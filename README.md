@@ -1,5 +1,7 @@
 # 《小猫回家记：流浪猫王国》1.0
 
+> GitLab 项目：`stray-kitty`（流浪咪咪 · Stray Kitty）
+
 Xsolla Garage Sprint 1 可玩 Demo。项目采用 React 19，实现一段可以完整演示的 Thin Slice：
 
 **品牌开场 → 剧情对话 → D6 随机事件 → 3×5 塔防救援 → 寻猫启事 → 章节结算**
