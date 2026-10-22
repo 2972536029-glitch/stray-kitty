@@ -8,8 +8,8 @@ interface Props {
   state: GameState;
   paused: boolean;
   storyScene?: StoryNode['scene'];
-  onNear: (near: boolean) => void;
-  onInteract: () => void;
+  onNear: (near: boolean, interactionId?: string, label?: string) => void;
+  onInteract: (interactionId?: string) => void;
   onResult: (result: BattleResult) => void;
   onDirectionReady: (send: (direction: Direction, held: boolean) => void) => void;
   onInspectHint?: (hint: string | null) => void;
@@ -24,8 +24,8 @@ export function Viewport(props: Props) {
   return <CanvasViewport label={props.state.phase === 'battle' ? '三路守护战场：点击格子布置光源' : '猫咪俯视探索场景，使用方向键或 WASD 移动'} createRuntime={canvas => {
     const runtime = new DemoScene(
       canvas,
-      near => latest.current.onNear(near),
-      () => latest.current.onInteract(),
+      (near, id, label) => latest.current.onNear(near, id, label),
+      id => latest.current.onInteract(id),
       result => latest.current.onResult(result),
       hint => latest.current.onInspectHint?.(hint)
     );

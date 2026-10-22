@@ -10,8 +10,15 @@ export default function WorldMap({state, catalog, disabled, onNavigate, onClose}
     <div className="map-origin">⌂ 蓝碗之家 <span>咪最初想回去的地方</span></div>
     <ol className="map-route">{catalog.maps.map((map, index) => {
       const current = map.id === state.mapId;
-      const unlocked = map.id === 'alley' || map.id === 'greenhouse' && homeOpen;
-      const command: GameCommand | null = map.id === 'alley' && state.phase === 'home' ? {type: 'GO_EXPLORE'} : map.id === 'greenhouse' && state.phase === 'explore' && homeOpen ? {type: 'GO_HOME'} : null;
+      const unlocked = map.id === 'alley' || (map.id === 'greenhouse' && homeOpen) || (map.id === 'market' && homeOpen);
+      let command: GameCommand | null = null;
+      if (map.id === 'alley' && (state.phase === 'home' || (state.phase === 'explore' && state.mapId !== 'alley'))) {
+        command = {type: 'GO_EXPLORE', mapId: 'alley'};
+      } else if (map.id === 'market' && (state.phase === 'home' || (state.phase === 'explore' && state.mapId !== 'market')) && homeOpen) {
+        command = {type: 'GO_EXPLORE', mapId: 'market'};
+      } else if (map.id === 'greenhouse' && state.phase === 'explore' && homeOpen) {
+        command = {type: 'GO_HOME'};
+      }
       return <li key={map.id} className={`map-stop ${current ? 'current' : ''} ${unlocked ? '' : 'locked'}`}>
         <div className="map-dot" aria-hidden="true">{['▦', '★', '❀', '☾', '⌂'][index] ?? '◇'}</div>
         <div><h3>{map.name}</h3><p>{current ? '你在这里' : unlocked ? '已经解锁' : map.status === 'planned' ? '后续章节开放' : '完成首次救援后开放'}</p></div>

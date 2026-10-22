@@ -19,8 +19,14 @@ async function finishDialogue(page:Page) {
  }
  throw Error('剧情未到达出口');
 }
+async function walkRightTo(page:Page,buttonName:string) {
+ await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+ await page.keyboard.down('ArrowRight');
+ try {await expect(page.getByRole('button',{name:buttonName})).toBeVisible({timeout:5000});}
+ finally {await page.keyboard.up('ArrowRight');}
+}
 
-test('真实浏览器贯通探索、事件、战斗、救援、家园和刷新恢复',async({page})=>{
+test('真实浏览器贯通前两章、双 NPC 事件、救援、家园和刷新恢复',async({page})=>{
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
  await page.goto('/');await expect(page.getByRole('button',{name:'开始冒险'})).toBeVisible();
  fs.mkdirSync('output/preview',{recursive:true});await page.screenshot({path:'output/preview/start.png',fullPage:true});
@@ -57,7 +63,37 @@ test('真实浏览器贯通探索、事件、战斗、救援、家园和刷新�
  await expect(page.getByRole('button',{name:'避雨角落'})).toContainText('纸箱猫窝');await expect(page.getByTestId('stamps')).toHaveText('1');
  await expect(page.getByRole('button',{name:'窗边'})).toContainText('蓝色饭碗');
  await page.getByRole('button',{name:'打开雨夜包裹'}).click();await expect(page.getByTestId('stamps')).toHaveText('0');
- await page.screenshot({path:'output/preview/home.png',fullPage:true});expect(errors).toEqual([]);
+ await page.screenshot({path:'output/preview/home.png',fullPage:true});
+ await page.getByRole('button',{name:'启程：第二章《午夜集市》',exact:false}).click();
+ await expect(page.locator('.chapter-pill')).toHaveText('第二章 · 午夜集市');
+ await expect(page.locator('.dialogue-copy p')).toContainText('午夜集市');
+ await page.screenshot({path:'output/preview/market-intro.png',fullPage:true});await finishDialogue(page);
+ await expect(page.locator('.area-label')).toHaveText('午夜集市');
+ await walkRightTo(page,'老黑羽的情报摊 · E');
+ await page.getByRole('button',{name:'老黑羽的情报摊 · E'}).click();
+ await page.getByRole('button',{name:'由喵喵摆出领队威严，与乌鸦讲价'}).click();
+ const [crowResponse]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/v1/commands')&&r.request().method()==='POST'),page.getByRole('button',{name:'掷出骰子'}).click()]);
+ expect(crowResponse.status()).toBe(200);const crowState=(await crowResponse.json()).state as GameState;
+ expect(stateSchema(crowState),JSON.stringify(stateSchema.errors)).toBe(true);
+ expect(crowState.eventState!.lastResolution.eventId).toBe('crow_intel_event');
+ if(crowState.phase==='dialogue')await finishDialogue(page);
+ await page.getByRole('button',{name:'带着收获继续探索集市'}).click();
+ await expect(page.getByRole('button',{name:'回到花房',exact:true})).toBeEnabled();
+ await walkRightTo(page,'咕咕大盗的传言棚 · E');
+ await page.getByRole('button',{name:'咕咕大盗的传言棚 · E'}).click();
+ await page.getByRole('button',{name:'打听通往废弃仓库的地下暗道'}).click();
+ const [pigeonResponse]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/v1/commands')&&r.request().method()==='POST'),page.getByRole('button',{name:'掷出骰子'}).click()]);
+ expect(pigeonResponse.status()).toBe(200);const pigeonState=(await pigeonResponse.json()).state as GameState;
+ expect(stateSchema(pigeonState),JSON.stringify(stateSchema.errors)).toBe(true);
+ expect(pigeonState.eventState!.lastResolution.eventId).toBe('pigeon_rumor_event');
+ if(pigeonState.phase==='dialogue')await finishDialogue(page);
+ await page.screenshot({path:'output/preview/market-result.png',fullPage:true});
+ await page.getByRole('button',{name:'带着收获继续探索集市'}).click();
+ await page.reload();await enterGame(page);await expect(page.locator('.area-label')).toHaveText('午夜集市');
+ await page.getByRole('button',{name:'回到花房',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'整理我们的家'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'前往午夜集市',exact:false})).toBeVisible();
+ expect(errors).toEqual([]);
 });
 test('匿名会话隔离、幂等与 API 真实响应',async({request})=>{
  const session=await(await request.post('/api/v1/sessions')).json();

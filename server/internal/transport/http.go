@@ -158,8 +158,35 @@ func (a *API) fail(w http.ResponseWriter, r *http.Request, err error) {
 	a.json(w, fault.Status, map[string]any{"error": map[string]string{"code": fault.Code, "message": fault.Message, "requestId": w.Header().Get("X-Request-Id")}})
 }
 func validateCommand(body []byte, kind string) error {
-	fields := map[string][]string{"ADVANCE_STORY": {"nodeId"}, "INTERACT": {"interactionId"}, "CHOOSE_EVENT": {"eventId", "optionId"}, "START_BATTLE": {"stageId"}, "COMPLETE_BATTLE": {"attemptId", "outcome"}, "CONTINUE": {}, "GO_HOME": {}, "GO_EXPLORE": {}, "PLACE_FURNITURE": {"furnitureId", "slotId"}, "DRAW_FURNITURE": {"poolId"}, "BUY_FURNITURE": {"productId"}}
-	required, ok := fields[kind]
+	allowed := map[string][]string{
+		"ADVANCE_STORY":   {"nodeId"},
+		"START_STORY":     {"nodeId"},
+		"INTERACT":        {"interactionId"},
+		"CHOOSE_EVENT":    {"eventId", "optionId"},
+		"START_BATTLE":    {"stageId"},
+		"COMPLETE_BATTLE": {"attemptId", "outcome"},
+		"CONTINUE":        {},
+		"GO_HOME":         {},
+		"GO_EXPLORE":      {"mapId"},
+		"PLACE_FURNITURE": {"furnitureId", "slotId"},
+		"DRAW_FURNITURE":  {"poolId"},
+		"BUY_FURNITURE":   {"productId"},
+	}
+	required := map[string][]string{
+		"ADVANCE_STORY":   {"nodeId"},
+		"START_STORY":     {"nodeId"},
+		"INTERACT":        {"interactionId"},
+		"CHOOSE_EVENT":    {"eventId", "optionId"},
+		"START_BATTLE":    {"stageId"},
+		"COMPLETE_BATTLE": {"attemptId", "outcome"},
+		"CONTINUE":        {},
+		"GO_HOME":         {},
+		"GO_EXPLORE":      {},
+		"PLACE_FURNITURE": {"furnitureId", "slotId"},
+		"DRAW_FURNITURE":  {"poolId"},
+		"BUY_FURNITURE":   {"productId"},
+	}
+	allowedKeys, ok := allowed[kind]
 	if !ok {
 		return domain.Fail("UNSUPPORTED_COMMAND", "命令尚未实现", 400)
 	}
@@ -170,14 +197,20 @@ func validateCommand(body []byte, kind string) error {
 		return err
 	}
 	for key := range raw.Command {
-		if key != "type" && !domain.Contains(required, key) {
+		if key != "type" && !domain.Contains(allowedKeys, key) {
 			return domain.Fail("INVALID_REQUEST", "命令包含不适用的字段", 400)
 		}
 	}
-	for _, key := range required {
+	for _, key := range required[kind] {
 		var value string
 		if err := json.Unmarshal(raw.Command[key], &value); err != nil || value == "" {
 			return domain.Fail("INVALID_REQUEST", "命令缺少有效的 "+key, 400)
+		}
+	}
+	if rawVal, exists := raw.Command["mapId"]; exists {
+		var value string
+		if err := json.Unmarshal(rawVal, &value); err != nil || value == "" {
+			return domain.Fail("INVALID_REQUEST", "命令缺少有效的 mapId", 400)
 		}
 	}
 	return nil

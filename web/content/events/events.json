@@ -197,5 +197,264 @@
         }
       }
     ]
+  },
+  {
+    "id": "crow_intel_event",
+    "title": "乌鸦老黑羽的情报摊",
+    "text": "一只戴着单片破镜片的年迈乌鸦站在生锈铁架上，精明的小眼睛打量着你们：“新面孔？想打听黑影的消息，就拿亮晶晶的瓶盖或小鱼干来换。”",
+    "category": "story",
+    "tags": [
+      "social",
+      "pathfinding"
+    ],
+    "triggers": [
+      "node"
+    ],
+    "options": [
+      {
+        "id": "trade_fish",
+        "label": "拿出一小份鱼干换取黑影弱点",
+        "outcomes": {
+          "crit": {
+            "text": "老乌鸦被上等干粮征服了：“看在美食的份上——黑影最怕聚光！另外，黑猫墨墨最近在老仓库周围打探！”",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 2,
+              "material": 3,
+              "fish": 1
+            },
+            "flags": [
+              "crow_friend",
+              "shadow_weakness_known"
+            ]
+          },
+          "success": {
+            "text": "乌鸦满意地点头：“黑影最怕亮光。还有，小心暗处的捕兽夹和下水道积水。”",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1,
+              "material": 2
+            },
+            "flags": [
+              "shadow_weakness_known"
+            ]
+          },
+          "partial": {
+            "text": "老乌鸦收了食物，慢吞吞吐出一句：“影子不仅怕光……它们还在暗中引诱落单的幼猫。注意脚下。”",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "shadow_warned"
+            ]
+          },
+          "fail": {
+            "text": "附近突然传来狗叫，惊飞了乌鸦！铁罐撞翻发出刺耳声响，团子拉着大家先撤退。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "emergency_withdrawal"
+            ],
+            "situation": {
+              "kind": "forced_chase",
+              "storyNodeId": "event_forced_chase"
+            }
+          }
+        }
+      },
+      {
+        "id": "negotiate",
+        "label": "由喵喵摆出领队威严，与乌鸦讲价",
+        "outcomes": {
+          "crit": {
+            "text": "喵喵威风凛凛的仪态让老乌鸦刮目相看：“有贵族猫的风范！这枚猫爪铜币送你，危急时能派上用场。”",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "stamps": 2,
+              "clue": 2
+            },
+            "flags": [
+              "crow_friend"
+            ]
+          },
+          "success": {
+            "text": "喵喵成功谈下了公道价格，老乌鸦透露了地下暗道的安全入口图纸。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "stamps": 1,
+              "clue": 1
+            },
+            "flags": [
+              "safe_route_found"
+            ]
+          },
+          "partial": {
+            "text": "乌鸦被你缠得烦了，随口丢下一份旧地图碎片：“拿去吧，别挡着我做生意。”",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "crow_map_fragment"
+            ]
+          },
+          "fail": {
+            "text": "老乌鸦嘎嘎怪叫嘲笑喵喵是家猫，争吵引来了暗处的警觉。团子示意大家先撤向有光的地方。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "market_alert"
+            ],
+            "situation": {
+              "kind": "detour",
+              "storyNodeId": "event_detour"
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "pigeon_rumor_event",
+    "title": "咕咕大盗的传言棚",
+    "text": "一只体型圆滚的灰鸽子正在旧木箱上吹嘘战绩：“整座城市的地下管道就没有本大盗不知道的近道！你们也在找失踪的猫咪？”",
+    "category": "story",
+    "tags": [
+      "social",
+      "trap"
+    ],
+    "triggers": [
+      "node"
+    ],
+    "options": [
+      {
+        "id": "ask_tunnel",
+        "label": "打听通往废弃仓库的地下暗道",
+        "outcomes": {
+          "crit": {
+            "text": "咕咕大盗掏出一张粗糙的下水道捷径图：“沿着有荧光苔藓的管道走，能避开黑影的埋伏！”",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 2,
+              "stamps": 1
+            },
+            "flags": [
+              "tunnel_map_found"
+            ]
+          },
+          "success": {
+            "text": "咕咕大盗告诉你避开捕兽夹的暗记，伙伴们的探索更有把握了。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1,
+              "material": 2
+            },
+            "flags": [
+              "trap_marks_known"
+            ]
+          },
+          "partial": {
+            "text": "鸽子只顾着吹嘘自己的战绩，半天才挤出一句：“黑猫墨墨去仓库侦查了，但还没回来。”",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "momo_rumor"
+            ]
+          },
+          "fail": {
+            "text": "鸽子扑腾翅膀撞翻了木箱，铁皮倒塌的巨响惊动了附近的危险黑影！",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "emergency_withdrawal"
+            ],
+            "situation": {
+              "kind": "forced_chase",
+              "storyNodeId": "event_forced_chase"
+            }
+          }
+        }
+      },
+      {
+        "id": "recruit_pigeon",
+        "label": "告诉鸽子花房庇护所，邀请它做联络员",
+        "outcomes": {
+          "crit": {
+            "text": "咕咕大盗大喜过望：“有固定的安全窝？太好了！本大盗以后就是你们的空中侦察兵！”",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "stamps": 2,
+              "material": 3
+            },
+            "flags": [
+              "pigeon_ally"
+            ]
+          },
+          "success": {
+            "text": "鸽子答应帮你们在花房附近放哨，留下了两枚闪亮的猫爪邮票作为定金。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "stamps": 2
+            },
+            "flags": [
+              "pigeon_ally"
+            ]
+          },
+          "partial": {
+            "text": "鸽子收下一份材料：“有空我会去花房瞅瞅的，不过别想白嫖本鸽的情报。”",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "pigeon_contact"
+            ]
+          },
+          "fail": {
+            "text": "一阵怪风吹灭了马灯，鸽子受惊飞走，阴影逼近，大家不得不紧急撤离！",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "emergency_withdrawal"
+            ],
+            "situation": {
+              "kind": "forced_chase",
+              "storyNodeId": "event_forced_chase"
+            }
+          }
+        }
+      }
+    ]
   }
 ]

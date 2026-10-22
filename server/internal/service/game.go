@@ -105,6 +105,21 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	switch c.Type {
 	case "BUY_FURNITURE":
 		return g.buyFurniture(s, c.ProductID)
+	case "START_STORY":
+		for _, n := range g.Catalog.Story {
+			if n.ID == c.NodeID {
+				s.Phase = "dialogue"
+				s.StoryNodeID = n.ID
+				s.ChapterID = n.ChapterID
+				if n.ChapterID == "market" {
+					s.MapID = "market"
+					s.Flags = domain.Add(s.Flags, "market_unlocked")
+					s.Flags = domain.Add(s.Flags, "chapter_2_started")
+				}
+				return nil
+			}
+		}
+		return invalid()
 	case "ADVANCE_STORY":
 		if err := domain.RequirePhase(*s, "dialogue"); err != nil {
 			return err
@@ -128,6 +143,11 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.MapID = "greenhouse"
 					s.Flags = domain.Add(s.Flags, "rescue_story_done")
 				}
+				if n.Exit == "explore" && n.ChapterID == "market" {
+					s.MapID = "market"
+					s.Flags = domain.Add(s.Flags, "market_unlocked")
+					s.Flags = domain.Add(s.Flags, "chapter_2_started")
+				}
 				return nil
 			}
 		}
@@ -136,7 +156,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		if err := domain.RequirePhase(*s, "explore"); err != nil {
 			return err
 		}
-		if domain.Contains(s.Flags, "alley_rescued") {
+		if s.MapID == "alley" && domain.Contains(s.Flags, "alley_rescued") {
 			return domain.Fail("ALREADY_COMPLETED", "伙伴已经获救，可以回花房看看", 409)
 		}
 		for _, m := range g.Catalog.Maps {
@@ -220,7 +240,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		s.ActiveBattle = nil
 		return nil
 	case "GO_HOME":
-		if err := domain.RequirePhase(*s, "explore"); err != nil {
+		if err := domain.RequirePhase(*s, "explore", "preparation"); err != nil {
 			return err
 		}
 		if !domain.Contains(s.Flags, "alley_rescued") {
@@ -230,11 +250,18 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		s.MapID = "greenhouse"
 		return nil
 	case "GO_EXPLORE":
-		if err := domain.RequirePhase(*s, "home"); err != nil {
-			return err
+		targetMap := "alley"
+		if c.MapID != "" {
+			targetMap = c.MapID
+		} else if s.MapID == "market" {
+			targetMap = "market"
 		}
 		s.Phase = "explore"
-		s.MapID = "alley"
+		s.MapID = targetMap
+		if targetMap == "market" {
+			s.Flags = domain.Add(s.Flags, "market_unlocked")
+			s.Flags = domain.Add(s.Flags, "chapter_2_started")
+		}
 		return nil
 	case "PLACE_FURNITURE":
 		if err := domain.RequirePhase(*s, "home"); err != nil {

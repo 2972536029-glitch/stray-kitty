@@ -60,6 +60,7 @@ type Command struct {
 	SlotID        string `json:"slotId,omitempty"`
 	PoolID        string `json:"poolId,omitempty"`
 	ProductID     string `json:"productId,omitempty"`
+	MapID         string `json:"mapId,omitempty"`
 }
 type CommandRequest struct {
 	ExpectedRevision *int    `json:"expectedRevision"`

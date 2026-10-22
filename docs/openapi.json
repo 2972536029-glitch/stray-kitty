@@ -663,7 +663,8 @@
             "enum": [
               "alley",
               "poster",
-              "home"
+              "home",
+              "market"
             ]
           },
           "setFlags": {
@@ -1194,6 +1195,9 @@
           "type": {
             "type": "string",
             "const": "GO_EXPLORE"
+          },
+          "mapId": {
+            "type": "string"
           }
         },
         "required": [
@@ -1272,6 +1276,9 @@
           },
           {
             "$ref": "#/components/schemas/BuyFurniture"
+          },
+          {
+            "$ref": "#/components/schemas/StartStory"
           }
         ]
       },
@@ -1635,6 +1642,23 @@
         "required": [
           "lastResolution",
           "pendingModifiers"
+        ]
+      },
+      "StartStory": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "START_STORY"
+          },
+          "nodeId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "nodeId"
         ]
       }
     }

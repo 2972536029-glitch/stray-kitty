@@ -16,8 +16,8 @@
     {
       "id": "market",
       "title": "第二章 · 午夜集市",
-      "summary": "交换线索，认识不同猫咪的生活，发现花房。",
-      "status": "planned"
+      "summary": "交换线索，结识不同流浪猫，探寻地下暗道与黑影秘密。",
+      "status": "demo"
     },
     {
       "id": "greenhouse",
@@ -142,25 +142,17 @@
       "id": "rescue_1",
       "chapterId": "alley",
       "speaker": "点点",
-      "text": "谢谢你们……我叫点点。原来，我们也可以一起找到安全的地方。",
+      "text": "呜……谢谢你们！要是没有你们，我早就被那些冰冷的黑影抓走了……小巷深处最近经常有暗影游荡，已经有好几个伙伴无声无息地失踪了。",
       "next": "poster_1",
-      "exit": ""
-    },
-    {
-      "id": "rescue_2",
-      "chapterId": "greenhouse",
-      "speaker": "喵喵",
-      "text": "那就先把这座旧花房收拾一下吧。一只猫的纸箱，也可以变成大家的家。",
-      "next": "",
-      "exit": "home",
-      "scene": "home"
+      "exit": "",
+      "scene": "alley"
     },
     {
       "id": "poster_1",
       "chapterId": "alley",
       "speaker": "喵喵",
       "text": "墙上这只猫……怎么和咪一模一样？还有这个名字。原来，家里也一直在找咪。",
-      "next": "poster_2",
+      "next": "poster_warmth",
       "exit": "",
       "scene": "poster",
       "setFlags": [
@@ -168,10 +160,28 @@
       ]
     },
     {
+      "id": "poster_warmth",
+      "chapterId": "alley",
+      "speaker": "喵喵",
+      "text": "海报上印着咪最宝贝的天蓝色饭碗，还有两脚兽焦急写下的字迹……原来两脚兽没有把咪忘掉，他们真的好着急。",
+      "next": "poster_2",
+      "exit": "",
+      "scene": "poster"
+    },
+    {
       "id": "poster_2",
       "chapterId": "alley",
       "speaker": "点点",
-      "text": "你已经找到回家的线索了。现在就走，也来得及。",
+      "text": "你已经找到回家的线索了。现在就走，也来得及。别像我们一样在街头挨饿受冻……",
+      "next": "poster_hesitate",
+      "exit": "",
+      "scene": "poster"
+    },
+    {
+      "id": "poster_hesitate",
+      "chapterId": "alley",
+      "speaker": "团子",
+      "text": "团子也叹了口气：“点点说得对。街头的黑影越来越危险，日子不好过。趁天还没全黑，顺着熟悉的气味回你的暖毯上去吧。”",
       "next": "poster_3",
       "exit": "",
       "scene": "poster"
@@ -181,9 +191,45 @@
       "chapterId": "alley",
       "speaker": "喵喵",
       "text": "……先把失踪的猫找回来。回家的路不会跑掉，但它们现在需要咪。",
-      "next": "rescue_2",
+      "next": "poster_resolve",
       "exit": "",
       "scene": "poster"
+    },
+    {
+      "id": "poster_resolve",
+      "chapterId": "alley",
+      "speaker": "喵喵",
+      "text": "本咪可是微服私访的领地巡察官！哪有巡察官丢下受难伙伴自己跑路的道理！听好了，先把所有失踪的猫咪都救出来，本咪再光荣回家！",
+      "next": "rescue_tuanzi_admire",
+      "exit": "",
+      "scene": "poster"
+    },
+    {
+      "id": "rescue_tuanzi_admire",
+      "chapterId": "alley",
+      "speaker": "团子",
+      "text": "团子咧嘴笑了：“好样的小少爷！真有骨气！既然要干票大的，就不能让点点再窝在破纸箱里受寒。”",
+      "next": "rescue_greenhouse_proposal",
+      "exit": "",
+      "scene": "poster"
+    },
+    {
+      "id": "rescue_greenhouse_proposal",
+      "chapterId": "alley",
+      "speaker": "团子",
+      "text": "老街转角有一座被遗忘的废弃花房。虽然漏雨破旧，但骨架结实，只要咱们一起收拾，就能变成谁也闯不进来的根据地！",
+      "next": "rescue_2",
+      "exit": "",
+      "scene": "alley"
+    },
+    {
+      "id": "rescue_2",
+      "chapterId": "greenhouse",
+      "speaker": "喵喵",
+      "text": "那就先把这座旧花房收拾一下吧。一只猫的纸箱，也可以变成大家的家。",
+      "next": "",
+      "exit": "home",
+      "scene": "home"
     },
     {
       "id": "event_forced_chase",
@@ -208,6 +254,46 @@
       "setFlags": [
         "detour_completed"
       ]
+    },
+    {
+      "id": "market_intro_1",
+      "chapterId": "market",
+      "speaker": "团子",
+      "text": "穿过这条下水道铁栅栏就是了——欢迎来到【午夜集市】！整座城市里流浪的猫咪和各路飞鸟都在这里互通有无。",
+      "next": "market_intro_2",
+      "exit": "",
+      "scene": "market"
+    },
+    {
+      "id": "market_intro_2",
+      "chapterId": "market",
+      "speaker": "旁白",
+      "text": "微光闪烁的暖黄色灯泡挂在生锈水管上，空气中弥漫着烤鱼骨的烟气与瓶盖叮当的脆响。木箱之间穿梭着各色流浪猫，神情警惕却又自得其乐。",
+      "next": "market_intro_3",
+      "exit": "",
+      "scene": "market"
+    },
+    {
+      "id": "market_intro_3",
+      "chapterId": "market",
+      "speaker": "喵喵",
+      "text": "哇……这里居然藏着这么大的地下集市！原来在两脚兽看不见的地方，流浪猫也有属于自己的热闹世界！",
+      "next": "market_intro_4",
+      "exit": "",
+      "scene": "market"
+    },
+    {
+      "id": "market_intro_4",
+      "chapterId": "market",
+      "speaker": "团子",
+      "text": "别光顾着看稀奇。看见前面挂着单片镜的乌鸦老黑羽、还有吹牛的灰鸽子了吗？去打听失踪猫咪的消息，还有常在暗道独行的神秘黑猫墨墨！",
+      "next": "",
+      "exit": "explore",
+      "scene": "market",
+      "setFlags": [
+        "market_unlocked",
+        "chapter_2_started"
+      ]
     }
   ],
   "maps": [
@@ -231,10 +317,25 @@
     {
       "id": "market",
       "name": "午夜集市",
-      "status": "planned",
+      "status": "demo",
       "width": 800,
       "height": 480,
-      "interactions": [],
+      "interactions": [
+        {
+          "id": "market_crow_stall",
+          "x": 260,
+          "y": 280,
+          "label": "乌鸦老黑羽的情报摊",
+          "eventId": "crow_intel_event"
+        },
+        {
+          "id": "market_pigeon_perch",
+          "x": 580,
+          "y": 270,
+          "label": "咕咕大盗的传言棚",
+          "eventId": "pigeon_rumor_event"
+        }
+      ],
       "dangerLevel": 2
     },
     {
@@ -450,6 +551,265 @@
             },
             "fail": {
               "text": "你试图吓退暗处，但体型差距让威慑落了空。黑影猛地逼近，团子急忙带大家先撤向路灯下！",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "emergency_withdrawal"
+              ],
+              "situation": {
+                "kind": "forced_chase",
+                "storyNodeId": "event_forced_chase"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "crow_intel_event",
+      "title": "乌鸦老黑羽的情报摊",
+      "text": "一只戴着单片破镜片的年迈乌鸦站在生锈铁架上，精明的小眼睛打量着你们：“新面孔？想打听黑影的消息，就拿亮晶晶的瓶盖或小鱼干来换。”",
+      "category": "story",
+      "tags": [
+        "social",
+        "pathfinding"
+      ],
+      "triggers": [
+        "node"
+      ],
+      "options": [
+        {
+          "id": "trade_fish",
+          "label": "拿出一小份鱼干换取黑影弱点",
+          "outcomes": {
+            "crit": {
+              "text": "老乌鸦被上等干粮征服了：“看在美食的份上——黑影最怕聚光！另外，黑猫墨墨最近在老仓库周围打探！”",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2,
+                "material": 3,
+                "fish": 1
+              },
+              "flags": [
+                "crow_friend",
+                "shadow_weakness_known"
+              ]
+            },
+            "success": {
+              "text": "乌鸦满意地点头：“黑影最怕亮光。还有，小心暗处的捕兽夹和下水道积水。”",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1,
+                "material": 2
+              },
+              "flags": [
+                "shadow_weakness_known"
+              ]
+            },
+            "partial": {
+              "text": "老乌鸦收了食物，慢吞吞吐出一句：“影子不仅怕光……它们还在暗中引诱落单的幼猫。注意脚下。”",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "material": 1
+              },
+              "flags": [
+                "shadow_warned"
+              ]
+            },
+            "fail": {
+              "text": "附近突然传来狗叫，惊飞了乌鸦！铁罐撞翻发出刺耳声响，团子拉着大家先撤退。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "emergency_withdrawal"
+              ],
+              "situation": {
+                "kind": "forced_chase",
+                "storyNodeId": "event_forced_chase"
+              }
+            }
+          }
+        },
+        {
+          "id": "negotiate",
+          "label": "由喵喵摆出领队威严，与乌鸦讲价",
+          "outcomes": {
+            "crit": {
+              "text": "喵喵威风凛凛的仪态让老乌鸦刮目相看：“有贵族猫的风范！这枚猫爪铜币送你，危急时能派上用场。”",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "stamps": 2,
+                "clue": 2
+              },
+              "flags": [
+                "crow_friend"
+              ]
+            },
+            "success": {
+              "text": "喵喵成功谈下了公道价格，老乌鸦透露了地下暗道的安全入口图纸。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "stamps": 1,
+                "clue": 1
+              },
+              "flags": [
+                "safe_route_found"
+              ]
+            },
+            "partial": {
+              "text": "乌鸦被你缠得烦了，随口丢下一份旧地图碎片：“拿去吧，别挡着我做生意。”",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "material": 1
+              },
+              "flags": [
+                "crow_map_fragment"
+              ]
+            },
+            "fail": {
+              "text": "老乌鸦嘎嘎怪叫嘲笑喵喵是家猫，争吵引来了暗处的警觉。团子示意大家先撤向有光的地方。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "market_alert"
+              ],
+              "situation": {
+                "kind": "detour",
+                "storyNodeId": "event_detour"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pigeon_rumor_event",
+      "title": "咕咕大盗的传言棚",
+      "text": "一只体型圆滚的灰鸽子正在旧木箱上吹嘘战绩：“整座城市的地下管道就没有本大盗不知道的近道！你们也在找失踪的猫咪？”",
+      "category": "story",
+      "tags": [
+        "social",
+        "trap"
+      ],
+      "triggers": [
+        "node"
+      ],
+      "options": [
+        {
+          "id": "ask_tunnel",
+          "label": "打听通往废弃仓库的地下暗道",
+          "outcomes": {
+            "crit": {
+              "text": "咕咕大盗掏出一张粗糙的下水道捷径图：“沿着有荧光苔藓的管道走，能避开黑影的埋伏！”",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2,
+                "stamps": 1
+              },
+              "flags": [
+                "tunnel_map_found"
+              ]
+            },
+            "success": {
+              "text": "咕咕大盗告诉你避开捕兽夹的暗记，伙伴们的探索更有把握了。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1,
+                "material": 2
+              },
+              "flags": [
+                "trap_marks_known"
+              ]
+            },
+            "partial": {
+              "text": "鸽子只顾着吹嘘自己的战绩，半天才挤出一句：“黑猫墨墨去仓库侦查了，但还没回来。”",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "material": 1
+              },
+              "flags": [
+                "momo_rumor"
+              ]
+            },
+            "fail": {
+              "text": "鸽子扑腾翅膀撞翻了木箱，铁皮倒塌的巨响惊动了附近的危险黑影！",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "emergency_withdrawal"
+              ],
+              "situation": {
+                "kind": "forced_chase",
+                "storyNodeId": "event_forced_chase"
+              }
+            }
+          }
+        },
+        {
+          "id": "recruit_pigeon",
+          "label": "告诉鸽子花房庇护所，邀请它做联络员",
+          "outcomes": {
+            "crit": {
+              "text": "咕咕大盗大喜过望：“有固定的安全窝？太好了！本大盗以后就是你们的空中侦察兵！”",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "stamps": 2,
+                "material": 3
+              },
+              "flags": [
+                "pigeon_ally"
+              ]
+            },
+            "success": {
+              "text": "鸽子答应帮你们在花房附近放哨，留下了两枚闪亮的猫爪邮票作为定金。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "stamps": 2
+              },
+              "flags": [
+                "pigeon_ally"
+              ]
+            },
+            "partial": {
+              "text": "鸽子收下一份材料：“有空我会去花房瞅瞅的，不过别想白嫖本鸽的情报。”",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "material": 1
+              },
+              "flags": [
+                "pigeon_contact"
+              ]
+            },
+            "fail": {
+              "text": "一阵怪风吹灭了马灯，鸽子受惊飞走，阴影逼近，大家不得不紧急撤离！",
               "tdMod": {
                 "shadowPressure": 1
               },

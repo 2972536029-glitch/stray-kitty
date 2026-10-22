@@ -28,3 +28,19 @@
 .attitude-btn.active{background:#fff3ad;border-color:var(--ink);box-shadow:2px 2px 0 var(--red);font-weight:700}
 .inspect-hint{color:#095b82!important;font-weight:600;animation:story-in .2s ease-out}
 .hint-paw{margin-right:5px;font-size:12px}
+
+/* 对话跳过与开发者验收工具栏 */
+.dialogue-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+.skip-button{background:#fff;border:1.5px solid var(--ink);color:var(--blue);font-size:11px;padding:9px 12px;border-radius:4px;cursor:pointer;box-shadow:2px 2px 0 var(--yellow);transition:all .15s}
+.skip-button:hover{background:#fff9d6;color:var(--ink)}
+.start-reset{background:transparent!important;border:1px dashed #7a7a7a!important;box-shadow:none!important;color:#666!important;padding:8px 14px!important;min-height:unset!important;font-size:11px!important;border-radius:4px;cursor:pointer;margin-top:6px}
+.start-reset:hover{background:#fff0f0!important;color:var(--red)!important;border-color:var(--red)!important}
+.dev-button{background:#fff0d0!important;color:var(--ink)!important}
+.dev-bar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:#fdf6e3;border-bottom:2px solid #e0d0b0;font-size:11px;flex-wrap:wrap}
+.dev-bar b{color:var(--blue);font-size:11px}
+.dev-bar button{background:white;border:1.5px solid #888;border-radius:4px;padding:4px 9px;font-size:10px;cursor:pointer;color:var(--ink);box-shadow:1px 1px 0 rgba(0,0,0,0.15)}
+.dev-bar button:hover{background:#fff3ad;border-color:var(--ink)}
+.dev-bar .dev-reset-btn{color:#b32415;border-color:#df9985}
+.dev-bar .dev-reset-btn:hover{background:#ffebe6}
+.primary-action-btn{background:var(--blue);color:white;border:2px solid var(--ink);box-shadow:3px 3px 0 var(--yellow);font-weight:700}
+.primary-action-btn:hover{background:#0a8be6}
