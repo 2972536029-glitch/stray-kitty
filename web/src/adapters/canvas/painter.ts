@@ -12,11 +12,15 @@ export class CanvasPainter {
   fillCircle(x: number, y: number, radius: number) {
     this.context.beginPath();this.context.arc(x, y, radius, 0, Math.PI * 2);this.context.fill();
   }
+  image(source: CanvasImageSource, x: number, y: number, width: number, height: number) {
+    this.context.save();this.context.globalAlpha = 1;
+    this.context.drawImage(source, x, y, width, height);this.context.restore();
+  }
   cat(x: number, y: number, breed: CatBreed, size = 64) {
     this.context.save();
     this.context.globalAlpha = 1;
     this.context.translate(Math.round(x - size / 2), Math.round(y - size * .8));
-    this.context.scale(size / 32, size / 32);
+    this.context.scale(size / 64, size / 64);
     drawPixelCat(this.context, breed);
     this.context.restore();
   }

@@ -1,9 +1,10 @@
 import PixelCat from './PixelCat';
+import StartMenuBackdrop from './StartMenuBackdrop';
 
 // 轩扬 react-demo 的开场构图与文案；进度由外部传入，开始按钮不重置存档。
 export default function StartScreen({hasProgress, disabled, onStart, onShop}: {hasProgress: boolean; disabled: boolean; onStart: () => void; onShop: () => void}) {
   return <section className="start-screen">
-    <div className="start-shape shape-red" aria-hidden="true"/><div className="start-shape shape-blue" aria-hidden="true"/>
+    <StartMenuBackdrop/>
     <header className="start-brand"><span className="xsolla-wordmark">XSOLLA<span> GARAGE</span></span><small>INTERNSHIP GAME PROJECT · 2026</small></header>
     <div className="start-title">
       <div className="start-cats"><PixelCat breed="tuanzi" size={120}/><PixelCat breed="miaomiao" size={185}/><PixelCat breed="diandian" size={125}/></div>

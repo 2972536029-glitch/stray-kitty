@@ -27,6 +27,7 @@ test('真实浏览器贯通探索、事件、战斗、救援、家园和刷新�
  await enterGame(page);await expect(page.locator('[data-renderer="canvas2d"]')).toBeVisible();
  fs.mkdirSync('output/preview',{recursive:true});await page.screenshot({path:'output/preview/desktop.png',fullPage:true});
  await finishDialogue(page);
+ await page.screenshot({path:'output/preview/explore.png',fullPage:true});
  await page.keyboard.down('ArrowRight');await page.waitForTimeout(1850);await page.keyboard.up('ArrowRight');
  await expect(page.getByRole('button',{name:'查看纸箱 · E'})).toBeVisible();await page.getByRole('button',{name:'查看纸箱 · E'}).click();
  await page.getByRole('button',{name:'仔细搜索周围的物资'}).click();await expect(page.getByRole('button',{name:'掷出骰子'})).toBeEnabled();
@@ -119,4 +120,28 @@ test('双骰已提交但响应丢失，刷新沿用原骰点与奖励',async({pa
  expect(await page.getByTestId('event-resolution').locator('.dice').evaluateAll(els=>els.map(el=>el.getAttribute('aria-label')))).toEqual(committed!.eventState!.lastResolution.dice.map(value=>`骰子 ${value} 点`));
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
  await page.screenshot({path:'output/preview/mobile-event-result.png',fullPage:true});
+});
+
+test('新版美术资源可加载，矮屏菜单与新增剧情态度可操作',async({page,request})=>{
+ const art=await request.get('/assets/city-backdrop.svg');expect(art.status()).toBe(200);expect(art.headers()['content-type']).toContain('image/svg+xml');
+ for(const viewport of [{width:1280,height:620},{width:375,height:560}]){
+  await page.setViewportSize(viewport);await page.goto('/');
+  const decoded=await page.evaluate(async()=>{const image=new Image();image.src='/assets/city-backdrop.svg';await image.decode();return {width:image.naturalWidth,height:image.naturalHeight};});expect(decoded.width).toBeGreaterThan(0);expect(decoded.height).toBeGreaterThan(0);
+  await expect(page.locator('.start-menu-backdrop')).toBeVisible();await expect(page.locator('.start-cats svg.pixel-cat')).toHaveCount(3);
+  const play=page.getByRole('button',{name:'开始冒险'});await play.scrollIntoViewIfNeeded();
+  const bounds=(await play.boundingBox())!;expect(bounds.y).toBeGreaterThanOrEqual(0);expect(bounds.y+bounds.height).toBeLessThanOrEqual(viewport.height);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.screenshot({path:`output/preview/start-${viewport.width}x${viewport.height}.png`,fullPage:true});
+  const shopButton=page.getByRole('button',{name:'猫国商店'});await shopButton.scrollIntoViewIfNeeded();await shopButton.click();
+  await expect(page.getByRole('dialog',{name:'猫国商店'})).toBeVisible();await page.getByRole('button',{name:'关闭猫国商店'}).click();
+  await enterGame(page);await expect(page.locator('[data-renderer="canvas2d"] canvas')).toBeVisible();
+  await expect(page.locator('.cat-entry').getByRole('img',{name:'橘猫 · 团子'})).toBeVisible();
+ }
+ for(let step=0;step<3;step++){
+  await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/v1/commands')&&r.request().method()==='POST'),page.getByRole('button',{name:'继续故事'}).click()]);
+  await expect(page.getByRole('button',{name:'继续故事'})).toBeEnabled();
+ }
+ const attitude=page.getByRole('group',{name:'猫咪态度'});await expect(attitude).toBeVisible();
+ await attitude.getByRole('button',{name:'诚实撒娇'}).click();await expect(page.locator('.dialogue-copy p')).toContainText('口水');
+ await attitude.getByRole('button',{name:'傲娇嘴硬'}).click();await expect(page.locator('.dialogue-copy p')).toContainText('领地之王');
 });

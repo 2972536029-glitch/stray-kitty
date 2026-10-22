@@ -1,40 +1,49 @@
-// 移植自轩扬 react-demo@b740853 的 PixelCat.jsx，保留原像素造型。
+// 轩扬 MR !2（a553076）的 64×64 像素图稿，UI 与 Canvas 共用路径。
+// 团子沿用当前剧情和档案的橘猫设定。
 export const breeds = {
-  miaomiao: { fur:'#fffef8', light:'#ffffff', shade:'#ddd8ce', dark:'#25252b', patch:'#ffd21f', eye:'#25252b', accent:'#e31b23', name:'英短 · 喵喵' },
-  diandian: { fur:'#fffef8', light:'#ffffff', shade:'#ddd8ce', dark:'#25252b', patch:'#45434a', eye:'#25252b', accent:'#e31b23', name:'奶牛猫 · 点点' },
-  tuanzi: { fur:'#f5a442', light:'#ffd980', shade:'#d66b26', dark:'#6e3e2f', patch:'#d66b26', eye:'#25252b', accent:'#0878c9', name:'橘猫 · 团子' },
-  momo: { fur:'#47444d', light:'#77727b', shade:'#2c2931', dark:'#202027', patch:'#35323b', eye:'#ffd21f', accent:'#0878c9', name:'孟买猫 · 墨墨' },
+  miaomiao: {fur: '#f2dfb8', shade: '#d5bc87', patch: '#b77b32', point: '#3b3131', eye: '#262b31', accent: '#b54035', name: '英短 · 喵喵'},
+  diandian: {fur: '#f4ead7', shade: '#d2c5ae', patch: '#49464d', point: '#302d32', eye: '#4e6d54', accent: '#b54035', name: '奶牛猫 · 点点'},
+  tuanzi: {fur: '#e7ad67', shade: '#c38343', patch: '#a66536', point: '#523729', eye: '#553d2e', accent: '#39698c', name: '橘猫 · 团子'},
+  momo: {fur: '#46434a', shade: '#2c2a30', patch: '#69646d', point: '#211f24', eye: '#c99b35', accent: '#39698c', name: '孟买猫 · 墨墨'}
 } as const;
 export type CatBreed = keyof typeof breeds;
 export type CatMood = 'idle' | 'worried' | 'brave';
-function px(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string) {
-  ctx.fillStyle = color
-  ctx.fillRect(x, y, w, h)
+export interface CatShape {path: string; fill: string; stroke?: string}
+
+export function catShapes(breed: CatBreed, mood: CatMood): CatShape[] {
+  const p = breeds[breed];
+  const outlined = (path: string, fill: string): CatShape => ({path, fill, stroke: p.point});
+  const flat = (path: string, fill: string): CatShape => ({path, fill});
+  const shapes: CatShape[] = [
+    outlined('M43 43h8v-4h5v-9h-5v5h-7z', p.shade),
+    outlined('M20 40h25v5h4v12H15V45h5z', p.fur),
+    flat('M39 41h6v4h4v12H39z', p.shade),
+    outlined('M10 21v-8h6V8l8 7h16l8-7v5h6v8h4v20h-4v5H10v-5H6V21z', p.fur),
+    flat('M45 14l3-4v5h6v7h3v19h-6V20z', p.shade)
+  ];
+  if (breed === 'diandian') shapes.push(flat('M8 22v-8h14v9h-5v8H8z', p.patch), flat('M43 14h11v9h-7z', p.patch), flat('M37 44h11v12H36z', p.patch));
+  if (breed === 'miaomiao') shapes.push(flat('M8 22v-7h9v13h-7z', p.patch), flat('M47 14h7v12h-9z', p.patch), flat('M37 44h11v11H36z', p.patch));
+  if (breed === 'tuanzi') shapes.push(flat('M18 15h4v9h-4zM29 15h4v10h-4zM40 15h4v9h-4zM18 46h4v8h-4zM40 46h4v8h-4z', p.patch));
+  if (breed === 'momo') shapes.push(flat('M20 34h24v9H20z', p.patch));
+  shapes.push(outlined('M15 52h12v7H14v-4zM37 52h13v7H37z', breed === 'momo' ? p.patch : '#fff4dc'));
+  if (mood === 'worried') shapes.push(flat('M19 29h8v2h-8zM37 29h8v2h-8z', p.point));
+  else shapes.push(flat('M21 27h4v7h-4zM39 27h4v7h-4z', p.eye), flat('M22 27h1.5v2H22zM40 27h1.5v2H40z', '#fff'));
+  if (mood === 'brave') shapes.push(flat('M19 24l8 2v2l-8-2zM37 26l8-2v2l-8 2z', p.point));
+  shapes.push(flat('M30 34h5v4h-5z', '#c78963'), flat('M27 39h4v2h-4zM34 39h4v2h-4z', p.point), flat('M8 34h10v1.5H8zM9 38h9v1.5H9zM46 34h10v1.5H46zM46 38h9v1.5H46z', p.point));
+  if (breed === 'miaomiao') shapes.push(flat('M48 15h6v-4h7v11h-7v-4h-6z', p.accent), flat('M52 14h5v5h-5z', '#d2a33e'));
+  else shapes.push(flat('M20 44h24v4H20zM29 47h7v6h-7z', p.accent), flat('M31 46h3v3h-3z', '#d2a33e'));
+  shapes.push(flat('M14 19h3v6h-3zM18 16h3v3h-3zM18 45h3v3h-3z', 'rgba(255,255,255,.5)'), flat('M13 58h14v2H13zM37 58h14v2H37z', 'rgba(34,32,37,.28)'));
+  return shapes;
 }
 
+const paths = new Map<string, Path2D>();
 export function drawPixelCat(ctx: CanvasRenderingContext2D, breed: CatBreed = 'miaomiao', mood: CatMood = 'idle') {
-  const p = breeds[breed];
-  ctx.imageSmoothingEnabled = false
-  // 拼豆娃娃比例：大圆方头、短身体、短脚。
-  px(ctx,9,19,15,9,p.fur); px(ctx,7,22,4,5,p.fur); px(ctx,22,22,4,5,p.fur)
-  px(ctx,8,8,17,13,p.fur); px(ctx,9,6,5,5,p.fur); px(ctx,20,6,4,5,p.fur)
-  px(ctx,10,5,3,3,p.dark); px(ctx,21,5,2,3,p.dark)
-  px(ctx,7,11,2,7,p.fur); px(ctx,25,11,2,7,p.fur)
-  px(ctx,11,15,11,5,p.light); px(ctx,16,16,2,2,'#f0c252')
-  // 固定右下暗面：用二维色块模拟体积，不使用渐变。
-  px(ctx,23,12,2,7,p.shade); px(ctx,21,19,3,2,p.shade); px(ctx,22,22,2,5,p.shade)
-  // breed markings
-  if (breed === 'diandian') { px(ctx,8,9,6,6,p.patch); px(ctx,20,8,5,4,p.patch); px(ctx,18,21,6,6,p.patch) }
-  if (breed === 'tuanzi') { px(ctx,11,8,2,4,p.dark); px(ctx,16,7,2,5,p.dark); px(ctx,21,8,2,4,p.dark); px(ctx,12,21,2,5,p.dark); px(ctx,19,21,2,5,p.dark) }
-  if (breed === 'momo') { px(ctx,11,15,11,5,p.light); px(ctx,9,20,3,4,p.light) }
-  if (breed === 'miaomiao') { px(ctx,8,10,4,5,p.patch); px(ctx,21,9,4,5,p.patch); px(ctx,19,21,5,5,p.patch) }
-  // eyes / expression
-  if (mood === 'worried') { px(ctx,11,13,3,1,p.dark); px(ctx,19,13,3,1,p.dark) }
-  else { px(ctx,11,13,2,3,p.eye); px(ctx,21,13,2,3,p.eye) }
-  if (mood === 'brave') { px(ctx,11,11,3,1,p.dark); px(ctx,19,11,3,1,p.dark) }
-  // 原创配饰：喵喵蝴蝶结，其余猫使用领巾/星饰，避免角色同质化。
-  if (breed === 'miaomiao') { px(ctx,23,8,3,4,p.accent); px(ctx,27,7,3,5,p.accent); px(ctx,26,10,2,2,'#ffd25f') }
-  else { px(ctx,11,20,13,2,p.accent); px(ctx,16,21,3,3,'#ffd25f') }
-  px(ctx,8,26,6,3,p.light); px(ctx,21,26,6,3,p.light)
-  px(ctx,9,10,1,5,'rgba(255,255,255,.55)')
+  ctx.save();ctx.imageSmoothingEnabled = false;ctx.lineJoin = 'round';ctx.lineWidth = 2.5;
+  for (const shape of catShapes(breed, mood)) {
+    let path = paths.get(shape.path);
+    if (!path) {path = new Path2D(shape.path);paths.set(shape.path, path);}
+    ctx.fillStyle = shape.fill;ctx.fill(path);
+    if (shape.stroke) {ctx.strokeStyle = shape.stroke;ctx.stroke(path);}
+  }
+  ctx.restore();
 }

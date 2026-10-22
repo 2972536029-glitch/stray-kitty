@@ -674,5 +674,11 @@
       "text": "基础猫窝已经准备好。救援获得的猫爪邮票可以换取装饰包裹。"
     }
   ],
-  "assets": []
+  "assets": [
+    {
+      "id": "city_backdrop_v2",
+      "kind": "svg",
+      "path": "/assets/city-backdrop.svg"
+    }
+  ]
 }

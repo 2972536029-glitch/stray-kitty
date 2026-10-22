@@ -10,6 +10,7 @@ export class DemoScene {
   pausedByUser = false;
   storyScene: StoryNode['scene'];
   private graphics: CanvasPainter;
+  private cityBackdrop: HTMLImageElement;
   private held = new Set<Direction>();
   private keys = new Set<string>();
   private x = 180;
@@ -33,6 +34,8 @@ export class DemoScene {
     if (!context) throw new Error('浏览器无法创建二维画布');
     context.imageSmoothingEnabled = false;
     this.graphics = new CanvasPainter(context);
+    this.cityBackdrop = new Image();
+    this.cityBackdrop.src = '/assets/city-backdrop.svg';
   }
   setDirection(direction: Direction, held: boolean) {if (held) this.held.add(direction);else this.held.delete(direction);}
   private keydown = (event: KeyboardEvent) => {
@@ -119,7 +122,9 @@ export class DemoScene {
   private cat(x:number,y:number,breed:CatBreed='miaomiao'){this.graphics.cat(x,y,breed);}
   private lamp(x:number,y:number){this.graphics.fillStyle(0xf9d78a,.12);this.graphics.fillCircle(x,y,45);this.rect(x-8,y-18,16,24,0x60786c);this.rect(x-5,y-15,10,16,0xffe1a0);this.rect(x-11,y+6,22,5,0x496259);}
   private drawAlley(){
-    this.rect(0,0,800,480,0x263e46);this.rect(35,80,730,350,0x78928c);this.rect(65,160,670,270,0xa6b7a6);
+    this.rect(0,0,800,480,0x738f98);
+    if(this.cityBackdrop.complete && this.cityBackdrop.naturalWidth > 0)this.graphics.image(this.cityBackdrop,0,-150,800,450);
+    this.rect(35,200,730,230,0x78928c);this.rect(65,205,670,225,0xa6b7a6);
     for(let y=175;y<430;y+=30)for(let x=70+(y%60===25?20:0);x<730;x+=42)this.rect(x,y,36,2,0x718f84,.35);
     this.rect(30,65,235,130,0x53716d);this.rect(25,57,245,18,0x354f53);this.rect(90,98,58,58,0x304e55);this.rect(95,103,48,48,0xc5bd82);
     this.rect(520,50,250,145,0x48636a);this.rect(508,43,270,20,0x304d57);this.rect(625,80,72,70,0x294750);this.rect(630,85,62,60,0xcabd83);

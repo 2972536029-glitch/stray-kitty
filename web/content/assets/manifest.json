@@ -1,1 +1,7 @@
-[]
+[
+  {
+    "id": "city_backdrop_v2",
+    "kind": "svg",
+    "path": "/assets/city-backdrop.svg"
+  }
+]
