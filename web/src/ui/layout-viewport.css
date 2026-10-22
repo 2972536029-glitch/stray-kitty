@@ -1,0 +1,81 @@
+/* 场景铺满窗口，HUD 与功能面板浮在场景上；画布仍使用原来的游戏坐标。 */
+html,body,#root{min-height:100%;width:100%}
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.app-shell{position:fixed;inset:0;width:100%;height:100dvh;max-width:none;margin:0;padding:0;overflow:hidden;isolation:isolate;background:#344b54}
+.app-shell>main,.game-layout{display:contents}
+.world-panel{position:absolute;inset:0;border:0;border-radius:0;box-shadow:none;overflow:hidden;background:transparent}
+.world-wrap{position:absolute;inset:0;min-height:0;display:grid;background:#344b54 url('/assets/city-backdrop.svg') center/cover}
+.world-wrap:has(.lost-poster),.world-wrap:has(.event-resolution.compact){min-height:0}
+.game-viewport{position:absolute;inset:0;display:block;width:100%;height:100%;aspect-ratio:auto;align-self:stretch}
+.game-viewport canvas{position:absolute;inset:0;min-width:0;min-height:0;width:100%;height:100%;max-height:none;object-fit:cover}
+.app-shell[data-phase=battle] .game-viewport canvas{object-fit:contain}
+@media(max-aspect-ratio:4/3),(min-aspect-ratio:21/9){.game-viewport canvas{object-fit:contain}}
+.app-shell .topbar{position:absolute;z-index:5;top:18px;left:20px;right:20px;min-height:66px;margin:0;padding:10px 16px;gap:16px;box-shadow:0 4px 0 #24312e}
+.topbar .brand strong{font-size:16px;letter-spacing:1px}
+.topbar .brand small{font-size:8px}
+.topbar .brand-mark{width:38px;height:38px;font-size:27px}
+.topbar .chapter-pill{font-size:10px;padding:8px 11px}
+.topbar .wallet{margin:0 0 0 auto;padding:0;gap:9px}
+.topbar .wallet>span{padding:7px 9px;font-size:10px;box-shadow:2px 2px 0 #526b50}
+.topbar .wallet b{font-size:16px;margin-left:5px}
+.topbar nav{gap:8px}
+.topbar nav button{font-size:11px;padding:9px 11px}
+.journal-button{background:#594536;color:#f1e8d3}
+.world-toolbar{position:absolute;z-index:3;top:102px;left:22px;min-height:40px;padding:6px 11px;gap:24px;border:2px solid #594536;border-radius:3px;box-shadow:3px 3px 0 #24312e;background:#f1e8d3ed}
+.world-toolbar .quiet{padding:5px 7px}
+.dev-bar{position:absolute;z-index:4;top:154px;left:22px;right:22px;max-height:calc(100dvh - 280px);overflow:auto;border:2px solid #66513e;border-radius:3px;box-shadow:3px 3px 0 #24312e}
+.world-footer{position:absolute;z-index:3;bottom:18px;left:22px;right:22px;width:fit-content;max-width:calc(100% - 44px);min-height:0;padding:10px 14px;border:2px solid #594536;border-radius:3px;box-shadow:3px 3px 0 #24312e;background:#f1e8d3ed}
+.world-footer p{flex:none;min-width:0;max-width:580px;font-size:10px}
+.world-footer>button{font-size:10px;padding:8px 11px}
+.dialogue-card{width:min(960px,calc(100% - 48px));justify-self:center;align-self:end;margin:0 24px 105px;padding:18px 22px}
+.dialogue-copy p{font-size:14px;line-height:1.9;min-height:3.8em}
+.dialogue-actions{gap:12px}
+.dialogue-actions button{margin-left:0}
+.dialogue-actions .skip-button{margin-right:auto}
+.lost-poster{top:170px;left:8%}
+.event-card{max-height:calc(100dvh - 200px);margin:90px 24px 100px}
+.home-controls{position:absolute;z-index:2;top:104px;right:22px;width:min(330px,calc(100% - 44px));max-height:calc(100dvh - 190px);overflow:auto;scrollbar-width:thin;scrollbar-color:#8b906d #e9dfc8;border:2px solid #594536;border-radius:4px;background:#e9dfc8;box-shadow:4px 4px 0 #24312e}
+.home-controls .home-panel{border:0;box-shadow:none}
+.journey-modal>.journal{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+.journey-modal .journal-card{box-shadow:none}
+.journey-modal .save-note{grid-column:1/-1;color:#62695d}
+.start-screen:has(~ .cat-shop[open]) .start-title,.start-screen:has(~ .cat-shop[open])>footer{visibility:hidden}
+@media(max-width:1100px){
+ .topbar nav button>span{display:none}
+ .topbar nav button{width:37px;height:37px;padding:0;font-size:16px}
+ .topbar .chapter-pill{display:none}
+ .topbar .wallet-label{font-size:9px}
+}
+@media(max-width:800px){
+ .game-viewport canvas{object-fit:contain}
+ .app-shell .topbar{top:12px;left:12px;right:12px;flex-wrap:wrap;padding:9px 10px;gap:8px}
+ .topbar .brand{gap:7px}
+ .topbar .brand strong{font-size:13px}
+ .topbar .brand-mark{width:30px;height:30px;font-size:23px}
+ .topbar .wallet{order:3;flex-basis:100%;justify-content:flex-end;gap:8px}
+ .topbar .wallet>span{padding:4px 7px;flex:none;font-size:9px}
+ .topbar .wallet b{font-size:13px}
+ .topbar nav{margin-left:auto;gap:6px}
+ .topbar nav button{width:31px;height:31px;min-width:0;font-size:14px}
+ .world-toolbar{top:119px;left:14px;right:14px;gap:10px;min-height:35px;padding:4px 8px}
+ .world-toolbar strong{font-size:10px}
+ .world-toolbar .area-label{font-size:9px}
+ .dev-bar{top:165px;left:14px;right:14px;max-height:calc(100dvh - 300px)}
+ .world-footer{left:14px;right:14px;bottom:14px;width:auto;max-width:none;padding:8px 10px;gap:7px}
+ .world-footer p{flex-basis:100%;font-size:9px;line-height:1.6}
+ .world-footer .direction-pad button{padding:7px 9px}
+ .dialogue-card{width:calc(100% - 32px);margin:0 16px 106px;padding:12px;gap:8px}
+ .dialogue-copy p{font-size:12px;min-height:3.8em;margin:12px 0}
+ .dialogue-actions{gap:8px}
+ .dialogue-actions button{font-size:10px;padding:8px}
+ .dialogue-copy button span{margin-left:9px}
+ .lost-poster{top:169px;left:18px;width:130px;padding:7px}
+ .lost-poster .pixel-cat{width:65px!important;height:65px!important}
+ .lost-poster>b{font-size:16px}
+ .lost-poster>strong{font-size:12px}
+ .event-card{max-height:calc(100dvh - 220px);width:calc(100% - 32px);margin:160px 16px 60px}
+ .home-controls{top:166px;right:16px;width:min(340px,calc(100% - 32px));max-height:calc(100dvh - 268px)}
+ .journey-modal>.journal{grid-template-columns:1fr}
+}
+@media(max-width:360px){.topbar .brand strong{font-size:11px}.topbar .brand small{font-size:7px}.topbar nav{gap:4px}.topbar nav button{width:27px;height:29px}}
+@media(max-height:650px) and (min-width:801px){.app-shell .topbar{top:10px;min-height:58px}.world-toolbar{top:80px}.dev-bar{top:126px}.world-footer{bottom:10px;padding:8px 12px}.dialogue-card{margin-bottom:84px;padding:12px 16px}.dialogue-copy p{font-size:12px;margin:10px 0;min-height:0}.event-card{max-height:calc(100dvh - 150px);margin:80px 24px 60px}.home-controls{top:80px;max-height:calc(100dvh - 155px)}}
