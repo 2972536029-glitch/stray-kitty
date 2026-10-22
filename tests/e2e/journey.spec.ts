@@ -34,8 +34,8 @@ test('真实浏览器贯通前两章、双 NPC 事件、救援、家园和刷新
  fs.mkdirSync('output/preview',{recursive:true});await page.screenshot({path:'output/preview/desktop.png',fullPage:true});
  await finishDialogue(page);
  await page.screenshot({path:'output/preview/explore.png',fullPage:true});
- await page.keyboard.down('ArrowRight');await page.waitForTimeout(1850);await page.keyboard.up('ArrowRight');
- await expect(page.getByRole('button',{name:'查看纸箱 · E'})).toBeVisible();await page.getByRole('button',{name:'查看纸箱 · E'}).click();
+ await walkRightTo(page,'查看纸箱 · E');
+ await page.getByRole('button',{name:'查看纸箱 · E'}).click();
  await page.getByRole('button',{name:'仔细搜索周围的物资'}).click();await expect(page.getByRole('button',{name:'掷出骰子'})).toBeEnabled();
  await page.screenshot({path:'output/preview/event.png',fullPage:true});
  const [eventResponse]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/v1/commands')&&r.request().method()==='POST'),page.getByRole('button',{name:'掷出骰子'}).click()]);
@@ -131,7 +131,7 @@ test('章节地图按进度显示，弹窗冻结移动并恢复焦点',async({pa
  const map=page.getByRole('dialog',{name:'猫爪地图'});await expect(map).toBeVisible();
  await expect(map.locator('.map-stop.current')).toContainText('雨后小巷');await expect(map.locator('.map-stop.locked')).toHaveCount(4);
  await page.screenshot({path:'output/preview/map.png',fullPage:true});
- await page.keyboard.down('ArrowRight');await page.waitForTimeout(1850);await page.keyboard.up('ArrowRight');
+ await page.keyboard.down('ArrowRight');await page.waitForTimeout(2300);await page.keyboard.up('ArrowRight');
  await page.keyboard.press('Escape');await expect(map).toHaveCount(0);await expect(mapButton).toBeFocused();
  await expect(page.getByRole('button',{name:'查看纸箱 · E'})).toHaveCount(0);
  await page.getByRole('button',{name:'暂停',exact:true}).click();await expect(page.getByText('旅程已暂停',{exact:true})).toBeVisible();
@@ -142,7 +142,7 @@ test('章节地图按进度显示，弹窗冻结移动并恢复焦点',async({pa
 
 test('双骰已提交但响应丢失，刷新沿用原骰点与奖励',async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto('/');await enterGame(page);await finishDialogue(page);
- await page.keyboard.down('ArrowRight');await page.waitForTimeout(1850);await page.keyboard.up('ArrowRight');await page.getByRole('button',{name:'查看纸箱 · E'}).click();
+ await walkRightTo(page,'查看纸箱 · E');await page.getByRole('button',{name:'查看纸箱 · E'}).click();
  await page.getByRole('button',{name:'先安抚点点，再寻找安全路线'}).click();await expect(page.getByLabel('双骰四档规则')).toBeVisible();
  await page.screenshot({path:'output/preview/mobile-event.png',fullPage:true});
  let committed:GameState|undefined;

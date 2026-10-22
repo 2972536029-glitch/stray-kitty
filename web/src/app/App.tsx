@@ -10,7 +10,7 @@ import ShopPanel from '../ui/ShopPanel';
 
 export default function App() {
   const game = useGame();
-  const {state, catalog, send, busy, pending, error, disabled, retry, skipDialogue, resetSession} = game;
+  const {state, catalog, send, reportMove, busy, pending, error, disabled, retry, skipDialogue, resetSession} = game;
   const [entered, setEntered] = useState(false), [paused, setPaused] = useState(false), [near, setNear] = useState(false);
   const [nearTarget, setNearTarget] = useState<{id: string; label: string} | null>(null);
   const [inspectHint, setInspectHint] = useState<string | null>(null);
@@ -26,7 +26,7 @@ export default function App() {
     {!state || !catalog ? <main className="loading-card"><span className="brand-mark">ฅ</span><h1>{busy ? '正在寻找熟悉的气味……' : '旅程暂时停在这里'}</h1><p>{busy ? '正在打开小巷和你的旅程记录。' : '请确认本地服务已启动，然后重试。'}</p>{!busy && <button onClick={() => void retry()}>重新连接</button>}</main>
       : !entered ? <StartScreen hasProgress={state.revision > 0} disabled={disabled} onStart={() => setEntered(true)} onShop={() => setOverlay('shop')} onReset={resetSession}/>
       : <GameScreen state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} onReset={resetSession} onCommand={command => void send(command)} onDirection={(d, held) => direction.current(d, held)} onPause={() => setPaused(!paused)} onMap={() => setOverlay('map')} onShop={() => setOverlay('shop')} onTitle={() => {setEntered(false);setPaused(false);}}>
-        <Viewport state={state} storyScene={currentStory(catalog, state)?.scene} paused={frozen} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onDirectionReady={fn => {direction.current = fn;}} onInspectHint={setInspectHint}/>
+        <Viewport state={state} storyScene={currentStory(catalog, state)?.scene} paused={frozen} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onDirectionReady={fn => {direction.current = fn;}} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)}/>
       </GameScreen>}
     {state && catalog && overlay === 'map' && <WorldMap state={state} catalog={catalog} disabled={disabled} onClose={() => setOverlay(null)} onNavigate={command => {setOverlay(null);void send(command);}}/>}
     {state && catalog && overlay === 'shop' && <ShopPanel state={state} catalog={catalog} disabled={disabled} error={error} onRetry={() => void retry()} onClose={() => setOverlay(null)} onBuy={productId => void send({type: 'BUY_FURNITURE', productId})}/>}

@@ -75,7 +75,12 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string) error 
 			if outcome.Situation != nil {
 				s.Phase = "dialogue"
 				s.StoryNodeID = outcome.Situation.StoryNodeID
+			} else if s.PendingEventSource == "random" {
+				// 随机相遇结束后回到探索继续赶路;局势除外(它接管后续走向)。
+				s.Phase = "explore"
+				s.ExploreDistance = -randomGrace
 			}
+			s.PendingEventSource = ""
 			return nil
 		}
 	}

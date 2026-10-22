@@ -24,12 +24,16 @@ export class DemoScene {
   private previousTime = 0;
   private now = 0;
   private destroyed = false;
+  // 随机事件:按真实位移累计里程,每满一段上报服务端判定;贴近交互点时暂停上报。
+  private moveBuffer = 0;
+  private static readonly moveSegment = 150;
   constructor(
     private canvas: HTMLCanvasElement,
     private onNear: (near: boolean, interactionId?: string, label?: string) => void,
     private onInteract: (interactionId?: string) => void,
     private onResult: (result: BattleResult) => void,
-    private onInspectHint?: (hint: string | null) => void
+    private onInspectHint?: (hint: string | null) => void,
+    private onMove?: (distance: number) => void
   ) {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('浏览器无法创建二维画布');
@@ -98,6 +102,7 @@ export class DemoScene {
         this.x = 180;
         this.y = 290;
       }
+      this.moveBuffer = 0;
       this.onNear(false);
       this.lastMode = mode;
       this.lastMapId = this.state.mapId;
@@ -112,12 +117,15 @@ export class DemoScene {
       let dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
       let dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
       const distance = Math.hypot(dx, dy);if (distance) {dx /= distance;dy /= distance;}
+      const previousX = this.x, previousY = this.y;
       this.x = Math.min(710, Math.max(90, this.x + dx * delta * .18));
       this.y = Math.min(410, Math.max(205, this.y + dy * delta * .18));
+      let nearInteraction = false;
 
       if (this.state.mapId === 'alley') {
         if (this.x > 325 && this.x < 445 && this.y > 320 && this.y < 385) this.y = dy > 0 ? 319 : 386;
         const nearCrate = Math.hypot(this.x - 570, this.y - 290) < 78 && !this.state.flags.includes('alley_rescued');
+        nearInteraction = nearCrate;
         this.onNear(nearCrate, 'alley_crate', '查看纸箱 · E');
 
         let inspect: string | null = null;
@@ -134,6 +142,7 @@ export class DemoScene {
       } else if (this.state.mapId === 'market') {
         const nearCrow = Math.hypot(this.x - 260, this.y - 280) < 78;
         const nearPigeon = Math.hypot(this.x - 580, this.y - 270) < 78;
+        nearInteraction = nearCrow || nearPigeon;
         if (nearCrow) {
           this.onNear(true, 'market_crow_stall', '老黑羽的情报摊 · E');
         } else if (nearPigeon) {
@@ -153,6 +162,14 @@ export class DemoScene {
           inspect = '【团子】“喵喵，集市里的鸟雀们消息很灵通，我们去打听一下吧！”';
         }
         this.onInspectHint?.(inspect);
+      }
+      const moved = Math.hypot(this.x - previousX, this.y - previousY);
+      if (moved > 0 && !nearInteraction) {
+        this.moveBuffer += moved;
+        if (this.moveBuffer >= DemoScene.moveSegment) {
+          this.onMove?.(Math.round(this.moveBuffer));
+          this.moveBuffer = 0;
+        }
       }
     }
     if (mode === 'battle' && active && this.simulation) {

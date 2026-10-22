@@ -39,6 +39,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
           <div className="dev-bar" role="toolbar" aria-label="开发者验收栏">
             <b>🛠️ 验收模式:</b>
             {state.phase === 'dialogue' && onSkip && <button onClick={onSkip}>⏩ 跳过本段对话</button>}
+            {state.phase === 'explore' && <button onClick={() => onCommand({type: 'REPORT_MOVE', distance: 150})}>🚶 走一段(随机判定)</button>}
             {state.phase === 'explore' && state.mapId === 'alley' && <button onClick={() => onCommand({type: 'INTERACT', interactionId: 'alley_crate'})}>🐾 触发纸箱事件</button>}
             {state.phase === 'explore' && state.mapId === 'market' && (
               <>

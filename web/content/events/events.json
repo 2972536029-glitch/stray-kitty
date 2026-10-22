@@ -468,6 +468,9 @@
     "triggers": [
       "random"
     ],
+    "maps": [
+      "alley"
+    ],
     "options": [
       {
         "id": "intercept",
@@ -552,6 +555,9 @@
     ],
     "triggers": [
       "random"
+    ],
+    "maps": [
+      "alley"
     ],
     "options": [
       {
@@ -648,6 +654,9 @@
     ],
     "triggers": [
       "random"
+    ],
+    "maps": [
+      "alley"
     ],
     "options": [
       {

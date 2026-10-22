@@ -30,7 +30,8 @@ stray-kitty/
 ├─ docs/  仅三份文档
 │  ├─ ARCHITECTURE.md  架构、目录与接入
 │  ├─ openapi.json  API 规范
-│  └─ PRD.md  需求与分工
+│  ├─ PRD.md  需求与分工
+│  └─ random-events-design.md
 ├─ scripts/  启动、生成与检查
 ├─ server/  Go 服务端
 │  ├─ cmd/  服务入口

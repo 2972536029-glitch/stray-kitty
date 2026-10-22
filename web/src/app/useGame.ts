@@ -43,6 +43,14 @@ export function useGame() {
       setBusy(false);
     }
   }, [controller, store]);
+  // 行走里程上报走静默通道:不锁界面,与其他操作冲突时丢弃本段,下一段再报。
+  const reportMove = useCallback(async (distance: number) => {
+    try {
+      await controller.dispatch({type: 'REPORT_MOVE', distance});
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'REVISION_CONFLICT') {try {store.replace(await port.load());} catch { /* 留给下一次操作处理。 */ }}
+    }
+  }, [controller, port, store]);
   const resetSession = useCallback(() => {
     localStorage.removeItem('stray-kitty.session.v1');
     localStorage.removeItem('stray-kitty.pending.v1');
@@ -60,5 +68,5 @@ export function useGame() {
     finally {setBusy(false);}
   }, [port, store, initialize]);
   const pending = !!port.pending();
-  return {state, catalog, busy, error, pending, send, skipDialogue, resetSession, retry, disabled: busy || pending};
+  return {state, catalog, busy, error, pending, send, reportMove, skipDialogue, resetSession, retry, disabled: busy || pending};
 }

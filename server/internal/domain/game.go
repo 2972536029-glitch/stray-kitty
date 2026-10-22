@@ -38,9 +38,13 @@ type GameState struct {
 	Placements      map[string]string `json:"placements"`
 	CompletedStages []string          `json:"completedStages"`
 	PendingEventID  string            `json:"pendingEventId"`
-	ActiveBattle    *Attempt          `json:"activeBattle"`
-	LastResult      Result            `json:"lastResult"`
-	EventState      *EventState       `json:"eventState,omitempty"`
+	// 随机事件:来源标记(node=交互点/random=随机触发)、本局已抽卡与探索里程。
+	PendingEventSource string       `json:"pendingEventSource,omitempty"`
+	DrawnEvents        []string     `json:"drawnEvents,omitempty"`
+	ExploreDistance    int          `json:"exploreDistance,omitempty"`
+	ActiveBattle       *Attempt     `json:"activeBattle"`
+	LastResult         Result       `json:"lastResult"`
+	EventState         *EventState  `json:"eventState,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -61,6 +65,8 @@ type Command struct {
 	PoolID        string `json:"poolId,omitempty"`
 	ProductID     string `json:"productId,omitempty"`
 	MapID         string `json:"mapId,omitempty"`
+	// REPORT_MOVE 携带的本次行走里程(画布像素)。
+	Distance int `json:"distance,omitempty"`
 }
 type CommandRequest struct {
 	ExpectedRevision *int    `json:"expectedRevision"`
@@ -84,14 +90,18 @@ type Interaction struct {
 type Map struct {
 	ID           string        `json:"id"`
 	Interactions []Interaction `json:"interactions"`
+	DangerLevel  int           `json:"dangerLevel"`
 }
 type EventOption struct {
 	ID       string                  `json:"id"`
 	Outcomes map[string]EventOutcome `json:"outcomes"`
 }
 type Event struct {
-	ID      string        `json:"id"`
-	Options []EventOption `json:"options"`
+	ID       string        `json:"id"`
+	Options  []EventOption `json:"options"`
+	Category string        `json:"category"`
+	Triggers []string      `json:"triggers"`
+	Maps     []string      `json:"maps"`
 }
 type Stage struct {
 	ID     string `json:"id"`

@@ -139,6 +139,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				}
 				s.StoryNodeID = ""
 				s.Phase = n.Exit
+				if n.Exit == "explore" {
+					s.ExploreDistance = -randomGrace
+				}
 				if n.Exit == "home" {
 					s.MapID = "greenhouse"
 					s.Flags = domain.Add(s.Flags, "rescue_story_done")
@@ -165,12 +168,15 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					if p.ID == c.InteractionID {
 						s.Phase = "event"
 						s.PendingEventID = p.EventID
+						s.PendingEventSource = "node"
 						return nil
 					}
 				}
 			}
 		}
 		return invalid()
+	case "REPORT_MOVE":
+		return g.reportMove(s, c.Distance)
 	case "CHOOSE_EVENT":
 		return g.chooseEvent(s, c.EventID, c.OptionID)
 	case "START_BATTLE":
@@ -249,16 +255,17 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		s.Phase = "home"
 		s.MapID = "greenhouse"
 		return nil
-	case "GO_EXPLORE":
-		targetMap := "alley"
-		if c.MapID != "" {
-			targetMap = c.MapID
-		} else if s.MapID == "market" {
-			targetMap = "market"
-		}
-		s.Phase = "explore"
-		s.MapID = targetMap
-		if targetMap == "market" {
+		case "GO_EXPLORE":
+			targetMap := "alley"
+			if c.MapID != "" {
+				targetMap = c.MapID
+			} else if s.MapID == "market" {
+				targetMap = "market"
+			}
+			s.Phase = "explore"
+			s.MapID = targetMap
+			s.ExploreDistance = -randomGrace
+			if targetMap == "market" {
 			s.Flags = domain.Add(s.Flags, "market_unlocked")
 			s.Flags = domain.Add(s.Flags, "chapter_2_started")
 		}
