@@ -20,11 +20,12 @@ export interface GameState {
 }
 export type GameCommand =
   | {type: 'ADVANCE_STORY'; nodeId: string}
+  | {type: 'START_STORY'; nodeId: string}
   | {type: 'INTERACT'; interactionId: string}
   | {type: 'CHOOSE_EVENT'; eventId: string; optionId: string}
   | {type: 'START_BATTLE'; stageId: string}
   | {type: 'COMPLETE_BATTLE'; attemptId: string; outcome: 'won' | 'lost'}
-  | {type: 'CONTINUE'} | {type: 'GO_HOME'} | {type: 'GO_EXPLORE'}
+  | {type: 'CONTINUE'} | {type: 'GO_HOME'} | {type: 'GO_EXPLORE'; mapId?: string}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
   | {type: 'DRAW_FURNITURE'; poolId: string}
   | {type: 'BUY_FURNITURE'; productId: string};
@@ -32,7 +33,7 @@ export interface CommandRequest {expectedRevision: number; command: GameCommand}
 export interface CommandResponse {state: GameState; replayed: boolean}
 export interface Session {playerId: string; token: string}
 export interface ApiErrorBody {error: {code: string; message: string; requestId: string}}
-export interface StoryNode {id: string; chapterId: string; speaker: string; text: string; next: string; exit: 'explore' | 'home' | 'preparation' | ''; scene?: 'alley' | 'poster' | 'home'; setFlags?: string[]}
+export interface StoryNode {id: string; chapterId: string; speaker: string; text: string; next: string; exit: 'explore' | 'home' | 'preparation' | ''; scene?: 'alley' | 'poster' | 'home' | 'market'; setFlags?: string[]}
 export interface FurnitureProduct {id: string; furnitureId: string; price: number; currencyId: string; requiredFlag: string; status: 'available' | 'disabled'}
 export interface MapInteraction {id: string; x: number; y: number; label: string; eventId: string}
 export interface MapDefinition {id: string; name: string; status: string; width: number; height: number; interactions: MapInteraction[]; dangerLevel?: 0 | 1 | 2 | 3}

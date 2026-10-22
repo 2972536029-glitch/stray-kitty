@@ -1,6 +1,11 @@
 import type {Catalog, GameState} from '../../contracts';
 export const currentStory = (catalog: Catalog, state: GameState) => catalog.story.find(n => n.id === state.storyNodeId);
 export function objective(state: GameState): string {
+  if (state.chapterId === 'market' || state.mapId === 'market') {
+    if (state.phase === 'dialogue') return '聆听午夜集市的情报与喧嚣。';
+    if (state.phase === 'event') return '在集市中与动物交换信息。';
+    return '探索午夜集市，向老黑羽或咕咕大盗打听失踪宠物猫的线索。';
+  }
   if (state.phase === 'home') return '把获救的伙伴安顿好，让花房多一点家的样子。';
   if (state.cats.includes('diandian')) return '点点已经安全了。回到花房，看看伙伴们吧。';
   if (state.phase === 'battle') return '布置光源守住三条撤离路线，保护纸箱里的点点。';

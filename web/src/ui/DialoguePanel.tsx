@@ -1,11 +1,32 @@
 import type {StoryNode} from '../contracts';
 import PixelCat from './PixelCat';
-import {useState, type ReactNode} from 'react';
+import {useEffect, useState, type ReactNode} from 'react';
 
 const speakers: Record<string, string> = {'喵喵': 'miaomiao', '团子': 'tuanzi', '点点': 'diandian', '墨墨': 'momo'};
 
-export default function DialoguePanel({node, disabled, onNext, eventResult}: {node: StoryNode; disabled: boolean; onNext: () => void; eventResult?: ReactNode}) {
+interface Props {
+  node: StoryNode;
+  disabled: boolean;
+  onNext: () => void;
+  onSkip?: () => void;
+  eventResult?: ReactNode;
+}
+
+export default function DialoguePanel({node, disabled, onNext, onSkip, eventResult}: Props) {
   const [attitude, setAttitude] = useState<'proud' | 'honest'>('proud');
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (!disabled) onNext();
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [disabled, onNext]);
 
   let displayText = node.text;
   if (node.id === 'prologue_banter') {
@@ -50,7 +71,16 @@ export default function DialoguePanel({node, disabled, onNext, eventResult}: {no
         </div>
         {eventResult}
         <p key={node.id + attitude}>{displayText}</p>
-        <button disabled={disabled} onClick={onNext}>继续故事 <span aria-hidden="true">→</span></button>
+        <div className="dialogue-actions">
+          {onSkip && (
+            <button type="button" className="skip-button" disabled={disabled} onClick={onSkip} title="快速推进当前对话至出口（Space/Enter也可快速阅读）">
+              ⏩ 跳过剧情
+            </button>
+          )}
+          <button disabled={disabled} onClick={onNext} title="点击或按空格/回车继续">
+            继续故事 <span aria-hidden="true">→</span>
+          </button>
+        </div>
       </div>
     </section>
   </>;

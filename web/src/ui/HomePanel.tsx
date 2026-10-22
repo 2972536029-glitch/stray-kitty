@@ -13,6 +13,22 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop}:
     <button className="shop-home" disabled={disabled} onClick={onShop}>去猫国商店挑一件家具 ↗</button>
     {pool && <><button disabled={disabled || (state.currencies.stamp ?? 0) < pool.cost} onClick={() => onCommand({type: 'DRAW_FURNITURE', poolId: pool.id})}>打开雨夜包裹 · {pool.cost} 邮票</button><p className="muted">{pool.entries.map(e => `${name(e.furnitureId)} ${Math.round(e.weight / total * 100)}%`).join('，')}；重复家具转化为 2 份材料。</p></>}
     <p className="home-result" role="status">{state.lastResult.message}</p>
+    {(state.flags.includes('alley_rescued') || state.flags.includes('rescue_story_done')) && (
+      !state.flags.includes('chapter_2_started') ? (
+        <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'market_intro_1'})}>
+          🌙 启程：第二章《午夜集市》 →
+        </button>
+      ) : (
+        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+          <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'market'})}>
+            🌙 前往午夜集市 →
+          </button>
+          <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'market_intro_1'})}>
+            📖 重温第二章剧情
+          </button>
+        </div>
+      )
+    )}
     <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE'})}>再去小巷走走 →</button>
   </section>;
 }

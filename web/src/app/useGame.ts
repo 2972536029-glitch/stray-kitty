@@ -29,6 +29,25 @@ export function useGame() {
       if (e instanceof ApiError && e.code === 'REVISION_CONFLICT') {try {store.replace(await port.load());} catch { /* 保留错误，等待重试。 */ }}
     } finally {setBusy(false);}
   }, [controller, port, store]);
+  const skipDialogue = useCallback(async () => {
+    setBusy(true);setError('');
+    try {
+      let cur = store.getSnapshot();
+      while (cur && cur.phase === 'dialogue' && cur.storyNodeId) {
+        await controller.dispatch({type: 'ADVANCE_STORY', nodeId: cur.storyNodeId});
+        cur = store.getSnapshot();
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '跳过剧情失败');
+    } finally {
+      setBusy(false);
+    }
+  }, [controller, store]);
+  const resetSession = useCallback(() => {
+    localStorage.removeItem('stray-kitty.session.v1');
+    localStorage.removeItem('stray-kitty.pending.v1');
+    window.location.reload();
+  }, []);
   const retry = useCallback(async () => {
     const pending = port.pending();
     if (!pending) {await initialize();return;}
@@ -41,5 +60,5 @@ export function useGame() {
     finally {setBusy(false);}
   }, [port, store, initialize]);
   const pending = !!port.pending();
-  return {state, catalog, busy, error, pending, send, retry, disabled: busy || pending};
+  return {state, catalog, busy, error, pending, send, skipDialogue, resetSession, retry, disabled: busy || pending};
 }
