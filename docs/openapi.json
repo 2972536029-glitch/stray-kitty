@@ -1,0 +1,1439 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "小猫回家记：框架 API",
+    "version": "0.1.0",
+    "description": "浏览器 Demo 已实现的 API。开发地址 http://127.0.0.1:8017；前端 5017 代理 /api/v1。\n\n会话：POST /api/v1/sessions 无正文，返回 playerId、token；其余玩家接口使用 Authorization: Bearer <token>。\n\n写命令：POST /api/v1/commands，Content-Type: application/json，Idempotency-Key 为 8–128 位字母数字、下划线或连字符；正文为 expectedRevision + command，最多 8 KiB。\n\n请求示例：{\"expectedRevision\":0,\"command\":{\"type\":\"ADVANCE_STORY\",\"nodeId\":\"prologue_1\"}}。成功返回 {state,replayed}。\n\n同键同正文重试返回原结果；replayed=true 后再 GET /api/v1/state。网络异常或 5xx 保留原键、正文重试；409 版本冲突读取最新状态。不得提交骰子、抽奖结果、价格、余额或任意完整存档。\n\n错误格式：{error:{code,message,requestId}}。400 请求无效；401 会话无效；409 阶段、版本、资格或资源冲突；413 超大正文；415 内容类型；500 内部错误。\n\n当前战斗胜负由客户端原型上报；商城和真实支付尚未实现。x-planned 中仅列后续约定，不是可调用 paths。"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8017"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "health",
+        "security": [],
+        "summary": "进程健康检查",
+        "responses": {
+          "200": {
+            "description": "正常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "operationId": "ready",
+        "security": [],
+        "summary": "服务已完成启动检查",
+        "responses": {
+          "200": {
+            "description": "启动就绪",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "storage": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "storage"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "operationId": "metrics",
+        "security": [],
+        "summary": "Prometheus 格式请求与错误计数",
+        "responses": {
+          "200": {
+            "description": "计数器",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/content": {
+      "get": {
+        "operationId": "getCatalog",
+        "security": [],
+        "summary": "读取与前端相同版本的内容目录",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions": {
+      "post": {
+        "operationId": "createGuestSession",
+        "security": [],
+        "summary": "创建匿名玩家会话；无请求体",
+        "responses": {
+          "201": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "会话无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "状态、版本或幂等冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "请求超过 8 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "媒体类型不支持",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "存储或服务失败，结果需确认",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/state": {
+      "get": {
+        "operationId": "getState",
+        "summary": "读取已持久化的长期进度",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "会话无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "状态、版本或幂等冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "请求超过 8 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "媒体类型不支持",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "存储或服务失败，结果需确认",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/commands": {
+      "post": {
+        "operationId": "executeCommand",
+        "summary": "原子执行命令并保存进度",
+        "description": "同会话、同幂等键和同请求返回原始结果；结果未知时保留原始正文与键。战斗结果为原型客户端上报，尚无战斗重演验证。",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommandRequest"
+              },
+              "example": {
+                "expectedRevision": 0,
+                "command": {
+                  "type": "ADVANCE_STORY",
+                  "nodeId": "prologue_1"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "会话无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "状态、版本或幂等冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "请求超过 8 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "媒体类型不支持",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "存储或服务失败，结果需确认",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "匿名会话返回的随机令牌，存储仅保存其 SHA-256 哈希。"
+      }
+    },
+    "schemas": {
+      "Session": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "playerId": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "playerId",
+          "token"
+        ]
+      },
+      "BattleAttempt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "stageId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "won",
+              "lost"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "stageId",
+          "status"
+        ]
+      },
+      "LastResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "roll": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "firstClear": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "requestId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "requestId"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "GameState": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "const": 1,
+            "type": "integer"
+          },
+          "contentVersion": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "dialogue",
+              "explore",
+              "event",
+              "preparation",
+              "battle",
+              "settlement",
+              "home"
+            ]
+          },
+          "chapterId": {
+            "type": "string"
+          },
+          "storyNodeId": {
+            "type": "string"
+          },
+          "mapId": {
+            "type": "string"
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cats": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "inventory": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "currencies": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "furniture": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "placements": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "completedStages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pendingEventId": {
+            "type": "string"
+          },
+          "activeBattle": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BattleAttempt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastResult": {
+            "$ref": "#/components/schemas/LastResult"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "contentVersion",
+          "revision",
+          "phase",
+          "chapterId",
+          "storyNodeId",
+          "mapId",
+          "flags",
+          "cats",
+          "inventory",
+          "currencies",
+          "furniture",
+          "placements",
+          "completedStages",
+          "pendingEventId",
+          "activeBattle",
+          "lastResult"
+        ]
+      },
+      "Chapter": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "status"
+        ]
+      },
+      "StoryNode": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "chapterId": {
+            "type": "string"
+          },
+          "speaker": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "next": {
+            "type": "string"
+          },
+          "exit": {
+            "type": "string",
+            "enum": [
+              "",
+              "explore",
+              "home"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "chapterId",
+          "speaker",
+          "text",
+          "next",
+          "exit"
+        ]
+      },
+      "MapInteraction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "label": {
+            "type": "string"
+          },
+          "eventId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "x",
+          "y",
+          "label",
+          "eventId"
+        ]
+      },
+      "Map": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "interactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MapInteraction"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "width",
+          "height",
+          "interactions"
+        ]
+      },
+      "EventOption": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "threshold": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "material": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "threshold",
+          "material"
+        ]
+      },
+      "Event": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventOption"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "text",
+          "options"
+        ]
+      },
+      "Cat": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "skill": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "color",
+          "description",
+          "skill"
+        ]
+      },
+      "Stage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "lanes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "columns": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "waves": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "lanes",
+          "columns",
+          "waves"
+        ]
+      },
+      "Furniture": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "theme": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "theme"
+        ]
+      },
+      "Slot": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "Item": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description"
+        ]
+      },
+      "PoolEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "furnitureId": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "furnitureId",
+          "weight"
+        ]
+      },
+      "Pool": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "cost": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "requiredFlag": {
+            "type": "string"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PoolEntry"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "cost",
+          "requiredFlag",
+          "entries"
+        ]
+      },
+      "Tutorial": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "phase": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "phase",
+          "text"
+        ]
+      },
+      "Asset": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "path"
+        ]
+      },
+      "AdvanceStory": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "ADVANCE_STORY"
+          },
+          "nodeId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "nodeId"
+        ]
+      },
+      "Interact": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "INTERACT"
+          },
+          "interactionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "interactionId"
+        ]
+      },
+      "ChooseEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "CHOOSE_EVENT"
+          },
+          "eventId": {
+            "type": "string"
+          },
+          "optionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "eventId",
+          "optionId"
+        ]
+      },
+      "StartBattle": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "START_BATTLE"
+          },
+          "stageId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "stageId"
+        ]
+      },
+      "CompleteBattle": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "COMPLETE_BATTLE"
+          },
+          "attemptId": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "won",
+              "lost"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "attemptId",
+          "outcome"
+        ]
+      },
+      "Continue": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "CONTINUE"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "GoHome": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "GO_HOME"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "GoExplore": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "GO_EXPLORE"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "PlaceFurniture": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "PLACE_FURNITURE"
+          },
+          "furnitureId": {
+            "type": "string"
+          },
+          "slotId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "furnitureId",
+          "slotId"
+        ]
+      },
+      "DrawFurniture": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "DRAW_FURNITURE"
+          },
+          "poolId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "poolId"
+        ]
+      },
+      "GameCommand": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AdvanceStory"
+          },
+          {
+            "$ref": "#/components/schemas/Interact"
+          },
+          {
+            "$ref": "#/components/schemas/ChooseEvent"
+          },
+          {
+            "$ref": "#/components/schemas/StartBattle"
+          },
+          {
+            "$ref": "#/components/schemas/CompleteBattle"
+          },
+          {
+            "$ref": "#/components/schemas/Continue"
+          },
+          {
+            "$ref": "#/components/schemas/GoHome"
+          },
+          {
+            "$ref": "#/components/schemas/GoExplore"
+          },
+          {
+            "$ref": "#/components/schemas/PlaceFurniture"
+          },
+          {
+            "$ref": "#/components/schemas/DrawFurniture"
+          }
+        ]
+      },
+      "CommandRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "command": {
+            "$ref": "#/components/schemas/GameCommand"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "command"
+        ]
+      },
+      "CommandResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/GameState"
+          },
+          "replayed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "state",
+          "replayed"
+        ]
+      },
+      "Catalog": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "chapters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Chapter"
+            }
+          },
+          "story": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoryNode"
+            }
+          },
+          "maps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Map"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          },
+          "cats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Cat"
+            }
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Stage"
+            }
+          },
+          "furniture": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Furniture"
+            }
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Slot"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            }
+          },
+          "pools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Pool"
+            }
+          },
+          "tutorials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tutorial"
+            }
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Asset"
+            }
+          }
+        },
+        "required": [
+          "version",
+          "chapters",
+          "story",
+          "maps",
+          "events",
+          "cats",
+          "stages",
+          "furniture",
+          "slots",
+          "items",
+          "pools",
+          "tutorials",
+          "assets"
+        ]
+      }
+    }
+  },
+  "x-planned": {
+    "status": "not-implemented",
+    "commands": [
+      {
+        "type": "TRAVEL_TO_MAP",
+        "fields": {
+          "mapId": "string",
+          "entranceId": "string"
+        },
+        "validation": "地图路线、任务门槛与区域解锁"
+      },
+      {
+        "type": "USE_ITEM",
+        "fields": {
+          "itemId": "string",
+          "targetId": "string"
+        },
+        "validation": "物品归属、数量与效果"
+      },
+      {
+        "type": "CAT_INTERACT",
+        "fields": {
+          "catId": "string",
+          "interactionId": "string"
+        },
+        "validation": "伙伴状态、家具偏好与互动条件"
+      },
+      {
+        "type": "UPGRADE_HOME",
+        "fields": {
+          "upgradeId": "string"
+        },
+        "validation": "前置条件、资源消耗与升级效果"
+      },
+      {
+        "type": "SET_BATTLE_LOADOUT",
+        "fields": {
+          "catIds": "string[]",
+          "unitIds": "string[]"
+        },
+        "validation": "已解锁阵容与容量"
+      },
+      {
+        "type": "REMOVE_FURNITURE",
+        "fields": {
+          "slotId": "string"
+        },
+        "validation": "摆放归属与槽位有效性"
+      },
+      {
+        "type": "SELECT_DIALOGUE_OPTION",
+        "fields": {
+          "nodeId": "string",
+          "optionId": "string"
+        },
+        "validation": "当前对话、选项条件、一次性效果与跳转"
+      },
+      {
+        "type": "CLAIM_TASK_REWARD",
+        "fields": {
+          "questId": "string"
+        },
+        "validation": "任务已完成、奖励未领取、原子发放"
+      },
+      {
+        "type": "UPGRADE_CAT",
+        "fields": {
+          "catId": "string",
+          "upgradeId": "string"
+        },
+        "validation": "已拥有伙伴、成长条件、资源与技能门槛"
+      },
+      {
+        "type": "PLACE_FURNITURE_GRID",
+        "fields": {
+          "instanceId": "string",
+          "roomId": "string",
+          "x": "integer",
+          "y": "integer",
+          "rotation": "integer"
+        },
+        "validation": "家具实例、房间归属、占地、碰撞与数量"
+      },
+      {
+        "type": "PURCHASE_PRODUCT",
+        "fields": {
+          "productId": "string",
+          "quantity": "positive integer"
+        },
+        "validation": "仅游戏内货币购买；服务端查价、校验资格与限购，原子扣费发货；客户端不得提交权威价格"
+      }
+    ],
+    "paymentEndpoints": [
+      {
+        "method": "POST",
+        "path": "/api/v1/payment/orders",
+        "purpose": "未来创建真实付费订单，返回订单标识与支付动作；服务端查价并绑定可恢复的玩家身份"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/payment/orders/{orderId}",
+        "purpose": "读取本人订单的支付与发货状态"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/payment/webhooks/{provider}",
+        "purpose": "支付渠道服务端通知，验证通知、核对订单、去重并驱动发货"
+      }
+    ],
+    "paymentRule": "服务端查价并绑定订单，验证渠道通知和金额，去重后原子发货；客户端返回页不发货。本期不接真实支付。"
+  }
+}

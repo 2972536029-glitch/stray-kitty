@@ -1,0 +1,27 @@
+[
+  {
+    "id": "cardboard_nest",
+    "name": "纸箱猫窝",
+    "theme": "基础"
+  },
+  {
+    "id": "soft_blanket",
+    "name": "柔软毛毯",
+    "theme": "雨夜纸箱"
+  },
+  {
+    "id": "tin_lamp",
+    "name": "罐头小灯",
+    "theme": "雨夜纸箱"
+  },
+  {
+    "id": "snack_cushion",
+    "name": "零食抱枕",
+    "theme": "午夜集市"
+  },
+  {
+    "id": "moon_hammock",
+    "name": "月亮吊床",
+    "theme": "地下月光"
+  }
+]

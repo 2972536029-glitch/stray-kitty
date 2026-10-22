@@ -1,20 +1,35 @@
 {
-  "name": "kittych-stray-cat-kingdom",
+  "name": "stray-kitty",
+  "version": "0.1.0",
   "private": true,
-  "version": "1.0.0",
   "type": "module",
+  "workspaces": [
+    "web"
+  ],
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "dev": "node scripts/dev.mjs",
+    "content:sync": "node scripts/content.mjs",
+    "content:check": "node scripts/content.mjs --check",
+    "typecheck": "npm run typecheck --workspace web",
+    "test": "tsx --test tests/core.test.ts tests/content.test.ts",
+    "test:server": "go -C server test ./...",
+    "test:e2e": "playwright test",
+    "api:check": "node scripts/check-api.mjs",
+    "check": "node scripts/check.mjs",
+    "build": "npm run content:check && npm run build --workspace web",
+    "test:startup": "node scripts/smoke-dev.mjs",
+    "architecture:build": "node scripts/architecture.mjs",
+    "architecture:check": "node scripts/architecture.mjs --check"
   },
-  "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "framer-motion": "latest",
-    "vite": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "zustand": "latest"
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "12.1.0",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.10.1",
+    "ajv": "8.20.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
   },
-  "devDependencies": {}
+  "engines": {
+    "node": ">=22.12"
+  }
 }

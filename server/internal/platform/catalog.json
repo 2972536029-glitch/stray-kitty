@@ -1,0 +1,296 @@
+{
+  "version": "2026.10.22.1",
+  "chapters": [
+    {
+      "id": "prologue",
+      "title": "序章 · 金枪鱼事件",
+      "summary": "喵喵追着香味走失，寻找回家的路。",
+      "status": "demo"
+    },
+    {
+      "id": "alley",
+      "title": "第一章 · 陌生小巷",
+      "summary": "认识团子，救助点点，发现寻猫启事。",
+      "status": "demo"
+    },
+    {
+      "id": "market",
+      "title": "第二章 · 午夜集市",
+      "summary": "交换线索，认识不同猫咪的生活，发现花房。",
+      "status": "planned"
+    },
+    {
+      "id": "greenhouse",
+      "title": "第三章 · 废弃花房",
+      "summary": "伙伴们共同整理花房，建立庇护所。",
+      "status": "planned"
+    },
+    {
+      "id": "rescue",
+      "title": "第四章 · 消失的猫咪们",
+      "summary": "侦查暗道与仓库，逐步救回失踪伙伴。",
+      "status": "planned"
+    },
+    {
+      "id": "finale",
+      "title": "终章 · 点亮流浪猫王国",
+      "summary": "用光源护送伙伴撤离，喵喵与主人团聚并继续看望伙伴。",
+      "status": "planned"
+    }
+  ],
+  "story": [
+    {
+      "id": "prologue_1",
+      "chapterId": "prologue",
+      "speaker": "喵喵",
+      "text": "明明只是追着金枪鱼的香味走了几步……这里怎么全是陌生的气味？",
+      "next": "prologue_2",
+      "exit": ""
+    },
+    {
+      "id": "prologue_2",
+      "chapterId": "alley",
+      "speaker": "团子",
+      "text": "喂，新来的！先别急着找家。那边的纸箱里，好像有只猫需要帮忙。",
+      "next": "",
+      "exit": "explore"
+    },
+    {
+      "id": "rescue_1",
+      "chapterId": "alley",
+      "speaker": "点点",
+      "text": "谢谢你们……我叫点点。原来，我们也可以一起找到安全的地方。",
+      "next": "rescue_2",
+      "exit": ""
+    },
+    {
+      "id": "rescue_2",
+      "chapterId": "greenhouse",
+      "speaker": "喵喵",
+      "text": "那就先把这座旧花房收拾一下吧。一只猫的纸箱，也可以变成大家的家。",
+      "next": "",
+      "exit": "home"
+    }
+  ],
+  "maps": [
+    {
+      "id": "alley",
+      "name": "雨后小巷",
+      "status": "demo",
+      "width": 800,
+      "height": 480,
+      "interactions": [
+        {
+          "id": "alley_crate",
+          "x": 570,
+          "y": 290,
+          "label": "纸箱里的叫声",
+          "eventId": "crate_event"
+        }
+      ]
+    },
+    {
+      "id": "market",
+      "name": "午夜集市",
+      "status": "planned",
+      "width": 800,
+      "height": 480,
+      "interactions": []
+    },
+    {
+      "id": "greenhouse",
+      "name": "废弃花房",
+      "status": "demo",
+      "width": 800,
+      "height": 480,
+      "interactions": []
+    },
+    {
+      "id": "tunnel",
+      "name": "地下通道",
+      "status": "planned",
+      "width": 800,
+      "height": 480,
+      "interactions": []
+    },
+    {
+      "id": "warehouse",
+      "name": "废弃仓库",
+      "status": "planned",
+      "width": 800,
+      "height": 480,
+      "interactions": []
+    }
+  ],
+  "events": [
+    {
+      "id": "crate_event",
+      "title": "纸箱里的微光",
+      "text": "一只受伤的奶牛猫缩在纸箱里。附近的暗处正在靠近。找些光源，也许能保护它。",
+      "options": [
+        {
+          "id": "search",
+          "label": "仔细搜索周围的物资",
+          "threshold": 4,
+          "material": 2
+        },
+        {
+          "id": "comfort",
+          "label": "先安抚点点，再寻找安全路线",
+          "threshold": 3,
+          "material": 1
+        }
+      ]
+    }
+  ],
+  "cats": [
+    {
+      "id": "miaomiao",
+      "name": "喵喵",
+      "color": "#ead7ae",
+      "description": "走失的家猫，正在学着保护伙伴。",
+      "skill": "主角：推进探索和救援"
+    },
+    {
+      "id": "tuanzi",
+      "name": "团子",
+      "color": "#d39251",
+      "description": "熟悉小巷的橘猫，热心又贪吃。",
+      "skill": "寻找物资与安全路线"
+    },
+    {
+      "id": "diandian",
+      "name": "点点",
+      "color": "#d8ded5",
+      "description": "善于观察环境的奶牛猫。",
+      "skill": "辨认陷阱与可疑目标"
+    },
+    {
+      "id": "momo",
+      "name": "墨墨",
+      "color": "#636a77",
+      "description": "熟悉地下通道的黑猫。",
+      "skill": "侦查暗处与隐藏路线"
+    }
+  ],
+  "stages": [
+    {
+      "id": "alley_rescue",
+      "name": "守护纸箱里的伙伴",
+      "status": "demo",
+      "lanes": 3,
+      "columns": 5,
+      "waves": 2
+    }
+  ],
+  "furniture": [
+    {
+      "id": "cardboard_nest",
+      "name": "纸箱猫窝",
+      "theme": "基础"
+    },
+    {
+      "id": "soft_blanket",
+      "name": "柔软毛毯",
+      "theme": "雨夜纸箱"
+    },
+    {
+      "id": "tin_lamp",
+      "name": "罐头小灯",
+      "theme": "雨夜纸箱"
+    },
+    {
+      "id": "snack_cushion",
+      "name": "零食抱枕",
+      "theme": "午夜集市"
+    },
+    {
+      "id": "moon_hammock",
+      "name": "月亮吊床",
+      "theme": "地下月光"
+    }
+  ],
+  "slots": [
+    {
+      "id": "corner",
+      "name": "避雨角落"
+    },
+    {
+      "id": "window",
+      "name": "窗边"
+    },
+    {
+      "id": "courtyard",
+      "name": "小庭院"
+    }
+  ],
+  "items": [
+    {
+      "id": "material",
+      "name": "修缮材料",
+      "description": "探索、救援与家具重复转化所得的材料。"
+    },
+    {
+      "id": "food",
+      "name": "猫粮",
+      "description": "完整版本用于伙伴照顾；参考样例不消耗。"
+    }
+  ],
+  "pools": [
+    {
+      "id": "rainy_box",
+      "name": "雨夜纸箱包裹",
+      "cost": 1,
+      "requiredFlag": "alley_rescued",
+      "entries": [
+        {
+          "furnitureId": "soft_blanket",
+          "weight": 60
+        },
+        {
+          "furnitureId": "tin_lamp",
+          "weight": 40
+        }
+      ]
+    },
+    {
+      "id": "midnight_market",
+      "name": "午夜集市包裹",
+      "cost": 1,
+      "requiredFlag": "market_explored",
+      "entries": [
+        {
+          "furnitureId": "snack_cushion",
+          "weight": 100
+        }
+      ]
+    },
+    {
+      "id": "underground_moon",
+      "name": "地下月光包裹",
+      "cost": 1,
+      "requiredFlag": "tunnel_explored",
+      "entries": [
+        {
+          "furnitureId": "moon_hammock",
+          "weight": 100
+        }
+      ]
+    }
+  ],
+  "tutorials": [
+    {
+      "phase": "explore",
+      "text": "方向键或 WASD 移动，靠近纸箱后按 E 互动。也可以使用画面下方方向按钮。"
+    },
+    {
+      "phase": "battle",
+      "text": "点击三条路线中的空格放置光源。影子怕光，守住撤离路线！"
+    },
+    {
+      "phase": "home",
+      "text": "基础猫窝已经准备好。救援获得的猫爪邮票可以换取装饰包裹。"
+    }
+  ],
+  "assets": []
+}

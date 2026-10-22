@@ -1,0 +1,38 @@
+[
+  {
+    "id": "prologue",
+    "title": "序章 · 金枪鱼事件",
+    "summary": "喵喵追着香味走失，寻找回家的路。",
+    "status": "demo"
+  },
+  {
+    "id": "alley",
+    "title": "第一章 · 陌生小巷",
+    "summary": "认识团子，救助点点，发现寻猫启事。",
+    "status": "demo"
+  },
+  {
+    "id": "market",
+    "title": "第二章 · 午夜集市",
+    "summary": "交换线索，认识不同猫咪的生活，发现花房。",
+    "status": "planned"
+  },
+  {
+    "id": "greenhouse",
+    "title": "第三章 · 废弃花房",
+    "summary": "伙伴们共同整理花房，建立庇护所。",
+    "status": "planned"
+  },
+  {
+    "id": "rescue",
+    "title": "第四章 · 消失的猫咪们",
+    "summary": "侦查暗道与仓库，逐步救回失踪伙伴。",
+    "status": "planned"
+  },
+  {
+    "id": "finale",
+    "title": "终章 · 点亮流浪猫王国",
+    "summary": "用光源护送伙伴撤离，喵喵与主人团聚并继续看望伙伴。",
+    "status": "planned"
+  }
+]

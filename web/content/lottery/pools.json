@@ -1,0 +1,42 @@
+[
+  {
+    "id": "rainy_box",
+    "name": "雨夜纸箱包裹",
+    "cost": 1,
+    "requiredFlag": "alley_rescued",
+    "entries": [
+      {
+        "furnitureId": "soft_blanket",
+        "weight": 60
+      },
+      {
+        "furnitureId": "tin_lamp",
+        "weight": 40
+      }
+    ]
+  },
+  {
+    "id": "midnight_market",
+    "name": "午夜集市包裹",
+    "cost": 1,
+    "requiredFlag": "market_explored",
+    "entries": [
+      {
+        "furnitureId": "snack_cushion",
+        "weight": 100
+      }
+    ]
+  },
+  {
+    "id": "underground_moon",
+    "name": "地下月光包裹",
+    "cost": 1,
+    "requiredFlag": "tunnel_explored",
+    "entries": [
+      {
+        "furnitureId": "moon_hammock",
+        "weight": 100
+      }
+    ]
+  }
+]

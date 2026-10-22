@@ -1,0 +1,50 @@
+[
+  {
+    "id": "alley",
+    "name": "雨后小巷",
+    "status": "demo",
+    "width": 800,
+    "height": 480,
+    "interactions": [
+      {
+        "id": "alley_crate",
+        "x": 570,
+        "y": 290,
+        "label": "纸箱里的叫声",
+        "eventId": "crate_event"
+      }
+    ]
+  },
+  {
+    "id": "market",
+    "name": "午夜集市",
+    "status": "planned",
+    "width": 800,
+    "height": 480,
+    "interactions": []
+  },
+  {
+    "id": "greenhouse",
+    "name": "废弃花房",
+    "status": "demo",
+    "width": 800,
+    "height": 480,
+    "interactions": []
+  },
+  {
+    "id": "tunnel",
+    "name": "地下通道",
+    "status": "planned",
+    "width": 800,
+    "height": 480,
+    "interactions": []
+  },
+  {
+    "id": "warehouse",
+    "name": "废弃仓库",
+    "status": "planned",
+    "width": 800,
+    "height": 480,
+    "interactions": []
+  }
+]

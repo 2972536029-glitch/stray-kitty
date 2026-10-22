@@ -1,0 +1,34 @@
+[
+  {
+    "id": "prologue_1",
+    "chapterId": "prologue",
+    "speaker": "喵喵",
+    "text": "明明只是追着金枪鱼的香味走了几步……这里怎么全是陌生的气味？",
+    "next": "prologue_2",
+    "exit": ""
+  },
+  {
+    "id": "prologue_2",
+    "chapterId": "alley",
+    "speaker": "团子",
+    "text": "喂，新来的！先别急着找家。那边的纸箱里，好像有只猫需要帮忙。",
+    "next": "",
+    "exit": "explore"
+  },
+  {
+    "id": "rescue_1",
+    "chapterId": "alley",
+    "speaker": "点点",
+    "text": "谢谢你们……我叫点点。原来，我们也可以一起找到安全的地方。",
+    "next": "rescue_2",
+    "exit": ""
+  },
+  {
+    "id": "rescue_2",
+    "chapterId": "greenhouse",
+    "speaker": "喵喵",
+    "text": "那就先把这座旧花房收拾一下吧。一只猫的纸箱，也可以变成大家的家。",
+    "next": "",
+    "exit": "home"
+  }
+]

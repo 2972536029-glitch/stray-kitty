@@ -1,0 +1,30 @@
+[
+  {
+    "id": "miaomiao",
+    "name": "喵喵",
+    "color": "#ead7ae",
+    "description": "走失的家猫，正在学着保护伙伴。",
+    "skill": "主角：推进探索和救援"
+  },
+  {
+    "id": "tuanzi",
+    "name": "团子",
+    "color": "#d39251",
+    "description": "熟悉小巷的橘猫，热心又贪吃。",
+    "skill": "寻找物资与安全路线"
+  },
+  {
+    "id": "diandian",
+    "name": "点点",
+    "color": "#d8ded5",
+    "description": "善于观察环境的奶牛猫。",
+    "skill": "辨认陷阱与可疑目标"
+  },
+  {
+    "id": "momo",
+    "name": "墨墨",
+    "color": "#636a77",
+    "description": "熟悉地下通道的黑猫。",
+    "skill": "侦查暗处与隐藏路线"
+  }
+]

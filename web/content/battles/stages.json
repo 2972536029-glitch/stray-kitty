@@ -1,0 +1,10 @@
+[
+  {
+    "id": "alley_rescue",
+    "name": "守护纸箱里的伙伴",
+    "status": "demo",
+    "lanes": 3,
+    "columns": 5,
+    "waves": 2
+  }
+]

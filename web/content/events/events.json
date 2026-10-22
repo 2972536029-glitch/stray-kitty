@@ -1,0 +1,21 @@
+[
+  {
+    "id": "crate_event",
+    "title": "纸箱里的微光",
+    "text": "一只受伤的奶牛猫缩在纸箱里。附近的暗处正在靠近。找些光源，也许能保护它。",
+    "options": [
+      {
+        "id": "search",
+        "label": "仔细搜索周围的物资",
+        "threshold": 4,
+        "material": 2
+      },
+      {
+        "id": "comfort",
+        "label": "先安抚点点，再寻找安全路线",
+        "threshold": 3,
+        "material": 1
+      }
+    ]
+  }
+]

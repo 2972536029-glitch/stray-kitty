@@ -1,0 +1,50 @@
+import {test,expect} from '@playwright/test';
+import fs from 'node:fs';
+import Ajv2020 from 'ajv/dist/2020.js';
+const spec=JSON.parse(fs.readFileSync('docs/openapi.json','utf8'));
+const ajv=new Ajv2020({strict:false,allErrors:true});
+const stateSchema=ajv.compile({components:spec.components,$ref:'#/components/schemas/GameState'});
+const catalogSchema=ajv.compile({components:spec.components,$ref:'#/components/schemas/Catalog'});
+test('真实浏览器贯通探索、事件、战斗、救援、家园和刷新恢复',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.goto('/');await expect(page.getByRole('button',{name:'继续故事'})).toBeVisible();
+ await expect(page.locator('[data-renderer="canvas2d"]')).toBeVisible();
+ fs.mkdirSync('output/preview',{recursive:true});await page.screenshot({path:'output/preview/desktop.png',fullPage:true});
+ await page.getByRole('button',{name:'继续故事'}).click();await page.getByRole('button',{name:'继续故事'}).click();
+ await page.keyboard.down('ArrowRight');await page.waitForTimeout(1850);await page.keyboard.up('ArrowRight');
+ await expect(page.getByRole('button',{name:'查看纸箱 · E'})).toBeVisible();await page.getByRole('button',{name:'查看纸箱 · E'}).click();
+ await page.getByRole('button',{name:'仔细搜索周围的物资'}).click();await expect(page.getByRole('button',{name:'开始守护'})).toBeVisible();
+ await page.getByRole('button',{name:'开始守护'}).click();
+ const canvas=page.locator('canvas');const box=(await canvas.boundingBox())!;
+ for(const lane of [0,1,2])await canvas.click({position:{x:191*box.width/800,y:(190+lane*82)*box.height/480}});
+ await expect(page.getByRole('button',{name:'带伙伴回家'})).toBeVisible({timeout:30000});
+ await page.getByRole('button',{name:'带伙伴回家'}).click();await page.getByRole('button',{name:'继续故事'}).click();await page.getByRole('button',{name:'继续故事'}).click();
+ await expect(page.getByRole('heading',{name:'整理我们的家'})).toBeVisible();await expect(page.getByTestId('stamps')).toHaveText('2');
+ await page.getByRole('button',{name:'避雨角落'}).click();await page.reload();await expect(page.getByRole('heading',{name:'整理我们的家'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'避雨角落'})).toContainText('纸箱猫窝');await expect(page.getByTestId('stamps')).toHaveText('2');
+ await page.getByRole('button',{name:'打开雨夜包裹'}).click();await expect(page.getByTestId('stamps')).toHaveText('1');
+ await page.screenshot({path:'output/preview/home.png',fullPage:true});expect(errors).toEqual([]);
+});
+test('匿名会话隔离、幂等与 API 真实响应',async({request})=>{
+ const session=await(await request.post('/api/v1/sessions')).json();
+ const headers={Authorization:`Bearer ${session.token}`,'Idempotency-Key':'e2e-command-123'};
+ const data={expectedRevision:0,command:{type:'ADVANCE_STORY',nodeId:'prologue_1'}};
+ const first=await request.post('/api/v1/commands',{headers,data});expect(first.status()).toBe(200);const result=await first.json();expect(result.state.revision).toBe(1);
+ expect(stateSchema(result.state),JSON.stringify(stateSchema.errors)).toBe(true);
+ const catalog=await(await request.get('/api/v1/content')).json();expect(catalogSchema(catalog),JSON.stringify(catalogSchema.errors)).toBe(true);
+ const replay=await(await request.post('/api/v1/commands',{headers,data})).json();expect(replay.replayed).toBe(true);expect(replay.state).toEqual(result.state);
+ const other=await(await request.post('/api/v1/sessions')).json();const state=await(await request.get('/api/v1/state',{headers:{Authorization:`Bearer ${other.token}`}})).json();expect(state.revision).toBe(0);
+ expect((await request.post('/api/v1/commands',{headers:{...headers,'Idempotency-Key':'different-command'},data})).status()).toBe(409);
+});
+test('服务器已提交但响应丢失时，重试原请求不会重复推进',async({page})=>{
+ await page.goto('/');await expect(page.getByRole('button',{name:'继续故事'})).toBeVisible();let lost=false;
+ await page.route('**/api/v1/commands',async route=>{if(!lost){lost=true;await route.fetch();await route.abort('failed');}else await route.continue();});
+ await page.getByRole('button',{name:'继续故事'}).click();await expect(page.getByRole('alert')).toBeVisible();
+ await page.getByRole('button',{name:'重试上次操作'}).click();await expect(page.locator('.speaker')).toHaveText('团子');
+ const revision=await page.evaluate(async()=>{const session=JSON.parse(localStorage.getItem('stray-kitty.session.v1')!);return (await(await fetch('/api/v1/state',{headers:{Authorization:`Bearer ${session.token}`}})).json()).revision;});
+ expect(revision).toBe(1);
+});
+test('窄屏首屏没有水平溢出且故事可操作',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto('/');await expect(page.getByRole('button',{name:'继续故事'})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await page.screenshot({path:'output/preview/mobile.png',fullPage:true});
+});

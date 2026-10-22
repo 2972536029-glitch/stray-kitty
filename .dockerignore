@@ -1,0 +1,12 @@
+node_modules
+web/dist
+.runtime
+data
+tmp
+test-results
+playwright-report
+.git
+.env*
+*.kubeconfig
+*.pdf
+output

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "corner",
+    "name": "避雨角落"
+  },
+  {
+    "id": "window",
+    "name": "窗边"
+  },
+  {
+    "id": "courtyard",
+    "name": "小庭院"
+  }
+]

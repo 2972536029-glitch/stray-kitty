@@ -1,0 +1,33 @@
+stages: [verify, build]
+
+web_checks:
+  stage: verify
+  image: node:24
+  script:
+    - npm ci --ignore-scripts
+    - npm run content:check
+    - npm run api:check
+    - npm run architecture:check
+    - npm run typecheck
+    - npm test
+    - npm run build --workspace web
+  artifacts:
+    paths: [web/dist/]
+    expire_in: 1 week
+
+server_checks:
+  stage: verify
+  image: golang:1.26
+  script:
+    - go -C server vet ./...
+    - go -C server test -race ./...
+
+server_build:
+  stage: build
+  image: golang:1.26
+  script:
+    - mkdir -p artifacts
+    - CGO_ENABLED=0 go -C server build -trimpath -o ../artifacts/kitty-api ./cmd/api
+  artifacts:
+    paths: [artifacts/kitty-api]
+    expire_in: 1 week
