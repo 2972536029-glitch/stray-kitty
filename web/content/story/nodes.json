@@ -3,17 +3,100 @@
     "id": "prologue_1",
     "chapterId": "prologue",
     "speaker": "喵喵",
-    "text": "等一下——这股香味……是金枪鱼！只追一下下，肯定不会迷路的。",
+    "text": "呼噜噜……午后的阳光晒在毛毯上真舒服。那个天蓝色的小饭碗擦得干干净净，两脚兽今天上菜还算勤快。",
+    "next": "prologue_home_narrator",
+    "exit": "",
+    "scene": "home"
+  },
+  {
+    "id": "prologue_home_narrator",
+    "chapterId": "prologue",
+    "speaker": "旁白",
+    "text": "微风轻轻拂动窗帘，阳台的纱门留着一条细细的缝隙。风里忽然飘来一缕极特殊的香气——焦香酥脆、鲜美浓郁。",
+    "next": "prologue_scent",
+    "exit": "",
+    "scene": "home"
+  },
+  {
+    "id": "prologue_scent",
+    "chapterId": "prologue",
+    "speaker": "喵喵",
+    "text": "等一下——鼻尖突然动了！这绝不是普通的干粮，是金枪鱼！而且是刚煎出焦边的新鲜金枪鱼！就在楼下街角……",
+    "next": "prologue_sneak",
+    "exit": "",
+    "scene": "home"
+  },
+  {
+    "id": "prologue_sneak",
+    "chapterId": "prologue",
+    "speaker": "喵喵",
+    "text": "咕噜噜……本咪的小肚子突然有了强烈的想法。本咪只是身为领地之王，顺便下楼巡视两分钟。只尝一口，一口就回来，肯定不会迷路！",
+    "next": "prologue_street",
+    "exit": "",
+    "scene": "home"
+  },
+  {
+    "id": "prologue_street",
+    "chapterId": "prologue",
+    "speaker": "旁白",
+    "text": "喵喵一溜烟钻出了门。可是外面的街道远比客厅宽阔喧闹，刺耳的车鸣、飞驰的卡车，还有从未踩过的粗糙泥沙，让习惯了毛毯的小爪子有些不知所措。",
+    "next": "prologue_thunder",
+    "exit": "",
+    "scene": "alley"
+  },
+  {
+    "id": "prologue_thunder",
+    "chapterId": "prologue",
+    "speaker": "旁白",
+    "text": "还没等找到香味的源头，天色猛地阴沉下来。一声惊雷在铁皮屋檐上炸响，紧接着是冰冷湍急的倾盆大雨。",
     "next": "prologue_rain",
-    "exit": ""
+    "exit": "",
+    "scene": "alley"
+  },
+  {
+    "id": "prologue_rain",
+    "chapterId": "prologue",
+    "speaker": "旁白",
+    "text": "雨把熟悉的气味冲淡了。蓝色饭碗不见了，暖毯也不见了，只有陌生小巷在灯下闪着水光。",
+    "next": "prologue_lost",
+    "exit": "",
+    "scene": "alley"
+  },
+  {
+    "id": "prologue_lost",
+    "chapterId": "prologue",
+    "speaker": "喵喵",
+    "text": "哇啊！泥巴全溅到肚皮上了……咪才没有害怕。咪只是……暂时不知道家在哪边。",
+    "next": "prologue_tuanzi",
+    "exit": "",
+    "scene": "alley"
+  },
+  {
+    "id": "prologue_tuanzi",
+    "chapterId": "alley",
+    "speaker": "团子",
+    "text": "哟，哪来的小少爷？圆滚滚、一身奶香味，爪子都踩成泥巴球了，脖子上的小铃铛还在晃呢。",
+    "next": "prologue_banter",
+    "exit": "",
+    "scene": "alley"
+  },
+  {
+    "id": "prologue_banter",
+    "chapterId": "alley",
+    "speaker": "喵喵",
+    "text": "谁是小少爷！本咪是微服私访的领地巡察官！……咕噜噜（肚子大声抗议）……本咪只是出来视察民情！",
+    "next": "prologue_2",
+    "exit": "",
+    "scene": "alley"
   },
   {
     "id": "prologue_2",
     "chapterId": "alley",
     "speaker": "团子",
-    "text": "喂，新来的！先别急着找家。那边的纸箱里，好像有只猫需要帮忙。",
+    "text": "行行行，大巡察官。不过先别逞强了——听，那边垃圾桶后的破纸箱里，好像有只猫需要帮忙。",
     "next": "",
-    "exit": "explore"
+    "exit": "explore",
+    "scene": "alley"
   },
   {
     "id": "rescue_1",
@@ -31,24 +114,6 @@
     "next": "",
     "exit": "home",
     "scene": "home"
-  },
-  {
-    "id": "prologue_rain",
-    "chapterId": "prologue",
-    "speaker": "旁白",
-    "text": "雨把熟悉的气味冲淡了。蓝色饭碗不见了，暖毯也不见了，只有陌生小巷在灯下闪着水光。",
-    "next": "prologue_lost",
-    "exit": "",
-    "scene": "alley"
-  },
-  {
-    "id": "prologue_lost",
-    "chapterId": "prologue",
-    "speaker": "喵喵",
-    "text": "咪才没有害怕。咪只是……暂时不知道家在哪边。",
-    "next": "prologue_2",
-    "exit": "",
-    "scene": "alley"
   },
   {
     "id": "poster_1",

@@ -22,7 +22,13 @@ export class DemoScene {
   private previousTime = 0;
   private now = 0;
   private destroyed = false;
-  constructor(private canvas: HTMLCanvasElement, private onNear: (near: boolean) => void, private onInteract: () => void, private onResult: (result: BattleResult) => void) {
+  constructor(
+    private canvas: HTMLCanvasElement,
+    private onNear: (near: boolean) => void,
+    private onInteract: () => void,
+    private onResult: (result: BattleResult) => void,
+    private onInspectHint?: (hint: string | null) => void
+  ) {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('浏览器无法创建二维画布');
     context.imageSmoothingEnabled = false;
@@ -86,13 +92,27 @@ export class DemoScene {
       this.y = Math.min(410, Math.max(205, this.y + dy * delta * .18));
       if (this.x > 325 && this.x < 445 && this.y > 320 && this.y < 385) this.y = dy > 0 ? 319 : 386;
       this.onNear(Math.hypot(this.x - 570, this.y - 290) < 78 && !this.state.flags.includes('alley_rescued'));
+
+      let inspect: string | null = null;
+      if (Math.hypot(this.x - 225, this.y - 330) < 55) {
+        inspect = '【雨水倒影】水里的毛发全都沾了泥点子……两脚兽要是看到，肯定又要心疼地拿热毛巾抱我了。';
+      } else if (Math.hypot(this.x - 165, this.y - 200) < 55) {
+        inspect = '【墙角抓痕】墙砖上留着好几道焦急的抓痕……似乎曾有猫在这里激烈挣扎逃避什么。';
+      } else if (Math.hypot(this.x - 310, this.y - 260) < 55) {
+        inspect = '【空鱼罐头】被雨水洗刷干净的破罐头。看来流浪的伙伴们经常要忍饥挨饿。';
+      } else if (Math.hypot(this.x - 570, this.y - 290) < 78 && !this.state.flags.includes('alley_rescued')) {
+        inspect = '【潮湿纸箱】纸箱深处传出瑟瑟发抖的微弱喵呜声……快靠近查看！';
+      }
+      this.onInspectHint?.(inspect);
     }
     if (mode === 'battle' && active && this.simulation) {
       this.simulation.update(delta / 1000);
       if (this.simulation.outcome && !this.reported) {this.reported = true;this.onResult({attemptId: this.attemptId, outcome: this.simulation.outcome});}
     }
     this.graphics.clear();
-    if (mode === 'battle') this.drawBattle();else if (mode === 'home' || this.storyScene === 'home' || this.state.flags.includes('rescue_story_done') && mode !== 'explore') this.drawHome();else this.drawAlley();
+    if (mode === 'battle') this.drawBattle();
+    else if (mode === 'home' || this.storyScene === 'home' || this.state.flags.includes('rescue_story_done') && mode !== 'explore') this.drawHome();
+    else this.drawAlley();
     if (this.pausedByUser) {this.graphics.fillStyle(0x18282a, .6);this.graphics.fillRect(0, 0, 800, 480);}
   }
   private rect(x:number,y:number,w:number,h:number,color:number,alpha=1){this.graphics.fillStyle(color,alpha);this.graphics.fillRect(Math.round(x),Math.round(y),w,h);}
@@ -104,7 +124,14 @@ export class DemoScene {
     this.rect(30,65,235,130,0x53716d);this.rect(25,57,245,18,0x354f53);this.rect(90,98,58,58,0x304e55);this.rect(95,103,48,48,0xc5bd82);
     this.rect(520,50,250,145,0x48636a);this.rect(508,43,270,20,0x304d57);this.rect(625,80,72,70,0x294750);this.rect(630,85,62,60,0xcabd83);
     this.rect(655,88,6,60,0x56746e);this.rect(630,113,62,6,0x56746e);
+    // 墙角抓痕
+    for(let i=0;i<3;i++) this.rect(160+i*6,122+i*3,2,14,0x3d5854);
     this.rect(348,336,75,35,0x697f65);for(let i=0;i<7;i++)this.rect(353+i*10,324-(i%2)*8,8,22,0x557553);
+    // 空鱼罐头
+    this.rect(305,258,14,8,0x829497);this.rect(307,256,10,2,0xa5b8bb);
+    // 雨水倒影水洼
+    this.rect(205,330,56,18,0x476a70,0.7);this.rect(215,333,36,11,0x729ea3,0.85);this.rect(222,335,14,5,0xc1dde0,0.75);
+    // 纸箱与点点
     this.rect(543,285,56,34,0xad8b64);this.rect(538,279,66,11,0xc2a179);this.rect(563,290,15,20,0x7f694e);
     this.lamp(475,190);if(!this.state?.flags.includes('alley_rescued'))this.cat(570,279,'diandian');this.cat(this.x,this.y);
     this.rect(70,440,660,4,0xd3cfb5,.4);
@@ -126,7 +153,28 @@ export class DemoScene {
     this.rect(118,310,563,100,0xbba982);for(let y=320;y<410;y+=22)this.rect(118,y,563,2,0x9f916f,.6);
     this.rect(270,88,260,173,0xb2c8b6);this.rect(395,88,8,173,0x7c9986);this.rect(270,164,260,8,0x7c9986);
     this.rect(135,240,55,75,0x8f9c73);for(let i=0;i<5;i++)this.rect(130+i*13,210-(i%2)*18,14,45,0x6d8d6a);
-    this.cat(265,350);this.cat(390,340,'tuanzi');if(this.state?.cats.includes('diandian'))this.cat(515,355,'diandian');
+
+    // 喵喵
+    this.cat(265,350);
+
+    // 序章家里细节
+    if(this.state?.chapterId === 'prologue'){
+      // 晒着阳光的柔软毛毯
+      this.rect(235, 345, 65, 24, 0xc69482);
+      this.rect(240, 348, 55, 18, 0xe0c7a0);
+      // 标志性天蓝色饭碗
+      this.rect(335-27, 350+4, 54, 17, 0x0878c9);
+      this.rect(335-31, 350, 62, 8, 0x47b4e6);
+      this.rect(335-20, 350-3, 40, 8, 0xefe0b3);
+      // 温暖午后阳光光斑
+      this.graphics.fillStyle(0xfff0ad, 0.15);
+      this.graphics.fillCircle(280, 340, 70);
+    } else {
+      // 逃出后/花房基地伙伴
+      this.cat(390,340,'tuanzi');
+      if(this.state?.cats.includes('diandian'))this.cat(515,355,'diandian');
+    }
+
     const positions:Record<string,[number,number]>={corner:[195,365],window:[490,270],courtyard:[625,365]};
     for(const [slot,id]of Object.entries(this.state?.placements??{})){
       const [x,y]=positions[slot]??[200,360];

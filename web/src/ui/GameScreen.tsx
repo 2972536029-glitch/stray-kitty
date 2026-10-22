@@ -11,10 +11,11 @@ import EventResult from './EventResult';
 const phases: Record<string, string> = {dialogue: '猫咪物语', explore: '小巷探索', event: '一次相遇', preparation: '守护准备', battle: '点亮防线', settlement: '救援结果', home: '我们的花房'};
 interface Props {
   state: GameState; catalog: Catalog; busy: boolean; pending: boolean; disabled: boolean; paused: boolean; near: boolean;
+  inspectHint?: string | null;
   onCommand: (command: GameCommand) => void; onDirection: (direction: Direction, held: boolean) => void;
   onPause: () => void; onMap: () => void; onShop: () => void; onTitle: () => void; children: ReactNode;
 }
-export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, onCommand, onDirection, onPause, onMap, onShop, onTitle, children}: Props) {
+export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, inspectHint, onCommand, onDirection, onPause, onMap, onShop, onTitle, children}: Props) {
   const node = currentStory(catalog, state);
   const chapter = catalog.chapters.find(c => c.id === state.chapterId);
   const event = catalog.events.find(e => e.id === state.pendingEventId);
@@ -32,7 +33,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
           {state.phase === 'settlement' && <section className="event-card rescue-card"><span className="eyebrow">{state.lastResult.outcome === 'won' ? 'A SAFE WAY HOME' : 'TRY A LITTLE DIFFERENTLY'}</span><div className="rescue-cats"><PixelCat size={90} mood="brave"/>{state.cats.includes('diandian') && <PixelCat breed="diandian" size={80}/>}<PixelCat breed="tuanzi" size={86}/></div><h2>{state.lastResult.outcome === 'won' ? '回家的路，也是救援的开始。' : '再一起想想办法。'}</h2><p>{state.lastResult.message}</p>{state.lastResult.firstClear && <p className="reward-note">点点加入 · 纸箱猫窝<br/>✦ 猫爪邮票 ×2 · ◆ 材料 ×3</p>}<button disabled={disabled} onClick={() => onCommand({type: 'CONTINUE'})}>{state.lastResult.outcome === 'won' ? '带伙伴回家 →' : '调整防线，再试一次'}</button></section>}
           {paused && <div className="pause-label"><span>旅程已暂停</span><button onClick={onPause}>继续旅程</button></div>}
         </div>
-        <div className="world-footer"><p>{catalog.tutorials.find(t => t.phase === state.phase)?.text ?? '每次相遇，都可能成为回家路上的一点光。'}</p>
+        <div className="world-footer"><p className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : (catalog.tutorials.find(t => t.phase === state.phase)?.text ?? '每次相遇，都可能成为回家路上的一点光。')}</p>
           {state.phase === 'explore' && <><div className="direction-pad">{(['up', 'left', 'down', 'right'] as Direction[]).map((d, i) => <button key={d} aria-label={`向${['上', '左', '下', '右'][i]}移动`} disabled={disabled} onPointerDown={e => {e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);onDirection(d, true);}} onPointerUp={() => onDirection(d, false)} onLostPointerCapture={() => onDirection(d, false)}>{['↑', '←', '↓', '→'][i]}</button>)}</div>{near && <button disabled={disabled} onClick={() => onCommand({type: 'INTERACT', interactionId: 'alley_crate'})}>查看纸箱 · E</button>}{state.flags.includes('alley_rescued') && <button disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>回到花房</button>}</>}
         </div>
       </section><aside className="journal">

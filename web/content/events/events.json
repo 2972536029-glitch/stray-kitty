@@ -135,6 +135,66 @@
             }
           }
         }
+      },
+      {
+        "id": "protect",
+        "label": "挺起胸膛虚张声势，护住纸箱",
+        "outcomes": {
+          "crit": {
+            "text": "你弓起后背、炸开浑身的毛发，发出一声极其威严的哈气！暗处被生生吓退，撤离路线安全了许多。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 3,
+              "fish": 1
+            },
+            "flags": [
+              "diandian_trust",
+              "brave_miaomiao"
+            ]
+          },
+          "success": {
+            "text": "你坚定地挡在纸箱前不肯后退。暗处的窥伺暂时止步，点点鼓起勇气紧紧跟在你的身后。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "material": 2,
+              "clue": 1
+            },
+            "flags": [
+              "diandian_trust",
+              "brave_miaomiao"
+            ]
+          },
+          "partial": {
+            "text": "你龇牙咧嘴地威慑暗处，虽稳住了阵脚，却不小心撞翻了身后的破铁罐。响动引来了更多阴影。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "reward": {
+              "material": 2
+            },
+            "flags": [
+              "diandian_trust",
+              "shadow_noticed"
+            ]
+          },
+          "fail": {
+            "text": "你试图吓退暗处，但体型差距让威慑落了空。黑影猛地逼近，团子急忙带大家先撤向路灯下！",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "emergency_withdrawal"
+            ],
+            "situation": {
+              "kind": "forced_chase",
+              "storyNodeId": "event_forced_chase"
+            }
+          }
+        }
       }
     ]
   }
