@@ -62,8 +62,10 @@ export class DemoScene {
   private pointerdown = (event: PointerEvent) => {
     if (this.state?.phase !== 'battle' || this.pausedByUser || !this.simulation) return;
     const bounds = this.canvas.getBoundingClientRect();
-    const x = (event.clientX - bounds.left) * this.canvas.width / bounds.width;
-    const y = (event.clientY - bounds.top) * this.canvas.height / bounds.height;
+    const cover = getComputedStyle(this.canvas).objectFit === 'cover';
+    const scale = (cover ? Math.max : Math.min)(bounds.width / this.canvas.width, bounds.height / this.canvas.height);
+    const x = (event.clientX - bounds.left - (bounds.width - this.canvas.width * scale) / 2) / scale;
+    const y = (event.clientY - bounds.top - (bounds.height - this.canvas.height * scale) / 2) / scale;
     if (x >= 150 && x < 580 && y >= 145 && y < 391) this.simulation.place(Math.floor((y - 145) / 82), Math.floor((x - 150) / 86));
   };
   start() {

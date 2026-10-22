@@ -48,7 +48,8 @@ test('真实浏览器贯通前两章、双 NPC 事件、救援、家园和刷新
  await page.screenshot({path:'output/preview/event-result.png',fullPage:true});
  await page.getByRole('button',{name:'开始守护'}).click();
  const canvas=page.locator('[data-renderer="canvas2d"] canvas');const box=(await canvas.boundingBox())!;
- for(const lane of [0,1,2])await canvas.click({position:{x:191*box.width/800,y:(190+lane*82)*box.height/480}});
+ const battleScale=Math.min(box.width/800,box.height/480);
+ for(const lane of [0,1,2])await canvas.click({position:{x:(box.width-800*battleScale)/2+191*battleScale,y:(box.height-480*battleScale)/2+(190+lane*82)*battleScale}});
  await expect(page.getByRole('button',{name:'带伙伴回家'})).toBeVisible({timeout:30000});
  await page.screenshot({path:'output/preview/rescue.png',fullPage:true});
  await page.getByRole('button',{name:'带伙伴回家'}).click();await page.getByRole('button',{name:'继续故事'}).click();
@@ -171,7 +172,9 @@ test('新版美术资源可加载，矮屏菜单与新增剧情态度可操作',
   const shopButton=page.getByRole('button',{name:'猫国商店'});await shopButton.scrollIntoViewIfNeeded();await shopButton.click();
   await expect(page.getByRole('dialog',{name:'猫国商店'})).toBeVisible();await page.getByRole('button',{name:'关闭猫国商店'}).click();
   await enterGame(page);await expect(page.locator('[data-renderer="canvas2d"] canvas')).toBeVisible();
-  await expect(page.locator('.cat-entry').getByRole('img',{name:'橘猫 · 团子'})).toBeVisible();
+  await page.getByRole('button',{name:'旅程记录',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'旅程记录'}).locator('.cat-entry').getByRole('img',{name:'橘猫 · 团子'})).toBeVisible();
+  await page.getByRole('button',{name:'关闭旅程记录'}).click();
  }
  for(let step=0;step<3;step++){
   await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/v1/commands')&&r.request().method()==='POST'),page.getByRole('button',{name:'继续故事'}).click()]);
@@ -180,4 +183,26 @@ test('新版美术资源可加载，矮屏菜单与新增剧情态度可操作',
  const attitude=page.getByRole('group',{name:'猫咪态度'});await expect(attitude).toBeVisible();
  await attitude.getByRole('button',{name:'诚实撒娇'}).click();await expect(page.locator('.dialogue-copy p')).toContainText('口水');
  await attitude.getByRole('button',{name:'傲娇嘴硬'}).click();await expect(page.locator('.dialogue-copy p')).toContainText('领地之王');
+});
+
+test('场景铺满窗口，商店居中且旅程记录可关闭',async({page})=>{
+ for(const viewport of [{width:1920,height:1080},{width:1280,height:620},{width:390,height:844}]){
+  await page.setViewportSize(viewport);await page.goto('/');await enterGame(page);
+  const canvas=page.locator('[data-renderer="canvas2d"] canvas');await expect(canvas).toBeVisible();
+  expect(await page.locator('.app-shell').boundingBox()).toEqual({x:0,y:0,width:viewport.width,height:viewport.height});
+  expect(await canvas.boundingBox()).toEqual({x:0,y:0,width:viewport.width,height:viewport.height});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight)).toBe(true);
+  const journalButton=page.getByRole('button',{name:'旅程记录',exact:true});await journalButton.click();
+  await expect(page.getByRole('dialog',{name:'旅程记录'})).toBeVisible();await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog',{name:'旅程记录'})).toHaveCount(0);await expect(journalButton).toBeFocused();
+  await page.screenshot({path:`output/preview/fullscreen-${viewport.width}x${viewport.height}.png`,fullPage:true});
+  await page.getByRole('button',{name:'返回标题'}).click();await page.locator('.start-actions').getByRole('button',{name:'猫国商店'}).click();
+  const shop=page.getByRole('dialog',{name:'猫国商店'});await expect(shop).toBeVisible();await expect(page.locator('.start-title')).toBeHidden();
+  const bounds=(await shop.boundingBox())!;
+  expect(Math.abs(bounds.x+bounds.width/2-viewport.width/2)).toBeLessThan(1);
+  expect(Math.abs(bounds.y+bounds.height/2-viewport.height/2)).toBeLessThan(1);
+  expect(await shop.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  await page.screenshot({path:`output/preview/fullscreen-shop-${viewport.width}x${viewport.height}.png`,fullPage:true});
+  await page.keyboard.press('Escape');await expect(page.locator('.start-title')).toBeVisible();
+ }
 });
