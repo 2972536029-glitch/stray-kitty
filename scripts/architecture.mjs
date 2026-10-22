@@ -16,7 +16,7 @@ const labels = {
   'web/src/modules/battle': '塔防 · 闫琦雯', 'web/src/modules/cats': '猫咪档案、救援与成长',
   'web/src/modules/home': '家园建设、摆放与互动', 'web/src/modules/inventory': '道具与家具持有',
   'web/src/modules/economy': '货币、扣费与奖励', 'web/src/modules/lottery': '奖池、抽取与结果',
-  'web/src/modules/shop': '商品与购买 · 预留', 'web/src/ui': '界面与样式 · 轩扬',
+  'web/src/modules/shop': '商品与购买', 'web/src/ui': '界面与样式 · 轩扬',
   'web/src/adapters': '具体运行能力', 'web/src/adapters/canvas': '原生 Canvas 2D',
   'web/src/adapters/api': 'HTTP 请求', 'web/src/adapters/storage': '浏览器会话与待确认请求',
   'web/src/adapters/platform': '输入与设备能力', 'web/src/adapters/telemetry': '本地诊断',
@@ -27,7 +27,7 @@ const labels = {
   'web/content/events': '事件与选项', 'web/content/cats': '猫咪档案',
   'web/content/battles': '关卡与波次', 'web/content/home': '家具与摆放位置',
   'web/content/items': '道具', 'web/content/economy': '经济配置 · 预留',
-  'web/content/lottery': '奖池', 'web/content/shop': '商品配置 · 预留',
+  'web/content/lottery': '奖池', 'web/content/shop': '家具商品配置',
   'web/content/tutorials': '操作提示', 'web/content/assets': '素材索引',
   'web/public': '静态资源', 'web/public/assets': '图片、动画、声音与字体',
   server: 'Go 服务端', 'server/cmd': '服务入口', 'server/cmd/api': 'HTTP 启动',
@@ -80,7 +80,7 @@ flowchart TD
   Store --> View
 \`\`\`
 
-移动、碰撞和逐帧战斗在前端运行；事件判定、抽奖、长期奖励和摆放经过 Go。商城和真实付费尚未实现，未来同样由服务端验证和发货。
+移动、碰撞和逐帧战斗在前端运行；事件判定、抽奖、长期奖励、摆放和游戏内家具购买经过 Go。真实付费尚未实现。
 
 ## 2. 实际目录
 
@@ -112,7 +112,7 @@ home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余
 | 闫琦雯 | modules/battle；content/battles | BattleContext → BattleResult → COMPLETE_BATTLE |
 | 轩扬 | ui 与各模块展示组件 | 订阅状态、展示结果 → 受控操作回调 |
 
-上表代码路径相对 web/src，内容路径相对 web；其他模块扩展待认领。modules 当前主要提供 types.ts 接口，参考画面和玩法在 examples/demo。各成员在本人模块开发，完成后逐个替换 Demo 中的对应部分。
+上表代码路径相对 web/src，内容路径相对 web；其他模块扩展待认领。modules 当前主要提供 types.ts 接口；app/App.tsx 装配，app/useGame.ts 处理会话、请求和恢复，ui 提供受控展示组件，examples/demo 保留可替换的 Canvas 地图与塔防样例。各成员在本人模块开发，完成后逐个替换对应部分。
 
 - 公共契约在 web/src/contracts/index.ts；长期变更通过 app/controller.ts，不直接修改快照。
 - 战斗输入包含服务端 attemptId、关卡、伙伴和事件效果；输出 attemptId 与 won/lost。正式模块实现 start、pause、stop，退出释放监听与计时器。
@@ -135,7 +135,36 @@ npm run test:e2e
 
 开发存档在 data/game.json；浏览器测试用独立端口 8117 和 .runtime/e2e-save.json。环境变量示例见 .env.example，程序读取进程环境变量，不自动加载 .env。
 
-当前存档只支持单进程，MySQL 只有 DDL；战斗胜负仍由客户端原型上报。Docker、K8s 与 GitLab CI 是待团队环境验证的模板。首次上传先把旧 main 保存到备份分支，再以本目录作为新 main 内容。
+当前存档只支持单进程，MySQL 只有 DDL；战斗胜负仍由客户端原型上报。Docker、K8s 与 GitLab CI 是待团队环境验证的模板。GitLab main 已采用本架构；旧 main 保存在 react-demo 分支，历史不变。
+
+## 6. react-demo 接入记录
+
+来源：[轩扬的 react-demo 原型](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/tree/react-demo)，基准提交 b740853；以下为在新架构中的移植，原分支未修改。
+
+| 原型内容 | 当前入口与变化 |
+| --- | --- |
+| 开场、红蓝黄视觉、像素猫 | ui/StartScreen.tsx、ui/styles.css、ui/PixelCat.tsx；Canvas 与 UI 共用 adapters/canvas/pixelCat.ts 的原像素造型 |
+| App / Zustand 状态 | app/App.tsx 与 app/useGame.ts；统一经过 GameController、GameStore、GameApiPort；不导入第二套游戏状态机 |
+| 对话与寻猫启事 | content/story/nodes.json 与 ui/DialoguePanel.tsx；保留既有节点 ID 和存档字段，追加兼容节点 |
+| 骰子界面 | ui/DiceEvent.tsx；选择后请求 CHOOSE_EVENT，Go 决定骰点；界面不随机发奖 |
+| 章节地图 | ui/WorldMap.tsx；读取 Catalog 和真实解锁状态，路线切换仍走 GO_HOME / GO_EXPLORE |
+| 家具商店 | ui/ShopPanel.tsx、content/shop/products.json、service/shop.go；新增 BUY_FURNITURE，单件购买、服务端定价、校验、扣费和发货，复用事务与幂等收据 |
+| 获救伙伴与结算 | ui/GameScreen.tsx；伙伴与首次奖励读取 GameState，不再使用静态解锁或固定结算 |
+| 探索与塔防 | 保留 examples/demo 的 Canvas 自由移动和战斗模拟；未导入旧原型的独立计时器与 onComplete 无条件胜利接口；正式替换仍由 Jenny、闫琦雯负责 |
+
+地图和商店采用原生 dialog，打开时暂停局内模拟；Escape 关闭、焦点约束和关闭后恢复焦点。返回标题保留存档，刷新后可继续；待确认的请求仍按原幂等键重试。新增商品与剧情为兼容内容补充，沿用当前 contentVersion，不清空已有玩家。
+
+## 7. 余尧事件设计 v0.3 接入
+
+来源：[余尧 MR !1](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/1)，提交 410fae4 的 docs/random-events-design.md。原交付为设计文档；本仓库把判定与跨模块衔接落成参考实现，事件模块与正式卡片内容仍由余尧负责。
+
+- **已接入**：服务端独立掷两颗 D6；12 大成功、9–11 成功、6–8 有代价、2–5 失败推进。四档概率依次 1/36、9/36、16/36、10/36；12 不重复计入普通成功。
+- **四通道 Outcome**：reward 的 fish → inventory.food、stamps → currencies.stamp、clue / material → inventory 同名键；tdMod.shadowPressure → 下场战斗的 modifiers；situation → 指定的衔接剧情；flags → 长期剧情标记。骰点、资源、后果与收据一起保存。
+- **局势已运行**：参考纸箱卡的绕路 / 紧急撤离先进入配置指定的剧情节点，确认后进入 preparation；失败仍能营救点点。寻猫启事按固定剧情节拍出现，推进时记录 lost_poster_found，不进随机池。
+- **塔防接入**：START_BATTLE 把待应用修正快照到 activeBattle.modifiers；参考模拟把黑影移动速度调整为基础速度的 80% / 100% / 120%。失败重试保留后果，成功后清除待应用修正；正式数值交闫琦雯确认。
+- **代码位置**：contracts/index.ts 公共契约；modules/events/types.ts、presentation.ts 接入与展示映射；content/events/events.json 两个选项 × 四档参考后果；Go domain/events.go 判定；service/events.go 原子结算与剧情衔接；ui/DiceEvent.tsx、EventResult.tsx 双骰与后果展示。
+- **只预留，尚未运行**：MapDefinition.dangerLevel 0–3（现为示例配置）、节点 / 随机触发类型与已抽事件 ID 输入。区域无放回随机池、触发频率与类型配比、半秒预告、伙伴技能、强制后续事件及其余正式事件卡待余尧与地图 / UI 负责人继续接入；未将 10 张设计目标写成已完成内容。
+- **兼容与分工**：保留原 crate_event、search / comfort 标识，新增 eventState 和 battle.modifiers 均为可选字段；旧单骰存档仍可继续，旧 event_success 加成仅为旧战斗保留。当前沿用内容版本；新增参考卡文案、危险度和压力数值均是接入样例，正式定稿由原模块负责人维护。原 MR 和分支未修改，未自动合并。
 
 目录变化后运行 npm run architecture:build；npm run architecture:check 会检查本文件与实际文件夹是否一致。需求见 [PRD](PRD.md)。
 `;

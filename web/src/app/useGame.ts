@@ -1,0 +1,45 @@
+import {useCallback, useEffect, useRef, useState, useSyncExternalStore} from 'react';
+import type {Catalog, GameCommand} from '../contracts';
+import {GameStore} from '../core/state';
+import {ApiError, HttpGameApi} from '../adapters/api/client';
+import {GameController} from './controller';
+
+// 装配 API、会话、流程控制器与快照。UI 只提交命令，不维护第二份游戏存档。
+export function useGame() {
+  const [store] = useState(() => new GameStore());
+  const [port] = useState(() => new HttpGameApi());
+  const [controller] = useState(() => new GameController(port, store));
+  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  const [catalog, setCatalog] = useState<Catalog | null>(null);
+  const [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const booting = useRef(false);
+  const initialize = useCallback(async () => {
+    if (booting.current) return;
+    booting.current = true;setBusy(true);setError('');
+    try {const [data, progress] = await Promise.all([port.catalog(), port.initialize()]);setCatalog(data);store.replace(progress);}
+    catch (e) {setError(e instanceof Error ? e.message : '暂时无法连接，请重试。');}
+    finally {setBusy(false);booting.current = false;}
+  }, [port, store]);
+  useEffect(() => {void initialize();}, [initialize]);
+  const send = useCallback(async (command: GameCommand) => {
+    setBusy(true);setError('');
+    try {await controller.dispatch(command);}
+    catch (e) {
+      setError(e instanceof Error ? e.message : '操作尚未确认，请重试。');
+      if (e instanceof ApiError && e.code === 'REVISION_CONFLICT') {try {store.replace(await port.load());} catch { /* 保留错误，等待重试。 */ }}
+    } finally {setBusy(false);}
+  }, [controller, port, store]);
+  const retry = useCallback(async () => {
+    const pending = port.pending();
+    if (!pending) {await initialize();return;}
+    setBusy(true);setError('');
+    try {
+      await port.execute(pending.request, pending.key);
+      const [latest, content] = await Promise.all([port.load(), port.catalog()]);
+      setCatalog(content);store.replace(latest);
+    } catch (e) {setError(e instanceof Error ? e.message : '仍未确认，请稍后再试。');}
+    finally {setBusy(false);}
+  }, [port, store, initialize]);
+  const pending = !!port.pending();
+  return {state, catalog, busy, error, pending, send, retry, disabled: busy || pending};
+}

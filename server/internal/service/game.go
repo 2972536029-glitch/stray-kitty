@@ -103,6 +103,8 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	invalid := func() error { return domain.Fail("INVALID_COMMAND", "命令参数或目标无效", 400) }
 	switch c.Type {
+	case "BUY_FURNITURE":
+		return g.buyFurniture(s, c.ProductID)
 	case "ADVANCE_STORY":
 		if err := domain.RequirePhase(*s, "dialogue"); err != nil {
 			return err
@@ -112,6 +114,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		}
 		for _, n := range g.Catalog.Story {
 			if n.ID == c.NodeID {
+				for _, flag := range n.SetFlags {
+					s.Flags = domain.Add(s.Flags, flag)
+				}
 				s.ChapterID = n.ChapterID
 				if n.Next != "" {
 					s.StoryNodeID = n.Next
@@ -147,38 +152,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		}
 		return invalid()
 	case "CHOOSE_EVENT":
-		if err := domain.RequirePhase(*s, "event"); err != nil {
-			return err
-		}
-		if c.EventID != s.PendingEventID {
-			return invalid()
-		}
-		for _, e := range g.Catalog.Events {
-			if e.ID == c.EventID {
-				for _, o := range e.Options {
-					if o.ID == c.OptionID {
-						roll, err := g.Random(6)
-						if err != nil {
-							return err
-						}
-						roll++
-						gain := o.Material
-						message := "虽然没找到完好的灯，但你们找到了可用材料。救援仍然继续。"
-						if roll >= o.Threshold {
-							gain += 2
-							s.Flags = domain.Add(s.Flags, "event_success")
-							message = "找到了一盏还能亮的小灯！守护时可以多布置一个光源。"
-						}
-						s.Inventory["material"] += gain
-						s.LastResult = domain.Result{Message: message, Roll: roll}
-						s.PendingEventID = ""
-						s.Phase = "preparation"
-						return nil
-					}
-				}
-			}
-		}
-		return invalid()
+		return g.chooseEvent(s, c.EventID, c.OptionID)
 	case "START_BATTLE":
 		if err := domain.RequirePhase(*s, "preparation", "home", "explore"); err != nil {
 			return err
@@ -193,6 +167,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					return err
 				}
 				s.ActiveBattle = &domain.Attempt{ID: id, StageID: stage.ID, Status: "active"}
+				if s.EventState != nil {
+					modifiers := s.EventState.PendingModifiers
+					s.ActiveBattle.Modifiers = &modifiers
+				}
 				s.Phase = "battle"
 				return nil
 			}
@@ -210,6 +188,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		s.LastResult = domain.Result{Outcome: c.Outcome, Message: "防线需要再调整一下。伙伴仍在等待，准备好就再试一次。"}
 		if c.Outcome == "won" {
 			s.LastResult.Message = "撤离路线已经照亮，点点安全了！"
+			if s.EventState != nil {
+				s.EventState.PendingModifiers = domain.BattleModifiers{}
+			}
 			if !domain.Contains(s.CompletedStages, s.ActiveBattle.StageID) {
 				s.LastResult.FirstClear = true
 				s.CompletedStages = domain.Add(s.CompletedStages, s.ActiveBattle.StageID)

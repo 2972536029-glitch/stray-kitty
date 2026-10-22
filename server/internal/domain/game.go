@@ -11,9 +11,10 @@ func (e *Fault) Error() string                    { return e.Message }
 func Fail(code, message string, status int) error { return &Fault{code, message, status} }
 
 type Attempt struct {
-	ID      string `json:"id"`
-	StageID string `json:"stageId"`
-	Status  string `json:"status"`
+	ID        string           `json:"id"`
+	StageID   string           `json:"stageId"`
+	Status    string           `json:"status"`
+	Modifiers *BattleModifiers `json:"modifiers,omitempty"`
 }
 type Result struct {
 	Message    string `json:"message"`
@@ -39,6 +40,7 @@ type GameState struct {
 	PendingEventID  string            `json:"pendingEventId"`
 	ActiveBattle    *Attempt          `json:"activeBattle"`
 	LastResult      Result            `json:"lastResult"`
+	EventState      *EventState       `json:"eventState,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -57,6 +59,7 @@ type Command struct {
 	FurnitureID   string `json:"furnitureId,omitempty"`
 	SlotID        string `json:"slotId,omitempty"`
 	PoolID        string `json:"poolId,omitempty"`
+	ProductID     string `json:"productId,omitempty"`
 }
 type CommandRequest struct {
 	ExpectedRevision *int    `json:"expectedRevision"`
@@ -67,10 +70,11 @@ type CommandResponse struct {
 	Replayed bool      `json:"replayed"`
 }
 type StoryNode struct {
-	ID        string `json:"id"`
-	ChapterID string `json:"chapterId"`
-	Next      string `json:"next"`
-	Exit      string `json:"exit"`
+	ID        string   `json:"id"`
+	ChapterID string   `json:"chapterId"`
+	Next      string   `json:"next"`
+	Exit      string   `json:"exit"`
+	SetFlags  []string `json:"setFlags,omitempty"`
 }
 type Interaction struct {
 	ID      string `json:"id"`
@@ -81,9 +85,8 @@ type Map struct {
 	Interactions []Interaction `json:"interactions"`
 }
 type EventOption struct {
-	ID        string `json:"id"`
-	Threshold int    `json:"threshold"`
-	Material  int    `json:"material"`
+	ID       string                  `json:"id"`
+	Outcomes map[string]EventOutcome `json:"outcomes"`
 }
 type Event struct {
 	ID      string        `json:"id"`
@@ -106,14 +109,27 @@ type Pool struct {
 type Slot struct {
 	ID string `json:"id"`
 }
+type Furniture struct {
+	ID string `json:"id"`
+}
+type Product struct {
+	ID           string `json:"id"`
+	FurnitureID  string `json:"furnitureId"`
+	Price        int    `json:"price"`
+	CurrencyID   string `json:"currencyId"`
+	RequiredFlag string `json:"requiredFlag"`
+	Status       string `json:"status"`
+}
 type Catalog struct {
-	Version string      `json:"version"`
-	Story   []StoryNode `json:"story"`
-	Maps    []Map       `json:"maps"`
-	Events  []Event     `json:"events"`
-	Stages  []Stage     `json:"stages"`
-	Pools   []Pool      `json:"pools"`
-	Slots   []Slot      `json:"slots"`
+	Version   string      `json:"version"`
+	Story     []StoryNode `json:"story"`
+	Maps      []Map       `json:"maps"`
+	Events    []Event     `json:"events"`
+	Stages    []Stage     `json:"stages"`
+	Pools     []Pool      `json:"pools"`
+	Slots     []Slot      `json:"slots"`
+	Furniture []Furniture `json:"furniture"`
+	Products  []Product   `json:"products"`
 }
 
 func Contains(values []string, value string) bool {

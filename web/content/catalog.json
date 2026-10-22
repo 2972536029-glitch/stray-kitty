@@ -43,8 +43,8 @@
       "id": "prologue_1",
       "chapterId": "prologue",
       "speaker": "喵喵",
-      "text": "明明只是追着金枪鱼的香味走了几步……这里怎么全是陌生的气味？",
-      "next": "prologue_2",
+      "text": "等一下——这股香味……是金枪鱼！只追一下下，肯定不会迷路的。",
+      "next": "prologue_rain",
       "exit": ""
     },
     {
@@ -60,7 +60,7 @@
       "chapterId": "alley",
       "speaker": "点点",
       "text": "谢谢你们……我叫点点。原来，我们也可以一起找到安全的地方。",
-      "next": "rescue_2",
+      "next": "poster_1",
       "exit": ""
     },
     {
@@ -69,7 +69,80 @@
       "speaker": "喵喵",
       "text": "那就先把这座旧花房收拾一下吧。一只猫的纸箱，也可以变成大家的家。",
       "next": "",
-      "exit": "home"
+      "exit": "home",
+      "scene": "home"
+    },
+    {
+      "id": "prologue_rain",
+      "chapterId": "prologue",
+      "speaker": "旁白",
+      "text": "雨把熟悉的气味冲淡了。蓝色饭碗不见了，暖毯也不见了，只有陌生小巷在灯下闪着水光。",
+      "next": "prologue_lost",
+      "exit": "",
+      "scene": "alley"
+    },
+    {
+      "id": "prologue_lost",
+      "chapterId": "prologue",
+      "speaker": "喵喵",
+      "text": "咪才没有害怕。咪只是……暂时不知道家在哪边。",
+      "next": "prologue_2",
+      "exit": "",
+      "scene": "alley"
+    },
+    {
+      "id": "poster_1",
+      "chapterId": "alley",
+      "speaker": "喵喵",
+      "text": "墙上这只猫……怎么和咪一模一样？还有这个名字。原来，家里也一直在找咪。",
+      "next": "poster_2",
+      "exit": "",
+      "scene": "poster",
+      "setFlags": [
+        "lost_poster_found"
+      ]
+    },
+    {
+      "id": "poster_2",
+      "chapterId": "alley",
+      "speaker": "点点",
+      "text": "你已经找到回家的线索了。现在就走，也来得及。",
+      "next": "poster_3",
+      "exit": "",
+      "scene": "poster"
+    },
+    {
+      "id": "poster_3",
+      "chapterId": "alley",
+      "speaker": "喵喵",
+      "text": "……先把失踪的猫找回来。回家的路不会跑掉，但它们现在需要咪。",
+      "next": "rescue_2",
+      "exit": "",
+      "scene": "poster"
+    },
+    {
+      "id": "event_forced_chase",
+      "chapterId": "alley",
+      "speaker": "团子",
+      "text": "这条路暂时走不通！喵喵陪着点点，我去前面的灯下引路。先撤到有光的地方，再守住她的出口。",
+      "next": "",
+      "exit": "preparation",
+      "scene": "alley",
+      "setFlags": [
+        "withdrawal_route_reached"
+      ]
+    },
+    {
+      "id": "event_detour",
+      "chapterId": "alley",
+      "speaker": "点点",
+      "text": "原来的出口被积水挡住了……沿着这边的墙走吧。谢谢你愿意等我，我们一起到路灯下重新准备。",
+      "next": "",
+      "exit": "preparation",
+      "scene": "alley",
+      "setFlags": [
+        "detour_completed"
+      ]
     }
   ],
   "maps": [
@@ -87,7 +160,8 @@
           "label": "纸箱里的叫声",
           "eventId": "crate_event"
         }
-      ]
+      ],
+      "dangerLevel": 1
     },
     {
       "id": "market",
@@ -95,7 +169,8 @@
       "status": "planned",
       "width": 800,
       "height": 480,
-      "interactions": []
+      "interactions": [],
+      "dangerLevel": 2
     },
     {
       "id": "greenhouse",
@@ -103,7 +178,8 @@
       "status": "demo",
       "width": 800,
       "height": 480,
-      "interactions": []
+      "interactions": [],
+      "dangerLevel": 0
     },
     {
       "id": "tunnel",
@@ -111,7 +187,8 @@
       "status": "planned",
       "width": 800,
       "height": 480,
-      "interactions": []
+      "interactions": [],
+      "dangerLevel": 3
     },
     {
       "id": "warehouse",
@@ -119,26 +196,147 @@
       "status": "planned",
       "width": 800,
       "height": 480,
-      "interactions": []
+      "interactions": [],
+      "dangerLevel": 3
     }
   ],
   "events": [
     {
       "id": "crate_event",
       "title": "纸箱里的微光",
-      "text": "一只受伤的奶牛猫缩在纸箱里。附近的暗处正在靠近。找些光源，也许能保护它。",
+      "text": "一只受惊的奶牛猫缩在纸箱里。附近的暗处正在靠近。找些光源，也许能保护它。",
+      "category": "story",
+      "tags": [
+        "social",
+        "pathfinding"
+      ],
+      "triggers": [
+        "node"
+      ],
       "options": [
         {
           "id": "search",
           "label": "仔细搜索周围的物资",
-          "threshold": 4,
-          "material": 2
+          "outcomes": {
+            "crit": {
+              "text": "你找到了一盏明亮的小灯和新的爪印，点点愿意相信你。撤离路线变得更安全了。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "material": 4,
+                "clue": 2
+              },
+              "flags": [
+                "diandian_trust",
+                "light_found"
+              ]
+            },
+            "success": {
+              "text": "一盏还能亮的小灯藏在纸箱后面。你们找到了物资和一条撤离线索。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "material": 3,
+                "clue": 1
+              },
+              "flags": [
+                "diandian_trust",
+                "light_found"
+              ]
+            },
+            "partial": {
+              "text": "找到了修补光源的材料，但响动惊动了暗处。点点跟上了你，下一场守护会更紧张。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "material": 2
+              },
+              "flags": [
+                "diandian_trust",
+                "shadow_noticed"
+              ]
+            },
+            "fail": {
+              "text": "没有找到可用光源，黑影已经靠近。你没有丢下点点，团子示意大家先向路灯下撤离。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "emergency_withdrawal"
+              ],
+              "situation": {
+                "kind": "forced_chase",
+                "storyNodeId": "event_forced_chase"
+              }
+            }
+          }
         },
         {
           "id": "comfort",
           "label": "先安抚点点，再寻找安全路线",
-          "threshold": 3,
-          "material": 1
+          "outcomes": {
+            "crit": {
+              "text": "点点从纸箱里探出头，告诉你一条明亮的近路，还分享了藏好的物资。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "material": 3,
+                "fish": 1,
+                "clue": 1
+              },
+              "flags": [
+                "diandian_trust",
+                "safe_route_found"
+              ]
+            },
+            "success": {
+              "text": "你耐心等到点点平静下来。她愿意跟你走，也把身边的物资推了过来。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "material": 2,
+                "fish": 1
+              },
+              "flags": [
+                "diandian_trust"
+              ]
+            },
+            "partial": {
+              "text": "点点愿意相信你，但安全出口被积水挡住了。带上能用的材料，一起从灯下绕过去。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "material": 1
+              },
+              "flags": [
+                "diandian_trust",
+                "route_detoured"
+              ],
+              "situation": {
+                "kind": "detour",
+                "storyNodeId": "event_detour"
+              }
+            },
+            "fail": {
+              "text": "点点还不敢走出纸箱，暗处却已经逼近。你陪在她身边，团子带大家撤向有光的地方。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "stayed_with_diandian"
+              ],
+              "situation": {
+                "kind": "forced_chase",
+                "storyNodeId": "event_forced_chase"
+              }
+            }
+          }
         }
       ]
     }
@@ -208,6 +406,26 @@
       "id": "moon_hammock",
       "name": "月亮吊床",
       "theme": "地下月光"
+    },
+    {
+      "id": "blue_bowl",
+      "name": "蓝色饭碗",
+      "theme": "家的回忆"
+    },
+    {
+      "id": "red_cushion",
+      "name": "蝴蝶结软垫",
+      "theme": "花房开张"
+    },
+    {
+      "id": "sun_lamp",
+      "name": "小太阳灯",
+      "theme": "花房开张"
+    },
+    {
+      "id": "box_castle",
+      "name": "纸箱小城堡",
+      "theme": "点点最爱"
     }
   ],
   "slots": [
@@ -234,6 +452,11 @@
       "id": "food",
       "name": "猫粮",
       "description": "完整版本用于伙伴照顾；参考样例不消耗。"
+    },
+    {
+      "id": "clue",
+      "name": "线索",
+      "description": "关于伙伴与安全路线的探索发现。"
     }
   ],
   "pools": [
@@ -276,6 +499,40 @@
           "weight": 100
         }
       ]
+    }
+  ],
+  "products": [
+    {
+      "id": "blue_bowl",
+      "furnitureId": "blue_bowl",
+      "price": 1,
+      "currencyId": "stamp",
+      "requiredFlag": "alley_rescued",
+      "status": "available"
+    },
+    {
+      "id": "red_cushion",
+      "furnitureId": "red_cushion",
+      "price": 2,
+      "currencyId": "stamp",
+      "requiredFlag": "alley_rescued",
+      "status": "available"
+    },
+    {
+      "id": "sun_lamp",
+      "furnitureId": "sun_lamp",
+      "price": 2,
+      "currencyId": "stamp",
+      "requiredFlag": "alley_rescued",
+      "status": "available"
+    },
+    {
+      "id": "box_castle",
+      "furnitureId": "box_castle",
+      "price": 3,
+      "currencyId": "stamp",
+      "requiredFlag": "alley_rescued",
+      "status": "available"
     }
   ],
   "tutorials": [

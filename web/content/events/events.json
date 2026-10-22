@@ -2,19 +2,139 @@
   {
     "id": "crate_event",
     "title": "纸箱里的微光",
-    "text": "一只受伤的奶牛猫缩在纸箱里。附近的暗处正在靠近。找些光源，也许能保护它。",
+    "text": "一只受惊的奶牛猫缩在纸箱里。附近的暗处正在靠近。找些光源，也许能保护它。",
+    "category": "story",
+    "tags": [
+      "social",
+      "pathfinding"
+    ],
+    "triggers": [
+      "node"
+    ],
     "options": [
       {
         "id": "search",
         "label": "仔细搜索周围的物资",
-        "threshold": 4,
-        "material": 2
+        "outcomes": {
+          "crit": {
+            "text": "你找到了一盏明亮的小灯和新的爪印，点点愿意相信你。撤离路线变得更安全了。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 4,
+              "clue": 2
+            },
+            "flags": [
+              "diandian_trust",
+              "light_found"
+            ]
+          },
+          "success": {
+            "text": "一盏还能亮的小灯藏在纸箱后面。你们找到了物资和一条撤离线索。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "material": 3,
+              "clue": 1
+            },
+            "flags": [
+              "diandian_trust",
+              "light_found"
+            ]
+          },
+          "partial": {
+            "text": "找到了修补光源的材料，但响动惊动了暗处。点点跟上了你，下一场守护会更紧张。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "reward": {
+              "material": 2
+            },
+            "flags": [
+              "diandian_trust",
+              "shadow_noticed"
+            ]
+          },
+          "fail": {
+            "text": "没有找到可用光源，黑影已经靠近。你没有丢下点点，团子示意大家先向路灯下撤离。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "emergency_withdrawal"
+            ],
+            "situation": {
+              "kind": "forced_chase",
+              "storyNodeId": "event_forced_chase"
+            }
+          }
+        }
       },
       {
         "id": "comfort",
         "label": "先安抚点点，再寻找安全路线",
-        "threshold": 3,
-        "material": 1
+        "outcomes": {
+          "crit": {
+            "text": "点点从纸箱里探出头，告诉你一条明亮的近路，还分享了藏好的物资。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 3,
+              "fish": 1,
+              "clue": 1
+            },
+            "flags": [
+              "diandian_trust",
+              "safe_route_found"
+            ]
+          },
+          "success": {
+            "text": "你耐心等到点点平静下来。她愿意跟你走，也把身边的物资推了过来。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "material": 2,
+              "fish": 1
+            },
+            "flags": [
+              "diandian_trust"
+            ]
+          },
+          "partial": {
+            "text": "点点愿意相信你，但安全出口被积水挡住了。带上能用的材料，一起从灯下绕过去。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "diandian_trust",
+              "route_detoured"
+            ],
+            "situation": {
+              "kind": "detour",
+              "storyNodeId": "event_detour"
+            }
+          },
+          "fail": {
+            "text": "点点还不敢走出纸箱，暗处却已经逼近。你陪在她身边，团子带大家撤向有光的地方。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "stayed_with_diandian"
+            ],
+            "situation": {
+              "kind": "forced_chase",
+              "storyNodeId": "event_forced_chase"
+            }
+          }
+        }
       }
     ]
   }

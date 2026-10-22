@@ -158,7 +158,7 @@ func (a *API) fail(w http.ResponseWriter, r *http.Request, err error) {
 	a.json(w, fault.Status, map[string]any{"error": map[string]string{"code": fault.Code, "message": fault.Message, "requestId": w.Header().Get("X-Request-Id")}})
 }
 func validateCommand(body []byte, kind string) error {
-	fields := map[string][]string{"ADVANCE_STORY": {"nodeId"}, "INTERACT": {"interactionId"}, "CHOOSE_EVENT": {"eventId", "optionId"}, "START_BATTLE": {"stageId"}, "COMPLETE_BATTLE": {"attemptId", "outcome"}, "CONTINUE": {}, "GO_HOME": {}, "GO_EXPLORE": {}, "PLACE_FURNITURE": {"furnitureId", "slotId"}, "DRAW_FURNITURE": {"poolId"}}
+	fields := map[string][]string{"ADVANCE_STORY": {"nodeId"}, "INTERACT": {"interactionId"}, "CHOOSE_EVENT": {"eventId", "optionId"}, "START_BATTLE": {"stageId"}, "COMPLETE_BATTLE": {"attemptId", "outcome"}, "CONTINUE": {}, "GO_HOME": {}, "GO_EXPLORE": {}, "PLACE_FURNITURE": {"furnitureId", "slotId"}, "DRAW_FURNITURE": {"poolId"}, "BUY_FURNITURE": {"productId"}}
 	required, ok := fields[kind]
 	if !ok {
 		return domain.Fail("UNSUPPORTED_COMMAND", "命令尚未实现", 400)

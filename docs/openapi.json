@@ -423,6 +423,9 @@
               "won",
               "lost"
             ]
+          },
+          "modifiers": {
+            "$ref": "#/components/schemas/BattleModifiers"
           }
         },
         "required": [
@@ -441,7 +444,7 @@
           "roll": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 6
+            "maximum": 12
           },
           "outcome": {
             "type": "string"
@@ -578,6 +581,9 @@
           },
           "lastResult": {
             "$ref": "#/components/schemas/LastResult"
+          },
+          "eventState": {
+            "$ref": "#/components/schemas/EventState"
           }
         },
         "required": [
@@ -648,8 +654,23 @@
             "enum": [
               "",
               "explore",
+              "home",
+              "preparation"
+            ]
+          },
+          "scene": {
+            "type": "string",
+            "enum": [
+              "alley",
+              "poster",
               "home"
             ]
+          },
+          "setFlags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -717,6 +738,11 @@
             "items": {
               "$ref": "#/components/schemas/MapInteraction"
             }
+          },
+          "dangerLevel": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
           }
         },
         "required": [
@@ -738,21 +764,35 @@
           "label": {
             "type": "string"
           },
-          "threshold": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 6
-          },
-          "material": {
-            "type": "integer",
-            "minimum": 0
+          "outcomes": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "crit": {
+                "$ref": "#/components/schemas/EventOutcome"
+              },
+              "success": {
+                "$ref": "#/components/schemas/EventOutcome"
+              },
+              "partial": {
+                "$ref": "#/components/schemas/EventOutcome"
+              },
+              "fail": {
+                "$ref": "#/components/schemas/EventOutcome"
+              }
+            },
+            "required": [
+              "crit",
+              "success",
+              "partial",
+              "fail"
+            ]
           }
         },
         "required": [
           "id",
           "label",
-          "threshold",
-          "material"
+          "outcomes"
         ]
       },
       "Event": {
@@ -768,8 +808,43 @@
           "text": {
             "type": "string"
           },
+          "category": {
+            "type": "string",
+            "enum": [
+              "opportunity",
+              "risk",
+              "story"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "trap",
+                "shadow",
+                "foraging",
+                "pathfinding",
+                "social"
+              ]
+            }
+          },
+          "triggers": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "node",
+                "random"
+              ]
+            }
+          },
           "options": {
             "type": "array",
+            "minItems": 1,
             "items": {
               "$ref": "#/components/schemas/EventOption"
             }
@@ -779,6 +854,9 @@
           "id",
           "title",
           "text",
+          "category",
+          "tags",
+          "triggers",
           "options"
         ]
       },
@@ -1191,6 +1269,9 @@
           },
           {
             "$ref": "#/components/schemas/DrawFurniture"
+          },
+          {
+            "$ref": "#/components/schemas/BuyFurniture"
           }
         ]
       },
@@ -1305,6 +1386,12 @@
             "items": {
               "$ref": "#/components/schemas/Asset"
             }
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FurnitureProduct"
+            }
           }
         },
         "required": [
@@ -1320,7 +1407,234 @@
           "items",
           "pools",
           "tutorials",
-          "assets"
+          "assets",
+          "products"
+        ]
+      },
+      "FurnitureProduct": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "furnitureId": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "currencyId": {
+            "type": "string",
+            "const": "stamp"
+          },
+          "requiredFlag": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "disabled"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "furnitureId",
+          "price",
+          "currencyId",
+          "requiredFlag",
+          "status"
+        ]
+      },
+      "BuyFurniture": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "用猫爪邮票购买一件尚未拥有的家具；仅提交商品 ID，由服务端定价并原子扣费发货，不涉及真实付款。",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "BUY_FURNITURE"
+          },
+          "productId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "type",
+          "productId"
+        ]
+      },
+      "EventReward": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "fish": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stamps": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "clue": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "material": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": []
+      },
+      "EventSituation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "detour",
+              "forced_chase"
+            ]
+          },
+          "storyNodeId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "storyNodeId"
+        ]
+      },
+      "TowerDefenseModifier": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "shadowPressure": {
+            "type": "integer",
+            "enum": [
+              -1,
+              0,
+              1
+            ]
+          }
+        },
+        "required": [
+          "shadowPressure"
+        ]
+      },
+      "BattleModifiers": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "shadowPressure": {
+            "type": "integer",
+            "enum": [
+              -1,
+              0,
+              1
+            ]
+          },
+          "situation": {
+            "type": "string",
+            "enum": [
+              "detour",
+              "forced_chase"
+            ]
+          }
+        },
+        "required": [
+          "shadowPressure"
+        ]
+      },
+      "EventOutcome": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reward": {
+            "$ref": "#/components/schemas/EventReward"
+          },
+          "tdMod": {
+            "$ref": "#/components/schemas/TowerDefenseModifier"
+          },
+          "situation": {
+            "$ref": "#/components/schemas/EventSituation"
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "EventResolution": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "eventId": {
+            "type": "string"
+          },
+          "optionId": {
+            "type": "string"
+          },
+          "dice": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "crit",
+              "success",
+              "partial",
+              "fail"
+            ]
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/EventOutcome"
+          }
+        },
+        "required": [
+          "eventId",
+          "optionId",
+          "dice",
+          "tier",
+          "outcome"
+        ]
+      },
+      "EventState": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "lastResolution": {
+            "$ref": "#/components/schemas/EventResolution"
+          },
+          "pendingModifiers": {
+            "$ref": "#/components/schemas/BattleModifiers"
+          }
+        },
+        "required": [
+          "lastResolution",
+          "pendingModifiers"
         ]
       }
     }

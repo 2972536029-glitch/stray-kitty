@@ -3,7 +3,7 @@ export interface Shadow {id: number; lane: number; x: number; hp: number}
 export class DemoBattle {
   elapsed=0; energy: number; lives=3; placed: {lane:number;column:number;cooldown:number}[]=[];
   shadows: Shadow[]=[]; spawned=0; outcome: 'won'|'lost'|null=null;
-  constructor(readonly lanes=3, readonly waves=2, bonus=false) {this.energy=bonus?8:6;}
+  constructor(readonly lanes=3, readonly waves=2, bonus=false, readonly shadowPressure: -1 | 0 | 1 = 0) {this.energy=bonus?8:6;}
   place(lane:number,column:number): boolean {
     if(this.outcome||!Number.isInteger(lane)||!Number.isInteger(column)||lane<0||lane>=this.lanes||column<0||column>=5||this.energy<2||this.placed.some(p=>p.lane===lane&&p.column===column))return false;
     this.energy-=2;this.placed.push({lane,column,cooldown:0});return true;
@@ -19,7 +19,8 @@ export class DemoBattle {
       p.cooldown-=dt;const target=this.shadows.filter(s=>s.lane===p.lane&&s.hp>0).sort((a,b)=>a.x-b.x)[0];
       if(target&&p.cooldown<=0){target.hp--;p.cooldown=.85;}
     }
-    for(const shadow of this.shadows) {shadow.x-=dt*36;if(shadow.hp>0&&shadow.x<95){shadow.hp=0;this.lives--;}}
+    // 接入事件压力的参考效果；正式塔防参数由模块负责人调整。
+    for(const shadow of this.shadows) {shadow.x-=dt*36*(1+this.shadowPressure*.2);if(shadow.hp>0&&shadow.x<95){shadow.hp=0;this.lives--;}}
     this.shadows=this.shadows.filter(s=>s.hp>0);
     if(this.lives<=0)this.outcome='lost';
     else if(this.spawned===this.lanes*this.waves&&this.shadows.length===0)this.outcome='won';

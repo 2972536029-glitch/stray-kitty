@@ -8,5 +8,10 @@
     "id": "food",
     "name": "猫粮",
     "description": "完整版本用于伙伴照顾；参考样例不消耗。"
+  },
+  {
+    "id": "clue",
+    "name": "线索",
+    "description": "关于伙伴与安全路线的探索发现。"
   }
 ]

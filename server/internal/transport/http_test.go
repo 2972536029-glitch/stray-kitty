@@ -38,7 +38,7 @@ func TestHTTPBoundaries(t *testing.T) {
 	var session map[string]string
 	json.Unmarshal(w.Body.Bytes(), &session)
 	token := session["token"]
-	for _, body := range []string{`{"command":{"type":"GO_HOME"}}`, `{"expectedRevision":0,"command":{"type":"ADVANCE_STORY","nodeId":"prologue_1","outcome":"won"}}`, `{"expectedRevision":0,"command":{"type":"ADVANCE_STORY","nodeId":"prologue_1"}} {}`} {
+	for _, body := range []string{`{"command":{"type":"GO_HOME"}}`, `{"expectedRevision":0,"command":{"type":"ADVANCE_STORY","nodeId":"prologue_1","outcome":"won"}}`, `{"expectedRevision":0,"command":{"type":"ADVANCE_STORY","nodeId":"prologue_1"}} {}`, `{"expectedRevision":0,"command":{"type":"BUY_FURNITURE","productId":"blue_bowl","price":0}}`, `{"expectedRevision":0,"command":{"type":"BUY_FURNITURE"}}`} {
 		if w = request("POST", "/api/v1/commands", body, token); w.Code != 400 {
 			t.Fatalf("invalid body accepted: %s %d", body, w.Code)
 		}

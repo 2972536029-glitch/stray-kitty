@@ -45,11 +45,25 @@ func execute(t *testing.T, g *service.Game, token string, c domain.Command) doma
 }
 func toBattle(t *testing.T, g *service.Game, token string) domain.GameState {
 	t.Helper()
-	execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: "prologue_1"})
-	execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: "prologue_2"})
+	finishStory(t, g, token)
 	execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "alley_crate"})
 	execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "crate_event", OptionID: "search"})
+	finishStory(t, g, token)
 	return execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
+}
+func finishStory(t *testing.T, g *service.Game, token string) domain.GameState {
+	t.Helper()
+	s, err := g.State(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; s.Phase == "dialogue"; i++ {
+		if i >= 20 {
+			t.Fatal("story did not reach an exit")
+		}
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	return s
 }
 func TestFullJourneyAndDurableIdempotency(t *testing.T) {
 	g, token, path := setup(t)
@@ -76,8 +90,7 @@ func TestFullJourneyAndDurableIdempotency(t *testing.T) {
 		t.Fatal("same key different payload accepted")
 	}
 	s = execute(t, restarted, token, domain.Command{Type: "CONTINUE"})
-	s = execute(t, restarted, token, domain.Command{Type: "ADVANCE_STORY", NodeID: "rescue_1"})
-	s = execute(t, restarted, token, domain.Command{Type: "ADVANCE_STORY", NodeID: "rescue_2"})
+	s = finishStory(t, restarted, token)
 	if s.Phase != "home" {
 		t.Fatal("home not reached")
 	}

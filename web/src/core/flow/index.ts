@@ -3,7 +3,7 @@ import type {GameCommand, GamePhase} from '../../contracts';
 const allowed: Record<GamePhase, readonly GameCommand['type'][]> = {
   dialogue: ['ADVANCE_STORY'], explore: ['INTERACT', 'GO_HOME', 'START_BATTLE'], event: ['CHOOSE_EVENT'],
   preparation: ['START_BATTLE'], battle: ['COMPLETE_BATTLE'], settlement: ['CONTINUE'],
-  home: ['GO_EXPLORE', 'DRAW_FURNITURE', 'PLACE_FURNITURE', 'START_BATTLE']
+  home: ['GO_EXPLORE', 'DRAW_FURNITURE', 'PLACE_FURNITURE', 'START_BATTLE', 'BUY_FURNITURE']
 };
 export function canDispatch(phase: GamePhase, command: GameCommand['type']): boolean {
   return allowed[phase].includes(command);

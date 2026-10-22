@@ -23,5 +23,25 @@
     "id": "moon_hammock",
     "name": "月亮吊床",
     "theme": "地下月光"
+  },
+  {
+    "id": "blue_bowl",
+    "name": "蓝色饭碗",
+    "theme": "家的回忆"
+  },
+  {
+    "id": "red_cushion",
+    "name": "蝴蝶结软垫",
+    "theme": "花房开张"
+  },
+  {
+    "id": "sun_lamp",
+    "name": "小太阳灯",
+    "theme": "花房开张"
+  },
+  {
+    "id": "box_castle",
+    "name": "纸箱小城堡",
+    "theme": "点点最爱"
   }
 ]

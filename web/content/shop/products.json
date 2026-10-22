@@ -1,0 +1,6 @@
+[
+  {"id":"blue_bowl","furnitureId":"blue_bowl","price":1,"currencyId":"stamp","requiredFlag":"alley_rescued","status":"available"},
+  {"id":"red_cushion","furnitureId":"red_cushion","price":2,"currencyId":"stamp","requiredFlag":"alley_rescued","status":"available"},
+  {"id":"sun_lamp","furnitureId":"sun_lamp","price":2,"currencyId":"stamp","requiredFlag":"alley_rescued","status":"available"},
+  {"id":"box_castle","furnitureId":"box_castle","price":3,"currencyId":"stamp","requiredFlag":"alley_rescued","status":"available"}
+]
