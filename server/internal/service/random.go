@@ -11,7 +11,8 @@ const (
 )
 
 // 千分比数值,首周试玩后调整:危险度 0~3 的触发概率与风险占比。
-var randomTriggerChance = [4]int{30, 80, 160, 280}
+// 危险度 1 原 80(8%):实测抽满 3 张约 50~90 段,一局遭遇偏稀,提到 120(12%)。
+var randomTriggerChance = [4]int{30, 120, 160, 280}
 var randomRiskShare = [4]int{200, 400, 600, 800}
 
 func (g *Game) reportMove(s *domain.GameState, distance int) error {
@@ -32,7 +33,7 @@ func (g *Game) reportMove(s *domain.GameState, distance int) error {
 			s.Phase = "event"
 			s.PendingEventID = id
 			s.PendingEventSource = "random"
-			s.DrawnEvents = domain.Add(s.DrawnEvents, id)
+			s.DrawnEvents = domain.Add(s.DrawnEvents, drawnKey(s.MapID, id))
 			s.ExploreDistance = -randomGrace // 触发后的冷却保护
 			s.LastResult = domain.Result{Message: "巷子里的风停了一下——好像有什么要发生了。"}
 			return nil
@@ -40,6 +41,10 @@ func (g *Game) reportMove(s *domain.GameState, distance int) error {
 	}
 	return nil
 }
+
+// drawnEvents 按"区域:事件"记录:无放回是区域池语义,同一事件挂多个区域时互不影响。
+// 旧存档的裸事件 ID 不匹配新键,等于该卡可再抽一次,无迁移成本。
+func drawnKey(mapID, eventID string) string { return mapID + ":" + eventID }
 
 // 从当前区域的随机池抽卡:排除已抽卡的机遇/风险事件,危险度决定是否触发与抽哪一类。
 func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, error) {
@@ -60,7 +65,7 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, error) {
 		if !domain.Contains(e.Triggers, "random") || !domain.Contains(e.Maps, s.MapID) {
 			continue
 		}
-		if domain.Contains(s.DrawnEvents, e.ID) {
+		if domain.Contains(s.DrawnEvents, drawnKey(s.MapID, e.ID)) {
 			continue
 		}
 		switch e.Category {

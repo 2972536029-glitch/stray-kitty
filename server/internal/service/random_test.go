@@ -23,8 +23,8 @@ func TestRandomEventTriggersAfterGraceAndReturnsToExplore(t *testing.T) {
 	if s.Phase != "event" || s.PendingEventID != "rats_grain_event" || s.PendingEventSource != "random" {
 		t.Fatalf("random event did not trigger as expected: phase=%s pending=%s source=%s", s.Phase, s.PendingEventID, s.PendingEventSource)
 	}
-	if !domain.Contains(s.DrawnEvents, "rats_grain_event") {
-		t.Fatal("drawn event not recorded")
+	if !domain.Contains(s.DrawnEvents, "alley:rats_grain_event") {
+		t.Fatal("drawn event not recorded with region key")
 	}
 	// 随机数恒 0 → 骰出 [1,1] 失败档;失败无局势时应回到探索并重新进入保护期。
 	s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "rats_grain_event", OptionID: "negotiate_share"})
@@ -70,6 +70,70 @@ func TestRandomPoolDrainsWithoutRepeat(t *testing.T) {
 		if s.Phase == "event" {
 			t.Fatal("empty pool still triggered")
 		}
+	}
+}
+
+// 同一事件挂两个区域:在一个区域抽过,另一个区域仍可抽到(区域池语义)。
+func TestDrawnEventsArePerRegion(t *testing.T) {
+	g, token, _ := setup(t)
+	// 临时克隆一张双区域随机卡进目录(不影响磁盘内容;设为 risk 以进入恒 0 随机数必选的风险池)。
+	g.Catalog.Events = append(g.Catalog.Events, g.Catalog.Events[len(g.Catalog.Events)-1])
+	dual := &g.Catalog.Events[len(g.Catalog.Events)-1]
+	dual.ID = "shared_event"
+	dual.Triggers = []string{"random"}
+	dual.Category = "risk"
+	for i := range dual.Options {
+		dual.Options[i].ID = dual.Options[i].ID + "_s"
+	}
+	dual.Maps = []string{"alley", "alley_copy"}
+	g.Catalog.Maps = append(g.Catalog.Maps, domain.Map{ID: "alley_copy", DangerLevel: 1})
+	finishStory(t, g, token)
+	// 在 alley 抽到共享卡。
+	found := false
+	for i := 0; i < 60 && !found; i++ {
+		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
+		if s.Phase != "event" {
+			continue
+		}
+		if s.PendingEventID == "shared_event" {
+			found = true
+			if !domain.Contains(s.DrawnEvents, "alley:shared_event") {
+				t.Fatal("shared event not keyed by region")
+			}
+			s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "shared_event", OptionID: dual.Options[0].ID})
+			if s.Phase != "explore" {
+				t.Fatal("expected explore after resolving shared event")
+			}
+		} else {
+			other := s.PendingEventID
+			optionID := ""
+			for _, e := range g.Catalog.Events {
+				if e.ID == other {
+					optionID = e.Options[0].ID
+				}
+			}
+			execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: other, OptionID: optionID})
+		}
+	}
+	if !found {
+		t.Fatal("shared event never drawn in alley")
+	}
+	// 换到 alley_copy,同一张卡必须还能抽到。
+	execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley_copy"})
+	drewAgain := false
+	for i := 0; i < 60 && !drewAgain; i++ {
+		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
+		if s.Phase == "event" && s.PendingEventID == "shared_event" {
+			drewAgain = true
+			if !domain.Contains(s.DrawnEvents, "alley_copy:shared_event") {
+				t.Fatal("second region draw not keyed correctly")
+			}
+		} else if s.Phase == "event" {
+			execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: s.PendingEventID, OptionID: "intercept"})
+		}
+	}
+	if !drewAgain {
+		t.Fatal("shared event should be drawable again in another region")
 	}
 }
 
