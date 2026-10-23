@@ -1,11 +1,19 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import type {EventDefinition} from '../contracts';
 import PixelCat from './PixelCat';
 import {eventTiers} from '../modules/events/presentation';
 
 const dots: Record<number, number[]> = {1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]};
 export function Dice({value = 1, rolling = false}: {value?: number; rolling?: boolean}) {
-  return <div className={`dice ${rolling ? 'rolling' : ''}`} role="img" aria-label={rolling ? '骰子滚动中' : `骰子 ${value} 点`}>{Array.from({length: 9}, (_, i) => <i key={i} className={(dots[value] ?? dots[1]).includes(i) ? 'on' : ''}/>)}</div>;
+  // 抛掷等待期间点数快速闪换,配合 dice-toss 动画营造翻滚感。
+  const [flicker, setFlicker] = useState(1);
+  useEffect(() => {
+    if (!rolling) return;
+    const timer = setInterval(() => setFlicker(v => v % 6 + 1), 130);
+    return () => clearInterval(timer);
+  }, [rolling]);
+  const shown = rolling ? flicker : value;
+  return <div className={`dice ${rolling ? 'rolling' : ''}`} role="img" aria-label={rolling ? '骰子滚动中' : `骰子 ${value} 点`}>{Array.from({length: 9}, (_, i) => <i key={i} className={(dots[shown] ?? dots[1]).includes(i) ? 'on' : ''}/>)}</div>;
 }
 // 只选择选项与展示等待动画；实际骰点仍由 CHOOSE_EVENT 的服务端响应决定。
 export default function DiceEvent({event, disabled, rolling, onChoose}: {event: EventDefinition; disabled: boolean; rolling: boolean; onChoose: (optionId: string) => void}) {
