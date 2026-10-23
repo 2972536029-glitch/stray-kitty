@@ -10,10 +10,28 @@ const (
 	randomGrace        = 600 // 进入探索/触发后的保护里程(约 3~4 秒行走,兼作 e2e 走位缓冲)
 )
 
-// 千分比数值,首周试玩后调整:危险度 0~3 的触发概率与风险占比。
-// 危险度 1 原 80(8%):实测抽满 3 张约 50~90 段,一局遭遇偏稀,提到 120(12%)。
+// 回落平衡表(content 里没有 eventsBalance 时使用);正式数值在
+// web/content/events/balance.json,调参不用重编译。
 var randomTriggerChance = [4]int{30, 120, 160, 280}
 var randomRiskShare = [4]int{200, 400, 600, 800}
+
+func (g *Game) triggerChance(danger int) int {
+	for _, b := range g.Catalog.EventsBalance {
+		if b.DangerLevel == danger && b.TriggerChance > 0 {
+			return b.TriggerChance
+		}
+	}
+	return randomTriggerChance[danger]
+}
+
+func (g *Game) riskShare(danger int) int {
+	for _, b := range g.Catalog.EventsBalance {
+		if b.DangerLevel == danger && b.RiskShare > 0 {
+			return b.RiskShare
+		}
+	}
+	return randomRiskShare[danger]
+}
 
 func (g *Game) reportMove(s *domain.GameState, distance int) error {
 	if err := domain.RequirePhase(*s, "explore"); err != nil {
@@ -82,7 +100,7 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	if roll >= randomTriggerChance[danger] {
+	if roll >= g.triggerChance(danger) {
 		return "", false, nil
 	}
 	pool := opportunities
@@ -90,7 +108,7 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	if roll < randomRiskShare[danger] {
+	if roll < g.riskShare(danger) {
 		pool = risks
 	}
 	if len(pool) == 0 {

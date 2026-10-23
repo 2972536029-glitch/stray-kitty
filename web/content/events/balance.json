@@ -1,0 +1,22 @@
+[
+  {
+    "dangerLevel": 0,
+    "triggerChance": 30,
+    "riskShare": 200
+  },
+  {
+    "dangerLevel": 1,
+    "triggerChance": 120,
+    "riskShare": 400
+  },
+  {
+    "dangerLevel": 2,
+    "triggerChance": 160,
+    "riskShare": 600
+  },
+  {
+    "dangerLevel": 3,
+    "triggerChance": 280,
+    "riskShare": 800
+  }
+]

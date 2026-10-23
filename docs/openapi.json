@@ -1392,6 +1392,19 @@
               "$ref": "#/components/schemas/Event"
             }
           },
+          "eventsBalance": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "dangerLevel": {"type": "integer", "minimum": 0, "maximum": 3},
+                "triggerChance": {"type": "integer", "minimum": 1, "maximum": 1000},
+                "riskShare": {"type": "integer", "minimum": 1, "maximum": 1000}
+              },
+              "required": ["dangerLevel", "triggerChance", "riskShare"]
+            }
+          },
           "cats": {
             "type": "array",
             "items": {

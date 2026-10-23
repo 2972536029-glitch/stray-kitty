@@ -102,6 +102,7 @@ type Event struct {
 	Category string        `json:"category"`
 	Triggers []string      `json:"triggers"`
 	Maps     []string      `json:"maps"`
+	Tags     []string      `json:"tags"`
 }
 type Stage struct {
 	ID     string `json:"id"`
@@ -132,15 +133,22 @@ type Product struct {
 	Status       string `json:"status"`
 }
 type Catalog struct {
-	Version   string      `json:"version"`
-	Story     []StoryNode `json:"story"`
-	Maps      []Map       `json:"maps"`
-	Events    []Event     `json:"events"`
-	Stages    []Stage     `json:"stages"`
-	Pools     []Pool      `json:"pools"`
-	Slots     []Slot      `json:"slots"`
-	Furniture []Furniture `json:"furniture"`
-	Products  []Product   `json:"products"`
+	Version      string         `json:"version"`
+	Story        []StoryNode    `json:"story"`
+	Maps         []Map          `json:"maps"`
+	Events       []Event        `json:"events"`
+	Stages       []Stage        `json:"stages"`
+	Pools        []Pool         `json:"pools"`
+	Slots        []Slot         `json:"slots"`
+	Furniture    []Furniture    `json:"furniture"`
+	Products     []Product      `json:"products"`
+	EventsBalance []EventBalance `json:"eventsBalance"`
+}
+// EventsBalance:随机事件平衡表,内容驱动(危险度→触发概率/风险占比,千分比)。
+type EventBalance struct {
+	DangerLevel   int `json:"dangerLevel"`
+	TriggerChance int `json:"triggerChance"`
+	RiskShare     int `json:"riskShare"`
 }
 
 func Contains(values []string, value string) bool {

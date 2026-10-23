@@ -40,8 +40,9 @@ func TestRandomEventTriggersAfterGraceAndReturnsToExplore(t *testing.T) {
 func TestRandomPoolDrainsWithoutRepeat(t *testing.T) {
 	g, token, _ := setup(t)
 	finishStory(t, g, token)
+	poolSize := 5 // alley 随机池:鼠群/黑影/捕兽夹/麻袋(风险)+ 猫粮碗(机遇)
 	drawn := map[string]bool{}
-	for i := 0; i < 40 && len(drawn) < 3; i++ {
+	for i := 0; i < 90 && len(drawn) < poolSize; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
 		if s.Phase != "event" {
 			continue
@@ -58,12 +59,19 @@ func TestRandomPoolDrainsWithoutRepeat(t *testing.T) {
 			}
 		}
 		s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: id, OptionID: optionID})
+		// 带局势的失败(如麻袋诱饵)会跳剧情节点:推完剧情、回探索继续抽。
+		if s.Phase == "dialogue" {
+			s = finishStory(t, g, token)
+		}
+		if s.Phase == "preparation" {
+			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+		}
 		if s.Phase != "explore" {
 			t.Fatalf("expected explore after resolving %s, got %s", id, s.Phase)
 		}
 	}
-	if len(drawn) != 3 {
-		t.Fatalf("expected 3 unique draws, got %v", drawn)
+	if len(drawn) != poolSize {
+		t.Fatalf("expected %d unique draws, got %v", poolSize, drawn)
 	}
 	for i := 0; i < 6; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
@@ -101,6 +109,12 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 				t.Fatal("shared event not keyed by region")
 			}
 			s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "shared_event", OptionID: dual.Options[0].ID})
+			if s.Phase == "dialogue" {
+				s = finishStory(t, g, token)
+			}
+			if s.Phase == "preparation" {
+				s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+			}
 			if s.Phase != "explore" {
 				t.Fatal("expected explore after resolving shared event")
 			}
@@ -112,7 +126,13 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 					optionID = e.Options[0].ID
 				}
 			}
-			execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: other, OptionID: optionID})
+			s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: other, OptionID: optionID})
+			if s.Phase == "dialogue" {
+				s = finishStory(t, g, token)
+			}
+			if s.Phase == "preparation" {
+				s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+			}
 		}
 	}
 	if !found {
@@ -134,6 +154,67 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 	}
 	if !drewAgain {
 		t.Fatal("shared event should be drawable again in another region")
+	}
+}
+
+// 团子·讨生活:觅食类失败保底成功奖励一半(向上取整);非觅食事件不保底。
+func TestTuanziForageFallbackOnFail(t *testing.T) {
+	g, token, _ := setup(t)
+	finishStory(t, g, token)
+	// 随机数恒 0:过完保护期(4 段)后必触发风险池第一张 rats_grain_event。
+	s := domain.GameState{}
+	for i := 0; i < 10; i++ {
+		s = execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
+		if s.Phase == "event" {
+			break
+		}
+	}
+	if s.PendingEventID != "rats_grain_event" {
+		t.Fatalf("expected rats card, got %q phase=%s", s.PendingEventID, s.Phase)
+	}
+	base := s.Inventory["food"] + s.Inventory["material"] + s.Currencies["stamp"]
+	// 骰出 [1,1] 失败档;negotiate_share 成功档 material:2 → 保底 (2+1)/2 = 1。
+	s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "rats_grain_event", OptionID: "negotiate_share"})
+	if s.Inventory["material"] != base+1 || s.Phase != "explore" {
+		t.Fatalf("forage fallback not granted: material=%d(+want 1) phase=%s", s.Inventory["material"], s.Phase)
+	}
+	if !domain.Contains(s.Flags, "tuanzi_provided") || s.LastResult.Message == "" {
+		t.Fatal("fallback flag or message missing")
+	}
+	// 对照:非觅食(shadow)失败不保底——shadow_glimpse fail 无奖励、无标记。
+	for i := 0; i < 60; i++ {
+		s = execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
+		if s.Phase == "event" {
+			break
+		}
+	}
+	if s.PendingEventID != "shadow_glimpse_event" {
+		t.Fatalf("expected shadow card, got %s", s.PendingEventID)
+	}
+	materials := s.Inventory["material"]
+	s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "shadow_glimpse_event", OptionID: "take_detour"})
+	if s.Inventory["material"] != materials || s.Phase != "explore" {
+		t.Fatal("non-forage fail should not grant fallback")
+	}
+}
+
+// 平衡表内容驱动:catalog 里 eventsBalance 优先于代码常量——把触发概率设为 1(千分之一),
+// 骰点恒 1 时不应触发;若回落到常量 120,恒 1 必触发,测试即失败。
+func TestEventsBalanceFromCatalogTakesPrecedence(t *testing.T) {
+	g, token, _ := setup(t)
+	g.Catalog.EventsBalance = []domain.EventBalance{
+		{DangerLevel: 0, TriggerChance: 1, RiskShare: 1},
+		{DangerLevel: 1, TriggerChance: 1, RiskShare: 1},
+		{DangerLevel: 2, TriggerChance: 1, RiskShare: 1},
+		{DangerLevel: 3, TriggerChance: 1, RiskShare: 1},
+	}
+	g.Random = func(int) (int, error) { return 1, nil }
+	finishStory(t, g, token)
+	for i := 0; i < 20; i++ {
+		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
+		if s.Phase == "event" {
+			t.Fatal("catalog balance (1/1000) should beat roll=1; constant fallback (120) would have fired")
+		}
 	}
 }
 
