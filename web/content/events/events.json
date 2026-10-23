@@ -456,5 +456,386 @@
         }
       }
     ]
+  },
+  {
+    "id": "rats_grain_event",
+    "title": "鼠群抢粮",
+    "text": "深巷的垃圾桶旁,一窝老鼠正拖着半袋漏了的猫粮往洞里搬。它们瘦得皮包骨,可你们也一天没吃了。团子咽了口口水:\"这袋粮,够咱们撑三天。\"",
+    "category": "risk",
+    "tags": [
+      "foraging"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "maps": [
+      "alley"
+    ],
+    "options": [
+      {
+        "id": "intercept",
+        "label": "冲上去截住粮袋",
+        "outcomes": {
+          "crit": {
+            "text": "你抢先一步守住洞口,鼠群迟疑着放下了粮袋,还朝墙角的鱼干铺子抬了抬爪子。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 3,
+              "clue": 1
+            },
+            "flags": [
+              "rats_truce"
+            ]
+          },
+          "success": {
+            "text": "鼠群丢下大半袋,退回了洞里。",
+            "reward": {
+              "material": 2
+            }
+          },
+          "partial": {
+            "text": "双方各拖走一半,谁也没吃饱。",
+            "reward": {
+              "material": 1
+            }
+          },
+          "fail": {
+            "text": "争抢的动静引来墙缝里的黑影,粮袋进了洞,你们僵在原地,直到它退回暗处。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "noise_attracted_shadow"
+            ]
+          }
+        }
+      },
+      {
+        "id": "negotiate_share",
+        "label": "学团子的样子,低声提议分粮",
+        "outcomes": {
+          "crit": {
+            "text": "鼠王收下这份心意,分了大半出来,还附赠一条地下粮道的消息。",
+            "reward": {
+              "material": 2,
+              "clue": 1
+            },
+            "flags": [
+              "rats_truce"
+            ]
+          },
+          "success": {
+            "text": "各分一半,皆大欢喜。",
+            "reward": {
+              "material": 2
+            }
+          },
+          "partial": {
+            "text": "它们只肯丢下几粒。",
+            "reward": {
+              "material": 1
+            }
+          },
+          "fail": {
+            "text": "谈崩了,粮袋整个消失在洞里。"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "shadow_glimpse_event",
+    "title": "墙缝里的黑影",
+    "text": "路灯照不到的地方,一段影子在没有风的巷子里自己动了动。它没有脚步声,却一直在变长。喵喵的毛炸了起来。",
+    "category": "risk",
+    "tags": [
+      "shadow"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "maps": [
+      "alley"
+    ],
+    "options": [
+      {
+        "id": "stand_ground",
+        "label": "退到灯下,盯住它",
+        "outcomes": {
+          "crit": {
+            "text": "你盯住它,它却先一步缩了回去。团子压低声音说,他从没见过黑影退让。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 2
+            },
+            "flags": [
+              "shadow_retreat_witnessed"
+            ]
+          },
+          "success": {
+            "text": "你们退到灯下,影子在光圈外停住,不再靠近。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "shadow_first_seen"
+            ]
+          },
+          "partial": {
+            "text": "退得慢了半拍,影子蹭近了一段,团子低吼着才把它逼停在光边。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "shadow_first_seen"
+            ]
+          },
+          "fail": {
+            "text": "影子猛地窜过整条巷子!你们慌忙奔回便利店的灯光里,才敢回头。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "shadow_chased"
+            ]
+          }
+        }
+      },
+      {
+        "id": "take_detour",
+        "label": "绕远路,走亮着灯的店铺门口",
+        "outcomes": {
+          "crit": {
+            "text": "绕路时顺手捡到店门口晾着的小鱼干。",
+            "reward": {
+              "fish": 1,
+              "clue": 1
+            }
+          },
+          "success": {
+            "text": "平安绕过了那段影子。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "shadow_avoided"
+            ]
+          },
+          "partial": {
+            "text": "踩翻了门口的水盆,湿着爪子多走了两条街。"
+          },
+          "fail": {
+            "text": "影子竟抄了近道在前面等着!撞翻一排空瓶子,你们才逃回灯下。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "shadow_chased"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "feeder_bowl_event",
+    "title": "屋檐下的猫粮碗",
+    "text": "一户人家的窗台下摆着橘色猫碗,猫粮堆成小山,旁边压着一张字条:\"给巷子里的孩子们\"。屋里没有动静。",
+    "category": "opportunity",
+    "tags": [
+      "foraging"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "maps": [
+      "alley"
+    ],
+    "options": [
+      {
+        "id": "feast_here",
+        "label": "饱餐一顿再打包",
+        "outcomes": {
+          "crit": {
+            "text": "你们吃得心满意足,旁边晒着的旧毛巾正好能叼回去垫窝。",
+            "reward": {
+              "fish": 2,
+              "material": 2
+            },
+            "flags": [
+              "feeder_bowl_found"
+            ]
+          },
+          "success": {
+            "text": "难得的一顿饱饭。",
+            "reward": {
+              "fish": 2
+            },
+            "flags": [
+              "feeder_bowl_found"
+            ]
+          },
+          "partial": {
+            "text": "一群野鸽俯冲下来抢食,你们只护住了小半碗。",
+            "reward": {
+              "fish": 1
+            },
+            "flags": [
+              "feeder_bowl_found",
+              "pigeon_squabble"
+            ]
+          },
+          "fail": {
+            "text": "碗是空的,今天的份早就被吃光,只剩字条在风里轻轻晃。",
+            "flags": [
+              "feeder_bowl_empty"
+            ]
+          }
+        }
+      },
+      {
+        "id": "carry_back",
+        "label": "叼一些回去给伙伴们",
+        "outcomes": {
+          "crit": {
+            "text": "才装满嘴,正碰上出来换粮的好心人,又给添了一把。",
+            "reward": {
+              "fish": 2,
+              "material": 1
+            },
+            "flags": [
+              "feeder_bowl_found"
+            ]
+          },
+          "success": {
+            "text": "叼回了一份数量可观的口粮。",
+            "reward": {
+              "fish": 1,
+              "material": 1
+            },
+            "flags": [
+              "feeder_bowl_found"
+            ]
+          },
+          "partial": {
+            "text": "半路被树枝刮撒了大半。",
+            "reward": {
+              "fish": 1
+            },
+            "flags": [
+              "feeder_bowl_found"
+            ]
+          },
+          "fail": {
+            "text": "回程被一群麻雀截住,叼着的猫粮都撒在了半路。",
+            "flags": [
+              "sparrow_robbed"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "moving_blanket_event",
+    "title": "搬家季的旧毛毯",
+    "text": "楼道口堆着几只待扔的纸箱,最上面那条奶黄色毛毯还带着阳光和洗衣粉的味道。团子用爪子按了按:\"这条垫窝底,冬天就不冷了。\"",
+    "category": "opportunity",
+    "tags": [
+      "pathfinding"
+    ],
+    "triggers": [
+      "node"
+    ],
+    "options": [
+      {
+        "id": "haul_together",
+        "label": "齐心协力整条叼走",
+        "outcomes": {
+          "crit": {
+            "text": "毛毯连着一个结实的纸箱一起到手,箱底还压着一枚落单的猫爪邮票。",
+            "reward": {
+              "material": 2,
+              "stamps": 1
+            },
+            "flags": [
+              "blanket_secured"
+            ]
+          },
+          "success": {
+            "text": "毛毯顺利到手。",
+            "reward": {
+              "material": 2
+            },
+            "flags": [
+              "blanket_secured"
+            ]
+          },
+          "partial": {
+            "text": "毛毯太大,咬断了半条才拖得动。",
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "blanket_half"
+            ]
+          },
+          "fail": {
+            "text": "楼道门突然打开,你们只好空着爪子退了出来。",
+            "flags": [
+              "blanket_lost"
+            ]
+          }
+        }
+      },
+      {
+        "id": "check_first",
+        "label": "先检查纸箱有没有夹子再动手",
+        "outcomes": {
+          "crit": {
+            "text": "箱底果然有个小夹子,绕开之后,还翻出一副能拆成线团的旧手套。",
+            "reward": {
+              "material": 2,
+              "clue": 1
+            },
+            "flags": [
+              "trap_avoided",
+              "blanket_secured"
+            ]
+          },
+          "success": {
+            "text": "确认安全,顺利搬走了毛毯。",
+            "reward": {
+              "material": 2
+            },
+            "flags": [
+              "blanket_secured"
+            ]
+          },
+          "partial": {
+            "text": "检查花了太久,清洁车已经到了街口,匆忙只叼走半条。",
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "blanket_half"
+            ]
+          },
+          "fail": {
+            "text": "发现夹子时,毛毯已经被压进了清洁车,只来得及抢出一小角。",
+            "flags": [
+              "blanket_lost"
+            ]
+          }
+        }
+      }
+    ]
   }
 ]

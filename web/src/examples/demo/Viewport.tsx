@@ -13,6 +13,7 @@ interface Props {
   onResult: (result: BattleResult) => void;
   onDirectionReady: (send: (direction: Direction, held: boolean) => void) => void;
   onInspectHint?: (hint: string | null) => void;
+  onMove?: (distance: number) => void;
 }
 
 export function Viewport(props: Props) {
@@ -27,7 +28,8 @@ export function Viewport(props: Props) {
       (near, id, label) => latest.current.onNear(near, id, label),
       id => latest.current.onInteract(id),
       result => latest.current.onResult(result),
-      hint => latest.current.onInspectHint?.(hint)
+      hint => latest.current.onInspectHint?.(hint),
+      distance => latest.current.onMove?.(distance)
     );
     runtime.state = latest.current.state;runtime.pausedByUser = latest.current.paused;runtime.storyScene = latest.current.storyScene;scene.current = runtime;
     latest.current.onDirectionReady((direction, held) => runtime.setDirection(direction, held));runtime.start();

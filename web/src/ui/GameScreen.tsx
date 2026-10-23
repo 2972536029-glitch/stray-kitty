@@ -1,4 +1,4 @@
-import {useState, type ReactNode} from 'react';
+import {useEffect, useRef, useState, type ReactNode} from 'react';
 import type {Catalog, GameCommand, GameState} from '../contracts';
 import type {Direction} from '../adapters/platform/input';
 import {currentStory, objective} from '../core/story';
@@ -28,6 +28,15 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
   const event = catalog.events.find(e => e.id === state.pendingEventId);
   const map = catalog.maps.find(m => m.id === state.mapId);
   const resolution = state.eventState?.lastResolution;
+  // 随机事件结算后直接回到探索,这里补一个结果卡让玩家看清骰点与收获,再继续赶路。
+  const resolutionKey = resolution ? `${resolution.eventId}:${resolution.optionId}:${resolution.dice[0]}${resolution.dice[1]}` : '';
+  const [dismissedResult, setDismissedResult] = useState('');
+  const arrivedFromEvent = useRef(false);
+  useEffect(() => {
+    if (state.phase === 'event') arrivedFromEvent.current = true;
+    else if (state.phase !== 'explore') arrivedFromEvent.current = false;
+  }, [state.phase]);
+  const showExploreResult = state.phase === 'explore' && arrivedFromEvent.current && !!resolution && dismissedResult !== resolutionKey;
   return <div className="app-shell" data-phase={state.phase}>
     <header className="topbar"><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
       <span className="chapter-pill">{chapter?.title}</span>
@@ -39,6 +48,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
           <div className="dev-bar" role="toolbar" aria-label="开发者验收栏">
             <b>🛠️ 验收模式:</b>
             {state.phase === 'dialogue' && onSkip && <button onClick={onSkip}>⏩ 跳过本段对话</button>}
+            {state.phase === 'explore' && <button onClick={() => onCommand({type: 'REPORT_MOVE', distance: 150})}>🚶 走一段(随机判定)</button>}
             {state.phase === 'explore' && state.mapId === 'alley' && <button onClick={() => onCommand({type: 'INTERACT', interactionId: 'alley_crate'})}>🐾 触发纸箱事件</button>}
             {state.phase === 'explore' && state.mapId === 'market' && (
               <>
@@ -60,6 +70,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
           {state.phase === 'event' && event && <DiceEvent key={event.id} event={event} disabled={disabled} rolling={busy} onChoose={optionId => onCommand({type: 'CHOOSE_EVENT', eventId: event.id, optionId})}/>}
           {state.phase === 'preparation' && <section className="event-card preparation-card"><span className="eyebrow">{state.mapId === 'market' ? 'MIDNIGHT MARKET INTEL' : 'RESCUE MISSION 01'}</span><h2>{state.mapId === 'market' ? '集市情报与收获' : '为伙伴点亮一条路'}</h2>{resolution ? <EventResult resolution={resolution}/> : state.lastResult.roll ? <div className="roll-result"><Dice value={state.lastResult.roll}/><span>骰子 · {state.lastResult.roll} 点</span></div> : <PixelCat breed="tuanzi" size={78}/>}<p>{!resolution || state.lastResult.outcome === 'lost' ? state.lastResult.message : state.mapId === 'market' ? '从鸟雀们那里得到了重要的线索与物资。' : '点点会跟上我们。准备好，就一起守住撤离路线。'}</p>{state.mapId === 'market' ? <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}><button disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'market'})}>带着收获继续探索集市 →</button><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回花房基地</button></div> : <><p className="muted">三路守护 · 点击格子布置光源<br/>每盏消耗 2 格能量，每 4 秒恢复 1 格。</p><button disabled={disabled} onClick={() => onCommand({type: 'START_BATTLE', stageId: 'alley_rescue'})}>开始守护 →</button></>}</section>}
           {state.phase === 'settlement' && <section className="event-card rescue-card"><span className="eyebrow">{state.lastResult.outcome === 'won' ? 'A SAFE WAY HOME' : 'TRY A LITTLE DIFFERENTLY'}</span><div className="rescue-cats"><PixelCat size={90} mood="brave"/>{state.cats.includes('diandian') && <PixelCat breed="diandian" size={80}/>}<PixelCat breed="tuanzi" size={86}/></div><h2>{state.lastResult.outcome === 'won' ? '回家的路，也是救援的开始。' : '再一起想想办法。'}</h2><p>{state.lastResult.message}</p>{state.lastResult.firstClear && <p className="reward-note">点点加入 · 纸箱猫窝<br/>✦ 猫爪邮票 ×2 · ◆ 材料 ×3</p>}<button disabled={disabled} onClick={() => onCommand({type: 'CONTINUE'})}>{state.lastResult.outcome === 'won' ? '带伙伴回家 →' : '调整防线，再试一次'}</button></section>}
+          {showExploreResult && resolution && <section className="event-card explore-result-card"><span className="eyebrow">一次相遇的结果</span><EventResult resolution={resolution}/><button disabled={disabled} onClick={() => {setDismissedResult(resolutionKey);arrivedFromEvent.current = false;}}>继续赶路 →</button></section>}
           {paused && <div className="pause-label"><span>旅程已暂停</span><button onClick={onPause}>继续旅程</button></div>}
         </div>
         <div className="world-footer"><p className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : (catalog.tutorials.find(t => t.phase === state.phase)?.text ?? '每次相遇，都可能成为回家路上的一点光。')}</p>

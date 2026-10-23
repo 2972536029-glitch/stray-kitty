@@ -162,6 +162,7 @@ func validateCommand(body []byte, kind string) error {
 		"ADVANCE_STORY":   {"nodeId"},
 		"START_STORY":     {"nodeId"},
 		"INTERACT":        {"interactionId"},
+		"REPORT_MOVE":     {"distance"},
 		"CHOOSE_EVENT":    {"eventId", "optionId"},
 		"START_BATTLE":    {"stageId"},
 		"COMPLETE_BATTLE": {"attemptId", "outcome"},
@@ -211,6 +212,14 @@ func validateCommand(body []byte, kind string) error {
 		var value string
 		if err := json.Unmarshal(rawVal, &value); err != nil || value == "" {
 			return domain.Fail("INVALID_REQUEST", "命令缺少有效的 mapId", 400)
+		}
+	}
+	// REPORT_MOVE 的 distance 是正整数,不能用上面的字符串必填校验。
+	if kind == "REPORT_MOVE" {
+		rawVal, exists := raw.Command["distance"]
+		var value int
+		if !exists || json.Unmarshal(rawVal, &value) != nil || value <= 0 {
+			return domain.Fail("INVALID_REQUEST", "命令缺少有效的 distance", 400)
 		}
 	}
 	return nil

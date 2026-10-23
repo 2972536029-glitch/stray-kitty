@@ -29,6 +29,7 @@ export function validateContent(c) {
   }
   for(const e of c.events) {
     if(e.options.length===0||!e.triggers?.length||e.category==='story'&&e.triggers.includes('random')||new Set(e.options.map(o=>o.id)).size!==e.options.length) errors.push(`event invalid: ${e.id}`);
+    if(e.triggers.includes('random')&&(!Array.isArray(e.maps)||!e.maps.length||e.maps.some(id=>!c.maps.some(m=>m.id===id)))) errors.push(`event random zone: ${e.id}`);
     for(const o of e.options) for(const tier of ['crit','success','partial','fail']) {
       const result=o.outcomes?.[tier];
       if(!result?.text||Object.values(result?.reward??{}).some(n=>!Number.isSafeInteger(n)||n<0)||result?.tdMod&&![-1,0,1].includes(result.tdMod.shadowPressure)) errors.push(`event outcome: ${e.id}/${o.id}/${tier}`);
