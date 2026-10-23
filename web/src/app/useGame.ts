@@ -49,6 +49,7 @@ export function useGame() {
       await controller.dispatch({type: 'REPORT_MOVE', distance});
     } catch (e) {
       if (e instanceof ApiError && e.code === 'REVISION_CONFLICT') {try {store.replace(await port.load());} catch { /* 留给下一次操作处理。 */ }}
+      else console.warn('REPORT_MOVE discarded:', e); // 静默通道不锁界面,但留痕便于排查。
     }
   }, [controller, port, store]);
   const resetSession = useCallback(() => {

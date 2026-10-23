@@ -255,17 +255,17 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		s.Phase = "home"
 		s.MapID = "greenhouse"
 		return nil
-		case "GO_EXPLORE":
-			targetMap := "alley"
-			if c.MapID != "" {
-				targetMap = c.MapID
-			} else if s.MapID == "market" {
-				targetMap = "market"
-			}
-			s.Phase = "explore"
-			s.MapID = targetMap
-			s.ExploreDistance = -randomGrace
-			if targetMap == "market" {
+	case "GO_EXPLORE":
+		targetMap := "alley"
+		if c.MapID != "" {
+			targetMap = c.MapID
+		} else if s.MapID == "market" {
+			targetMap = "market"
+		}
+		s.Phase = "explore"
+		s.MapID = targetMap
+		s.ExploreDistance = -randomGrace
+		if targetMap == "market" {
 			s.Flags = domain.Add(s.Flags, "market_unlocked")
 			s.Flags = domain.Add(s.Flags, "chapter_2_started")
 		}

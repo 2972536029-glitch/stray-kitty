@@ -27,6 +27,7 @@ export class DemoScene {
   // 随机事件:按真实位移累计里程,每满一段上报服务端判定;贴近交互点时暂停上报。
   private moveBuffer = 0;
   private static readonly moveSegment = 150;
+  private static readonly maxReport = 300; // 服务端单次上报上限,超出整段会被拒,剩余里程留到下一段。
   constructor(
     private canvas: HTMLCanvasElement,
     private onNear: (near: boolean, interactionId?: string, label?: string) => void,
@@ -167,8 +168,9 @@ export class DemoScene {
       if (moved > 0 && !nearInteraction) {
         this.moveBuffer += moved;
         if (this.moveBuffer >= DemoScene.moveSegment) {
-          this.onMove?.(Math.round(this.moveBuffer));
-          this.moveBuffer = 0;
+          const report = Math.min(Math.round(this.moveBuffer), DemoScene.maxReport);
+          this.moveBuffer -= report;
+          this.onMove?.(report);
         }
       }
     }
