@@ -781,6 +781,10 @@
           "label": {
             "type": "string"
           },
+          "requireCat": {
+            "type": "string",
+            "description": "仅当队伍包含这只猫时选项可用;前端隐藏,服务端拒绝"
+          },
           "outcomes": {
             "type": "object",
             "additionalProperties": false,

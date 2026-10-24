@@ -17,6 +17,9 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string) error 
 			if option.ID != optionID {
 				continue
 			}
+			if option.RequireCat != "" && !domain.Contains(s.Cats, option.RequireCat) {
+				return domain.Fail("OPTION_LOCKED", "队伍中没有能执行这个行动的伙伴", 400)
+			}
 			var dice [2]int
 			for i := range dice {
 				value, err := g.Random(6)

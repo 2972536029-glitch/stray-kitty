@@ -93,8 +93,10 @@ type Map struct {
 	DangerLevel  int           `json:"dangerLevel"`
 }
 type EventOption struct {
-	ID       string                  `json:"id"`
-	Outcomes map[string]EventOutcome `json:"outcomes"`
+	ID string `json:"id"`
+	// RequireCat:仅当队伍里有这只猫时该选项可选(前端隐藏,服务端拒绝);伙伴"隐藏选项"型技能的地基。
+	RequireCat string                  `json:"requireCat,omitempty"`
+	Outcomes   map[string]EventOutcome `json:"outcomes"`
 }
 type Event struct {
 	ID       string        `json:"id"`

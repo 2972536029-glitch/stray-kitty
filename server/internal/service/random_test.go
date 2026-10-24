@@ -218,6 +218,39 @@ func TestEventsBalanceFromCatalogTakesPrecedence(t *testing.T) {
 	}
 }
 
+// 选项级 requireCat:队伍没有对应伙伴时服务端拒绝(前端同样隐藏);有伙伴时放行。
+func TestRequireCatOptionGating(t *testing.T) {
+	g, token, _ := setup(t)
+	finishStory(t, g, token)
+	execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "alley_crate"})
+	// 队伍是 miaomiao+tuanzi;把 crate 首选项临时标记需要 momo → 拒绝。
+	for i := range g.Catalog.Events {
+		if g.Catalog.Events[i].ID == "crate_event" {
+			g.Catalog.Events[i].Options[0].RequireCat = "momo"
+		}
+	}
+	s, err := g.State(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rev := s.Revision
+	if _, err = g.Execute(token, "locked-option", domain.CommandRequest{ExpectedRevision: &rev, Command: domain.Command{Type: "CHOOSE_EVENT", EventID: "crate_event", OptionID: "search"}}); err == nil {
+		t.Fatal("requireCat option accepted without the cat")
+	}
+	// 换成队伍已有的 tuanzi → 放行并正常结算。
+	for i := range g.Catalog.Events {
+		if g.Catalog.Events[i].ID == "crate_event" {
+			g.Catalog.Events[i].Options[0].RequireCat = "tuanzi"
+		}
+	}
+	rev = s.Revision
+	s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "crate_event", OptionID: "search"})
+	// 恒 0 骰出 [1,1] 失败档,crate 的 fail 带局势跳转剧情;关键是命令被接受并正常结算。
+	if s.Phase != "preparation" && s.Phase != "dialogue" {
+		t.Fatalf("requireCat option with the cat should resolve, got %s", s.Phase)
+	}
+}
+
 // 概率未中时里程照常累积,阶段保持探索。
 func TestReportMoveNoTriggerKeepsExploring(t *testing.T) {
 	g, token, _ := setup(t)

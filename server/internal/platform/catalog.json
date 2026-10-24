@@ -1679,6 +1679,56 @@
               ]
             }
           }
+        },
+        {
+          "id": "momo_scout",
+          "label": "让墨墨贴着暗处摸过去",
+          "requireCat": "momo",
+          "outcomes": {
+            "crit": {
+              "text": "墨墨绕到麻袋后面,连里面小猫的毛色都看清了,还顺回了旁边一罐没人要的鱼罐头。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 1,
+                "fish": 1
+              },
+              "flags": [
+                "momo_scouted"
+              ]
+            },
+            "success": {
+              "text": "墨墨看清了:里面是受困的小猫。解开的时候它安安静静,一点也没有挣扎。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "momo_scouted"
+              ]
+            },
+            "partial": {
+              "text": "墨墨看清了里面的情况,可绕暗处的路太窄,你们等得心慌——天色又暗了一层。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "momo_scouted"
+              ]
+            },
+            "fail": {
+              "text": "墨墨的脚步声惊动了什么,麻袋自己滚进了更深的暗处。线索没拿到,大家贴着灯走了一段。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "momo_lost_track"
+              ]
+            }
+          }
         }
       ]
     }
