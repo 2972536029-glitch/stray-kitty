@@ -2,6 +2,7 @@ import {test,expect,type Page} from '@playwright/test';
 import fs from 'node:fs';
 import Ajv2020 from 'ajv/dist/2020.js';
 import type {GameState} from '../../web/src/contracts';
+import {playL00ThroughHost} from './l00-battle';
 const spec=JSON.parse(fs.readFileSync('docs/openapi.json','utf8'));
 const ajv=new Ajv2020({strict:false,allErrors:true});
 const stateSchema=ajv.compile({components:spec.components,$ref:'#/components/schemas/GameState'});
@@ -26,8 +27,16 @@ async function walkRightTo(page:Page,buttonName:string) {
  finally {await page.keyboard.up('ArrowRight');}
 }
 
-test('真实浏览器贯通前两章、双 NPC 事件、救援、家园和刷新恢复',async({page})=>{
+test('真实浏览器贯通前两章、双 NPC 事件、救援、家园和刷新恢复',async({page},testInfo)=>{
+ test.setTimeout(300000);
+ page.setDefaultTimeout(10000);
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+ const battleCommands:string[]=[];page.on('request',request=>{
+  if(request.url().endsWith('/api/v1/commands')&&request.method()==='POST'){
+   const type=request.postDataJSON().command?.type;
+   if(type==='START_BATTLE'||type==='COMPLETE_BATTLE')battleCommands.push(type);
+  }
+ });
  await page.goto('/');await expect(page.getByRole('button',{name:'开始冒险'})).toBeVisible();
  fs.mkdirSync('output/preview',{recursive:true});await page.screenshot({path:'output/preview/start.png',fullPage:true});
  await enterGame(page);await expect(page.locator('[data-renderer="canvas2d"]')).toBeVisible();
@@ -47,10 +56,9 @@ test('真实浏览器贯通前两章、双 NPC 事件、救援、家园和刷新
  expect(await page.getByTestId('event-resolution').locator('.dice').evaluateAll(els=>els.map(el=>el.getAttribute('aria-label')))).toEqual(dice.map(value=>`骰子 ${value} 点`));
  await page.screenshot({path:'output/preview/event-result.png',fullPage:true});
  await page.getByRole('button',{name:'开始守护'}).click();
- const canvas=page.locator('[data-renderer="canvas2d"] canvas');const box=(await canvas.boundingBox())!;
- const battleScale=Math.min(box.width/800,box.height/480);
- for(const lane of [0,1,2])await canvas.click({position:{x:(box.width-800*battleScale)/2+191*battleScale,y:(box.height-480*battleScale)/2+(190+lane*82)*battleScale}});
- await expect(page.getByRole('button',{name:'带伙伴回家'})).toBeVisible({timeout:30000});
+ const battleRun=await playL00ThroughHost(page);
+ expect(battleCommands).toEqual(['START_BATTLE','COMPLETE_BATTLE']);
+ await testInfo.attach('l00-ten-wave-run',{body:JSON.stringify(battleRun,null,2),contentType:'application/json'});
  await page.screenshot({path:'output/preview/rescue.png',fullPage:true});
  await page.getByRole('button',{name:'带伙伴回家'}).click();await page.getByRole('button',{name:'继续故事'}).click();
  await expect(page.getByLabel('寻猫启事')).toBeVisible();await page.screenshot({path:'output/preview/poster.png',fullPage:true});await finishDialogue(page);
