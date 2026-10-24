@@ -83,6 +83,17 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, error) {
 		if !domain.Contains(e.Triggers, "random") || !domain.Contains(e.Maps, s.MapID) {
 			continue
 		}
+		// 事件链:前置 flag 未集齐的后续卡不进池(与已抽卡一样跳过)。
+		chainReady := true
+		for _, flag := range e.RequiresFlags {
+			if !domain.Contains(s.Flags, flag) {
+				chainReady = false
+				break
+			}
+		}
+		if !chainReady {
+			continue
+		}
 		if domain.Contains(s.DrawnEvents, drawnKey(s.MapID, e.ID)) {
 			continue
 		}

@@ -105,6 +105,8 @@ type Event struct {
 	Triggers []string      `json:"triggers"`
 	Maps     []string      `json:"maps"`
 	Tags     []string      `json:"tags"`
+	// RequiresFlags:事件链——全部 flag 都已记录时该卡才进随机池;空=无条件。
+	RequiresFlags []string `json:"requiresFlags,omitempty"`
 }
 type Stage struct {
 	ID     string `json:"id"`

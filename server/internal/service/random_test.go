@@ -251,6 +251,65 @@ func TestRequireCatOptionGating(t *testing.T) {
 	}
 }
 
+// 事件链:前置 flag 未集齐时后续卡不进池;集齐(麻袋 crit 放走小猫)后可抽到。
+// 随机数定制:骰子恒 [6,6](crit);抽卡按段内序——触发必中、配比恒选机遇池、索引取第一张。
+func TestEventChainRequiresFlags(t *testing.T) {
+	g, token, _ := setup(t)
+	seq := 0
+	g.Random = func(max int) (int, error) {
+		if max == 6 {
+			return 5, nil
+		}
+		seq++
+		if seq%3 == 2 {
+			return max - 1, nil
+		}
+		return 0, nil
+	}
+	finishStory(t, g, token)
+	optionFor := func(id string) string {
+		if id == "moving_sack_event" {
+			return "watch_first" // crit 档写 sack_cat_freed
+		}
+		for _, e := range g.Catalog.Events {
+			if e.ID == id {
+				return e.Options[0].ID
+			}
+		}
+		return ""
+	}
+	sawChain := false
+	var saw string
+	for i := 0; i < 70; i++ {
+		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
+		if s.Phase != "event" {
+			continue
+		}
+		id := s.PendingEventID
+		if id == "wall_kitten_event" {
+			if !domain.Contains(s.Flags, "sack_cat_freed") {
+				t.Fatal("chain card drawn before its flag")
+			}
+			sawChain = true
+			break
+		}
+		if saw == "" {
+			saw = id
+		}
+		s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: id, OptionID: optionFor(id)})
+		for s.Phase == "dialogue" {
+			s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+		}
+		if s.Phase == "preparation" {
+			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+		}
+	}
+	if !sawChain {
+		t.Fatal("chain card never became drawable after flag was set")
+	}
+	_ = saw
+}
+
 // 概率未中时里程照常累积,阶段保持探索。
 func TestReportMoveNoTriggerKeepsExploring(t *testing.T) {
 	g, token, _ := setup(t)
