@@ -1,6 +1,10 @@
 package service
 
-import "stray-kitty/server/internal/domain"
+import (
+	"log/slog"
+
+	"stray-kitty/server/internal/domain"
+)
 
 func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string) error {
 	if err := domain.RequirePhase(*s, "event"); err != nil {
@@ -85,6 +89,8 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string) error 
 			}
 			s.EventState = &domain.EventState{LastResolution: domain.EventResolution{EventID: eventID, OptionID: optionID, Dice: dice, Tier: tier, Outcome: outcome}, PendingModifiers: modifiers}
 			s.LastResult = domain.Result{Message: outcome.Text, Roll: dice[0] + dice[1]}
+			// 观测埋点:档位分布/选项偏好/压力输出,不含玩家身份。
+			slog.Info("event_resolve", "eventId", eventID, "optionId", optionID, "source", s.PendingEventSource, "dice", dice[0]+dice[1], "tier", tier, "pressure", modifiers.ShadowPressure, "situation", modifiers.Situation)
 			s.PendingEventID = ""
 			s.Phase = "preparation"
 			if outcome.Situation != nil {

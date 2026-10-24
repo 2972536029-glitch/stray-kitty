@@ -1,6 +1,10 @@
 package service
 
-import "stray-kitty/server/internal/domain"
+import (
+	"log/slog"
+
+	"stray-kitty/server/internal/domain"
+)
 
 // 随机事件触发协议:玩家在探索阶段行走,里程每累计一个检查段,服务端按当前
 // 区域危险度掷一次概率;危险度同时决定触发概率与机遇/风险配比;同区域无放回。
@@ -54,6 +58,8 @@ func (g *Game) reportMove(s *domain.GameState, distance int) error {
 			s.DrawnEvents = domain.Add(s.DrawnEvents, drawnKey(s.MapID, id))
 			s.ExploreDistance = -randomGrace // 触发后的冷却保护
 			s.LastResult = domain.Result{Message: "巷子里的风停了一下——好像有什么要发生了。"}
+			// 观测埋点(README §9):不含玩家身份,后续接 Datadog 时替换 handler 即可。
+			slog.Info("event_random_trigger", "mapId", s.MapID, "eventId", id)
 			return nil
 		}
 	}

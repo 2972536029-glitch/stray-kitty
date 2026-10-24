@@ -27,6 +27,8 @@ flowchart TD
 ```text
 stray-kitty/
 ├─ deploy/  部署模板
+├─ design/
+│  └─ events/
 ├─ docs/  仅三份文档
 │  ├─ ARCHITECTURE.md  架构、目录与接入
 │  ├─ openapi.json  API 规范
