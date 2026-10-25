@@ -21,7 +21,7 @@ export function validateContent(c) {
   for(const p of c.pools) {
     if(!Number.isInteger(p.cost)||p.cost<1||p.entries.length===0||p.entries.some(e=>!has('furniture',e.furnitureId)||!Number.isInteger(e.weight)||e.weight<=0)) errors.push(`pool invalid: ${p.id}`);
   }
-  for(const stage of c.stages) if(![stage.lanes,stage.columns,stage.waves].every(n=>Number.isSafeInteger(n)&&n>0)||stage.chapterId!==undefined&&!has('chapters',stage.chapterId)) errors.push(`stage invalid: ${stage.id}`);
+  for(const stage of c.stages) if(stage.lanes<1||stage.columns<1||stage.waves<1) errors.push(`stage invalid: ${stage.id}`);
   const sold = new Set();
   for(const p of c.products) {
     if(!has('furniture',p.furnitureId)||!Number.isSafeInteger(p.price)||p.price<1||p.currencyId!=='stamp'||!['available','disabled'].includes(p.status)||sold.has(p.furnitureId)) errors.push(`product invalid: ${p.id}`);

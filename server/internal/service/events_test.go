@@ -70,14 +70,7 @@ func TestFourEventTiersPersistAndAllLeadToRescue(t *testing.T) {
 				t.Fatal(err)
 			}
 			restarted = service.New(store, g.Catalog)
-			rewardDraws := 0
-			restarted.Random = func(max int) (int, error) {
-				if max != 100 {
-					t.Fatal("battle lifecycle re-rolled event dice")
-				}
-				rewardDraws++
-				return 0, nil
-			}
+			restarted.Random = func(int) (int, error) { t.Fatal("battle lifecycle re-rolled event dice"); return 0, nil }
 			restored, err := restarted.State(token)
 			if err != nil || restored.Phase != "battle" || !reflect.DeepEqual(restored.ActiveBattle, s.ActiveBattle) || !reflect.DeepEqual(restored.EventState, s.EventState) {
 				t.Fatalf("active battle snapshot changed after restart: %v", err)
@@ -85,9 +78,6 @@ func TestFourEventTiersPersistAndAllLeadToRescue(t *testing.T) {
 			g = restarted
 			// 失败重试沿用后果，不重掷；胜利后清除待应用压力。
 			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: firstAttemptID, Outcome: "lost"})
-			if rewardDraws != 0 {
-				t.Fatal("loss drew victory supplies")
-			}
 			if s.EventState == nil || s.EventState.PendingModifiers.ShadowPressure != tc.pressure {
 				t.Fatal("loss cleared pending event pressure")
 			}
@@ -101,9 +91,6 @@ func TestFourEventTiersPersistAndAllLeadToRescue(t *testing.T) {
 			}
 			retryAttemptID := s.ActiveBattle.ID
 			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: retryAttemptID, Outcome: "won"})
-			if rewardDraws != 5+tc.pressure {
-				t.Fatal("victory supplies did not use the locked difficulty plus first-clear bonus")
-			}
 			if !domain.Contains(s.Cats, "diandian") || s.Currencies["stamp"] != 2 || s.EventState == nil || s.EventState.PendingModifiers != (domain.BattleModifiers{}) {
 				t.Fatal("mainline rescue or modifier cleanup failed")
 			}

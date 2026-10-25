@@ -30,12 +30,10 @@ stray-kitty/
 ├─ design/  模块设计
 │  └─ tower-defense/  塔防规则与关卡规格
 │     └─ levels/
-│        ├─ L00-prologue/
-│        └─ L01-first-alley/
+│        └─ L00-prologue/
 ├─ docs/  需求、架构、接口与集成记录
 │  ├─ ARCHITECTURE.md  架构、目录与接入
-│  ├─ L00-INTEGRATION.md  L00 历史接入与验证记录
-│  ├─ L01-INTEGRATION.md  第一章、补给服务与当前验证
+│  ├─ L00-INTEGRATION.md  L00 接入范围与验证记录
 │  ├─ openapi.json  API 规范
 │  └─ PRD.md  需求与分工
 ├─ scripts/  启动、生成与检查
@@ -92,7 +90,6 @@ stray-kitty/
 │     │  └─ demo/  可替换的贯通 Demo
 │     ├─ modules/  正式模块接入口
 │     │  ├─ battle/  塔防 · 闫琦雯
-│     │  │  ├─ chapter/  第一章凸形小巷、六猫与固定首领
 │     │  │  └─ l00/  固定 L00 局内实现
 │     │  ├─ cats/  猫咪档案、救援与成长
 │     │  ├─ economy/  货币、扣费与奖励
@@ -138,14 +135,12 @@ home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余
 | 闫琦雯 | modules/battle；content/battles | BattleContext → BattleResult → COMPLETE_BATTLE |
 | 轩扬 | ui 与各模块展示组件 | 订阅状态、展示结果 → 受控操作回调 |
 
-上表代码路径相对 web/src，内容路径相对 web；战斗补给库存、结算和联调由闫琦雯扩展，家园仓库展示由 UI 协作；其余经济、运维与数据库适配继续按团队认领。app/App.tsx 装配，app/useGame.ts 处理会话、请求和恢复，ui 提供受控展示组件。战斗阶段由 modules/battle/BattleHost.tsx 按场次路由 L00 与 L01 实现，其他阶段保留 examples/demo 的探索、地图、家园及剧情场景；其余模块按各自接口继续接入。
+上表代码路径相对 web/src，内容路径相对 web；其他模块扩展待认领。app/App.tsx 装配，app/useGame.ts 处理会话、请求和恢复，ui 提供受控展示组件。战斗阶段由 modules/battle/L00BattleHost.tsx 接入固定 L00 实现，其他阶段保留 examples/demo 的探索、地图、家园及剧情场景；其余模块按各自接口继续接入。
 
 - 公共契约在 web/src/contracts/index.ts；长期变更通过 app/controller.ts，不直接修改快照。
 - 战斗输入使用服务端 attemptId、3×7／十波关卡与伙伴标识；宿主已将 activeBattle.modifiers.shadowPressure 的 -1／0／1 转为 low／medium／high，缺省普通、非法值拒绝，经 BattleContext.difficulty 传入，extraSupplies={}。只读取该场次保存的修正快照，不读取最新 EventState 或重复评分；同场重启与刷新保持档位，刷新仍重新开始教学，不恢复局内棋盘、体力与波次。输出 attemptId 与 won/lost，沿用 COMPLETE_BATTLE。局部 start、pause、stop 保留，退出释放监听与计时器；补给服务仍待接入。工程检查与浏览器覆盖范围统一见 [L00 接入记录](L00-INTEGRATION.md#验证记录)。
 - 新增长期规则时同步 Go service、TypeScript 契约与 [OpenAPI](openapi.json)。服务端负责奖励，UI 不直接加余额或发家具。
 - 修改内容后执行 npm run content:sync，提交 web/content/catalog.json 和 server/internal/platform/catalog.json 两份生成物。
-
-第一章与正式补给当前实现见 [L01 接入](L01-INTEGRATION.md)。其余段落中的 L00 空清单、补给待接状态保留为首次集成历史；当前服务支持预留、有效耗用结算、未用返还、分档首胜与 L01 零漏加奖。
 
 ## 5. 启动与检查
 
@@ -210,7 +205,7 @@ npm run test:e2e
 
 当前入口、workspace 工程命令、JSON 存档、服务端定价与发货、双骰后果包均保留。王浩哲新增的序章、对话态度、环境观察及 protect 事件选项继续运行。外部库不增加 Zustand 或 Framer Motion。MR 的旧状态机、临时结算、根目录工程配置与旧剧情数据未纳入本次移植。
 
-## 9. L00 主项目集成（历史基线）
+## 9. L00 主项目集成
 
 固定来源为 0.10.0／38545c3b9b93698b3a2cbbc23608c51e192388cc。App 的 battle 阶段挂载 modules/battle/L00BattleHost.tsx，核心导出为 modules/battle/l00/index.ts；其他阶段保留团队 UI、地图、剧情及家园。关卡源为 content/battles/stages.json，alley_rescue 使用 3 行、7 列、10 波，并同步前后端聚合目录。
 

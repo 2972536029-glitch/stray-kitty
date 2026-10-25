@@ -102,10 +102,6 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 }
 func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	invalid := func() error { return domain.Fail("INVALID_COMMAND", "命令参数或目标无效", 400) }
-	// An active reservation cannot be abandoned through a story or map command.
-	if s.ActiveBattle != nil && s.ActiveBattle.Status == "active" && c.Type != "COMPLETE_BATTLE" {
-		return domain.Fail("INVALID_PHASE", "请先完成当前战斗；返回标题可暂停并保留本场。", 409)
-	}
 	switch c.Type {
 	case "BUY_FURNITURE":
 		return g.buyFurniture(s, c.ProductID)
@@ -184,16 +180,63 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "CHOOSE_EVENT":
 		return g.chooseEvent(s, c.EventID, c.OptionID)
 	case "START_BATTLE":
-		return g.startBattle(s, c)
+		if err := domain.RequirePhase(*s, "preparation", "home", "explore"); err != nil {
+			return err
+		}
+		if s.Phase != "preparation" && !domain.Contains(s.Flags, "alley_rescued") {
+			return domain.Fail("STAGE_LOCKED", "请先探索小巷并完成事件", 409)
+		}
+		for _, stage := range g.Catalog.Stages {
+			if stage.ID == c.StageID && stage.Status == "demo" {
+				id, err := ID()
+				if err != nil {
+					return err
+				}
+				s.ActiveBattle = &domain.Attempt{ID: id, StageID: stage.ID, Status: "active"}
+				if s.EventState != nil {
+					modifiers := s.EventState.PendingModifiers
+					s.ActiveBattle.Modifiers = &modifiers
+				}
+				s.Phase = "battle"
+				return nil
+			}
+		}
+		return invalid()
 	case "COMPLETE_BATTLE":
-		return g.completeBattle(s, c)
+		if err := domain.RequirePhase(*s, "battle"); err != nil {
+			return err
+		}
+		if s.ActiveBattle == nil || s.ActiveBattle.ID != c.AttemptID || s.ActiveBattle.Status != "active" || (c.Outcome != "won" && c.Outcome != "lost") {
+			return invalid()
+		}
+		s.ActiveBattle.Status = c.Outcome
+		s.Phase = "settlement"
+		s.LastResult = domain.Result{Outcome: c.Outcome, Message: "防线需要再调整一下。伙伴仍在等待，准备好就再试一次。"}
+		if c.Outcome == "won" {
+			s.LastResult.Message = "撤离路线已经照亮，点点安全了！"
+			if s.EventState != nil {
+				s.EventState.PendingModifiers = domain.BattleModifiers{}
+			}
+			if !domain.Contains(s.CompletedStages, s.ActiveBattle.StageID) {
+				s.LastResult.FirstClear = true
+				s.CompletedStages = domain.Add(s.CompletedStages, s.ActiveBattle.StageID)
+				s.Cats = domain.Add(s.Cats, "diandian")
+				s.Furniture = domain.Add(s.Furniture, "cardboard_nest")
+				s.Currencies["stamp"] += 2
+				s.Inventory["material"] += 3
+				s.Flags = domain.Add(s.Flags, "alley_rescued")
+			} else {
+				s.LastResult.Message = "再次守护成功！首次救援奖励已领取，本次不重复发放。"
+			}
+		}
+		return nil
 	case "CONTINUE":
 		if err := domain.RequirePhase(*s, "settlement"); err != nil {
 			return err
 		}
 		if s.LastResult.Outcome == "lost" {
 			s.Phase = "preparation"
-		} else if s.LastResult.StageID != "alley_boss" && !domain.Contains(s.Flags, "rescue_story_done") {
+		} else if !domain.Contains(s.Flags, "rescue_story_done") {
 			s.Phase = "dialogue"
 			s.StoryNodeID = "rescue_1"
 		} else {

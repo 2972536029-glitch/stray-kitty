@@ -1245,15 +1245,6 @@
       "lanes": 3,
       "columns": 7,
       "waves": 10
-    },
-    {
-      "id": "alley_boss",
-      "name": "第一章 · 深巷首领",
-      "chapterId": "alley",
-      "status": "demo",
-      "lanes": 5,
-      "columns": 12,
-      "waves": 8
     }
   ],
   "furniture": [
@@ -1332,16 +1323,6 @@
       "id": "clue",
       "name": "线索",
       "description": "关于伙伴与安全路线的探索发现。"
-    },
-    {
-      "id": "warm-can",
-      "name": "暖心罐罐",
-      "description": "为一只在场或休整战斗猫恢复 60 点体力，不超过最大值；全队治疗物品共用 4 秒模拟时间间隔。"
-    },
-    {
-      "id": "bouncy-treat",
-      "name": "蹦蹦冻干",
-      "description": "为一只在场战斗猫增加 30 点能量，上限 100；同一只猫接受能量物品间隔 12 秒模拟时间。"
     }
   ],
   "pools": [
