@@ -47,7 +47,7 @@ func (g *Game) reportMove(s *domain.GameState, distance int) error {
 	s.ExploreDistance += distance
 	for s.ExploreDistance >= randomCheckSegment {
 		s.ExploreDistance -= randomCheckSegment
-		id, triggered, err := g.drawRandomEvent(*s)
+		id, triggered, repeatable, err := g.drawRandomEvent(*s)
 		if err != nil {
 			return err
 		}
@@ -55,7 +55,9 @@ func (g *Game) reportMove(s *domain.GameState, distance int) error {
 			s.Phase = "event"
 			s.PendingEventID = id
 			s.PendingEventSource = "random"
-			s.DrawnEvents = domain.Add(s.DrawnEvents, drawnKey(s.MapID, id))
+			if !repeatable {
+				s.DrawnEvents = domain.Add(s.DrawnEvents, drawnKey(s.MapID, id))
+			}
 			s.ExploreDistance = -randomGrace // 触发后的冷却保护
 			s.LastResult = domain.Result{Message: "巷子里的风停了一下——好像有什么要发生了。"}
 			// 观测埋点(README §9):不含玩家身份,后续接 Datadog 时替换 handler 即可。
@@ -71,7 +73,8 @@ func (g *Game) reportMove(s *domain.GameState, distance int) error {
 func drawnKey(mapID, eventID string) string { return mapID + ":" + eventID }
 
 // 从当前区域的随机池抽卡:排除已抽卡的机遇/风险事件,危险度决定是否触发与抽哪一类。
-func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, error) {
+// 第三个返回值:该卡是否为可重复的回响卡(repeatable,不占无放回名额)。
+func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, bool, error) {
 	danger := 0
 	for _, m := range g.Catalog.Maps {
 		if m.ID == s.MapID {
@@ -100,7 +103,7 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, error) {
 		if !chainReady {
 			continue
 		}
-		if domain.Contains(s.DrawnEvents, drawnKey(s.MapID, e.ID)) {
+		if domain.Contains(s.DrawnEvents, drawnKey(s.MapID, e.ID)) && !e.Repeatable {
 			continue
 		}
 		switch e.Category {
@@ -111,19 +114,19 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, error) {
 		}
 	}
 	if len(risks)+len(opportunities) == 0 {
-		return "", false, nil // 区域池已抽干,这段路安全了。
+		return "", false, false, nil // 区域池已抽干,这段路安全了。,这段路安全了。
 	}
 	roll, err := g.Random(1000)
 	if err != nil {
-		return "", false, err
+		return "", false, false, err
 	}
 	if roll >= g.triggerChance(danger) {
-		return "", false, nil
+		return "", false, false, nil
 	}
 	pool := opportunities
 	roll, err = g.Random(1000)
 	if err != nil {
-		return "", false, err
+		return "", false, false, err
 	}
 	if roll < g.riskShare(danger) {
 		pool = risks
@@ -132,11 +135,18 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, error) {
 		pool = opportunities
 	}
 	if len(pool) == 0 {
-		return "", false, nil
+		return "", false, false, nil
 	}
 	index, err := g.Random(len(pool))
 	if err != nil {
-		return "", false, err
+		return "", false, false, err
 	}
-	return pool[index], true, nil
+	id := pool[index]
+	repeatable := false
+	for _, e := range g.Catalog.Events {
+		if e.ID == id {
+			repeatable = e.Repeatable
+		}
+	}
+	return id, true, repeatable, nil
 }

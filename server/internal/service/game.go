@@ -102,6 +102,12 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 }
 func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	invalid := func() error { return domain.Fail("INVALID_COMMAND", "命令参数或目标无效", 400) }
+	// 换章=区域换了新鲜事:清空已抽卡(含 node: 前缀的节点一次性记录,每章一次)。
+	switchChapter := func(next string) {
+		if next != "" && next != s.ChapterID {
+			s.DrawnEvents = nil
+		}
+	}
 	switch c.Type {
 	case "BUY_FURNITURE":
 		return g.buyFurniture(s, c.ProductID)
@@ -110,6 +116,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			if n.ID == c.NodeID {
 				s.Phase = "dialogue"
 				s.StoryNodeID = n.ID
+				switchChapter(n.ChapterID)
 				s.ChapterID = n.ChapterID
 				if n.ChapterID == "market" {
 					s.MapID = "market"
@@ -127,12 +134,14 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		if c.NodeID != s.StoryNodeID {
 			return invalid()
 		}
-		for _, n := range g.Catalog.Story {
-			if n.ID == c.NodeID {
-				for _, flag := range n.SetFlags {
-					s.Flags = domain.Add(s.Flags, flag)
-				}
-				s.ChapterID = n.ChapterID
+			for _, n := range g.Catalog.Story {
+				if n.ID == c.NodeID {
+					for _, flag := range n.SetFlags {
+						s.Flags = domain.Add(s.Flags, flag)
+					}
+					// 注意:章节内 ADVANCE(含局势跳转节点,其 chapterId 可能属于别的章节)
+					// 不触发重置——只有 START_STORY 主动开启新章节才清空已抽卡。
+					s.ChapterID = n.ChapterID
 				if n.Next != "" {
 					s.StoryNodeID = n.Next
 					return nil
@@ -182,7 +191,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "REPORT_MOVE":
 		return g.reportMove(s, c.Distance)
 	case "CHOOSE_EVENT":
-		return g.chooseEvent(s, c.EventID, c.OptionID)
+		return g.chooseEvent(s, c.EventID, c.OptionID, c.UsePush)
 	case "START_BATTLE":
 		if err := domain.RequirePhase(*s, "preparation", "home", "explore"); err != nil {
 			return err
@@ -218,6 +227,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		s.LastResult = domain.Result{Outcome: c.Outcome, Message: "防线需要再调整一下。伙伴仍在等待，准备好就再试一次。"}
 		if c.Outcome == "won" {
 			s.LastResult.Message = "撤离路线已经照亮，点点安全了！"
+			// 守护成功,伙伴的信任攒回一枚鼓励(上限 2)。
+			if s.PushTokens < 2 {
+				s.PushTokens++
+			}
 			if s.EventState != nil {
 				s.EventState.PendingModifiers = domain.BattleModifiers{}
 			}

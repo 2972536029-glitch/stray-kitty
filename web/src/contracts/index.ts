@@ -15,7 +15,7 @@ export interface GameState {
   cats: string[]; inventory: Record<string, number>; currencies: Record<string, number>;
   furniture: string[]; placements: Record<string, string>; completedStages: string[];
   pendingEventId: string; activeBattle: BattleAttempt | null;
-  pendingEventSource?: 'node' | 'random'; drawnEvents?: string[]; exploreDistance?: number;
+  pendingEventSource?: 'node' | 'random'; drawnEvents?: string[]; exploreDistance?: number; pushTokens?: number;
   eventState?: EventState;
   lastResult: {message: string; roll?: number; outcome?: string; firstClear?: boolean};
 }
@@ -24,7 +24,7 @@ export type GameCommand =
   | {type: 'START_STORY'; nodeId: string}
   | {type: 'INTERACT'; interactionId: string}
   | {type: 'REPORT_MOVE'; distance: number}
-  | {type: 'CHOOSE_EVENT'; eventId: string; optionId: string}
+  | {type: 'CHOOSE_EVENT'; eventId: string; optionId: string; usePush?: boolean}
   | {type: 'START_BATTLE'; stageId: string}
   | {type: 'COMPLETE_BATTLE'; attemptId: string; outcome: 'won' | 'lost'}
   | {type: 'CONTINUE'} | {type: 'GO_HOME'} | {type: 'GO_EXPLORE'; mapId?: string}

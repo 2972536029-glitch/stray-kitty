@@ -163,7 +163,7 @@ func validateCommand(body []byte, kind string) error {
 		"START_STORY":     {"nodeId"},
 		"INTERACT":        {"interactionId"},
 		"REPORT_MOVE":     {"distance"},
-		"CHOOSE_EVENT":    {"eventId", "optionId"},
+		"CHOOSE_EVENT":    {"eventId", "optionId", "usePush"},
 		"START_BATTLE":    {"stageId"},
 		"COMPLETE_BATTLE": {"attemptId", "outcome"},
 		"CONTINUE":        {},

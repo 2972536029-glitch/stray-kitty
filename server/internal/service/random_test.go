@@ -2,9 +2,10 @@ package service_test
 
 import (
 	"strings"
+	"testing"
 
 	"stray-kitty/server/internal/domain"
-	"testing"
+	"stray-kitty/server/internal/service"
 )
 
 // 进入探索后有保护里程;保护期内上报不触发,过保护后危险度 1 必触发(随机数恒为 0)。
@@ -41,6 +42,7 @@ func TestRandomEventTriggersAfterGraceAndReturnsToExplore(t *testing.T) {
 // 无放回:区域池抽干后不再触发;节点事件(来源 node)结算仍走向准备阶段。
 func TestRandomPoolDrainsWithoutRepeat(t *testing.T) {
 	g, token, _ := setup(t)
+	dropRepeatable(g)
 	finishStory(t, g, token)
 	poolSize := 5 // alley 随机池:鼠群/黑影/捕兽夹/麻袋(风险)+ 猫粮碗(机遇)
 	drawn := map[string]bool{}
@@ -86,6 +88,7 @@ func TestRandomPoolDrainsWithoutRepeat(t *testing.T) {
 // 同一事件挂两个区域:在一个区域抽过,另一个区域仍可抽到(区域池语义)。
 func TestDrawnEventsArePerRegion(t *testing.T) {
 	g, token, _ := setup(t)
+	dropRepeatable(g)
 	// 临时克隆一张双区域随机卡进目录(不影响磁盘内容;设为 risk 以进入恒 0 随机数必选的风险池)。
 	g.Catalog.Events = append(g.Catalog.Events, g.Catalog.Events[len(g.Catalog.Events)-1])
 	dual := &g.Catalog.Events[len(g.Catalog.Events)-1]
@@ -93,6 +96,7 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 	dual.Triggers = []string{"random"}
 	dual.Category = "risk"
 	dual.RequiresFlags = nil // 克隆源可能带门槛,清掉避免继承
+	dual.Repeatable = false  // 克隆源可能是回响卡,清掉保持无放回语义
 	for i := range dual.Options {
 		dual.Options[i].ID = dual.Options[i].ID + "_s"
 	}
@@ -258,6 +262,7 @@ func TestRequireCatOptionGating(t *testing.T) {
 // 随机数定制:骰子恒 [6,6](crit);抽卡按段内序——触发必中、配比恒选机遇池、索引取第一张。
 func TestEventChainRequiresFlags(t *testing.T) {
 	g, token, _ := setup(t)
+	dropRepeatable(g)
 	seq := 0
 	g.Random = func(max int) (int, error) {
 		if max == 6 {
@@ -387,6 +392,124 @@ func TestNodeEventOneShot(t *testing.T) {
 	rev := s.Revision
 	if _, err = g.Execute(token, "crow-again", domain.CommandRequest{ExpectedRevision: &rev, Command: domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall"}}); err == nil {
 		t.Fatal("repeat interact with crow stall was accepted")
+	}
+}
+
+// 随机卡结算选项速查(测试用:各卡第一个温和选项)。
+func resolveOption(id string) string {
+	switch id {
+	case "moving_sack_event":
+		return "watch_first"
+	case "feeder_bowl_event":
+		return "feast_here"
+	case "shadow_glimpse_event":
+		return "stand_ground"
+	case "trap_snap_event":
+		return "climb_wall"
+	default:
+		return "intercept"
+	}
+}
+
+// 无放回/链语义的老测试滤掉 repeatable 回响卡(它们永不抽干,是另一套语义)。
+func dropRepeatable(g *service.Game) {
+	kept := g.Catalog.Events[:0]
+	for _, e := range g.Catalog.Events {
+		if !e.Repeatable {
+			kept = append(kept, e)
+		}
+	}
+	g.Catalog.Events = kept
+}
+
+// 伙伴鼓励:usePush 掷两组取优(低组 [1,1] 被高组 [6,6] 替换→crit),消耗 token;无 token 明确拒绝。
+func TestCompanionPushTakesBetterPair(t *testing.T) {
+	g, token, _ := setup(t)
+	calls := 0
+	g.Random = func(max int) (int, error) {
+		calls++
+		if calls <= 2 {
+			return 0, nil // 第一组 [1,1]
+		}
+		return 5, nil // 鼓励组 [6,6]
+	}
+	finishStory(t, g, token)
+	execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "alley_crate"})
+	s := execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "crate_event", OptionID: "search", UsePush: true})
+	res := s.EventState.LastResolution
+	if res.Tier != "crit" || res.Dice != [2]int{6, 6} {
+		t.Fatalf("push should take the better pair, got %v (%s)", res.Dice, res.Tier)
+	}
+	if s.PushTokens != 0 {
+		t.Fatalf("push token not spent, left %d", s.PushTokens)
+	}
+	// 同一局再触发一个事件,无 token 时 usePush 被明确拒绝(409)。
+	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall"})
+	rev := s.Revision
+	if _, err := g.Execute(token, "push-empty", domain.CommandRequest{ExpectedRevision: &rev, Command: domain.Command{Type: "CHOOSE_EVENT", EventID: "crow_intel_event", OptionID: "trade_fish", UsePush: true}}); err == nil {
+		t.Fatal("push without token accepted")
+	}
+}
+
+// 回响卡 repeatable:不占无放回名额,可重复抽到。
+func TestRepeatableEchoCard(t *testing.T) {
+	g, token, _ := setup(t)
+	for i := range g.Catalog.Events {
+		if g.Catalog.Events[i].ID == "feeder_bowl_event" {
+			g.Catalog.Events[i].Repeatable = true
+		}
+	}
+	finishStory(t, g, token)
+	seen := 0
+	for i := 0; i < 120 && seen < 2; i++ {
+		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
+		if s.Phase != "event" {
+			continue
+		}
+		if s.PendingEventID == "feeder_bowl_event" {
+			seen++
+			if domain.Contains(s.DrawnEvents, "alley:feeder_bowl_event") {
+				t.Fatal("repeatable card should not enter drawnEvents")
+			}
+		}
+		s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: s.PendingEventID, OptionID: resolveOption(s.PendingEventID)})
+		for s.Phase == "dialogue" {
+			s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+		}
+		if s.Phase == "preparation" {
+			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+		}
+	}
+	if seen < 2 {
+		t.Fatal("repeatable card not drawn twice")
+	}
+}
+
+// 换章重置:进入第二章后,小巷已抽卡清空(区域换了新鲜事)。
+func TestChapterSwitchResetsDrawn(t *testing.T) {
+	g, token, _ := setup(t)
+	finishStory(t, g, token)
+	for i := 0; i < 60; i++ {
+		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
+		if s.Phase == "event" {
+			execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: s.PendingEventID, OptionID: resolveOption(s.PendingEventID)})
+			break
+		}
+	}
+	before, err := g.State(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(before.DrawnEvents) == 0 {
+		t.Skip("no card drawn before chapter switch")
+	}
+	s := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
+	if s.ChapterID != "market" || len(s.DrawnEvents) != 0 {
+		t.Fatalf("chapter switch should reset drawn events: chapter=%s drawn=%v", s.ChapterID, s.DrawnEvents)
 	}
 }
 

@@ -6,7 +6,7 @@ import (
 	"stray-kitty/server/internal/domain"
 )
 
-func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string) error {
+func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string, usePush bool) error {
 	if err := domain.RequirePhase(*s, "event"); err != nil {
 		return err
 	}
@@ -24,13 +24,34 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string) error 
 			if option.RequireCat != "" && !domain.Contains(s.Cats, option.RequireCat) {
 				return domain.Fail("OPTION_LOCKED", "队伍中没有能执行这个行动的伙伴", 400)
 			}
-			var dice [2]int
-			for i := range dice {
-				value, err := g.Random(6)
-				if err != nil {
-					return err
+			rollPair := func() ([2]int, error) {
+				var pair [2]int
+				for i := range pair {
+					value, err := g.Random(6)
+					if err != nil {
+						return pair, err
+					}
+					pair[i] = value + 1
 				}
-				dice[i] = value + 1
+				return pair, nil
+			}
+			dice, err := rollPair()
+			if err != nil {
+				return err
+			}
+			// 伙伴鼓励:掷两组 2d6 取总和高的一组,消耗一枚;无库存时明确拒绝。
+			if usePush {
+				if s.PushTokens <= 0 {
+					return domain.Fail("NO_PUSH_TOKEN", "伙伴的鼓励已经用完了，守护成功后会再攒起来的", 409)
+				}
+				alt, altErr := rollPair()
+				if altErr != nil {
+					return altErr
+				}
+				if alt[0]+alt[1] > dice[0]+dice[1] {
+					dice = alt
+				}
+				s.PushTokens--
 			}
 			tier, err := domain.EventTier(dice)
 			if err != nil {
