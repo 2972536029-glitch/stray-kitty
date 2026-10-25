@@ -19,6 +19,17 @@ export function validateContent(c) {
     if(!has('events',p.eventId)||p.x<0||p.y<0||p.x>m.width||p.y>m.height) errors.push(`map reference/bounds: ${p.id}`);
   }
   if(c.eventsBalance.length!==4||c.eventsBalance.some((b,i)=>!Number.isInteger(b.dangerLevel)||b.dangerLevel!==i||!Number.isInteger(b.triggerChance)||b.triggerChance<1||b.triggerChance>1000||!Number.isInteger(b.riskShare)||b.riskShare<1||b.riskShare>1000)) errors.push('eventsBalance invalid: 需要 dangerLevel 0~3 递增的四条 1~1000 千分比配置');
+  // 红线执法:主线 flag 只能由剧情/服务端写,随机与机遇卡的 outcomes 不得触碰。
+  const mainlineFlags=['alley_rescued','rescue_story_done','market_unlocked','chapter_2_started'];
+  for(const e of c.events) if(e.category!=='story') for(const o of e.options) for(const tier of ['crit','success','partial','fail'])
+    for(const f of o.outcomes?.[tier]?.flags??[]) if(mainlineFlags.includes(f)) errors.push(`mainline flag leak: ${e.id}/${o.id}/${tier} 写入 ${f}`);
+  // flag DAG:requiresFlags 的门槛必须有生产者(事件 outcomes / 剧情节点 setFlags / 服务端写入名单)。
+  const serverWrittenFlags=['alley_rescued','rescue_story_done','market_unlocked','chapter_2_started','tuanzi_provided'];
+  const produced=new Set(serverWrittenFlags);
+  for(const n of c.story) for(const f of n.setFlags??[]) produced.add(f);
+  for(const e of c.events) for(const o of e.options) for(const tier of ['crit','success','partial','fail'])
+    for(const f of o.outcomes?.[tier]?.flags??[]) produced.add(f);
+  for(const e of c.events) for(const f of e.requiresFlags??[]) if(!produced.has(f)) errors.push(`chain flag without producer: ${e.id} 需要 ${f}`);
   for(const p of c.pools) {
     if(!Number.isInteger(p.cost)||p.cost<1||p.entries.length===0||p.entries.some(e=>!has('furniture',e.furnitureId)||!Number.isInteger(e.weight)||e.weight<=0)) errors.push(`pool invalid: ${p.id}`);
   }
