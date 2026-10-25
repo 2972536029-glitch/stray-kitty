@@ -1,6 +1,8 @@
 package service_test
 
 import (
+	"strings"
+
 	"stray-kitty/server/internal/domain"
 	"testing"
 )
@@ -179,8 +181,8 @@ func TestTuanziForageFallbackOnFail(t *testing.T) {
 	if s.Inventory["material"] != base+1 || s.Phase != "explore" {
 		t.Fatalf("forage fallback not granted: material=%d(+want 1) phase=%s", s.Inventory["material"], s.Phase)
 	}
-	if !domain.Contains(s.Flags, "tuanzi_provided") || s.LastResult.Message == "" {
-		t.Fatal("fallback flag or message missing")
+	if !domain.Contains(s.Flags, "tuanzi_provided") || !strings.Contains(s.LastResult.Message, "翻找了一圈") {
+		t.Fatal("fallback flag or appended message missing (message must reach client)")
 	}
 	// 对照:非觅食(shadow)失败不保底——shadow_glimpse fail 无奖励、无标记。
 	for i := 0; i < 60; i++ {
@@ -359,6 +361,32 @@ func TestNarrativeGatedCardDrawnAfterFlag(t *testing.T) {
 	}
 	if !gotGift {
 		t.Fatal("narrative-gated card never drawn after flag was set")
+	}
+}
+
+// 节点事件一次性:market 的摊位事件结算后重触发被拒(修复无限重掷刷奖励)。
+func TestNodeEventOneShot(t *testing.T) {
+	g, token, _ := setup(t)
+	execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
+	s, err := g.State(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall"})
+	if s.Phase != "event" || s.PendingEventID != "crow_intel_event" {
+		t.Fatalf("first interact failed: %s %s", s.Phase, s.PendingEventID)
+	}
+	s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "crow_intel_event", OptionID: "trade_fish"})
+	if s.Phase == "dialogue" {
+		s = finishStory(t, g, token)
+	}
+	s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+	rev := s.Revision
+	if _, err = g.Execute(token, "crow-again", domain.CommandRequest{ExpectedRevision: &rev, Command: domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall"}}); err == nil {
+		t.Fatal("repeat interact with crow stall was accepted")
 	}
 }
 

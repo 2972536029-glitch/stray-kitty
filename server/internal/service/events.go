@@ -73,6 +73,8 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string) error 
 				s.Currencies["stamp"] += reward.Stamps
 			}
 			// 团子·讨生活:觅食类事件失败时,老江湖仍保底拿到成功档奖励的一半(向上取整)。
+			// 放在主 LastResult 赋值之后,追加文案不被覆盖。
+			tuanziFallback := ""
 			if tier == "fail" && domain.Contains(event.Tags, "foraging") && domain.Contains(s.Cats, "tuanzi") {
 				if success, ok := option.Outcomes["success"]; ok && success.Reward != nil {
 					half := func(v int) int { return (v + 1) / 2 }
@@ -81,14 +83,18 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string) error 
 					s.Inventory["material"] += half(success.Reward.Material)
 					s.Currencies["stamp"] += half(success.Reward.Stamps)
 					s.Flags = domain.Add(s.Flags, "tuanzi_provided")
-					s.LastResult = domain.Result{Message: outcome.Text + " 团子带着大家在附近又翻找了一圈,老江湖没让你们空手而归。", Roll: dice[0] + dice[1]}
+					tuanziFallback = " 团子带着大家在附近又翻找了一圈,老江湖没让你们空手而归。"
 				}
 			}
 			for _, flag := range outcome.Flags {
 				s.Flags = domain.Add(s.Flags, flag)
 			}
 			s.EventState = &domain.EventState{LastResolution: domain.EventResolution{EventID: eventID, OptionID: optionID, Dice: dice, Tier: tier, Outcome: outcome}, PendingModifiers: modifiers}
-			s.LastResult = domain.Result{Message: outcome.Text, Roll: dice[0] + dice[1]}
+			s.LastResult = domain.Result{Message: outcome.Text + tuanziFallback, Roll: dice[0] + dice[1]}
+			// 节点事件一次性:结算即记录,INTERACT 侧据此拒绝重触发。
+			if s.PendingEventSource == "node" {
+				s.DrawnEvents = domain.Add(s.DrawnEvents, "node:"+eventID)
+			}
 			// 观测埋点:档位分布/选项偏好/压力输出,不含玩家身份。
 			slog.Info("event_resolve", "eventId", eventID, "optionId", optionID, "source", s.PendingEventSource, "dice", dice[0]+dice[1], "tier", tier, "pressure", modifiers.ShadowPressure, "situation", modifiers.Situation)
 			s.PendingEventID = ""

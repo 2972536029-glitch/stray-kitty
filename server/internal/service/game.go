@@ -166,6 +166,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			if m.ID == s.MapID {
 				for _, p := range m.Interactions {
 					if p.ID == c.InteractionID {
+						// 节点事件一次性:结算过的卡记入 drawnEvents("node:" 前缀),防无限重掷刷奖励。
+						if domain.Contains(s.DrawnEvents, "node:"+p.EventID) {
+							return domain.Fail("ALREADY_COMPLETED", "这件事今天已经办过了，先去别处转转吧。", 409)
+						}
 						s.Phase = "event"
 						s.PendingEventID = p.EventID
 						s.PendingEventSource = "node"
