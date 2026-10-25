@@ -406,6 +406,10 @@ func resolveOption(id string) string {
 		return "stand_ground"
 	case "trap_snap_event":
 		return "climb_wall"
+	case "dark_meow_event":
+		return "follow_voice"
+	case "fish_thief_event":
+		return "track_pawprints"
 	default:
 		return "intercept"
 	}
@@ -510,6 +514,69 @@ func TestChapterSwitchResetsDrawn(t *testing.T) {
 	s := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
 	if s.ChapterID != "market" || len(s.DrawnEvents) != 0 {
 		t.Fatalf("chapter switch should reset drawn events: chapter=%s drawn=%v", s.ChapterID, s.DrawnEvents)
+	}
+}
+
+// 鼓励稀缺性:token 只在首次守护成功发放,重复通关不回(防零成本刷满)。
+func TestRepeatWinDoesNotRefundPush(t *testing.T) {
+	g, token, _ := setup(t)
+	finishStory(t, g, token)
+	execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "alley_crate"})
+	// 掷骰用掉初始 1 枚(token→0),fail 档进 chase 剧情后推进到布防。
+	s := execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "crate_event", OptionID: "search", UsePush: true})
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	if s.PushTokens != 0 {
+		t.Fatalf("initial token should be spent, got %d", s.PushTokens)
+	}
+	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+	if s.PushTokens != 1 {
+		t.Fatalf("first win should refund to 1, got %d", s.PushTokens)
+	}
+	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	// 第二次胜利:非首通,不回 token。
+	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+	if s.PushTokens != 1 {
+		t.Fatalf("repeat win must not refund push, got %d", s.PushTokens)
+	}
+}
+
+// 回跳章节不清池:只有章节序前进才重置,来回跳无法刷新鲜度。
+func TestBackwardChapterJumpKeepsDrawn(t *testing.T) {
+	g, token, _ := setup(t)
+	dropRepeatable(g)
+	execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
+	s, err := g.State(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	for i := 0; i < 60; i++ {
+		s = execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
+		if s.Phase == "event" {
+			execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: s.PendingEventID, OptionID: resolveOption(s.PendingEventID)})
+			break
+		}
+	}
+	before, err := g.State(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(before.DrawnEvents) == 0 {
+		t.Skip("no card drawn")
+	}
+	// 回跳到序章/小巷的节点:章节序后退,已抽卡保留。
+	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "prologue_tuanzi"})
+	if len(s.DrawnEvents) != len(before.DrawnEvents) {
+		t.Fatalf("backward jump must keep drawn events: %d -> %d", len(before.DrawnEvents), len(s.DrawnEvents))
 	}
 }
 

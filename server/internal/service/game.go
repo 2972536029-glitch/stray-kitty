@@ -102,9 +102,18 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 }
 func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	invalid := func() error { return domain.Fail("INVALID_COMMAND", "命令参数或目标无效", 400) }
-	// 换章=区域换了新鲜事:清空已抽卡(含 node: 前缀的节点一次性记录,每章一次)。
+	// 换章=区域换了新鲜事:仅在章节序"前进"时清空已抽卡(回看旧章节不清,防来回跳刷池子);
+	// 节点一次性(node: 前缀)随章重置。
+	chapterOrder := func(id string) int {
+		for i, ch := range g.Catalog.Chapters {
+			if ch.ID == id {
+				return i
+			}
+		}
+		return -1
+	}
 	switchChapter := func(next string) {
-		if next != "" && next != s.ChapterID {
+		if next != "" && next != s.ChapterID && chapterOrder(next) > chapterOrder(s.ChapterID) {
 			s.DrawnEvents = nil
 		}
 	}
@@ -134,14 +143,14 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		if c.NodeID != s.StoryNodeID {
 			return invalid()
 		}
-			for _, n := range g.Catalog.Story {
-				if n.ID == c.NodeID {
-					for _, flag := range n.SetFlags {
-						s.Flags = domain.Add(s.Flags, flag)
-					}
-					// 注意:章节内 ADVANCE(含局势跳转节点,其 chapterId 可能属于别的章节)
-					// 不触发重置——只有 START_STORY 主动开启新章节才清空已抽卡。
-					s.ChapterID = n.ChapterID
+		for _, n := range g.Catalog.Story {
+			if n.ID == c.NodeID {
+				for _, flag := range n.SetFlags {
+					s.Flags = domain.Add(s.Flags, flag)
+				}
+				// 注意:章节内 ADVANCE(含局势跳转节点,其 chapterId 可能属于别的章节)
+				// 不触发重置——只有 START_STORY 主动开启新章节才清空已抽卡。
+				s.ChapterID = n.ChapterID
 				if n.Next != "" {
 					s.StoryNodeID = n.Next
 					return nil
@@ -227,10 +236,6 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		s.LastResult = domain.Result{Outcome: c.Outcome, Message: "防线需要再调整一下。伙伴仍在等待，准备好就再试一次。"}
 		if c.Outcome == "won" {
 			s.LastResult.Message = "撤离路线已经照亮，点点安全了！"
-			// 守护成功,伙伴的信任攒回一枚鼓励(上限 2)。
-			if s.PushTokens < 2 {
-				s.PushTokens++
-			}
 			if s.EventState != nil {
 				s.EventState.PendingModifiers = domain.BattleModifiers{}
 			}
@@ -242,6 +247,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				s.Currencies["stamp"] += 2
 				s.Inventory["material"] += 3
 				s.Flags = domain.Add(s.Flags, "alley_rescued")
+				// 鼓励只在首次守护成功发放:重复通关不回(否则稀缺性可零成本刷满)。
+				if s.PushTokens < 2 {
+					s.PushTokens++
+				}
 			} else {
 				s.LastResult.Message = "再次守护成功！首次救援奖励已领取，本次不重复发放。"
 			}

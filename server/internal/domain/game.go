@@ -39,14 +39,14 @@ type GameState struct {
 	CompletedStages []string          `json:"completedStages"`
 	PendingEventID  string            `json:"pendingEventId"`
 	// 随机事件:来源标记(node=交互点/random=随机触发)、本局已抽卡与探索里程。
-	PendingEventSource string       `json:"pendingEventSource,omitempty"`
-	DrawnEvents        []string     `json:"drawnEvents,omitempty"`
-	ExploreDistance    int          `json:"exploreDistance,omitempty"`
+	PendingEventSource string   `json:"pendingEventSource,omitempty"`
+	DrawnEvents        []string `json:"drawnEvents,omitempty"`
+	ExploreDistance    int      `json:"exploreDistance,omitempty"`
 	// PushTokens:伙伴鼓励次数——掷骰前声明使用,掷两组 2d6 取优;初始 1,塔防胜利恢复 1(上限 2)。
-	PushTokens    int          `json:"pushTokens,omitempty"`
-	ActiveBattle  *Attempt     `json:"activeBattle"`
-	LastResult    Result       `json:"lastResult"`
-	EventState    *EventState  `json:"eventState,omitempty"`
+	PushTokens   int         `json:"pushTokens,omitempty"`
+	ActiveBattle *Attempt    `json:"activeBattle"`
+	LastResult   Result      `json:"lastResult"`
+	EventState   *EventState `json:"eventState,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -143,17 +143,22 @@ type Product struct {
 	Status       string `json:"status"`
 }
 type Catalog struct {
-	Version      string         `json:"version"`
-	Story        []StoryNode    `json:"story"`
-	Maps         []Map          `json:"maps"`
-	Events       []Event        `json:"events"`
-	Stages       []Stage        `json:"stages"`
-	Pools        []Pool         `json:"pools"`
-	Slots        []Slot         `json:"slots"`
-	Furniture    []Furniture    `json:"furniture"`
-	Products     []Product      `json:"products"`
+	Version       string         `json:"version"`
+	Chapters      []Chapter      `json:"chapters"`
+	Story         []StoryNode    `json:"story"`
+	Maps          []Map          `json:"maps"`
+	Events        []Event        `json:"events"`
+	Stages        []Stage        `json:"stages"`
+	Pools         []Pool         `json:"pools"`
+	Slots         []Slot         `json:"slots"`
+	Furniture     []Furniture    `json:"furniture"`
+	Products      []Product      `json:"products"`
 	EventsBalance []EventBalance `json:"eventsBalance"`
 }
+type Chapter struct {
+	ID string `json:"id"`
+}
+
 // EventsBalance:随机事件平衡表,内容驱动(危险度→触发概率/风险占比,千分比)。
 type EventBalance struct {
 	DangerLevel   int `json:"dangerLevel"`

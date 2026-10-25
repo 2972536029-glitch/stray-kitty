@@ -88,9 +88,19 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, bool, error) {
 		danger = 3
 	}
 	var risks, opportunities []string
+	echoChance := 1000 / 3 // 回响卡参与率约 1/3:近零奖励的氛围卡不稀释主要遭遇。
 	for _, e := range g.Catalog.Events {
 		if !domain.Contains(e.Triggers, "random") || !domain.Contains(e.Maps, s.MapID) {
 			continue
+		}
+		if e.Repeatable {
+			roll, err := g.Random(1000)
+			if err != nil {
+				return "", false, false, err
+			}
+			if roll >= echoChance {
+				continue
+			}
 		}
 		// 事件链:前置 flag 未集齐的后续卡不进池(与已抽卡一样跳过)。
 		chainReady := true
@@ -114,7 +124,7 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, bool, error) {
 		}
 	}
 	if len(risks)+len(opportunities) == 0 {
-		return "", false, false, nil // 区域池已抽干,这段路安全了。,这段路安全了。
+		return "", false, false, nil // 区域池已抽干,这段路安全了。
 	}
 	roll, err := g.Random(1000)
 	if err != nil {
@@ -142,11 +152,10 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, bool, error) {
 		return "", false, false, err
 	}
 	id := pool[index]
-	repeatable := false
 	for _, e := range g.Catalog.Events {
 		if e.ID == id {
-			repeatable = e.Repeatable
+			return id, true, e.Repeatable, nil
 		}
 	}
-	return id, true, repeatable, nil
+	return "", false, false, nil
 }
