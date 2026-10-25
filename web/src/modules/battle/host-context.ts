@@ -20,8 +20,8 @@ export function createL00Context(
     attempt: {id: attempt.id, stageId: attempt.stageId, status: attempt.status},
     stage: {...stage},
     catIds: [...state.cats],
-    // The current server has no selected-difficulty/loadout contract. Use the documented
-    // medium compatibility mode until that contract is implemented; never map event pressure.
+    // Events determine the tier; the host will map the saved event output to low/medium/high.
+    // That mapping and the loadout integration are pending, so keep medium compatibility for now.
     difficulty: 'medium',
     modifiers: [],
     extraSupplies: {},

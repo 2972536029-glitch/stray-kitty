@@ -34,7 +34,7 @@
 
 宿主只在服务端 phase=battle 且 activeBattle 合法时装配 L00。使用原 attempt.id、stageId、active 状态及对应目录关卡；校验 3／7／10，不在前端虚构场次或静默伪造关卡配置。catIds 沿用主项目长期伙伴输入，固定序章援军不写入长期伙伴表。
 
-本次正式服务未接 difficulty 字段和选择流程，宿主使用 medium 普通兼容档。模块内部保留 low／medium／high，但不显示为服务端已保存的三档选择。未来事件与战斗须透传同一原值；本次不会把旧 shadowPressure／event_success 叠加到正式战斗数值。
+难度分工为：事件侧负责根据事件结果判断档位，主流程／宿主将其转换为 low／medium／high，经 BattleContext.difficulty 传入战斗；战斗侧提供三档数值与接口，不承担事件评分或重新判档。现有服务已把事件修正保存到 activeBattle.modifiers；本次 L00 宿主尚未接入三档转换，仍使用 medium 普通兼容档。映射与同场恢复待联调，不能将模块已有三档能力写成全链路已接通；接入后也不在三档数值之外额外叠加旧 shadowPressure／event_success 倍率。具体接口见[难度接入约定](../design/tower-defense/interfaces.md#4-难度与补给的后续目标)。
 
 主项目公共 BattleModifiers 对象与战斗局部 string[] 来源标签分别维护，通过宿主显式适配；不以类型断言跳过差异，也不把局部字段擅自加入未升级的 HTTP 请求。BattleResult 保持 attemptId 与 won／lost。
 
