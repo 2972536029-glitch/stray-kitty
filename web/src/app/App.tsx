@@ -1,7 +1,7 @@
 import {useCallback, useRef, useState} from 'react';
 import {useGame} from './useGame';
 import {Viewport} from '../examples/demo/Viewport';
-import {L00BattleHost} from '../modules/battle/L00BattleHost';
+import {BattleHost} from '../modules/battle/BattleHost';
 import type {Direction} from '../adapters/platform/input';
 import {currentStory} from '../core/story';
 import StartScreen from '../ui/StartScreen';
@@ -31,7 +31,7 @@ export default function App() {
         {(entered || state.phase === 'battle') && <div hidden={!entered}>
           <GameScreen state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} onReset={resetSession} onCommand={command => void send(command)} onDirection={(d, held) => direction.current(d, held)} onPause={() => setPaused(!paused)} onMap={() => setOverlay('map')} onShop={() => setOverlay('shop')} onTitle={() => {setEntered(false);setPaused(false);}}>
             {state.phase === 'battle'
-              ? <L00BattleHost state={state} catalog={catalog} paused={frozen} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})}/>
+              ? <BattleHost state={state} catalog={catalog} paused={frozen} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})}/>
               : <Viewport state={state} storyScene={currentStory(catalog, state)?.scene} paused={frozen} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onDirectionReady={fn => {direction.current = fn;}} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)}/>}
           </GameScreen>
         </div>}

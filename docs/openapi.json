@@ -426,6 +426,9 @@
           },
           "modifiers": {
             "$ref": "#/components/schemas/BattleModifiers"
+          },
+          "supplies": {
+            "$ref": "#/components/schemas/BattleSupplies"
           }
         },
         "required": [
@@ -451,6 +454,12 @@
           },
           "firstClear": {
             "type": "boolean"
+          },
+          "stageId": {
+            "type": "string"
+          },
+          "battleRewards": {
+            "$ref": "#/components/schemas/BattleRewards"
           }
         },
         "required": [
@@ -937,6 +946,9 @@
           "waves": {
             "type": "integer",
             "minimum": 0
+          },
+          "chapterId": {
+            "type": "string"
           }
         },
         "required": [
@@ -1173,6 +1185,9 @@
           },
           "stageId": {
             "type": "string"
+          },
+          "supplies": {
+            "$ref": "#/components/schemas/BattleSupplies"
           }
         },
         "required": [
@@ -1197,13 +1212,20 @@
               "won",
               "lost"
             ]
+          },
+          "usedSupplies": {
+            "$ref": "#/components/schemas/BattleSupplies"
+          },
+          "report": {
+            "$ref": "#/components/schemas/BattleReport"
           }
         },
         "required": [
           "type",
           "attemptId",
           "outcome"
-        ]
+        ],
+        "description": "L01 requires report and usedSupplies (an empty object is valid). Any reserved loadout requires usedSupplies. Returns unused reserved units and commits rewards atomically. Old L00 clients with no reservation may omit both fields."
       },
       "Continue": {
         "type": "object",
@@ -1705,6 +1727,105 @@
         "required": [
           "type",
           "nodeId"
+        ]
+      },
+      "BattleSupplies": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Player-owned supplies. START_BATTLE reserves these once; COMPLETE_BATTLE reports effective use. L00 allows up to 2 warm cans and 1 energy treat; L01 allows 4 and 2, with no free baseline.",
+        "properties": {
+          "warm-can": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "bouncy-treat": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          }
+        }
+      },
+      "BattleReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Client-reported combat summary; L01 requires it. The prototype does not run server-authoritative combat. L01 victory requires bossDefeated and fewer than 3 leaks. Perfect means zero leaks, not zero damage to combat cats.",
+        "properties": {
+          "leaks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "bossDefeated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "leaks",
+          "bossDefeated"
+        ]
+      },
+      "BattleRewards": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "supplies": {
+            "$ref": "#/components/schemas/BattleRewardSupplies"
+          },
+          "baseCount": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 4
+          },
+          "firstClearBonus": {
+            "type": "integer",
+            "enum": [
+              0,
+              2
+            ]
+          },
+          "perfectBonus": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          }
+        },
+        "required": [
+          "supplies",
+          "baseCount",
+          "firstClearBonus",
+          "perfectBonus",
+          "difficulty"
+        ]
+      },
+      "BattleRewardSupplies": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "warm-can": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7
+          },
+          "bouncy-treat": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7
+          }
+        },
+        "required": [
+          "warm-can",
+          "bouncy-treat"
         ]
       }
     }
