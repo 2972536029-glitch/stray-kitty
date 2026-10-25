@@ -51,7 +51,7 @@ async function castSkill(page: Page, cat: 'guard' | 'caster', target = 'B5') {
 }
 
 /** Complete every teaching action through the controls presented to the player. */
-async function completeTutorial(page: Page, battle: Locator) {
+export async function completeL00Tutorial(page: Page, battle: Locator) {
   await phase(battle, 'ready');
   await page.getByTestId('battle-speed-toggle').click();
   await expect(battle).toHaveAttribute('data-playback-speed', '2');
@@ -120,7 +120,7 @@ async function checkHostPauseAndReentry(page: Page, battle: Locator) {
 export async function playL00ThroughHost(page: Page): Promise<L00Run> {
   const battle = page.locator(battleSelector);
   await expect(battle).toBeVisible();
-  await completeTutorial(page, battle);
+  await completeL00Tutorial(page, battle);
   await checkHostPauseAndReentry(page, battle);
   const run: L00Run = {waves: [], guardSkills: 0, casterSkills: 0, healingItems: 0, energyItems: 0, reforms: 0};
   const deadline = Date.now() + 240000;

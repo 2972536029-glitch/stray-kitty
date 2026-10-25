@@ -1,6 +1,13 @@
 import type {Catalog, GameState} from '../../contracts';
 import {CONFIG} from './l00/config';
-import type {BattleContext} from './l00/types';
+import type {BattleContext, BattleDifficulty} from './l00/types';
+
+function difficultyFromPressure(pressure: unknown): BattleDifficulty {
+  if (pressure === undefined || pressure === 0) return 'medium';
+  if (pressure === -1) return 'low';
+  if (pressure === 1) return 'high';
+  throw Object.assign(new Error('战斗难度数据无效，请重新连接后重试。'), {code: 'INVALID_BATTLE_PRESSURE'});
+}
 
 /** The host owns attempts and persistence; this adapter only routes the fixed L00 module. */
 export function createL00Context(
@@ -20,9 +27,8 @@ export function createL00Context(
     attempt: {id: attempt.id, stageId: attempt.stageId, status: attempt.status},
     stage: {...stage},
     catIds: [...state.cats],
-    // Events determine the tier; the host will map the saved event output to low/medium/high.
-    // That mapping and the loadout integration are pending, so keep medium compatibility for now.
-    difficulty: 'medium',
+    // Use this attempt's saved event output, never a later pending result or an extra stat multiplier.
+    difficulty: difficultyFromPressure(attempt.modifiers?.shadowPressure),
     modifiers: [],
     extraSupplies: {},
   };

@@ -14,19 +14,68 @@ function fixtures() {
   return {state, catalog};
 }
 
-test('L00 uses the server attempt and synchronized 3×7/10-wave catalog without converting event pressure to difficulty', () => {
-  for (const shadowPressure of [-1, 0, 1] as const) {
+test('L00 maps the saved event pressure to its three difficulty tiers without applying another pressure multiplier', () => {
+  for (const [shadowPressure, difficulty] of [[-1, 'low'], [0, 'medium'], [1, 'high']] as const) {
     const {state, catalog} = fixtures();
     state.activeBattle!.modifiers = {shadowPressure, situation: 'forced_chase'};
     const context = createL00Context(state, catalog);
     assert.deepEqual(context.attempt, {id: 'server-attempt-1', stageId: 'alley_rescue', status: 'active'});
-    assert.equal(context.difficulty, 'medium');
+    assert.equal(context.difficulty, difficulty);
     assert.deepEqual(context.extraSupplies, {});
     assert.deepEqual(context.modifiers, []);
     const battle = new PrologueBattle();
     assert.doesNotThrow(() => battle.start(context, () => {}));
-    assert.equal(battle.getSnapshot().difficulty, 'medium');
+    assert.equal(battle.getSnapshot().difficulty, difficulty);
+    assert.equal(battle.getSnapshot().effectivePressure, 0);
+    battle.dispatch({type: 'START'});
+    // Scripted rescue is shared by all tiers; event pressure must not scale this pursuer.
+    assert.equal(battle.getSnapshot().enemies[0].maxHp, 240);
+    battle.dispatch({type: 'RESTART'});
+    assert.equal(battle.getSnapshot().phase, 'ready');
+    assert.equal(battle.getSnapshot().attemptId, 'server-attempt-1');
+    assert.equal(battle.getSnapshot().difficulty, difficulty);
     battle.stop();
+  }
+});
+
+test('L00 uses normal difficulty for legacy attempts with omitted modifiers or pressure', () => {
+  for (const modifiers of [undefined, {}]) {
+    const {state, catalog} = fixtures();
+    // The runtime boundary may receive old JSON without the newer optional data.
+    state.activeBattle = JSON.parse(JSON.stringify({...state.activeBattle, modifiers}));
+    assert.equal(createL00Context(state, catalog).difficulty, 'medium');
+  }
+});
+
+test('L00 rejects malformed pressure instead of silently choosing a different tier', () => {
+  for (const shadowPressure of [null, -2, 2, 0.5, '1', 'high', false, {}, [], NaN]) {
+    const {state, catalog} = fixtures();
+    Object.assign(state.activeBattle!.modifiers!, {shadowPressure});
+    assert.throws(() => createL00Context(state, catalog), {code: 'INVALID_BATTLE_PRESSURE'});
+  }
+});
+
+test('L00 reconstructs the same attempt tier after serialization and ignores later pending event results', () => {
+  for (const [shadowPressure, difficulty] of [[-1, 'low'], [0, 'medium'], [1, 'high']] as const) {
+    const {state, catalog} = fixtures();
+    state.activeBattle!.modifiers = {shadowPressure};
+    // A pending result belongs to a later battle; this host consumes only activeBattle.
+    const saved = {...state, eventState: {pendingModifiers: {shadowPressure: shadowPressure === 1 ? -1 : 1}}};
+    const restored = JSON.parse(JSON.stringify(saved));
+    const first = new PrologueBattle();
+    first.start(createL00Context(saved, catalog), () => {});
+    first.dispatch({type: 'START'});
+    first.stop();
+    const reloaded = new PrologueBattle();
+    reloaded.start(createL00Context(restored, catalog), () => {});
+    assert.equal(reloaded.getSnapshot().difficulty, difficulty);
+    assert.equal(reloaded.getSnapshot().attemptId, saved.activeBattle!.id);
+    assert.equal(reloaded.getSnapshot().phase, 'ready');
+    const changedTier = structuredClone(restored);
+    changedTier.activeBattle.modifiers.shadowPressure = shadowPressure === 1 ? -1 : 1;
+    assert.throws(() => reloaded.start(createL00Context(changedTier, catalog), () => {}), {code: 'BATTLE_DIFFICULTY_LOCKED'});
+    assert.equal(reloaded.getSnapshot().difficulty, difficulty);
+    reloaded.stop();
   }
 });
 
