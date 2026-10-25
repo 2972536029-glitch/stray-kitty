@@ -436,6 +436,9 @@
               "situation": {
                 "kind": "forced_chase",
                 "storyNodeId": "event_forced_chase"
+              },
+              "reward": {
+                "clue": 1
               }
             }
           }
@@ -500,6 +503,9 @@
               "situation": {
                 "kind": "forced_chase",
                 "storyNodeId": "event_forced_chase"
+              },
+              "reward": {
+                "clue": 1
               }
             }
           }
@@ -560,6 +566,9 @@
               "situation": {
                 "kind": "forced_chase",
                 "storyNodeId": "event_forced_chase"
+              },
+              "reward": {
+                "clue": 1
               }
             }
           }
@@ -634,6 +643,9 @@
               "situation": {
                 "kind": "forced_chase",
                 "storyNodeId": "event_forced_chase"
+              },
+              "reward": {
+                "clue": 1
               }
             }
           }
@@ -691,6 +703,9 @@
               "situation": {
                 "kind": "detour",
                 "storyNodeId": "event_detour"
+              },
+              "reward": {
+                "clue": 1
               }
             }
           }
@@ -763,6 +778,9 @@
               "situation": {
                 "kind": "forced_chase",
                 "storyNodeId": "event_forced_chase"
+              },
+              "reward": {
+                "clue": 1
               }
             }
           }
@@ -819,6 +837,9 @@
               "situation": {
                 "kind": "forced_chase",
                 "storyNodeId": "event_forced_chase"
+              },
+              "reward": {
+                "clue": 1
               }
             }
           }
@@ -876,7 +897,10 @@
               },
               "flags": [
                 "noise_attracted_shadow"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -907,7 +931,10 @@
               }
             },
             "fail": {
-              "text": "谈崩了,粮袋整个消失在洞里。"
+              "text": "谈崩了,粮袋整个消失在洞里。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -972,7 +999,10 @@
               },
               "flags": [
                 "shadow_chased"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -1006,7 +1036,10 @@
               },
               "flags": [
                 "shadow_chased"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -1053,7 +1086,10 @@
               },
               "flags": [
                 "momo_uncertain"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -1111,7 +1147,10 @@
               "text": "碗是空的,今天的份早就被吃光,只剩字条在风里轻轻晃。",
               "flags": [
                 "feeder_bowl_empty"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -1152,7 +1191,10 @@
               "text": "回程被一群麻雀截住,叼着的猫粮都撒在了半路。",
               "flags": [
                 "sparrow_robbed"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -1206,7 +1248,10 @@
               "text": "楼道门突然打开,你们只好空着爪子退了出来。",
               "flags": [
                 "blanket_lost"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -1247,7 +1292,10 @@
               "text": "发现夹子时,毛毯已经被压进了清洁车,只来得及抢出一小角。",
               "flags": [
                 "blanket_lost"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -1316,6 +1364,9 @@
               "situation": {
                 "kind": "forced_chase",
                 "storyNodeId": "event_forced_chase"
+              },
+              "reward": {
+                "clue": 1
               }
             }
           }
@@ -1365,7 +1416,10 @@
               },
               "flags": [
                 "market_ruckus"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -1417,7 +1471,10 @@
               },
               "flags": [
                 "momo_stuck"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -1488,7 +1545,10 @@
               },
               "flags": [
                 "trail_lost"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -1540,7 +1600,10 @@
               },
               "flags": [
                 "stall_mishap"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -1603,7 +1666,10 @@
               },
               "flags": [
                 "long_detour"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -1652,7 +1718,10 @@
               },
               "flags": [
                 "trap_close_call"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -1723,6 +1792,9 @@
               "situation": {
                 "kind": "forced_chase",
                 "storyNodeId": "event_forced_chase"
+              },
+              "reward": {
+                "clue": 1
               }
             }
           }
@@ -1775,7 +1847,10 @@
               },
               "flags": [
                 "sack_empty"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -1825,7 +1900,10 @@
               },
               "flags": [
                 "momo_lost_track"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -1897,7 +1975,10 @@
               },
               "flags": [
                 "wall_kitten_spooked"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -1942,7 +2023,10 @@
               },
               "flags": [
                 "wall_kitten_spooked"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -2014,7 +2098,10 @@
               },
               "flags": [
                 "follower_spooked"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -2062,7 +2149,10 @@
               },
               "flags": [
                 "follower_spooked"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -2131,7 +2221,10 @@
               },
               "flags": [
                 "momo_trail_lost"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -2180,7 +2273,10 @@
               },
               "flags": [
                 "momo_trail_lost"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -2252,7 +2348,10 @@
               },
               "flags": [
                 "crow_advice_missed"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -2305,7 +2404,10 @@
               },
               "flags": [
                 "crow_advice_missed"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -2372,7 +2474,10 @@
               },
               "flags": [
                 "rats_path_dead"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -2417,7 +2522,151 @@
               },
               "flags": [
                 "rats_gone"
+              ],
+              "reward": {
+                "clue": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "alley_breeze_event",
+      "title": "巷口的晚风",
+      "text": "晚风把谁家窗口的饭香吹进了巷子。窗台上摆着一只小碟,碟边的字条被胶带仔细地封了角。这样的傍晚,这条巷子也有自己的温度。",
+      "category": "opportunity",
+      "tags": [
+        "social"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "alley"
+      ],
+      "repeatable": true,
+      "options": [
+        {
+          "id": "pause_watch",
+          "label": "在窗台下停一会儿,打个哈欠",
+          "outcomes": {
+            "crit": {
+              "text": "小碟里居然有一条小鱼干,还是温的。放碟的人就在窗帘后面,轻轻笑了一声。",
+              "reward": {
+                "fish": 1
+              },
+              "flags": [
+                "warm_window"
               ]
+            },
+            "success": {
+              "text": "你们靠着窗台晒了会儿余温。碟是空的,但字条上的字很暖。",
+              "flags": [
+                "warm_window"
+              ]
+            },
+            "partial": {
+              "text": "刚走近,屋里的狗叫了一声。你们退回墙根,风里的饭香还在。"
+            },
+            "fail": {
+              "text": "檐口的积水滴了满头。晚风不认识你们,今天先记个脸熟。"
+            }
+          }
+        },
+        {
+          "id": "move_on",
+          "label": "贴着墙根慢慢走过去",
+          "outcomes": {
+            "crit": {
+              "text": "墙根的水泥还是白天晒热的。你们排成一排走过去,影子被路灯拉得很长,很齐。",
+              "flags": [
+                "calm_walk"
+              ]
+            },
+            "success": {
+              "text": "安安静静地走完了这条巷子。谁也没说话,但都走得很稳。",
+              "flags": [
+                "calm_walk"
+              ]
+            },
+            "partial": {
+              "text": "半路一只夜鸟扑棱起来,吓了大家一跳,又都装作没事。"
+            },
+            "fail": {
+              "text": "风把一片广告纸拍在脸上,甩了半天。巷子里的生活,不总是一帆风顺。"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "market_warm_lights_event",
+      "title": "灯串下的打盹",
+      "text": "集市深处有一串没关的小灯,灯下有猫在打盹,摊主的呼噜和猫的呼噜一唱一和。夜市的喧闹到这里就轻了,像退潮后留在沙上的水洼。",
+      "category": "opportunity",
+      "tags": [
+        "social"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "market"
+      ],
+      "repeatable": true,
+      "options": [
+        {
+          "id": "sit_beside",
+          "label": "在灯下坐一会儿",
+          "outcomes": {
+            "crit": {
+              "text": "打盹的猫醒了,冲你们眨眨眼,把摊主落在垫子上的一小袋鱼干推了过来,又睡了回去。",
+              "reward": {
+                "fish": 1
+              },
+              "flags": [
+                "market_cat_nod"
+              ]
+            },
+            "success": {
+              "text": "你们在灯下并排坐了一会儿。呼噜声很近,夜市的喧闹很远。",
+              "flags": [
+                "market_cat_nod"
+              ]
+            },
+            "partial": {
+              "text": "坐了一会儿,摊主翻了个身,你们悄悄让开了位置。"
+            },
+            "fail": {
+              "text": "刚坐下,灯串闪了两下熄了。打盹的猫头也不抬地换了个姿势,你们也该走了。"
+            }
+          }
+        },
+        {
+          "id": "keep_window_shopping",
+          "label": "慢慢逛过这一段",
+          "outcomes": {
+            "crit": {
+              "text": "逛到一半,前面猫摊的老板塞给你们一小块鱼骨饼干:\"新烤的,尝尝。\"",
+              "reward": {
+                "fish": 1
+              },
+              "flags": [
+                "market_snack"
+              ]
+            },
+            "success": {
+              "text": "灯串的光落在背上,暖烘烘的。这一段路,走得很慢,也很好。",
+              "flags": [
+                "market_snack"
+              ]
+            },
+            "partial": {
+              "text": "人潮涌过来,把队伍冲散了一小截,又自动合上。"
+            },
+            "fail": {
+              "text": "踩到一摊看不见的油渍,滑了个趔趄。打盹的猫睁开一只眼,好像在笑。"
             }
           }
         }
