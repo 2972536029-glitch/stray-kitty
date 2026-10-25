@@ -20,10 +20,10 @@ export const RULES = Object.freeze({step: 0.05, maxFrameSeconds: 30, maxLeaks: 3
 export const CAT_DEFINITIONS: Readonly<Record<ChapterCatId, CatDefinition>> = Object.freeze({
   caster: {id: 'caster', name: '绒绒', breed: '布偶', role: '星绒术士', maxHp: 80, damage: 20, interval: 0.8, block: 1, range: 'ranged', color: '#cab9e6', initial: {x: 6, y: 3}},
   guard: {id: 'guard', name: '斑斑', breed: '奶牛猫', role: '罐盾卫士', maxHp: 240, damage: 8, interval: 1.1, block: 2, range: 'melee', color: '#e7e8d8', initial: {x: 8, y: 3}},
-  tabby: {id: 'tabby', name: '狸花护卫', breed: '狸花', role: '巡巷护卫', maxHp: 170, damage: 15, interval: 0.9, block: 1, range: 'melee', color: '#b89d73', initial: {x: 4, y: 2}},
-  hammer: {id: 'hammer', name: '彩狸重锤', breed: '彩狸', role: '破阵重锤', maxHp: 190, damage: 30, interval: 1.8, block: 1, range: 'hammer', color: '#d69e78', initial: {x: 8, y: 4}},
-  frost: {id: 'frost', name: '蓝猫寒铃', breed: '蓝猫', role: '寒铃守望', maxHp: 110, damage: 11, interval: 1.05, block: 1, range: 'ranged', color: '#91b7cb', initial: {x: 6, y: 4}},
-  singer: {id: 'singer', name: '暹罗歌者', breed: '暹罗', role: '共鸣歌者', maxHp: 115, damage: 10, interval: 1.1, block: 1, range: 'ranged', color: '#d6c8a7', initial: {x: 4, y: 3}},
+  tabby: {id: 'tabby', name: '栗栗', breed: '狸花', role: '巡巷护卫', maxHp: 170, damage: 15, interval: 0.9, block: 1, range: 'melee', color: '#b89d73', initial: {x: 4, y: 2}},
+  hammer: {id: 'hammer', name: '桃桃', breed: '彩狸', role: '破阵重锤', maxHp: 190, damage: 30, interval: 1.8, block: 1, range: 'hammer', color: '#d69e78', initial: {x: 8, y: 4}},
+  frost: {id: 'frost', name: '铃铃', breed: '蓝猫', role: '寒铃守望', maxHp: 110, damage: 11, interval: 1.05, block: 1, range: 'ranged', color: '#91b7cb', initial: {x: 6, y: 4}},
+  singer: {id: 'singer', name: '音音', breed: '暹罗', role: '共鸣歌者', maxHp: 115, damage: 10, interval: 1.1, block: 1, range: 'ranged', color: '#d6c8a7', initial: {x: 4, y: 3}},
 });
 export const SKILLS: Readonly<Record<ChapterCatId, SkillDefinition>> = Object.freeze({
   caster: {name: '星绒绽放', targeting: 'area', cost: 100, damage: 45, description: '任意可用格为中心的五格十字，每名敌人受到 45 点伤害。'},

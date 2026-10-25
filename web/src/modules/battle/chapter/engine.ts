@@ -88,10 +88,10 @@ export function getChapterAdvice(state: ChapterState): string {
   if (state.phase === 'lost') return '本场守护已结束，伙伴们已经撤往安全处。重新挑战走主项目准备流程。';
   if (state.boss.phase === 'windup') return '首领正双手举起路障、向后蓄势！把裂纹格中的伙伴移开；落点已经锁定，不会追着猫走。';
   const resting = state.cats.find(cat => cat.status === 'resting');
-  if (resting) return resting.hp >= resting.maxHp * RULES.readyRatio ? `${resting.name}已经恢复，可以重新部署到安全空格。` : `${resting.name}正在休整。暹罗歌者的归家和声能照顾休整猫，也可以使用已有暖罐。`;
-  if (state.cats.some(cat => cat.id === 'singer' && cat.energy === 100) && state.cats.some(cat => cat.hp < cat.maxHp * 0.75)) return '暹罗歌者已经蓄满能量，可以使用归家和声照顾全队；休整猫恢复后仍需手动上阵。';
+  if (resting) return resting.hp >= resting.maxHp * RULES.readyRatio ? `${resting.name}已经恢复，可以重新部署到安全空格。` : `${resting.name}正在休整。${CAT_DEFINITIONS.singer.name}的归家和声能照顾休整猫，也可以使用已有暖罐。`;
+  if (state.cats.some(cat => cat.id === 'singer' && cat.energy === 100) && state.cats.some(cat => cat.hp < cat.maxHp * 0.75)) return `${CAT_DEFINITIONS.singer.name}已经蓄满能量，可以使用归家和声照顾全队；休整猫恢复后仍需手动上阵。`;
   if (state.boss.phase === 'defeated') return '首领已经倒下，还要守住余下的小怪波次。不要过早收起防线。';
-  return '斑斑守右侧上路，重锤照看下路，狸花护卫拦住 A5 支巷；留意首领举起路障的动作，主动技能满能量后可手动释放。';
+  return `${CAT_DEFINITIONS.guard.name}守右侧上路，${CAT_DEFINITIONS.hammer.name}照看下路，${CAT_DEFINITIONS.tabby.name}拦住 A5 支巷；留意首领举起路障的动作，主动技能满能量后可手动释放。`;
 }
 function log(state: ChapterState, text: string): void {
   state.logs.push({id: ++state.sequence, time: state.elapsed, text});
@@ -231,7 +231,7 @@ function bossTick(state: ChapterState, dt: number): void {
   }
   if (boss.cooldown <= EPS && nearby.length) {
     hurtCat(state, nearby[0], RULES.bossDamage); boss.cooldown = RULES.bossAttackInterval; boss.attacks++;
-    effect(state, 'attack', boss, nearby[0]);
+    effect(state, 'boss-attack', boss, nearby[0]);
   }
 }
 function tick(state: ChapterState, dt: number): void {

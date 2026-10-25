@@ -15,7 +15,8 @@ const aliases: readonly [ChapterCatId, RegExp][] = [
   ['tabby', /狸花|护卫|巡巷|tabby/i], ['hammer', /彩狸|重锤|破阵|hammer/i],
   ['frost', /蓝猫|寒铃|霜环|frost/i], ['singer', /暹罗|歌者|和声|singer/i],
 ];
-const requestedCat = (question: string) => aliases.find(([, pattern]) => pattern.test(question))?.[0];
+const requestedCat = (question: string) => Object.values(CAT_DEFINITIONS).find(cat => question.includes(cat.name))?.id
+  ?? aliases.find(([, pattern]) => pattern.test(question))?.[0];
 const supportRole = (question: string) => /喵喵|主角|金吉拉|阿策|军师/.test(question);
 const active = (cat: ChapterCat) => cat.status === 'active';
 const cooldownNote = '收起军师和背包、继续战斗后，物品间隔才会继续计时。';
@@ -31,8 +32,8 @@ function healAnswer(state: ChapterState, question: string): ChapterAdvice {
     const singer = state.cats.find(cat => cat.id === 'singer');
     const fallback = state.inventory['warm-can'] === 0
       ? singer && active(singer) && singer.energy >= 100
-        ? '歌者已经蓄满能量；结束瞄准、收起面板并恢复战斗后，可以手动施放归家和声治疗全队。'
-        : '歌者的归家和声能够治疗全队和休整猫，需要普攻蓄满 100 能量后由你手动施放；本章没有免费补给或免费本波重整。'
+        ? `${CAT_DEFINITIONS.singer.name}已经蓄满能量；结束瞄准、收起面板并恢复战斗后，可以手动施放归家和声治疗全队。`
+        : `${CAT_DEFINITIONS.singer.name}的归家和声能够治疗全队和休整猫，需要普攻蓄满 100 能量后由你手动施放；本章没有免费补给或免费本波重整。`
       : state.healingCooldown > 0 ? cooldownNote : '';
     return {title: `${target.name}需要照顾`, text: `${target.name}当前体力 ${Math.ceil(target.hp)} / ${target.maxHp}。${problem}${fallback}`};
   }

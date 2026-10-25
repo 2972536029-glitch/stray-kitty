@@ -34,7 +34,7 @@ export interface SkillDefinition {
   cost: 100; damage?: number; heal?: number; shield?: number; duration?: number;
 }
 export interface ChapterEffect {
-  id: number; kind: 'attack' | 'skill' | 'heal' | 'slam' | 'defeat' | 'shield';
+  id: number; kind: 'attack' | 'boss-attack' | 'skill' | 'heal' | 'slam' | 'defeat' | 'shield';
   from: Position; to: Position; remaining: number; cells?: Position[];
 }
 export interface ChapterState {

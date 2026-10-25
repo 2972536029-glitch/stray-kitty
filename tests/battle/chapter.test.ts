@@ -223,6 +223,74 @@ test('boss attack range and target choice use the nearest occupied footprint cel
   assert.equal(state.cats.find(cat => cat.id === 'guard')!.hp, CAT_DEFINITIONS.guard.maxHp);
 });
 
+function isolatedBossFixture(): ChapterState {
+  const state = dispatchChapter(createChapterBattle(), {type: 'START'});
+  for (const cat of state.cats) {
+    cat.cooldown = 999;
+    if (cat.id !== 'guard') {cat.status = 'resting'; cat.hp = cat.maxHp * 0.25;}
+  }
+  return state;
+}
+
+test('boss basics deal ten damage at 1.8-second intervals and expose a short-lived hit on the actual target', () => {
+  let state = isolatedBossFixture();
+  const hp = state.cats.find(cat => cat.id === 'guard')!.hp;
+  state = advanceChapter(state, 1.75);
+  assert.equal(state.boss.attacks, 0);
+  assert.equal(state.cats.find(cat => cat.id === 'guard')!.hp, hp);
+  state = advanceChapter(state, 0.05);
+  assert.equal(state.boss.attacks, 1);
+  const guard = state.cats.find(cat => cat.id === 'guard')!;
+  assert.equal(guard.hp, hp - 10);
+  const fx = state.effects.find(effect => effect.kind === 'boss-attack');
+  assert.ok(fx);
+  assert.deepEqual({x: fx.from.x, y: fx.from.y}, MAP.boss);
+  assert.deepEqual({x: fx.to.x, y: fx.to.y}, {x: guard.x, y: guard.y});
+  state = advanceChapter(state, 0.45);
+  assert.equal(state.effects.some(effect => effect.kind === 'boss-attack'), false);
+  state = advanceChapter(state, 1.3);
+  assert.equal(state.boss.attacks, 1);
+  assert.equal(state.cats.find(cat => cat.id === 'guard')!.hp, hp - 10);
+  state = advanceChapter(state, 0.05);
+  assert.equal(state.boss.attacks, 2);
+  assert.equal(state.cats.find(cat => cat.id === 'guard')!.hp, hp - 20);
+});
+
+test('boss basics consume shields first and only the unabsorbed portion reaches HP', () => {
+  for (const shield of [6, 20]) {
+    let state = isolatedBossFixture();
+    const guard = state.cats.find(cat => cat.id === 'guard')!;
+    guard.shield = shield; guard.shieldRemaining = 8;
+    state = advanceChapter(state, 1.8);
+    const hit = state.cats.find(cat => cat.id === 'guard')!;
+    assert.equal(state.boss.attacks, 1);
+    assert.equal(hit.shield, Math.max(0, shield - 10));
+    assert.equal(hit.hp, guard.maxHp - Math.max(0, 10 - shield));
+    assert.equal(state.stats.damageTaken, Math.max(0, 10 - shield));
+  }
+});
+
+test('boss basics ignore resting or out-of-range cats and never overlap the slam windup or recovery', () => {
+  let state = dispatchChapter(isolatedBossFixture(), {type: 'MOVE_CAT', catId: 'guard', x: 5, y: 3});
+  assert.equal(state.lastAction?.ok, true);
+  state = advanceChapter(state, 1.85);
+  assert.equal(state.boss.attacks, 0); // Closer cats exist but are resting; the active guard is four cells away.
+  assert.equal(state.cats.find(cat => cat.id === 'guard')!.hp, CAT_DEFINITIONS.guard.maxHp);
+  state = dispatchChapter(state, {type: 'MOVE_CAT', catId: 'guard', x: 6, y: 3});
+  assert.equal(state.lastAction?.ok, true);
+  state = advanceChapter(state, 0.05);
+  assert.equal(state.boss.attacks, 1); // The three-cell boundary is in range.
+  assert.equal(state.cats.find(cat => cat.id === 'guard')!.hp, CAT_DEFINITIONS.guard.maxHp - 10);
+  for (const phase of ['windup', 'recovery'] as const) {
+    state = isolatedBossFixture(); state.boss.phase = phase; state.boss.phaseTime = 0; state.boss.cooldown = 0;
+    state = advanceChapter(state, 1);
+    assert.equal(state.boss.phase, phase);
+    assert.equal(state.boss.attacks, 0);
+    assert.equal(state.cats.find(cat => cat.id === 'guard')!.hp, CAT_DEFINITIONS.guard.maxHp);
+    assert.equal(state.effects.some(effect => effect.kind === 'boss-attack'), false);
+  }
+});
+
 function confluenceFixture(): ChapterState {
   const state = dispatchChapter(createChapterBattle(), {type: 'START'});
   state.wave = WAVES.length; state.spawnIndex = WAVES.at(-1)!.length; state.spawned = TOTAL_MINIONS;
