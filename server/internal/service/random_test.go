@@ -90,6 +90,7 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 	dual.ID = "shared_event"
 	dual.Triggers = []string{"random"}
 	dual.Category = "risk"
+	dual.RequiresFlags = nil // 克隆源可能带门槛,清掉避免继承
 	for i := range dual.Options {
 		dual.Options[i].ID = dual.Options[i].ID + "_s"
 	}
@@ -308,6 +309,57 @@ func TestEventChainRequiresFlags(t *testing.T) {
 		t.Fatal("chain card never became drawable after flag was set")
 	}
 	_ = saw
+}
+
+// 叙事门控卡:rats_truce(与鼠群分粮)集齐后,《鼠群的回礼》才可能出现在巷子池里。
+func TestNarrativeGatedCardDrawnAfterFlag(t *testing.T) {
+	g, token, _ := setup(t)
+	g.Random = func(max int) (int, error) {
+		if max == 6 {
+			return 5, nil // 骰子恒 [6,6] crit
+		}
+		return 0, nil // 触发必中、配比选风险池、索引取第一张
+	}
+	finishStory(t, g, token)
+	optionFor := func(id string) string {
+		switch id {
+		case "rats_grain_event":
+			return "negotiate_share" // crit 写 rats_truce
+		case "moving_sack_event":
+			return "watch_first"
+		default:
+			for _, e := range g.Catalog.Events {
+				if e.ID == id {
+					return e.Options[0].ID
+				}
+			}
+			return ""
+		}
+	}
+	gotGift := false
+	for i := 0; i < 80 && !gotGift; i++ {
+		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
+		if s.Phase != "event" {
+			continue
+		}
+		if s.PendingEventID == "rats_gift_event" {
+			if !domain.Contains(s.Flags, "rats_truce") {
+				t.Fatal("gift card drawn before truce flag")
+			}
+			gotGift = true
+			break
+		}
+		s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: s.PendingEventID, OptionID: optionFor(s.PendingEventID)})
+		for s.Phase == "dialogue" {
+			s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+		}
+		if s.Phase == "preparation" {
+			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+		}
+	}
+	if !gotGift {
+		t.Fatal("narrative-gated card never drawn after flag was set")
+	}
 }
 
 // 概率未中时里程照常累积,阶段保持探索。

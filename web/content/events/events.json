@@ -1817,5 +1817,242 @@
         }
       }
     ]
+  },
+  {
+    "id": "crow_advice_event",
+    "title": "老黑羽的忠告",
+    "text": "老黑羽远远地叫住了你们:\"上回那桩买卖,老乌鸦还记着。过来——今天有句话,白送。\"他压低了声音,单片镜片后的眼睛往集市深处瞟了瞟。",
+    "category": "opportunity",
+    "tags": [
+      "social"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "requiresFlags": [
+      "crow_friend",
+      "chapter_2_started"
+    ],
+    "maps": [
+      "market"
+    ],
+    "options": [
+      {
+        "id": "listen_close",
+        "label": "凑近了听他说",
+        "outcomes": {
+          "crit": {
+            "text": "老黑羽用翅尖蘸了蘸水,在台面上画出仓库的方向:\"那边的灯,不是两脚兽点的,是影子引的。记着——走有水的路,别走亮的。\"这条忠告,值一次平安。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 2
+            },
+            "flags": [
+              "crow_deep_advice"
+            ]
+          },
+          "success": {
+            "text": "\"仓库那头,看守比你想的多。\"老黑羽慢条斯理地理了理羽毛,\"带足光,别信任何会动的东西。\"",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "crow_deep_advice"
+            ]
+          },
+          "partial": {
+            "text": "话说到一半,一桌客人吵了起来。老黑羽分了神,你只来得及记下半句:\"……别走正门。\"",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "crow_partial_advice"
+            ]
+          },
+          "fail": {
+            "text": "一阵夜风掀起摊帘,等你们再凑近,老黑羽已经换回了做生意的腔调:\"白送的就说这么多。改天,带鱼干來。\"",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "crow_advice_missed"
+            ]
+          }
+        }
+      },
+      {
+        "id": "help_close_stall",
+        "label": "先帮他收摊,再慢慢聊",
+        "outcomes": {
+          "crit": {
+            "text": "收摊的工夫,老黑羽把该说的、不该说的都说了,末了还塞给你们一小包烤鱼骨:\"拿去。别说我讲人情。\"",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 2,
+              "fish": 1
+            },
+            "flags": [
+              "crow_deep_advice",
+              "crow_favor"
+            ]
+          },
+          "success": {
+            "text": "摊位收拾利索,老黑羽也说了个明白:仓库深处的动静,最近不太对。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "crow_deep_advice"
+            ]
+          },
+          "partial": {
+            "text": "收摊收到一半,老黑羽被别处的动静叫走了。你只听到一句:\"少往北边凑。\"",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "crow_partial_advice"
+            ]
+          },
+          "fail": {
+            "text": "你们帮倒忙碰翻了墨水,老黑羽心疼地直跺脚,忠告的事谁也没再提。改天再来吧。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "crow_advice_missed"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "rats_gift_event",
+    "title": "鼠群的回礼",
+    "text": "墙洞口整整齐齐码着几颗完整的猫粮。洞口的水泥地上,一串细小的爪印被刻意拖出一道浅痕,弯弯地指向巷子深处——上次分粮的情,它们记着。",
+    "category": "opportunity",
+    "tags": [
+      "social",
+      "pathfinding"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "requiresFlags": [
+      "rats_truce"
+    ],
+    "maps": [
+      "alley"
+    ],
+    "options": [
+      {
+        "id": "follow_marks",
+        "label": "顺着浅痕往巷子深处走",
+        "outcomes": {
+          "crit": {
+            "text": "浅痕绕开了黑影盘踞的墙角,尽头是一条谁也没注意的排水沟便道。团子看看爪印又看看你们:\"它们把最熟的路,让给你们了。\"",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 1,
+              "material": 1
+            },
+            "flags": [
+              "rats_shared_path"
+            ]
+          },
+          "success": {
+            "text": "浅痕领着你们绕开了两处黑影徘徊的死角。这条路,是鼠群用了很多遍的。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "flags": [
+              "rats_shared_path"
+            ]
+          },
+          "partial": {
+            "text": "浅痕走到一半被新落的雨水糊住了。剩下的路,你们贴着灯自己走完。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "rats_path_faded"
+            ]
+          },
+          "fail": {
+            "text": "浅痕的尽头是一堵实打实的墙。你们对视了一眼——也许它们只是想把猫粮搬远一点。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "rats_path_dead"
+            ]
+          }
+        }
+      },
+      {
+        "id": "return_gift",
+        "label": "往洞口放一份口粮,还礼",
+        "outcomes": {
+          "crit": {
+            "text": "第二天再路过,洞口多了一小堆亮晶晶的杂物:锡纸、绳头、半枚旧币。鼠群不懂猫的邮票,但它们懂还情。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 2
+            },
+            "flags": [
+              "rats_allied"
+            ]
+          },
+          "success": {
+            "text": "口粮放下了。洞里静了一会儿,然后传来细细的、满足的啃食声。这笔账,两清了。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "rats_allied"
+            ]
+          },
+          "partial": {
+            "text": "口粮刚放下就被夜鸟叼走了一半。洞里的动静停了停,又静下去。心意到了就好。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "rats_gift_stolen"
+            ]
+          },
+          "fail": {
+            "text": "洞里静悄悄的,像是很久没有鼠群回来了。你们把口粮留在原处——它们回来时,会看见的。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "rats_gone"
+            ]
+          }
+        }
+      }
+    ]
   }
 ]
