@@ -28,6 +28,15 @@ func (g *Game) triggerChance(danger int) int {
 	return randomTriggerChance[danger]
 }
 
+func (g *Game) echoShare() int {
+	for _, b := range g.Catalog.EventsBalance {
+		if b.EchoShare > 0 {
+			return b.EchoShare
+		}
+	}
+	return 333
+}
+
 func (g *Game) riskShare(danger int) int {
 	for _, b := range g.Catalog.EventsBalance {
 		if b.DangerLevel == danger && b.RiskShare > 0 {
@@ -88,17 +97,20 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, bool, error) {
 		danger = 3
 	}
 	var risks, opportunities []string
-	echoChance := 1000 / 3 // 回响卡参与率约 1/3:近零奖励的氛围卡不稀释主要遭遇。
+	// 回响卡参与门槛(balance.json 的 echoShare,千分比):近零奖励的氛围卡不稀释主要遭遇。
+	echoShare := g.echoShare()
+	isEcho := map[string]bool{}
 	for _, e := range g.Catalog.Events {
 		if !domain.Contains(e.Triggers, "random") || !domain.Contains(e.Maps, s.MapID) {
 			continue
 		}
+		isEcho[e.ID] = e.Repeatable
 		if e.Repeatable {
 			roll, err := g.Random(1000)
 			if err != nil {
 				return "", false, false, err
 			}
-			if roll >= echoChance {
+			if roll >= echoShare {
 				continue
 			}
 		}
@@ -152,10 +164,5 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, bool, error) {
 		return "", false, false, err
 	}
 	id := pool[index]
-	for _, e := range g.Catalog.Events {
-		if e.ID == id {
-			return id, true, e.Repeatable, nil
-		}
-	}
-	return "", false, false, nil
+	return id, true, isEcho[id], nil
 }

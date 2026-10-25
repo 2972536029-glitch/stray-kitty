@@ -42,7 +42,7 @@ type GameState struct {
 	PendingEventSource string   `json:"pendingEventSource,omitempty"`
 	DrawnEvents        []string `json:"drawnEvents,omitempty"`
 	ExploreDistance    int      `json:"exploreDistance,omitempty"`
-	// PushTokens:伙伴鼓励次数——掷骰前声明使用,掷两组 2d6 取优;初始 1,塔防胜利恢复 1(上限 2)。
+	// PushTokens:伙伴鼓励次数——掷骰前声明使用,掷两组 2d6 取优;初始 1,每关首次守护成功恢复 1(上限 2,重复通关不回)。
 	PushTokens   int         `json:"pushTokens,omitempty"`
 	ActiveBattle *Attempt    `json:"activeBattle"`
 	LastResult   Result      `json:"lastResult"`
@@ -159,11 +159,12 @@ type Chapter struct {
 	ID string `json:"id"`
 }
 
-// EventsBalance:随机事件平衡表,内容驱动(危险度→触发概率/风险占比,千分比)。
+// EventsBalance:随机事件平衡表,内容驱动(危险度→触发概率/风险占比,千分比;echoShare 为回响卡参与门槛,取首个非零)。
 type EventBalance struct {
 	DangerLevel   int `json:"dangerLevel"`
 	TriggerChance int `json:"triggerChance"`
 	RiskShare     int `json:"riskShare"`
+	EchoShare     int `json:"echoShare"`
 }
 
 func Contains(values []string, value string) bool {

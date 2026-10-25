@@ -18,7 +18,7 @@ export function validateContent(c) {
   for(const m of c.maps) for(const p of m.interactions) {
     if(!has('events',p.eventId)||p.x<0||p.y<0||p.x>m.width||p.y>m.height) errors.push(`map reference/bounds: ${p.id}`);
   }
-  if(c.eventsBalance.length!==4||c.eventsBalance.some((b,i)=>!Number.isInteger(b.dangerLevel)||b.dangerLevel!==i||!Number.isInteger(b.triggerChance)||b.triggerChance<1||b.triggerChance>1000||!Number.isInteger(b.riskShare)||b.riskShare<1||b.riskShare>1000)) errors.push('eventsBalance invalid: 需要 dangerLevel 0~3 递增的四条 1~1000 千分比配置');
+  if(c.eventsBalance.length!==4||c.eventsBalance.some((b,i)=>!Number.isInteger(b.dangerLevel)||b.dangerLevel!==i||!Number.isInteger(b.triggerChance)||b.triggerChance<1||b.triggerChance>1000||!Number.isInteger(b.riskShare)||b.riskShare<1||b.riskShare>1000||!Number.isInteger(b.echoShare)||b.echoShare<1||b.echoShare>1000)) errors.push('eventsBalance invalid: 需要 dangerLevel 0~3 递增的四条 1~1000 千分比配置(含 echoShare)');
   // 红线执法:主线 flag 只能由剧情/服务端写,随机与机遇卡的 outcomes 不得触碰。
   const mainlineFlags=['alley_rescued','rescue_story_done','market_unlocked','chapter_2_started'];
   for(const e of c.events) if(e.category!=='story') for(const o of e.options) for(const tier of ['crit','success','partial','fail'])

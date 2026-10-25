@@ -2677,22 +2677,26 @@
     {
       "dangerLevel": 0,
       "triggerChance": 30,
-      "riskShare": 200
+      "riskShare": 200,
+      "echoShare": 333
     },
     {
       "dangerLevel": 1,
       "triggerChance": 120,
-      "riskShare": 400
+      "riskShare": 400,
+      "echoShare": 333
     },
     {
       "dangerLevel": 2,
       "triggerChance": 160,
-      "riskShare": 600
+      "riskShare": 600,
+      "echoShare": 333
     },
     {
       "dangerLevel": 3,
       "triggerChance": 280,
-      "riskShare": 800
+      "riskShare": 800,
+      "echoShare": 333
     }
   ],
   "cats": [
