@@ -1,10 +1,7 @@
 export type GamePhase = 'dialogue' | 'explore' | 'event' | 'preparation' | 'battle' | 'settlement' | 'home';
 export interface BattleModifiers {shadowPressure: -1 | 0 | 1; situation?: 'detour' | 'forced_chase'}
-export type BattleSupplyId = 'warm-can' | 'bouncy-treat';
-export type BattleSupplies = Partial<Record<BattleSupplyId, number>>;
 export interface BattleReport {leaks: number; bossDefeated: boolean}
-export interface BattleRewards {supplies: Record<BattleSupplyId, number>; baseCount: number; firstClearBonus: number; perfectBonus: number; difficulty: 'low' | 'medium' | 'high'}
-export interface BattleAttempt {id: string; stageId: string; status: 'active' | 'won' | 'lost'; modifiers?: BattleModifiers; supplies?: BattleSupplies}
+export interface BattleAttempt {id: string; stageId: string; status: 'active' | 'won' | 'lost'; modifiers?: BattleModifiers}
 export type EventTier = 'crit' | 'success' | 'partial' | 'fail';
 export interface EventReward {fish?: number; stamps?: number; clue?: number; material?: number}
 export interface EventOutcome {
@@ -21,7 +18,7 @@ export interface GameState {
   pendingEventId: string; activeBattle: BattleAttempt | null;
   pendingEventSource?: 'node' | 'random'; drawnEvents?: string[]; exploreDistance?: number; pushTokens?: number;
   eventState?: EventState;
-  lastResult: {message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string; battleRewards?: BattleRewards};
+  lastResult: {message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string};
 }
 export type GameCommand =
   | {type: 'ADVANCE_STORY'; nodeId: string}
@@ -30,7 +27,7 @@ export type GameCommand =
   | {type: 'REPORT_MOVE'; distance: number}
   | {type: 'CHECK_RANDOM_ZONE'; zoneId: string}
   | {type: 'CHOOSE_EVENT'; eventId: string; optionId: string; usePush?: boolean}
-  | {type: 'START_BATTLE'; stageId: string; supplies?: BattleSupplies}
+  | {type: 'START_BATTLE'; stageId: string}
   | ({type: 'COMPLETE_BATTLE'} & BattleResult)
   | {type: 'CONTINUE'} | {type: 'GO_HOME'} | {type: 'GO_EXPLORE'; mapId?: string}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
@@ -49,7 +46,7 @@ export interface EventDefinition {id: string; title: string; text: string; categ
 export interface StageDefinition {id: string; name: string; status: string; lanes: number; columns: number; waves: number; chapterId?: string}
 export interface ModuleResult<T> {status: 'completed' | 'cancelled'; data: T}
 export interface BattleContext {attempt: BattleAttempt; stage: StageDefinition; catIds: string[]; modifiers: BattleModifiers}
-export interface BattleResult {attemptId: string; outcome: 'won' | 'lost'; usedSupplies?: BattleSupplies; report?: BattleReport}
+export interface BattleResult {attemptId: string; outcome: 'won' | 'lost'; report?: BattleReport}
 export interface MapContext {map: MapDefinition; flags: string[]; spawn: {x: number; y: number}}
 export interface Catalog {
   version: string;

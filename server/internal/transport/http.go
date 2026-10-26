@@ -164,8 +164,8 @@ func validateCommand(body []byte, kind string) error {
 		"INTERACT":          {"interactionId"},
 		"REPORT_MOVE":       {"distance"},
 		"CHOOSE_EVENT":      {"eventId", "optionId", "usePush"},
-		"START_BATTLE":      {"stageId", "supplies"},
-		"COMPLETE_BATTLE":   {"attemptId", "outcome", "usedSupplies", "report"},
+		"START_BATTLE":      {"stageId"},
+		"COMPLETE_BATTLE":   {"attemptId", "outcome", "report"},
 		"CONTINUE":          {},
 		"GO_HOME":           {},
 		"GO_EXPLORE":        {"mapId"},
@@ -209,23 +209,9 @@ func validateCommand(body []byte, kind string) error {
 			return domain.Fail("INVALID_REQUEST", "命令缺少有效的 "+key, 400)
 		}
 	}
-	for _, key := range []string{"supplies", "usedSupplies", "report"} {
+	for _, key := range []string{"report"} {
 		if value, exists := raw.Command[key]; exists && (len(value) == 0 || value[0] != '{') {
 			return domain.Fail("INVALID_REQUEST", key+" 必须为对象", 400)
-		}
-	}
-	for _, key := range []string{"supplies", "usedSupplies"} {
-		if value, exists := raw.Command[key]; exists {
-			var quantities map[string]json.RawMessage
-			if json.Unmarshal(value, &quantities) != nil {
-				return domain.Fail("INVALID_REQUEST", "补给清单必须为对象", 400)
-			}
-			for _, rawQuantity := range quantities {
-				var quantity *int
-				if json.Unmarshal(rawQuantity, &quantity) != nil || quantity == nil {
-					return domain.Fail("INVALID_REQUEST", "补给数量必须为整数", 400)
-				}
-			}
 		}
 	}
 	if rawVal, exists := raw.Command["mapId"]; exists {

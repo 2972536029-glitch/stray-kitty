@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func TestBattleSupplyHTTPContract(t *testing.T) {
+func TestBattleRejectsRemovedSupplyFieldsAndRequiresBossReport(t *testing.T) {
 	store, err := repository.Open(filepath.Join(t.TempDir(), "save.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -49,25 +49,37 @@ func TestBattleSupplyHTTPContract(t *testing.T) {
 		handler.ServeHTTP(w, r)
 		return w
 	}
-	for _, supplies := range []string{`null`, `[]`, `{"warm-can":null}`, `{"warm-can":1.5}`, `{"warm-can":"1"}`, `{"unknown":0}`} {
+	for _, supplies := range []string{`null`, `[]`, `{"warm-can":null}`, `{"warm-can":1.5}`, `{"warm-can":"1"}`, `{"unknown":0}`, `{}`, `{"warm-can":2}`} {
 		w := request(`{"expectedRevision":0,"command":{"type":"START_BATTLE","stageId":"alley_boss","supplies":` + supplies + `}}`)
 		if w.Code != 400 {
 			t.Fatalf("invalid supplies %s returned %d", supplies, w.Code)
 		}
 	}
-	w := request(`{"expectedRevision":0,"command":{"type":"START_BATTLE","stageId":"alley_boss","supplies":{"warm-can":2}}}`)
+	w := request(`{"expectedRevision":0,"command":{"type":"START_BATTLE","stageId":"alley_boss"}}`)
 	if w.Code != 200 {
 		t.Fatal(w.Body.String())
 	}
 	s, _ := g.State(token)
-	if s.Inventory["warm-can"] != 1 || s.ActiveBattle.Supplies["warm-can"] != 2 {
-		t.Fatal("HTTP reservation missing")
+	if s.Inventory["warm-can"] != 3 || len(s.ActiveBattle.Supplies) != 0 {
+		t.Fatal("new battle changed inventory")
 	}
 	for _, report := range []string{`null`, `{}`, `{"leaks":null,"bossDefeated":true}`, `{"leaks":0,"bossDefeated":true,"extra":1}`} {
-		body := fmt.Sprintf(`{"expectedRevision":1,"command":{"type":"COMPLETE_BATTLE","attemptId":%q,"outcome":"won","usedSupplies":{},"report":%s}}`, s.ActiveBattle.ID, report)
+		body := fmt.Sprintf(`{"expectedRevision":1,"command":{"type":"COMPLETE_BATTLE","attemptId":%q,"outcome":"won","report":%s}}`, s.ActiveBattle.ID, report)
 		w = request(body)
 		if w.Code != 400 {
 			t.Fatalf("invalid report %s returned %d", report, w.Code)
 		}
+	}
+	body := fmt.Sprintf(`{"expectedRevision":1,"command":{"type":"COMPLETE_BATTLE","attemptId":%q,"outcome":"won","usedSupplies":{},"report":{"leaks":0,"bossDefeated":true}}}`, s.ActiveBattle.ID)
+	if w = request(body); w.Code != 400 {
+		t.Fatalf("obsolete usage accepted: %s", w.Body.String())
+	}
+	body = fmt.Sprintf(`{"expectedRevision":1,"command":{"type":"COMPLETE_BATTLE","attemptId":%q,"outcome":"won","report":{"leaks":0,"bossDefeated":true}}}`, s.ActiveBattle.ID)
+	if w = request(body); w.Code != 200 {
+		t.Fatal(w.Body.String())
+	}
+	s, _ = g.State(token)
+	if s.Inventory["warm-can"] != 3 || strings.Contains(w.Body.String(), "battleRewards") {
+		t.Fatal("settlement consumed or awarded supplies")
 	}
 }

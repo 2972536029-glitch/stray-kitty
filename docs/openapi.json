@@ -428,7 +428,7 @@
             "$ref": "#/components/schemas/BattleModifiers"
           },
           "supplies": {
-            "$ref": "#/components/schemas/BattleSupplies"
+            "$ref": "#/components/schemas/LegacyBattleReservation"
           }
         },
         "required": [
@@ -457,9 +457,6 @@
           },
           "stageId": {
             "type": "string"
-          },
-          "battleRewards": {
-            "$ref": "#/components/schemas/BattleRewards"
           }
         },
         "required": [
@@ -1212,15 +1209,13 @@
           },
           "stageId": {
             "type": "string"
-          },
-          "supplies": {
-            "$ref": "#/components/schemas/BattleSupplies"
           }
         },
         "required": [
           "type",
           "stageId"
-        ]
+        ],
+        "description": "Starts L01 first rescue (alley_rescue) or unlocked home replay (alley_boss). l00_tutorial is accepted only to retry a failed tutorial settlement. No battle inventory reservation."
       },
       "CompleteBattle": {
         "type": "object",
@@ -1240,9 +1235,6 @@
               "lost"
             ]
           },
-          "usedSupplies": {
-            "$ref": "#/components/schemas/BattleSupplies"
-          },
           "report": {
             "$ref": "#/components/schemas/BattleReport"
           }
@@ -1252,7 +1244,7 @@
           "attemptId",
           "outcome"
         ],
-        "description": "L01 requires report and usedSupplies (an empty object is valid). Any reserved loadout requires usedSupplies. Returns unused reserved units and commits rewards atomically. Old L00 clients with no reservation may omit both fields."
+        "description": "Both first-chapter stage IDs (alley_rescue and alley_boss) require report. l00_tutorial requires only attemptId and outcome. Battle completion grants no consumable supplies. Old active reservations are fully returned in the same durable, idempotent settlement transaction."
       },
       "Continue": {
         "type": "object",
@@ -1447,12 +1439,33 @@
               "type": "object",
               "additionalProperties": false,
               "properties": {
-                "dangerLevel": {"type": "integer", "minimum": 0, "maximum": 3},
-                "triggerChance": {"type": "integer", "minimum": 1, "maximum": 1000},
-                "riskShare": {"type": "integer", "minimum": 1, "maximum": 1000},
-                "echoShare": {"type": "integer", "minimum": 1, "maximum": 1000}
+                "dangerLevel": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 3
+                },
+                "triggerChance": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000
+                },
+                "riskShare": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000
+                },
+                "echoShare": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000
+                }
               },
-              "required": ["dangerLevel", "triggerChance", "riskShare", "echoShare"]
+              "required": [
+                "dangerLevel",
+                "triggerChance",
+                "riskShare",
+                "echoShare"
+              ]
             }
           },
           "cats": {
@@ -1770,27 +1783,10 @@
           "nodeId"
         ]
       },
-      "BattleSupplies": {
-        "type": "object",
-        "additionalProperties": false,
-        "description": "Player-owned supplies. START_BATTLE reserves these once; COMPLETE_BATTLE reports effective use. L00 allows up to 2 warm cans and 1 energy treat; L01 allows 4 and 2, with no free baseline.",
-        "properties": {
-          "warm-can": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 4
-          },
-          "bouncy-treat": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 2
-          }
-        }
-      },
       "BattleReport": {
         "type": "object",
         "additionalProperties": false,
-        "description": "Client-reported combat summary; L01 requires it. The prototype does not run server-authoritative combat. L01 victory requires bossDefeated and fewer than 3 leaks. Perfect means zero leaks, not zero damage to combat cats.",
+        "description": "Client-reported combat summary, required for alley_rescue and alley_boss. Victory requires bossDefeated and fewer than 3 leaks. The prototype does not run server-authoritative combat.",
         "properties": {
           "leaks": {
             "type": "integer",
@@ -1806,68 +1802,22 @@
           "bossDefeated"
         ]
       },
-      "BattleRewards": {
+      "LegacyBattleReservation": {
         "type": "object",
         "additionalProperties": false,
-        "properties": {
-          "supplies": {
-            "$ref": "#/components/schemas/BattleRewardSupplies"
-          },
-          "baseCount": {
-            "type": "integer",
-            "minimum": 2,
-            "maximum": 4
-          },
-          "firstClearBonus": {
-            "type": "integer",
-            "enum": [
-              0,
-              2
-            ]
-          },
-          "perfectBonus": {
-            "type": "integer",
-            "enum": [
-              0,
-              1
-            ]
-          },
-          "difficulty": {
-            "type": "string",
-            "enum": [
-              "low",
-              "medium",
-              "high"
-            ]
-          }
-        },
-        "required": [
-          "supplies",
-          "baseCount",
-          "firstClearBonus",
-          "perfectBonus",
-          "difficulty"
-        ]
-      },
-      "BattleRewardSupplies": {
-        "type": "object",
-        "additionalProperties": false,
+        "description": "Read-only compatibility for old active saves. Current battles cannot select or consume these items. All reserved units are returned atomically once when that active attempt settles; historical settled attempts are never refunded again.",
         "properties": {
           "warm-can": {
             "type": "integer",
-            "minimum": 0,
-            "maximum": 7
+            "minimum": 0
           },
           "bouncy-treat": {
             "type": "integer",
-            "minimum": 0,
-            "maximum": 7
+            "minimum": 0
           }
         },
-        "required": [
-          "warm-can",
-          "bouncy-treat"
-        ]
+        "deprecated": true,
+        "readOnly": true
       }
     }
   },

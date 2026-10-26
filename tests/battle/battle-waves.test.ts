@@ -14,9 +14,9 @@ function firstGap(): CombatState {
   return state;
 }
 
-test('ten waves alternate groups and relief, with immutable entries and derived totals', () => {
-  assert.deepEqual(WAVES.map(wave => wave.length), [2, 3, 3, 2, 4, 3, 2, 4, 3, 5]);
-  assert.equal(WAVES.flat().length, 31);
+test('six waves alternate groups and relief, with immutable entries and derived totals', () => {
+  assert.deepEqual(WAVES.map(wave => wave.length), [2, 3, 3, 2, 4, 3]);
+  assert.equal(WAVES.flat().length, 17);
   assert.equal(CONFIG.TOTAL_WAVES, WAVES.length);
   assert.equal(CONFIG.TOTAL_ENEMIES, WAVES.flat().length + 1);
   assert.equal(CONFIG.WAVE_GAP, 5);
@@ -33,7 +33,7 @@ test('ten waves alternate groups and relief, with immutable entries and derived 
   }
 });
 
-test('legal play visits every wave, preserves each spawn schedule, and wins only after all 31 real enemies resolve', () => {
+test('legal play visits every wave, preserves each spawn schedule, and wins only after all 17 real enemies resolve', () => {
   const byWave = new Map<number, {time: number; type: string}[]>();
   const seen = new Set<string>();
   const gaps = new Set<number>();
@@ -43,7 +43,6 @@ test('legal play visits every wave, preserves each spawn schedule, and wins only
     if (state.wave !== lastWave) {
       assert.equal(state.wave, lastWave + 1);
       lastWave = state.wave;
-      assert.equal(state.waveCheckpoint!.spawned, 1 + WAVES.slice(0, state.wave - 1).flat().length);
       byWave.set(state.wave, []);
     }
     for (const enemy of state.enemies) if (!seen.has(enemy.id)) {
@@ -59,23 +58,23 @@ test('legal play visits every wave, preserves each spawn schedule, and wins only
     if (state.nextWaveIn !== null) {
       gaps.add(state.wave);
       assert.equal(state.phase, 'battle');
-      assert.ok(state.wave < 10);
+      assert.ok(state.wave < CONFIG.TOTAL_WAVES);
       assert.equal(state.enemies.length, 0);
       assert.equal(state.spawnIndex, WAVES[state.wave - 1].length);
       assert.ok(state.nextWaveIn > 0 && state.nextWaveIn <= 5);
     }
-    if (state.wave < 10) assert.notEqual(state.phase, 'won');
+    if (state.wave < CONFIG.TOTAL_WAVES) assert.notEqual(state.phase, 'won');
   }});
   assert.equal(result.state.phase, 'won');
-  assert.equal(result.state.wave, 10);
-  assert.equal(result.state.spawned, 32);
-  assert.equal(result.state.defeated + result.state.escaped, 32);
+  assert.equal(result.state.wave, 6);
+  assert.equal(result.state.spawned, 18);
+  assert.equal(result.state.defeated + result.state.escaped, 18);
   assert.equal(result.state.enemies.length, 0);
-  assert.equal(result.state.spawnIndex, 5);
+  assert.equal(result.state.spawnIndex, 3);
   assert.equal(result.state.nextWaveIn, null);
-  assert.equal(seen.size, 31);
+  assert.equal(seen.size, 17);
   assert.ok(pendingOnEmptyBoard > 0);
-  assert.deepEqual([...gaps], [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.deepEqual([...gaps], [1, 2, 3, 4, 5]);
   for (const [wave, actual] of byWave) {
     const expected = WAVES[wave - 1];
     assert.equal(actual.length, expected.length);
@@ -86,78 +85,34 @@ test('legal play visits every wave, preserves each spawn schedule, and wins only
   }
 });
 
-for (const speed of [0.5, 1, 2] as PlaybackSpeed[]) test(`${speed}x wave gap consumes exactly five simulation seconds and pause sources freeze it`, () => {
+for (const speed of [0.5, 1, 2] as PlaybackSpeed[]) test(`${speed}x keeps an exact five-second simulation gap, charging energy while pause freezes it`, () => {
   const initial = act(firstGap(), {type: 'SET_SPEED', speed});
-  for (const stopped of [act(initial, {type: 'PAUSE'}), act(initial, {type: 'OPEN_BAG'}), {...initial, externallyPaused: true}]) {
-    assert.equal(advanceGame(stopped, 30), stopped);
-    assert.equal(stopped.nextWaveIn, 5);
-    assert.equal(stopped.wave, 1);
-  }
   const paused = act(initial, {type: 'PAUSE'});
-  const bag = act(paused, {type: 'OPEN_BAG'});
-  const closed = act(bag, {type: 'CLOSE_BAG'});
-  assert.equal(closed.paused, true); assert.equal(advanceGame(closed, 30), closed);
-  const resumed = act(closed, {type: 'PAUSE'});
-  const almost = advanceGame(resumed, 4.95 / speed);
-  assert.equal(almost.wave, 1); closeTo(almost.nextWaveIn!, 0.05);
-  assert.equal(almost.enemies.length, 0);
-  const next = advanceGame(almost, 0.05 / speed);
-  assert.equal(next.wave, 2); assert.equal(next.nextWaveIn, null);
-  closeTo(next.time - initial.time, 5);
-  assert.equal(next.enemies.length, 1);
-  assert.equal(next.spawned, initial.spawned + 1);
-  assert.deepEqual(next.inventory, initial.inventory, 'a wave gap is not a refill');
-  for (const cat of next.cats) {
-    const before = initial.cats.find(value => value.id === cat.id)!;
-    assert.equal(cat.hp, before.hp); assert.equal(cat.energy, before.energy);
+  assert.equal(paused.paused, true);
+  assert.equal(advanceGame(paused, 30), paused, 'manual pause preserves the complete gap state');
+  const external = {...initial, externallyPaused: true};
+  assert.equal(advanceGame(external, 30), external, 'host pause also preserves the complete gap state');
+
+  const resumed = act(paused, {type: 'PAUSE'});
+  const beforeEnd = advanceGame(resumed, 4.95 / speed);
+  assert.equal(beforeEnd.wave, 1);
+  closeTo(beforeEnd.nextWaveIn!, 0.05);
+  closeTo(beforeEnd.time - initial.time, 4.95);
+  assert.equal(beforeEnd.enemies.length, 0);
+  assert.equal(beforeEnd.spawned, initial.spawned);
+
+  const afterEnd = advanceGame(beforeEnd, 0.05 / speed);
+  assert.equal(afterEnd.wave, 2);
+  assert.equal(afterEnd.nextWaveIn, null);
+  closeTo(afterEnd.time - initial.time, 5);
+  assert.equal(afterEnd.spawned, initial.spawned + 1);
+  assert.equal(afterEnd.spawnIndex, 1);
+  assert.equal(afterEnd.enemies.length, 1);
+  for (const cat of afterEnd.cats) {
+    const previous = initial.cats.find(value => value.id === cat.id)!;
+    assert.equal(cat.hp, previous.hp, 'wave gaps do not heal or reset cats');
+    closeTo(cat.energy, cat.combatant ? Math.min(CONFIG.MAX_ENERGY, previous.energy + 25) : previous.energy);
   }
-});
-
-test('ordinary difficulty tolerates a three-second reaction and moving aim with only the basic loadout', context => {
-  let aimingSeconds = 0;
-  let previous: CombatState | null = null;
-  const result = playBattle(beginBattle({difficulty: 'medium'}), {reactionSeconds: 3, onSnapshot(state) {
-    if (previous?.skillAim && state.time > previous.time) aimingSeconds += state.time - previous.time;
-    previous = state;
-  }});
-  assert.equal(result.state.phase, 'won');
-  assert.equal(result.reforms, 0); assert.equal(result.state.leaks, 0);
-  assert.ok(result.areaCasts >= 3 && result.shieldCasts >= 2);
-  assert.ok(aimingSeconds >= result.areaCasts * 3 - 0.01);
-  assert.ok(result.healingItems <= 2 && result.energyItems <= 1);
-  context.diagnostic(JSON.stringify({difficulty: 'medium', reactionSeconds: 3, seconds: result.battleSeconds,
-    shields: result.shieldCasts, areas: result.areaCasts, areaHits: result.areaHits,
-    healingItems: result.healingItems, energyItems: result.energyItems, leaks: result.state.leaks}));
-});
-
-test('slow difficult play can reform on wave ten and finish with the same empty inventory, without free supplies', context => {
-  let observedReform = false;
-  const result = playBattle(beginBattle({difficulty: 'high'}), {reactionSeconds: 3, allowReforms: 1,
-    onReform(before, after) {
-      observedReform = true;
-      assert.equal(before.wave, 10); assert.equal(before.leaks, 3);
-      assert.deepEqual(before.inventory, {'warm-can': 0, 'bouncy-treat': 0});
-      assert.deepEqual(before.waveCheckpoint!.inventory, before.inventory);
-      assert.equal(after.phase, 'battle'); assert.equal(after.wave, 10);
-      assert.equal(after.leaks, 0); assert.equal(after.reforms, 1);
-      assert.equal(after.spawned, before.waveCheckpoint!.spawned);
-      assert.deepEqual(after.inventory, before.inventory);
-      assert.deepEqual(after.initialInventory, {'warm-can': 2, 'bouncy-treat': 1});
-      assert.notEqual(after.inventory, after.waveCheckpoint!.inventory);
-      for (const cat of after.cats.filter(cat => cat.combatant)) {
-        assert.equal(cat.hp, cat.maxHp);
-        assert.equal(cat.energy, 0); assert.equal(cat.shield, 0); assert.equal(cat.energyItemCooldown, 0);
-      }
-      assert.equal(after.healingCooldown, 0);
-    }});
-  assert.equal(observedReform, true);
-  assert.equal(result.reforms, 1); assert.equal(result.state.phase, 'won');
-  assert.equal(result.state.spawned, 32); assert.equal(result.state.defeated + result.state.escaped, 32);
-  assert.ok(result.state.leaks < 3);
-  assert.equal(result.healingItems, 2); assert.equal(result.energyItems, 1);
-  assert.deepEqual(result.state.inventory, {'warm-can': 0, 'bouncy-treat': 0});
-  assert.ok(result.battleSeconds < 180);
-  context.diagnostic(JSON.stringify({difficulty: 'high', reactionSeconds: 3, seconds: result.battleSeconds,
-    reforms: result.reforms, shields: result.shieldCasts, areas: result.areaCasts, areaHits: result.areaHits,
-    healingItems: result.healingItems, energyItems: result.energyItems, leaksAfterReform: result.state.leaks}));
+  assert.equal('inventory' in afterEnd, false);
+  assert.equal('waveCheckpoint' in afterEnd, false);
 });

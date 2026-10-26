@@ -5,24 +5,11 @@ import {getSkillCells, isEnemyInCells} from '../../web/src/modules/battle/l00/ra
 import type {CombatAction, CombatEnemy, CombatOptions, CombatState} from '../../web/src/modules/battle/l00/state.ts';
 import type {PrologueBattle} from '../../web/src/modules/battle/l00/runtime.ts';
 
-export function useTutorialEnergyItem(initial: CombatState): CombatState {
-  assert.equal(initial.phase, 'teach_energy_item');
-  let state = act(initial, {type: 'OPEN_BAG'});
-  state = act(state, {type: 'SELECT_ITEM', itemId: 'bouncy-treat'});
-  state = act(state, {type: 'SELECT_TARGET', catId: 'caster'});
-  assert.equal(state.lastAction!.ok, true);
-  assert.equal(state.phase, 'skill_charge');
-  return state;
-}
-
 export function skillTutorialSnapshots(initial: CombatState): CombatState[] {
   assert.equal(initial.phase, 'teach_energy');
   let state = act(initial, {type: 'BEGIN_SKILL_PRACTICE'});
   const snapshots = [state];
-  for (let step = 0; step < 200 && state.phase === 'skill_charge'; step++) state = advanceGame(state, 0.1);
-  assert.equal(state.phase, 'teach_energy_item'); snapshots.push(state);
-  state = useTutorialEnergyItem(state); snapshots.push(state);
-  for (let step = 0; step < 200 && state.phase === 'skill_charge'; step++) state = advanceGame(state, 0.1);
+  for (let step = 0; step < 500 && state.phase === 'skill_charge'; step++) state = advanceGame(state, 0.1);
   assert.equal(state.phase, 'teach_guard_skill'); snapshots.push(state);
   state = act(state, {type: 'CAST_SKILL', catId: 'guard'});
   assert.equal(state.phase, 'teach_caster_skill'); snapshots.push(state);
@@ -38,11 +25,10 @@ export function finishSkillTutorial(initial: CombatState): CombatState {return s
 /** Reach real wave one exclusively through the same legal tutorial actions as the player. */
 export function beginBattle(options: CombatOptions = {}): CombatState {
   let state = act(createGame(options), {type: 'START'});
-  for (let step = 0; step < 1000 && state.phase !== 'teach_bag'; step++) state = advanceGame(state, 0.05);
-  assert.equal(state.phase, 'teach_bag');
+  for (let step = 0; step < 1000 && state.phase !== 'teach_position'; step++) state = advanceGame(state, 0.05);
+  assert.equal(state.phase, 'teach_position');
   for (const action of [
-    {type: 'OPEN_BAG'}, {type: 'SELECT_ITEM', itemId: 'warm-can'}, {type: 'SELECT_TARGET', catId: 'caster'},
-    {type: 'DEPLOY_CAT', catId: 'caster', ...RECOMMENDED_POSITIONS.caster},
+    {type: 'MOVE_CAT', catId: 'caster', ...RECOMMENDED_POSITIONS.caster},
     {type: 'MOVE_CAT', catId: 'guard', ...RECOMMENDED_POSITIONS.guard},
   ] as CombatAction[]) state = act(state, action);
   return finishSkillTutorial(state);
@@ -51,9 +37,7 @@ export function beginBattle(options: CombatOptions = {}): CombatState {
 export interface ManualPlayOptions {
   /** Both shield reaction and area aiming take this many simulated seconds. */
   reactionSeconds?: number;
-  allowReforms?: number;
   onSnapshot?: (state: CombatState) => void;
-  onReform?: (before: CombatState, after: CombatState) => void;
 }
 interface BattleDriver {
   snapshot(): CombatState;
@@ -62,8 +46,8 @@ interface BattleDriver {
 }
 const fighter = (state: CombatState, id: 'guard' | 'caster') => state.cats.find(cat => cat.id === id)!;
 
-/** Inspect once a second, heal at half health, and spend skills only after a human-sized delay.
- * Never writes combat state, tops up resources, skips waves, or uses extra host supplies.
+/** Inspect once a second and spend skills only after a human-sized delay.
+ * Never writes combat state, tops up health/energy, revives cats or skips waves.
  * Aiming keeps simulation running; a cluster may disperse before the eventual release.
  */
 function playManually(driver: BattleDriver, options: ManualPlayOptions = {}) {
@@ -77,7 +61,7 @@ function playManually(driver: BattleDriver, options: ManualPlayOptions = {}) {
   const seen = new Set<string>();
   const spawns: CombatEnemy[] = [];
   const waves: number[] = [];
-  const stats = {shieldCasts: 0, areaCasts: 0, areaHits: 0, healingItems: 0, energyItems: 0, cancelledAims: 0, reforms: 0};
+  const stats = {shieldCasts: 0, areaCasts: 0, areaHits: 0, cancelledAims: 0};
   const observe = () => {
     if (waves.at(-1) !== state.wave) waves.push(state.wave);
     for (const enemy of state.enemies) if (!enemy.training && !seen.has(enemy.id)) {
@@ -97,15 +81,7 @@ function playManually(driver: BattleDriver, options: ManualPlayOptions = {}) {
   };
   const dispatch = (action: CombatAction) => {state = driver.dispatch(action); return state.lastAction?.ok === true;};
   observe();
-  for (let step = 0; step < 12000 && (state.phase === 'battle' || state.phase === 'reform'); step++) {
-    if (state.phase === 'reform') {
-      if (stats.reforms >= (options.allowReforms ?? 0)) break;
-      const before = state;
-      assert.equal(dispatch({type: 'REFORM'}), true);
-      stats.reforms++; casterDue = null; guardDue = null;
-      options.onReform?.(before, state);
-      observe();
-    }
+  for (let step = 0; step < 12000 && state.phase === 'battle'; step++) {
     if (casterDue !== null && state.time + 1e-8 >= casterDue) {
       const target = bestTarget();
       if (target.damage > 0) {
@@ -122,22 +98,10 @@ function playManually(driver: BattleDriver, options: ManualPlayOptions = {}) {
     if (state.time + 1e-8 >= nextObservation && !state.skillAim) {
       // Observations stay on a one-second clock, even while an aim prevents acting.
       nextObservation = startTime + Math.floor(state.time - startTime + 1e-8) + 1;
-      for (const id of ['guard', 'caster'] as const) {
-        const cat = fighter(state, id);
-        if (cat.hp <= cat.maxHp * 0.5 && state.inventory['warm-can'] > 0 && state.healingCooldown === 0) {
-          if (dispatch({type: 'USE_ITEM', itemId: 'warm-can', catId: id})) stats.healingItems++;
-        }
-        if (fighter(state, id).status === 'ready') dispatch({type: 'DEPLOY_CAT', catId: id, ...RECOMMENDED_POSITIONS[id]});
-      }
-      const caster = fighter(state, 'caster');
-      if (state.inventory['bouncy-treat'] > 0 && caster.energy >= 70 && caster.energy < 100
-          && state.enemies.filter(enemy => enemy.x <= CONFIG.VISIBLE_MAX_X).length >= 2) {
-        if (dispatch({type: 'USE_ITEM', itemId: 'bouncy-treat', catId: 'caster'})) stats.energyItems++;
-      }
       const guard = fighter(state, 'guard');
-      if (guardDue === null && guard.energy >= CONFIG.MAX_ENERGY && guard.shield <= 0
+      if (guardDue === null && guard.status === 'active' && guard.energy >= CONFIG.MAX_ENERGY && guard.shield <= 0
           && state.enemies.some(enemy => enemy.blockedBy === 'guard')) guardDue = state.time + reactionSeconds;
-      if (guardDue === null && fighter(state, 'caster').energy >= CONFIG.MAX_ENERGY) {
+      if (guardDue === null && fighter(state, 'caster').status === 'active' && fighter(state, 'caster').energy >= CONFIG.MAX_ENERGY) {
         const target = bestTarget();
         if (target.hits >= 2 || (guard.hp <= 120 && target.damage >= 30) || (state.wave === CONFIG.TOTAL_WAVES && target.damage > 0)) {
           if (dispatch({type: 'SELECT_SKILL', catId: 'caster'})) {

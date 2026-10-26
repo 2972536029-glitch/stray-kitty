@@ -84,7 +84,7 @@ func TestFourEventTiersPersistAndAllLeadToRescue(t *testing.T) {
 			}
 			g = restarted
 			// 失败重试沿用后果，不重掷；胜利后清除待应用压力。
-			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: firstAttemptID, Outcome: "lost"})
+			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: firstAttemptID, Outcome: "lost", Report: bossReport(3, false)})
 			if rewardDraws != 0 {
 				t.Fatal("loss drew victory supplies")
 			}
@@ -100,9 +100,9 @@ func TestFourEventTiersPersistAndAllLeadToRescue(t *testing.T) {
 				t.Fatal("retry did not create a fresh attempt with the same event result and pressure")
 			}
 			retryAttemptID := s.ActiveBattle.ID
-			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: retryAttemptID, Outcome: "won"})
-			if rewardDraws != 5+tc.pressure {
-				t.Fatal("victory supplies did not use the locked difficulty plus first-clear bonus")
+			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: retryAttemptID, Outcome: "won", Report: bossReport(0, true)})
+			if rewardDraws != 0 {
+				t.Fatal("victory must not draw supplies")
 			}
 			if !domain.Contains(s.Cats, "diandian") || s.Currencies["stamp"] != 2 || s.EventState == nil || s.EventState.PendingModifiers != (domain.BattleModifiers{}) {
 				t.Fatal("mainline rescue or modifier cleanup failed")

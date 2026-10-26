@@ -18,7 +18,7 @@ export function createL00Context(
   if (state.phase !== 'battle' || !attempt?.id.trim() || attempt.status !== 'active') {
     throw new Error('没有可进入的进行中战斗。');
   }
-  if (attempt.stageId !== 'alley_rescue') throw new Error('这个关卡的战斗尚未开放。');
+  if (attempt.stageId !== 'l00_tutorial') throw new Error('这个关卡的战斗尚未开放。');
   const stage = catalog.stages.find(candidate => candidate.id === attempt.stageId);
   if (!stage || stage.lanes !== CONFIG.ROWS || stage.columns !== CONFIG.COLUMNS || stage.waves !== CONFIG.TOTAL_WAVES) {
     throw new Error('关卡配置需要更新，请重新连接游戏后再试。');
@@ -30,6 +30,5 @@ export function createL00Context(
     // Use this attempt's saved event output, never a later pending result or an extra stat multiplier.
     difficulty: difficultyFromPressure(attempt.modifiers?.shadowPressure),
     modifiers: [],
-    extraSupplies: {...attempt.supplies},
   };
 }

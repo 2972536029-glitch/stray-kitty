@@ -35,8 +35,8 @@ stray-kitty/
 │        └─ L01-first-alley/
 ├─ docs/  需求、架构、接口与集成记录
 │  ├─ ARCHITECTURE.md  架构、目录与接入
-│  ├─ L00-INTEGRATION.md  L00 历史接入与验证记录
-│  ├─ L01-INTEGRATION.md  第一章、补给服务与当前验证
+│  ├─ L00-INTEGRATION.md  L00 六波新手教学与接入
+│  ├─ L01-INTEGRATION.md  第一章四猫与当前接入
 │  ├─ openapi.json  API 规范
 │  └─ PRD.md  需求与分工
 ├─ level_design/
@@ -64,7 +64,6 @@ stray-kitty/
 │  └─ migrations/  MySQL 结构 · 尚未接入
 ├─ tests/  自动验证
 │  ├─ battle/
-│  │  └─ reference/
 │  └─ e2e/  浏览器流程
 ├─ web/  浏览器前端
 │  ├─ content/  独立内容数据
@@ -103,7 +102,7 @@ stray-kitty/
 │     │  └─ demo/  可替换的贯通 Demo
 │     ├─ modules/  正式模块接入口
 │     │  ├─ battle/  塔防 · 闫琦雯
-│     │  │  ├─ chapter/  第一章凸形小巷、六猫与固定首领
+│     │  │  ├─ chapter/  第一章紧凑棋盘、四猫与固定首领
 │     │  │  └─ l00/  固定 L00 局内实现
 │     │  ├─ cats/  猫咪档案、救援与成长
 │     │  ├─ economy/  货币、扣费与奖励
@@ -118,6 +117,7 @@ stray-kitty/
 │     └─ ui/  界面与样式 · 轩扬
 ├─ .dockerignore  容器构建排除
 ├─ .env.example  非秘密环境变量示例
+├─ .git
 ├─ .gitattributes  换行与二进制规则
 ├─ .gitignore  本地生成文件排除
 ├─ .gitlab-ci.yml  检查与构建流水线
@@ -150,14 +150,14 @@ home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余
 | 闫琦雯 | modules/battle；content/battles | BattleContext → BattleResult → COMPLETE_BATTLE |
 | 轩扬 | ui 与各模块展示组件 | 订阅状态、展示结果 → 受控操作回调 |
 
-上表代码路径相对 web/src，内容路径相对 web；战斗补给库存、结算和联调由闫琦雯扩展，家园仓库展示由 UI 协作；其余经济、运维与数据库适配继续按团队认领。app/App.tsx 装配，app/useGame.ts 处理会话、请求和恢复，ui 提供受控展示组件。战斗阶段由 modules/battle/BattleHost.tsx 按场次路由 L00 与 L01 实现，其他阶段保留 examples/demo 的探索、地图、家园及剧情场景；其余模块按各自接口继续接入。
+上表代码路径相对 web/src，内容路径相对 web；战斗引擎、结果结算和联调由闫琦雯维护，家园仓库展示由 UI 协作；其余经济、运维与数据库适配继续按团队认领。app/App.tsx 装配，app/useGame.ts 处理会话、请求和恢复，ui 提供受控展示组件。战斗阶段由 modules/battle/BattleHost.tsx 按场次路由 L00 与 L01 实现，其他阶段保留 examples/demo 的探索、地图、家园及剧情场景；其余模块按各自接口继续接入。
 
 - 公共契约在 web/src/contracts/index.ts；长期变更通过 app/controller.ts，不直接修改快照。
-- 战斗输入使用服务端 attemptId、3×7／十波关卡与伙伴标识；宿主已将 activeBattle.modifiers.shadowPressure 的 -1／0／1 转为 low／medium／high，缺省普通、非法值拒绝，经 BattleContext.difficulty 传入，extraSupplies={}。只读取该场次保存的修正快照，不读取最新 EventState 或重复评分；同场重启与刷新保持档位，刷新仍重新开始教学，不恢复局内棋盘、体力与波次。输出 attemptId 与 won/lost，沿用 COMPLETE_BATTLE。局部 start、pause、stop 保留，退出释放监听与计时器；补给服务仍待接入。工程检查与浏览器覆盖范围统一见 [L00 接入记录](L00-INTEGRATION.md#验证记录)。
+- 战斗使用服务端attemptId和保存的事件难度快照。l00_tutorial为3×7／六波正式教程，alley_rescue和alley_boss均为5×10／八波四猫首领战。新命令无supplies／usedSupplies；L01结果包含leaks与bossDefeated。所有在场猫每秒自动+5能量，0血本场退场，无道具或休整。暂停与卸载沿用宿主生命周期，刷新同场次从ready重建。
 - 新增长期规则时同步 Go service、TypeScript 契约与 [OpenAPI](openapi.json)。服务端负责奖励，UI 不直接加余额或发家具。
 - 修改内容后执行 npm run content:sync，提交 web/content/catalog.json 和 server/internal/platform/catalog.json 两份生成物。
 
-第一章与正式补给当前实现见 [L01 接入](L01-INTEGRATION.md)。其余段落中的 L00 空清单、补给待接状态保留为首次集成历史；当前服务支持预留、有效耗用结算、未用返还、分档首胜与 L01 零漏加奖。
+当前无道具规则与旧预留返还见 [L01 接入](L01-INTEGRATION.md)；序章教程见 [L00 接入](L00-INTEGRATION.md)。旧仓库存量保留，新版本不抽取或消耗战斗物品。
 
 ## 5. 启动与检查
 
@@ -222,12 +222,8 @@ npm run test:e2e
 
 当前入口、workspace 工程命令、JSON 存档、服务端定价与发货、双骰后果包均保留。王浩哲新增的序章、对话态度、环境观察及 protect 事件选项继续运行。外部库不增加 Zustand 或 Framer Motion。MR 的旧状态机、临时结算、根目录工程配置与旧剧情数据未纳入本次移植。
 
-## 9. L00 主项目集成（历史基线）
+## 9. 当前战斗集成
 
-固定来源为 0.10.0／38545c3b9b93698b3a2cbbc23608c51e192388cc。App 的 battle 阶段挂载 modules/battle/L00BattleHost.tsx，核心导出为 modules/battle/l00/index.ts；其他阶段保留团队 UI、地图、剧情及家园。关卡源为 content/battles/stages.json，alley_rescue 使用 3 行、7 列、10 波，并同步前后端聚合目录。
-
-本次难度已按活动场次保存的事件修正转换为三档，extraSupplies={}，结果沿用原 COMPLETE_BATTLE 与服务端剧情结算；没有迁入独立试玩仓库、补给回执或分档物资发奖。现有点点救援身份与战斗保护喵喵的演出仍待剧情负责人最终衔接。原独立交付提醒的整树合并限制作为历史保留，当前分支是 main 工程上的真实集成，不替换主项目根配置。
-
-本轮工程检查已通过，独立审查未发现阻塞问题；浏览器运行结果、精确覆盖范围与历史证据统一见 [L00 接入记录](L00-INTEGRATION.md#验证记录)。[集成 MR !14](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/14) 面向 main，尚未合入，远端最新 CI 未核对。规则与后续目标见[战斗设计](../design/tower-defense/README.md)，首次正式合入后统一在主项目维护。
+L00／L01当前规则已取代旧九步十波、六猫、补给与休整版本。正式序章入口l00_tutorial与第一章首次救援alley_rescue分开，家园alley_boss重玩同一首领战；不重写其他模块故事。旧active预留在新版结算时全额返还且只执行一次。实际检查结果见本次交付记录，不混用旧提交的测试数字。
 
 目录变化后运行 npm run architecture:build；npm run architecture:check 会检查本文件与实际文件夹是否一致。需求见 [PRD](PRD.md)。

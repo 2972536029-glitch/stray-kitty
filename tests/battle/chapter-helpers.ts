@@ -1,13 +1,13 @@
 import {CAT_DEFINITIONS, CELLS, MAP, SKILLS} from '../../web/src/modules/battle/chapter/config.ts';
 import {advanceChapter, createChapterBattle, dispatchChapter, getBossCells, getDeployError, getSkillCells, isPlayableCell} from '../../web/src/modules/battle/chapter/engine.ts';
-import type {BattleDifficulty, ChapterAction, ChapterCatId, ChapterState, Position, Supplies} from '../../web/src/modules/battle/chapter/types.ts';
+import type {BattleDifficulty, ChapterAction, ChapterCatId, ChapterState, Position} from '../../web/src/modules/battle/chapter/types.ts';
 
 /** A deterministic player: observe once a second, move away from locked slam cells,
  * then restore the formation when cells are clear and use one ready skill per observation.
- * Only dispatches actions available to the UI; it never writes health, wave or inventory state.
+ * Only dispatches actions available to the UI; it never writes health or wave state.
  */
-export function playChapter(difficulty: BattleDifficulty, options: {loadout?: Partial<Supplies>; dodge?: boolean; skills?: boolean; limit?: number; onSnapshot?: (state: ChapterState) => void} = {}) {
-  let state = dispatchChapter(createChapterBattle({difficulty, loadout: options.loadout}), {type: 'START'});
+export function playChapter(difficulty: BattleDifficulty, options: {dodge?: boolean; skills?: boolean; limit?: number; onSnapshot?: (state: ChapterState) => void} = {}) {
+  let state = dispatchChapter(createChapterBattle({difficulty}), {type: 'START'});
   let observeAt = 0;
   const readySince = new Map<ChapterCatId, number>();
   const actions: {time: number; action: ChapterAction}[] = [];
@@ -47,7 +47,7 @@ export function playChapter(difficulty: BattleDifficulty, options: {loadout?: Pa
       } else if (state.boss.phase !== 'windup') {
         for (const cat of [...state.cats]) {
           const desired = CAT_DEFINITIONS[cat.id].initial;
-          if ((cat.x !== desired.x || cat.y !== desired.y || cat.status === 'resting') && !getDeployError(state, cat.id, desired)) act({type: 'MOVE_CAT', catId: cat.id, ...desired});
+          if (cat.status === 'active' && (cat.x !== desired.x || cat.y !== desired.y) && !getDeployError(state, cat.id, desired)) act({type: 'MOVE_CAT', catId: cat.id, ...desired});
         }
       }
       if (options.skills !== false) {
@@ -55,11 +55,11 @@ export function playChapter(difficulty: BattleDifficulty, options: {loadout?: Pa
           if (cat.energy === 100 && cat.status === 'active') {if (!readySince.has(cat.id)) readySince.set(cat.id, state.elapsed);}
           else readySince.delete(cat.id);
         }
-        const order: ChapterCatId[] = ['singer', 'guard', 'tabby', 'caster', 'hammer', 'frost'];
+        const order: ChapterCatId[] = ['diandian', 'guard', 'caster', 'tuanzi'];
         for (const id of order) {
           const cat = state.cats.find(cat => cat.id === id)!;
           if (!readySince.has(id) || state.elapsed - readySince.get(id)! < 1) continue;
-          if (id === 'singer' && state.cats.reduce((sum, c) => sum + c.maxHp - c.hp, 0) < 40) continue;
+          if (id === 'diandian' && state.cats.reduce((sum, c) => sum + c.maxHp - c.hp, 0) < 40) continue;
           if (SKILLS[id].targeting === 'area') act({type: 'CAST_SKILL', catId: id, target: chooseTarget(id)});
           else act({type: 'CAST_SKILL', catId: id});
           readySince.delete(id); break;

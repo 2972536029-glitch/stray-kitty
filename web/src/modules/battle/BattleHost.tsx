@@ -6,9 +6,8 @@ import {ChapterBattleViewport} from './chapter/ChapterBattleViewport';
 export function BattleHost({state, catalog, paused, onResult}: {
   state: GameState; catalog: Catalog; paused: boolean; onResult: (result: BattleResult) => void;
 }) {
-  // 序章教学战(l00_tutorial,雨巷探索前的独立教学)与救援战(alley_rescue,序章
-  // 剧情对齐后的 L00 体验)都走 L00BattleHost;教学与救援是两场服务端 attempt。
-  if (state.activeBattle?.stageId === 'l00_tutorial' || state.activeBattle?.stageId === 'alley_rescue') {
+  // The prologue teaches combat; the first rescue and home replay share L01.
+  if (state.activeBattle?.stageId === 'l00_tutorial') {
     return <L00BattleHost key={state.activeBattle.id} state={state} catalog={catalog} paused={paused} onResult={onResult}/>;
   }
   let context: ReturnType<typeof createChapterContext>;

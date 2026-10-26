@@ -558,7 +558,7 @@ func TestRepeatWinDoesNotRefundPush(t *testing.T) {
 		t.Fatalf("initial token should be spent, got %d", s.PushTokens)
 	}
 	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
-	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
 	if s.PushTokens != 1 {
 		t.Fatalf("first win should refund to 1, got %d", s.PushTokens)
 	}
@@ -568,7 +568,7 @@ func TestRepeatWinDoesNotRefundPush(t *testing.T) {
 	}
 	// 第二次胜利:非首通,不回 token。
 	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
-	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
 	if s.PushTokens != 1 {
 		t.Fatalf("repeat win must not refund push, got %d", s.PushTokens)
 	}

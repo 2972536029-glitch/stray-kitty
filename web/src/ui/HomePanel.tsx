@@ -9,7 +9,7 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop}:
   const pool = catalog.pools.find(p => p.id === 'rainy_box');
   const total = pool?.entries.reduce((sum, e) => sum + e.weight, 0) ?? 0;
   return <section className="journal-card home-panel"><span className="eyebrow">MAKE IT OURS</span><h2>整理我们的家</h2>
-    {state.flags.includes('alley_rescued') && <ChapterLoadout state={state} disabled={disabled} onCommand={onCommand}/>}
+    {state.flags.includes('alley_rescued') && <ChapterLoadout disabled={disabled} onCommand={onCommand}/>}
     <label className="select-label">选择家具<select value={furniture} onChange={e => setSelected(e.target.value)} disabled={disabled}>{state.furniture.map(id => <option key={id} value={id}>{name(id)}</option>)}</select></label>
     <div className="slot-list">{catalog.slots.map(slot => <button className="secondary" key={slot.id} disabled={disabled || !furniture} onClick={() => onCommand({type: 'PLACE_FURNITURE', furnitureId: furniture, slotId: slot.id})}>{slot.name}<small>{state.placements[slot.id] ? name(state.placements[slot.id]) : '还空着，放一件家具'}</small></button>)}</div>
     <button className="shop-home" disabled={disabled} onClick={onShop}>去猫国商店挑一件家具 ↗</button>

@@ -1,5 +1,5 @@
-import {CAT_DEFINITIONS, CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, normalizeDifficulty, normalizeLoadout, RULES, SKILLS, TOTAL_MINIONS, WAVES} from './config';
-import type {BasicSupplyId, ChapterAction, ChapterBoss, ChapterCat, ChapterCatId, ChapterEnemy, ChapterOptions, ChapterState, Position} from './types';
+import {CAT_DEFINITIONS, CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, normalizeDifficulty, RULES, SKILLS, TOTAL_MINIONS, WAVES} from './config';
+import type {ChapterAction, ChapterBoss, ChapterCat, ChapterCatId, ChapterEnemy, ChapterOptions, ChapterState, Position} from './types';
 
 const EPS = 1e-8;
 const same = (a: Position, b: Position) => a.x === b.x && a.y === b.y;
@@ -29,7 +29,7 @@ export function isDeployableCell(position: Position): boolean {
 export function getAttackCells(cat: ChapterCat): Position[] {
   if (cat.status !== 'active') return [];
   const offsets = cat.range === 'melee' ? [{x: 0, y: 0}, {x: 1, y: 0}, {x: 0, y: -1}, {x: 0, y: 1}]
-    : Array.from({length: (cat.range === 'hammer' ? 3 : 4) * 3}, (_, i) => ({x: Math.floor(i / 3), y: i % 3 - 1}));
+    : Array.from({length: (cat.range === 'claws' ? 3 : 4) * 3}, (_, i) => ({x: Math.floor(i / 3), y: i % 3 - 1}));
   return offsets.map(offset => ({x: cat.x + offset.x, y: cat.y + offset.y})).filter(isPlayableCell);
 }
 export function getSkillCells(cat: ChapterCat, target?: Position | null): Position[] {
@@ -51,29 +51,11 @@ export function getDeployError(state: ChapterState, catId: ChapterCatId, target:
   if (!isChapterCell(target)) return '这里没有可用地格。';
   if (isObstacle(target)) return '垃圾桶和杂物占用了这个位置。';
   if (!isDeployableCell(target)) return '保护点、刷怪口和首领位置不能部署。';
-  if (cat.status === 'resting' && cat.hp < cat.maxHp * RULES.readyRatio) return '休整猫需要恢复到至少一半体力才能上阵。';
+  if (cat.status !== 'active') return '这位伙伴已经退场，本场不能重新上阵。';
   if (state.enemies.some(enemy => inCells(enemy, [target]))) return '这格有黑影，暂时不能移动过去。';
   const occupant = state.cats.find(other => other.id !== catId && other.status === 'active' && same(other, target));
   if (occupant && cat.status !== 'active') return '这格已有伙伴，请选择空格。';
   if (occupant && state.enemies.some(enemy => inCells(enemy, [cat]))) return '原位置有黑影，不能让伙伴交换到危险格。';
-  return null;
-}
-export function getItemTargetError(state: ChapterState, itemId: BasicSupplyId, catId: ChapterCatId): string | null {
-  if (itemId !== 'warm-can' && itemId !== 'bouncy-treat') return '这件物品不可用。';
-  if (terminal(state)) return '这场战斗已经结束。';
-  if (state.externallyPaused) return '宿主暂停时不能使用补给。';
-  if (state.aim) return '请先完成或取消技能瞄准。';
-  const cat = catById(state, catId);
-  if (!cat) return '没有这只战斗猫。';
-  if (state.inventory[itemId] <= 0) return '这场没有剩余的该物品。';
-  if (itemId === 'warm-can') {
-    if (state.healingCooldown > EPS) return '全队治疗物品仍在间隔中。';
-    if (cat.hp >= cat.maxHp) return '伙伴体力已满，不消耗暖罐。';
-  } else {
-    if (cat.status !== 'active') return '冻干只能给场上的战斗猫。';
-    if (cat.energyItemCooldown > EPS) return '这只猫的补能间隔尚未结束。';
-    if (cat.energy >= RULES.maxEnergy) return '伙伴能量已满，不消耗冻干。';
-  }
   return null;
 }
 export function getChapterSpeed(state: ChapterState): number {
@@ -83,15 +65,16 @@ export function getChapterSpeed(state: ChapterState): number {
   return state.baseSpeed;
 }
 export function getChapterAdvice(state: ChapterState): string {
-  if (state.phase === 'ready') return '六位援军都已到齐。A5 支巷向下汇入主路，右侧还有上下两个刷怪口；暖罐和冻干只来自这次的仓库装配。';
-  if (state.phase === 'won') return state.leaks === 0 ? '零突破守护成功！战斗猫受到伤害不影响无伤奖励，奖励以服务端结算为准。' : '小怪已处理，首领已被击败。剩余自带物资与奖励交给主流程结算。';
-  if (state.phase === 'lost') return '本场守护已结束，伙伴们已经撤往安全处。重新挑战走主项目准备流程。';
+  if (state.phase === 'ready') return '四位伙伴已就位。绒绒照看 A4 支巷，斑斑与团子守住右侧两路；点点蓄满能量后可治疗仍在场的队友。';
+  if (state.phase === 'won') return state.leaks === 0 ? '零突破守护成功！八波敌人已处理，首领也被击败。' : '小怪已处理，首领已被击败，可以返回主流程。';
+  if (state.phase === 'lost') return '本场守护已结束，重新挑战走主项目准备流程。';
   if (state.boss.phase === 'windup') return '首领正双手举起路障、向后蓄势！把裂纹格中的伙伴移开；落点已经锁定，不会追着猫走。';
-  const resting = state.cats.find(cat => cat.status === 'resting');
-  if (resting) return resting.hp >= resting.maxHp * RULES.readyRatio ? `${resting.name}已经恢复，可以重新部署到安全空格。` : `${resting.name}正在休整。${CAT_DEFINITIONS.singer.name}的归家和声能照顾休整猫，也可以使用已有暖罐。`;
-  if (state.cats.some(cat => cat.id === 'singer' && cat.energy === 100) && state.cats.some(cat => cat.hp < cat.maxHp * 0.75)) return `${CAT_DEFINITIONS.singer.name}已经蓄满能量，可以使用归家和声照顾全队；休整猫恢复后仍需手动上阵。`;
+  const healer = state.cats.find(cat => cat.id === 'diandian')!;
+  if (healer.status === 'active' && healer.energy >= 100 && state.cats.some(cat => cat.status === 'active' && cat.hp < cat.maxHp * 0.75)) return '点点已经蓄满能量，可以用安心呼噜治疗仍在场的队友；不要等到体力归零才治疗。';
+  const retired = state.cats.filter(cat => cat.status === 'retired');
+  if (retired.length) return `${retired.map(cat => cat.name).join('、')}已退场，本场不能复活。调整剩余伙伴的位置，守住三路汇合处。`;
   if (state.boss.phase === 'defeated') return '首领已经倒下，还要守住余下的小怪波次。不要过早收起防线。';
-  return `${CAT_DEFINITIONS.guard.name}守右侧上路，${CAT_DEFINITIONS.hammer.name}照看下路，${CAT_DEFINITIONS.tabby.name}拦住 A5 支巷；留意首领举起路障的动作，主动技能满能量后可手动释放。`;
+  return '绒绒守支巷，斑斑挡上路，团子守下路，点点提供治疗。每模拟秒自动积攒 5 能量，满 100 后手动释放技能。';
 }
 function log(state: ChapterState, text: string): void {
   state.logs.push({id: ++state.sequence, time: state.elapsed, text});
@@ -109,7 +92,7 @@ function releaseBlocks(state: ChapterState): void {
   for (const enemy of state.enemies) {
     const cat = enemy.blockedBy && catById(state, enemy.blockedBy);
     // Validate the contact on its actual route segment. Distance alone would retain
-    // an enemy after its blocker moves across it or around the D5 corner.
+    // an enemy after its blocker moves across it or around the D4 corner.
     const touching = cat && (enemy.route === 'branch' && enemy.y < 3 - EPS
       ? cat.x === enemy.x && cat.y >= enemy.y - EPS && cat.y - enemy.y <= 0.42 + EPS
       : Math.abs(cat.y - enemy.y) < EPS && cat.x <= enemy.x + EPS && enemy.x - cat.x <= 0.42 + EPS);
@@ -124,11 +107,11 @@ function hurtCat(state: ChapterState, cat: ChapterCat, damage: number): void {
   cat.shield -= absorbed;
   const actual = Math.min(cat.hp, damage - absorbed);
   cat.hp -= actual; state.stats.damageTaken += actual;
-  if (cat.hp <= cat.maxHp * RULES.restRatio) {
-    cat.status = 'resting'; cat.shield = 0; cat.shieldRemaining = 0; cat.buffRemaining = 0;
+  if (cat.hp <= 0) {
+    cat.hp = 0; cat.status = 'retired'; cat.energy = 0; cat.shield = 0; cat.shieldRemaining = 0;
     if (state.inspectedCatId === cat.id) state.inspectedCatId = null;
     if (state.aim?.catId === cat.id) state.aim = null;
-    log(state, `${cat.name}回到安全区休整，恢复到一半体力后可重新上阵。`);
+    log(state, `${cat.name}体力归零，已经退场，本场无法重新上阵。`);
     releaseBlocks(state);
   }
 }
@@ -142,10 +125,10 @@ function checkEnemyDeaths(state: ChapterState): void {
 }
 function startWave(state: ChapterState, wave: number): void {
   state.wave = wave; state.waveTime = 0; state.spawnIndex = 0; state.nextWaveIn = null;
-  log(state, `第 ${wave} / ${WAVES.length} 波：留意 A5 支巷与右侧上下两处巷口。`);
+  log(state, `第 ${wave} / ${WAVES.length} 波：留意 A4 支巷与右侧上下两处巷口。`);
 }
 export function createChapterBattle(options: ChapterOptions = {}): ChapterState {
-  const difficulty = normalizeDifficulty(options.difficulty), inventory = normalizeLoadout(options.loadout);
+  const difficulty = normalizeDifficulty(options.difficulty);
   const bossHp = Math.round(RULES.bossHp * DIFFICULTIES[difficulty].hpMultiplier);
   return {
     stageId: 'alley_boss', difficulty, phase: 'ready', elapsed: 0, accumulator: 0,
@@ -153,11 +136,11 @@ export function createChapterBattle(options: ChapterOptions = {}): ChapterState 
     totalEnemies: TOTAL_MINIONS, leaks: 0, maxLeaks: RULES.maxLeaks,
     boss: {id: 'alley-chief', name: '路障首领', ...MAP.boss, width: 2, height: 2, hp: bossHp, maxHp: bossHp, phase: 'idle', phaseTime: 0, cooldown: 1.8, skillCooldown: 10, targetCells: [], attacks: 0, slams: 0},
     cats: Object.values(CAT_DEFINITIONS).map(def => ({...structuredClone(def), ...def.initial, hp: def.maxHp, energy: 0, cooldown: 0,
-      shield: 0, shieldRemaining: 0, status: 'active', energyItemCooldown: 0, buffRemaining: 0, attacks: 0, skillUses: 0, blockedCount: 0})),
-    enemies: [], inventory, initialInventory: {...inventory}, usedSupplies: {'warm-can': 0, 'bouncy-treat': 0}, healingCooldown: 0,
+      shield: 0, shieldRemaining: 0, status: 'active', attacks: 0, skillUses: 0, blockedCount: 0})),
+    enemies: [],
     paused: false, externallyPaused: false, uiPaused: false, baseSpeed: 1, inspectedCatId: null, aim: null,
-    logs: [{id: 0, time: 0, text: '第一章 · 陌生小巷。六位临时援军就位，守住三处巷口并击败占据四格的固定首领。'}], effects: [], sequence: 0, lastAction: null,
-    stats: {skills: 0, healingItems: 0, energyItems: 0, dodgedSlams: 0, damageTaken: 0},
+    logs: [{id: 0, time: 0, text: '第一章 · 陌生小巷。四位伙伴就位，守住三处巷口并击败占据四格的固定首领。'}], effects: [], sequence: 0, lastAction: null,
+    stats: {skills: 0, dodgedSlams: 0, damageTaken: 0},
   };
 }
 function moveEnemies(state: ChapterState, dt: number): void {
@@ -166,13 +149,13 @@ function moveEnemies(state: ChapterState, dt: number): void {
   // enemy through its blocker, especially where the vertical branch meets D5.
   releaseBlocks(state);
   const counts = new Map<ChapterCatId, number>(state.cats.map(cat => [cat.id, cat.blockedCount]));
-  const remaining = (enemy: ChapterEnemy) => enemy.route === 'branch' && enemy.y < 3 ? 3 - enemy.y + 4 : enemy.x + Math.max(0, enemy.y - 3);
+  const remaining = (enemy: ChapterEnemy) => enemy.route === 'branch' && enemy.y < 3 ? 3 - enemy.y + MAP.spawns[2].x : enemy.x + Math.max(0, enemy.y - 3);
   for (const enemy of [...state.enemies].sort((a, b) => remaining(a) - remaining(b) || a.id.localeCompare(b.id))) {
     if (enemy.blockedBy) continue;
-    const distance = enemy.speed * (enemy.slowRemaining > 0 ? 0.6 : 1) * dt;
+    const distance = enemy.speed * dt;
     if (enemy.route === 'branch' && enemy.y < 3 - EPS) {
       const proposed = Math.min(3, enemy.y + distance);
-      const cat = state.cats.filter(candidate => candidate.status === 'active' && candidate.x === 4
+      const cat = state.cats.filter(candidate => candidate.status === 'active' && candidate.x === MAP.spawns[2].x
         && candidate.y >= enemy.y - EPS && proposed >= candidate.y - 0.42 && (counts.get(candidate.id) ?? 0) < candidate.block)
         .sort((a, b) => a.y - b.y)[0];
       if (cat) {enemy.y = Math.max(enemy.y, cat.y - 0.42); enemy.blockedBy = cat.id; counts.set(cat.id, (counts.get(cat.id) ?? 0) + 1);}
@@ -198,9 +181,8 @@ function catsAttack(state: ChapterState): void {
     if (cat.status !== 'active' || cat.cooldown > EPS) continue;
     const target = attackTargets(state, getAttackCells(cat)).find(enemy => enemy.hp > 0);
     if (!target) continue;
-    const damage = cat.damage * (cat.buffRemaining > 0 ? 1.5 : 1);
+    const damage = cat.damage;
     target.hp = Math.max(0, target.hp - damage); cat.cooldown = cat.interval; cat.attacks++;
-    cat.energy = Math.min(RULES.maxEnergy, cat.energy + RULES.energyPerHit);
     effect(state, 'attack', cat, target); checkEnemyDeaths(state);
   }
 }
@@ -236,13 +218,12 @@ function bossTick(state: ChapterState, dt: number): void {
 }
 function tick(state: ChapterState, dt: number): void {
   state.elapsed += dt;
-  state.healingCooldown = Math.max(0, state.healingCooldown - dt);
   for (const cat of state.cats) {
-    cat.cooldown = Math.max(0, cat.cooldown - dt); cat.energyItemCooldown = Math.max(0, cat.energyItemCooldown - dt);
+    cat.cooldown = Math.max(0, cat.cooldown - dt);
+    if (cat.status === 'active') cat.energy = Math.min(RULES.maxEnergy, cat.energy + RULES.energyPerSecond * dt);
     cat.shieldRemaining = Math.max(0, cat.shieldRemaining - dt); if (cat.shieldRemaining === 0) cat.shield = 0;
-    cat.buffRemaining = Math.max(0, cat.buffRemaining - dt);
   }
-  for (const enemy of state.enemies) {enemy.cooldown = Math.max(0, enemy.cooldown - dt); enemy.slowRemaining = Math.max(0, enemy.slowRemaining - dt);}
+  for (const enemy of state.enemies) {enemy.cooldown = Math.max(0, enemy.cooldown - dt);}
   state.effects = state.effects.filter(effect => (effect.remaining -= dt) > 0);
   if (state.nextWaveIn !== null) {state.nextWaveIn -= dt; if (state.nextWaveIn <= EPS) startWave(state, state.wave + 1);}
   if (state.nextWaveIn === null) {
@@ -252,8 +233,8 @@ function tick(state: ChapterState, dt: number): void {
       const entry = wave[state.spawnIndex++], def = ENEMY_DEFINITIONS[entry.kind];
       const maxHp = Math.round(def.maxHp * DIFFICULTIES[state.difficulty].hpMultiplier);
       state.enemies.push({...def, maxHp, hp: maxHp, kind: entry.kind, id: `minion-${++state.sequence}`,
-        x: entry.lane === 0 ? 4 : 11, y: entry.lane, route: entry.lane === 0 ? 'branch' : entry.lane === 3 ? 'upper' : 'lower',
-        cooldown: 0, blockedBy: null, slowRemaining: 0}); state.spawned++;
+        x: entry.lane === 0 ? MAP.spawns[2].x : MAP.columns - 1, y: entry.lane, route: entry.lane === 0 ? 'branch' : entry.lane === 3 ? 'upper' : 'lower',
+        cooldown: 0, blockedBy: null}); state.spawned++;
     }
   }
   moveEnemies(state, dt);
@@ -269,9 +250,8 @@ function tick(state: ChapterState, dt: number): void {
     if (cat && cat.status === 'active' && enemy.cooldown <= EPS) {hurtCat(state, cat, enemy.damage); enemy.cooldown = enemy.interval; effect(state, 'attack', enemy, cat);}
   }
   bossTick(state, dt); releaseBlocks(state);
-  if (state.cats.every(cat => cat.status === 'resting')
-      && !state.cats.some(cat => cat.hp + state.inventory['warm-can'] * RULES.warmCanHeal >= cat.maxHp * RULES.readyRatio)) {
-    completePhase(state, 'lost', '所有伙伴都需要休整，现有补给不足以重新部署。队伍撤离本场，准备好后再来。'); return;
+  if (state.cats.every(cat => cat.status === 'retired')) {
+    completePhase(state, 'lost', '所有伙伴都已退场，本场守护结束。准备好后再来挑战。'); return;
   }
   if (state.nextWaveIn === null && state.spawnIndex === WAVES[state.wave - 1].length && state.enemies.length === 0) {
     if (state.wave < WAVES.length) state.nextWaveIn = RULES.waveGap;
@@ -288,7 +268,7 @@ export function advanceChapter(state: ChapterState, seconds: number): ChapterSta
 }
 function actionResult(state: ChapterState, ok: boolean, message: string): ChapterState {state.lastAction = {ok, message}; return state;}
 function castSkill(state: ChapterState, cat: ChapterCat, target?: Position | null): string | null {
-  if (cat.status !== 'active') return '休整中的伙伴不能释放技能。';
+  if (cat.status !== 'active') return '已经退场的伙伴不能释放技能。';
   if (cat.energy < 100) return '需要 100 能量才能释放技能。';
   const skill = SKILLS[cat.id];
   if (skill.targeting === 'area' && (!target || !isPlayableCell(target))) return '请在实际存在、没有杂物的格子选择技能中心。';
@@ -296,13 +276,11 @@ function castSkill(state: ChapterState, cat: ChapterCat, target?: Position | nul
   if (skill.damage) {
     for (const enemy of attackTargets(state, cells)) {
       enemy.hp = Math.max(0, enemy.hp - skill.damage);
-      if (cat.id === 'frost' && 'slowRemaining' in enemy) enemy.slowRemaining = 4;
     }
     effect(state, 'skill', cat, target ?? cat, cells); checkEnemyDeaths(state);
   }
-  if (cat.id === 'guard') {cat.shield = 60; cat.shieldRemaining = 8; effect(state, 'shield', cat, cat);}
-  if (cat.id === 'tabby') {cat.buffRemaining = 8; cat.shield = 35; cat.shieldRemaining = 8; effect(state, 'shield', cat, cat);}
-  if (cat.id === 'singer') for (const friend of state.cats) {friend.hp = Math.min(friend.maxHp, friend.hp + 55); effect(state, 'heal', cat, friend);}
+  if (skill.shield) {cat.shield = skill.shield; cat.shieldRemaining = skill.duration!; effect(state, 'shield', cat, cat);}
+  if (skill.heal) for (const friend of state.cats.filter(friend => friend.status === 'active')) {friend.hp = Math.min(friend.maxHp, friend.hp + skill.heal); effect(state, 'heal', cat, friend);}
   cat.energy -= 100; cat.skillUses++; state.stats.skills++; state.aim = null; state.inspectedCatId = null;
   log(state, `${cat.name}使用「${skill.name}」。`);
   return null;
@@ -334,7 +312,7 @@ export function dispatchChapter(state: ChapterState, action: ChapterAction): Cha
   if (terminal(next)) return actionResult(next, false, '这场战斗已经结束。');
   if (action.type === 'RETREAT') {
     if (next.phase !== 'battle') return actionResult(next, false, '守护尚未开始。');
-    completePhase(next, 'lost', '队伍主动撤离本场。按实际消耗结算自带补给，本场没有胜利奖励。');
+    completePhase(next, 'lost', '队伍主动撤离本场，按失败返回主流程。');
     return actionResult(next, true, '伙伴们已安全撤离。');
   }
   if (action.type === 'START') {
@@ -351,14 +329,6 @@ export function dispatchChapter(state: ChapterState, action: ChapterAction): Cha
     if (occupant) {occupant.x = cat.x; occupant.y = cat.y;}
     cat.x = action.x; cat.y = action.y; cat.status = 'active'; releaseBlocks(next); next.inspectedCatId = null;
     return actionResult(next, true, occupant ? '伙伴交换位置，体力、能量和冷却保留。' : `${cat.name}移动到 ${cellName(cat)}。`);
-  }
-  if (action.type === 'USE_ITEM') {
-    const problem = getItemTargetError(next, action.itemId, action.catId); if (problem) return actionResult(next, false, problem);
-    const cat = catById(next, action.catId)!;
-    if (action.itemId === 'warm-can') {cat.hp = Math.min(cat.maxHp, cat.hp + RULES.warmCanHeal); next.healingCooldown = RULES.healingCooldown; next.stats.healingItems++; effect(next, 'heal', cat, cat);}
-    else {cat.energy = Math.min(100, cat.energy + RULES.treatEnergy); cat.energyItemCooldown = RULES.energyCooldown; next.stats.energyItems++;}
-    next.inventory[action.itemId]--; next.usedSupplies[action.itemId]++;
-    return actionResult(next, true, `${cat.name}使用了一份${action.itemId === 'warm-can' ? '暖罐' : '冻干'}。`);
   }
   if (action.type === 'INSPECT') {
     const cat = catById(next, action.catId); if (!cat || cat.status !== 'active') return actionResult(next, false, '请选择场上的伙伴。');

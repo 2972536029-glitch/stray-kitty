@@ -8,7 +8,7 @@ import {PrologueBattle} from '../web/src/modules/battle/l00/runtime.ts';
 function fixtures() {
   const state: Pick<GameState, 'phase' | 'activeBattle' | 'cats'> = {
     phase: 'battle', cats: ['miaomiao'],
-    activeBattle: {id: 'server-attempt-1', stageId: 'alley_rescue', status: 'active', modifiers: {shadowPressure: 1}},
+    activeBattle: {id: 'server-attempt-1', stageId: 'l00_tutorial', status: 'active', modifiers: {shadowPressure: 1}},
   };
   const catalog: Pick<Catalog, 'stages'> = JSON.parse(fs.readFileSync('web/content/catalog.json', 'utf8'));
   return {state, catalog};
@@ -19,9 +19,8 @@ test('L00 maps the saved event pressure to its three difficulty tiers without ap
     const {state, catalog} = fixtures();
     state.activeBattle!.modifiers = {shadowPressure, situation: 'forced_chase'};
     const context = createL00Context(state, catalog);
-    assert.deepEqual(context.attempt, {id: 'server-attempt-1', stageId: 'alley_rescue', status: 'active'});
+    assert.deepEqual(context.attempt, {id: 'server-attempt-1', stageId: 'l00_tutorial', status: 'active'});
     assert.equal(context.difficulty, difficulty);
-    assert.deepEqual(context.extraSupplies, {});
     assert.deepEqual(context.modifiers, []);
     const battle = new PrologueBattle();
     assert.doesNotThrow(() => battle.start(context, () => {}));
@@ -30,8 +29,9 @@ test('L00 maps the saved event pressure to its three difficulty tiers without ap
     battle.dispatch({type: 'START'});
     // Scripted rescue is shared by all tiers; event pressure must not scale this pursuer.
     assert.equal(battle.getSnapshot().enemies[0].maxHp, 240);
-    battle.dispatch({type: 'RESTART'});
-    assert.equal(battle.getSnapshot().phase, 'ready');
+    const running = battle.getSnapshot();
+    battle.start(context, () => {});
+    assert.deepEqual(battle.getSnapshot(), running);
     assert.equal(battle.getSnapshot().attemptId, 'server-attempt-1');
     assert.equal(battle.getSnapshot().difficulty, difficulty);
     battle.stop();
@@ -106,7 +106,7 @@ test('both generated catalogs publish the same L00 layout and retain the server-
   const {catalog} = fixtures();
   const serverCatalog = JSON.parse(fs.readFileSync('server/internal/platform/catalog.json', 'utf8'));
   assert.deepEqual(catalog.stages, serverCatalog.stages);
-  const stage = catalog.stages.find(stage => stage.id === 'alley_rescue')!;
-  assert.deepEqual([stage.lanes, stage.columns, stage.waves], [3, 7, 10]);
+  const stage = catalog.stages.find(stage => stage.id === 'l00_tutorial')!;
+  assert.deepEqual([stage.lanes, stage.columns, stage.waves], [3, 7, 6]);
   assert.equal(stage.status, 'demo');
 });

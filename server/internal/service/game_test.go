@@ -110,7 +110,7 @@ func TestL00LossRetriesWithNewServerAttempt(t *testing.T) {
 func TestFullJourneyAndDurableIdempotency(t *testing.T) {
 	g, token, path := setup(t)
 	s := toBattle(t, g, token)
-	req := domain.CommandRequest{ExpectedRevision: &s.Revision, Command: domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"}}
+	req := domain.CommandRequest{ExpectedRevision: &s.Revision, Command: domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)}}
 	first, err := g.Execute(token, "settle-once-123", req)
 	if err != nil {
 		t.Fatal(err)
@@ -141,7 +141,7 @@ func TestFullJourneyAndDurableIdempotency(t *testing.T) {
 		t.Fatal("placement failed")
 	}
 	s = execute(t, restarted, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
-	s = execute(t, restarted, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+	s = execute(t, restarted, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
 	if s.Currencies["stamp"] != 2 {
 		t.Fatal("repeat win granted first-clear reward")
 	}
@@ -149,7 +149,7 @@ func TestFullJourneyAndDurableIdempotency(t *testing.T) {
 func TestFailureAndInvalidTargetsDoNotGrantRewards(t *testing.T) {
 	g, token, _ := setup(t)
 	s := toBattle(t, g, token)
-	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "lost"})
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "lost", Report: bossReport(3, false)})
 	if s.Currencies["stamp"] != 0 || domain.Contains(s.Cats, "diandian") {
 		t.Fatal("failure rewarded")
 	}

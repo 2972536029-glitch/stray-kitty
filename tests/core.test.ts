@@ -22,3 +22,16 @@ test('流程控制器串行处理命令，禁止并发复用同一进度',async(
  const controller=new GameController(port,store);const first=controller.dispatch({type:'ADVANCE_STORY',nodeId:'intro'});
  await assert.rejects(controller.dispatch({type:'ADVANCE_STORY',nodeId:'intro'}));release({state:{revision:1,phase:'explore'},replayed:false});await first;assert.equal(calls,1);assert.equal(store.getSnapshot()?.revision,1);
 });
+
+test('教程结算重试通过控制器进入新的服务端场次', async () => {
+  const store = new GameStore();
+  store.replace({revision: 3, phase: 'settlement', activeBattle: {id: 'failed', stageId: 'l00_tutorial', status: 'lost'}} as GameState);
+  let received: unknown;
+  const port = {createSession: async () => ({playerId: 'x', token: 'x'}), catalog: async () => ({}) as any, load: async () => store.getSnapshot()!, execute: async (request: unknown) => {
+    received = request;
+    return {state: {revision: 4, phase: 'battle', activeBattle: {id: 'retry', stageId: 'l00_tutorial', status: 'active'}} as GameState, replayed: false};
+  }};
+  await new GameController(port, store).dispatch({type: 'START_BATTLE', stageId: 'l00_tutorial'});
+  assert.deepEqual(received, {expectedRevision: 3, command: {type: 'START_BATTLE', stageId: 'l00_tutorial'}});
+  assert.equal(store.getSnapshot()!.activeBattle!.id, 'retry');
+});

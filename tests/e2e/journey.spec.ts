@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import Ajv2020 from 'ajv/dist/2020.js';
 import type {GameCommand,GameState} from '../../web/src/contracts';
 import {playL00ThroughHost} from './l00-battle';
+import {playVisibleControls} from './l01-battle';
 const spec=JSON.parse(fs.readFileSync('docs/openapi.json','utf8'));
 const ajv=new Ajv2020({strict:false,allErrors:true});
 const stateSchema=ajv.compile({components:spec.components,$ref:'#/components/schemas/GameState'});
@@ -57,7 +58,7 @@ async function triggerCrateFromDevTools(page:Page) {
 }
 
 test('真实浏览器贯通前两章、双 NPC 事件、救援、家园和刷新恢复',async({page,request},testInfo)=>{
- test.setTimeout(300000);
+ test.setTimeout(480000);
  page.setDefaultTimeout(10000);
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
  const battleCommands:string[]=[];page.on('request',request=>{
@@ -71,7 +72,9 @@ test('真实浏览器贯通前两章、双 NPC 事件、救援、家园和刷新
  await enterGame(page);await expect(page.locator('[data-renderer="canvas2d"]')).toBeVisible();
  fs.mkdirSync('output/preview',{recursive:true});await page.screenshot({path:'output/preview/desktop.png',fullPage:true});
  await finishDialogue(page);
- await settleTutorial(page,request);
+ const tutorialRun=await playL00ThroughHost(page);
+ await testInfo.attach('l00-new-tutorial-six-waves',{body:JSON.stringify(tutorialRun),contentType:'application/json'});
+ await page.getByRole('button',{name:'进入雨夜小巷 →'}).click();
  await page.screenshot({path:'output/preview/explore.png',fullPage:true});
  await triggerCrateFromDevTools(page);
  await page.getByRole('button',{name:'仔细搜索周围的物资'}).click();await expect(page.getByRole('button',{name:'掷出骰子'})).toBeEnabled();
@@ -85,11 +88,13 @@ test('真实浏览器贯通前两章、双 NPC 事件、救援、家园和刷新
  expect(await page.getByTestId('event-resolution').locator('.dice').evaluateAll(els=>els.map(el=>el.getAttribute('aria-label')))).toEqual(dice.map(value=>`骰子 ${value} 点`));
  await page.screenshot({path:'output/preview/event-result.png',fullPage:true});
  await page.getByRole('button',{name:'开始守护'}).click();
- const battleRun=await playL00ThroughHost(page);
- expect(battleCommands).toEqual(['START_BATTLE','COMPLETE_BATTLE']);
- await testInfo.attach('l00-ten-wave-run',{body:JSON.stringify(battleRun,null,2),contentType:'application/json'});
+ const battleRun=await playVisibleControls(page);
+ expect(battleCommands).toEqual(['COMPLETE_BATTLE','START_BATTLE','COMPLETE_BATTLE']);
+ await expect(page.getByTestId('chapter-battle')).toHaveCount(0);
+ await expect(page.getByTestId('battle-supply-rewards')).toHaveCount(0);
+ await testInfo.attach('l01-first-rescue-boss-run',{body:JSON.stringify(battleRun,null,2),contentType:'application/json'});
  await page.screenshot({path:'output/preview/rescue.png',fullPage:true});
- await page.getByRole('button',{name:'带伙伴回家'}).click();await page.getByRole('button',{name:'继续故事'}).click();
+ await page.getByRole('button',{name:'带伙伴回家 →',exact:true}).click();await page.getByRole('button',{name:'继续故事'}).click();
  await expect(page.getByLabel('寻猫启事')).toBeVisible();await page.screenshot({path:'output/preview/poster.png',fullPage:true});await finishDialogue(page);
  await expect(page.getByRole('heading',{name:'整理我们的家'})).toBeVisible();await expect(page.getByTestId('stamps')).toHaveText('2');
  await page.getByRole('button',{name:'避雨角落'}).click();

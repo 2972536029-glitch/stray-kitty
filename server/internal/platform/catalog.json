@@ -2742,16 +2742,17 @@
       "name": "窗外的第一道防线",
       "status": "demo",
       "lanes": 3,
-      "columns": 5,
-      "waves": 2
+      "columns": 7,
+      "waves": 6
     },
     {
       "id": "alley_rescue",
       "name": "守护纸箱里的伙伴",
       "status": "demo",
-      "lanes": 3,
-      "columns": 7,
-      "waves": 10
+      "chapterId": "alley",
+      "lanes": 5,
+      "columns": 10,
+      "waves": 8
     },
     {
       "id": "alley_boss",
@@ -2759,7 +2760,7 @@
       "chapterId": "alley",
       "status": "demo",
       "lanes": 5,
-      "columns": 12,
+      "columns": 10,
       "waves": 8
     }
   ],
@@ -2839,16 +2840,6 @@
       "id": "clue",
       "name": "线索",
       "description": "关于伙伴与安全路线的探索发现。"
-    },
-    {
-      "id": "warm-can",
-      "name": "暖心罐罐",
-      "description": "为一只在场或休整战斗猫恢复 60 点体力，不超过最大值；全队治疗物品共用 4 秒模拟时间间隔。"
-    },
-    {
-      "id": "bouncy-treat",
-      "name": "蹦蹦冻干",
-      "description": "为一只在场战斗猫增加 30 点能量，上限 100；同一只猫接受能量物品间隔 12 秒模拟时间。"
     }
   ],
   "pools": [
@@ -2934,7 +2925,7 @@
     },
     {
       "phase": "battle",
-      "text": "跟随序章教学，使用背包、部署猫咪并施放技能，守住十波黑影。打开地图、商店或返回标题会暂停战斗。"
+      "text": "序章学习站位、自动蓄能和技能，守住六波黑影；第一章由四只猫守住八波并击败首领。体力归零后本场退场，暂停时停止蓄能。"
     },
     {
       "phase": "home",
