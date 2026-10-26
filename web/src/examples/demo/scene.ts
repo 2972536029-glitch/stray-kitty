@@ -313,6 +313,21 @@ export class DemoScene {
       else {this.rect(x-28,y,58,24,id==='red_cushion'?0xe31b23:id==='soft_blanket'?0xc69482:0xa88962);this.rect(x-22,y+4,46,12,id==='red_cushion'?0xff8a80:0xe0c7a0);}
     }
     this.lamp(610,200);for(let i=0;i<8;i++)this.rect(145+i*70,98+(i%2)*6,5,9,0xf4d68e);
+
+    // 终章 / 流浪猫王国庆典装饰与人类支持物资
+    if (this.state?.chapterId === 'finale' || this.state?.flags.includes('kingdom_founded')) {
+      for (let i = 0; i < 11; i++) {
+        const lx = 140 + i * 50;
+        const ly = 95 + Math.sin(i * 0.8) * 7;
+        this.graphics.fillStyle(0xffd54f, 0.4);
+        this.graphics.fillCircle(lx, ly, 10);
+        this.rect(lx - 4, ly - 4, 8, 8, 0xffeb3b);
+      }
+      this.rect(630, 375, 24, 10, 0x546e7a);
+      this.rect(632, 377, 20, 6, 0x81d4fa);
+      this.rect(665, 365, 20, 20, 0xef5350);
+      this.rect(667, 368, 16, 14, 0xffcdd2);
+    }
   }
   private drawMarket() {
     // 夜幕背景

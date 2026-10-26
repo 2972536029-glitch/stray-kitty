@@ -1,6 +1,13 @@
 import type {Catalog, GameState} from '../../contracts';
 export const currentStory = (catalog: Catalog, state: GameState) => catalog.story.find(n => n.id === state.storyNodeId);
 export function objective(state: GameState): string {
+  if (state.chapterId === 'finale' || state.flags.includes('finale_started')) {
+    if (state.flags.includes('finale_completed')) {
+      return '流浪猫王国落成！喵喵与伙伴们共同守护温暖家园，常回家看看。';
+    }
+    if (state.phase === 'dialogue') return '用光明彻底驱散废弃仓库深处的黑影，点亮流浪猫王国！';
+    return '全员集结照亮归途，迎来大团圆与流浪猫王国的诞生。';
+  }
   if (state.chapterId === 'rescue' || state.flags.includes('chapter_4_started')) {
     if (state.phase === 'dialogue') return '随墨墨深入地下暗道，识破陷阱寻找失踪伙伴。';
     return '侦查地下暗道，营救受困的小猫并锁闭黑影通道。';
