@@ -1,6 +1,6 @@
 # 第三章废弃花房接入
 
-更新：2026-10-26。`feat/battle-l03-greenhouse` 从第二章完成版 `9710034` 建立，本轮不创建 MR。
+更新：2026-10-26。`feat/battle-l03-greenhouse` 从第二章完成版建立，现已同步团队 main `6ad47e9`，提交 [MR !31](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/31)，目标为 `main`；请按 [MR !29](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/29) → [MR !30](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/30) → !31 顺序审阅。本分支尚未合入 main，正式剧情战斗入口仍待对齐。
 
 ## 独立试玩
 

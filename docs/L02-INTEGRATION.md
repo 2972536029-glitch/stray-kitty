@@ -1,6 +1,6 @@
 # 第二章六猫午夜集市接入
 
-更新：2026-10-26。分支 `feat/battle-l02-market` 基于两章简化版本 `9833c3e`；本轮建立分支，不创建 MR。
+更新：2026-10-26。分支 `feat/battle-l02-market` 基于两章简化版本建立，现已同步团队 main `6ad47e9`，提交 [MR !30](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/30)，目标为 `main`；请先合入前置 [MR !29](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/29)。本分支尚未合入 main，正式剧情战斗入口仍待对齐。
 
 ## 当前入口
 
@@ -33,6 +33,7 @@ L00／L01／L02 均不再展示左侧伙伴名单。战场上保留血条、能�
 - L00 六波教学接小巷事件、L01 三档与原主流程回归通过。最终画面核对三章均无伙伴名单侧栏，序章保留原地图；L02 宽窄屏无页面水平溢出，窄屏可全图查看或放大滚动。
 
 整页刷新仍从同一场次 ready 重建；正式第二章剧情入口与战中随机事件协议尚待团队对接，不能把独立试玩写成主线全部接通。
+
 ## 事件携带物接入补充（2026-10-26）
 
 本关已接收活动场次的 carry 快照，按 MR !24 的 lantern/mirror/bell/box/dog/dove 六种 ID 提供事件加成，基础配置与波表不变。具体效果、来源和生命周期见[事件战斗对接](BATTLE-EVENT-CARRY.md)。这不改变本文原有正式主线或独立试玩定位；战斗中途热替换随机事件仍未接入。此前测试数字对应各自交付，本轮验证单独记录。

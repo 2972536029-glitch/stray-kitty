@@ -1,6 +1,6 @@
 # 随机事件 → 战斗携带物与协助者
 
-更新：2026-10-26。对接参考为余尧 [MR !23](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/23) 的 `98346fc` 与最新 [MR !24](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/24) 的 `8b7943c`。事件方提供四种物品、两种协助者的事件来源、carry 通道及结果卡展示；本分支保留这些来源与文本，接入战斗实际效果。没有合并团队 main 或改动原 MR。
+更新：2026-10-26。对接参考为余尧 [MR !23](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/23) 的 `98346fc` 与 [MR !24](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/24) 的 `8b7943c`。事件方提供四种物品、两种协助者的事件来源、carry 通道及结果卡展示；本分支保留这些来源与文本，接入战斗实际效果。现已同步团队 main `6ad47e9` 到个人分支，并提交 [MR !32](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/32)；本分支尚未合入 main，没有改动事件原 MR。请先完成战斗侧 !29 → !30 → !31 及事件侧 !23 → !24 的评审整合，再合入本 MR。
 
 本轮目标是完成可玩接入，不重调已有猫咪、敌人、Boss、地图、波表、通关条件或三档难度基础数值。没有 carry 的关卡保持原规则。事件加成不作为通关必需条件，也不恢复已删除的库存补给、选带背包、用药或复活系统。
 
