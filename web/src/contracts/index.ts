@@ -40,7 +40,7 @@ export interface CommandRequest {expectedRevision: number; command: GameCommand}
 export interface CommandResponse {state: GameState; replayed: boolean}
 export interface Session {playerId: string; token: string}
 export interface ApiErrorBody {error: {code: string; message: string; requestId: string}}
-export interface StoryNode {id: string; chapterId: string; speaker: string; text: string; next: string; exit: 'explore' | 'home' | 'preparation' | ''; scene?: 'alley' | 'poster' | 'home' | 'market'; setFlags?: string[]}
+export interface StoryNode {id: string; chapterId: string; speaker: string; text: string; next: string; exit: 'explore' | 'home' | 'preparation' | ''; scene?: 'alley' | 'poster' | 'home' | 'market' | 'tunnel'; setFlags?: string[]}
 export interface FurnitureProduct {id: string; furnitureId: string; price: number; currencyId: string; requiredFlag: string; status: 'available' | 'disabled'}
 export interface MapInteraction {id: string; x: number; y: number; label: string; eventId: string}
 export interface MapDefinition {id: string; name: string; status: string; width: number; height: number; interactions: MapInteraction[]; dangerLevel?: 0 | 1 | 2 | 3}

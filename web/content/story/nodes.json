@@ -322,5 +322,73 @@
       "greenhouse_fortified",
       "momo_joined"
     ]
+  },
+  {
+    "id": "rescue_intro_1",
+    "chapterId": "rescue",
+    "speaker": "墨墨",
+    "text": "“跟紧我。从废弃花房后院的暗井下去，就是穿过老城地下的排污与蓄水暗道。普通猫咪在黑暗中寸步难行，但我能看清每块砖的缝隙。”",
+    "next": "rescue_intro_2",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "rescue_intro_2",
+    "chapterId": "rescue",
+    "speaker": "点点",
+    "text": "点点停下脚步，竖起胡须：“大家等等！前面拐角水管下有一根极细的绊线，还放着一只会发出小猫哭叫的旧发条铁盒——是黑影设下的假目标诱饵！”",
+    "next": "rescue_intro_3",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "rescue_intro_3",
+    "chapterId": "rescue",
+    "speaker": "团子",
+    "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
+    "next": "rescue_intro_4",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "rescue_intro_4",
+    "chapterId": "rescue",
+    "speaker": "阿策",
+    "text": "阿策轻摇折扇沉吟：“黑影不仅诡诈，而且有意将受惊的流浪幼猫逐段分割隔离在暗渠深处。墨墨，前面通风口可有生还同伴的动静？”",
+    "next": "rescue_intro_5",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "rescue_intro_5",
+    "chapterId": "rescue",
+    "speaker": "墨墨",
+    "text": "墨墨跃上生锈管道，绿眸中微光凝聚：“东北方的3号泄洪阀门后……有微弱的呼噜求救声！是失踪的花猫姐妹和几只小奶猫！它们被困在阀门铁栅栏内了！”",
+    "next": "rescue_intro_6",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "rescue_intro_6",
+    "chapterId": "rescue",
+    "speaker": "喵喵",
+    "text": "喵喵毫不犹豫地上前：“墨墨带路，点点警戒陷阱，团子跟我合力把卡死的阀门铁栓顶开！有光的地方就不用害怕暗影，我们这就带你们回花房！”",
+    "next": "rescue_intro_7",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "rescue_intro_7",
+    "chapterId": "rescue",
+    "speaker": "旁白",
+    "text": "伴随着铁闸门被顶开的声响，受困的伙伴们终于重见天光。在猫咪小队的护送下，第一批失踪的猫咪们安全转移到了花房大本营。而暗道的更深处，正是黑影盘踞的最终据点——废弃大仓库！",
+    "next": "",
+    "exit": "home",
+    "scene": "home",
+    "setFlags": [
+      "chapter_4_started",
+      "tunnel_explored",
+      "cats_rescued_batch1"
+    ]
   }
 ]
