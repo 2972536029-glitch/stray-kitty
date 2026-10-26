@@ -44,6 +44,22 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop}:
         </div>
       )
     )}
+    {(state.flags.includes('chapter_3_started') || state.flags.includes('greenhouse_fortified')) && (
+      !state.flags.includes('chapter_4_started') ? (
+        <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'rescue_intro_1'})}>
+          🐾 启程：第四章《消失的猫咪们》 →
+        </button>
+      ) : (
+        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
+          <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'tunnel'})}>
+            🐾 前往地下暗道 →
+          </button>
+          <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'rescue_intro_1'})}>
+            📖 重温第四章剧情
+          </button>
+        </div>
+      )
+    )}
     <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE'})}>再去小巷走走 →</button>
   </section>;
 }

@@ -695,7 +695,8 @@
               "alley",
               "poster",
               "home",
-              "market"
+              "market",
+              "tunnel"
             ]
           },
           "setFlags": {

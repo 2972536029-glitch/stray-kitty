@@ -10,12 +10,15 @@ export default function WorldMap({state, catalog, disabled, onNavigate, onClose}
     <div className="map-origin">⌂ 蓝碗之家 <span>咪最初想回去的地方</span></div>
     <ol className="map-route">{catalog.maps.map((map, index) => {
       const current = map.id === state.mapId;
-      const unlocked = map.id === 'alley' || (map.id === 'greenhouse' && homeOpen) || (map.id === 'market' && homeOpen);
+      const tunnelOpen = state.flags.includes('chapter_4_started') || state.flags.includes('tunnel_unlocked');
+      const unlocked = map.id === 'alley' || (map.id === 'greenhouse' && homeOpen) || (map.id === 'market' && homeOpen) || (map.id === 'tunnel' && tunnelOpen);
       let command: GameCommand | null = null;
       if (map.id === 'alley' && (state.phase === 'home' || (state.phase === 'explore' && state.mapId !== 'alley'))) {
         command = {type: 'GO_EXPLORE', mapId: 'alley'};
       } else if (map.id === 'market' && (state.phase === 'home' || (state.phase === 'explore' && state.mapId !== 'market')) && homeOpen) {
         command = {type: 'GO_EXPLORE', mapId: 'market'};
+      } else if (map.id === 'tunnel' && (state.phase === 'home' || (state.phase === 'explore' && state.mapId !== 'tunnel')) && tunnelOpen) {
+        command = {type: 'GO_EXPLORE', mapId: 'tunnel'};
       } else if (map.id === 'greenhouse' && state.phase === 'explore' && homeOpen) {
         command = {type: 'GO_HOME'};
       }

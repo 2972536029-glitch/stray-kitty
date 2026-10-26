@@ -693,4 +693,25 @@ func TestChapter3GreenhouseProgressionAndMomoUnlock(t *testing.T) {
 	if !domain.Contains(s.Cats, "momo") {
 		t.Fatal("expected momo in cats list")
 	}
+
+	// 启程第四章
+	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "rescue_intro_1"})
+	if s.Phase != "dialogue" || s.ChapterID != "rescue" || s.MapID != "tunnel" {
+		t.Fatalf("expected dialogue phase in tunnel for chapter 4, got phase=%s chapter=%s map=%s", s.Phase, s.ChapterID, s.MapID)
+	}
+	for s.StoryNodeID != "" && s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	if s.Phase != "home" {
+		t.Fatalf("expected return to home phase after chapter 4 story, got %s", s.Phase)
+	}
+	if !domain.Contains(s.Flags, "chapter_4_started") {
+		t.Fatal("expected chapter_4_started flag")
+	}
+	if !domain.Contains(s.Flags, "tunnel_explored") {
+		t.Fatal("expected tunnel_explored flag")
+	}
+	if !domain.Contains(s.Flags, "cats_rescued_batch1") {
+		t.Fatal("expected cats_rescued_batch1 flag")
+	}
 }
