@@ -70,7 +70,7 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string, usePus
 			}
 			// 战备物:枚举校验后记入待应用修正;后得覆盖先得(每场最多叼一件)。
 			switch outcome.Carry {
-			case "", "lantern", "mirror", "bell", "box":
+			case "", "lantern", "mirror", "bell", "box", "dog", "dove":
 				modifiers.Carry = outcome.Carry
 			default:
 				return domain.Fail("INVALID_CONTENT", "未知的战备物: "+outcome.Carry, 500)
