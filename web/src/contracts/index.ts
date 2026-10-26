@@ -28,6 +28,7 @@ export type GameCommand =
   | {type: 'START_STORY'; nodeId: string}
   | {type: 'INTERACT'; interactionId: string}
   | {type: 'REPORT_MOVE'; distance: number}
+  | {type: 'CHECK_RANDOM_ZONE'; zoneId: string}
   | {type: 'CHOOSE_EVENT'; eventId: string; optionId: string; usePush?: boolean}
   | {type: 'START_BATTLE'; stageId: string; supplies?: BattleSupplies}
   | ({type: 'COMPLETE_BATTLE'} & BattleResult)

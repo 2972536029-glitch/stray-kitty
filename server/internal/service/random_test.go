@@ -8,10 +8,21 @@ import (
 	"stray-kitty/server/internal/service"
 )
 
+func useMarketRandomPool(t *testing.T, g *service.Game, token string) domain.GameState {
+	t.Helper()
+	for index := range g.Catalog.Events {
+		if domain.Contains(g.Catalog.Events[index].Triggers, "random") {
+			g.Catalog.Events[index].Maps = domain.Add(g.Catalog.Events[index].Maps, "market")
+		}
+	}
+	return execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+}
+
 // 进入探索后有保护里程;保护期内上报不触发,过保护后危险度 1 必触发(随机数恒为 0)。
 func TestRandomEventTriggersAfterGraceAndReturnsToExplore(t *testing.T) {
 	g, token, _ := setup(t)
 	s := finishStory(t, g, token)
+	s = useMarketRandomPool(t, g, token)
 	if s.Phase != "explore" {
 		t.Fatalf("expected explore, got %s", s.Phase)
 	}
@@ -26,7 +37,7 @@ func TestRandomEventTriggersAfterGraceAndReturnsToExplore(t *testing.T) {
 	if s.Phase != "event" || s.PendingEventID != "rats_grain_event" || s.PendingEventSource != "random" {
 		t.Fatalf("random event did not trigger as expected: phase=%s pending=%s source=%s", s.Phase, s.PendingEventID, s.PendingEventSource)
 	}
-	if !domain.Contains(s.DrawnEvents, "alley:rats_grain_event") {
+	if !domain.Contains(s.DrawnEvents, "market:rats_grain_event") {
 		t.Fatal("drawn event not recorded with region key")
 	}
 	// 随机数恒 0 → 骰出 [1,1] 失败档;失败无局势时应回到探索并重新进入保护期。
@@ -44,7 +55,15 @@ func TestRandomPoolDrainsWithoutRepeat(t *testing.T) {
 	g, token, _ := setup(t)
 	dropRepeatable(g)
 	finishStory(t, g, token)
-	poolSize := 5 // alley 随机池:鼠群/黑影/捕兽夹/麻袋(风险)+ 猫粮碗(机遇)
+	// 雨巷已禁用 REPORT_MOVE 触发(改区域判定),无放回语义在 market 池上验证。
+	useMarketRandomPool(t, g, token)
+	// 恒 0 骰子永远是 fail 档,RequiresFlags 集不齐的卡不进池,池大小按无门槛卡算。
+	poolSize := 0
+	for _, e := range g.Catalog.Events {
+		if domain.Contains(e.Triggers, "random") && domain.Contains(e.Maps, "market") && len(e.RequiresFlags) == 0 {
+			poolSize++
+		}
+	}
 	drawn := map[string]bool{}
 	for i := 0; i < 90 && len(drawn) < poolSize; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
@@ -68,7 +87,7 @@ func TestRandomPoolDrainsWithoutRepeat(t *testing.T) {
 			s = finishStory(t, g, token)
 		}
 		if s.Phase == "preparation" {
-			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
 		}
 		if s.Phase != "explore" {
 			t.Fatalf("expected explore after resolving %s, got %s", id, s.Phase)
@@ -100,10 +119,11 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 	for i := range dual.Options {
 		dual.Options[i].ID = dual.Options[i].ID + "_s"
 	}
-	dual.Maps = []string{"alley", "alley_copy"}
-	g.Catalog.Maps = append(g.Catalog.Maps, domain.Map{ID: "alley_copy", DangerLevel: 1})
+	dual.Maps = []string{"market", "market_copy"}
+	g.Catalog.Maps = append(g.Catalog.Maps, domain.Map{ID: "market_copy", DangerLevel: 1})
 	finishStory(t, g, token)
-	// 在 alley 抽到共享卡。
+	useMarketRandomPool(t, g, token)
+	// 在 market 抽到共享卡。
 	found := false
 	for i := 0; i < 60 && !found; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
@@ -112,7 +132,7 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 		}
 		if s.PendingEventID == "shared_event" {
 			found = true
-			if !domain.Contains(s.DrawnEvents, "alley:shared_event") {
+			if !domain.Contains(s.DrawnEvents, "market:shared_event") {
 				t.Fatal("shared event not keyed by region")
 			}
 			s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "shared_event", OptionID: dual.Options[0].ID})
@@ -120,7 +140,7 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 				s = finishStory(t, g, token)
 			}
 			if s.Phase == "preparation" {
-				s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+				s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
 			}
 			if s.Phase != "explore" {
 				t.Fatal("expected explore after resolving shared event")
@@ -138,21 +158,21 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 				s = finishStory(t, g, token)
 			}
 			if s.Phase == "preparation" {
-				s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+				s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
 			}
 		}
 	}
 	if !found {
-		t.Fatal("shared event never drawn in alley")
+		t.Fatal("shared event never drawn in market")
 	}
-	// 换到 alley_copy,同一张卡必须还能抽到。
-	execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley_copy"})
+	// 换到 market_copy,同一张卡必须还能抽到。
+	execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market_copy"})
 	drewAgain := false
 	for i := 0; i < 60 && !drewAgain; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
 		if s.Phase == "event" && s.PendingEventID == "shared_event" {
 			drewAgain = true
-			if !domain.Contains(s.DrawnEvents, "alley_copy:shared_event") {
+			if !domain.Contains(s.DrawnEvents, "market_copy:shared_event") {
 				t.Fatal("second region draw not keyed correctly")
 			}
 		} else if s.Phase == "event" {
@@ -168,6 +188,7 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 func TestTuanziForageFallbackOnFail(t *testing.T) {
 	g, token, _ := setup(t)
 	finishStory(t, g, token)
+	useMarketRandomPool(t, g, token)
 	// 随机数恒 0:过完保护期(4 段)后必触发风险池第一张 rats_grain_event。
 	s := domain.GameState{}
 	for i := 0; i < 10; i++ {
@@ -217,6 +238,7 @@ func TestEventsBalanceFromCatalogTakesPrecedence(t *testing.T) {
 	}
 	g.Random = func(int) (int, error) { return 1, nil }
 	finishStory(t, g, token)
+	useMarketRandomPool(t, g, token)
 	for i := 0; i < 20; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
 		if s.Phase == "event" {
@@ -275,6 +297,7 @@ func TestEventChainRequiresFlags(t *testing.T) {
 		return 0, nil
 	}
 	finishStory(t, g, token)
+	useMarketRandomPool(t, g, token)
 	optionFor := func(id string) string {
 		if id == "moving_sack_event" {
 			return "watch_first" // crit 档写 sack_cat_freed
@@ -309,7 +332,7 @@ func TestEventChainRequiresFlags(t *testing.T) {
 			s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 		}
 		if s.Phase == "preparation" {
-			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
 		}
 	}
 	if !sawChain {
@@ -321,6 +344,7 @@ func TestEventChainRequiresFlags(t *testing.T) {
 // 叙事门控卡:rats_truce(与鼠群分粮)集齐后,《鼠群的回礼》才可能出现在巷子池里。
 func TestNarrativeGatedCardDrawnAfterFlag(t *testing.T) {
 	g, token, _ := setup(t)
+	dropRepeatable(g) // market 池里的回响卡会挤占恒定骰子的抽卡位,滤掉保持确定性
 	g.Random = func(max int) (int, error) {
 		if max == 6 {
 			return 5, nil // 骰子恒 [6,6] crit
@@ -328,6 +352,7 @@ func TestNarrativeGatedCardDrawnAfterFlag(t *testing.T) {
 		return 0, nil // 触发必中、配比选风险池、索引取第一张
 	}
 	finishStory(t, g, token)
+	useMarketRandomPool(t, g, token)
 	optionFor := func(id string) string {
 		switch id {
 		case "rats_grain_event":
@@ -361,7 +386,7 @@ func TestNarrativeGatedCardDrawnAfterFlag(t *testing.T) {
 			s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 		}
 		if s.Phase == "preparation" {
-			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
 		}
 	}
 	if !gotGift {
@@ -468,6 +493,7 @@ func TestRepeatableEchoCard(t *testing.T) {
 		}
 	}
 	finishStory(t, g, token)
+	useMarketRandomPool(t, g, token)
 	seen := 0
 	for i := 0; i < 120 && seen < 2; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
@@ -476,7 +502,7 @@ func TestRepeatableEchoCard(t *testing.T) {
 		}
 		if s.PendingEventID == "feeder_bowl_event" {
 			seen++
-			if domain.Contains(s.DrawnEvents, "alley:feeder_bowl_event") {
+			if domain.Contains(s.DrawnEvents, "market:feeder_bowl_event") {
 				t.Fatal("repeatable card should not enter drawnEvents")
 			}
 		}
@@ -485,7 +511,7 @@ func TestRepeatableEchoCard(t *testing.T) {
 			s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 		}
 		if s.Phase == "preparation" {
-			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
 		}
 	}
 	if seen < 2 {
@@ -497,6 +523,7 @@ func TestRepeatableEchoCard(t *testing.T) {
 func TestChapterSwitchResetsDrawn(t *testing.T) {
 	g, token, _ := setup(t)
 	finishStory(t, g, token)
+	useMarketRandomPool(t, g, token)
 	for i := 0; i < 60; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
 		if s.Phase == "event" {
@@ -584,6 +611,7 @@ func TestBackwardChapterJumpKeepsDrawn(t *testing.T) {
 func TestReportMoveNoTriggerKeepsExploring(t *testing.T) {
 	g, token, _ := setup(t)
 	finishStory(t, g, token)
+	useMarketRandomPool(t, g, token)
 	g.Random = func(max int) (int, error) { return max - 1, nil } // 触发概率掷出最大值,永不命中
 	for i := 0; i < 10; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})

@@ -8,6 +8,7 @@ import StartScreen from '../ui/StartScreen';
 import GameScreen from '../ui/GameScreen';
 import WorldMap from '../ui/WorldMap';
 import ShopPanel from '../ui/ShopPanel';
+import {rainyAlleyObject} from '../modules/rainyAlley/assets';
 
 export default function App() {
   const game = useGame();
@@ -18,9 +19,18 @@ export default function App() {
   const [overlay, setOverlay] = useState<'map' | 'shop' | 'journal' | null>(null);
   const direction = useRef<(direction: Direction, held: boolean) => void>(() => {});
   const interact = useCallback((targetId?: string) => {
-    const id = targetId || nearTarget?.id || 'alley_crate';
+    const id = targetId || nearTarget?.id;
+    if (!id) return;
+    const object = rainyAlleyObject(id);
+    if (object?.kind === 'inspection') {
+      setInspectHint(object.text ?? null);
+      return;
+    }
     void send({type: 'INTERACT', interactionId: id});
   }, [send, nearTarget]);
+  const checkRandomZone = useCallback((zoneId: string) => busy || pending
+    ? Promise.resolve(false)
+    : send({type: 'CHECK_RANDOM_ZONE', zoneId}), [busy, pending, send]);
   const frozen = paused || busy || pending || !!overlay || !entered;
   return <>
     {error && overlay !== 'shop' && <div className="error-banner" role="alert">{error}<button disabled={busy} onClick={() => void retry()}>重试上次操作</button></div>}
@@ -29,10 +39,10 @@ export default function App() {
         {!entered && <StartScreen hasProgress={state.revision > 0} disabled={disabled} onStart={() => setEntered(true)} onShop={() => setOverlay('shop')} onReset={resetSession}/>}
         {/* Keep an active battle mounted and paused behind the title, so returning does not restart its attempt. */}
         {(entered || state.phase === 'battle') && <div hidden={!entered}>
-          <GameScreen state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} onReset={resetSession} onCommand={command => void send(command)} onDirection={(d, held) => direction.current(d, held)} onPause={() => setPaused(!paused)} onMap={() => setOverlay('map')} onShop={() => setOverlay('shop')} onTitle={() => {setEntered(false);setPaused(false);}}>
+          <GameScreen state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} onReset={resetSession} onCommand={command => void send(command)} onInteract={interact} onDirection={(d, held) => direction.current(d, held)} onPause={() => setPaused(!paused)} onMap={() => setOverlay('map')} onShop={() => setOverlay('shop')} onTitle={() => {setEntered(false);setPaused(false);}}>
             {state.phase === 'battle'
               ? <BattleHost state={state} catalog={catalog} paused={frozen} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})}/>
-              : <Viewport state={state} storyScene={currentStory(catalog, state)?.scene} paused={frozen} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onDirectionReady={fn => {direction.current = fn;}} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)}/>}
+              : <Viewport state={state} storyScene={currentStory(catalog, state)?.scene} paused={frozen} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onDirectionReady={fn => {direction.current = fn;}} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone}/>}
           </GameScreen>
         </div>}
       </>}

@@ -159,19 +159,20 @@ func (a *API) fail(w http.ResponseWriter, r *http.Request, err error) {
 }
 func validateCommand(body []byte, kind string) error {
 	allowed := map[string][]string{
-		"ADVANCE_STORY":   {"nodeId"},
-		"START_STORY":     {"nodeId"},
-		"INTERACT":        {"interactionId"},
-		"REPORT_MOVE":     {"distance"},
-		"CHOOSE_EVENT":    {"eventId", "optionId", "usePush"},
-		"START_BATTLE":    {"stageId", "supplies"},
-		"COMPLETE_BATTLE": {"attemptId", "outcome", "usedSupplies", "report"},
-		"CONTINUE":        {},
-		"GO_HOME":         {},
-		"GO_EXPLORE":      {"mapId"},
-		"PLACE_FURNITURE": {"furnitureId", "slotId"},
-		"DRAW_FURNITURE":  {"poolId"},
-		"BUY_FURNITURE":   {"productId"},
+		"ADVANCE_STORY":     {"nodeId"},
+		"START_STORY":       {"nodeId"},
+		"INTERACT":          {"interactionId"},
+		"REPORT_MOVE":       {"distance"},
+		"CHOOSE_EVENT":      {"eventId", "optionId", "usePush"},
+		"START_BATTLE":      {"stageId", "supplies"},
+		"COMPLETE_BATTLE":   {"attemptId", "outcome", "usedSupplies", "report"},
+		"CONTINUE":          {},
+		"GO_HOME":           {},
+		"GO_EXPLORE":        {"mapId"},
+		"PLACE_FURNITURE":   {"furnitureId", "slotId"},
+		"DRAW_FURNITURE":    {"poolId"},
+		"CHECK_RANDOM_ZONE": {"zoneId"},
+		"BUY_FURNITURE":     {"productId"},
 	}
 	required := map[string][]string{
 		"ADVANCE_STORY":   {"nodeId"},

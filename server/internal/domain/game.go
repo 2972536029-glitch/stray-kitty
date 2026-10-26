@@ -82,6 +82,7 @@ type Command struct {
 	PoolID        string `json:"poolId,omitempty"`
 	ProductID     string `json:"productId,omitempty"`
 	MapID         string `json:"mapId,omitempty"`
+	ZoneID        string `json:"zoneId,omitempty"`
 	// REPORT_MOVE 携带的本次行走里程(画布像素)。
 	Distance     int            `json:"distance,omitempty"`
 	Supplies     map[string]int `json:"supplies,omitempty"`

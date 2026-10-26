@@ -53,6 +53,9 @@ func (g *Game) reportMove(s *domain.GameState, distance int) error {
 	if distance <= 0 || distance > randomMaxReport {
 		return domain.Fail("INVALID_COMMAND", "里程上报无效", 400)
 	}
+	if s.MapID == "alley" {
+		return nil
+	}
 	s.ExploreDistance += distance
 	for s.ExploreDistance >= randomCheckSegment {
 		s.ExploreDistance -= randomCheckSegment
@@ -82,8 +85,48 @@ func (g *Game) reportMove(s *domain.GameState, distance int) error {
 func drawnKey(mapID, eventID string) string { return mapID + ":" + eventID }
 
 // 从当前区域的随机池抽卡:排除已抽卡的机遇/风险事件,危险度决定是否触发与抽哪一类。
-// 第三个返回值:该卡是否为可重复的回响卡(repeatable,不占无放回名额)。
 func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, bool, error) {
+	return g.drawRandomEventWithChance(s, -1)
+}
+
+// checkRandomZone 处理雨巷三块固定随机区(!21):每区一次判定机会,概率走
+// RainyZoneChance(千分比 550);雨巷已禁用 REPORT_MOVE 触发,区域判定是唯一入口。
+func (g *Game) checkRandomZone(s *domain.GameState, zoneID string) error {
+	if err := domain.RequirePhase(*s, "explore"); err != nil {
+		return err
+	}
+	if s.MapID != "alley" {
+		return domain.Fail("INVALID_COMMAND", "随机区域不属于当前地图", 400)
+	}
+	switch zoneID {
+	case "rainy_random_west", "rainy_random_central", "rainy_random_east":
+	default:
+		return domain.Fail("INVALID_COMMAND", "随机区域无效", 400)
+	}
+	flag := "attempted_" + zoneID
+	if domain.Contains(s.Flags, flag) {
+		return nil
+	}
+	s.Flags = domain.Add(s.Flags, flag)
+	id, triggered, repeatable, err := g.drawRandomEventWithChance(*s, g.RainyZoneChance)
+	if err != nil {
+		return err
+	}
+	if triggered {
+		s.Phase = "event"
+		s.PendingEventID = id
+		s.PendingEventSource = "random"
+		if !repeatable {
+			s.DrawnEvents = domain.Add(s.DrawnEvents, drawnKey(s.MapID, id))
+		}
+		s.LastResult = domain.Result{Message: "巷子里的风停了一下——好像有什么要发生了。"}
+	}
+	return nil
+}
+
+// 第三个返回值:该卡是否为可重复的回响卡(repeatable,不占无放回名额)。
+// triggerChance<0 时按危险度取默认/balance 覆盖值,>=0 时强制指定(雨巷区域判定用)。
+func (g *Game) drawRandomEventWithChance(s domain.GameState, triggerChance int) (string, bool, bool, error) {
 	danger := 0
 	for _, m := range g.Catalog.Maps {
 		if m.ID == s.MapID {
@@ -138,11 +181,20 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, bool, error) {
 	if len(risks)+len(opportunities) == 0 {
 		return "", false, false, nil // 区域池已抽干,这段路安全了。
 	}
+	if triggerChance < 0 {
+		triggerChance = g.triggerChance(danger)
+	}
+	if triggerChance < 0 {
+		triggerChance = 0
+	}
+	if triggerChance > 1000 {
+		triggerChance = 1000
+	}
 	roll, err := g.Random(1000)
 	if err != nil {
 		return "", false, false, err
 	}
-	if roll >= g.triggerChance(danger) {
+	if roll >= triggerChance {
 		return "", false, false, nil
 	}
 	pool := opportunities

@@ -109,7 +109,8 @@ async function playVisibleControls(page:Page){
 
 for(const entry of cases.filter(value=>value.id!=='supplies')){
   test(`L01 ${entry.id}: real six-cat controls complete eight waves and a fixed boss, zero-supply rewards persist`,async({page,request},info)=>{
-    test.setTimeout(240000);page.setDefaultTimeout(6000);
+    // 全量套件串行跑到这里时浏览器累积负载会拖慢战斗快照查询,6s 会饿死 evaluate;放宽一倍防抖。
+    test.setTimeout(240000);page.setDefaultTimeout(12000);
     await openFixture(page,entry.id);
     const commands:string[]=[];page.on('request',req=>{if(req.url()===origin+'/api/v1/commands'&&req.method()==='POST')commands.push(req.postDataJSON().command.type);});
     await page.getByTestId('chapter-enter').click();

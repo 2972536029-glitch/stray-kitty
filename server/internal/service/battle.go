@@ -104,6 +104,18 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 	if attempt == nil || attempt.ID != c.AttemptID || attempt.Status != "active" || (c.Outcome != "won" && c.Outcome != "lost") {
 		return domain.Fail("INVALID_COMMAND", "战斗场次或结果无效", 400)
 	}
+	// 教学战无补给预留与战斗报告,单独结算:不发救援奖励,不设 alley_rescued。
+	if attempt.StageID == "l00_tutorial" {
+		attempt.Status = c.Outcome
+		s.Phase = "settlement"
+		s.LastResult = domain.Result{Outcome: c.Outcome, Message: "再熟悉一下光源的摆放，然后重新试试。"}
+		if c.Outcome == "won" {
+			s.LastResult.Message = "教学防线守住了。小巷的入口就在前方。"
+			s.CompletedStages = domain.Add(s.CompletedStages, "l00_tutorial")
+			s.Flags = domain.Add(s.Flags, "l00_completed")
+		}
+		return nil
+	}
 	if err := validateSupplies(c.UsedSupplies, 4, 2); err != nil {
 		return err
 	}

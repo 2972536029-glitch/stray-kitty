@@ -301,13 +301,20 @@
       "id": "alley",
       "name": "雨后小巷",
       "status": "demo",
-      "width": 800,
-      "height": 480,
+      "width": 1188,
+      "height": 726,
       "interactions": [
         {
+          "id": "alley_blanket_stack",
+          "x": 454,
+          "y": 231,
+          "label": "旧毛毯",
+          "eventId": "moving_blanket_event"
+        },
+        {
           "id": "alley_crate",
-          "x": 570,
-          "y": 290,
+          "x": 975,
+          "y": 415,
           "label": "纸箱里的叫声",
           "eventId": "crate_event"
         }
@@ -2730,6 +2737,14 @@
     }
   ],
   "stages": [
+    {
+      "id": "l00_tutorial",
+      "name": "窗外的第一道防线",
+      "status": "demo",
+      "lanes": 3,
+      "columns": 5,
+      "waves": 2
+    },
     {
       "id": "alley_rescue",
       "name": "守护纸箱里的伙伴",

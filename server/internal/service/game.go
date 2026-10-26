@@ -11,13 +11,14 @@ import (
 )
 
 type Game struct {
-	Store   *repository.Store
-	Catalog domain.Catalog
-	Random  func(int) (int, error)
+	Store           *repository.Store
+	Catalog         domain.Catalog
+	Random          func(int) (int, error)
+	RainyZoneChance int
 }
 
 func New(store *repository.Store, c domain.Catalog) *Game {
-	return &Game{Store: store, Catalog: c, Random: func(max int) (int, error) {
+	return &Game{Store: store, Catalog: c, RainyZoneChance: 550, Random: func(max int) (int, error) {
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(max)))
 		if err != nil {
 			return 0, err
@@ -159,6 +160,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.StoryNodeID = n.Next
 					return nil
 				}
+				if n.ID == "prologue_2" {
+					s.StoryNodeID = ""
+					return g.startTutorialBattle(s, "l00_tutorial", false)
+				}
 				s.StoryNodeID = ""
 				s.Phase = n.Exit
 				if n.Exit == "explore" {
@@ -181,8 +186,36 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		if err := domain.RequirePhase(*s, "explore"); err != nil {
 			return err
 		}
-		if s.MapID == "alley" && domain.Contains(s.Flags, "alley_rescued") {
-			return domain.Fail("ALREADY_COMPLETED", "伙伴已经获救，可以回花房看看", 409)
+		if s.MapID == "alley" {
+			switch c.InteractionID {
+			case "alley_fish_dry":
+				if !domain.Contains(s.Flags, "alley_fish_collected") {
+					s.Inventory["food"]++
+					s.Flags = domain.Add(s.Flags, "alley_fish_collected")
+					s.LastResult = domain.Result{Message: "找到了一条鱼干。"}
+				}
+				return nil
+			case "alley_poster":
+				if !domain.Contains(s.Flags, "alley_rescued") {
+					return domain.Fail("INTERACTION_LOCKED", "先帮助纸箱里的伙伴", 409)
+				}
+				if domain.Contains(s.Flags, "lost_poster_found") {
+					return nil
+				}
+				s.Phase = "dialogue"
+				s.StoryNodeID = "poster_1"
+				return nil
+			case "alley_crate":
+				if domain.Contains(s.Flags, "alley_rescued") {
+					return domain.Fail("ALREADY_COMPLETED", "伙伴已经获救", 409)
+				}
+			case "alley_blanket_stack":
+				if domain.Contains(s.Flags, "blanket_secured") || domain.Contains(s.Flags, "blanket_half") || domain.Contains(s.Flags, "blanket_lost") {
+					return domain.Fail("ALREADY_COMPLETED", "旧毛毯已经检查过了", 409)
+				}
+			default:
+				return invalid()
+			}
 		}
 		for _, m := range g.Catalog.Maps {
 			if m.ID == s.MapID {
@@ -203,6 +236,8 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		return invalid()
 	case "REPORT_MOVE":
 		return g.reportMove(s, c.Distance)
+	case "CHECK_RANDOM_ZONE":
+		return g.checkRandomZone(s, c.ZoneID)
 	case "CHOOSE_EVENT":
 		return g.chooseEvent(s, c.EventID, c.OptionID, c.UsePush)
 	case "START_BATTLE":
@@ -212,6 +247,16 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "CONTINUE":
 		if err := domain.RequirePhase(*s, "settlement"); err != nil {
 			return err
+		}
+		if s.ActiveBattle != nil && s.ActiveBattle.StageID == "l00_tutorial" {
+			if s.LastResult.Outcome == "lost" {
+				return g.startTutorialBattle(s, "l00_tutorial", false)
+			}
+			s.Phase = "explore"
+			s.MapID = "alley"
+			s.ExploreDistance = -randomGrace
+			s.ActiveBattle = nil
+			return nil
 		}
 		if s.LastResult.Outcome == "lost" {
 			s.Phase = "preparation"
@@ -319,4 +364,26 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	default:
 		return domain.Fail("UNSUPPORTED_COMMAND", "此命令尚未实现", 400)
 	}
+}
+
+// startTutorialBattle 仅服务内部流程(序章教学战进入/失败重试)使用;
+// 玩家命令入口统一走 battle.go 的 startBattle,后者不开放 l00_tutorial。
+func (g *Game) startTutorialBattle(s *domain.GameState, stageID string, includeModifiers bool) error {
+	for _, stage := range g.Catalog.Stages {
+		if stage.ID != stageID || stage.Status != "demo" {
+			continue
+		}
+		id, err := ID()
+		if err != nil {
+			return err
+		}
+		s.ActiveBattle = &domain.Attempt{ID: id, StageID: stage.ID, Status: "active"}
+		if includeModifiers && s.EventState != nil {
+			modifiers := s.EventState.PendingModifiers
+			s.ActiveBattle.Modifiers = &modifiers
+		}
+		s.Phase = "battle"
+		return nil
+	}
+	return domain.Fail("INVALID_COMMAND", "命令参数或目标无效", 400)
 }

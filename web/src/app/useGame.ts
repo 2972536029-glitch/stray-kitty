@@ -23,10 +23,11 @@ export function useGame() {
   useEffect(() => {void initialize();}, [initialize]);
   const send = useCallback(async (command: GameCommand) => {
     setBusy(true);setError('');
-    try {await controller.dispatch(command);}
+    try {await controller.dispatch(command);return true;}
     catch (e) {
       setError(e instanceof Error ? e.message : '操作尚未确认，请重试。');
       if (e instanceof ApiError && e.code === 'REVISION_CONFLICT') {try {store.replace(await port.load());} catch { /* 保留错误，等待重试。 */ }}
+      return false;
     } finally {setBusy(false);}
   }, [controller, port, store]);
   const skipDialogue = useCallback(async () => {

@@ -24,6 +24,11 @@ test('既有内容版本的战斗会话刷新后沿用同一场次，宽窄屏�
     expect(state.phase).not.toBe('dialogue');
   };
   await finishStory();
+  // 合并后序章对话结束自动进入 l00_tutorial 教学战;先结算教学,再走雨巷纸箱救援流程。
+  if (state.activeBattle?.stageId === 'l00_tutorial') {
+    await command({type: 'COMPLETE_BATTLE', attemptId: state.activeBattle.id, outcome: 'won'});
+    await command({type: 'CONTINUE'});
+  }
   await command({type: 'INTERACT', interactionId: 'alley_crate'});
   await command({type: 'CHOOSE_EVENT', eventId: 'crate_event', optionId: 'search'});
   await finishStory();

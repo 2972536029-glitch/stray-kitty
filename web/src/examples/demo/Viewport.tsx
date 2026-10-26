@@ -14,6 +14,7 @@ interface Props {
   onDirectionReady: (send: (direction: Direction, held: boolean) => void) => void;
   onInspectHint?: (hint: string | null) => void;
   onMove?: (distance: number) => void;
+  onRandomZone?: (zoneId: string) => Promise<boolean>;
 }
 
 export function Viewport(props: Props) {
@@ -29,7 +30,8 @@ export function Viewport(props: Props) {
       id => latest.current.onInteract(id),
       result => latest.current.onResult(result),
       hint => latest.current.onInspectHint?.(hint),
-      distance => latest.current.onMove?.(distance)
+      distance => latest.current.onMove?.(distance),
+      zoneId => latest.current.onRandomZone?.(zoneId) ?? Promise.resolve(false)
     );
     runtime.state = latest.current.state;runtime.pausedByUser = latest.current.paused;runtime.storyScene = latest.current.storyScene;scene.current = runtime;
     latest.current.onDirectionReady((direction, held) => runtime.setDirection(direction, held));runtime.start();

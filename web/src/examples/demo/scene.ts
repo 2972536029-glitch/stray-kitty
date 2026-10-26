@@ -3,6 +3,7 @@ import type {CatBreed} from '../../adapters/canvas/pixelCat';
 import {DemoBattle} from './battle';
 import type {Direction} from '../../adapters/platform/input';
 import {CanvasPainter} from '../../adapters/canvas/painter';
+import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 export class DemoScene {
@@ -10,6 +11,8 @@ export class DemoScene {
   pausedByUser = false;
   storyScene: StoryNode['scene'];
   private graphics: CanvasPainter;
+  private context: CanvasRenderingContext2D;
+  private rainyAlley: IntegratedRainyAlley;
   private cityBackdrop: HTMLImageElement;
   private held = new Set<Direction>();
   private keys = new Set<string>();
@@ -24,8 +27,12 @@ export class DemoScene {
   private previousTime = 0;
   private now = 0;
   private destroyed = false;
+  private readonly viewWidth: number;
+  private readonly viewHeight: number;
   // 随机事件:按真实位移累计里程,每满一段上报服务端判定;贴近交互点时暂停上报。
   private moveBuffer = 0;
+  private nearbyInteractionId = '';
+  private squeezePromptVisible = false;
   private static readonly moveSegment = 150;
   private static readonly maxReport = 300; // 服务端单次上报上限,超出整段会被拒,剩余里程留到下一段。
   constructor(
@@ -34,12 +41,19 @@ export class DemoScene {
     private onInteract: (interactionId?: string) => void,
     private onResult: (result: BattleResult) => void,
     private onInspectHint?: (hint: string | null) => void,
-    private onMove?: (distance: number) => void
+    private onMove?: (distance: number) => void,
+    private onRandomZone?: (zoneId: string) => Promise<boolean>
   ) {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('浏览器无法创建二维画布');
+    this.viewWidth = Number(canvas.dataset.logicalWidth) || canvas.width;
+    this.viewHeight = Number(canvas.dataset.logicalHeight) || canvas.height;
+    const dpr = Number(canvas.dataset.dpr) || 1;
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
     context.imageSmoothingEnabled = false;
+    this.context = context;
     this.graphics = new CanvasPainter(context);
+    this.rainyAlley = new IntegratedRainyAlley();
     this.cityBackdrop = new Image();
     this.cityBackdrop.src = '/assets/city-backdrop.svg';
   }
@@ -49,28 +63,37 @@ export class DemoScene {
     if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
     if (this.state?.phase !== 'explore' || this.pausedByUser) return;
     const key = event.key.toLowerCase();
+    if (key === 's' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartSqueeze()) {
+      event.preventDefault(); this.keys.delete('s'); return;
+    }
     this.keys.add(key);
-    if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e'].includes(key)) event.preventDefault();
+    if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','g'].includes(key)) event.preventDefault();
+    if (key === 'g' && !event.repeat && this.state?.mapId === 'alley') this.rainyAlley.toggleDebug();
     if (key === 'e' && !event.repeat) {
       if (this.state?.mapId === 'market') {
         if (Math.hypot(this.x - 260, this.y - 280) < 78) this.onInteract('market_crow_stall');
         else if (Math.hypot(this.x - 580, this.y - 270) < 78) this.onInteract('market_pigeon_perch');
-      } else {
-        if (Math.hypot(this.x - 570, this.y - 290) < 78 && !this.state?.flags.includes('alley_rescued')) {
-          this.onInteract('alley_crate');
-        }
+      } else if (this.state?.mapId === 'alley') {
+        const interaction = this.rainyAlley.nearestInteraction();
+        if (interaction) this.onInteract(interaction.id);
       }
     }
   };
   private keyup = (event: KeyboardEvent) => {this.keys.delete(event.key.toLowerCase());};
   private clearInput = () => {this.keys.clear();this.held.clear();};
   private pointerdown = (event: PointerEvent) => {
+    if (this.state?.phase === 'explore' && this.state.mapId === 'alley' && !this.pausedByUser) {
+      const bounds = this.canvas.getBoundingClientRect();
+      const cover = getComputedStyle(this.canvas).objectFit === 'cover';
+      this.rainyAlley.click(event.clientX, event.clientY, bounds, this.viewWidth, this.viewHeight, cover);
+      return;
+    }
     if (this.state?.phase !== 'battle' || this.pausedByUser || !this.simulation) return;
     const bounds = this.canvas.getBoundingClientRect();
     const cover = getComputedStyle(this.canvas).objectFit === 'cover';
-    const scale = (cover ? Math.max : Math.min)(bounds.width / this.canvas.width, bounds.height / this.canvas.height);
-    const x = (event.clientX - bounds.left - (bounds.width - this.canvas.width * scale) / 2) / scale;
-    const y = (event.clientY - bounds.top - (bounds.height - this.canvas.height * scale) / 2) / scale;
+    const scale = (cover ? Math.max : Math.min)(bounds.width / this.viewWidth, bounds.height / this.viewHeight);
+    const x = (event.clientX - bounds.left - (bounds.width - this.viewWidth * scale) / 2) / scale;
+    const y = (event.clientY - bounds.top - (bounds.height - this.viewHeight * scale) / 2) / scale;
     if (x >= 150 && x < 580 && y >= 145 && y < 391) this.simulation.place(Math.floor((y - 145) / 82), Math.floor((x - 150) / 86));
   };
   start() {
@@ -98,13 +121,21 @@ export class DemoScene {
     if (!this.state) return;
     const mode = this.state.phase;
     if (mode !== this.lastMode || this.state.mapId !== this.lastMapId) {
+      const mapChanged = this.state.mapId !== this.lastMapId;
       this.held.clear();
       if (mode === 'explore') {
-        this.x = 180;
-        this.y = 290;
+        if (this.state.mapId === 'alley') {
+          if (mapChanged) this.rainyAlley.reset();
+        } else {
+          this.x = 180;
+          this.y = 290;
+        }
       }
       this.moveBuffer = 0;
+      this.nearbyInteractionId = '';
+      this.squeezePromptVisible = false;
       this.onNear(false);
+      if (mode === 'event') this.rainyAlley.pauseForEvent();
       this.lastMode = mode;
       this.lastMapId = this.state.mapId;
     }
@@ -114,7 +145,23 @@ export class DemoScene {
     }
     const active = !this.pausedByUser && document.visibilityState !== 'hidden';
     if (!active) this.clearInput();
-    if (mode === 'explore' && active) {
+    if (mode === 'explore' && active && this.state.mapId === 'alley') {
+      const dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
+      const dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
+      this.rainyAlley.move(delta / 1000, dx, dy, this.state.flags, zoneId => this.onRandomZone?.(zoneId) ?? Promise.resolve(false));
+      const interaction = this.rainyAlley.nearestInteraction();
+      const interactionId = interaction?.id ?? '';
+      if (interactionId !== this.nearbyInteractionId) {
+        this.nearbyInteractionId = interactionId;
+        this.onNear(!!interaction, interaction?.id, interaction ? `${interaction.label} · E` : undefined);
+        this.onInspectHint?.(null);
+      }
+      const squeezePrompt = this.rainyAlley.squeezePromptActive();
+      if (squeezePrompt !== this.squeezePromptVisible) {
+        this.squeezePromptVisible = squeezePrompt;
+        this.onInspectHint?.(squeezePrompt ? 'S · 挤过去' : null);
+      }
+    } else if (mode === 'explore' && active) {
       let dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
       let dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
       const distance = Math.hypot(dx, dy);if (distance) {dx /= distance;dy /= distance;}
@@ -179,9 +226,16 @@ export class DemoScene {
       if (this.simulation.outcome && !this.reported) {this.reported = true;this.onResult({attemptId: this.attemptId, outcome: this.simulation.outcome});}
     }
     this.graphics.clear();
+    // CanvasPainter.fillStyle() changes globalAlpha; clearRect() does not reset it.
+    // Reset frame-wide compositing before drawing the integrated background and cat.
+    this.context.globalAlpha = 1;
+    this.context.globalCompositeOperation = 'source-over';
+    this.context.imageSmoothingEnabled = false;
     if (mode === 'battle') this.drawBattle();
-    else if (this.state.mapId === 'market' || this.state.chapterId === 'market' || this.storyScene === 'market') this.drawMarket();
-    else if (mode === 'home' || this.storyScene === 'home' || (this.state.flags.includes('rescue_story_done') && mode !== 'explore')) this.drawHome();
+    else if (mode === 'dialogue' && this.storyScene === 'home') this.drawHome();
+    else if (this.state.mapId === 'market') this.drawMarket();
+    else if (mode === 'home' || this.state.mapId === 'greenhouse') this.drawHome();
+    else if (this.state.mapId === 'alley') this.rainyAlley.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, {phase: mode, eventId: this.state.pendingEventId, pendingEventSource: this.state.pendingEventSource});
     else this.drawAlley();
     if (this.pausedByUser) {this.graphics.fillStyle(0x18282a, .6);this.graphics.fillRect(0, 0, 800, 480);}
   }
