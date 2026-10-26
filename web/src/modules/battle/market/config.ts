@@ -30,7 +30,7 @@ export const CAT_DEFINITIONS: Readonly<Record<MarketCatId, CatDefinition>> = Obj
   caster: {id: 'caster', name: '绒绒', breed: '布偶', role: '星绒术士', maxHp: 80, damage: 20, interval: 0.8, block: 1, range: 'ranged', color: '#cab9e6', initial: {x: 2, y: 1}},
   guard: {id: 'guard', name: '斑斑', breed: '奶牛猫', role: '罐盾卫士', maxHp: 240, damage: 8, interval: 1.1, block: 2, range: 'melee', color: '#e7e8d8', initial: {x: 4, y: 1}},
   tuanzi: {id: 'tuanzi', name: '团子', breed: '橘猫', role: '橘影先锋', maxHp: 220, damage: 28, interval: 1.2, block: 1, range: 'claws', color: '#d39251', initial: {x: 4, y: 2}},
-  diandian: {id: 'diandian', name: '点点', breed: '奶牛猫', role: '暖心伙伴', maxHp: 140, damage: 10, interval: 1.1, block: 1, range: 'ranged', color: '#d8ded5', initial: {x: 2, y: 2}},
+  diandian: {id: 'diandian', name: '点点', breed: '暹罗猫', role: '暖心伙伴', maxHp: 140, damage: 10, interval: 1.1, block: 1, range: 'ranged', color: '#d9c7a8', initial: {x: 2, y: 2}},
   bruiser: {id: 'bruiser', name: '栗栗', breed: '狸花猫', role: '栗盾斗士', maxHp: 240, damage: 16, interval: 1, block: 2, range: 'melee', color: '#b98d68', initial: {x: 4, y: 3}},
   controller: {id: 'controller', name: '铃铃', breed: '银渐层', role: '银铃术士', maxHp: 110, damage: 14, interval: 1, block: 1, range: 'ranged', color: '#afc7cc', initial: {x: 2, y: 3}},
 });

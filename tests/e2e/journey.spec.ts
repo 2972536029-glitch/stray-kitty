@@ -72,6 +72,14 @@ test('真实浏览器贯通前两章、双 NPC 事件、救援、家园和刷新
  await enterGame(page);await expect(page.locator('[data-renderer="canvas2d"]')).toBeVisible();
  fs.mkdirSync('output/preview',{recursive:true});await page.screenshot({path:'output/preview/desktop.png',fullPage:true});
  await finishDialogue(page);
+ await expect(page.locator('section[aria-label="序章塔防战斗"]')).toBeVisible();
+ await page.getByRole('button',{name:'验收工具'}).click();
+ const battleDevTools=page.getByRole('toolbar',{name:'开发者验收栏'});
+ await expect(battleDevTools.getByRole('button',{name:/直接胜利|完成当前战斗并胜利/})).toHaveCount(0);
+ await expect(battleDevTools.getByRole('button',{name:/开启第二章剧情/})).toBeDisabled();
+ await expect(battleDevTools.getByRole('button',{name:/直达午夜集市/})).toBeDisabled();
+ expect(battleCommands).toEqual([]);
+ await page.getByRole('button',{name:'验收工具'}).click();
  const tutorialRun=await playL00ThroughHost(page);
  await testInfo.attach('l00-new-tutorial-six-waves',{body:JSON.stringify(tutorialRun),contentType:'application/json'});
  await page.getByRole('button',{name:'进入雨夜小巷 →'}).click();
