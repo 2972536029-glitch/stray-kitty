@@ -1,6 +1,10 @@
 export type GamePhase = 'dialogue' | 'explore' | 'event' | 'preparation' | 'battle' | 'settlement' | 'home';
 export interface BattleModifiers {shadowPressure: -1 | 0 | 1; situation?: 'detour' | 'forced_chase'}
-export interface BattleAttempt {id: string; stageId: string; status: 'active' | 'won' | 'lost'; modifiers?: BattleModifiers}
+export type BattleSupplyId = 'warm-can' | 'bouncy-treat';
+export type BattleSupplies = Partial<Record<BattleSupplyId, number>>;
+export interface BattleReport {leaks: number; bossDefeated: boolean}
+export interface BattleRewards {supplies: Record<BattleSupplyId, number>; baseCount: number; firstClearBonus: number; perfectBonus: number; difficulty: 'low' | 'medium' | 'high'}
+export interface BattleAttempt {id: string; stageId: string; status: 'active' | 'won' | 'lost'; modifiers?: BattleModifiers; supplies?: BattleSupplies}
 export type EventTier = 'crit' | 'success' | 'partial' | 'fail';
 export interface EventReward {fish?: number; stamps?: number; clue?: number; material?: number}
 export interface EventOutcome {
@@ -17,7 +21,7 @@ export interface GameState {
   pendingEventId: string; activeBattle: BattleAttempt | null;
   pendingEventSource?: 'node' | 'random'; drawnEvents?: string[]; exploreDistance?: number;
   eventState?: EventState;
-  lastResult: {message: string; roll?: number; outcome?: string; firstClear?: boolean};
+  lastResult: {message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string; battleRewards?: BattleRewards};
 }
 export type GameCommand =
   | {type: 'ADVANCE_STORY'; nodeId: string}
@@ -25,8 +29,8 @@ export type GameCommand =
   | {type: 'INTERACT'; interactionId: string}
   | {type: 'REPORT_MOVE'; distance: number}
   | {type: 'CHOOSE_EVENT'; eventId: string; optionId: string}
-  | {type: 'START_BATTLE'; stageId: string}
-  | {type: 'COMPLETE_BATTLE'; attemptId: string; outcome: 'won' | 'lost'}
+  | {type: 'START_BATTLE'; stageId: string; supplies?: BattleSupplies}
+  | ({type: 'COMPLETE_BATTLE'} & BattleResult)
   | {type: 'CONTINUE'} | {type: 'GO_HOME'} | {type: 'GO_EXPLORE'; mapId?: string}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
   | {type: 'DRAW_FURNITURE'; poolId: string}
@@ -41,10 +45,10 @@ export interface MapInteraction {id: string; x: number; y: number; label: string
 export interface MapDefinition {id: string; name: string; status: string; width: number; height: number; interactions: MapInteraction[]; dangerLevel?: 0 | 1 | 2 | 3}
 export interface EventOption {id: string; label: string; outcomes: Record<EventTier, EventOutcome>}
 export interface EventDefinition {id: string; title: string; text: string; category: 'opportunity' | 'risk' | 'story'; tags: ('trap' | 'shadow' | 'foraging' | 'pathfinding' | 'social')[]; triggers: ('node' | 'random')[]; options: EventOption[]}
-export interface StageDefinition {id: string; name: string; status: string; lanes: number; columns: number; waves: number}
+export interface StageDefinition {id: string; name: string; status: string; lanes: number; columns: number; waves: number; chapterId?: string}
 export interface ModuleResult<T> {status: 'completed' | 'cancelled'; data: T}
 export interface BattleContext {attempt: BattleAttempt; stage: StageDefinition; catIds: string[]; modifiers: BattleModifiers}
-export interface BattleResult {attemptId: string; outcome: 'won' | 'lost'}
+export interface BattleResult {attemptId: string; outcome: 'won' | 'lost'; usedSupplies?: BattleSupplies; report?: BattleReport}
 export interface MapContext {map: MapDefinition; flags: string[]; spawn: {x: number; y: number}}
 export interface Catalog {
   version: string;
