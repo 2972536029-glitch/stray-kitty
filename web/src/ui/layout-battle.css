@@ -1,0 +1,18 @@
+/* Only the battle phase uses a scrollable module surface; exploration keeps its full-screen canvas. */
+.app-shell[data-phase=battle]{display:flex;flex-direction:column;background:#f1e8d3}
+.app-shell[data-phase=battle] .topbar{position:relative;top:auto;left:auto;right:auto;flex-shrink:0;margin:10px 12px;padding:9px 12px;min-height:58px}
+.app-shell[data-phase=battle]>main{display:block;flex:1;min-height:0}
+.app-shell[data-phase=battle] .game-layout{display:block;height:100%}
+.app-shell[data-phase=battle] .world-panel{position:relative;inset:auto;height:100%;display:flex;flex-direction:column}
+.app-shell[data-phase=battle] .world-toolbar{position:relative;inset:auto;flex-shrink:0;margin:0 12px 8px;min-height:36px;padding:5px 10px;box-shadow:none}
+.app-shell[data-phase=battle] .world-wrap{position:relative;inset:auto;display:block;flex:1;min-height:0;overflow:auto;padding:10px 12px;background:#f4f0e4;scrollbar-gutter:stable}
+.app-shell[data-phase=battle] .world-footer{position:relative;inset:auto;flex-shrink:0;width:auto;max-width:none;margin:8px 12px 10px;padding:6px 10px;box-shadow:none}
+.app-shell[data-phase=battle] .world-footer p{max-width:none;min-width:0}
+.app-shell[data-phase=battle] .dev-bar{position:relative;inset:auto;flex-shrink:0;margin:0 12px 8px;max-height:110px}
+.l00-host-error{max-width:720px;margin:24px auto;padding:20px;border:2px solid #594536;background:#f1e8d3;color:#303333}
+@media(max-width:800px){
+ .app-shell[data-phase=battle] .topbar{margin:6px 8px;gap:5px;padding:7px 8px}
+ .app-shell[data-phase=battle] .world-toolbar{margin:0 8px 5px}
+ .app-shell[data-phase=battle] .world-wrap{padding:8px;scrollbar-gutter:auto}
+ .app-shell[data-phase=battle] .world-footer{margin:5px 8px 7px;padding:5px 8px}
+}

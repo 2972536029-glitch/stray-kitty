@@ -103,6 +103,25 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 }
 func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	invalid := func() error { return domain.Fail("INVALID_COMMAND", "命令参数或目标无效", 400) }
+	// An active reservation cannot be abandoned through a story or map command.
+	if s.ActiveBattle != nil && s.ActiveBattle.Status == "active" && c.Type != "COMPLETE_BATTLE" {
+		return domain.Fail("INVALID_PHASE", "请先完成当前战斗；返回标题可暂停并保留本场。", 409)
+	}
+	// 换章=区域换了新鲜事:仅在章节序"前进"时清空已抽卡(回看旧章节不清,防来回跳刷池子);
+	// 节点一次性(node: 前缀)随章重置。
+	chapterOrder := func(id string) int {
+		for i, ch := range g.Catalog.Chapters {
+			if ch.ID == id {
+				return i
+			}
+		}
+		return -1
+	}
+	switchChapter := func(next string) {
+		if next != "" && next != s.ChapterID && chapterOrder(next) > chapterOrder(s.ChapterID) {
+			s.DrawnEvents = nil
+		}
+	}
 	switch c.Type {
 	case "BUY_FURNITURE":
 		return g.buyFurniture(s, c.ProductID)
@@ -111,6 +130,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			if n.ID == c.NodeID {
 				s.Phase = "dialogue"
 				s.StoryNodeID = n.ID
+				switchChapter(n.ChapterID)
 				s.ChapterID = n.ChapterID
 				if n.ChapterID == "market" {
 					s.MapID = "market"
@@ -133,6 +153,8 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				for _, flag := range n.SetFlags {
 					s.Flags = domain.Add(s.Flags, flag)
 				}
+				// 注意:章节内 ADVANCE(含局势跳转节点,其 chapterId 可能属于别的章节)
+				// 不触发重置——只有 START_STORY 主动开启新章节才清空已抽卡。
 				s.ChapterID = n.ChapterID
 				if n.Next != "" {
 					s.StoryNodeID = n.Next
@@ -140,7 +162,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				}
 				if n.ID == "prologue_2" {
 					s.StoryNodeID = ""
-					return g.startBattle(s, "l00_tutorial", false)
+					return g.startTutorialBattle(s, "l00_tutorial", false)
 				}
 				s.StoryNodeID = ""
 				s.Phase = n.Exit
@@ -199,6 +221,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			if m.ID == s.MapID {
 				for _, p := range m.Interactions {
 					if p.ID == c.InteractionID {
+						// 节点事件一次性:结算过的卡记入 drawnEvents("node:" 前缀),防无限重掷刷奖励。
+						if domain.Contains(s.DrawnEvents, "node:"+p.EventID) {
+							return domain.Fail("ALREADY_COMPLETED", "这件事今天已经办过了，先去别处转转吧。", 409)
+						}
 						s.Phase = "event"
 						s.PendingEventID = p.EventID
 						s.PendingEventSource = "node"
@@ -213,62 +239,18 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "CHECK_RANDOM_ZONE":
 		return g.checkRandomZone(s, c.ZoneID)
 	case "CHOOSE_EVENT":
-		return g.chooseEvent(s, c.EventID, c.OptionID)
+		return g.chooseEvent(s, c.EventID, c.OptionID, c.UsePush)
 	case "START_BATTLE":
-		if err := domain.RequirePhase(*s, "preparation", "home", "explore"); err != nil {
-			return err
-		}
-		if s.Phase != "preparation" && !domain.Contains(s.Flags, "alley_rescued") {
-			return domain.Fail("STAGE_LOCKED", "请先探索小巷并完成事件", 409)
-		}
-		if c.StageID == "l00_tutorial" {
-			return invalid()
-		}
-		return g.startBattle(s, c.StageID, true)
+		return g.startBattle(s, c)
 	case "COMPLETE_BATTLE":
-		if err := domain.RequirePhase(*s, "battle"); err != nil {
-			return err
-		}
-		if s.ActiveBattle == nil || s.ActiveBattle.ID != c.AttemptID || s.ActiveBattle.Status != "active" || (c.Outcome != "won" && c.Outcome != "lost") {
-			return invalid()
-		}
-		s.ActiveBattle.Status = c.Outcome
-		s.Phase = "settlement"
-		if s.ActiveBattle.StageID == "l00_tutorial" {
-			s.LastResult = domain.Result{Outcome: c.Outcome, Message: "再熟悉一下光源的摆放，然后重新试试。"}
-			if c.Outcome == "won" {
-				s.LastResult.Message = "教学防线守住了。小巷的入口就在前方。"
-				s.CompletedStages = domain.Add(s.CompletedStages, "l00_tutorial")
-				s.Flags = domain.Add(s.Flags, "l00_completed")
-			}
-			return nil
-		}
-		s.LastResult = domain.Result{Outcome: c.Outcome, Message: "防线需要再调整一下。伙伴仍在等待，准备好就再试一次。"}
-		if c.Outcome == "won" {
-			s.LastResult.Message = "撤离路线已经照亮，点点安全了！"
-			if s.EventState != nil {
-				s.EventState.PendingModifiers = domain.BattleModifiers{}
-			}
-			if !domain.Contains(s.CompletedStages, s.ActiveBattle.StageID) {
-				s.LastResult.FirstClear = true
-				s.CompletedStages = domain.Add(s.CompletedStages, s.ActiveBattle.StageID)
-				s.Cats = domain.Add(s.Cats, "diandian")
-				s.Furniture = domain.Add(s.Furniture, "cardboard_nest")
-				s.Currencies["stamp"] += 2
-				s.Inventory["material"] += 3
-				s.Flags = domain.Add(s.Flags, "alley_rescued")
-			} else {
-				s.LastResult.Message = "再次守护成功！首次救援奖励已领取，本次不重复发放。"
-			}
-		}
-		return nil
+		return g.completeBattle(s, c)
 	case "CONTINUE":
 		if err := domain.RequirePhase(*s, "settlement"); err != nil {
 			return err
 		}
 		if s.ActiveBattle != nil && s.ActiveBattle.StageID == "l00_tutorial" {
 			if s.LastResult.Outcome == "lost" {
-				return g.startBattle(s, "l00_tutorial", false)
+				return g.startTutorialBattle(s, "l00_tutorial", false)
 			}
 			s.Phase = "explore"
 			s.MapID = "alley"
@@ -278,7 +260,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		}
 		if s.LastResult.Outcome == "lost" {
 			s.Phase = "preparation"
-		} else if !domain.Contains(s.Flags, "rescue_story_done") {
+		} else if s.LastResult.StageID != "alley_boss" && !domain.Contains(s.Flags, "rescue_story_done") {
 			s.Phase = "dialogue"
 			s.StoryNodeID = "rescue_1"
 		} else {
@@ -384,7 +366,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	}
 }
 
-func (g *Game) startBattle(s *domain.GameState, stageID string, includeModifiers bool) error {
+// startTutorialBattle 仅服务内部流程(序章教学战进入/失败重试)使用;
+// 玩家命令入口统一走 battle.go 的 startBattle,后者不开放 l00_tutorial。
+func (g *Game) startTutorialBattle(s *domain.GameState, stageID string, includeModifiers bool) error {
 	for _, stage := range g.Catalog.Stages {
 		if stage.ID != stageID || stage.Status != "demo" {
 			continue
