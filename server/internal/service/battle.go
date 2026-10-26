@@ -145,6 +145,10 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 		rewards := &domain.BattleRewards{Supplies: map[string]int{"warm-can": 0, "bouncy-treat": 0}, BaseCount: baseCount, Difficulty: difficulty}
 		if first {
 			rewards.FirstClearBonus = 2
+			// 鼓励只在首次守护成功发放:重复通关不回(否则稀缺性可零成本刷满)。
+			if s.PushTokens < 2 {
+				s.PushTokens++
+			}
 		}
 		if attempt.StageID == "alley_boss" && *c.Report.Leaks == 0 {
 			rewards.PerfectBonus = 1

@@ -54,16 +54,18 @@ type GameState struct {
 	CompletedStages []string          `json:"completedStages"`
 	PendingEventID  string            `json:"pendingEventId"`
 	// 随机事件:来源标记(node=交互点/random=随机触发)、本局已抽卡与探索里程。
-	PendingEventSource string      `json:"pendingEventSource,omitempty"`
-	DrawnEvents        []string    `json:"drawnEvents,omitempty"`
-	ExploreDistance    int         `json:"exploreDistance,omitempty"`
-	ActiveBattle       *Attempt    `json:"activeBattle"`
-	LastResult         Result      `json:"lastResult"`
-	EventState         *EventState `json:"eventState,omitempty"`
+	PendingEventSource string   `json:"pendingEventSource,omitempty"`
+	DrawnEvents        []string `json:"drawnEvents,omitempty"`
+	ExploreDistance    int      `json:"exploreDistance,omitempty"`
+	// PushTokens:伙伴鼓励次数——掷骰前声明使用,掷两组 2d6 取优;初始 1,每关首次守护成功恢复 1(上限 2,重复通关不回)。
+	PushTokens   int         `json:"pushTokens,omitempty"`
+	ActiveBattle *Attempt    `json:"activeBattle"`
+	LastResult   Result      `json:"lastResult"`
+	EventState   *EventState `json:"eventState,omitempty"`
 }
 
 func InitialState(version string) GameState {
-	return GameState{SchemaVersion: 1, ContentVersion: version, Phase: "dialogue", ChapterID: "prologue", StoryNodeID: "prologue_1", MapID: "alley", Flags: []string{}, Cats: []string{"miaomiao", "tuanzi"}, Inventory: map[string]int{"material": 0, "food": 0}, Currencies: map[string]int{"stamp": 0}, Furniture: []string{}, Placements: map[string]string{}, CompletedStages: []string{}, LastResult: Result{Message: "旅程从一缕金枪鱼的香味开始。"}}
+	return GameState{SchemaVersion: 1, ContentVersion: version, Phase: "dialogue", ChapterID: "prologue", StoryNodeID: "prologue_1", MapID: "alley", Flags: []string{}, Cats: []string{"miaomiao", "tuanzi"}, Inventory: map[string]int{"material": 0, "food": 0}, Currencies: map[string]int{"stamp": 0}, Furniture: []string{}, Placements: map[string]string{}, CompletedStages: []string{}, PushTokens: 1, LastResult: Result{Message: "旅程从一缕金枪鱼的香味开始。"}}
 }
 
 type Command struct {
@@ -85,6 +87,8 @@ type Command struct {
 	Supplies     map[string]int `json:"supplies,omitempty"`
 	UsedSupplies map[string]int `json:"usedSupplies,omitempty"`
 	Report       *BattleReport  `json:"report,omitempty"`
+	// CHOOSE_EVENT 的伙伴鼓励声明:掷两组 2d6 取优,消耗一枚 PushTokens。
+	UsePush bool `json:"usePush,omitempty"`
 }
 type CommandRequest struct {
 	ExpectedRevision *int    `json:"expectedRevision"`
@@ -111,8 +115,10 @@ type Map struct {
 	DangerLevel  int           `json:"dangerLevel"`
 }
 type EventOption struct {
-	ID       string                  `json:"id"`
-	Outcomes map[string]EventOutcome `json:"outcomes"`
+	ID string `json:"id"`
+	// RequireCat:仅当队伍里有这只猫时该选项可选(前端隐藏,服务端拒绝);伙伴"隐藏选项"型技能的地基。
+	RequireCat string                  `json:"requireCat,omitempty"`
+	Outcomes   map[string]EventOutcome `json:"outcomes"`
 }
 type Event struct {
 	ID       string        `json:"id"`
@@ -120,6 +126,11 @@ type Event struct {
 	Category string        `json:"category"`
 	Triggers []string      `json:"triggers"`
 	Maps     []string      `json:"maps"`
+	Tags     []string      `json:"tags"`
+	// RequiresFlags:事件链——全部 flag 都已记录时该卡才进随机池;空=无条件。
+	RequiresFlags []string `json:"requiresFlags,omitempty"`
+	// Repeatable:回响卡——可重复抽到,不占用无放回名额;奖励应保持近零,防资源刷取。
+	Repeatable bool `json:"repeatable,omitempty"`
 }
 type Stage struct {
 	ID        string `json:"id"`
@@ -151,15 +162,28 @@ type Product struct {
 	Status       string `json:"status"`
 }
 type Catalog struct {
-	Version   string      `json:"version"`
-	Story     []StoryNode `json:"story"`
-	Maps      []Map       `json:"maps"`
-	Events    []Event     `json:"events"`
-	Stages    []Stage     `json:"stages"`
-	Pools     []Pool      `json:"pools"`
-	Slots     []Slot      `json:"slots"`
-	Furniture []Furniture `json:"furniture"`
-	Products  []Product   `json:"products"`
+	Version       string         `json:"version"`
+	Chapters      []Chapter      `json:"chapters"`
+	Story         []StoryNode    `json:"story"`
+	Maps          []Map          `json:"maps"`
+	Events        []Event        `json:"events"`
+	Stages        []Stage        `json:"stages"`
+	Pools         []Pool         `json:"pools"`
+	Slots         []Slot         `json:"slots"`
+	Furniture     []Furniture    `json:"furniture"`
+	Products      []Product      `json:"products"`
+	EventsBalance []EventBalance `json:"eventsBalance"`
+}
+type Chapter struct {
+	ID string `json:"id"`
+}
+
+// EventsBalance:随机事件平衡表,内容驱动(危险度→触发概率/风险占比,千分比;echoShare 为回响卡参与门槛,取首个非零)。
+type EventBalance struct {
+	DangerLevel   int `json:"dangerLevel"`
+	TriggerChance int `json:"triggerChance"`
+	RiskShare     int `json:"riskShare"`
+	EchoShare     int `json:"echoShare"`
 }
 
 func Contains(values []string, value string) bool {
