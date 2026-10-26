@@ -3,7 +3,7 @@ import type {KeyboardEvent, PointerEvent} from 'react';
 import type {BattleDifficulty, ChapterAction, ChapterCat, ChapterCatId, ChapterState, Position} from './types';
 import {CELLS, DIFFICULTIES, MAP, RULES, SKILLS} from './config';
 import {advanceChapter, createChapterBattle, dispatchChapter, getAttackCells, getBossCells, getChapterAdvice, getChapterSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
-import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintChapter, portrait} from './painter';
+import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintChapter} from './painter';
 import {drawCat} from '../l00/painter';
 import {getChapterAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
@@ -22,11 +22,6 @@ const ICONS:Record<ChapterCatId,string>={caster:'✧',guard:'◈',tuanzi:'✦',d
 
 function RoleBadge({id}:{id:ChapterCatId}){
   return <span className="chapter-role-badge" data-role={CAT_PRESENTATION[id].label}>{CAT_PRESENTATION[id].label}</span>;
-}
-function Portrait({cat}:{cat:ChapterCat}){
-  const ref=useRef<HTMLCanvasElement>(null);
-  useEffect(()=>{const context=ref.current?.getContext('2d');if(context)portrait(context,cat);},[cat.id,cat.status]);
-  return <canvas ref={ref} width={64} height={64} className="chapter-portrait" aria-hidden="true"/>;
 }
 function AdvisorPortrait(){
   const ref=useRef<HTMLCanvasElement>(null);
@@ -303,8 +298,9 @@ export function ChapterBattleViewport({attemptId,difficulty,paused,onResult}:Cha
     <div className="btl-subhead"><span>凸形小巷 · 垃圾占格不可部署</span><span>已上阵 {game.cats.filter(cat=>cat.status==='active').length} / {RULES.maxCats}</span><span>体力归零退场 · 点点治疗在场伙伴</span></div>
     <div className="btl-difficulty-strip" data-testid="chapter-difficulty"><strong>{DIFFICULTIES[difficulty].label} · 敌人体力 {Math.round(DIFFICULTIES[difficulty].hpMultiplier*100)}%</strong><span>守完全部波次并击退首领；3 次突破则失败。所有猫退场也会失败。</span></div>
     <div className={`chapter-boss-panel${bossWindup?' is-warning':''}`} data-testid="chapter-boss" data-boss-phase={game.boss.phase} data-boss-attacks={game.boss.attacks} data-boss-basic-attacking={bossBasicAttacking}><strong>{game.boss.phase==='defeated'?'首领已击退':game.boss.name}</strong><div className="chapter-boss-health" role="meter" aria-label="首领体力" aria-valuemin={0} aria-valuemax={game.boss.maxHp} aria-valuenow={Math.ceil(game.boss.hp)} data-testid="chapter-boss-health"><i style={{width:`${100*game.boss.hp/game.boss.maxHp}%`}}/><span>{Math.ceil(game.boss.hp)} / {game.boss.maxHp}</span></div><small>{bossWindup?'举起路障了！移开裂纹范围内的猫咪。':game.boss.phase==='recovery'?'重砸落地，正在收势。':game.boss.phase==='defeated'?'首领已击退，继续处理全部波次。':bossBasicAttacking?'普通攻击 · 挥动路障':'固定占据 D8–E9 四格 · 普攻 / 路障重砸'}</small></div>
-    <div className="btl-arena">
-      <div className="btl-command" aria-label="伙伴状态与军师区域"><aside className="chapter-party" aria-label="本场四位伙伴"><small>本场伙伴</small><div className="chapter-party-list">{game.cats.map(cat=><div className={`chapter-party-cat${cat.status==='retired'?' is-retired':''}`} key={cat.id} data-testid={`chapter-party-${cat.id}`} data-status={cat.status} data-hp={Math.ceil(cat.hp)}><Portrait cat={cat}/><div><strong>{cat.name} <RoleBadge id={cat.id}/></strong><Health cat={cat}/><span>{cat.status==='retired'?'已退场 · 本场无法复活':`${Math.ceil(cat.hp)} / ${cat.maxHp}`}</span></div></div>)}</div></aside><div className="btl-advisor"><button type="button" className="btl-advisor-cat" data-testid="chapter-advisor" aria-label="与军师阿策交谈" disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(value=>!value);}}><AdvisorPortrait/><strong>阿策 · 军师喵</strong></button><button type="button" className="btl-small-bubble" disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(true);}}>{advice}<small>点我聊聊 →</small></button></div></div>
+    <div className="btl-tactics"><button type="button" data-testid="chapter-advisor" aria-label="与军师阿策交谈" disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(value=>!value);}}><AdvisorPortrait/><strong>问问阿策</strong></button><p>{advice}</p></div>
+    {game.cats.some(cat=>cat.status==='retired')&&<p className="btl-retirement-note" role="status" data-testid="chapter-retired">{game.cats.filter(cat=>cat.status==='retired').map(cat=>cat.name).join('、')}已退场，本场无法复活。</p>}
+    <div className="btl-arena btl-arena-wide">
       <div className="btl-board-column">
         <div className="btl-playback" role="group" aria-label="战斗速度与开始暂停"><button type="button" className={game.baseSpeed===.5?'btl-speed-selected':''} disabled={ended||paused||hidden} aria-pressed={game.baseSpeed===.5} data-testid="chapter-speed-half" onClick={()=>act({type:'SET_SPEED',speed:.5})}>×0.5</button><button type="button" className={game.baseSpeed!==.5?'btl-speed-selected':''} disabled={ended||paused||hidden} aria-pressed={game.baseSpeed!==.5} data-testid="chapter-speed-toggle" aria-label={`常速或倍速，当前基础 ×${game.baseSpeed}`} onClick={()=>act({type:'SET_SPEED',speed:game.baseSpeed===1?2:1})}>{game.baseSpeed===.5?'×1 / ×2':`×${game.baseSpeed}`}</button><button type="button" className="btl-play-toggle" data-testid="chapter-start" disabled={paused||hidden||ended||chatOpen||retreatOpen} onClick={startOrToggle}>{game.phase==='ready'?'开始守护':game.paused?'继续战斗':'暂停战斗'}</button><span data-testid="chapter-effective-speed">{speed===0?'当前暂停':game.aim?'技能瞄准 ×1':inspected?'查看猫咪 · 临时 ×0.5':`当前 ×${speed}`} · {game.elapsed.toFixed(0)} 秒</span></div>
         {game.phase==='ready'&&<p className="chapter-ready" data-testid="chapter-ready">推荐阵型已就位，可拖动小猫调整。点猫查看技能，点击开始守护。</p>}

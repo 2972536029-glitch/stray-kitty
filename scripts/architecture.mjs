@@ -37,6 +37,7 @@ const labels = {
   'server/internal/integrations': '外部集成', 'server/internal/integrations/payment': '支付渠道 · 预留',
   'server/migrations': 'MySQL 结构 · 尚未接入', docs: '需求、架构、接口与集成记录',
   design: '模块设计', 'design/tower-defense': '塔防规则与关卡规格',
+  'web/src/modules/battle/market': '第二章六猫、七入口与单格横扫首领', 'design/tower-defense/levels/L02-midnight-market': '第二章午夜集市设计', 'docs/L02-INTEGRATION.md': '第二章独立试玩与参数边界',
   'web/src/modules/battle/chapter': '第一章紧凑棋盘、四猫与固定首领', 'web/src/modules/battle/l00': '固定 L00 局内实现', 'docs/L01-INTEGRATION.md': '第一章四猫与当前接入', 'docs/L00-INTEGRATION.md': 'L00 六波新手教学与接入',
   tests: '自动验证', 'tests/e2e': '浏览器流程', scripts: '启动、生成与检查', deploy: '部署模板',
   '.dockerignore': '容器构建排除', '.env.example': '非秘密环境变量示例',
@@ -114,14 +115,14 @@ home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余
 | 闫琦雯 | modules/battle；content/battles | BattleContext → BattleResult → COMPLETE_BATTLE |
 | 轩扬 | ui 与各模块展示组件 | 订阅状态、展示结果 → 受控操作回调 |
 
-上表代码路径相对 web/src，内容路径相对 web；战斗引擎、结果结算和联调由闫琦雯维护，家园仓库展示由 UI 协作；其余经济、运维与数据库适配继续按团队认领。app/App.tsx 装配，app/useGame.ts 处理会话、请求和恢复，ui 提供受控展示组件。战斗阶段由 modules/battle/BattleHost.tsx 按场次路由 L00 与 L01 实现，其他阶段保留 examples/demo 的探索、地图、家园及剧情场景；其余模块按各自接口继续接入。
+上表代码路径相对 web/src，内容路径相对 web；战斗引擎、结果结算和联调由闫琦雯维护，家园仓库展示由 UI 协作；其余经济、运维与数据库适配继续按团队认领。app/App.tsx 装配，app/useGame.ts 处理会话、请求和恢复，ui 提供受控展示组件。战斗阶段由 modules/battle/BattleHost.tsx 按场次路由 L00、L01 与 L02 实现，其他阶段保留 examples/demo 的探索、地图、家园及剧情场景；其余模块按各自接口继续接入。
 
 - 公共契约在 web/src/contracts/index.ts；长期变更通过 app/controller.ts，不直接修改快照。
-- 战斗使用服务端attemptId和保存的事件难度快照。l00_tutorial为3×7／六波正式教程，alley_rescue和alley_boss均为5×10／八波四猫首领战。新命令无supplies／usedSupplies；L01结果包含leaks与bossDefeated。所有在场猫每秒自动+5能量，0血本场退场，无道具或休整。暂停与卸载沿用宿主生命周期，刷新同场次从ready重建。
+- 战斗使用服务端attemptId和保存的事件难度快照。l00_tutorial为3×7／六波正式教程，alley_rescue和alley_boss均为5×10／八波四猫首领战。新命令无supplies／usedSupplies；L01／L02结果包含leaks与bossDefeated；market_boss为5×8／八波六猫独立试玩，保留主线待用事件参数，不发额外奖励或推进剧情。所有在场猫正常每秒自动+5能量（L02横扫可短暂封能），0血本场退场，无道具或休整。暂停与卸载沿用宿主生命周期，刷新同场次从ready重建。
 - 新增长期规则时同步 Go service、TypeScript 契约与 [OpenAPI](openapi.json)。服务端负责奖励，UI 不直接加余额或发家具。
 - 修改内容后执行 npm run content:sync，提交 web/content/catalog.json 和 server/internal/platform/catalog.json 两份生成物。
 
-当前无道具规则与旧预留返还见 [L01 接入](L01-INTEGRATION.md)；序章教程见 [L00 接入](L00-INTEGRATION.md)。旧仓库存量保留，新版本不抽取或消耗战斗物品。\n\n## 5. 启动与检查
+当前无道具规则与旧预留返还见 [L01 接入](L01-INTEGRATION.md)；序章教程见 [L00 接入](L00-INTEGRATION.md)，第二章七口六猫试玩见 [L02 接入](L02-INTEGRATION.md)。旧仓库存量保留，新版本不抽取或消耗战斗物品。\n\n## 5. 启动与检查
 
 环境：Node.js 22.12+、Go 1.24+，无需先安装数据库。
 

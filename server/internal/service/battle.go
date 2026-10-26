@@ -29,10 +29,19 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 	if err := domain.RequirePhase(*s, "preparation", "home", "explore"); err != nil {
 		return err
 	}
+	marketRetry := c.StageID == "market_boss" && s.Phase == "preparation" && s.ActiveBattle != nil && s.ActiveBattle.StageID == "market_boss" && s.ActiveBattle.Status == "lost"
+	if c.StageID == "market_boss" {
+		if !domain.Contains(s.Flags, "alley_rescued") {
+			return domain.Fail("STAGE_LOCKED", "请先完成第一章救援，再从家园进入午夜集市试玩", 409)
+		}
+		if s.Phase != "home" && !marketRetry {
+			return domain.Fail("INVALID_PHASE", "午夜集市试玩请从家园进入", 409)
+		}
+	}
 	if (s.Phase != "preparation" || c.StageID == "alley_boss") && !domain.Contains(s.Flags, "alley_rescued") {
 		return domain.Fail("STAGE_LOCKED", "请先完成第一章救援，再从家园重玩小巷首领", 409)
 	}
-	if c.StageID != "alley_rescue" && c.StageID != "alley_boss" {
+	if c.StageID != "alley_rescue" && c.StageID != "alley_boss" && c.StageID != "market_boss" {
 		return domain.Fail("INVALID_COMMAND", "关卡尚未开放", 400)
 	}
 	found := false
@@ -49,7 +58,12 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 		return err
 	}
 	attempt := &domain.Attempt{ID: id, StageID: c.StageID, Status: "active"}
-	if s.EventState != nil {
+	if marketRetry {
+		if s.ActiveBattle.Modifiers != nil {
+			modifiers := *s.ActiveBattle.Modifiers
+			attempt.Modifiers = &modifiers
+		}
+	} else if s.EventState != nil {
 		modifiers := s.EventState.PendingModifiers
 		attempt.Modifiers = &modifiers
 	}
@@ -100,9 +114,9 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 	if c.Report != nil && (c.Report.Leaks == nil || c.Report.BossDefeated == nil || *c.Report.Leaks < 0 || *c.Report.Leaks > 10000) {
 		return domain.Fail("INVALID_BATTLE_REPORT", "战斗报告字段无效", 400)
 	}
-	if attempt.StageID == "alley_rescue" || attempt.StageID == "alley_boss" {
+	if attempt.StageID == "alley_rescue" || attempt.StageID == "alley_boss" || attempt.StageID == "market_boss" {
 		if c.Report == nil {
-			return domain.Fail("INVALID_BATTLE_REPORT", "第一章需要完整的首领战斗报告，请刷新页面后重新挑战当前场次", 400)
+			return domain.Fail("INVALID_BATTLE_REPORT", "首领关卡需要完整的战斗报告，请刷新页面后重新挑战当前场次", 400)
 		}
 		if c.Outcome == "won" && (!*c.Report.BossDefeated || *c.Report.Leaks >= 3) {
 			return domain.Fail("INVALID_BATTLE_REPORT", "必须击败首领并守住防线才能通关", 400)
@@ -129,7 +143,7 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 	attempt.Supplies = nil
 	if c.Outcome == "won" {
 		first := !domain.Contains(s.CompletedStages, attempt.StageID)
-		if first {
+		if first && attempt.StageID != "market_boss" {
 			// 鼓励只在首次守护成功发放:重复通关不回(否则稀缺性可零成本刷满)。
 			if s.PushTokens < 2 {
 				s.PushTokens++
@@ -137,7 +151,7 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 		}
 		result.FirstClear = first
 		s.CompletedStages = domain.Add(s.CompletedStages, attempt.StageID)
-		if s.EventState != nil {
+		if s.EventState != nil && attempt.StageID != "market_boss" {
 			s.EventState.PendingModifiers = domain.BattleModifiers{}
 		}
 		if attempt.StageID == "alley_rescue" {
@@ -150,6 +164,8 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 				s.Inventory["material"] += 3
 				s.Flags = domain.Add(s.Flags, "alley_rescued")
 			}
+		} else if attempt.StageID == "market_boss" {
+			result.Message = "午夜集市的防线守住了，六位伙伴击退了首领。"
 		} else {
 			result.Message = "小巷首领已被击退，伙伴们守住了撤离路线。"
 		}

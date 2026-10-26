@@ -2762,6 +2762,15 @@
       "lanes": 5,
       "columns": 10,
       "waves": 8
+    },
+    {
+      "id": "market_boss",
+      "name": "第二章 · 午夜集市试玩",
+      "chapterId": "market",
+      "status": "demo",
+      "lanes": 5,
+      "columns": 8,
+      "waves": 8
     }
   ],
   "furniture": [
