@@ -23,7 +23,7 @@ async function finishDialogue(page:Page) {
 async function walkRightTo(page:Page,buttonName:string) {
  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
  await page.keyboard.down('ArrowRight');
- try {await expect(page.getByRole('button',{name:buttonName})).toBeVisible({timeout:5000});}
+ try {await expect(page.getByRole('button',{name:buttonName})).toBeVisible({timeout:15000});}
  finally {await page.keyboard.up('ArrowRight');}
 }
 

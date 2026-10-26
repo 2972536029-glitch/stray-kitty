@@ -28,6 +28,7 @@ flowchart TD
 stray-kitty/
 ├─ deploy/  部署模板
 ├─ design/  模块设计
+│  ├─ events/
 │  └─ tower-defense/  塔防规则与关卡规格
 │     └─ levels/
 │        ├─ L00-prologue/

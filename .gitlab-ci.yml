@@ -19,6 +19,7 @@ server_checks:
   stage: verify
   image: golang:1.26
   script:
+    - gofmt_check=$(gofmt -l ./server) && test -z "$gofmt_check" || (echo "gofmt required:"; echo "$gofmt_check"; exit 1)
     - go -C server vet ./...
     - go -C server test -race ./...
 

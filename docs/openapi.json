@@ -594,6 +594,12 @@
           "exploreDistance": {
             "type": "integer"
           },
+          "pushTokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "description": "伙伴鼓励次数:掷两组 2d6 取优;初始 1,塔防胜利恢复(上限 2)"
+          },
           "activeBattle": {
             "anyOf": [
               {
@@ -790,6 +796,10 @@
           "label": {
             "type": "string"
           },
+          "requireCat": {
+            "type": "string",
+            "description": "仅当队伍包含这只猫时选项可用;前端隐藏,服务端拒绝"
+          },
           "outcomes": {
             "type": "object",
             "additionalProperties": false,
@@ -875,6 +885,19 @@
             "items": {
               "type": "string"
             }
+          },
+          "requiresFlags": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            },
+            "description": "事件链:全部剧情标记已记录时该卡才进随机池"
+          },
+          "repeatable": {
+            "type": "boolean",
+            "description": "回响卡:可重复抽到,不占无放回名额;奖励应保持近零"
           },
           "options": {
             "type": "array",
@@ -1162,6 +1185,10 @@
             "type": "string",
             "const": "CHOOSE_EVENT"
           },
+          "usePush": {
+            "type": "boolean",
+            "description": "伙伴鼓励:消耗一枚,掷两组 2d6 取总和高的一组"
+          },
           "eventId": {
             "type": "string"
           },
@@ -1412,6 +1439,20 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Event"
+            }
+          },
+          "eventsBalance": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "dangerLevel": {"type": "integer", "minimum": 0, "maximum": 3},
+                "triggerChance": {"type": "integer", "minimum": 1, "maximum": 1000},
+                "riskShare": {"type": "integer", "minimum": 1, "maximum": 1000},
+                "echoShare": {"type": "integer", "minimum": 1, "maximum": 1000}
+              },
+              "required": ["dangerLevel", "triggerChance", "riskShare", "echoShare"]
             }
           },
           "cats": {

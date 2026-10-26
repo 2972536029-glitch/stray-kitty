@@ -106,6 +106,21 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	if s.ActiveBattle != nil && s.ActiveBattle.Status == "active" && c.Type != "COMPLETE_BATTLE" {
 		return domain.Fail("INVALID_PHASE", "请先完成当前战斗；返回标题可暂停并保留本场。", 409)
 	}
+	// 换章=区域换了新鲜事:仅在章节序"前进"时清空已抽卡(回看旧章节不清,防来回跳刷池子);
+	// 节点一次性(node: 前缀)随章重置。
+	chapterOrder := func(id string) int {
+		for i, ch := range g.Catalog.Chapters {
+			if ch.ID == id {
+				return i
+			}
+		}
+		return -1
+	}
+	switchChapter := func(next string) {
+		if next != "" && next != s.ChapterID && chapterOrder(next) > chapterOrder(s.ChapterID) {
+			s.DrawnEvents = nil
+		}
+	}
 	switch c.Type {
 	case "BUY_FURNITURE":
 		return g.buyFurniture(s, c.ProductID)
@@ -114,6 +129,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			if n.ID == c.NodeID {
 				s.Phase = "dialogue"
 				s.StoryNodeID = n.ID
+				switchChapter(n.ChapterID)
 				s.ChapterID = n.ChapterID
 				if n.ChapterID == "market" {
 					s.MapID = "market"
@@ -136,6 +152,8 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				for _, flag := range n.SetFlags {
 					s.Flags = domain.Add(s.Flags, flag)
 				}
+				// 注意:章节内 ADVANCE(含局势跳转节点,其 chapterId 可能属于别的章节)
+				// 不触发重置——只有 START_STORY 主动开启新章节才清空已抽卡。
 				s.ChapterID = n.ChapterID
 				if n.Next != "" {
 					s.StoryNodeID = n.Next
@@ -170,6 +188,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			if m.ID == s.MapID {
 				for _, p := range m.Interactions {
 					if p.ID == c.InteractionID {
+						// 节点事件一次性:结算过的卡记入 drawnEvents("node:" 前缀),防无限重掷刷奖励。
+						if domain.Contains(s.DrawnEvents, "node:"+p.EventID) {
+							return domain.Fail("ALREADY_COMPLETED", "这件事今天已经办过了，先去别处转转吧。", 409)
+						}
 						s.Phase = "event"
 						s.PendingEventID = p.EventID
 						s.PendingEventSource = "node"
@@ -182,7 +204,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "REPORT_MOVE":
 		return g.reportMove(s, c.Distance)
 	case "CHOOSE_EVENT":
-		return g.chooseEvent(s, c.EventID, c.OptionID)
+		return g.chooseEvent(s, c.EventID, c.OptionID, c.UsePush)
 	case "START_BATTLE":
 		return g.startBattle(s, c)
 	case "COMPLETE_BATTLE":
