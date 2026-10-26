@@ -52,8 +52,9 @@ test('both generated catalogs expose the standalone 5 by 8, eight-wave market st
 });
 
 test('market objectives follow the current trial and do not override later mainline exploration', () => {
-  const active = {...fixture(), lastResult: {stageId: 'market_boss'}, mapId: 'greenhouse', chapterId: 'alley', cats: []} as GameState;
+  const active = {...fixture(), lastResult: {stageId: 'market_boss'}, mapId: 'greenhouse', chapterId: 'alley', cats: [], flags: []} as GameState;
   assert.match(objective(active), /六位伙伴.*集市首领/);
+  assert.match(objective({...active, chapterId: 'rescue', flags: ['chapter_4_started']}), /六位伙伴.*集市首领/);
   assert.match(objective({...active, phase: 'preparation', activeBattle: {...active.activeBattle!, status: 'lost'}}), /结束试玩/);
   assert.match(objective({...active, phase: 'explore', activeBattle: null, mapId: 'market'}), /探索午夜集市/);
 });

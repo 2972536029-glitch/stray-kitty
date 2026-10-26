@@ -233,7 +233,9 @@ export class DemoScene {
     this.context.imageSmoothingEnabled = false;
     if (mode === 'battle') this.drawBattle();
     else if (mode === 'dialogue' && this.storyScene === 'home') this.drawHome();
-    else if (this.state.mapId === 'market') this.drawMarket();
+    else if (mode === 'dialogue' && this.storyScene === 'tunnel') this.drawTunnel();
+    else if (this.state.mapId === 'tunnel' || this.storyScene === 'tunnel') this.drawTunnel();
+    else if (this.state.mapId === 'market' || this.storyScene === 'market') this.drawMarket();
     else if (mode === 'home' || this.state.mapId === 'greenhouse') this.drawHome();
     else if (this.state.mapId === 'alley') this.rainyAlley.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, {phase: mode, eventId: this.state.pendingEventId, pendingEventSource: this.state.pendingEventSource});
     else this.drawAlley();
@@ -299,6 +301,7 @@ export class DemoScene {
       // 逃出后/花房基地伙伴
       this.cat(390,340,'tuanzi');
       if(this.state?.cats.includes('diandian'))this.cat(515,355,'diandian');
+      if(this.state?.cats.includes('momo'))this.cat(190,265,'momo');
     }
 
     const positions:Record<string,[number,number]>={corner:[195,365],window:[490,270],courtyard:[625,365]};
@@ -413,5 +416,55 @@ export class DemoScene {
       const py = 200 + ((i * 41 + this.now * 0.015) % 220);
       this.rect(px, py, 2, 2, 0xffe8a3, 0.5);
     }
+  }
+  private drawTunnel() {
+    // 阴暗地下管道拱门背景
+    this.rect(0, 0, 800, 480, 0x11161d);
+    // 拱形砖墙与管道
+    this.rect(40, 40, 720, 160, 0x1a232c);
+    this.rect(60, 50, 680, 140, 0x222e3a);
+    // 砖墙接缝
+    for (let y = 60; y < 190; y += 22) {
+      for (let x = 65 + (y % 44 === 22 ? 25 : 0); x < 735; x += 50) {
+        this.rect(x, y, 46, 2, 0x161e26, 0.5);
+      }
+    }
+    // 上方大水管
+    this.rect(40, 90, 720, 22, 0x3d4b58);
+    this.rect(40, 94, 720, 6, 0x5a6d7e);
+    this.rect(40, 112, 720, 4, 0x27313b);
+    for (let x = 120; x < 720; x += 110) {
+      this.rect(x - 4, 86, 12, 30, 0x506272);
+      this.rect(x - 2, 88, 8, 26, 0x27313b);
+    }
+    // 荧光苔藓斑点
+    const mosses = [[160, 130], [280, 150], [450, 120], [600, 140], [210, 260], [520, 270]];
+    for (const [mx, my] of mosses) {
+      this.graphics.fillStyle(0x38b000, 0.15);
+      this.graphics.fillCircle(mx, my, 26);
+      this.rect(mx - 8, my - 6, 16, 12, 0x2d6a4f, 0.75);
+      this.rect(mx - 4, my - 3, 8, 6, 0x52b788, 0.9);
+    }
+    // 地面积水石板路
+    this.rect(35, 200, 730, 230, 0x182029);
+    this.rect(65, 205, 670, 225, 0x202b37);
+    for (let y = 210; y < 430; y += 30) {
+      for (let x = 70 + (y % 60 === 30 ? 25 : 0); x < 730; x += 50) {
+        this.rect(x, y, 44, 2, 0x151c24, 0.45);
+      }
+    }
+    // 积水反光
+    this.rect(220, 310, 80, 24, 0x1a3338, 0.8);
+    this.rect(230, 314, 60, 15, 0x285058, 0.85);
+    this.rect(245, 318, 30, 7, 0x488b95, 0.7);
+    this.rect(490, 280, 90, 26, 0x1a3338, 0.8);
+    this.rect(500, 284, 70, 17, 0x285058, 0.85);
+    this.rect(515, 288, 38, 8, 0x488b95, 0.7);
+
+    // 警戒的伙伴们
+    this.cat(190, 340, 'momo');
+    this.cat(320, 345, 'tuanzi');
+    this.cat(440, 350, 'diandian');
+    this.cat(this.x || 265, this.y || 355, 'miaomiao');
   }
 }

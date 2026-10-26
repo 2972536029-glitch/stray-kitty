@@ -59,7 +59,7 @@
   {
     "id": "tunnel",
     "name": "地下通道",
-    "status": "planned",
+    "status": "demo",
     "width": 800,
     "height": 480,
     "interactions": [],
