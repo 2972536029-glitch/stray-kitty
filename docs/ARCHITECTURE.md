@@ -33,12 +33,14 @@ stray-kitty/
 │     └─ levels/
 │        ├─ L00-prologue/
 │        ├─ L01-first-alley/
-│        └─ L02-midnight-market/  第二章午夜集市设计
+│        ├─ L02-midnight-market/  第二章午夜集市设计
+│        └─ L03-abandoned-greenhouse/  第三章废弃花房设计
 ├─ docs/  需求、架构、接口与集成记录
 │  ├─ ARCHITECTURE.md  架构、目录与接入
 │  ├─ L00-INTEGRATION.md  L00 六波新手教学与接入
 │  ├─ L01-INTEGRATION.md  第一章四猫与当前接入
 │  ├─ L02-INTEGRATION.md  第二章独立试玩与参数边界
+│  ├─ L03-INTEGRATION.md  第三章不规则棋盘与独立试玩边界
 │  ├─ openapi.json  API 规范
 │  └─ PRD.md  需求与分工
 ├─ level_design/
@@ -105,6 +107,7 @@ stray-kitty/
 │     ├─ modules/  正式模块接入口
 │     │  ├─ battle/  塔防 · 闫琦雯
 │     │  │  ├─ chapter/  第一章紧凑棋盘、四猫与固定首领
+│     │  │  ├─ greenhouse/  第三章34格不规则棋盘、墨墨与四格荆冠首领
 │     │  │  ├─ l00/  固定 L00 局内实现
 │     │  │  └─ market/  第二章六猫、七入口与单格横扫首领
 │     │  ├─ cats/  猫咪档案、救援与成长
@@ -153,14 +156,16 @@ home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余
 | 闫琦雯 | modules/battle；content/battles | BattleContext → BattleResult → COMPLETE_BATTLE |
 | 轩扬 | ui 与各模块展示组件 | 订阅状态、展示结果 → 受控操作回调 |
 
-上表代码路径相对 web/src，内容路径相对 web；战斗引擎、结果结算和联调由闫琦雯维护，家园仓库展示由 UI 协作；其余经济、运维与数据库适配继续按团队认领。app/App.tsx 装配，app/useGame.ts 处理会话、请求和恢复，ui 提供受控展示组件。战斗阶段由 modules/battle/BattleHost.tsx 按场次路由 L00、L01 与 L02 实现，其他阶段保留 examples/demo 的探索、地图、家园及剧情场景；其余模块按各自接口继续接入。
+上表代码路径相对 web/src，内容路径相对 web；战斗引擎、结果结算和联调由闫琦雯维护，家园仓库展示由 UI 协作；其余经济、运维与数据库适配继续按团队认领。app/App.tsx 装配，app/useGame.ts 处理会话、请求和恢复，ui 提供受控展示组件。战斗阶段由 modules/battle/BattleHost.tsx 按场次路由 L00、L01、L02 与 L03 四套实现，其他阶段保留 examples/demo 的探索、地图、家园及剧情场景；其余模块按各自接口继续接入。
 
 - 公共契约在 web/src/contracts/index.ts；长期变更通过 app/controller.ts，不直接修改快照。
-- 战斗使用服务端attemptId和保存的事件难度快照。l00_tutorial为3×7／六波正式教程，alley_rescue和alley_boss均为5×10／八波四猫首领战。新命令无supplies／usedSupplies；L01／L02结果包含leaks与bossDefeated；market_boss为5×8／八波六猫独立试玩，保留主线待用事件参数，不发额外奖励或推进剧情。所有在场猫正常每秒自动+5能量（L02横扫可短暂封能），0血本场退场，无道具或休整。暂停与卸载沿用宿主生命周期，刷新同场次从ready重建。
+- 战斗使用服务端 attemptId 和保存的难度快照，五个入口对应四套地图：l00_tutorial 为 3×7／六波教学；alley_rescue 和 alley_boss 共用 5×10 包围框内 26 格／八波四猫首领战；market_boss 为 5×8／八波六猫试玩；greenhouse_boss 为 6×9 包围框内 34 个真实格／八波六猫试玩。L03 缺失格不绘制、不部署、不作为技能中心，墨墨替代点点提供护盾并清除已生成荆棘，四格 Boss 共享体力。
+- 新命令无 supplies／usedSupplies；L01–L03 结果包含 leaks 与 bossDefeated。L02／L03 仅从家园独立进入，完成第一章救援即可分别试玩，不要求先赢 L02；胜利只记录本关完成，不发物资、长期伙伴或鼓励奖励，不推进剧情，不清理主线 PendingModifiers。失败回原关准备并保留失败场次快照，重新挑战创建新 ID、沿用难度；离开准备页清理临时失败身份。
+- 所有在场猫正常每模拟秒自动 +5 能量（L02 横扫可短暂停止自然蓄能），0 血本场退场，无道具或休整。暂停与卸载沿用宿主生命周期，刷新同场次从 ready 重建。
 - 新增长期规则时同步 Go service、TypeScript 契约与 [OpenAPI](openapi.json)。服务端负责奖励，UI 不直接加余额或发家具。
 - 修改内容后执行 npm run content:sync，提交 web/content/catalog.json 和 server/internal/platform/catalog.json 两份生成物。
 
-当前无道具规则与旧预留返还见 [L01 接入](L01-INTEGRATION.md)；序章教程见 [L00 接入](L00-INTEGRATION.md)，第二章七口六猫试玩见 [L02 接入](L02-INTEGRATION.md)。旧仓库存量保留，新版本不抽取或消耗战斗物品。
+当前无道具规则与旧预留返还见 [L01 接入](L01-INTEGRATION.md)；序章教程见 [L00 接入](L00-INTEGRATION.md)，第二章七口六猫试玩见 [L02 接入](L02-INTEGRATION.md)，第三章不规则棋盘与墨墨补位见 [L03 接入](L03-INTEGRATION.md)。旧仓库存量保留，新版本不抽取或消耗战斗物品。
 
 ## 5. 启动与检查
 
@@ -193,7 +198,7 @@ npm run test:e2e
 | 章节地图 | ui/WorldMap.tsx；读取 Catalog 和真实解锁状态，路线切换仍走 GO_HOME / GO_EXPLORE |
 | 家具商店 | ui/ShopPanel.tsx、content/shop/products.json、service/shop.go；新增 BUY_FURNITURE，单件购买、服务端定价、校验、扣费和发货，复用事务与幂等收据 |
 | 获救伙伴与结算 | ui/GameScreen.tsx；伙伴与首次奖励读取 GameState，不再使用静态解锁或固定结算 |
-| 探索与塔防 | 探索保留 examples/demo 的 Canvas 场景；本次战斗阶段改挂固定 L00 模块，不覆盖探索／家园画面；未导入旧原型的 onComplete 无条件胜利接口 |
+| 探索与塔防 | 探索保留 examples/demo 的 Canvas 场景；战斗由 BattleHost 路由 L00–L03 四套模块，不覆盖探索／家园画面；未导入旧原型的 onComplete 无条件胜利接口 |
 
 地图和商店采用原生 dialog，打开时暂停局内模拟；Escape 关闭、焦点约束和关闭后恢复焦点。返回标题保留存档，刷新后可继续；待确认的请求仍按原幂等键重试。新增商品与剧情为兼容内容补充，沿用当前 contentVersion，不清空已有玩家。
 
@@ -204,7 +209,7 @@ npm run test:e2e
 - **已接入**：服务端独立掷两颗 D6；12 大成功、9–11 成功、6–8 有代价、2–5 失败推进。四档概率依次 1/36、9/36、16/36、10/36；12 不重复计入普通成功。
 - **四通道 Outcome**：reward 的 fish → inventory.food、stamps → currencies.stamp、clue / material → inventory 同名键；tdMod.shadowPressure → 下场战斗的 modifiers；situation → 指定的衔接剧情；flags → 长期剧情标记。骰点、资源、后果与收据一起保存。
 - **局势已运行**：参考纸箱卡的绕路 / 紧急撤离先进入配置指定的剧情节点，确认后进入 preparation；失败仍能营救点点。寻猫启事按固定剧情节拍出现，推进时记录 lost_poster_found，不进随机池。
-- **塔防接入**：START_BATTLE 保留原 activeBattle.modifiers 字段与事件状态流程，事件修正随场次保存。事件侧负责根据结果判断档位，L00 宿主已将该场次 shadowPressure 的 -1／0／1 转为 low／medium／high，缺省普通、非法值拒绝；不随最新 EventState 改档。lost 后保留待用修正，再试创建新 attempt 并沿用难度；won 后清空待用修正，没有新事件修正时下一场为普通。战斗侧提供三档数值与接收接口，不重复计算事件得分，也不额外应用旧 Demo 的压力速度倍率。
+- **塔防接入**：START_BATTLE 保留 activeBattle.modifiers 字段，事件修正随场次保存。事件侧负责判断档位，各章宿主将场次 shadowPressure 的 -1／0／1 转为 low／medium／high，缺省普通、非法值拒绝；不随最新 EventState 改档。L00 首次教学固定普通，失败重试复制旧场次快照，结算不消费待用修正。L01 胜利清空待用修正。L02／L03 独立试玩可快照已有压力，但胜负均保留主线 PendingModifiers，重试沿用失败场次难度。战斗侧只应用一次三档敌人体力倍率，不重新评分，也不叠加旧 Demo 压力速度倍率。
 - **代码位置**：contracts/index.ts 公共契约；modules/events/types.ts、presentation.ts 接入与展示映射；content/events/events.json 三个选项 × 四档参考后果；Go domain/events.go 判定；service/events.go 原子结算与剧情衔接；ui/DiceEvent.tsx、EventResult.tsx 双骰与后果展示。
 - **只预留，尚未运行**：MapDefinition.dangerLevel 0–3（现为示例配置）、节点 / 随机触发类型与已抽事件 ID 输入。区域无放回随机池、触发频率与类型配比、半秒预告、伙伴技能、强制后续事件及其余正式事件卡待余尧与地图 / UI 负责人继续接入；未将 10 张设计目标写成已完成内容。
 - **兼容与分工**：保留原 crate_event、search / comfort 标识，新增 eventState 和 battle.modifiers 均为可选字段；旧单骰存档仍可继续，旧 event_success 加成仅为旧战斗保留。当前沿用内容版本；新增参考卡文案、危险度和压力数值均是接入样例，正式定稿由原模块负责人维护。原 MR 和分支未修改，未自动合并。
@@ -227,6 +232,8 @@ npm run test:e2e
 
 ## 9. 当前战斗集成
 
-L00／L01当前规则已取代旧九步十波、六猫、补给与休整版本。正式序章入口l00_tutorial与第一章首次救援alley_rescue分开，家园alley_boss重玩同一首领战；不重写其他模块故事。旧active预留在新版结算时全额返还且只执行一次。实际检查结果见本次交付记录，不混用旧提交的测试数字。
+当前已有 L00–L03 四套战斗地图、五个服务入口。正式序章 l00_tutorial 使用五步教学与六波实战；第一章首次救援 alley_rescue 与家园 alley_boss 共用四猫首领战。家园 market_boss 和 greenhouse_boss 分别提供第二、三章六猫独立试玩，不插入正式主线，不清理主线待用压力。L03 保留原图 34 格不规则边界，点点本章留守，墨墨以护盾与清棘补位；本关名单不改长期招募或其他模块故事。L04 及以后尚未实现。
+
+所有已实现章节无战斗道具、休整或同场复活，技能使用自然蓄能。旧 active 预留在新版结算时全额返还且只执行一次。公共规则和各章设计见 [塔防索引](../design/tower-defense/README.md)。
 
 目录变化后运行 npm run architecture:build；npm run architecture:check 会检查本文件与实际文件夹是否一致。需求见 [PRD](PRD.md)。

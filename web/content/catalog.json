@@ -2771,6 +2771,15 @@
       "lanes": 5,
       "columns": 8,
       "waves": 8
+    },
+    {
+      "id": "greenhouse_boss",
+      "name": "第三章 · 废弃花房试玩",
+      "chapterId": "greenhouse",
+      "status": "demo",
+      "lanes": 6,
+      "columns": 9,
+      "waves": 8
     }
   ],
   "furniture": [

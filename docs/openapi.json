@@ -978,7 +978,8 @@
           "lanes",
           "columns",
           "waves"
-        ]
+        ],
+        "description": "Dimensions specify the bounding box, not necessarily a filled rectangle. The stage module owns its playable cell outline; greenhouse_boss has 34 real cells inside a 6-row by 9-column box."
       },
       "Furniture": {
         "type": "object",
@@ -1215,7 +1216,7 @@
           "type",
           "stageId"
         ],
-        "description": "Starts L01 first rescue (alley_rescue), unlocked home replay (alley_boss), or the standalone home trial market_boss after alley_rescued. market_boss can also restart from its own failed preparation, preserving the old attempt tier. l00_tutorial is accepted only to retry a failed tutorial settlement. No battle inventory reservation."
+        "description": "Starts L01 first rescue (alley_rescue), unlocked home replay (alley_boss), or a standalone home trial (market_boss / greenhouse_boss) after alley_rescued. Standalone trials do not require each other to be completed. A trial may restart only from its own failed preparation, preserving the old attempt tier. l00_tutorial is accepted only to retry a failed tutorial settlement. No battle inventory reservation."
       },
       "CompleteBattle": {
         "type": "object",
@@ -1244,7 +1245,7 @@
           "attemptId",
           "outcome"
         ],
-        "description": "alley_rescue, alley_boss and market_boss require report. l00_tutorial requires only attemptId and outcome. Battle completion grants no consumable supplies. market_boss only records stage completion: no recruitment, items, currency, push tokens or story progression, and no clearing mainline pending event modifiers. Old active L01 reservations are fully returned in the durable, idempotent settlement transaction."
+        "description": "alley_rescue, alley_boss, market_boss and greenhouse_boss require report. l00_tutorial requires only attemptId and outcome. Battle completion grants no consumable supplies. Standalone market_boss / greenhouse_boss only record stage completion: no recruitment, items, currency, push tokens or story progression, and no clearing mainline pending event modifiers. Old active L01 reservations are fully returned in the durable, idempotent settlement transaction."
       },
       "Continue": {
         "type": "object",
@@ -1786,7 +1787,7 @@
       "BattleReport": {
         "type": "object",
         "additionalProperties": false,
-        "description": "Client-reported combat summary required for alley_rescue, alley_boss and market_boss. Victory requires bossDefeated and fewer than 3 leaks. The prototype does not run server-authoritative combat.",
+        "description": "Client-reported combat summary required for alley_rescue, alley_boss, market_boss and greenhouse_boss. Victory requires bossDefeated and fewer than 3 leaks. The prototype does not run server-authoritative combat.",
         "properties": {
           "leaks": {
             "type": "integer",

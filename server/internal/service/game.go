@@ -108,7 +108,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		return domain.Fail("INVALID_PHASE", "请先完成当前战斗；返回标题可暂停并保留本场。", 409)
 	}
 	// A failed standalone trial keeps its tier only while the player is retrying.
-	if s.ActiveBattle != nil && s.ActiveBattle.StageID == "market_boss" && s.ActiveBattle.Status == "lost" && domain.Contains([]string{"GO_HOME", "GO_EXPLORE", "START_STORY"}, c.Type) {
+	if s.ActiveBattle != nil && isStandaloneBattle(s.ActiveBattle.StageID) && s.ActiveBattle.Status == "lost" && domain.Contains([]string{"GO_HOME", "GO_EXPLORE", "START_STORY"}, c.Type) {
 		s.ActiveBattle = nil
 	}
 	// 换章=区域换了新鲜事:仅在章节序"前进"时清空已抽卡(回看旧章节不清,防来回跳刷池子);
@@ -264,10 +264,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		}
 		if s.LastResult.Outcome == "lost" {
 			s.Phase = "preparation"
-			if s.ActiveBattle != nil && s.ActiveBattle.StageID == "market_boss" {
+			if s.ActiveBattle != nil && isStandaloneBattle(s.ActiveBattle.StageID) {
 				return nil
 			}
-		} else if s.LastResult.StageID != "alley_boss" && s.LastResult.StageID != "market_boss" && !domain.Contains(s.Flags, "rescue_story_done") {
+		} else if s.LastResult.StageID != "alley_boss" && !isStandaloneBattle(s.LastResult.StageID) && !domain.Contains(s.Flags, "rescue_story_done") {
 			s.Phase = "dialogue"
 			s.StoryNodeID = "rescue_1"
 		} else {
