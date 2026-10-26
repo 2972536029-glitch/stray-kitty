@@ -137,6 +137,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.Flags = domain.Add(s.Flags, "market_unlocked")
 					s.Flags = domain.Add(s.Flags, "chapter_2_started")
 				}
+				if n.ChapterID == "greenhouse" {
+					s.MapID = "greenhouse"
+					s.Flags = domain.Add(s.Flags, "chapter_3_started")
+				}
 				return nil
 			}
 		}
@@ -172,6 +176,12 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				if n.Exit == "home" {
 					s.MapID = "greenhouse"
 					s.Flags = domain.Add(s.Flags, "rescue_story_done")
+					if n.ChapterID == "greenhouse" || n.ID == "greenhouse_intro_7" {
+						s.Flags = domain.Add(s.Flags, "chapter_3_started")
+						s.Flags = domain.Add(s.Flags, "greenhouse_fortified")
+						s.Flags = domain.Add(s.Flags, "momo_joined")
+						s.Cats = domain.Add(s.Cats, "momo")
+					}
 				}
 				if n.Exit == "explore" && n.ChapterID == "market" {
 					s.MapID = "market"
@@ -278,6 +288,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		}
 		s.Phase = "home"
 		s.MapID = "greenhouse"
+		if domain.Contains(s.Flags, "chapter_3_started") {
+			s.ChapterID = "greenhouse"
+		}
 		return nil
 	case "GO_EXPLORE":
 		targetMap := "alley"

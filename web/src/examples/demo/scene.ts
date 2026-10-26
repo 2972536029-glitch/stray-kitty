@@ -299,6 +299,7 @@ export class DemoScene {
       // 逃出后/花房基地伙伴
       this.cat(390,340,'tuanzi');
       if(this.state?.cats.includes('diandian'))this.cat(515,355,'diandian');
+      if(this.state?.cats.includes('momo'))this.cat(190,265,'momo');
     }
 
     const positions:Record<string,[number,number]>={corner:[195,365],window:[490,270],courtyard:[625,365]};
