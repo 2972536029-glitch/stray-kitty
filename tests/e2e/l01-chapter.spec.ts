@@ -43,6 +43,7 @@ for(const entry of cases.filter(value=>value.id!=='retreat')){
     await page.getByTestId('chapter-enter').click();
     await expect(page.getByTestId('chapter-battle')).toHaveAttribute('data-phase','ready');
     await expect(page.locator('[data-testid^="chapter-cat-"][data-status]')).toHaveCount(4);
+    if(entry.id==='low')await page.screenshot({path:info.outputPath('l01-ready-siamese-diandian.png'),fullPage:true});
     await expect(page.locator('.chapter-roster [data-testid^="chapter-skill-"]')).toHaveCount(0);
     await expect(page.locator('.chapter-cell')).toHaveCount(26);
     await expect(page.getByTestId('chapter-boss-health')).toHaveAttribute('aria-valuemax',String(Math.round(2600*(entry.pressure===-1?.8:entry.pressure===1?1.2:1))));

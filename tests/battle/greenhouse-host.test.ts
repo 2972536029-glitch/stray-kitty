@@ -57,8 +57,9 @@ test('catalogs publish a 6 by 9 bounding box without filling the 34-cell irregul
 });
 
 test('greenhouse objectives are restricted to the active standalone trial', () => {
-  const active = {...fixture(), lastResult: {stageId: 'greenhouse_boss'}, mapId: 'greenhouse', chapterId: 'alley', cats: []} as GameState;
+  const active = {...fixture(), lastResult: {stageId: 'greenhouse_boss'}, mapId: 'greenhouse', chapterId: 'alley', cats: [], flags: []} as GameState;
   assert.match(objective(active), /花房通路.*B1.*四格首领/);
+  assert.match(objective({...active, chapterId: 'rescue', flags: ['chapter_4_started']}), /花房通路.*B1.*四格首领/);
   assert.match(objective({...active, phase: 'preparation', activeBattle: {...active.activeBattle!, status: 'lost'}}), /结束试玩/);
   assert.match(objective({...active, phase: 'home', activeBattle: null}), /把获救的伙伴安顿好/);
   assert.match(objective({...active, phase: 'explore', activeBattle: null, mapId: 'market'}), /探索午夜集市/);

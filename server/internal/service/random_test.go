@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"stray-kitty/server/internal/domain"
+	"stray-kitty/server/internal/repository"
 	"stray-kitty/server/internal/service"
 )
 
@@ -683,5 +684,75 @@ func TestCarryLifecycle(t *testing.T) {
 	s2 = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s2.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
 	if s2.EventState.PendingModifiers.Carry != "" {
 		t.Fatal("win must clear carry")
+	}
+}
+
+// 第三章废弃花房剧情推进与墨墨入队解锁测试。
+func TestChapter3GreenhouseProgressionAndMomoUnlock(t *testing.T) {
+	g, token, _ := setup(t)
+	finishStory(t, g, token)
+	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Flags = domain.Add(p.State.Flags, "alley_rescued")
+		p.State.Flags = domain.Add(p.State.Flags, "rescue_story_done")
+		p.State.Phase = "home"
+		p.State.MapID = "greenhouse"
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 解锁第二章集市
+	s := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
+	for s.StoryNodeID != "" && s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	if !domain.Contains(s.Flags, "chapter_2_started") {
+		t.Fatal("expected chapter_2_started")
+	}
+	// 回到花房
+	s = execute(t, g, token, domain.Command{Type: "GO_HOME"})
+	if s.Phase != "home" || s.MapID != "greenhouse" {
+		t.Fatalf("expected home phase in greenhouse, got phase=%s map=%s", s.Phase, s.MapID)
+	}
+	// 启程第三章
+	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "greenhouse_intro_1"})
+	if s.Phase != "dialogue" || s.ChapterID != "greenhouse" {
+		t.Fatalf("expected dialogue phase in greenhouse, got phase=%s chapter=%s", s.Phase, s.ChapterID)
+	}
+	for s.StoryNodeID != "" && s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	if s.Phase != "home" {
+		t.Fatalf("expected return to home phase after chapter 3 story, got %s", s.Phase)
+	}
+	if !domain.Contains(s.Flags, "chapter_3_started") {
+		t.Fatal("expected chapter_3_started flag")
+	}
+	if !domain.Contains(s.Flags, "momo_joined") {
+		t.Fatal("expected momo_joined flag")
+	}
+	if !domain.Contains(s.Cats, "momo") {
+		t.Fatal("expected momo in cats list")
+	}
+
+	// 启程第四章
+	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "rescue_intro_1"})
+	if s.Phase != "dialogue" || s.ChapterID != "rescue" || s.MapID != "tunnel" {
+		t.Fatalf("expected dialogue phase in tunnel for chapter 4, got phase=%s chapter=%s map=%s", s.Phase, s.ChapterID, s.MapID)
+	}
+	for s.StoryNodeID != "" && s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	if s.Phase != "home" {
+		t.Fatalf("expected return to home phase after chapter 4 story, got %s", s.Phase)
+	}
+	if !domain.Contains(s.Flags, "chapter_4_started") {
+		t.Fatal("expected chapter_4_started flag")
+	}
+	if !domain.Contains(s.Flags, "tunnel_explored") {
+		t.Fatal("expected tunnel_explored flag")
+	}
+	if !domain.Contains(s.Flags, "cats_rescued_batch1") {
+		t.Fatal("expected cats_rescued_batch1 flag")
 	}
 }

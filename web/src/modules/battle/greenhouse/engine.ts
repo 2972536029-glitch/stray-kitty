@@ -65,7 +65,7 @@ export function getGreenhouseSpeed(state: GreenhouseState): number {
   return state.baseSpeed;
 }
 export function getGreenhouseAdvice(state: GreenhouseState): string {
-  if (state.phase === 'ready') return '六位伙伴守护温室。点点休养，墨墨以全队护盾支援；留意 C8、E8、F7 三条路径，守住 B1。';
+  if (state.phase === 'ready') return '六位伙伴守护温室。点点在场外巡视陷阱，墨墨以全队护盾支援；留意 C8、E8、F7 三条路径，守住 B1。';
   if (state.phase === 'won') return state.leaks === 0 ? '八波黑影与荆冠首领都已处理，零突破守护完成！' : '小怪与首领都已处理，可以返回主流程。';
   if (state.phase === 'lost') return '本场守护已结束，重新挑战按主流程开始新场次。';
   if (state.boss.phase === 'windup') return `荆棘播种已锁定 ${state.boss.targetCells.map(cellName).join('、')}！三秒后落地，不会追踪伙伴。先移开；墨墨不能取消尚未落地的预告。`;
@@ -154,7 +154,7 @@ export function createGreenhouseBattle(options: GreenhouseOptions = {}): Greenho
       shield: 0, shieldRemaining: 0, attackBuffRemaining: 0, status: 'active', attacks: 0, skillUses: 0, blockedCount: 0})),
     enemies: [], hazards: [],
     paused: false, externallyPaused: false, uiPaused: false, baseSpeed: 1, inspectedCatId: null, aim: null,
-    logs: [{id: 0, time: 0, text: '第三章 · 温室长廊。点点休养，墨墨加入守护；六位伙伴守住三条路线，击败荆冠首领。'}], effects: [], sequence: 0, lastAction: null,
+    logs: [{id: 0, time: 0, text: '第三章 · 温室长廊。点点在场外巡视陷阱，墨墨加入守护；六位伙伴守住三条路线，击败荆冠首领。'}], effects: [], sequence: 0, lastAction: null,
     stats: {skills: 0, dodgedSlams: 0, damageTaken: 0},
   };
 }

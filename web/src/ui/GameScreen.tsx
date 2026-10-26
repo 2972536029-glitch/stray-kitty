@@ -32,6 +32,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
   const map = catalog.maps.find(m => m.id === state.mapId);
   const resolution = state.eventState?.lastResolution;
   const activeStage = state.activeBattle?.stageId ?? state.lastResult.stageId;
+  const battleLocked = state.activeBattle?.status === 'active';
   const tutorialBattle = activeStage === 'l00_tutorial' && ['battle', 'settlement'].includes(state.phase);
   const chapterBattle = ['alley_rescue', 'alley_boss'].includes(activeStage ?? '') && ['battle', 'preparation', 'settlement'].includes(state.phase);
   const marketBattle = state.activeBattle?.stageId === 'market_boss' && ['battle', 'preparation', 'settlement'].includes(state.phase);
@@ -68,8 +69,9 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
             )}
             {state.phase === 'preparation' && !chapterBattle && !standaloneBattle && <button onClick={() => onCommand({type: 'START_BATTLE', stageId: 'alley_rescue'})}>⚔️ 开始塔防</button>}
             {state.flags.includes('alley_rescued') && state.phase !== 'home' && <button onClick={() => onCommand({type: 'GO_HOME'})}>🏡 直达花房</button>}
-            <button onClick={() => onCommand({type: 'START_STORY', nodeId: 'market_intro_1'})}>🌙 开启第二章剧情</button>
-            <button onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'market'})}>🌃 直达午夜集市</button>
+            <button disabled={disabled || battleLocked} onClick={() => onCommand({type: 'START_STORY', nodeId: 'market_intro_1'})}>🌙 开启第二章剧情</button>
+            <button disabled={disabled || battleLocked} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'market'})}>🌃 直达午夜集市</button>
+            {battleLocked && <small>请先完成或撤离当前战斗，再切换章节。</small>}
             {onReset && <button className="dev-reset-btn" onClick={onReset}>↺ 重置为新存档</button>}
           </div>
         )}
@@ -93,7 +95,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
       </section></div>
     </main>
     {journalOpen && <Modal title="旅程记录" onClose={onJournal} className="journey-modal"><header><span className="eyebrow">OUR LITTLE JOURNEY</span><h2>旅程记录</h2></header><aside className="journal">
-        <section className="journal-card"><span className="eyebrow">OUR LITTLE QUEST</span><h2>现在的小目标</h2><p>{objective(state)}</p><ol className="quest-steps"><li className={state.chapterId !== 'prologue' ? 'done' : ''}>遇见团子</li><li className={state.phase !== 'dialogue' || state.cats.includes('diandian') ? 'done' : ''}>寻找纸箱里的叫声</li><li className={state.cats.includes('diandian') ? 'done' : ''}>守护点点的撤离路线</li><li className={state.flags.includes('rescue_story_done') ? 'done' : ''}>一起安顿花房</li>{state.flags.includes('rescue_story_done') && <li className={state.flags.includes('chapter_2_started') || state.mapId === 'market' ? 'done' : ''}>探访午夜集市</li>}</ol></section>
+        <section className="journal-card"><span className="eyebrow">OUR LITTLE QUEST</span><h2>现在的小目标</h2><p>{objective(state)}</p><ol className="quest-steps"><li className={state.chapterId !== 'prologue' ? 'done' : ''}>遇见团子</li><li className={state.phase !== 'dialogue' || state.cats.includes('diandian') ? 'done' : ''}>寻找纸箱里的叫声</li><li className={state.cats.includes('diandian') ? 'done' : ''}>守护点点的撤离路线</li><li className={state.flags.includes('rescue_story_done') ? 'done' : ''}>一起安顿花房</li>{state.flags.includes('rescue_story_done') && <li className={state.flags.includes('chapter_2_started') || state.mapId === 'market' || state.flags.includes('chapter_3_started') ? 'done' : ''}>探访午夜集市</li>}{(state.flags.includes('chapter_2_started') || state.flags.includes('chapter_3_started')) && <li className={state.flags.includes('chapter_3_started') || state.flags.includes('chapter_4_started') ? 'done' : ''}>修缮花房要塞</li>}{(state.flags.includes('chapter_3_started') || state.flags.includes('chapter_4_started')) && <li className={state.flags.includes('chapter_4_started') ? 'done' : ''}>深入暗道营救</li>}</ol></section>
         <section className="journal-card"><div className="card-title"><h2>一路上的伙伴</h2><span>{state.cats.length} / {catalog.cats.length}</span></div><div className="cat-list">{catalog.cats.map(cat => <div className={`cat-entry ${state.cats.includes(cat.id) ? '' : 'locked'}`} key={cat.id}><PixelCat breed={cat.id} size={54}/><div><strong>{cat.name}<span>{state.cats.includes(cat.id) ? cat.id === 'miaomiao' ? '领队' : '伙伴' : '未相遇'}</span></strong><small>{state.cats.includes(cat.id) ? cat.description : '还有新的相遇，在前方等待。'}</small></div></div>)}</div></section>
         <div className="save-note" role="status"><span className="live-dot"/>{busy ? '正在记录旅程……' : pending ? '有一次操作等待确认' : '旅程已自动保存'}<small>刷新页面后，可以继续。</small></div>
       </aside></Modal>}

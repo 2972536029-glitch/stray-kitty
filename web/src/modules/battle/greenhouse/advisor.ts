@@ -17,7 +17,7 @@ export function getGreenhouseAnswer(state:GreenhouseState,question:string):Green
   const ids=aliases.filter(([,pattern])=>pattern.test(prompt)).map(([id])=>id),id=ids.length===1?ids[0]:undefined;
   const target=state.cats.find(cat=>cat.id===id),momo=state.cats.find(cat=>cat.id==='momo')!;
   if(/退场|复活|休整|重新上阵/.test(prompt))return {title:'体力归零退出本场',text:'体力大于零时继续战斗，归零后本场不能移动、施法、复活或重新部署。墨墨的护盾不治疗、不复活；所有猫退场会失败，重新挑战恢复出战状态。'};
-  if(/点点|治疗|回血|喝药/.test(prompt))return {title:'本章用护盾保护伙伴',text:'点点本章休养，出战辅助是黑猫墨墨。巡光护行给仍在场伙伴 45 护盾并清除已经生成的荆棘，不恢复体力。本章没有治疗道具，也没有复活。注意提前换位、护盾与清棘。'};
+  if(/点点|治疗|回血|喝药/.test(prompt))return {title:'本章用护盾保护伙伴',text:'点点在场外巡视陷阱，出战辅助是黑猫墨墨。巡光护行给仍在场伙伴 45 护盾并清除已经生成的荆棘，不恢复体力。本章没有治疗道具，也没有复活。注意提前换位、护盾与清棘。'};
   if(/墨墨|巡光|清.*荆|清.*棘|清除|护行/.test(prompt)&&!/所有|六只|全部.*技能/.test(prompt))return {title:'墨墨 · 巡光护行',text:`${momo.status==='retired'?'墨墨已退场，本场无法再释放技能。':`墨墨当前 ${Math.floor(momo.energy)} / 100 能量。`}满能手动释放，为全部在场伙伴提供 ${SKILLS.momo.shield} 护盾，持续 ${SKILLS.momo.duration} 秒，与已有护盾取较大值和较长时长，不相加；同时清掉所有已生成荆棘。不能取消尚未落地的播种预告；如果在预告阶段施放，预告仍会按时长成荆棘。${state.hazards.length?`当前已生成荆棘：${state.hazards.map(cellName).join('、')}。`:'当前没有已生成荆棘。'}`};
   if(/boss|首领|荆棘|播种|大招|预告|危险/i.test(prompt))return {title:'预告结束后，荆棘仍然危险',text:`荆冠首领占 C6、C7、D6、D7 四格，同一次范围攻击只结算一次。播种锁定最近两只在场猫的位置，${RULES.bossSeedWindup} 秒后长出持续 ${RULES.thornDuration} 秒的荆棘，每秒 ${RULES.thornDamage} 伤害；落地满 1 秒才开始造成伤害。预告锁点后不追踪，可以换位躲避。${state.boss.phase==='windup'?`当前预告：${state.boss.targetCells.map(cellName).join('、')}。`:''}${state.hazards.length?`当前持续荆棘：${state.hazards.map(cellName).join('、')}，首领收势或恢复普攻时这些地格仍不安全。`:'当前没有持续荆棘。'}墨墨只清已生成荆棘，不清未落地预告。`};
   if(/封能|横扫|熄灯/.test(prompt))return {title:'花房首领使用荆棘播种',text:'本章没有熄灯横扫或封能。需要躲开两处播种预告，并在荆棘持续期间离开危险格；也可以用墨墨清除已经生成的荆棘。'};

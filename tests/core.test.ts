@@ -4,6 +4,7 @@ import {canDispatch} from '../web/src/core/flow/index.ts';
 import {GameStore} from '../web/src/core/state/index.ts';
 import {GameController} from '../web/src/app/controller.ts';
 import {DemoBattle} from '../web/src/examples/demo/battle.ts';
+import {objective} from '../web/src/core/story/index.ts';
 import type {GameState} from '../web/src/contracts/index.ts';
 test('流程禁止跳过事件直接提交战斗结果',()=>{assert.equal(canDispatch('explore','COMPLETE_BATTLE'),false);assert.equal(canDispatch('battle','COMPLETE_BATTLE'),true);assert.equal(canDispatch('event','DRAW_FURNITURE'),false);});
 test('家具购买只能在家园进行',()=>{assert.equal(canDispatch('home','BUY_FURNITURE'),true);assert.equal(canDispatch('explore','BUY_FURNITURE'),false);assert.equal(canDispatch('battle','BUY_FURNITURE'),false);});
@@ -34,4 +35,25 @@ test('教程结算重试通过控制器进入新的服务端场次', async () =>
   await new GameController(port, store).dispatch({type: 'START_BATTLE', stageId: 'l00_tutorial'});
   assert.deepEqual(received, {expectedRevision: 3, command: {type: 'START_BATTLE', stageId: 'l00_tutorial'}});
   assert.equal(store.getSnapshot()!.activeBattle!.id, 'retry');
+});
+
+test('第三、四章进度不会覆盖当前序章的六波教学目标', () => {
+  for (const chapterId of ['greenhouse', 'rescue'] as const) {
+    const state = {phase: 'battle', chapterId, mapId: 'greenhouse', cats: [],
+      flags: ['chapter_3_started', 'chapter_4_started'],
+      activeBattle: {id: 'tutorial-revisit', stageId: 'l00_tutorial', status: 'active'}} as GameState;
+    assert.match(objective(state), /六波教学/);
+  }
+});
+
+test('第三、四章进度不会覆盖当前第一章的八波首领战目标', () => {
+  for (const chapterId of ['greenhouse', 'rescue'] as const) {
+    for (const stageId of ['alley_rescue', 'alley_boss']) {
+      const state = {phase: 'battle', chapterId, mapId: 'greenhouse', cats: [],
+        flags: ['chapter_3_started', 'chapter_4_started'],
+        activeBattle: {id: 'chapter-revisit', stageId, status: 'active'}} as GameState;
+      assert.match(objective(state), /八波黑影/);
+      assert.match(objective(state), /首领/);
+    }
+  }
 });

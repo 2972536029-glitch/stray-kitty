@@ -23,13 +23,13 @@
       "id": "greenhouse",
       "title": "第三章 · 废弃花房",
       "summary": "伙伴们共同整理花房，建立庇护所。",
-      "status": "planned"
+      "status": "demo"
     },
     {
       "id": "rescue",
       "title": "第四章 · 消失的猫咪们",
       "summary": "侦查暗道与仓库，逐步救回失踪伙伴。",
-      "status": "planned"
+      "status": "demo"
     },
     {
       "id": "finale",
@@ -107,6 +107,15 @@
       "chapterId": "prologue",
       "speaker": "喵喵",
       "text": "哇啊！泥巴全溅到肚皮上了……咪才没有害怕。咪只是……暂时不知道家在哪边。",
+      "next": "chapter1_intro",
+      "exit": "",
+      "scene": "alley"
+    },
+    {
+      "id": "chapter1_intro",
+      "chapterId": "alley",
+      "speaker": "旁白",
+      "text": "暴雨中的陌生小巷昏暗而冰冷，雨水拍打着锈蚀的铁皮招牌。就在喵喵蜷着身子不知所措时，旁边垃圾桶后的旧木箱微晃，探出了一个圆滚滚、毛茸茸的橘色大脑袋……",
       "next": "prologue_tuanzi",
       "exit": "",
       "scene": "alley"
@@ -294,6 +303,142 @@
         "market_unlocked",
         "chapter_2_started"
       ]
+    },
+    {
+      "id": "greenhouse_intro_1",
+      "chapterId": "greenhouse",
+      "speaker": "团子",
+      "text": "呼……从午夜集市带回来的这包小鱼干和线索总算平安运回花房了！点点，快看我们换回来的好东西！",
+      "next": "greenhouse_intro_2",
+      "exit": "",
+      "scene": "home"
+    },
+    {
+      "id": "greenhouse_intro_2",
+      "chapterId": "greenhouse",
+      "speaker": "点点",
+      "text": "点点小跑过来，耳朵敏锐地抖了抖：“等等……你们听！花房破损的天窗横梁上，好像有极轻的爪子落地声！”",
+      "next": "greenhouse_intro_3",
+      "exit": "",
+      "scene": "home"
+    },
+    {
+      "id": "greenhouse_intro_3",
+      "chapterId": "greenhouse",
+      "speaker": "旁白",
+      "text": "一道矫健的黑影轻盈跃下，琥珀色眼眸在微光中闪烁——正是集市传言中穿梭地下暗道的独行侠【黑猫墨墨】！",
+      "next": "greenhouse_intro_4",
+      "exit": "",
+      "scene": "home"
+    },
+    {
+      "id": "greenhouse_intro_4",
+      "chapterId": "greenhouse",
+      "speaker": "墨墨",
+      "text": "“不用戒备。我在集市看到你们帮受困伙伴出头，一路循着气味跟到这里。外围的黑影正蠢蠢欲动，但你们居然真把这处漏雨废墟收拾成了像样的避风港。”",
+      "next": "greenhouse_intro_5",
+      "exit": "",
+      "scene": "home"
+    },
+    {
+      "id": "greenhouse_intro_5",
+      "chapterId": "greenhouse",
+      "speaker": "阿策",
+      "text": "阿策军师轻摇折扇赞许道：“墨墨兄来得正好。集市打听到的地下暗道盘根错节，正需要阁下擅长暗处夜视的侦查本领。”",
+      "next": "greenhouse_intro_6",
+      "exit": "",
+      "scene": "home"
+    },
+    {
+      "id": "greenhouse_intro_6",
+      "chapterId": "greenhouse",
+      "speaker": "墨墨",
+      "text": "墨墨微微颔首：“算我一个。黑影怕光，但正在向花房暗处渗透。只要咱们加固天窗防线、封锁地下通风道，这里就会成为谁也攻不破的猫咪王国要塞！”",
+      "next": "greenhouse_intro_7",
+      "exit": "",
+      "scene": "home"
+    },
+    {
+      "id": "greenhouse_intro_7",
+      "chapterId": "greenhouse",
+      "speaker": "喵喵",
+      "text": "喵喵昂起毛茸茸的小脑瓜，神情坚定：“大家分工协作！团子整理物资，点点巡视陷阱，墨墨侦查暗道，阿策指挥布防！让我们把废弃花房彻底修缮成最温暖坚固的猫国要塞！”",
+      "next": "",
+      "exit": "home",
+      "scene": "home",
+      "setFlags": [
+        "chapter_3_started",
+        "greenhouse_fortified",
+        "momo_joined"
+      ]
+    },
+    {
+      "id": "rescue_intro_1",
+      "chapterId": "rescue",
+      "speaker": "墨墨",
+      "text": "“跟紧我。从废弃花房后院的暗井下去，就是穿过老城地下的排污与蓄水暗道。普通猫咪在黑暗中寸步难行，但我能看清每块砖的缝隙。”",
+      "next": "rescue_intro_2",
+      "exit": "",
+      "scene": "tunnel"
+    },
+    {
+      "id": "rescue_intro_2",
+      "chapterId": "rescue",
+      "speaker": "点点",
+      "text": "点点停下脚步，竖起胡须：“大家等等！前面拐角水管下有一根极细的绊线，还放着一只会发出小猫哭叫的旧发条铁盒——是黑影设下的假目标诱饵！”",
+      "next": "rescue_intro_3",
+      "exit": "",
+      "scene": "tunnel"
+    },
+    {
+      "id": "rescue_intro_3",
+      "chapterId": "rescue",
+      "speaker": "团子",
+      "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
+      "next": "rescue_intro_4",
+      "exit": "",
+      "scene": "tunnel"
+    },
+    {
+      "id": "rescue_intro_4",
+      "chapterId": "rescue",
+      "speaker": "阿策",
+      "text": "阿策轻摇折扇沉吟：“黑影不仅诡诈，而且有意将受惊的流浪幼猫逐段分割隔离在暗渠深处。墨墨，前面通风口可有生还同伴的动静？”",
+      "next": "rescue_intro_5",
+      "exit": "",
+      "scene": "tunnel"
+    },
+    {
+      "id": "rescue_intro_5",
+      "chapterId": "rescue",
+      "speaker": "墨墨",
+      "text": "墨墨跃上生锈管道，绿眸中微光凝聚：“东北方的3号泄洪阀门后……有微弱的呼噜求救声！是失踪的花猫姐妹和几只小奶猫！它们被困在阀门铁栅栏内了！”",
+      "next": "rescue_intro_6",
+      "exit": "",
+      "scene": "tunnel"
+    },
+    {
+      "id": "rescue_intro_6",
+      "chapterId": "rescue",
+      "speaker": "喵喵",
+      "text": "喵喵毫不犹豫地上前：“墨墨带路，点点警戒陷阱，团子跟我合力把卡死的阀门铁栓顶开！有光的地方就不用害怕暗影，我们这就带你们回花房！”",
+      "next": "rescue_intro_7",
+      "exit": "",
+      "scene": "tunnel"
+    },
+    {
+      "id": "rescue_intro_7",
+      "chapterId": "rescue",
+      "speaker": "旁白",
+      "text": "伴随着铁闸门被顶开的声响，受困的伙伴们终于重见天光。在猫咪小队的护送下，第一批失踪的猫咪们安全转移到了花房大本营。而暗道的更深处，正是黑影盘踞的最终据点——废弃大仓库！",
+      "next": "",
+      "exit": "home",
+      "scene": "home",
+      "setFlags": [
+        "chapter_4_started",
+        "tunnel_explored",
+        "cats_rescued_batch1"
+      ]
     }
   ],
   "maps": [
@@ -357,7 +502,7 @@
     {
       "id": "tunnel",
       "name": "地下通道",
-      "status": "planned",
+      "status": "demo",
       "width": 800,
       "height": 480,
       "interactions": [],
@@ -2855,8 +3000,8 @@
     {
       "id": "diandian",
       "name": "点点",
-      "color": "#d8ded5",
-      "description": "善于观察环境的奶牛猫。",
+      "color": "#d9c7a8",
+      "description": "善于观察环境的暹罗猫，也是伙伴们的暖心辅助。",
       "skill": "辨认陷阱与可疑目标"
     },
     {

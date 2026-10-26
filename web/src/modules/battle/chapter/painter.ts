@@ -14,12 +14,12 @@ export function obstacleCell(x:number,y:number) { return MAP.obstacles.some(cell
 function rect(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string){ctx.fillStyle=color;ctx.fillRect(x,y,w,h);}
 function pixelBlocks(ctx:CanvasRenderingContext2D,color:string,blocks:number[][]){for(const b of blocks)rect(ctx,b[0],b[1],b[2],b[3],color);}
 
-/** Orange Tuanzi and black-and-white Diandian retain the story cast's coat colors. */
+/** Tuanzi keeps the orange coat; Diandian reuses the former Siamese support sprite. */
 export function drawChapterCat(ctx:CanvasRenderingContext2D,id:CatId,x:number,y:number,size:number,retired=false,attacking=false){
   ctx.save();if(retired)ctx.globalAlpha=.4;
   if(id==='caster'||id==='guard'){drawCat(ctx,id,x,y,size,attacking?'attack':'idle',.5);ctx.restore();return;}
   const colors:Record<'tuanzi'|'diandian',string[]>={
-    tuanzi:['#d39251','#f4d59b','#a66e3e','#b77c4b'],diandian:['#d8ded5','#f5f1df','#5b625d','#c5969e'],
+    tuanzi:['#d39251','#f4d59b','#a66e3e','#b77c4b'],diandian:['#d9c7a8','#f4e8cc','#63594d','#d8a1a0'],
   };
   const [fur,light,patch,accent]=colors[id];
   ctx.translate(x,y);ctx.scale(size/32,size/32);ctx.imageSmoothingEnabled=false;
@@ -27,11 +27,11 @@ export function drawChapterCat(ctx:CanvasRenderingContext2D,id:CatId,x:number,y:
   if(attacking)ctx.translate(1,-1);
   pixelBlocks(ctx,fur,[[8,8,17,12],[7,11,20,7],[8,5,5,7],[20,5,5,7],[10,19,14,9],[7,25,8,4],[21,25,7,4],[25,22,4,4]]);
   pixelBlocks(ctx,light,[[12,14,11,6],[13,21,9,5],[9,26,4,2],[23,26,4,2]]);
-  pixelBlocks(ctx,patch,id==='tuanzi'?[[9,8,3,6],[15,8,3,3],[21,8,3,6],[11,20,3,4],[21,21,3,3]]:[[9,7,7,7],[21,6,4,9],[20,21,4,5]]);
+  pixelBlocks(ctx,patch,id==='tuanzi'?[[9,8,3,6],[15,8,3,3],[21,8,3,6],[11,20,3,4],[21,21,3,3]]:[[9,10,16,6],[10,6,3,4],[21,6,3,4],[9,25,4,3],[23,25,3,3]]);
   pixelBlocks(ctx,'#354f44',[[11,13,3,2],[21,13,3,2]]);pixelBlocks(ctx,'#fff3c9',[[11,13,1,1],[21,13,1,1]]);rect(ctx,17,17,2,1,'#c28c82');
   pixelBlocks(ctx,accent,[[10,20,15,2],[12,22,3,4]]);
   if(id==='tuanzi'){pixelBlocks(ctx,light,[[24,19,6,4],[28,18,2,2],[28,22,2,2]]);}
-  else {pixelBlocks(ctx,'#c5969e',[[22,19,7,6],[24,17,3,10]]);rect(ctx,24,20,3,3,'#fff1cc');}
+  else {pixelBlocks(ctx,'#d49b9f',[[23,18,6,7],[24,17,4,2]]);pixelBlocks(ctx,'#fae7be',[[25,19,2,5],[28,13,1,5],[26,17,3,2]]);}
   ctx.restore();
 }
 

@@ -29,7 +29,7 @@ test('persistent thorn advice still warns during boss recovery and idle',()=>{
 
 test('healing and retired companions never suggest absent Diandian skills or resurrection',()=>{
   const state=createGreenhouseBattle();
-  assert.match(getGreenhouseAnswer(state,'点点能治疗吗？').text,/点点本章休养/);
+  assert.match(getGreenhouseAnswer(state,'点点能治疗吗？').text,/点点在场外巡视陷阱/);
   assert.match(getGreenhouseAnswer(state,'点点能治疗吗？').text,/不恢复体力/);
   assert.match(getGreenhouseAnswer(state,'退场的猫怎么复活？').text,/不能移动、施法、复活或重新部署/);
   state.cats.find(cat=>cat.id==='momo')!.status='retired';

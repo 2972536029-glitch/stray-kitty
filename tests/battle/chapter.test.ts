@@ -18,7 +18,8 @@ test('compact chapter has 26 real cells, three entrances, four boss cells and ex
   const state = createChapterBattle();
   assert.equal(MAP.columns, 10); assert.equal(CELLS.length, 26); assert.equal(isChapterCell({x: 7, y: 1}), false);
   assert.deepEqual(state.cats.map(cat => cat.name), ['绒绒', '斑斑', '团子', '点点']);
-  assert.equal(CAT_DEFINITIONS.tuanzi.breed, '橘猫'); assert.equal(CAT_DEFINITIONS.diandian.breed, '奶牛猫');
+  assert.equal(CAT_DEFINITIONS.tuanzi.breed, '橘猫'); assert.equal(CAT_DEFINITIONS.diandian.breed, '暹罗猫');
+  assert.equal(CAT_DEFINITIONS.guard.breed, '奶牛猫');
   assert.equal(CELLS.filter(isDeployableCell).length, 15);
   for (const cell of [...MAP.obstacles, ...MAP.spawns, MAP.goal, ...MAP.bossCells]) assert.equal(isDeployableCell(cell), false);
   for (const cat of state.cats) assert.equal(getDeployError(state, cat.id, cat), null);
