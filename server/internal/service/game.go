@@ -150,6 +150,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.Flags = domain.Add(s.Flags, "chapter_4_started")
 					s.Flags = domain.Add(s.Flags, "tunnel_unlocked")
 				}
+				if n.ChapterID == "finale" {
+					s.MapID = "greenhouse"
+					s.Flags = domain.Add(s.Flags, "finale_started")
+				}
 				return nil
 			}
 		}
@@ -207,6 +211,11 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 						s.Flags = domain.Add(s.Flags, "chapter_4_started")
 						s.Flags = domain.Add(s.Flags, "tunnel_explored")
 						s.Flags = domain.Add(s.Flags, "cats_rescued_batch1")
+					}
+					if n.ChapterID == "finale" || n.ID == "finale_intro_9" {
+						s.Flags = domain.Add(s.Flags, "finale_started")
+						s.Flags = domain.Add(s.Flags, "finale_completed")
+						s.Flags = domain.Add(s.Flags, "kingdom_founded")
 					}
 				}
 				if n.Exit == "explore" && n.ChapterID == "market" {
@@ -317,7 +326,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		}
 		s.Phase = "home"
 		s.MapID = "greenhouse"
-		if domain.Contains(s.Flags, "chapter_4_started") {
+		if domain.Contains(s.Flags, "finale_started") {
+			s.ChapterID = "finale"
+		} else if domain.Contains(s.Flags, "chapter_4_started") {
 			s.ChapterID = "rescue"
 		} else if domain.Contains(s.Flags, "chapter_3_started") {
 			s.ChapterID = "greenhouse"

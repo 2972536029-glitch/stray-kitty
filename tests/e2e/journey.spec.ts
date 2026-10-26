@@ -78,6 +78,7 @@ test('真实浏览器贯通前两章、双 NPC 事件、救援、家园和刷新
  await expect(battleDevTools.getByRole('button',{name:/直接胜利|完成当前战斗并胜利/})).toHaveCount(0);
  await expect(battleDevTools.getByRole('button',{name:/开启第二章剧情/})).toBeDisabled();
  await expect(battleDevTools.getByRole('button',{name:/直达午夜集市/})).toBeDisabled();
+ await expect(battleDevTools.getByRole('button',{name:/开启终章剧情/})).toBeDisabled();
  expect(battleCommands).toEqual([]);
  await page.getByRole('button',{name:'验收工具'}).click();
  const tutorialRun=await playL00ThroughHost(page);

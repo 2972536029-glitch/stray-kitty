@@ -62,6 +62,27 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop}:
         </div>
       )
     )}
+    {(state.flags.includes('chapter_4_started') || state.flags.includes('tunnel_explored')) && (
+      !state.flags.includes('finale_started') ? (
+        <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_intro_1'})}>
+          🌟 启程：终章《点亮流浪猫王国》 →
+        </button>
+      ) : (
+        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
+          <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_intro_1'})}>
+            📖 重温终章大结局
+          </button>
+        </div>
+      )
+    )}
+    {state.flags.includes('finale_completed') && (
+      <div className="celebration-card" style={{marginTop: '12px', padding: '12px 16px', background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.15))', border: '1px solid #e2a03f', borderRadius: '12px'}}>
+        <div style={{fontWeight: 'bold', color: '#ffb300', fontSize: '15px', marginBottom: '4px'}}>👑 全剧终 · 流浪猫王国落成！</div>
+        <div style={{fontSize: '13px', color: 'var(--text-subtle, #a0aec0)', lineHeight: '1.5'}}>
+          喵喵与伙伴们用光明驱散了废弃仓库的所有黑影，救回了全部被困猫咪。花房如今挂起暖黄串灯、搭起纸箱城堡，成为了温暖坚固的流浪猫王国！喵喵回到主人身边吃到了金枪鱼，也每天都会回来和大家一起守护王国！
+        </div>
+      </div>
+    )}
     <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
       <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE'})}>再去小巷走走 →</button>
       <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'chapter1_intro'})}>📖 重温第一章剧情</button>

@@ -1,6 +1,6 @@
 # 第二章六猫午夜集市接入
 
-更新：2026-10-26。分支 `feat/battle-l02-market` 基于两章简化版本建立，现已同步团队 main `6ad47e9`，提交 [MR !30](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/30)，目标为 `main`；请先合入前置 [MR !29](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/29)。本分支尚未合入 main，正式剧情战斗入口仍待对齐。
+更新：2026-10-26。分支 `feat/battle-l02-market` 基于两章简化版本建立，现已同步团队 main `589c2fc`，提交 [MR !30](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/30)，目标为 `main`；请先合入前置 [MR !29](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/29)。本分支尚未合入 main，正式剧情战斗入口仍待对齐。
 
 ## 当前入口
 

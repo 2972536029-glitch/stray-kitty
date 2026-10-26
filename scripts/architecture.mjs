@@ -50,7 +50,8 @@ const labels = {
 let directoryCount = 0;
 function tree(relative = '', prefix = '') {
   const entries = fs.readdirSync(path.join(root, relative), {withFileTypes: true})
-    .filter(entry => entry.isDirectory() ? !excluded.has(entry.name) : relative === '' || relative === 'docs')
+    .filter(entry => !excluded.has(entry.name))
+    .filter(entry => entry.isDirectory() || relative === '' || relative === 'docs')
     .filter(entry => entry.isDirectory() || entry.isFile())
     .sort((a, b) => Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name, 'en'));
   return entries.flatMap((entry, index) => {
