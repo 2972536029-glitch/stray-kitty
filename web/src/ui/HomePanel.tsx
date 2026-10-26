@@ -31,6 +31,19 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop}:
         </div>
       )
     )}
+    {(state.flags.includes('chapter_2_started') || state.flags.includes('market_unlocked')) && (
+      !state.flags.includes('chapter_3_started') ? (
+        <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'greenhouse_intro_1'})}>
+          🌿 启程：第三章《废弃花房》 →
+        </button>
+      ) : (
+        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
+          <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'greenhouse_intro_1'})}>
+            📖 重温第三章剧情
+          </button>
+        </div>
+      )
+    )}
     <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE'})}>再去小巷走走 →</button>
   </section>;
 }
