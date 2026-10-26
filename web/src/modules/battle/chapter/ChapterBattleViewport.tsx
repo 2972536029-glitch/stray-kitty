@@ -1,12 +1,14 @@
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {KeyboardEvent, PointerEvent} from 'react';
 import type {BattleDifficulty, ChapterAction, ChapterCat, ChapterCatId, ChapterState, Position} from './types';
-import {CELLS, DIFFICULTIES, MAP, RULES, SKILLS} from './config';
+import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES} from './config';
 import {advanceChapter, createChapterBattle, dispatchChapter, getAttackCells, getBossCells, getChapterAdvice, getChapterSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintChapter} from './painter';
 import {drawCat} from '../l00/painter';
 import {getChapterAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
+import {CarryPanel} from '../CarryPanel';
+import '../carry.css';
 import '../l00/battle.css';
 import './chapter.css';
 
@@ -14,7 +16,7 @@ export interface ChapterBattleResult {
   outcome: 'won' | 'lost'; report: {leaks:number;bossDefeated:boolean};
 }
 export interface ChapterBattleViewportProps {
-  attemptId: string; difficulty: BattleDifficulty; paused: boolean;
+  attemptId: string; difficulty: BattleDifficulty; carry?: unknown; paused: boolean;
   onResult: (result:ChapterBattleResult)=>void;
 }
 interface DragGesture {catId:ChapterCatId;pointerId:number;startX:number;startY:number;moved:boolean}
@@ -36,8 +38,8 @@ function Health({cat}:{cat:ChapterCat}){
 }
 
 /** A single local simulation owns the attempt. Host state updates do not recreate its board. */
-export function ChapterBattleViewport({attemptId,difficulty,paused,onResult}:ChapterBattleViewportProps){
-  const [game,setGame]=useState(()=>createChapterBattle({difficulty}));
+export function ChapterBattleViewport({attemptId,difficulty,carry,paused,onResult}:ChapterBattleViewportProps){
+  const [game,setGame]=useState(()=>createChapterBattle({difficulty,carry}));
   const gameRef=useRef(game);
   const [selected,setSelected]=useState<ChapterCatId|null>(null);
   const [moving,setMoving]=useState<ChapterCatId|null>(null);
@@ -113,8 +115,8 @@ export function ChapterBattleViewport({attemptId,difficulty,paused,onResult}:Cha
     attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);
     setSelected(null);setMoving(null);setHover(null);setChatOpen(false);setDragging(null);setNotice('');
     setQuestion('');setMessages([]);
-    publish(createChapterBattle({difficulty}));
-  },[attemptId,difficulty]);
+    publish(createChapterBattle({difficulty,carry}));
+  },[attemptId,difficulty,carry]);
 
   useEffect(()=>{
     if(paused){setSelected(null);setMoving(null);setHover(null);setDragging(null);gesture.current=null;}
@@ -298,6 +300,7 @@ export function ChapterBattleViewport({attemptId,difficulty,paused,onResult}:Cha
     <div className="btl-subhead"><span>凸形小巷 · 垃圾占格不可部署</span><span>已上阵 {game.cats.filter(cat=>cat.status==='active').length} / {RULES.maxCats}</span><span>体力归零退场 · 点点治疗在场伙伴</span></div>
     <div className="btl-difficulty-strip" data-testid="chapter-difficulty"><strong>{DIFFICULTIES[difficulty].label} · 敌人体力 {Math.round(DIFFICULTIES[difficulty].hpMultiplier*100)}%</strong><span>守完全部波次并击退首领；3 次突破则失败。所有猫退场也会失败。</span></div>
     <div className={`chapter-boss-panel${bossWindup?' is-warning':''}`} data-testid="chapter-boss" data-boss-phase={game.boss.phase} data-boss-attacks={game.boss.attacks} data-boss-basic-attacking={bossBasicAttacking}><strong>{game.boss.phase==='defeated'?'首领已击退':game.boss.name}</strong><div className="chapter-boss-health" role="meter" aria-label="首领体力" aria-valuemin={0} aria-valuemax={game.boss.maxHp} aria-valuenow={Math.ceil(game.boss.hp)} data-testid="chapter-boss-health"><i style={{width:`${100*game.boss.hp/game.boss.maxHp}%`}}/><span>{Math.ceil(game.boss.hp)} / {game.boss.maxHp}</span></div><small>{bossWindup?'举起路障了！移开裂纹范围内的猫咪。':game.boss.phase==='recovery'?'重砸落地，正在收势。':game.boss.phase==='defeated'?'首领已击退，继续处理全部波次。':bossBasicAttacking?'普通攻击 · 挥动路障':'固定占据 D8–E9 四格 · 普攻 / 路障重砸'}</small></div>
+    <CarryPanel carry={game.carry} phase={game.phase} wave={game.wave} waves={WAVES} entrances={{'0':MAP.spawns[2],'3':MAP.spawns[0],'4':MAP.spawns[1]}} enemies={ENEMY_DEFINITIONS} disabled={paused||hidden||game.paused||game.uiPaused||game.externallyPaused} onUse={()=>act({type:'USE_CARRY'})}/>
     <div className="btl-tactics"><button type="button" data-testid="chapter-advisor" aria-label="与军师阿策交谈" disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(value=>!value);}}><AdvisorPortrait/><strong>问问阿策</strong></button><p>{advice}</p></div>
     {game.cats.some(cat=>cat.status==='retired')&&<p className="btl-retirement-note" role="status" data-testid="chapter-retired">{game.cats.filter(cat=>cat.status==='retired').map(cat=>cat.name).join('、')}已退场，本场无法复活。</p>}
     <div className="btl-arena btl-arena-wide">

@@ -12,5 +12,7 @@ export function createGreenhouseContext(state: Pick<GameState, 'phase' | 'active
   if (!stage || stage.columns !== MAP.columns || stage.lanes !== MAP.rows || stage.waves !== WAVES.length) {
     throw new Error('废弃花房关卡配置需要更新，请重新连接后再试。');
   }
-  return {attemptId: attempt.id, difficulty: difficultyFromPressure(attempt.modifiers?.shadowPressure)};
+  // Carry belongs to this persisted attempt, including an unknown legacy value for a non-blocking warning.
+  const carry: unknown = attempt.modifiers?.carry;
+  return {attemptId: attempt.id, difficulty: difficultyFromPressure(attempt.modifiers?.shadowPressure), ...(carry === undefined ? {} : {carry})};
 }

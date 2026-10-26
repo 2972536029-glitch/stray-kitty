@@ -62,18 +62,22 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string, usePus
 				return domain.Fail("INVALID_CONTENT", "事件结果配置不完整", 500)
 			}
 			modifiers := domain.BattleModifiers{}
+			if s.EventState != nil {
+				modifiers.Carry = s.EventState.PendingModifiers.Carry
+			}
 			if outcome.TDMod != nil {
 				modifiers.ShadowPressure = outcome.TDMod.ShadowPressure
 				if modifiers.ShadowPressure < -1 || modifiers.ShadowPressure > 1 {
 					return domain.Fail("INVALID_CONTENT", "事件压力配置无效", 500)
 				}
 			}
-			// 战备物:枚举校验后记入待应用修正;后得覆盖先得(每场最多叼一件)。
-			switch outcome.Carry {
-			case "", "lantern", "mirror", "bell", "box":
+			// No new carry leaves the previous one intact. Only configured awards
+			// replace it; carry never grants or consumes inventory resources.
+			if outcome.Carry != "" {
+				if !domain.IsBattleCarryID(outcome.Carry) {
+					return domain.Fail("INVALID_CONTENT", "未知的战备物: "+string(outcome.Carry), 500)
+				}
 				modifiers.Carry = outcome.Carry
-			default:
-				return domain.Fail("INVALID_CONTENT", "未知的战备物: "+outcome.Carry, 500)
 			}
 			if outcome.Situation != nil {
 				if outcome.Situation.Kind != "detour" && outcome.Situation.Kind != "forced_chase" {

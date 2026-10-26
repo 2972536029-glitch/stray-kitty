@@ -1,3 +1,4 @@
+import {createBattleCarry, finishCarryWave, getCarrySpeedMultiplier, startBattleCarry, tickBattleCarry, useBattleCarry} from '../carry';
 import {CAT_DEFINITIONS, CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, normalizeDifficulty, RULES, SKILLS, TOTAL_MINIONS, WAVES} from './config';
 import type {ChapterAction, ChapterBoss, ChapterCat, ChapterCatId, ChapterEnemy, ChapterOptions, ChapterState, Position} from './types';
 
@@ -130,7 +131,11 @@ function startWave(state: ChapterState, wave: number): void {
 export function createChapterBattle(options: ChapterOptions = {}): ChapterState {
   const difficulty = normalizeDifficulty(options.difficulty);
   const bossHp = Math.round(RULES.bossHp * DIFFICULTIES[difficulty].hpMultiplier);
+  const firstLane = WAVES[0][0].lane;
+  const carryRoute = firstLane === 0 ? 'branch' : firstLane === 3 ? 'upper' : 'lower';
+  const carryAnchor = firstLane === 0 ? MAP.spawns[2] : {x: MAP.columns - 1, y: firstLane};
   return {
+    carry: createBattleCarry(options.carry, carryRoute, carryAnchor),
     stageId: 'alley_boss', difficulty, phase: 'ready', elapsed: 0, accumulator: 0,
     wave: 0, totalWaves: WAVES.length, waveTime: 0, spawnIndex: 0, nextWaveIn: null, spawned: 0, defeated: 0,
     totalEnemies: TOTAL_MINIONS, leaks: 0, maxLeaks: RULES.maxLeaks,
@@ -143,16 +148,18 @@ export function createChapterBattle(options: ChapterOptions = {}): ChapterState 
     stats: {skills: 0, dodgedSlams: 0, damageTaken: 0},
   };
 }
-function moveEnemies(state: ChapterState, dt: number): void {
+const distanceRemaining = (enemy: ChapterEnemy) => enemy.route === 'branch' && enemy.y < 3 ? 3 - enemy.y + MAP.spawns[2].x : enemy.x + Math.max(0, enemy.y - 3);
+function moveEnemies(state: ChapterState, dt: number, enemySeconds: ReadonlyMap<string, number>): void {
   // Reserve all still-valid contacts before considering new arrivals. Reassigning
   // capacity every tick lets overflow enemies rotate into slots and push a held
   // enemy through its blocker, especially where the vertical branch meets D5.
   releaseBlocks(state);
   const counts = new Map<ChapterCatId, number>(state.cats.map(cat => [cat.id, cat.blockedCount]));
-  const remaining = (enemy: ChapterEnemy) => enemy.route === 'branch' && enemy.y < 3 ? 3 - enemy.y + MAP.spawns[2].x : enemy.x + Math.max(0, enemy.y - 3);
-  for (const enemy of [...state.enemies].sort((a, b) => remaining(a) - remaining(b) || a.id.localeCompare(b.id))) {
+  for (const enemy of [...state.enemies].sort((a, b) => distanceRemaining(a) - distanceRemaining(b) || a.id.localeCompare(b.id))) {
     if (enemy.blockedBy) continue;
-    const distance = enemy.speed * dt;
+    const activeSeconds = enemySeconds.get(enemy.id) ?? dt;
+    if (activeSeconds <= EPS) continue;
+    const distance = enemy.speed * activeSeconds * getCarrySpeedMultiplier(state.carry, enemy.route);
     if (enemy.route === 'branch' && enemy.y < 3 - EPS) {
       const proposed = Math.min(3, enemy.y + distance);
       const cat = state.cats.filter(candidate => candidate.status === 'active' && candidate.x === MAP.spawns[2].x
@@ -223,7 +230,6 @@ function tick(state: ChapterState, dt: number): void {
     if (cat.status === 'active') cat.energy = Math.min(RULES.maxEnergy, cat.energy + RULES.energyPerSecond * dt);
     cat.shieldRemaining = Math.max(0, cat.shieldRemaining - dt); if (cat.shieldRemaining === 0) cat.shield = 0;
   }
-  for (const enemy of state.enemies) {enemy.cooldown = Math.max(0, enemy.cooldown - dt);}
   state.effects = state.effects.filter(effect => (effect.remaining -= dt) > 0);
   if (state.nextWaveIn !== null) {state.nextWaveIn -= dt; if (state.nextWaveIn <= EPS) startWave(state, state.wave + 1);}
   if (state.nextWaveIn === null) {
@@ -237,7 +243,11 @@ function tick(state: ChapterState, dt: number): void {
         cooldown: 0, blockedBy: null}); state.spawned++;
     }
   }
-  moveEnemies(state, dt);
+  const carryTick = tickBattleCarry(state.carry, dt, state.wave, state.enemies);
+  for (const hit of carryTick.hits) effect(state, 'skill', state.carry.anchor, hit.position);
+  if (carryTick.hits.length) checkEnemyDeaths(state);
+  for (const enemy of state.enemies) enemy.cooldown = Math.max(0, enemy.cooldown - (carryTick.enemySeconds.get(enemy.id) ?? dt));
+  moveEnemies(state, dt, carryTick.enemySeconds);
   const escaped = state.enemies.filter(enemy => enemy.x <= EPS && enemy.y <= MAP.goal.y + EPS);
   if (escaped.length) {
     state.leaks += escaped.length; state.enemies = state.enemies.filter(enemy => !escaped.includes(enemy));
@@ -247,13 +257,14 @@ function tick(state: ChapterState, dt: number): void {
   catsAttack(state);
   for (const enemy of state.enemies) {
     const cat = enemy.blockedBy && catById(state, enemy.blockedBy);
-    if (cat && cat.status === 'active' && enemy.cooldown <= EPS) {hurtCat(state, cat, enemy.damage); enemy.cooldown = enemy.interval; effect(state, 'attack', enemy, cat);}
+    if (cat && cat.status === 'active' && enemy.cooldown <= EPS && (carryTick.enemySeconds.get(enemy.id) ?? dt) > EPS) {hurtCat(state, cat, enemy.damage); enemy.cooldown = enemy.interval; effect(state, 'attack', enemy, cat);}
   }
   bossTick(state, dt); releaseBlocks(state);
   if (state.cats.every(cat => cat.status === 'retired')) {
     completePhase(state, 'lost', '所有伙伴都已退场，本场守护结束。准备好后再来挑战。'); return;
   }
   if (state.nextWaveIn === null && state.spawnIndex === WAVES[state.wave - 1].length && state.enemies.length === 0) {
+    finishCarryWave(state.carry, state.wave);
     if (state.wave < WAVES.length) state.nextWaveIn = RULES.waveGap;
     else if (state.spawned === TOTAL_MINIONS && state.boss.phase === 'defeated') completePhase(state, 'won');
   }
@@ -317,7 +328,13 @@ export function dispatchChapter(state: ChapterState, action: ChapterAction): Cha
   }
   if (action.type === 'START') {
     if (next.phase !== 'ready') return actionResult(next, false, '这场守护已经开始。');
-    next.phase = 'battle'; startWave(next, 1); return actionResult(next, true, '守护开始！');
+    next.phase = 'battle'; startBattleCarry(next.carry, next.cats); startWave(next, 1); return actionResult(next, true, '守护开始！');
+  }
+  if (action.type === 'USE_CARRY') {
+    if (next.phase !== 'battle' || next.paused || next.uiPaused) return actionResult(next, false, '准备、暂停或结束期间不能使用镜片。');
+    const problem = useBattleCarry(next.carry);
+    if (!problem) log(next, '镜片映出强光，普通黑影停止移动和攻击 3 秒，首领不受影响。');
+    return actionResult(next, !problem, problem ?? '镜片已使用。');
   }
   if (action.type === 'MOVE_CAT') {
     const problem = getDeployError(next, action.catId, action); if (problem) return actionResult(next, false, problem);

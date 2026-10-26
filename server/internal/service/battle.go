@@ -34,12 +34,15 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 	if err := domain.RequirePhase(*s, "preparation", "home", "explore"); err != nil {
 		return err
 	}
-	standaloneRetry := isStandaloneBattle(c.StageID) && s.Phase == "preparation" && s.ActiveBattle != nil && s.ActiveBattle.StageID == c.StageID && s.ActiveBattle.Status == "lost"
+	battleRetry := s.Phase == "preparation" && s.ActiveBattle != nil && s.ActiveBattle.Status == "lost"
+	if battleRetry && s.ActiveBattle.StageID != c.StageID {
+		return domain.Fail("INVALID_PHASE", "请重试当前关卡，或先离开准备页再选择其他关卡", 409)
+	}
 	if isStandaloneBattle(c.StageID) {
 		if !domain.Contains(s.Flags, "alley_rescued") {
 			return domain.Fail("STAGE_LOCKED", "请先完成第一章救援，再从家园进入独立试玩", 409)
 		}
-		if s.Phase != "home" && !standaloneRetry {
+		if s.Phase != "home" && !battleRetry {
 			return domain.Fail("INVALID_PHASE", "独立试玩请从家园进入", 409)
 		}
 	}
@@ -63,7 +66,7 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 		return err
 	}
 	attempt := &domain.Attempt{ID: id, StageID: c.StageID, Status: "active"}
-	if standaloneRetry {
+	if battleRetry {
 		if s.ActiveBattle.Modifiers != nil {
 			modifiers := *s.ActiveBattle.Modifiers
 			attempt.Modifiers = &modifiers
@@ -90,6 +93,8 @@ func (g *Game) retryTutorialBattle(s *domain.GameState) error {
 	}
 	if previousModifiers != nil {
 		modifiers := *previousModifiers
+		// Tutorials preserve their difficulty on retry but never enable carry.
+		modifiers.Carry = ""
 		s.ActiveBattle.Modifiers = &modifiers
 	}
 	return nil

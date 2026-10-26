@@ -96,7 +96,7 @@ func TestBothFirstChapterStagesRequireValidBossReports(t *testing.T) {
 				t.Fatal("loss changed pending difficulty")
 			}
 			s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
-			if s.Phase != "preparation" || s.LastResult.StageID != stage || s.ActiveBattle != nil {
+			if s.Phase != "preparation" || s.LastResult.StageID != stage || s.ActiveBattle == nil || s.ActiveBattle.Status != "lost" || s.ActiveBattle.StageID != stage {
 				t.Fatal("retry lost first-chapter stage")
 			}
 			s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: stage})

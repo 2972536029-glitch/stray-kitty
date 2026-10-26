@@ -1,3 +1,4 @@
+import type {BattleCarryState} from '../carry';
 import type {BattleDifficulty} from '../l00/types';
 
 export type {BattleDifficulty};
@@ -37,6 +38,7 @@ export interface ChapterEffect {
   from: Position; to: Position; remaining: number; cells?: Position[];
 }
 export interface ChapterState {
+  carry: BattleCarryState;
   stageId: 'alley_boss'; difficulty: BattleDifficulty; phase: 'ready' | 'battle' | 'won' | 'lost';
   elapsed: number; accumulator: number; wave: number; totalWaves: number; waveTime: number;
   spawnIndex: number; nextWaveIn: number | null; spawned: number; defeated: number;
@@ -49,12 +51,12 @@ export interface ChapterState {
   stats: {skills: number; dodgedSlams: number; damageTaken: number};
 }
 export type ChapterAction =
-  | {type: 'START'} | {type: 'RETREAT'} | {type: 'PAUSE'; paused?: boolean}
+  | {type: 'START'} | {type: 'USE_CARRY'} | {type: 'RETREAT'} | {type: 'PAUSE'; paused?: boolean}
   | {type: 'SET_EXTERNAL_PAUSE' | 'SET_UI_PAUSE'; paused: boolean}
   | {type: 'SET_SPEED'; speed: 0.5 | 1 | 2}
   | {type: 'INSPECT'; catId: ChapterCatId} | {type: 'CLOSE_INSPECTION'}
   | {type: 'SELECT_SKILL'; catId: ChapterCatId} | {type: 'AIM_SKILL'; x: number; y: number}
   | {type: 'CANCEL_SKILL'} | {type: 'CAST_SKILL'; catId: ChapterCatId; target?: Position}
   | {type: 'MOVE_CAT'; catId: ChapterCatId; x: number; y: number};
-export interface ChapterOptions {difficulty?: BattleDifficulty}
+export interface ChapterOptions {difficulty?: BattleDifficulty; carry?: unknown}
 export interface WaveEntry {at: number; kind: EnemyKind; lane: 0 | 3 | 4}

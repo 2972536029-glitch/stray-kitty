@@ -1,6 +1,6 @@
 # 战斗模块接口与章节入口
 
-更新：2026-10-26。四章无道具，L00 六波，L01 四猫首领战，L02／L03 为六猫独立试玩。五个入口对应四套战斗地图。当前接口定义见 [TS契约](../../web/src/contracts/index.ts)、[OpenAPI](../../docs/openapi.json)与[Go服务](../../server/internal/service/battle.go)。
+更新：2026-10-26。四章无库存补给，L00 六波，L01 四猫首领战，L02／L03 为六猫独立试玩。第一章起按 MR !24 接收事件 carry 的六种正向加成，见[事件战斗契约](../../docs/BATTLE-EVENT-CARRY.md)。五个入口对应四套战斗地图。当前接口定义见 [TS契约](../../web/src/contracts/index.ts)、[OpenAPI](../../docs/openapi.json)与[Go服务](../../server/internal/service/battle.go)。
 
 ## 入口对应
 
@@ -28,7 +28,7 @@ START_BATTLE不接受supplies；COMPLETE_BATTLE不接受usedSupplies。两个L01
 
 ## 结算与恢复
 
-L00胜利设置l00_completed并进入探索，不提前完成alley_rescued或发放救援奖励；失败后重新开始教学创建新attempt，保留失败档位。L01首次alley_rescue胜利沿用点点、猫窝、邮票／材料及原战后剧情。alley_boss重玩不重复救援首奖。L01失败结算继续回preparation，由lastResult.stageId保留对应入口；新开战创建新attempt，仍非失败直接回探索。
+L00胜利设置l00_completed并进入探索，不提前完成alley_rescued或发放救援奖励；失败后重新开始教学创建新attempt，保留失败档位，不启用carry。L01首次alley_rescue胜利沿用点点、猫窝、邮票／材料及原战后剧情。alley_boss重玩不重复救援首奖。L01失败结算继续回preparation，保留lost attempt作为同关重试快照；新开战创建新ID并复制其难度与carry，仍非失败直接回探索。离开失败准备时清理临时身份，不能串到另一stage。
 
 L02／L03均为家园独立试玩，只要求已有alley_rescued；L03不要求先完成L02。胜利只记对应关卡完成，不发物资、货币、家具、长期伙伴或鼓励奖励，不改剧情标志或推进故事，继续返回家园。不改原第二章探索与剧情按钮，也不新增正式主线插入点。
 
@@ -46,4 +46,4 @@ Go存档暂保留旧Attempt.Supplies读取字段。新版结算旧active场次�
 
 ## 分工
 
-战斗维护L00–L03引擎、教程、各章技能、棋盘、结果和必要接入；事件维护档位判定，主流程维护剧情、存档与长期奖励；探索地图和最终场景美术维持对应模块。军师目前为本地规则。L04及以后与模型不在本轮实现范围。L02／L03仅接现有shadowPressure参数快照，不实现动物随机事件、重新评分或未经确定的战中协议；扩展边界见[第二章接入](../../docs/L02-INTEGRATION.md)和[第三章接入](../../docs/L03-INTEGRATION.md)。
+战斗维护L00–L03引擎、教程、各章技能、棋盘、结果和必要接入；事件维护档位判定、携带物/协助者来源，主流程维护剧情、存档与长期奖励；探索地图和最终场景美术维持对应模块。军师目前为本地规则。L04及以后与模型不在本轮实现范围。L01–L03消费活动场次的shadowPressure和carry快照，正式ID为lantern/mirror/bell/box/dog/dove；只在开战时接收，不实现战斗中再次随机抽取或热替换奖励。效果与职责见[事件战斗对接](../../docs/BATTLE-EVENT-CARRY.md)；两章试玩的主线边界仍按[第二章接入](../../docs/L02-INTEGRATION.md)和[第三章接入](../../docs/L03-INTEGRATION.md)。

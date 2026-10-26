@@ -1,3 +1,4 @@
+import {paintCarryAnchor} from '../carry-painter';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP, ROUTES} from './config';
@@ -103,6 +104,7 @@ export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseSta
   ctx.strokeStyle='#a1a47b';ctx.lineWidth=2;ctx.strokeRect(state.boss.x*CELL+4,state.boss.y*CELL+4,2*CELL-8,2*CELL-8);
   if(state.boss.phase==='defeated'){ctx.fillStyle='#89957e';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText('荆冠首领已退去',(MAP.boss.x+1)*CELL,(MAP.boss.y+1)*CELL);}
   drawCat(ctx,'hero',8,MAP.goal.y*CELL+11,62);ctx.fillStyle='#758052';ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText('守护 B1',40,MAP.goal.y*CELL+73);
+  paintCarryAnchor(ctx,state.carry,CELL,mapCell);
   const chosen=state.cats.find(cat=>cat.id===selected&&cat.status==='active');
   if(chosen&&!state.aim){ctx.fillStyle='#788f6c32';ctx.strokeStyle='#7b916d';ctx.lineWidth=2;for(const p of getAttackCells(chosen)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);}}
   if(state.aim){ctx.fillStyle='#8fc5c044';for(const p of CELLS)if(!obstacleCell(p.x,p.y))ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);const cat=state.cats.find(value=>value.id===state.aim?.catId);if(cat&&state.aim.target){ctx.fillStyle='#f0d16c80';ctx.strokeStyle='#ba8f32';ctx.lineWidth=2;for(const p of getSkillCells(cat,state.aim.target)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+5,p.y*CELL+5,CELL-10,CELL-10);}}}

@@ -669,7 +669,7 @@ func TestCarryLifecycle(t *testing.T) {
 		t.Fatal("battle attempt should receive carry")
 	}
 	// 失败保留:COMPLETE_BATTLE lost → CONTINUE → preparation,carry 仍在。
-	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "lost"})
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "lost", Report: bossReport(3, false)})
 	execute(t, g, token, domain.Command{Type: "CONTINUE"})
 	after, err := g.State(token)
 	if err != nil {
@@ -680,7 +680,7 @@ func TestCarryLifecycle(t *testing.T) {
 	}
 	// 胜利清零(沿用既有 PendingModifiers 清空,carry 随之)。
 	s2 := execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
-	s2 = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s2.ActiveBattle.ID, Outcome: "won"})
+	s2 = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s2.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
 	if s2.EventState.PendingModifiers.Carry != "" {
 		t.Fatal("win must clear carry")
 	}

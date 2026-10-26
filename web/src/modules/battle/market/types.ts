@@ -1,3 +1,4 @@
+import type {BattleCarryState} from '../carry';
 import type {BattleDifficulty} from '../l00/types';
 
 export type {BattleDifficulty};
@@ -40,6 +41,7 @@ export interface MarketEffect {
   from: Position; to: Position; remaining: number; cells?: Position[];
 }
 export interface MarketState {
+  carry: BattleCarryState;
   stageId: 'market_boss'; difficulty: BattleDifficulty; phase: 'ready' | 'battle' | 'won' | 'lost';
   elapsed: number; accumulator: number; wave: number; totalWaves: number; waveTime: number;
   spawnIndex: number; nextWaveIn: number | null; spawned: number; defeated: number;
@@ -52,13 +54,13 @@ export interface MarketState {
   stats: {skills: number; dodgedSlams: number; damageTaken: number};
 }
 export type MarketAction =
-  | {type: 'START'} | {type: 'RETREAT'} | {type: 'PAUSE'; paused?: boolean}
+  | {type: 'START'} | {type: 'USE_CARRY'} | {type: 'RETREAT'} | {type: 'PAUSE'; paused?: boolean}
   | {type: 'SET_EXTERNAL_PAUSE' | 'SET_UI_PAUSE'; paused: boolean}
   | {type: 'SET_SPEED'; speed: 0.5 | 1 | 2}
   | {type: 'INSPECT'; catId: MarketCatId} | {type: 'CLOSE_INSPECTION'}
   | {type: 'SELECT_SKILL'; catId: MarketCatId} | {type: 'AIM_SKILL'; x: number; y: number}
   | {type: 'CANCEL_SKILL'} | {type: 'CAST_SKILL'; catId: MarketCatId; target?: Position}
   | {type: 'MOVE_CAT'; catId: MarketCatId; x: number; y: number};
-export interface MarketOptions {difficulty?: BattleDifficulty}
+export interface MarketOptions {difficulty?: BattleDifficulty; carry?: unknown}
 export type MarketRouteId = 'north4' | 'north5' | 'eastB' | 'eastC' | 'eastD' | 'south4' | 'south5';
 export interface WaveEntry {at: number; kind: EnemyKind; route: MarketRouteId}

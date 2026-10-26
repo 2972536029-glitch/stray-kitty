@@ -1,3 +1,4 @@
+import type {BattleCarryState} from '../carry';
 import type {BattleDifficulty} from '../l00/types';
 
 export type {BattleDifficulty};
@@ -43,6 +44,7 @@ export interface GreenhouseHazard extends Position {
   id: number; remaining: number; tickIn: number; ticks: number;
 }
 export interface GreenhouseState {
+  carry: BattleCarryState;
   stageId: 'greenhouse_boss'; difficulty: BattleDifficulty; phase: 'ready' | 'battle' | 'won' | 'lost';
   elapsed: number; accumulator: number; wave: number; totalWaves: number; waveTime: number;
   spawnIndex: number; nextWaveIn: number | null; spawned: number; defeated: number;
@@ -55,13 +57,13 @@ export interface GreenhouseState {
   stats: {skills: number; dodgedSlams: number; damageTaken: number};
 }
 export type GreenhouseAction =
-  | {type: 'START'} | {type: 'RETREAT'} | {type: 'PAUSE'; paused?: boolean}
+  | {type: 'START'} | {type: 'USE_CARRY'} | {type: 'RETREAT'} | {type: 'PAUSE'; paused?: boolean}
   | {type: 'SET_EXTERNAL_PAUSE' | 'SET_UI_PAUSE'; paused: boolean}
   | {type: 'SET_SPEED'; speed: 0.5 | 1 | 2}
   | {type: 'INSPECT'; catId: GreenhouseCatId} | {type: 'CLOSE_INSPECTION'}
   | {type: 'SELECT_SKILL'; catId: GreenhouseCatId} | {type: 'AIM_SKILL'; x: number; y: number}
   | {type: 'CANCEL_SKILL'} | {type: 'CAST_SKILL'; catId: GreenhouseCatId; target?: Position}
   | {type: 'MOVE_CAT'; catId: GreenhouseCatId; x: number; y: number};
-export interface GreenhouseOptions {difficulty?: BattleDifficulty}
+export interface GreenhouseOptions {difficulty?: BattleDifficulty; carry?: unknown}
 export type GreenhouseRouteId = 'upper' | 'lower' | 'branch';
 export interface WaveEntry {at: number; kind: EnemyKind; route: GreenhouseRouteId}
