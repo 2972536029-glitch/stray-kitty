@@ -32,11 +32,6 @@ stray-kitty/
 │  ├─ openapi.json  API 规范
 │  └─ PRD.md  需求与分工
 ├─ level_design/
-│  ├─ battle/
-│  │  ├─ 100/
-│  │  │  └─ handoff/
-│  │  └─ l00/
-│  │     └─ handoff/
 │  ├─ maps/
 │  │  └─ reference/
 │  ├─ night_market/
