@@ -20,7 +20,7 @@ export const CAT_DEFINITIONS: Readonly<Record<ChapterCatId, CatDefinition>> = Ob
   caster: {id: 'caster', name: '绒绒', breed: '布偶', role: '星绒术士', maxHp: 80, damage: 20, interval: 0.8, block: 1, range: 'ranged', color: '#cab9e6', initial: {x: 3, y: 3}},
   guard: {id: 'guard', name: '斑斑', breed: '奶牛猫', role: '罐盾卫士', maxHp: 240, damage: 8, interval: 1.1, block: 2, range: 'melee', color: '#e7e8d8', initial: {x: 5, y: 3}},
   tuanzi: {id: 'tuanzi', name: '团子', breed: '橘猫', role: '橘影先锋', maxHp: 220, damage: 28, interval: 1.2, block: 1, range: 'claws', color: '#d39251', initial: {x: 5, y: 4}},
-  diandian: {id: 'diandian', name: '点点', breed: '奶牛猫', role: '暖心伙伴', maxHp: 140, damage: 10, interval: 1.1, block: 1, range: 'ranged', color: '#d8ded5', initial: {x: 4, y: 3}},
+  diandian: {id: 'diandian', name: '点点', breed: '暹罗猫', role: '暖心伙伴', maxHp: 140, damage: 10, interval: 1.1, block: 1, range: 'ranged', color: '#d9c7a8', initial: {x: 4, y: 3}},
 });
 export const SKILLS: Readonly<Record<ChapterCatId, SkillDefinition>> = Object.freeze({
   caster: {name: '星绒绽放', targeting: 'area', cost: 100, damage: 45, description: '任意可用格为中心的五格十字，每名敌人受到 45 点伤害。'},
