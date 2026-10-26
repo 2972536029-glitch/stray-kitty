@@ -1,8 +1,8 @@
 # 随机事件 → 战斗携带物与协助者
 
-更新：2026-10-26。对接参考为余尧 [MR !23](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/23) 的 `98346fc` 与 [MR !24](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/24) 的 `8b7943c`。事件方提供四种物品、两种协助者的事件来源、carry 通道及结果卡展示；本分支保留这些来源与文本，接入战斗实际效果。现已同步团队 main `589c2fc` 到个人分支，并提交 [MR !32](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/32)；本分支尚未合入 main，没有改动事件原 MR。请先完成战斗侧 !29 → !30 → !31 及事件侧 !23 → !24 的评审整合，再合入本 MR。
+更新：2026-10-27。对接参考为余尧 [MR !23](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/23) 的 `98346fc` 与 [MR !24](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/24) 的 `8b7943c`。事件方提供四种物品、两种协助者的事件来源、carry 通道及结果卡展示；战斗保留这些来源与文本，接入实际效果。2026-10-26 的 carry 交付同步团队 main `589c2fc` 并提交 [MR !32](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/merge_requests/32)，没有改动事件原 MR；该交付依赖战斗侧 !29 → !30 → !31 及事件侧 !23 → !24 的评审整合。2026-10-27 的第四章在 `feat/battle-l04-tunnel` 继续沿用此协议，本轮尚未新建第四章 MR，不把 !32 当作第四章交付。
 
-本轮目标是完成可玩接入，不重调已有猫咪、敌人、Boss、地图、波表、通关条件或三档难度基础数值。没有 carry 的关卡保持原规则。事件加成不作为通关必需条件，也不恢复已删除的库存补给、选带背包、用药或复活系统。
+携带物接入不重调已有猫咪、敌人、Boss、地图、波表、通关条件或三档难度基础数值。第四章使用本章自身的新地图与 Boss 配置，同样不为抵消 carry 收益而提高压力。没有 carry 的关卡保持基础规则。事件加成不作为通关必需条件，也不恢复已删除的库存补给、选带背包、用药或复活系统。
 
 ## 交接字段
 
@@ -29,13 +29,13 @@ attempt.modifiers = {
 | `EventOutcome.carry?` | 事件 → 主流程 | 一个有效 ID；未发放时省略，不从物资数推导 |
 | `PendingModifiers.carry?` | 主流程持久化 | 仅新奖励覆盖，按章节清理或保留 |
 | `attempt.modifiers.carry?` | 主流程 → 战斗 | 开战快照，整场不随之后事件修改 |
-| `COMPLETE_BATTLE` | 战斗 → 主流程 | 沿用 `attemptId`、`outcome`；L01–L03 必须包含 `report: {leaks, bossDefeated}`，L00 仍只报 `attemptId` 与 `outcome`。不新增库存耗用、carry 发奖或返还字段 |
+| `COMPLETE_BATTLE` | 战斗 → 主流程 | 沿用 `attemptId`、`outcome`；L01–L04 必须包含 `report: {leaks, bossDefeated}`，L00 仍只报 `attemptId` 与 `outcome`。不新增库存耗用、carry 发奖或返还字段 |
 
 镜片“本局已使用”等只属于局内状态；场次结果仍使用原幂等命令，事件方不需要接收逐帧信息。
 
 ## 第一版效果表
 
-时间均为模拟秒，跟随暂停、标题、页面隐藏及倍速。物品和协助者不占猫咪编队、不增加部署格、不计入敌人／胜负统计。默认入口取该章第一波第一只黑影的真实入口：L01 为 A4，L02 为 A4，L03 为 C8；固定路线指从该入口生成的那一路。
+时间均为模拟秒，跟随暂停、标题、页面隐藏及倍速。物品和协助者不占猫咪编队、不增加部署格、不计入敌人／胜负统计。默认入口取该章第一波第一只黑影的真实入口：L01 为 A4，L02 为 A4，L03 为 C8，L04 为 B8；固定路线指从该入口生成的那一路。L04 默认入口不取较短的 A2 暗管线。
 
 | ID | 名称 | 本轮战斗效果 | 触发与结束 |
 | --- | --- | --- | --- |
@@ -56,7 +56,7 @@ attempt.modifiers = {
 | --- | --- |
 | L00 `l00_tutorial` | 不启用 carry，保持五步教学与六波实战；不消费主线待用携带物，历史教学场次也不因携带物跳过教学 |
 | L01 `alley_rescue / alley_boss` | 从第一章开始启用。胜利清理主线待用修正；失败结算回原关准备，重试复制失败 attempt 的完整难度与 carry 快照，生成新 ID |
-| L02 `market_boss`、L03 `greenhouse_boss` | 两章当前为家园独立试玩；可展示场次携带物，胜负均保留主线 PendingModifiers。失败重试沿用失败快照，胜利只记录本关完成并返回家园 |
+| L02 `market_boss`、L03 `greenhouse_boss`、L04 `tunnel_boss` | 三章当前为家园独立试玩；可展示场次携带物，胜负均保留主线 PendingModifiers。失败重试沿用失败快照，胜利只记录本关完成并返回家园 |
 | 结束／重试 | 局内计时与镜片使用状态随局结束；失败后的新 attempt 按同一个 carry 重新初始化。离开失败准备去家园／探索／剧情时清理临时失败身份 |
 | 标题／整页刷新 | 标题保留原局内实例并停表；整页刷新按同一服务 attempt 和快照重建 ready，不是逐帧存档，carry 不叠加 |
 
@@ -67,5 +67,7 @@ attempt.modifiers = {
 战斗上方只增加一条事件带入说明，物品写“从事件带来”，协助者写“动物来报恩”，镜片提供一次使用按钮；无 carry 时不显示该条。小灯与纸箱只在实际入口画小标记，不扩展棋盘边界或重新加入伙伴侧栏。
 
 原事件文案／结果卡负责说清来源，战斗不写成系统凭空赠送，也不发长期猫咪或物品奖励。契约、OpenAPI 和服务校验需一起维护；未来新增枚举由双方对齐。本分支只接入开战时的快照，尚无“战斗已经开始后再推送新随机事件替换 carry”的通道。
+
+第四章墨墨的夜视＋全队护盾属于本章伙伴技能，不增加 carry ID，也不要求事件方补发一个“夜视物品”。小灯继续按原半径造成伤害，不额外恢复全场视野；镜片仍只停普通黑影，不暂停 Boss 断灯预告、黑暗或夜视计时；鸽子提供当前／下一波配置情报，不暴露黑暗中移动黑影的精确坐标。黑暗会自行恢复，六种 carry 都不是解除黑暗或通过关卡的必需条件。第三章墨墨的护盾＋清荆棘保持原样。
 
 基础规则见[战斗接口](../design/tower-defense/interfaces.md)，现有补给取消与旧存档处理见[物品说明](../design/tower-defense/items.md)。

@@ -42,5 +42,14 @@
     "lanes": 6,
     "columns": 9,
     "waves": 8
+  },
+  {
+    "id": "tunnel_boss",
+    "name": "第四章 · 地下通道试玩",
+    "chapterId": "rescue",
+    "status": "demo",
+    "lanes": 5,
+    "columns": 8,
+    "waves": 8
   }
 ]

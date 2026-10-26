@@ -6,6 +6,8 @@ import {createMarketContext} from './market-context';
 import {MarketBattleViewport} from './market/MarketBattleViewport';
 import {createGreenhouseContext} from './greenhouse-context';
 import {GreenhouseBattleViewport} from './greenhouse/GreenhouseBattleViewport';
+import {createTunnelContext} from './tunnel-context';
+import {TunnelBattleViewport} from './tunnel/TunnelBattleViewport';
 
 export function BattleHost({state, catalog, paused, onResult}: {
   state: GameState; catalog: Catalog; paused: boolean; onResult: (result: BattleResult) => void;
@@ -25,6 +27,12 @@ export function BattleHost({state, catalog, paused, onResult}: {
     try {context = createGreenhouseContext(state, catalog);}
     catch (error) {return <section className="l00-host-error" role="alert"><h2>战斗暂时无法进入</h2><p>{error instanceof Error ? error.message : '暂时无法进入这场战斗。'}</p></section>;}
     return <GreenhouseBattleViewport key={context.attemptId} {...context} paused={paused} onResult={result => onResult({attemptId: context.attemptId, ...result})}/>;
+  }
+  if (state.activeBattle?.stageId === 'tunnel_boss') {
+    let context: ReturnType<typeof createTunnelContext>;
+    try {context = createTunnelContext(state, catalog);}
+    catch (error) {return <section className="l00-host-error" role="alert"><h2>战斗暂时无法进入</h2><p>{error instanceof Error ? error.message : '暂时无法进入这场战斗。'}</p></section>;}
+    return <TunnelBattleViewport key={context.attemptId} {...context} paused={paused} onResult={result => onResult({attemptId: context.attemptId, ...result})}/>;
   }
   let context: ReturnType<typeof createChapterContext>;
   try {context = createChapterContext(state, catalog);}

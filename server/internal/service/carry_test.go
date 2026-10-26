@@ -114,7 +114,7 @@ func TestUnknownConfiguredCarryIsRejectedAtomically(t *testing.T) {
 }
 
 func TestCarryRetriesLockStageAndOriginalSnapshot(t *testing.T) {
-	for _, stage := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss"} {
+	for _, stage := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss"} {
 		t.Run(stage, func(t *testing.T) {
 			g, token, path := prepareBoss(t, -1, map[string]int{"food": 7, "material": 3})
 			editCarryFixture(t, g, token, func(s *domain.GameState) { s.EventState.PendingModifiers.Carry = domain.CarryDog })
@@ -133,7 +133,7 @@ func TestCarryRetriesLockStageAndOriginalSnapshot(t *testing.T) {
 			editCarryFixture(t, g, token, func(s *domain.GameState) {
 				s.EventState.PendingModifiers = domain.BattleModifiers{ShadowPressure: 1, Carry: domain.CarryDove}
 			})
-			for _, other := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss"} {
+			for _, other := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss"} {
 				if other != stage {
 					rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: other})
 				}
@@ -159,7 +159,7 @@ func TestCarryRetriesLockStageAndOriginalSnapshot(t *testing.T) {
 			if err != nil || !replay.Replayed || !reflect.DeepEqual(won.State, replay.State) {
 				t.Fatalf("carry completion was not idempotent: %v", err)
 			}
-			if stage == "market_boss" || stage == "greenhouse_boss" {
+			if stage == "market_boss" || stage == "greenhouse_boss" || stage == "tunnel_boss" {
 				if won.State.EventState.PendingModifiers != (domain.BattleModifiers{ShadowPressure: 1, Carry: domain.CarryDove}) || !reflect.DeepEqual(carryResources(before), carryResources(won.State)) {
 					t.Fatal("standalone victory consumed pending carry or granted mainline rewards")
 				}
@@ -233,7 +233,7 @@ func TestL00NeverEnablesCarryAndPreservesMainlinePending(t *testing.T) {
 }
 
 func TestUnknownHistoricalCarryDoesNotBlockExistingStages(t *testing.T) {
-	for _, stage := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss"} {
+	for _, stage := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss"} {
 		for _, carry := range []domain.BattleCarryID{"retired-carry-id", "pigeon", "crow"} {
 			t.Run(stage+"/"+string(carry), func(t *testing.T) {
 				g, token, _ := prepareBoss(t, 0, nil)

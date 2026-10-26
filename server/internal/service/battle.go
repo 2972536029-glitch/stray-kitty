@@ -4,7 +4,7 @@ import "stray-kitty/server/internal/domain"
 
 // Standalone trials share battle contracts without changing mainline progression.
 func isStandaloneBattle(stageID string) bool {
-	return stageID == "market_boss" || stageID == "greenhouse_boss"
+	return stageID == "market_boss" || stageID == "greenhouse_boss" || stageID == "tunnel_boss"
 }
 
 func battleDifficulty(modifiers *domain.BattleModifiers) (string, error) {
@@ -176,6 +176,8 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 			}
 		} else if attempt.StageID == "market_boss" {
 			result.Message = "午夜集市的防线守住了，六位伙伴击退了首领。"
+		} else if attempt.StageID == "tunnel_boss" {
+			result.Message = "地下通道的归路守住了，六位伙伴击退了断灯监守。"
 		} else if attempt.StageID == "greenhouse_boss" {
 			result.Message = "废弃花房的防线守住了，六位伙伴击退了首领。"
 		} else {

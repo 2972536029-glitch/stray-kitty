@@ -12,11 +12,16 @@ import type {GreenhouseState, GreenhouseAction, GreenhouseEnemy} from '../../web
 import type {BattleCarryId} from '../../web/src/contracts/index.ts';
 import type {BattleDifficulty} from '../../web/src/modules/battle/l00/types.ts';
 
-type State=ChapterState|MarketState|GreenhouseState;
-type Action=ChapterAction|MarketAction|GreenhouseAction;
-type Enemy=ChapterEnemy|MarketEnemy|GreenhouseEnemy;
+import * as tunnel from '../../web/src/modules/battle/tunnel/engine.ts';
+import * as tunnelConfig from '../../web/src/modules/battle/tunnel/config.ts';
+import type {TunnelState, TunnelAction, TunnelEnemy} from '../../web/src/modules/battle/tunnel/types.ts';
+
+type State=ChapterState|MarketState|GreenhouseState|TunnelState;
+type Action=ChapterAction|MarketAction|GreenhouseAction|TunnelAction;
+type Enemy=ChapterEnemy|MarketEnemy|GreenhouseEnemy|TunnelEnemy;
 type Position={x:number;y:number};
 const adapters=[
+  {name:'L04',engine:tunnel,config:tunnelConfig,create:tunnel.createTunnelBattle,tick:tunnel.advanceTunnel,act:tunnel.dispatchTunnel},
   {name:'L01',engine:chapter,config:chapterConfig,create:chapter.createChapterBattle,tick:chapter.advanceChapter,act:chapter.dispatchChapter},
   {name:'L02',engine:market,config:marketConfig,create:market.createMarketBattle,tick:market.advanceMarket,act:market.dispatchMarket},
   {name:'L03',engine:greenhouse,config:greenhouseConfig,create:greenhouse.createGreenhouseBattle,tick:greenhouse.advanceGreenhouse,act:greenhouse.dispatchGreenhouse},
@@ -56,7 +61,7 @@ function setEnemies(s:State,enemies:Enemy[]){s.enemies=enemies as never;}
 for(const a of adapters){
   test(`${a.name}: omitted, invalid and information-only carry preserve the complete baseline battle`,()=>{
     assert.deepEqual(a.create({carry:undefined}),a.create());
-    assert.deepEqual(a.create().carry.anchor,a.name==='L03'?{x:7,y:2}:{x:3,y:0});
+    assert.deepEqual(a.create().carry.anchor,a.name==='L03'?{x:7,y:2}:a.name==='L04'?{x:7,y:1}:{x:3,y:0});
     for(const input of ['unknown','pigeon','crow','',{},['bell'],42,false]){
       let candidate=start(a,input),baseline=start(a);assert.equal(candidate.carry.id,null);assert.ok(candidate.carry.warning);
       for(let i=0;i<20;i++){candidate=tick(a,candidate,1);baseline=tick(a,baseline,1);assert.deepEqual(withoutCarry(candidate),withoutCarry(baseline));}
@@ -153,7 +158,7 @@ function play(a:Adapter,difficulty:BattleDifficulty,carry:BattleCarryId){
     if(state.elapsed+1e-8>=observeAt){
       observeAt=state.elapsed+.5;
       const hazards='hazards' in state?state.hazards:[];
-      const danger=[...(state.boss.phase==='windup'?state.boss.targetCells:[]),...hazards];
+      const danger=[...(state.boss.phase==='windup'&&a.name!=='L04'?state.boss.targetCells:[]),...hazards];
       const dangerous=(cell:Position)=>danger.some(position=>position.x===cell.x&&position.y===cell.y);
       const threatened=state.cats.find(cat=>cat.status==='active'&&dangerous(cat));
       if(threatened){
