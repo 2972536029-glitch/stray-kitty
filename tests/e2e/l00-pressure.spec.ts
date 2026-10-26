@@ -59,7 +59,7 @@ test.beforeAll(async ({request}) => {
   fs.writeFileSync(saveFile, JSON.stringify({schemaVersion: 1, players}));
   // playwright.config's outer preview server already builds this executable.
   // Reuse it without rebuilding or touching the user's dev server/save file.
-  fixtureServer = spawn(path.join(root, '.runtime', process.platform === 'win32' ? 'kitty-preview.exe' : 'kitty-preview'), [], {
+  fixtureServer = spawn(process.env.KITTY_FIXTURE_BINARY ?? path.join(root, '.runtime', process.platform === 'win32' ? 'kitty-preview.exe' : 'kitty-preview'), [], {
     cwd: path.join(root, 'server'), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
     env: {...process.env, GAME_ADDR: `127.0.0.1:${fixturePort}`, GAME_DATA_FILE: saveFile, GAME_WEB_DIR: path.join(root, 'web/dist')},
   });

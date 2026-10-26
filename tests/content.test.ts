@@ -3,6 +3,15 @@ import assert from 'node:assert/strict';
 // @ts-expect-error 内容脚本由 Node 直接运行，测试复用同一校验器。
 import {readCatalog,validateContent} from '../scripts/content.mjs';
 test('所有内容 ID 与跨模块引用一致',()=>{assert.doesNotThrow(()=>validateContent(readCatalog()));});
+test('第一章首领关卡引用真实章节且尺寸、波次必须为正整数',()=>{
+ const catalog=readCatalog();
+ const stage=catalog.stages.find((s:any)=>s.id==='alley_boss');
+ assert.equal(stage.chapterId,'alley');
+ assert.deepEqual([stage.lanes,stage.columns,stage.waves],[5,12,8]);
+ for(const patch of [{chapterId:'missing'},{columns:1.5},{waves:0}]){
+  const c=readCatalog();Object.assign(c.stages.find((s:any)=>s.id==='alley_boss'),patch);assert.throws(()=>validateContent(c));
+ }
+});
 test('坏地图引用、重复猫咪、无效抽取权重会阻止打包',()=>{
  const c=readCatalog();c.maps[0].interactions[0].eventId='missing';c.cats.push(c.cats[0]);c.pools[0].entries[0].weight=-1;assert.throws(()=>validateContent(c));
 });

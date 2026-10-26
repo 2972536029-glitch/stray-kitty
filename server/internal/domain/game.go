@@ -15,12 +15,27 @@ type Attempt struct {
 	StageID   string           `json:"stageId"`
 	Status    string           `json:"status"`
 	Modifiers *BattleModifiers `json:"modifiers,omitempty"`
+	// Supplies are reserved from available inventory once, for this attempt.
+	Supplies map[string]int `json:"supplies,omitempty"`
+}
+type BattleReport struct {
+	Leaks        *int  `json:"leaks"`
+	BossDefeated *bool `json:"bossDefeated"`
+}
+type BattleRewards struct {
+	Supplies        map[string]int `json:"supplies"`
+	BaseCount       int            `json:"baseCount"`
+	FirstClearBonus int            `json:"firstClearBonus"`
+	PerfectBonus    int            `json:"perfectBonus"`
+	Difficulty      string         `json:"difficulty"`
 }
 type Result struct {
-	Message    string `json:"message"`
-	Roll       int    `json:"roll,omitempty"`
-	Outcome    string `json:"outcome,omitempty"`
-	FirstClear bool   `json:"firstClear,omitempty"`
+	Message       string         `json:"message"`
+	Roll          int            `json:"roll,omitempty"`
+	Outcome       string         `json:"outcome,omitempty"`
+	FirstClear    bool           `json:"firstClear,omitempty"`
+	StageID       string         `json:"stageId,omitempty"`
+	BattleRewards *BattleRewards `json:"battleRewards,omitempty"`
 }
 type GameState struct {
 	SchemaVersion   int               `json:"schemaVersion"`
@@ -39,12 +54,12 @@ type GameState struct {
 	CompletedStages []string          `json:"completedStages"`
 	PendingEventID  string            `json:"pendingEventId"`
 	// 随机事件:来源标记(node=交互点/random=随机触发)、本局已抽卡与探索里程。
-	PendingEventSource string       `json:"pendingEventSource,omitempty"`
-	DrawnEvents        []string     `json:"drawnEvents,omitempty"`
-	ExploreDistance    int          `json:"exploreDistance,omitempty"`
-	ActiveBattle       *Attempt     `json:"activeBattle"`
-	LastResult         Result       `json:"lastResult"`
-	EventState         *EventState  `json:"eventState,omitempty"`
+	PendingEventSource string      `json:"pendingEventSource,omitempty"`
+	DrawnEvents        []string    `json:"drawnEvents,omitempty"`
+	ExploreDistance    int         `json:"exploreDistance,omitempty"`
+	ActiveBattle       *Attempt    `json:"activeBattle"`
+	LastResult         Result      `json:"lastResult"`
+	EventState         *EventState `json:"eventState,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -66,7 +81,10 @@ type Command struct {
 	ProductID     string `json:"productId,omitempty"`
 	MapID         string `json:"mapId,omitempty"`
 	// REPORT_MOVE 携带的本次行走里程(画布像素)。
-	Distance int `json:"distance,omitempty"`
+	Distance     int            `json:"distance,omitempty"`
+	Supplies     map[string]int `json:"supplies,omitempty"`
+	UsedSupplies map[string]int `json:"usedSupplies,omitempty"`
+	Report       *BattleReport  `json:"report,omitempty"`
 }
 type CommandRequest struct {
 	ExpectedRevision *int    `json:"expectedRevision"`
@@ -104,8 +122,9 @@ type Event struct {
 	Maps     []string      `json:"maps"`
 }
 type Stage struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
+	ID        string `json:"id"`
+	Status    string `json:"status"`
+	ChapterID string `json:"chapterId,omitempty"`
 }
 type Entry struct {
 	FurnitureID string `json:"furnitureId"`

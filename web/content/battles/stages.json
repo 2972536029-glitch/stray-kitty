@@ -6,5 +6,14 @@
     "lanes": 3,
     "columns": 7,
     "waves": 10
+  },
+  {
+    "id": "alley_boss",
+    "name": "第一章 · 深巷首领",
+    "chapterId": "alley",
+    "status": "demo",
+    "lanes": 5,
+    "columns": 12,
+    "waves": 8
   }
 ]

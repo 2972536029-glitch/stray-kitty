@@ -2,7 +2,7 @@ import type {Catalog, GameState} from '../../contracts';
 import {CONFIG} from './l00/config';
 import type {BattleContext, BattleDifficulty} from './l00/types';
 
-function difficultyFromPressure(pressure: unknown): BattleDifficulty {
+export function difficultyFromPressure(pressure: unknown): BattleDifficulty {
   if (pressure === undefined || pressure === 0) return 'medium';
   if (pressure === -1) return 'low';
   if (pressure === 1) return 'high';
@@ -30,6 +30,6 @@ export function createL00Context(
     // Use this attempt's saved event output, never a later pending result or an extra stat multiplier.
     difficulty: difficultyFromPressure(attempt.modifiers?.shadowPressure),
     modifiers: [],
-    extraSupplies: {},
+    extraSupplies: {...attempt.supplies},
   };
 }
