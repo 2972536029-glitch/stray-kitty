@@ -68,6 +68,13 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string, usePus
 					return domain.Fail("INVALID_CONTENT", "事件压力配置无效", 500)
 				}
 			}
+			// 战备物:枚举校验后记入待应用修正;后得覆盖先得(每场最多叼一件)。
+			switch outcome.Carry {
+			case "", "lantern", "mirror", "bell", "box":
+				modifiers.Carry = outcome.Carry
+			default:
+				return domain.Fail("INVALID_CONTENT", "未知的战备物: "+outcome.Carry, 500)
+			}
 			if outcome.Situation != nil {
 				if outcome.Situation.Kind != "detour" && outcome.Situation.Kind != "forced_chase" {
 					return domain.Fail("INVALID_CONTENT", "局势类型无效", 500)
