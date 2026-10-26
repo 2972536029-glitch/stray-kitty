@@ -14,6 +14,15 @@ for(const command of [{type:'UNKNOWN'},{type:'START_STORY'},{type:'GO_EXPLORE',m
   if(commandSchema(command))throw Error(`Invalid command accepted: ${JSON.stringify(command)}`);
 }
 const carryIds=['lantern','mirror','bell','box','dog','dove'];
+for(const stageId of ['tunnel_boss','finale_boss']) {
+  if(!commandSchema({type:'START_BATTLE',stageId}))throw Error(`Chapter entry rejected: ${stageId}`);
+}
+for(const elitesDefeated of [0,1,2]) {
+  if(!commandSchema({type:'COMPLETE_BATTLE',attemptId:'finale-attempt',outcome:'lost',report:{leaks:0,bossDefeated:false,elitesDefeated}}))throw Error('Finale result rejected');
+}
+for(const elitesDefeated of [-1,3,1.5,'2']) {
+  if(commandSchema({type:'COMPLETE_BATTLE',attemptId:'finale-attempt',outcome:'won',report:{leaks:0,bossDefeated:true,elitesDefeated}}))throw Error(`Invalid elite count accepted: ${elitesDefeated}`);
+}
 for(const name of ['BattleModifiers','EventOutcome']) {
   const schema=new Ajv2020({strict:false,allErrors:true}).compile({components:spec.components,$ref:`#/components/schemas/${name}`});
   const base=name==='BattleModifiers'?{shadowPressure:0}:{text:'Carry contract check'};

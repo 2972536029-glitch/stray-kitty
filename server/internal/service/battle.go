@@ -4,7 +4,7 @@ import "stray-kitty/server/internal/domain"
 
 // Standalone trials share battle contracts without changing mainline progression.
 func isStandaloneBattle(stageID string) bool {
-	return stageID == "market_boss" || stageID == "greenhouse_boss" || stageID == "tunnel_boss"
+	return stageID == "market_boss" || stageID == "greenhouse_boss" || stageID == "tunnel_boss" || stageID == "finale_boss"
 }
 
 func battleDifficulty(modifiers *domain.BattleModifiers) (string, error) {
@@ -132,6 +132,12 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 			return domain.Fail("INVALID_BATTLE_REPORT", "必须击败首领并守住防线才能通关", 400)
 		}
 	}
+	if c.Report != nil && c.Report.ElitesDefeated != nil && (*c.Report.ElitesDefeated < 0 || *c.Report.ElitesDefeated > 2) {
+		return domain.Fail("INVALID_BATTLE_REPORT", "精英战斗报告字段无效", 400)
+	}
+	if attempt.StageID == "finale_boss" && (c.Report == nil || c.Report.ElitesDefeated == nil || (c.Outcome == "won" && *c.Report.ElitesDefeated != 2)) {
+		return domain.Fail("INVALID_BATTLE_REPORT", "终局需要报告精英击败数，胜利须击败两名护卫", 400)
+	}
 	_, err := battleDifficulty(attempt.Modifiers)
 	if err != nil {
 		return err
@@ -176,6 +182,8 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 			}
 		} else if attempt.StageID == "market_boss" {
 			result.Message = "午夜集市的防线守住了，六位伙伴击退了首领。"
+		} else if attempt.StageID == "finale_boss" {
+			result.Message = "伙伴们共同守住了光之归路，永夜之王与两名精英护卫已被击退。"
 		} else if attempt.StageID == "tunnel_boss" {
 			result.Message = "地下通道的归路守住了，六位伙伴击退了断灯监守。"
 		} else if attempt.StageID == "greenhouse_boss" {

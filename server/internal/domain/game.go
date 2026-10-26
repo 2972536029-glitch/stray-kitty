@@ -20,8 +20,9 @@ type Attempt struct {
 	Supplies map[string]int `json:"supplies,omitempty"`
 }
 type BattleReport struct {
-	Leaks        *int  `json:"leaks"`
-	BossDefeated *bool `json:"bossDefeated"`
+	Leaks          *int  `json:"leaks"`
+	BossDefeated   *bool `json:"bossDefeated"`
+	ElitesDefeated *int  `json:"elitesDefeated,omitempty"`
 }
 type Result struct {
 	Message    string `json:"message"`

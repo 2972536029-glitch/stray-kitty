@@ -1,0 +1,111 @@
+/* Shared battle controls with the irregular seven-row finale warehouse. */
+.battle-l00.battle-finale{width:100%;max-width:1180px;margin:0 auto}
+.battle-finale .finale-boss-panel{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:9px 0;padding:7px 10px;border:1px solid #d4dec7;border-radius:5px;background:#eff3e6;font-size:10px;color:#687d59}
+.battle-finale .finale-boss-panel strong{font-size:11px}.battle-finale .finale-boss-panel small{font-size:9px}.battle-finale .finale-boss-panel.is-warning{background:#f5e7ca;border-color:#c7aa6b;color:#906d37}
+.battle-finale .finale-boss-health{position:relative;width:190px;height:14px;background:#d7ddc9;border:1px solid #c3c9b5;border-radius:3px;overflow:hidden}.battle-finale .finale-boss-health i{height:100%;display:block;background:#968365}.battle-finale .finale-boss-health span{position:absolute;inset:0;text-align:center;font-size:9px;line-height:12px;color:#fffbed;text-shadow:0 1px #5a6550}
+.battle-finale .finale-ready{font-size:10px;color:#82906f;margin:0 0 8px;line-height:1.6}
+.battle-finale .finale-battlefield{position:relative;min-width:0}
+.battle-finale .finale-board-scroll{width:100%;overflow-x:auto;overflow-y:hidden;border:0;border-radius:0;background:transparent;scrollbar-color:#afbf9d #faf7ed;scrollbar-width:thin}
+.battle-finale .finale-board{position:relative;width:100%;min-width:840px;aspect-ratio:12/7;user-select:none;touch-action:none;background:transparent;border:0;outline:0}
+.battle-finale .finale-board.is-overview{min-width:0}
+.battle-finale .finale-board>canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;pointer-events:none}
+.battle-finale .finale-cells{display:grid;position:absolute;inset:0;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(7,1fr);pointer-events:none}
+.battle-finale .finale-cell{position:relative;padding:0;border:0;min-height:0;border-radius:0;background:transparent!important;box-shadow:none;transform:none;touch-action:none;pointer-events:auto}
+.battle-finale .finale-cell:hover{box-shadow:inset 0 0 0 1px #8fa579;background:#8faa7221!important}.battle-finale .finale-cell:disabled{opacity:1}.battle-finale .finale-cell:focus-visible{outline:none;box-shadow:inset 0 0 0 3px #ca9a60;background:#a8bf8620!important}
+.battle-finale .finale-cell.is-obstacle{cursor:not-allowed}.battle-finale .finale-board.is-moving .finale-cell,.battle-finale .finale-board.is-aiming .finale-cell{cursor:crosshair}
+.battle-finale .finale-unit-state{position:absolute;inset:0;display:block;cursor:grab}.battle-finale .finale-unit-state:active{cursor:grabbing}.battle-finale .is-aiming .finale-unit-state{pointer-events:none}
+.battle-finale .finale-unit-state .btl-unit-name{font-size:9px;top:1px;z-index:2}.battle-finale .finale-unit-state .btl-unit-name small{font-size:8px}
+.battle-finale .finale-map-tools{display:none}.battle-finale .finale-battlefield>.btl-cat-menu{top:auto;min-height:92px}.battle-finale .btl-skill-orb>span{font-size:24px;line-height:1}
+.battle-finale .finale-portrait{display:block;width:64px;height:64px;max-width:100%;image-rendering:pixelated;margin:0 auto}
+.battle-finale .finale-cat-meters{display:grid;gap:3px;margin:5px 0}.battle-finale .finale-cat-hp,.battle-finale .finale-cat-energy{display:block;width:100%;height:4px;background:#d7ddc9;border-radius:2px;overflow:hidden}.battle-finale .finale-cat-energy{height:3px}.battle-finale .finale-cat-hp i,.battle-finale .finale-cat-energy i{display:block;height:100%;background:#82a078}.battle-finale .finale-cat-energy i{background:#bac3a0}.battle-finale .finale-cat-energy.is-full i{background:#d3ad55}
+.battle-finale .finale-retreat{margin-left:auto;white-space:nowrap}.battle-finale .finale-notice{color:#9b784b!important}
+.battle-finale .finale-modal{position:absolute;inset:0;z-index:30;background:#263b35a6;padding:20px;display:flex;align-items:center;justify-content:center}.battle-finale .finale-dialog{max-width:460px;padding:22px;background:#faf7ed;border:1px solid #cdd8bd;border-radius:9px;color:#647b55}.battle-finale .finale-dialog h3{font-size:16px}.battle-finale .finale-dialog p{font-size:12px;line-height:1.8}.battle-finale .finale-dialog>div{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+@media(max-width:850px){.battle-finale .btl-command{grid-template-columns:minmax(95px,1fr) minmax(0,1.7fr)}.battle-finale .btl-advisor{min-width:0}.battle-finale .finale-map-tools{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:4px;margin-bottom:5px}.battle-finale .finale-map-tools button{font-size:9px;padding:4px 6px}.battle-finale .finale-boss-panel small{width:100%}.battle-finale .finale-boss-health{flex:1}.battle-finale .finale-unit-state .btl-unit-name{font-size:8px;padding:1px 2px}.battle-finale .is-overview .finale-unit-state .btl-unit-name{font-size:6px}.battle-finale .is-overview .finale-unit-state .btl-unit-name small{font-size:6px;margin-left:1px}.battle-finale .btl-controls{gap:9px}}
+.battle-finale .btl-chat-log article p{white-space:pre-line}
+.battle-finale .finale-attack-buff{display:block;margin:5px 0;color:#9b784b;font-size:10px}.battle-finale .finale-boss-panel.is-warning{background:#efe8d5;border-color:#b19a70;color:#88703e}
+.battle-finale .finale-role-badge{display:inline-block;flex-shrink:0;padding:0 3px;border:1px solid #c7d2ba;border-radius:3px;background:#eef0e1;color:#647b55;font-size:8px;font-weight:400;line-height:1.4;white-space:nowrap;vertical-align:middle}
+.battle-finale .finale-unit-state .btl-unit-name{display:flex;align-items:center;gap:2px;max-width:calc(100% - 4px);padding:1px 3px;font-size:8px;line-height:1.3}
+.battle-finale .finale-unit-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.battle-finale .finale-unit-state .btl-unit-name .finale-role-badge{font-size:7px;padding:0 2px;line-height:1.2}.battle-finale .finale-unit-state .btl-unit-name .finale-unit-energy{flex-shrink:0;font-size:7px;margin-left:0;font-variant-numeric:tabular-nums}
+.battle-finale .finale-menu-cat-name{display:flex;flex-wrap:wrap;gap:2px 4px;min-width:0}.battle-finale .btl-skill-tooltip>p.finale-positioning{padding-bottom:7px;margin-bottom:7px;border-bottom:1px solid #dbddcd;color:#647b55}
+@media(max-width:850px){.battle-finale .finale-unit-state .btl-unit-name{font-size:7px;gap:1px;padding:1px 2px}.battle-finale .finale-unit-state .btl-unit-name .finale-role-badge{font-size:7px;padding:0 1px}.battle-finale .finale-unit-state .btl-unit-name .finale-unit-energy{font-size:6px}.battle-finale .is-overview .finale-unit-state .finale-role-badge{display:none}.battle-finale .is-overview .finale-unit-state .btl-unit-name{max-width:calc(100% - 2px);padding:0 1px}.battle-finale .is-overview .finale-unit-state .btl-unit-name .finale-role-badge{font-size:7px;padding:0 1px}}
+
+.battle-finale .finale-vision-status{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin:7px 0;padding:6px 10px;border:1px solid #d6dec9;border-radius:4px;background:#f3f4e9;color:#708062;font-size:10px;line-height:1.5}.battle-finale .finale-vision-status strong{font-size:10px}.battle-finale .finale-vision-status.is-dark{background:#526353;color:#f1eed6;border-color:#7e9277}.battle-finale .finale-vision-status.is-night-vision{background:#e5efe1;border-color:#a5c0a4;color:#53785d}.battle-finale .is-darkened .finale-unit-state .btl-unit-name{background:#f3eed7;color:#425b3e;border:1px solid #bac69d}.battle-finale .is-darkened .finale-cell:focus-visible{box-shadow:inset 0 0 0 3px #e6c78c}.battle-finale .has-night-vision .finale-cell:focus-visible{box-shadow:inset 0 0 0 3px #84b99d}
+
+/* Three leaders and the arrival timeline stay compact above the battlefield. */
+.battle-finale .finale-leaders{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:8px 0}.battle-finale .finale-leaders .finale-boss-panel{margin:0;min-width:0;padding:6px 9px}.battle-finale .finale-leader-boss{grid-column:1/-1}.battle-finale .finale-elite-panel .finale-boss-health{width:110px;flex:1;min-width:80px}.battle-finale .finale-elite-panel small{width:100%}.battle-finale .finale-elite-panel.is-defeated{opacity:.65}.battle-finale .finale-elite-panel .finale-boss-health i{background:#96a482}.battle-finale .finale-reinforcement-strip{display:flex;align-items:center;flex-wrap:wrap;gap:4px 7px;margin:6px 0 9px;font-size:9px;color:#7e8c70}.battle-finale .finale-reinforcement-chip{padding:3px 6px;border:1px dashed #c7d0b9;border-radius:3px;background:#f2f3e6}.battle-finale .finale-reinforcement-chip.is-active{border-style:solid;border-color:#a9be92;background:#e7efdd;color:#637b53}.battle-finale .finale-reinforcement-chip.is-retired{color:#9f9584;background:#eeeade}.battle-finale .finale-reinforcement-strip small{font-size:9px}.battle-finale .finale-ally-state{position:absolute;inset:0;display:block;cursor:help;pointer-events:none}.battle-finale .finale-ally-name{position:absolute;top:1px;left:50%;transform:translateX(-50%);display:flex;gap:3px;align-items:center;white-space:nowrap;background:#f2f0d8e8;color:#75845e;padding:1px 4px;border-radius:3px;font-size:8px;line-height:1.3}.battle-finale .finale-ally-name small{font-size:7px;font-weight:400}.battle-finale .finale-ally-state[data-status=retired]{opacity:.65}.battle-finale .finale-vision-status{padding:5px 9px;margin:6px 0}.battle-finale .finale-boss-panel.is-warning small{font-weight:700}.battle-finale .finale-cell[data-danger=true]{box-shadow:inset 0 0 0 2px #bc855a}.battle-finale .btl-tactics{margin:7px 0}.battle-finale .finale-unit-state .btl-unit-name{max-width:calc(100% - 4px)}
+@media(max-width:600px){.battle-finale .finale-leaders{gap:4px}.battle-finale .finale-leaders .finale-boss-panel{padding:5px 6px;gap:4px 6px}.battle-finale .finale-elite-panel strong{font-size:10px}.battle-finale .finale-leader-boss small{width:100%}.battle-finale .finale-elite-panel .finale-boss-health{width:100%;min-width:0;flex:auto}.battle-finale .finale-reinforcement-strip{gap:4px}.battle-finale .finale-reinforcement-chip{font-size:8px;padding:3px 4px}.battle-finale .is-overview .finale-ally-name{font-size:6px;padding:0 1px;gap:1px}.battle-finale .is-overview .finale-ally-name small{display:none}}
+
+/* The finale's larger board has a viewport-sized overview at every screen size. */
+.battle-l00.battle-finale{padding-top:12px;padding-bottom:12px}
+.battle-finale .finale-board.is-overview{max-width:100%;margin-inline:auto}
+.battle-finale .finale-map-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-bottom:5px}
+.battle-finale .finale-map-toolbar .btl-playback{flex:1 1 380px;margin:0;padding:4px 6px;gap:5px}
+.battle-finale .btl-playback>button{padding:5px 8px}
+.battle-finale .finale-map-toolbar .finale-map-tools{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin:0;flex-wrap:wrap}
+.battle-finale .finale-map-tools button{padding:5px 7px;font-size:9px;white-space:nowrap}
+.battle-finale .finale-map-toolbar .finale-ready{order:3;flex-basis:100%;margin:0;font-size:9px;line-height:1.5}
+.battle-finale .btl-head{margin-bottom:6px}.battle-finale .btl-head strong{margin-top:3px;font-size:15px}
+.battle-finale .btl-progress{gap:3px}
+.battle-finale .btl-wave-status{margin-bottom:5px;padding:4px 8px;gap:3px 10px;font-size:9px}
+.battle-finale .btl-wave-status>strong{font-size:10px}
+.battle-finale .btl-difficulty-strip{margin-bottom:5px;padding:4px 8px;font-size:10px;gap:3px 10px}
+.battle-finale .finale-leaders{grid-template-columns:1.35fr 1fr 1fr;gap:5px;margin:5px 0}
+.battle-finale .finale-leader-boss{grid-column:auto}
+.battle-finale .finale-leaders .finale-boss-panel{padding:5px 7px;gap:4px 7px;align-content:start}
+.battle-finale .finale-leaders .finale-boss-health{flex:1;min-width:95px;width:100px}
+.battle-finale .finale-leaders small{width:100%;min-height:26px;line-height:1.4}
+.battle-finale .finale-vision-status{padding:4px 8px;margin:5px 0}
+.battle-finale .finale-reinforcement-strip{margin:4px 0 5px}
+.battle-finale .btl-tactics{margin:4px 0 7px;gap:8px}
+.battle-finale .btl-tactics>button{padding:3px 7px}
+.battle-finale .btl-tactics>button .btl-portrait{width:24px!important;height:24px!important}
+.battle-finale .btl-tactics>p{font-size:10px;line-height:1.5}
+.battle-finale .btl-range-legend{margin-top:4px}
+.battle-finale .btl-board-caption{margin:5px 0;font-size:9px;line-height:1.5}
+.battle-finale .btl-controls{margin-top:5px;padding-top:6px}
+@media(max-width:850px){
+ .battle-finale .finale-leaders{grid-template-columns:1fr 1fr}
+ .battle-finale .finale-leader-boss{grid-column:1/-1}
+ .battle-finale .finale-leaders small{min-height:0}
+ .battle-finale .finale-map-toolbar{gap:4px}
+ .battle-finale .finale-map-toolbar .btl-playback{flex-basis:100%}
+ .battle-finale .finale-map-toolbar .finale-map-tools{margin-left:auto}
+ .battle-finale .finale-map-toolbar .finale-ready{order:0;line-height:1.4}
+ .battle-finale .finale-map-tools button{padding:6px 8px}
+}
+@media(max-width:440px){
+ .battle-finale .btl-head strong{font-size:12px}
+ .battle-finale .btl-wave-status>span:last-child{flex-basis:100%}
+ .battle-finale .finale-leaders .finale-boss-health{min-width:80px}
+ .battle-finale .finale-elite-panel .finale-boss-health{flex-basis:100%}
+ .battle-finale .finale-map-toolbar .btl-playback>span{flex-basis:auto;font-size:8px}
+ .battle-finale .finale-map-tools button{padding:7px 8px}
+}
+
+/* Short desktop windows prioritize the seven-row board without removing battle state. */
+@media(min-width:851px) and (max-height:850px){
+ .battle-l00.battle-finale{padding-top:7px;padding-bottom:7px}
+ .battle-finale .btl-eyebrow,.battle-finale .finale-map-toolbar .finale-ready{display:none}
+ .battle-finale .btl-head{margin-bottom:3px;min-height:20px}
+ .battle-finale .btl-head strong{margin-top:0;font-size:14px;line-height:20px}
+ .battle-finale .btl-progress{display:flex;align-items:center;gap:10px;line-height:14px}
+ .battle-finale .btl-wave-status{margin-bottom:3px;padding:2px 7px;line-height:1.5}
+ .battle-finale .btl-difficulty-strip{margin-bottom:3px;padding:2px 7px;line-height:1.5}
+ .battle-finale .finale-leaders{margin:3px 0;gap:4px}
+ .battle-finale .finale-leaders .finale-boss-panel{padding:3px 6px;gap:2px 6px}
+ .battle-finale .finale-leaders small{min-height:12px;line-height:1.3}
+ .battle-finale .finale-leaders strong{font-size:10px;line-height:14px}
+ .battle-finale .finale-vision-status{margin:3px 0;padding:2px 7px;line-height:1.5}
+ .battle-finale .finale-reinforcement-strip{margin:2px 0 3px;gap:3px 6px;line-height:1.3}
+ .battle-finale .finale-reinforcement-chip{padding:2px 5px}
+ .battle-finale .btl-tactics{margin:2px 0 3px;gap:7px}
+ .battle-finale .btl-tactics>button{padding:2px 6px}
+ .battle-finale .btl-tactics>button .btl-portrait{width:18px!important;height:18px!important}
+ .battle-finale .btl-tactics strong{font-size:10px}
+ .battle-finale .btl-tactics>p{line-height:1.35}
+ .battle-finale .btl-board-column{padding-top:0}
+ .battle-finale .finale-map-toolbar{margin-bottom:3px;gap:3px 8px}
+ .battle-finale .finale-map-toolbar .btl-playback{padding:2px 5px;gap:4px}
+ .battle-finale .btl-playback>button{padding:4px 7px;font-size:10px}
+ .battle-finale .finale-map-tools button{padding:4px 6px}
+}

@@ -3151,6 +3151,15 @@
       "lanes": 5,
       "columns": 8,
       "waves": 8
+    },
+    {
+      "id": "finale_boss",
+      "name": "第五章 · 点亮流浪猫王国试玩",
+      "chapterId": "finale",
+      "status": "demo",
+      "lanes": 7,
+      "columns": 12,
+      "waves": 10
     }
   ],
   "furniture": [
