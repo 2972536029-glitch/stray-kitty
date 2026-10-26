@@ -399,5 +399,91 @@
       "tunnel_explored",
       "cats_rescued_batch1"
     ]
+  },
+  {
+    "id": "finale_intro_1",
+    "chapterId": "finale",
+    "speaker": "墨墨",
+    "text": "“前面就是黑影盘踞的废弃总仓库了。那里地形极其复杂，堆满了废弃钢架与集装箱。最后一批失踪的伙伴们全被围困在最底层的防空隔间里，黑影正层层封锁退路。”",
+    "next": "finale_intro_2",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "finale_intro_2",
+    "chapterId": "finale",
+    "speaker": "点点",
+    "text": "点点竖起耳朵仔细倾听：“我听见微弱的呜咽声了！仓库四周布满了伪装陷阱，阴暗死角里黑影在四处游荡，小猫们吓得缩在一起根本不敢动弹。但是……黑影极度畏惧光源！”",
+    "next": "finale_intro_3",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "finale_intro_3",
+    "chapterId": "finale",
+    "speaker": "团子",
+    "text": "团子抖了抖胡须，神采奕奕地拍了拍背上的包裹：“嘿嘿，看我们带来了什么！午夜集市换来的聚光手电、暖黄灯泡，还有从小巷收集的蓄光镜片！只要连成一条光之走廊，黑影就休想靠近！”",
+    "next": "finale_intro_4",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "finale_intro_4",
+    "chapterId": "finale",
+    "speaker": "阿策",
+    "text": "阿策轻摇折扇，运筹帷幄：“墨墨居高引导视线，点点排查障碍，团子与喵喵合力推移移动灯具逐段推进。每点亮一片区域，黑影退散三分，受困伙伴便可循着光芒与气味安全突围！”",
+    "next": "finale_intro_5",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "finale_intro_5",
+    "chapterId": "finale",
+    "speaker": "喵喵",
+    "text": "喵喵挺起胸膛，眼神无比坚毅：“行动开始！猫咪小队，跟我冲！把所有的光都聚拢过来——无论黑暗有多深，我们彼此的光芒绝不会熄灭！”",
+    "next": "finale_intro_6",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "finale_intro_6",
+    "chapterId": "finale",
+    "speaker": "旁白",
+    "text": "随着一道道金黄与皎洁的光束划破幽暗的仓库，黑影在耀眼的光明中无处遁形、溃退消散。生锈的铁锁被破开，数十只惊魂未定的流浪猫在喵喵与伙伴们的呼唤声中排成整齐的长队，沿着光之通道有序撤离。",
+    "next": "finale_intro_7",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "finale_intro_7",
+    "chapterId": "finale",
+    "speaker": "旁白",
+    "text": "清晨的第一缕朝阳洒在废弃花房上。曾经漏雨破损的温室，如今被猫咪们用纸箱搭起了坚固的攀爬城堡，窗边悬挂着暖黄串灯与毛毯，花草重获生机。附近的街坊也悄悄在门外放下了干净的清水盆、毛毯与香喷喷的猫粮——属于流浪猫们的“流浪猫王国”正式落成！",
+    "next": "finale_intro_8",
+    "exit": "",
+    "scene": "home"
+  },
+  {
+    "id": "finale_intro_8",
+    "chapterId": "finale",
+    "speaker": "团子",
+    "text": "团子轻轻碰了碰喵喵的额头，望向花房院墙外的一张寻猫启事：“喵喵，你看！那是找你的启事，还有那个熟悉的人影……你的主人一直在找你呢，你该回家啦。”",
+    "next": "finale_intro_9",
+    "exit": "",
+    "scene": "home"
+  },
+  {
+    "id": "finale_intro_9",
+    "chapterId": "finale",
+    "speaker": "喵喵",
+    "text": "喵喵奔向那个带着蓝色饭碗与金枪鱼罐头的温暖怀抱，眼中泛起感动的泪花。但这一次，喵喵心底无比踏实——它不仅找回了自己的家，更和伙伴们一起创造了一个属于大家的流浪猫王国。喵喵回过头，向墨墨、团子和点点骄傲地挥了挥爪子：“明天见！我每天都会回来和大家一起守护王国的！”",
+    "next": "",
+    "exit": "home",
+    "scene": "home",
+    "setFlags": [
+      "finale_started",
+      "finale_completed",
+      "kingdom_founded"
+    ]
   }
 ]

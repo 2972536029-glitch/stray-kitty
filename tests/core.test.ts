@@ -37,20 +37,20 @@ test('教程结算重试通过控制器进入新的服务端场次', async () =>
   assert.equal(store.getSnapshot()!.activeBattle!.id, 'retry');
 });
 
-test('第三、四章进度不会覆盖当前序章的六波教学目标', () => {
-  for (const chapterId of ['greenhouse', 'rescue'] as const) {
+test('第三、四章与终章进度不会覆盖当前序章的六波教学目标', () => {
+  for (const chapterId of ['greenhouse', 'rescue', 'finale'] as const) {
     const state = {phase: 'battle', chapterId, mapId: 'greenhouse', cats: [],
-      flags: ['chapter_3_started', 'chapter_4_started'],
+      flags: ['chapter_3_started', 'chapter_4_started', 'finale_started', 'finale_completed'],
       activeBattle: {id: 'tutorial-revisit', stageId: 'l00_tutorial', status: 'active'}} as GameState;
     assert.match(objective(state), /六波教学/);
   }
 });
 
-test('第三、四章进度不会覆盖当前第一章的八波首领战目标', () => {
-  for (const chapterId of ['greenhouse', 'rescue'] as const) {
+test('第三、四章与终章进度不会覆盖当前第一章的八波首领战目标', () => {
+  for (const chapterId of ['greenhouse', 'rescue', 'finale'] as const) {
     for (const stageId of ['alley_rescue', 'alley_boss']) {
       const state = {phase: 'battle', chapterId, mapId: 'greenhouse', cats: [],
-        flags: ['chapter_3_started', 'chapter_4_started'],
+        flags: ['chapter_3_started', 'chapter_4_started', 'finale_started', 'finale_completed'],
         activeBattle: {id: 'chapter-revisit', stageId, status: 'active'}} as GameState;
       assert.match(objective(state), /八波黑影/);
       assert.match(objective(state), /首领/);
