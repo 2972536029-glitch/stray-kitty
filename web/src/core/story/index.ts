@@ -5,6 +5,13 @@ export function objective(state: GameState): string {
     ? '练习伙伴站位、蓄能与技能配合，守住六波教学防线。'
     : '与绒绒、斑斑、团子和点点守住八波黑影，击败小巷首领。';
   if (state.phase === 'preparation') return '调整伙伴站位与技能安排，守住点点的撤离路线。';
+  if (state.chapterId === 'finale' || state.flags.includes('finale_started')) {
+    if (state.flags.includes('finale_completed')) {
+      return '流浪猫王国落成！喵喵与伙伴们共同守护温暖家园，常回家看看。';
+    }
+    if (state.phase === 'dialogue') return '用光明彻底驱散废弃仓库深处的黑影，点亮流浪猫王国！';
+    return '全员集结照亮归途，迎来大团圆与流浪猫王国的诞生。';
+  }
   if (state.chapterId === 'rescue' || state.flags.includes('chapter_4_started')) {
     if (state.phase === 'dialogue') return '随墨墨深入地下暗道，识破陷阱寻找失踪伙伴。';
     return '侦查地下暗道，营救受困的小猫并锁闭黑影通道。';
