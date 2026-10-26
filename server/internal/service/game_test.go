@@ -238,3 +238,43 @@ func TestChapter1TuanziEncounterAndReplay(t *testing.T) {
 		t.Fatalf("expected return to explore after replay, got phase=%s, map=%s", s.Phase, s.MapID)
 	}
 }
+
+func TestFinaleKingdomFounded(t *testing.T) {
+	g, token, _ := setup(t)
+	s := toBattle(t, g, token)
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
+	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	s = finishStory(t, g, token)
+	if s.Phase != "home" {
+		t.Fatalf("expected home phase, got %s", s.Phase)
+	}
+
+	// 开启终章剧情
+	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "finale_intro_1"})
+	if s.Phase != "dialogue" || s.StoryNodeID != "finale_intro_1" || s.ChapterID != "finale" {
+		t.Fatalf("expected finale dialogue, got phase=%s, node=%s, chapter=%s", s.Phase, s.StoryNodeID, s.ChapterID)
+	}
+	if !domain.Contains(s.Flags, "finale_started") {
+		t.Fatalf("expected finale_started flag")
+	}
+
+	// 步进终章全部剧情节点 1~9
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+
+	// 终章结束返回花房家园，落成流浪猫王国
+	if s.Phase != "home" || s.ChapterID != "finale" || s.MapID != "greenhouse" {
+		t.Fatalf("expected home in finale chapter, got phase=%s, chapter=%s, map=%s", s.Phase, s.ChapterID, s.MapID)
+	}
+	if !domain.Contains(s.Flags, "finale_completed") || !domain.Contains(s.Flags, "kingdom_founded") {
+		t.Fatalf("expected finale_completed and kingdom_founded flags, got %v", s.Flags)
+	}
+
+	// 探索后再次回家，应保持终章 ChapterID
+	s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+	s = execute(t, g, token, domain.Command{Type: "GO_HOME"})
+	if s.ChapterID != "finale" {
+		t.Fatalf("expected finale chapter after returning home, got %s", s.ChapterID)
+	}
+}

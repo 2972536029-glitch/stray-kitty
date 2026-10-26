@@ -123,7 +123,6 @@ stray-kitty/
 │     └─ ui/  界面与样式 · 轩扬
 ├─ .dockerignore  容器构建排除
 ├─ .env.example  非秘密环境变量示例
-├─ .git
 ├─ .gitattributes  换行与二进制规则
 ├─ .gitignore  本地生成文件排除
 ├─ .gitlab-ci.yml  检查与构建流水线
