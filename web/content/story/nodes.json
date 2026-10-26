@@ -67,6 +67,15 @@
     "chapterId": "prologue",
     "speaker": "喵喵",
     "text": "哇啊！泥巴全溅到肚皮上了……咪才没有害怕。咪只是……暂时不知道家在哪边。",
+    "next": "chapter1_intro",
+    "exit": "",
+    "scene": "alley"
+  },
+  {
+    "id": "chapter1_intro",
+    "chapterId": "alley",
+    "speaker": "旁白",
+    "text": "【第一章 · 陌生小巷】\n暴雨中的陌生小巷昏暗而冰冷，雨水拍打着锈蚀的铁皮招牌。就在喵喵蜷着身子不知所措时，旁边垃圾桶后的旧木箱微晃，探出了一个圆滚滚、毛茸茸的橘色大脑袋……",
     "next": "prologue_tuanzi",
     "exit": "",
     "scene": "alley"
