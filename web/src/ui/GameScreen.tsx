@@ -58,10 +58,25 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
                 <button onClick={() => onCommand({type: 'INTERACT', interactionId: 'market_pigeon_perch'})}>🕊️ 访问鸽子传言棚</button>
               </>
             )}
+            {state.phase === 'battle' && state.activeBattle && <button onClick={() => onCommand({type: 'COMPLETE_BATTLE', attemptId: state.activeBattle!.id, outcome: 'won'})}>⚡ 验收：直接胜利当前战斗</button>}
             {state.phase === 'preparation' && !chapterBattle && <button onClick={() => onCommand({type: 'START_BATTLE', stageId: 'alley_rescue'})}>⚔️ 开始塔防</button>}
             {state.flags.includes('alley_rescued') && state.phase !== 'home' && <button onClick={() => onCommand({type: 'GO_HOME'})}>🏡 直达花房</button>}
-            <button onClick={() => onCommand({type: 'START_STORY', nodeId: 'market_intro_1'})}>🌙 开启第二章剧情</button>
-            <button onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'market'})}>🌃 直达午夜集市</button>
+            <button onClick={() => {
+              if (state.activeBattle?.status === 'active') {
+                onCommand({type: 'COMPLETE_BATTLE', attemptId: state.activeBattle.id, outcome: 'won'});
+                setTimeout(() => onCommand({type: 'START_STORY', nodeId: 'market_intro_1'}), 120);
+              } else {
+                onCommand({type: 'START_STORY', nodeId: 'market_intro_1'});
+              }
+            }}>🌙 开启第二章剧情</button>
+            <button onClick={() => {
+              if (state.activeBattle?.status === 'active') {
+                onCommand({type: 'COMPLETE_BATTLE', attemptId: state.activeBattle.id, outcome: 'won'});
+                setTimeout(() => onCommand({type: 'GO_EXPLORE', mapId: 'market'}), 120);
+              } else {
+                onCommand({type: 'GO_EXPLORE', mapId: 'market'});
+              }
+            }}>🌃 直达午夜集市</button>
             {onReset && <button className="dev-reset-btn" onClick={onReset}>↺ 重置为新存档</button>}
           </div>
         )}
