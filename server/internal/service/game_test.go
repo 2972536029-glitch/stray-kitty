@@ -63,7 +63,49 @@ func finishStory(t *testing.T, g *service.Game, token string) domain.GameState {
 		}
 		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 	}
+	// Existing service scenarios begin in Rainy Alley. Complete the real L00
+	// attempt here; focused transition tests below inspect each intermediate state.
+	if s.Phase == "battle" && s.ActiveBattle != nil && s.ActiveBattle.StageID == "l00_tutorial" {
+		s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+		s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	}
 	return s
+}
+
+func TestPrologueStartsAndCompletesDistinctL00Tutorial(t *testing.T) {
+	g, token, _ := setup(t)
+	s, err := g.State(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	if s.Phase != "battle" || s.ActiveBattle == nil || s.ActiveBattle.StageID != "l00_tutorial" {
+		t.Fatalf("prologue ended at phase=%s battle=%+v", s.Phase, s.ActiveBattle)
+	}
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+	if !domain.Contains(s.Flags, "l00_completed") || domain.Contains(s.Flags, "alley_rescued") || domain.Contains(s.Cats, "diandian") || s.Currencies["stamp"] != 0 || s.Inventory["material"] != 0 {
+		t.Fatalf("tutorial completion leaked rescue state: %+v", s)
+	}
+	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	if s.Phase != "explore" || s.MapID != "alley" || s.ActiveBattle != nil {
+		t.Fatalf("tutorial did not hand off to Rainy Alley: %+v", s)
+	}
+}
+
+func TestL00LossRetriesWithNewServerAttempt(t *testing.T) {
+	g, token, _ := setup(t)
+	s, _ := g.State(token)
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	firstID := s.ActiveBattle.ID
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: firstID, Outcome: "lost"})
+	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	if s.Phase != "battle" || s.ActiveBattle == nil || s.ActiveBattle.StageID != "l00_tutorial" || s.ActiveBattle.ID == firstID || domain.Contains(s.Flags, "l00_completed") {
+		t.Fatalf("tutorial retry was not a fresh authoritative attempt: %+v", s)
+	}
 }
 func TestFullJourneyAndDurableIdempotency(t *testing.T) {
 	g, token, path := setup(t)

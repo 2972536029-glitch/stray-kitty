@@ -1,0 +1,1275 @@
+[
+  {
+    "id": "crate_event",
+    "title": "纸箱里的微光",
+    "text": "一只受惊的奶牛猫缩在纸箱里。附近的暗处正在靠近。找些光源，也许能保护它。",
+    "category": "story",
+    "tags": [
+      "social",
+      "pathfinding"
+    ],
+    "triggers": [
+      "node"
+    ],
+    "options": [
+      {
+        "id": "search",
+        "label": "仔细搜索周围的物资",
+        "outcomes": {
+          "crit": {
+            "text": "你找到了一盏明亮的小灯和新的爪印，点点愿意相信你。撤离路线变得更安全了。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 4,
+              "clue": 2
+            },
+            "flags": [
+              "diandian_trust",
+              "light_found"
+            ]
+          },
+          "success": {
+            "text": "一盏还能亮的小灯藏在纸箱后面。你们找到了物资和一条撤离线索。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "material": 3,
+              "clue": 1
+            },
+            "flags": [
+              "diandian_trust",
+              "light_found"
+            ]
+          },
+          "partial": {
+            "text": "找到了修补光源的材料，但响动惊动了暗处。点点跟上了你，下一场守护会更紧张。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "reward": {
+              "material": 2
+            },
+            "flags": [
+              "diandian_trust",
+              "shadow_noticed"
+            ]
+          },
+          "fail": {
+            "text": "没有找到可用光源，黑影已经靠近。你没有丢下点点，团子示意大家先向路灯下撤离。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "emergency_withdrawal"
+            ],
+            "situation": {
+              "kind": "forced_chase",
+              "storyNodeId": "event_forced_chase"
+            },
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "comfort",
+        "label": "先安抚点点，再寻找安全路线",
+        "outcomes": {
+          "crit": {
+            "text": "点点从纸箱里探出头，告诉你一条明亮的近路，还分享了藏好的物资。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 3,
+              "fish": 1,
+              "clue": 1
+            },
+            "flags": [
+              "diandian_trust",
+              "safe_route_found"
+            ]
+          },
+          "success": {
+            "text": "你耐心等到点点平静下来。她愿意跟你走，也把身边的物资推了过来。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "material": 2,
+              "fish": 1
+            },
+            "flags": [
+              "diandian_trust"
+            ]
+          },
+          "partial": {
+            "text": "点点愿意相信你，但安全出口被积水挡住了。带上能用的材料，一起从灯下绕过去。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "diandian_trust",
+              "route_detoured"
+            ],
+            "situation": {
+              "kind": "detour",
+              "storyNodeId": "event_detour"
+            }
+          },
+          "fail": {
+            "text": "点点还不敢走出纸箱，暗处却已经逼近。你陪在她身边，团子带大家撤向有光的地方。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "stayed_with_diandian"
+            ],
+            "situation": {
+              "kind": "forced_chase",
+              "storyNodeId": "event_forced_chase"
+            },
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "protect",
+        "label": "挺起胸膛虚张声势，护住纸箱",
+        "outcomes": {
+          "crit": {
+            "text": "你弓起后背、炸开浑身的毛发，发出一声极其威严的哈气！暗处被生生吓退，撤离路线安全了许多。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 3,
+              "fish": 1
+            },
+            "flags": [
+              "diandian_trust",
+              "brave_miaomiao"
+            ]
+          },
+          "success": {
+            "text": "你坚定地挡在纸箱前不肯后退。暗处的窥伺暂时止步，点点鼓起勇气紧紧跟在你的身后。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "material": 2,
+              "clue": 1
+            },
+            "flags": [
+              "diandian_trust",
+              "brave_miaomiao"
+            ]
+          },
+          "partial": {
+            "text": "你龇牙咧嘴地威慑暗处，虽稳住了阵脚，却不小心撞翻了身后的破铁罐。响动引来了更多阴影。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "reward": {
+              "material": 2
+            },
+            "flags": [
+              "diandian_trust",
+              "shadow_noticed"
+            ]
+          },
+          "fail": {
+            "text": "你试图吓退暗处，但体型差距让威慑落了空。黑影猛地逼近，团子急忙带大家先撤向路灯下！",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "emergency_withdrawal"
+            ],
+            "situation": {
+              "kind": "forced_chase",
+              "storyNodeId": "event_forced_chase"
+            },
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "rats_grain_event",
+    "title": "鼠群抢粮",
+    "text": "深巷的垃圾桶旁,一窝老鼠正拖着半袋漏了的猫粮往洞里搬。它们瘦得皮包骨,可你们也一天没吃了。团子咽了口口水:\"这袋粮,够咱们撑三天。\"",
+    "category": "risk",
+    "tags": [
+      "foraging"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "maps": [
+      "alley"
+    ],
+    "options": [
+      {
+        "id": "intercept",
+        "label": "冲上去截住粮袋",
+        "outcomes": {
+          "crit": {
+            "text": "你抢先一步守住洞口,鼠群迟疑着放下了粮袋,还朝墙角的鱼干铺子抬了抬爪子。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 3,
+              "clue": 1
+            },
+            "flags": [
+              "rats_truce"
+            ]
+          },
+          "success": {
+            "text": "鼠群丢下大半袋,退回了洞里。",
+            "reward": {
+              "material": 2
+            }
+          },
+          "partial": {
+            "text": "双方各拖走一半,谁也没吃饱。",
+            "reward": {
+              "material": 1
+            }
+          },
+          "fail": {
+            "text": "争抢的动静引来墙缝里的黑影,粮袋进了洞,你们僵在原地,直到它退回暗处。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "noise_attracted_shadow"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "negotiate_share",
+        "label": "学团子的样子,低声提议分粮",
+        "outcomes": {
+          "crit": {
+            "text": "鼠王收下这份心意,分了大半出来,还附赠一条地下粮道的消息。",
+            "reward": {
+              "material": 2,
+              "clue": 1
+            },
+            "flags": [
+              "rats_truce"
+            ]
+          },
+          "success": {
+            "text": "各分一半,皆大欢喜。",
+            "reward": {
+              "material": 2
+            }
+          },
+          "partial": {
+            "text": "它们只肯丢下几粒。",
+            "reward": {
+              "material": 1
+            }
+          },
+          "fail": {
+            "text": "谈崩了,粮袋整个消失在洞里。",
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "shadow_glimpse_event",
+    "title": "墙缝里的黑影",
+    "text": "路灯照不到的地方,一段影子在没有风的巷子里自己动了动。它没有脚步声,却一直在变长。喵喵的毛炸了起来。",
+    "category": "risk",
+    "tags": [
+      "shadow"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "maps": [
+      "alley"
+    ],
+    "options": [
+      {
+        "id": "stand_ground",
+        "label": "退到灯下,盯住它",
+        "outcomes": {
+          "crit": {
+            "text": "你盯住它,它却先一步缩了回去。团子压低声音说,他从没见过黑影退让。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 2
+            },
+            "flags": [
+              "shadow_retreat_witnessed"
+            ]
+          },
+          "success": {
+            "text": "你们退到灯下,影子在光圈外停住,不再靠近。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "shadow_first_seen"
+            ]
+          },
+          "partial": {
+            "text": "退得慢了半拍,影子蹭近了一段,团子低吼着才把它逼停在光边。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "shadow_first_seen"
+            ]
+          },
+          "fail": {
+            "text": "影子猛地窜过整条巷子!你们慌忙奔回便利店的灯光里,才敢回头。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "shadow_chased"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "take_detour",
+        "label": "绕远路,走亮着灯的店铺门口",
+        "outcomes": {
+          "crit": {
+            "text": "绕路时顺手捡到店门口晾着的小鱼干。",
+            "reward": {
+              "fish": 1,
+              "clue": 1
+            }
+          },
+          "success": {
+            "text": "平安绕过了那段影子。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "shadow_avoided"
+            ]
+          },
+          "partial": {
+            "text": "踩翻了门口的水盆,湿着爪子多走了两条街。"
+          },
+          "fail": {
+            "text": "影子竟抄了近道在前面等着!撞翻一排空瓶子,你们才逃回灯下。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "shadow_chased"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "momo_dark_detour",
+        "label": "让墨墨带路,贴着它熟悉的暗边走",
+        "requireCat": "momo",
+        "outcomes": {
+          "crit": {
+            "text": "墨墨走在最前面,影子在你们身侧停了停,竟自己退开了。他从影子和路灯之间,给你们挑出了一条谁也没发现的小道。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 1,
+              "fish": 1
+            },
+            "flags": [
+              "momo_guided"
+            ]
+          },
+          "success": {
+            "text": "墨墨贴着暗处绕了一圈,冲你们摇摇尾巴:安全。你们从影子够不着的屋檐下从容走过。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "momo_guided"
+            ]
+          },
+          "partial": {
+            "text": "墨墨带的路很稳,只是他一路竖着尾巴探了又探,大家走得比平时慢了些。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "momo_guided"
+            ]
+          },
+          "fail": {
+            "text": "墨墨在一处岔口停了很久,最后摇了摇头——这条路今晚也说不准。你们原路退回灯下,影子在远处晃了晃。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "momo_uncertain"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "feeder_bowl_event",
+    "title": "屋檐下的猫粮碗",
+    "text": "一户人家的窗台下摆着橘色猫碗,猫粮堆成小山,旁边压着一张字条:\"给巷子里的孩子们\"。屋里没有动静。",
+    "category": "opportunity",
+    "tags": [
+      "foraging"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "maps": [
+      "alley"
+    ],
+    "options": [
+      {
+        "id": "feast_here",
+        "label": "饱餐一顿再打包",
+        "outcomes": {
+          "crit": {
+            "text": "你们吃得心满意足,旁边晒着的旧毛巾正好能叼回去垫窝。",
+            "reward": {
+              "fish": 2,
+              "material": 2
+            },
+            "flags": [
+              "feeder_bowl_found"
+            ]
+          },
+          "success": {
+            "text": "难得的一顿饱饭。",
+            "reward": {
+              "fish": 2
+            },
+            "flags": [
+              "feeder_bowl_found"
+            ]
+          },
+          "partial": {
+            "text": "一群野鸽俯冲下来抢食,你们只护住了小半碗。",
+            "reward": {
+              "fish": 1
+            },
+            "flags": [
+              "feeder_bowl_found",
+              "pigeon_squabble"
+            ]
+          },
+          "fail": {
+            "text": "碗是空的,今天的份早就被吃光,只剩字条在风里轻轻晃。",
+            "flags": [
+              "feeder_bowl_empty"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "carry_back",
+        "label": "叼一些回去给伙伴们",
+        "outcomes": {
+          "crit": {
+            "text": "才装满嘴,正碰上出来换粮的好心人,又给添了一把。",
+            "reward": {
+              "fish": 2,
+              "material": 1
+            },
+            "flags": [
+              "feeder_bowl_found"
+            ]
+          },
+          "success": {
+            "text": "叼回了一份数量可观的口粮。",
+            "reward": {
+              "fish": 1,
+              "material": 1
+            },
+            "flags": [
+              "feeder_bowl_found"
+            ]
+          },
+          "partial": {
+            "text": "半路被树枝刮撒了大半。",
+            "reward": {
+              "fish": 1
+            },
+            "flags": [
+              "feeder_bowl_found"
+            ]
+          },
+          "fail": {
+            "text": "回程被一群麻雀截住,叼着的猫粮都撒在了半路。",
+            "flags": [
+              "sparrow_robbed"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "moving_blanket_event",
+    "title": "搬家季的旧毛毯",
+    "text": "楼道口堆着几只待扔的纸箱,最上面那条奶黄色毛毯还带着阳光和洗衣粉的味道。团子用爪子按了按:\"这条垫窝底,冬天就不冷了。\"",
+    "category": "opportunity",
+    "tags": [
+      "pathfinding"
+    ],
+    "triggers": [
+      "node"
+    ],
+    "options": [
+      {
+        "id": "haul_together",
+        "label": "齐心协力整条叼走",
+        "outcomes": {
+          "crit": {
+            "text": "毛毯连着一个结实的纸箱一起到手,箱底还压着一枚落单的猫爪邮票。",
+            "reward": {
+              "material": 2,
+              "stamps": 1
+            },
+            "flags": [
+              "blanket_secured"
+            ]
+          },
+          "success": {
+            "text": "毛毯顺利到手。",
+            "reward": {
+              "material": 2
+            },
+            "flags": [
+              "blanket_secured"
+            ]
+          },
+          "partial": {
+            "text": "毛毯太大,咬断了半条才拖得动。",
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "blanket_half"
+            ]
+          },
+          "fail": {
+            "text": "楼道门突然打开,你们只好空着爪子退了出来。",
+            "flags": [
+              "blanket_lost"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "check_first",
+        "label": "先检查纸箱有没有夹子再动手",
+        "outcomes": {
+          "crit": {
+            "text": "箱底果然有个小夹子,绕开之后,还翻出一副能拆成线团的旧手套。",
+            "reward": {
+              "material": 2,
+              "clue": 1
+            },
+            "flags": [
+              "trap_avoided",
+              "blanket_secured"
+            ]
+          },
+          "success": {
+            "text": "确认安全,顺利搬走了毛毯。",
+            "reward": {
+              "material": 2
+            },
+            "flags": [
+              "blanket_secured"
+            ]
+          },
+          "partial": {
+            "text": "检查花了太久,清洁车已经到了街口,匆忙只叼走半条。",
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "blanket_half"
+            ]
+          },
+          "fail": {
+            "text": "发现夹子时,毛毯已经被压进了清洁车,只来得及抢出一小角。",
+            "flags": [
+              "blanket_lost"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "trap_snap_event",
+    "title": "草丛里的寒光",
+    "text": "墙根的草丛里闪过一道金属的寒光。团子猛地刹住脚:\"都别动——那是两脚兽下的夹子,上个月老麻雀就是在这一带没的。\"",
+    "category": "risk",
+    "tags": [
+      "trap"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "maps": [
+      "alley"
+    ],
+    "options": [
+      {
+        "id": "climb_wall",
+        "label": "带大家从墙头绕过去",
+        "outcomes": {
+          "crit": {
+            "text": "你们踩着团子熟门熟路的路线翻上墙头,墙砖上还留着别的猫做的爪痕记号——一条避开夹子的安全道。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 1,
+              "material": 1
+            },
+            "flags": [
+              "safe_marks_found"
+            ]
+          },
+          "success": {
+            "text": "墙头有点滑,但大家一个接一个都过去了。草丛里的寒光留在身后,谁也没有回头。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "trap_avoided"
+            ]
+          },
+          "partial": {
+            "text": "下墙时一块砖松了,你们摔在草堆里,离夹子只差一个身位。惊出一身冷汗,脚步都乱了。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "trap_close_call"
+            ]
+          },
+          "fail": {
+            "text": "墙头的路被新装的铁丝网封死了。你们退回巷口,多绕了整整两条街才回到正路上。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "long_detour"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "disarm_stick",
+        "label": "捡树枝把夹子排掉",
+        "outcomes": {
+          "crit": {
+            "text": "你用一根结实的树枝压下了夹子,又把弹簧拆下来收好——这份铁件能换不少材料,以后也再不会夹到谁。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 2,
+              "clue": 1
+            },
+            "flags": [
+              "trap_disarmed"
+            ]
+          },
+          "success": {
+            "text": "\"咔哒\"一声,夹子咬住了树枝。危险解除,大家从它旁边从容走过。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "trap_disarmed"
+            ]
+          },
+          "partial": {
+            "text": "夹子弹起的一瞬擦着树枝飞了出去,砸在墙上冒出火星。声音太大,你们贴着墙根等了很久才敢动。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "trap_loud_snap"
+            ]
+          },
+          "fail": {
+            "text": "树枝太细,夹子咬住的一瞬你们全都吓得炸了毛,连滚带爬退开。等喘匀了气,谁也不想再靠近那丛草。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "trap_close_call"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "moving_sack_event",
+    "title": "会动的麻袋",
+    "text": "巷子深处传来挣扎声,一只麻袋在扭动,旁边有新鲜的爪痕。是受困的伙伴,还是诱饵?",
+    "category": "risk",
+    "tags": [
+      "trap",
+      "shadow"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "maps": [
+      "alley"
+    ],
+    "options": [
+      {
+        "id": "rush_untie",
+        "label": "直接扑上去解开绳结",
+        "outcomes": {
+          "crit": {
+            "text": "绳结比你想象中松。受惊的小猫钻出麻袋,抖抖毛飞快跑远——它留在袋底的爪印,深深指向仓库的方向。袋子里还有它攒下的一枚猫爪邮票。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 1,
+              "stamps": 1
+            },
+            "flags": [
+              "sack_cat_freed"
+            ]
+          },
+          "success": {
+            "text": "解开绳结,一只吓坏了的小猫探出头,冲你们眨了眨眼,消失在墙头。爪痕的方向记下了。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "sack_cat_freed"
+            ]
+          },
+          "partial": {
+            "text": "小猫解出来跑了,可扭打的声音惊动了暗处。团子压低身子:\"它记住我们了。\"",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "sack_noise"
+            ]
+          },
+          "fail": {
+            "text": "麻袋口猛地一沉——里面是空的,只有一块冰凉的石头。身后传来拖长的影子,你们头也不回地冲向路灯。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "sack_was_bait"
+            ],
+            "situation": {
+              "kind": "forced_chase",
+              "storyNodeId": "event_forced_chase"
+            },
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "watch_first",
+        "label": "先在暗处观察一会儿",
+        "outcomes": {
+          "crit": {
+            "text": "你看清了:确实是一只小猫,而麻袋旁边还堆着它偷偷攒下的物资。等它安静下来,你们一起把它放了出来,物资也一并带走了。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 1,
+              "material": 2
+            },
+            "flags": [
+              "sack_cat_freed"
+            ]
+          },
+          "success": {
+            "text": "观察了一阵,挣扎的节奏不对劲——是活物没错。你们绕到上风口,合力把它安全解了出来。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "sack_cat_freed"
+            ]
+          },
+          "partial": {
+            "text": "你们看清的时候,一只路过的野猫已经把麻袋咬开放走了同伴。地上只剩下它没来得及带走的物资。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "sack_missed"
+            ]
+          },
+          "fail": {
+            "text": "风向变了两次,等你们靠近时,麻袋已经瘪了下去——里面空空如也。白等了一场。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "sack_empty"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "momo_scout",
+        "label": "让墨墨贴着暗处摸过去",
+        "requireCat": "momo",
+        "outcomes": {
+          "crit": {
+            "text": "墨墨绕到麻袋后面,连里面小猫的毛色都看清了,还顺回了旁边一罐没人要的鱼罐头。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 1,
+              "fish": 1
+            },
+            "flags": [
+              "momo_scouted"
+            ]
+          },
+          "success": {
+            "text": "墨墨看清了:里面是受困的小猫。解开的时候它安安静静,一点也没有挣扎。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "momo_scouted"
+            ]
+          },
+          "partial": {
+            "text": "墨墨看清了里面的情况,可绕暗处的路太窄,你们等得心慌——天色又暗了一层。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "momo_scouted"
+            ]
+          },
+          "fail": {
+            "text": "墨墨的脚步声惊动了什么,麻袋自己滚进了更深的暗处。线索没拿到,大家贴着灯走了一段。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "momo_lost_track"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "wall_kitten_event",
+    "title": "墙头的小猫",
+    "text": "巷口的墙头上蹲着一只小猫——正是那只从麻袋里放出来的。它远远地认出了你们,冲这边短促地叫了一声,把爪子底下的东西推了下来。",
+    "category": "opportunity",
+    "tags": [
+      "social"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "requiresFlags": [
+      "sack_cat_freed"
+    ],
+    "maps": [
+      "alley"
+    ],
+    "options": [
+      {
+        "id": "greet_back",
+        "label": "仰头和它打个招呼",
+        "outcomes": {
+          "crit": {
+            "text": "小猫从墙头跃下,围着你们转了一圈,把叼来的鱼干和一小团毛线都留下了——原来它一直在附近看着你们。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "fish": 2,
+              "material": 2
+            },
+            "flags": [
+              "wall_kitten_friend"
+            ]
+          },
+          "success": {
+            "text": "小猫把一块压得皱皱的鱼干推到你们面前,蹭了蹭墙角的砖,又跳回墙头放哨去了。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "fish": 1
+            },
+            "flags": [
+              "wall_kitten_friend"
+            ]
+          },
+          "partial": {
+            "text": "小猫有点认生,犹豫半天只丢下来半块鱼干,就缩回了墙那头。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "fish": 1
+            },
+            "flags": [
+              "wall_kitten_shy"
+            ]
+          },
+          "fail": {
+            "text": "你们招呼打得急了些,小猫受惊,顺着墙头一溜烟跑远了。没关系,它记住你们就好。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "wall_kitten_spooked"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "leave_gift",
+        "label": "留一份口粮在墙角,不惊动它",
+        "outcomes": {
+          "crit": {
+            "text": "你们把口粮放好刚走开,小猫就跳下来吃了。等你们回头看,墙角多了一枚亮晶晶的猫爪邮票——像是它主人的谢礼。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "stamps": 1
+            },
+            "flags": [
+              "wall_kitten_friend"
+            ]
+          },
+          "success": {
+            "text": "小猫等你们走远才下来吃。这段墙头,往后就是它在替你们盯着了。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "wall_kitten_friend"
+            ]
+          },
+          "partial": {
+            "text": "口粮放下了,小猫却一直没下来。也许它还没那么信你们。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "wall_kitten_shy"
+            ]
+          },
+          "fail": {
+            "text": "一阵野猫的动静惊走了它,口粮也被别的猫叼走了。这座巷子里的日子,就是这样。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "wall_kitten_spooked"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "rats_gift_event",
+    "title": "鼠群的回礼",
+    "text": "墙洞口整整齐齐码着几颗完整的猫粮。洞口的水泥地上,一串细小的爪印被刻意拖出一道浅痕,弯弯地指向巷子深处——上次分粮的情,它们记着。",
+    "category": "opportunity",
+    "tags": [
+      "social",
+      "pathfinding"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "requiresFlags": [
+      "rats_truce"
+    ],
+    "maps": [
+      "alley"
+    ],
+    "options": [
+      {
+        "id": "follow_marks",
+        "label": "顺着浅痕往巷子深处走",
+        "outcomes": {
+          "crit": {
+            "text": "浅痕绕开了黑影盘踞的墙角,尽头是一条谁也没注意的排水沟便道。团子看看爪印又看看你们:\"它们把最熟的路,让给你们了。\"",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 1,
+              "material": 1
+            },
+            "flags": [
+              "rats_shared_path"
+            ]
+          },
+          "success": {
+            "text": "浅痕领着你们绕开了两处黑影徘徊的死角。这条路,是鼠群用了很多遍的。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "flags": [
+              "rats_shared_path"
+            ]
+          },
+          "partial": {
+            "text": "浅痕走到一半被新落的雨水糊住了。剩下的路,你们贴着灯自己走完。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "rats_path_faded"
+            ]
+          },
+          "fail": {
+            "text": "浅痕的尽头是一堵实打实的墙。你们对视了一眼——也许它们只是想把猫粮搬远一点。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "rats_path_dead"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      },
+      {
+        "id": "return_gift",
+        "label": "往洞口放一份口粮,还礼",
+        "outcomes": {
+          "crit": {
+            "text": "第二天再路过,洞口多了一小堆亮晶晶的杂物:锡纸、绳头、半枚旧币。鼠群不懂猫的邮票,但它们懂还情。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 2
+            },
+            "flags": [
+              "rats_allied"
+            ]
+          },
+          "success": {
+            "text": "口粮放下了。洞里静了一会儿,然后传来细细的、满足的啃食声。这笔账,两清了。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "rats_allied"
+            ]
+          },
+          "partial": {
+            "text": "口粮刚放下就被夜鸟叼走了一半。洞里的动静停了停,又静下去。心意到了就好。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "rats_gift_stolen"
+            ]
+          },
+          "fail": {
+            "text": "洞里静悄悄的,像是很久没有鼠群回来了。你们把口粮留在原处——它们回来时,会看见的。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "rats_gone"
+            ],
+            "reward": {
+              "clue": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "alley_breeze_event",
+    "title": "巷口的晚风",
+    "text": "晚风把谁家窗口的饭香吹进了巷子。窗台上摆着一只小碟,碟边的字条被胶带仔细地封了角。这样的傍晚,这条巷子也有自己的温度。",
+    "category": "opportunity",
+    "tags": [
+      "social"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "maps": [
+      "alley"
+    ],
+    "repeatable": true,
+    "options": [
+      {
+        "id": "pause_watch",
+        "label": "在窗台下停一会儿,打个哈欠",
+        "outcomes": {
+          "crit": {
+            "text": "小碟里居然有一条小鱼干,还是温的。放碟的人就在窗帘后面,轻轻笑了一声。",
+            "reward": {
+              "fish": 1
+            },
+            "flags": [
+              "warm_window"
+            ]
+          },
+          "success": {
+            "text": "你们靠着窗台晒了会儿余温。碟是空的,但字条上的字很暖。",
+            "flags": [
+              "warm_window"
+            ]
+          },
+          "partial": {
+            "text": "刚走近,屋里的狗叫了一声。你们退回墙根,风里的饭香还在。"
+          },
+          "fail": {
+            "text": "檐口的积水滴了满头。晚风不认识你们,今天先记个脸熟。"
+          }
+        }
+      },
+      {
+        "id": "move_on",
+        "label": "贴着墙根慢慢走过去",
+        "outcomes": {
+          "crit": {
+            "text": "墙根的水泥还是白天晒热的。你们排成一排走过去,影子被路灯拉得很长,很齐。",
+            "flags": [
+              "calm_walk"
+            ]
+          },
+          "success": {
+            "text": "安安静静地走完了这条巷子。谁也没说话,但都走得很稳。",
+            "flags": [
+              "calm_walk"
+            ]
+          },
+          "partial": {
+            "text": "半路一只夜鸟扑棱起来,吓了大家一跳,又都装作没事。"
+          },
+          "fail": {
+            "text": "风把一片广告纸拍在脸上,甩了半天。巷子里的生活,不总是一帆风顺。"
+          }
+        }
+      }
+    ]
+  }
+]

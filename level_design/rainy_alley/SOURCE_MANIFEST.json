@@ -1,0 +1,26 @@
+{
+  "name": "Rainy Alley v0.9 SVG canonical gameplay + unchanged user-approved art",
+  "geometryCoordinateSpace": "1188x726",
+  "artPixelDimensions": [
+    1672,
+    941
+  ],
+  "artSource": "霓虹雨夜迷宫港区.png; exact source bytes also used in Rainy Alley v1.2.1",
+  "note": "SVG and background match is a previously reviewed target; do not silently rescale/mutate either source. v12.1 registration was a review transform. Do not claim pixel-perfect match without overlay QA.",
+  "hashes_sha256": {
+    "level_design/rainy_alley/source/rainy_alley_v09.svg": "b16085bfc4105ceac49762262c6e88e4974f75a73c634d247a819aeb7ce2f6cd",
+    "level_design/rainy_alley/source/geometry.json": "d17d0a2ce98d516916ba8fdafa65abb91d25c8696a6376b9a524b28ee25f3540",
+    "level_design/rainy_alley/source/level_objects.json": "71b03e2ab0b6d5ed5216416473373ecc403ae9da4ed8f632937fc1115f2b0834",
+    "level_design/rainy_alley/art/rainy_alley_background.png": "4303914bac03a742bdcfe687aaf830218c235db62c8d6611511abf888d508113",
+    "level_design/rainy_alley/reference/events_alley_branch_v13.json": "47a13189724591b9d5df1e86d9651bc0082baea8c0a99a98cc6a83d9edd121dd",
+    "level_design/rainy_alley/reference/story_alley_branch.json": "b497289d94c8a2b4b77bc3c7357ad6ff852bb1e3d022f7b43522c08de9b97919",
+    "level_design/rainy_alley/reference/preview_v09.js": "8b99ccfe22b1cc46d7ae8c3d502aaf58900cddaeaba763ed1623a043ee734d37"
+  },
+  "source_refs": {
+    "svg": "Rainy_Alley_Events_Interactive_v09.zip",
+    "png": "Rainy_Alley_v12_1_Background_Fixed.zip",
+    "story": "feat-story-chapters-1-2 (original branch source, reference copy in package)",
+    "events": "feat-events-v13 (original branch source, reference copy in package)",
+    "battle": "feat-l00-main-integration (NOT copied into this pack)"
+  }
+}

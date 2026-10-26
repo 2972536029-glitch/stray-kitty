@@ -1,0 +1,107 @@
+{
+  "version": "graybox-v0.4-events-v0.8",
+  "coordinateSpace": "locked graybox local, 1188x726; not yet registered to PNG",
+  "interactionRadius": 37,
+  "fixed": [
+    {
+      "id": "alley_blanket_stack",
+      "label": "旧毛毯",
+      "kind": "node_event",
+      "eventId": "moving_blanket_event",
+      "x": 454,
+      "y": 231,
+      "once": true
+    },
+    {
+      "id": "alley_scratch_marks",
+      "label": "爪痕",
+      "kind": "inspection",
+      "x": 759,
+      "y": 310,
+      "text": "【墙角抓痕】墙砖上留着好几道焦急的抓痕……似乎曾有猫在这里激烈挣扎逃避什么。"
+    },
+    {
+      "id": "alley_puddle_reflection",
+      "label": "雨水倒影",
+      "kind": "inspection",
+      "x": 163,
+      "y": 355,
+      "text": "【雨水倒影】水里的毛发全都沾了泥点子……两脚兽要是看到，肯定又要心疼地拿热毛巾抱我了。"
+    },
+    {
+      "id": "alley_empty_fish_can",
+      "label": "空鱼罐头",
+      "kind": "inspection",
+      "x": 210,
+      "y": 428,
+      "text": "【空鱼罐头】被雨水洗刷干净的破罐头。看来流浪的伙伴们经常要忍饥挨饿。"
+    },
+    {
+      "id": "alley_fish_dry",
+      "label": "鱼干",
+      "kind": "pickup_proposed",
+      "x": 759,
+      "y": 637,
+      "reward": {
+        "food": 1
+      },
+      "once": true
+    },
+    {
+      "id": "alley_crate",
+      "label": "点点 · 纸箱",
+      "kind": "node_event",
+      "eventId": "crate_event",
+      "x": 975,
+      "y": 415,
+      "once": true
+    },
+    {
+      "id": "alley_poster",
+      "label": "寻猫启事",
+      "kind": "story",
+      "storyNodeId": "poster_1",
+      "x": 997,
+      "y": 361,
+      "requiresFlag": "alley_rescued",
+      "once": true
+    }
+  ],
+  "zones": [
+    {
+      "id": "rainy_random_west",
+      "x": 170,
+      "y": 487,
+      "r": 23
+    },
+    {
+      "id": "rainy_random_central",
+      "x": 650,
+      "y": 510,
+      "r": 28
+    },
+    {
+      "id": "rainy_random_east",
+      "x": 780,
+      "y": 400,
+      "r": 30
+    }
+  ],
+  "spatialPlaceholders": [
+    {
+      "id": "alley_battle_approach",
+      "label": "Battle approach",
+      "x": 1094,
+      "y": 274,
+      "owner": "battle/story team"
+    },
+    {
+      "id": "alley_contextual_exit",
+      "label": "Contextual exit",
+      "x": 1066,
+      "y": 166,
+      "owner": "exit/story team",
+      "physicalRoute": false
+    }
+  ]
+}

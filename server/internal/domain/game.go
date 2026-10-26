@@ -39,12 +39,12 @@ type GameState struct {
 	CompletedStages []string          `json:"completedStages"`
 	PendingEventID  string            `json:"pendingEventId"`
 	// 随机事件:来源标记(node=交互点/random=随机触发)、本局已抽卡与探索里程。
-	PendingEventSource string       `json:"pendingEventSource,omitempty"`
-	DrawnEvents        []string     `json:"drawnEvents,omitempty"`
-	ExploreDistance    int          `json:"exploreDistance,omitempty"`
-	ActiveBattle       *Attempt     `json:"activeBattle"`
-	LastResult         Result       `json:"lastResult"`
-	EventState         *EventState  `json:"eventState,omitempty"`
+	PendingEventSource string      `json:"pendingEventSource,omitempty"`
+	DrawnEvents        []string    `json:"drawnEvents,omitempty"`
+	ExploreDistance    int         `json:"exploreDistance,omitempty"`
+	ActiveBattle       *Attempt    `json:"activeBattle"`
+	LastResult         Result      `json:"lastResult"`
+	EventState         *EventState `json:"eventState,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -65,6 +65,7 @@ type Command struct {
 	PoolID        string `json:"poolId,omitempty"`
 	ProductID     string `json:"productId,omitempty"`
 	MapID         string `json:"mapId,omitempty"`
+	ZoneID        string `json:"zoneId,omitempty"`
 	// REPORT_MOVE 携带的本次行走里程(画布像素)。
 	Distance int `json:"distance,omitempty"`
 }

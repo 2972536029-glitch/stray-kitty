@@ -11,13 +11,14 @@ import (
 )
 
 type Game struct {
-	Store   *repository.Store
-	Catalog domain.Catalog
-	Random  func(int) (int, error)
+	Store           *repository.Store
+	Catalog         domain.Catalog
+	Random          func(int) (int, error)
+	RainyZoneChance int
 }
 
 func New(store *repository.Store, c domain.Catalog) *Game {
-	return &Game{Store: store, Catalog: c, Random: func(max int) (int, error) {
+	return &Game{Store: store, Catalog: c, RainyZoneChance: 550, Random: func(max int) (int, error) {
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(max)))
 		if err != nil {
 			return 0, err
@@ -137,6 +138,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.StoryNodeID = n.Next
 					return nil
 				}
+				if n.ID == "prologue_2" {
+					s.StoryNodeID = ""
+					return g.startBattle(s, "l00_tutorial", false)
+				}
 				s.StoryNodeID = ""
 				s.Phase = n.Exit
 				if n.Exit == "explore" {
@@ -159,8 +164,36 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		if err := domain.RequirePhase(*s, "explore"); err != nil {
 			return err
 		}
-		if s.MapID == "alley" && domain.Contains(s.Flags, "alley_rescued") {
-			return domain.Fail("ALREADY_COMPLETED", "伙伴已经获救，可以回花房看看", 409)
+		if s.MapID == "alley" {
+			switch c.InteractionID {
+			case "alley_fish_dry":
+				if !domain.Contains(s.Flags, "alley_fish_collected") {
+					s.Inventory["food"]++
+					s.Flags = domain.Add(s.Flags, "alley_fish_collected")
+					s.LastResult = domain.Result{Message: "找到了一条鱼干。"}
+				}
+				return nil
+			case "alley_poster":
+				if !domain.Contains(s.Flags, "alley_rescued") {
+					return domain.Fail("INTERACTION_LOCKED", "先帮助纸箱里的伙伴", 409)
+				}
+				if domain.Contains(s.Flags, "lost_poster_found") {
+					return nil
+				}
+				s.Phase = "dialogue"
+				s.StoryNodeID = "poster_1"
+				return nil
+			case "alley_crate":
+				if domain.Contains(s.Flags, "alley_rescued") {
+					return domain.Fail("ALREADY_COMPLETED", "伙伴已经获救", 409)
+				}
+			case "alley_blanket_stack":
+				if domain.Contains(s.Flags, "blanket_secured") || domain.Contains(s.Flags, "blanket_half") || domain.Contains(s.Flags, "blanket_lost") {
+					return domain.Fail("ALREADY_COMPLETED", "旧毛毯已经检查过了", 409)
+				}
+			default:
+				return invalid()
+			}
 		}
 		for _, m := range g.Catalog.Maps {
 			if m.ID == s.MapID {
@@ -177,6 +210,8 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		return invalid()
 	case "REPORT_MOVE":
 		return g.reportMove(s, c.Distance)
+	case "CHECK_RANDOM_ZONE":
+		return g.checkRandomZone(s, c.ZoneID)
 	case "CHOOSE_EVENT":
 		return g.chooseEvent(s, c.EventID, c.OptionID)
 	case "START_BATTLE":
@@ -186,22 +221,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		if s.Phase != "preparation" && !domain.Contains(s.Flags, "alley_rescued") {
 			return domain.Fail("STAGE_LOCKED", "请先探索小巷并完成事件", 409)
 		}
-		for _, stage := range g.Catalog.Stages {
-			if stage.ID == c.StageID && stage.Status == "demo" {
-				id, err := ID()
-				if err != nil {
-					return err
-				}
-				s.ActiveBattle = &domain.Attempt{ID: id, StageID: stage.ID, Status: "active"}
-				if s.EventState != nil {
-					modifiers := s.EventState.PendingModifiers
-					s.ActiveBattle.Modifiers = &modifiers
-				}
-				s.Phase = "battle"
-				return nil
-			}
+		if c.StageID == "l00_tutorial" {
+			return invalid()
 		}
-		return invalid()
+		return g.startBattle(s, c.StageID, true)
 	case "COMPLETE_BATTLE":
 		if err := domain.RequirePhase(*s, "battle"); err != nil {
 			return err
@@ -211,6 +234,15 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		}
 		s.ActiveBattle.Status = c.Outcome
 		s.Phase = "settlement"
+		if s.ActiveBattle.StageID == "l00_tutorial" {
+			s.LastResult = domain.Result{Outcome: c.Outcome, Message: "再熟悉一下光源的摆放，然后重新试试。"}
+			if c.Outcome == "won" {
+				s.LastResult.Message = "教学防线守住了。小巷的入口就在前方。"
+				s.CompletedStages = domain.Add(s.CompletedStages, "l00_tutorial")
+				s.Flags = domain.Add(s.Flags, "l00_completed")
+			}
+			return nil
+		}
 		s.LastResult = domain.Result{Outcome: c.Outcome, Message: "防线需要再调整一下。伙伴仍在等待，准备好就再试一次。"}
 		if c.Outcome == "won" {
 			s.LastResult.Message = "撤离路线已经照亮，点点安全了！"
@@ -233,6 +265,16 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "CONTINUE":
 		if err := domain.RequirePhase(*s, "settlement"); err != nil {
 			return err
+		}
+		if s.ActiveBattle != nil && s.ActiveBattle.StageID == "l00_tutorial" {
+			if s.LastResult.Outcome == "lost" {
+				return g.startBattle(s, "l00_tutorial", false)
+			}
+			s.Phase = "explore"
+			s.MapID = "alley"
+			s.ExploreDistance = -randomGrace
+			s.ActiveBattle = nil
+			return nil
 		}
 		if s.LastResult.Outcome == "lost" {
 			s.Phase = "preparation"
@@ -340,4 +382,24 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	default:
 		return domain.Fail("UNSUPPORTED_COMMAND", "此命令尚未实现", 400)
 	}
+}
+
+func (g *Game) startBattle(s *domain.GameState, stageID string, includeModifiers bool) error {
+	for _, stage := range g.Catalog.Stages {
+		if stage.ID != stageID || stage.Status != "demo" {
+			continue
+		}
+		id, err := ID()
+		if err != nil {
+			return err
+		}
+		s.ActiveBattle = &domain.Attempt{ID: id, StageID: stage.ID, Status: "active"}
+		if includeModifiers && s.EventState != nil {
+			modifiers := s.EventState.PendingModifiers
+			s.ActiveBattle.Modifiers = &modifiers
+		}
+		s.Phase = "battle"
+		return nil
+	}
+	return domain.Fail("INVALID_COMMAND", "命令参数或目标无效", 400)
 }

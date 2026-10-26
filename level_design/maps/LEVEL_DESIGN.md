@@ -382,3 +382,25 @@ After implementation changes: run the repository's existing `npm run check` (or 
 ---
 
 **Next step:** Agree on a Rainy Alley graybox layout and the single L00-to-main-story handoff. Then implement an end-to-end alley slice, with a tiny separate three-elevation Market movement test. Do not build out all five art maps before the movement and event loops work.
+
+## 9. Rainy Alley production geometry contract
+
+The authoritative chain is: locked graybox v0.4 → `level_design/rainy_alley/source/rainy_alley_v09.svg` gameplay geometry → approved `level_design/rainy_alley/art/rainy_alley_background.png` background → React/Go integration. Runtime movement and click-to-move use the same SVG-derived geometry through `web/src/modules/rainyAlley/runtimeGeometry.ts`; Tiled/TMJ files and their grid are not runtime authority.
+
+The SVG-derived runtime geometry retains the reviewed western courtyard railing, claw-mark facade, eastern bridge handrail, blanket footprint, narrow passages, crate squeeze, and southeast fish-platform connector. The elevated top-right exit remains a contextual post-battle transition rather than a continuous physical walking route.
+
+### 9.1 Random-event zone contract
+
+The SVG source and `level_objects.json` define exactly three circular authoring zones in the 1188 × 726 graybox coordinate space:
+
+| Stable name | Circle (x, y, radius) |
+|---|---|
+| `rainy_random_west` | `170, 487, 23` |
+| `rainy_random_central` | `650, 510, 28` |
+| `rainy_random_east` | `780, 400, 30` |
+
+These objects define spatial eligibility only. Each zone gets one persistent attempt per journey and uses the server-configured 55% trigger probability.
+
+### 9.2 Existing random-event compatibility
+
+The React integration sends `CHECK_RANDOM_ZONE` with the stable `zoneId`. The Go transport admits that field and delegates to the existing service event-selection and resolution path; `REPORT_MOVE` remains the separate distance-driven path for other exploration behavior.

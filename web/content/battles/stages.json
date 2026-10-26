@@ -1,5 +1,13 @@
 [
   {
+    "id": "l00_tutorial",
+    "name": "窗外的第一道防线",
+    "status": "demo",
+    "lanes": 3,
+    "columns": 5,
+    "waves": 2
+  },
+  {
     "id": "alley_rescue",
     "name": "守护纸箱里的伙伴",
     "status": "demo",

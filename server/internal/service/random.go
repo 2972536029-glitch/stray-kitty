@@ -21,6 +21,9 @@ func (g *Game) reportMove(s *domain.GameState, distance int) error {
 	if distance <= 0 || distance > randomMaxReport {
 		return domain.Fail("INVALID_COMMAND", "里程上报无效", 400)
 	}
+	if s.MapID == "alley" {
+		return nil
+	}
 	s.ExploreDistance += distance
 	for s.ExploreDistance >= randomCheckSegment {
 		s.ExploreDistance -= randomCheckSegment
@@ -43,6 +46,41 @@ func (g *Game) reportMove(s *domain.GameState, distance int) error {
 
 // 从当前区域的随机池抽卡:排除已抽卡的机遇/风险事件,危险度决定是否触发与抽哪一类。
 func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, error) {
+	return g.drawRandomEventWithChance(s, -1)
+}
+
+func (g *Game) checkRandomZone(s *domain.GameState, zoneID string) error {
+	if err := domain.RequirePhase(*s, "explore"); err != nil {
+		return err
+	}
+	if s.MapID != "alley" {
+		return domain.Fail("INVALID_COMMAND", "随机区域不属于当前地图", 400)
+	}
+	switch zoneID {
+	case "rainy_random_west", "rainy_random_central", "rainy_random_east":
+	default:
+		return domain.Fail("INVALID_COMMAND", "随机区域无效", 400)
+	}
+	flag := "attempted_" + zoneID
+	if domain.Contains(s.Flags, flag) {
+		return nil
+	}
+	s.Flags = domain.Add(s.Flags, flag)
+	id, triggered, err := g.drawRandomEventWithChance(*s, g.RainyZoneChance)
+	if err != nil {
+		return err
+	}
+	if triggered {
+		s.Phase = "event"
+		s.PendingEventID = id
+		s.PendingEventSource = "random"
+		s.DrawnEvents = domain.Add(s.DrawnEvents, id)
+		s.LastResult = domain.Result{Message: "巷子里的风停了一下——好像有什么要发生了。"}
+	}
+	return nil
+}
+
+func (g *Game) drawRandomEventWithChance(s domain.GameState, triggerChance int) (string, bool, error) {
 	danger := 0
 	for _, m := range g.Catalog.Maps {
 		if m.ID == s.MapID {
@@ -73,11 +111,20 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, error) {
 	if len(risks)+len(opportunities) == 0 {
 		return "", false, nil // 区域池已抽干,这段路安全了。
 	}
+	if triggerChance < 0 {
+		triggerChance = randomTriggerChance[danger]
+	}
+	if triggerChance < 0 {
+		triggerChance = 0
+	}
+	if triggerChance > 1000 {
+		triggerChance = 1000
+	}
 	roll, err := g.Random(1000)
 	if err != nil {
 		return "", false, err
 	}
-	if roll >= randomTriggerChance[danger] {
+	if roll >= triggerChance {
 		return "", false, nil
 	}
 	pool := opportunities

@@ -2,13 +2,25 @@ package service_test
 
 import (
 	"stray-kitty/server/internal/domain"
+	"stray-kitty/server/internal/service"
 	"testing"
 )
+
+func useMarketRandomPool(t *testing.T, g *service.Game, token string) domain.GameState {
+	t.Helper()
+	for index := range g.Catalog.Events {
+		if domain.Contains(g.Catalog.Events[index].Triggers, "random") {
+			g.Catalog.Events[index].Maps = domain.Add(g.Catalog.Events[index].Maps, "market")
+		}
+	}
+	return execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+}
 
 // 进入探索后有保护里程;保护期内上报不触发,过保护后危险度 1 必触发(随机数恒为 0)。
 func TestRandomEventTriggersAfterGraceAndReturnsToExplore(t *testing.T) {
 	g, token, _ := setup(t)
 	s := finishStory(t, g, token)
+	s = useMarketRandomPool(t, g, token)
 	if s.Phase != "explore" {
 		t.Fatalf("expected explore, got %s", s.Phase)
 	}
@@ -40,6 +52,7 @@ func TestRandomEventTriggersAfterGraceAndReturnsToExplore(t *testing.T) {
 func TestRandomPoolDrainsWithoutRepeat(t *testing.T) {
 	g, token, _ := setup(t)
 	finishStory(t, g, token)
+	useMarketRandomPool(t, g, token)
 	drawn := map[string]bool{}
 	for i := 0; i < 40 && len(drawn) < 3; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
@@ -77,6 +90,7 @@ func TestRandomPoolDrainsWithoutRepeat(t *testing.T) {
 func TestReportMoveNoTriggerKeepsExploring(t *testing.T) {
 	g, token, _ := setup(t)
 	finishStory(t, g, token)
+	useMarketRandomPool(t, g, token)
 	g.Random = func(max int) (int, error) { return max - 1, nil } // 触发概率掷出最大值,永不命中
 	for i := 0; i < 10; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})

@@ -1,0 +1,110 @@
+[
+  {
+    "id": "rescue_1",
+    "chapterId": "alley",
+    "speaker": "点点",
+    "text": "呜……谢谢你们！要是没有你们，我早就被那些冰冷的黑影抓走了……小巷深处最近经常有暗影游荡，已经有好几个伙伴无声无息地失踪了。",
+    "next": "poster_1",
+    "exit": "",
+    "scene": "alley"
+  },
+  {
+    "id": "poster_1",
+    "chapterId": "alley",
+    "speaker": "喵喵",
+    "text": "墙上这只猫……怎么和咪一模一样？还有这个名字。原来，家里也一直在找咪。",
+    "next": "poster_warmth",
+    "exit": "",
+    "scene": "poster",
+    "setFlags": [
+      "lost_poster_found"
+    ]
+  },
+  {
+    "id": "poster_warmth",
+    "chapterId": "alley",
+    "speaker": "喵喵",
+    "text": "海报上印着咪最宝贝的天蓝色饭碗，还有两脚兽焦急写下的字迹……原来两脚兽没有把咪忘掉，他们真的好着急。",
+    "next": "poster_2",
+    "exit": "",
+    "scene": "poster"
+  },
+  {
+    "id": "poster_2",
+    "chapterId": "alley",
+    "speaker": "点点",
+    "text": "你已经找到回家的线索了。现在就走，也来得及。别像我们一样在街头挨饿受冻……",
+    "next": "poster_hesitate",
+    "exit": "",
+    "scene": "poster"
+  },
+  {
+    "id": "poster_hesitate",
+    "chapterId": "alley",
+    "speaker": "团子",
+    "text": "团子也叹了口气：“点点说得对。街头的黑影越来越危险，日子不好过。趁天还没全黑，顺着熟悉的气味回你的暖毯上去吧。”",
+    "next": "poster_3",
+    "exit": "",
+    "scene": "poster"
+  },
+  {
+    "id": "poster_3",
+    "chapterId": "alley",
+    "speaker": "喵喵",
+    "text": "……先把失踪的猫找回来。回家的路不会跑掉，但它们现在需要咪。",
+    "next": "poster_resolve",
+    "exit": "",
+    "scene": "poster"
+  },
+  {
+    "id": "poster_resolve",
+    "chapterId": "alley",
+    "speaker": "喵喵",
+    "text": "本咪可是微服私访的领地巡察官！哪有巡察官丢下受难伙伴自己跑路的道理！听好了，先把所有失踪的猫咪都救出来，本咪再光荣回家！",
+    "next": "rescue_tuanzi_admire",
+    "exit": "",
+    "scene": "poster"
+  },
+  {
+    "id": "rescue_tuanzi_admire",
+    "chapterId": "alley",
+    "speaker": "团子",
+    "text": "团子咧嘴笑了：“好样的小少爷！真有骨气！既然要干票大的，就不能让点点再窝在破纸箱里受寒。”",
+    "next": "rescue_greenhouse_proposal",
+    "exit": "",
+    "scene": "poster"
+  },
+  {
+    "id": "rescue_greenhouse_proposal",
+    "chapterId": "alley",
+    "speaker": "团子",
+    "text": "老街转角有一座被遗忘的废弃花房。虽然漏雨破旧，但骨架结实，只要咱们一起收拾，就能变成谁也闯不进来的根据地！",
+    "next": "rescue_2",
+    "exit": "",
+    "scene": "alley"
+  },
+  {
+    "id": "event_forced_chase",
+    "chapterId": "alley",
+    "speaker": "团子",
+    "text": "这条路暂时走不通！喵喵陪着点点，我去前面的灯下引路。先撤到有光的地方，再守住她的出口。",
+    "next": "",
+    "exit": "preparation",
+    "scene": "alley",
+    "setFlags": [
+      "withdrawal_route_reached"
+    ]
+  },
+  {
+    "id": "event_detour",
+    "chapterId": "alley",
+    "speaker": "点点",
+    "text": "原来的出口被积水挡住了……沿着这边的墙走吧。谢谢你愿意等我，我们一起到路灯下重新准备。",
+    "next": "",
+    "exit": "preparation",
+    "scene": "alley",
+    "setFlags": [
+      "detour_completed"
+    ]
+  }
+]

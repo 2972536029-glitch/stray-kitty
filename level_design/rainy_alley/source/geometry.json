@@ -1,0 +1,164 @@
+{
+  "version": "graybox-v0.4-svg-events-v0.9",
+  "units": "graybox-local-pixels",
+  "coordinate_space": {
+    "width": 1188,
+    "height": 726,
+    "graybox_reference_crop": [
+      27,
+      115,
+      1215,
+      841
+    ]
+  },
+  "future_art_registration": {
+    "approved_png_dimensions": [
+      1672,
+      941
+    ],
+    "status": "NOT REGISTERED; review geometry first"
+  },
+  "player_test_radius_graybox_pixels": 8,
+  "walkable_path_d": "M 88 659 L 153 659 L 153 638 L 175 637 L 176 615 L 197 615 L 198 681 L 219 681 L 220 703 L 461 703 L 461 682 L 484 680 L 483 572 L 549 571 L 549 550 L 572 548 L 572 461 L 616 462 L 616 549 L 637 549 L 638 571 L 770 572 L 770 593 L 748 594 L 747 616 L 726 616 L 726 637 L 747 637 L 748 659 L 769 659 L 769 638 L 791 637 L 791 616 L 813 615 L 813 594 L 835 593 L 835 572 L 857 571 L 857 550 L 880 548 L 879 506 L 901 505 L 902 483 L 989 483 L 989 462 L 1012 460 L 1011 374 L 1077 373 L 1077 352 L 1100 350 L 1099 286 L 1143 285 L 1143 264 L 1166 262 L 1165 242 L 1145 242 L 1143 239 L 1143 220 L 1107 220 L 1107 225 L 1105 227 L 1034 227 L 1034 307 L 968 308 L 968 329 L 946 330 L 945 418 L 925 418 L 923 415 L 923 396 L 902 395 L 901 374 L 793 374 L 791 371 L 792 329 L 901 329 L 901 326 L 873 325 L 873 269 L 901 268 L 901 264 L 748 264 L 748 285 L 726 286 L 725 374 L 551 374 L 549 371 L 549 308 L 593 307 L 593 286 L 616 284 L 615 198 L 594 198 L 593 176 L 572 176 L 572 197 L 550 198 L 549 242 L 485 242 L 483 239 L 483 198 L 462 197 L 461 154 L 440 154 L 439 132 L 308 132 L 308 153 L 286 154 L 285 330 L 155 330 L 153 327 L 153 242 L 132 242 L 131 220 L 110 220 L 110 241 L 88 242 L 88 349 L 93 349 L 95 351 L 95 373 L 110 374 L 110 395 L 198 396 L 198 461 L 132 462 L 132 483 L 110 484 L 110 593 L 88 594 L 89 612 L 84 617 L 81 627 L 84 637 L 89 642 Z M 681 440 L 813 439 L 814 505 L 683 506 L 681 503 Z M 264 395 L 396 396 L 396 549 L 418 550 L 417 638 L 265 638 L 263 635 L 263 572 L 243 572 L 241 569 L 241 550 L 176 549 L 176 527 L 352 526 L 351 522 L 315 522 L 313 519 L 313 471 L 351 470 L 351 462 L 264 461 L 263 447 L 260 447 L 258 445 L 258 417 L 260 415 L 263 415 Z M 352 307 L 434 307 L 436 305 L 543 305 L 545 307 L 545 335 L 543 337 L 484 337 L 484 417 L 506 418 L 505 506 L 463 506 L 461 503 L 461 352 L 441 352 L 439 349 L 439 337 L 436 337 L 434 335 L 434 330 L 353 330 L 351 327 Z M 351 198 L 417 197 L 418 241 L 353 242 L 351 239 Z M 368 153 L 370 151 L 429 151 L 431 153 L 432 161 L 431 181 L 429 183 L 370 183 L 368 181 Z",
+  "obstacle_paths": {
+    "pushcart": "M315 474 H367 V521 H315 Z"
+  },
+  "landmarks": [
+    {
+      "id": "entrance",
+      "label": "Entrance",
+      "x": 111,
+      "y": 626,
+      "type": "start"
+    },
+    {
+      "id": "flooded_end",
+      "label": "Flooded dead end",
+      "x": 125,
+      "y": 265,
+      "type": "optional"
+    },
+    {
+      "id": "north_dead_end",
+      "label": "North dead end",
+      "x": 373,
+      "y": 178,
+      "type": "optional"
+    },
+    {
+      "id": "blanket",
+      "label": "Old blanket",
+      "x": 454,
+      "y": 231,
+      "type": "optional"
+    },
+    {
+      "id": "crate_gap",
+      "label": "Crate squeeze",
+      "x": 477,
+      "y": 315,
+      "type": "route"
+    },
+    {
+      "id": "scratch",
+      "label": "Claw marks",
+      "x": 759,
+      "y": 310,
+      "type": "optional"
+    },
+    {
+      "id": "east_lane",
+      "label": "Eastern lane",
+      "x": 998,
+      "y": 332,
+      "type": "route"
+    },
+    {
+      "id": "battle_approach",
+      "label": "Battle approach",
+      "x": 1094,
+      "y": 274,
+      "type": "battle"
+    },
+    {
+      "id": "fish",
+      "label": "Fish platform",
+      "x": 759,
+      "y": 637,
+      "type": "optional"
+    },
+    {
+      "id": "exit",
+      "label": "Contextual exit (no physical route)",
+      "x": 1066,
+      "y": 166,
+      "type": "exit"
+    }
+  ],
+  "contours": [
+    {
+      "index": 0,
+      "vertices": 135,
+      "area": 306427.5,
+      "parent": -1
+    },
+    {
+      "index": 11,
+      "vertices": 5,
+      "area": 8904.5,
+      "parent": 0
+    },
+    {
+      "index": 12,
+      "vertices": 27,
+      "area": 33176.0,
+      "parent": 0
+    },
+    {
+      "index": 13,
+      "vertices": 22,
+      "area": 11611.5,
+      "parent": 0
+    },
+    {
+      "index": 14,
+      "vertices": 5,
+      "area": 3009.5,
+      "parent": 0
+    },
+    {
+      "index": 15,
+      "vertices": 9,
+      "area": 2017.0,
+      "parent": 0
+    }
+  ],
+  "test_results": {
+    "accessible_component_count_after_8px_erosion": 1,
+    "largest_component_pixels": 187355,
+    "squeeze_playable_clearance": "pending browser verification"
+  },
+  "squeeze_connector": {
+    "id": "squeeze-corridor",
+    "svg_path_d": "M 478 283 H 507 V 352 H 478 Z",
+    "note": "Narrow traversable gap opened through the crate squeeze obstruction; SVG union drives rendering, keyboard collision and A* grid."
+  },
+  "notes_v08": "Event object relocation only; walkable footprint, squeeze connector, obstacles and navigation remain unchanged.",
+  "conditional_barrier": {
+    "id": "crate-gate-hitbox",
+    "owner": "alley_crate",
+    "position_unchanged": [
+      975,
+      415
+    ],
+    "rect": {
+      "x": 935,
+      "y": 398,
+      "width": 80,
+      "height": 34
+    },
+    "active_until": "alley_rescued",
+    "collision_source": "SVG #crate-gate-hitbox",
+    "effect": "blocks passage before boss victory; visual and navigation open after boss victory"
+  }
+}
