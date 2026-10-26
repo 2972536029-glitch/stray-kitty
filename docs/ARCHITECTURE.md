@@ -31,6 +31,21 @@ stray-kitty/
 │  ├─ ARCHITECTURE.md  架构、目录与接入
 │  ├─ openapi.json  API 规范
 │  └─ PRD.md  需求与分工
+├─ level_design/
+│  ├─ battle/
+│  │  ├─ 100/
+│  │  │  └─ handoff/
+│  │  └─ l00/
+│  │     └─ handoff/
+│  ├─ maps/
+│  │  └─ reference/
+│  ├─ night_market/
+│  │  ├─ art/
+│  │  └─ design/
+│  └─ rainy_alley/
+│     ├─ art/
+│     ├─ reference/
+│     └─ source/
 ├─ scripts/  启动、生成与检查
 ├─ server/  Go 服务端
 │  ├─ cmd/  服务入口
@@ -90,6 +105,7 @@ stray-kitty/
 │     │  ├─ inventory/  道具与家具持有
 │     │  ├─ lottery/  奖池、抽取与结果
 │     │  ├─ map/  地图 · Jenny
+│     │  ├─ rainyAlley/
 │     │  └─ shop/  商品与购买
 │     ├─ shared/  通用工具 · 预留
 │     └─ ui/  界面与样式 · 轩扬
