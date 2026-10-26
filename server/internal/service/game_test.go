@@ -193,3 +193,48 @@ func TestFailedCommandRollsBack(t *testing.T) {
 		t.Fatal("failed request changed state")
 	}
 }
+
+func TestChapter1TuanziEncounterAndReplay(t *testing.T) {
+	g, token, _ := setup(t)
+	s, err := g.State(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 推进至序章末尾
+	for s.StoryNodeID != "prologue_lost" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	if s.ChapterID != "prologue" {
+		t.Fatalf("expected prologue chapter before intro, got %s", s.ChapterID)
+	}
+
+	// 序章结束，进入第一章小巷导言
+	s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: "prologue_lost"})
+	if s.StoryNodeID != "chapter1_intro" || s.ChapterID != "alley" {
+		t.Fatalf("expected chapter1_intro in alley, got node=%s, chapter=%s", s.StoryNodeID, s.ChapterID)
+	}
+
+	// 第一章开端：团子登场与相遇
+	s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: "chapter1_intro"})
+	if s.StoryNodeID != "prologue_tuanzi" || s.ChapterID != "alley" {
+		t.Fatalf("expected prologue_tuanzi in alley, got node=%s, chapter=%s", s.StoryNodeID, s.ChapterID)
+	}
+
+	// 完成教学战并回放第一章
+	s = finishStory(t, g, token)
+	if s.Phase != "explore" {
+		t.Fatalf("expected explore after finishStory, got %s", s.Phase)
+	}
+	// 重温第一章剧情
+	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "chapter1_intro"})
+	if s.Phase != "dialogue" || s.StoryNodeID != "chapter1_intro" || s.ChapterID != "alley" {
+		t.Fatalf("replay failed: phase=%s, node=%s", s.Phase, s.StoryNodeID)
+	}
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	// 教学战已通关，重温剧情结束平稳回到小巷探索阶段，无需重复打教学战
+	if s.Phase != "explore" || s.MapID != "alley" {
+		t.Fatalf("expected return to explore after replay, got phase=%s, map=%s", s.Phase, s.MapID)
+	}
+}

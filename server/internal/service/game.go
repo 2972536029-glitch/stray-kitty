@@ -167,10 +167,22 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				s.ChapterID = n.ChapterID
 				if n.Next != "" {
 					s.StoryNodeID = n.Next
+					for _, nextNode := range g.Catalog.Story {
+						if nextNode.ID == n.Next {
+							s.ChapterID = nextNode.ChapterID
+							break
+						}
+					}
 					return nil
 				}
 				if n.ID == "prologue_2" {
 					s.StoryNodeID = ""
+					if domain.Contains(s.CompletedStages, "l00_tutorial") {
+						s.Phase = "explore"
+						s.MapID = "alley"
+						s.ExploreDistance = -randomGrace
+						return nil
+					}
 					return g.startTutorialBattle(s, "l00_tutorial", false)
 				}
 				s.StoryNodeID = ""
