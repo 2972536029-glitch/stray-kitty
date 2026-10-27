@@ -154,6 +154,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.MapID = "greenhouse"
 					s.Flags = domain.Add(s.Flags, "finale_started")
 				}
+				if n.ID == "finale_clue_insufficient" {
+					s.MapID = "market"
+				}
 				return nil
 			}
 		}
@@ -222,6 +225,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.MapID = "market"
 					s.Flags = domain.Add(s.Flags, "market_unlocked")
 					s.Flags = domain.Add(s.Flags, "chapter_2_started")
+				}
+				if n.ID == "finale_clue_insufficient" {
+					s.MapID = "market"
 				}
 				return nil
 			}
