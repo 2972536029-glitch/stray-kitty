@@ -69,7 +69,7 @@ func TestRainyAlleyCrateGateOpensOnlyAfterRescueWin(t *testing.T) {
 	s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "crate_event", OptionID: "search"})
 	s = finishStory(t, g, token)
 	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
-	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
 	if !domain.Contains(s.Flags, "alley_rescued") {
 		t.Fatal("crate gate rescue flag was not set by the Chapter 1 battle win")
 	}
