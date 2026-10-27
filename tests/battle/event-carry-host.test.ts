@@ -14,6 +14,9 @@ import {createGreenhouseBattle} from '../../web/src/modules/battle/greenhouse/en
 import * as chapter from '../../web/src/modules/battle/chapter/config.ts';
 import * as market from '../../web/src/modules/battle/market/config.ts';
 import * as greenhouse from '../../web/src/modules/battle/greenhouse/config.ts';
+import * as tunnel from '../../web/src/modules/battle/tunnel/config.ts';
+import {createTunnelContext} from '../../web/src/modules/battle/tunnel-context.ts';
+import {createTunnelBattle} from '../../web/src/modules/battle/tunnel/engine.ts';
 
 const catalog: Pick<Catalog, 'stages'> = JSON.parse(fs.readFileSync('web/content/catalog.json', 'utf8'));
 const ids: BattleCarryId[] = ['lantern','mirror','bell','box','dog','dove'];
@@ -22,6 +25,7 @@ const stages = [
   {id: 'alley_boss', context: createChapterContext, create: createChapterBattle, anchor: {x:3,y:0}},
   {id: 'market_boss', context: createMarketContext, create: createMarketBattle, anchor: {x:3,y:0}},
   {id: 'greenhouse_boss', context: createGreenhouseContext, create: createGreenhouseBattle, anchor: {x:7,y:2}},
+  {id: 'tunnel_boss', context: createTunnelContext, create: createTunnelBattle, anchor: {x:7,y:1}},
 ];
 function fixture(stageId: string, carry?: unknown) {
   const state: Pick<GameState, 'phase'|'activeBattle'> & {eventState: unknown} = {
@@ -78,6 +82,7 @@ test('mirror control is available once in active play and stays disabled in read
 const previews=[
   {config:chapter,entrances:{'0':chapter.MAP.spawns[2],'3':chapter.MAP.spawns[0],'4':chapter.MAP.spawns[1]},first:['A4','E10','D10']},
   {config:market,entrances:Object.fromEntries(Object.entries(market.ROUTES).map(([id,path])=>[id,path[0]])),first:['A4','C8','E4']},
+  {config:tunnel,entrances:Object.fromEntries(Object.entries(tunnel.ROUTES).map(([id,path])=>[id,path[0]])),first:['B8','D8','A2']},
   {config:greenhouse,entrances:Object.fromEntries(Object.entries(greenhouse.ROUTES).map(([id,path])=>[id,path[0]])),first:['C8','E8']},
 ];
 test('dove reports real first, current and next waves with accurate entrances, enemy kinds and counts',()=>{
