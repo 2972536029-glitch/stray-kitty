@@ -2,6 +2,7 @@ import type {BattleCarryId} from '../../contracts';
 
 export type {BattleCarryId};
 export interface CarryPosition {x: number; y: number}
+export interface CarryPatrolRoute {route: string; anchor: CarryPosition}
 export interface BattleCarryState {
   id: BattleCarryId | null;
   used: boolean;
@@ -14,6 +15,8 @@ export interface BattleCarryState {
   boxWait: Record<string, number>;
   boxSeen: string[];
   pulses: number;
+  patrolRoutes: CarryPatrolRoute[];
+  kittenWave: number;
 }
 export interface CarryEnemy extends CarryPosition {id: string; route: string; hp: number}
 export interface CarryTick {
@@ -22,20 +25,36 @@ export interface CarryTick {
   hits: {position: CarryPosition; kind: 'light'; damage: number}[];
 }
 const EPS = 1e-8;
-const IDS: readonly BattleCarryId[] = ['lantern', 'mirror', 'bell', 'box', 'dog', 'dove'];
+const IDS: readonly BattleCarryId[] = ['lantern', 'mirror', 'bell', 'box', 'dog', 'dove', 'rats', 'kitten'];
 
 /** Unknown or malformed event data never prevents entering a battle. */
-export function createBattleCarry(input: unknown, route: string, anchor: CarryPosition): BattleCarryState {
+export function createBattleCarry(input: unknown, route: string, anchor: CarryPosition, patrolRoutes: readonly CarryPatrolRoute[] = []): BattleCarryState {
   const id = typeof input === 'string' && IDS.includes(input as BattleCarryId) ? input as BattleCarryId : null;
+  const routes = [{route, anchor}, ...patrolRoutes].filter((value, index, all) => all.findIndex(entry => entry.route === value.route) === index)
+    .map(value => ({route: value.route, anchor: {...value.anchor}}));
   return {id, route, anchor: {...anchor}, used: false, freezeRemaining: 0, elapsed: 0,
     warning: input === undefined || input === null || id ? null : '无法识别这次携带物，已按原有战斗规则继续。',
-    boxActive: id === 'box', boxWait: {}, boxSeen: [], pulses: 0};
+    boxActive: id === 'box', boxWait: {}, boxSeen: [], pulses: 0, patrolRoutes: routes, kittenWave: 0};
 }
 
 export function startBattleCarry(carry: BattleCarryState, cats: {status: string; energy: number}[]): void {
   if (carry.id !== 'bell' || carry.used) return;
   for (const cat of cats) if (cat.status === 'active') cat.energy = Math.max(0, Math.min(100, cat.energy + 20));
   carry.used = true;
+}
+
+/** Each real wave can help active main cats once; no inventory, revival or automatic skill use. */
+export function startCarryWave(carry: BattleCarryState, wave: number, cats: {status: string; energy: number; energyBlockedRemaining?: number}[]): void {
+  if (carry.id !== 'kitten' || !Number.isInteger(wave) || wave < 1 || wave <= carry.kittenWave) return;
+  carry.kittenWave = wave;
+  for (const cat of cats) if (cat.status === 'active' && (cat.energyBlockedRemaining ?? 0) <= 0) cat.energy = Math.max(0, Math.min(100, cat.energy + 8));
+}
+
+/** Patrol follows the simulation clock and real entrances, including while a wave is clearing. */
+export function getCarryPatrol(carry: BattleCarryState): CarryPatrolRoute {
+  const routes = carry.patrolRoutes;
+  const current = routes[Math.floor((carry.elapsed + EPS) / 8) % routes.length];
+  return current ?? {route: carry.route, anchor: carry.anchor};
 }
 
 /** Engine validates lifecycle and pause before calling this; rejection never spends the mirror. */
@@ -47,6 +66,7 @@ export function useBattleCarry(carry: BattleCarryState): string | null {
 }
 
 export function getCarrySpeedMultiplier(carry: BattleCarryState, route: string): number {
+  if (carry.id === 'rats' && getCarryPatrol(carry).route === route) return 0.8;
   return carry.id === 'dog' && carry.route === route ? 0.75 : 1;
 }
 

@@ -16,7 +16,7 @@
 | [技能](skills.md) | 自动蓄能、主动能力与猫旁操作 |
 | [道具移除与旧存档](items.md) | 已取消的机制及旧预留返还 |
 | [接口](interfaces.md) | 七个入口 ID、独立试玩协议与旧场次兼容 |
-| [事件携带物与协助者](../../docs/BATTLE-EVENT-CARRY.md) | 按 MR !24 的六个正式 ID、实际效果、来源与重试边界 |
+| [事件携带物与协助者](../../docs/BATTLE-EVENT-CARRY.md) | 八个正式 ID（新增鼠群／小猫）、实际效果、来源与重试边界 |
 | [序章接入](../../docs/L00-INTEGRATION.md) | L00 当前教程与入口 |
 | [第一章接入](../../docs/L01-INTEGRATION.md) | L01 集成、验收与协作 |
 | [第二章接入](../../docs/L02-INTEGRATION.md) | L02 独立试玩、参数边界与验证 |
