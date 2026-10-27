@@ -66,7 +66,7 @@ func TestRandomPoolDrainsWithoutRepeat(t *testing.T) {
 		}
 	}
 	drawn := map[string]bool{}
-	for i := 0; i < 90 && len(drawn) < poolSize; i++ {
+	for i := 0; i < 220 && len(drawn) < poolSize; i++ { // 预算随池规模放大:39 张时代约 5 步/抽
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
 		if s.Phase != "event" {
 			continue
@@ -370,7 +370,7 @@ func TestNarrativeGatedCardDrawnAfterFlag(t *testing.T) {
 		}
 	}
 	gotGift := false
-	for i := 0; i < 80 && !gotGift; i++ {
+	for i := 0; i < 220 && !gotGift; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
 		if s.Phase != "event" {
 			continue
@@ -496,7 +496,7 @@ func TestRepeatableEchoCard(t *testing.T) {
 	finishStory(t, g, token)
 	useMarketRandomPool(t, g, token)
 	seen := 0
-	for i := 0; i < 120 && seen < 2; i++ {
+	for i := 0; i < 220 && seen < 2; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
 		if s.Phase != "event" {
 			continue
