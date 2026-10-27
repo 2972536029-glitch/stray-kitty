@@ -13,7 +13,7 @@ for(const command of [{type:'ADVANCE_STORY',nodeId:'prologue_1'},{type:'START_ST
 for(const command of [{type:'UNKNOWN'},{type:'START_STORY'},{type:'GO_EXPLORE',mapId:123},{type:'START_BATTLE',stageId:'alley_boss',supplies:{}},{type:'COMPLETE_BATTLE',attemptId:'chapter-attempt',outcome:'won',usedSupplies:{}}]) {
   if(commandSchema(command))throw Error(`Invalid command accepted: ${JSON.stringify(command)}`);
 }
-const carryIds=['lantern','mirror','bell','box','dog','dove'];
+const carryIds=['lantern','mirror','bell','box','dog','dove','rats','kitten'];
 for(const stageId of ['tunnel_boss','finale_boss']) {
   if(!commandSchema({type:'START_BATTLE',stageId}))throw Error(`Chapter entry rejected: ${stageId}`);
 }

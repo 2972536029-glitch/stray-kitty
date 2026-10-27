@@ -39,8 +39,8 @@ func carryResources(s domain.GameState) map[string]any {
 	return map[string]any{"inventory": s.Inventory, "currencies": s.Currencies, "cats": s.Cats, "furniture": s.Furniture, "flags": s.Flags, "pushTokens": s.PushTokens, "chapter": s.ChapterID, "story": s.StoryNodeID}
 }
 
-func TestAllSixCarriesPersistWithEventReceiptAndAttempt(t *testing.T) {
-	for _, carry := range []domain.BattleCarryID{domain.CarryLantern, domain.CarryMirror, domain.CarryBell, domain.CarryBox, domain.CarryDog, domain.CarryDove} {
+func TestAllCarriesPersistWithEventReceiptAndAttempt(t *testing.T) {
+	for _, carry := range []domain.BattleCarryID{domain.CarryLantern, domain.CarryMirror, domain.CarryBell, domain.CarryBox, domain.CarryDog, domain.CarryDove, domain.CarryRats, domain.CarryKitten} {
 		t.Run(string(carry), func(t *testing.T) {
 			g, token, path := setup(t)
 			finishStory(t, g, token)
@@ -87,7 +87,7 @@ func TestEventWithoutCarryPreservesPriorCarryAndOnlyNewCarryReplacesIt(t *testin
 	editCarryFixture(t, g, token, func(s *domain.GameState) {
 		s.EventState = &domain.EventState{PendingModifiers: domain.BattleModifiers{ShadowPressure: -1, Carry: domain.CarryLantern}}
 	})
-	for _, step := range []struct{ awarded, expected domain.BattleCarryID }{{"", domain.CarryLantern}, {domain.CarryDove, domain.CarryDove}, {"", domain.CarryDove}} {
+	for _, step := range []struct{ awarded, expected domain.BattleCarryID }{{"", domain.CarryLantern}, {domain.CarryDove, domain.CarryDove}, {"", domain.CarryDove}, {domain.CarryRats, domain.CarryRats}, {"", domain.CarryRats}, {domain.CarryKitten, domain.CarryKitten}, {"", domain.CarryKitten}} {
 		configureCarryOutcome(g, step.awarded)
 		editCarryFixture(t, g, token, func(s *domain.GameState) { s.Phase = "event"; s.PendingEventID = "crate_event" })
 		before, _ := g.State(token)
@@ -122,58 +122,60 @@ func carryReportForStage(stage string, leaks int, defeated bool) *domain.BattleR
 
 func TestCarryRetriesLockStageAndOriginalSnapshot(t *testing.T) {
 	for _, stage := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss", "finale_boss"} {
-		t.Run(stage, func(t *testing.T) {
-			g, token, path := prepareBoss(t, -1, map[string]int{"food": 7, "material": 3})
-			editCarryFixture(t, g, token, func(s *domain.GameState) { s.EventState.PendingModifiers.Carry = domain.CarryDog })
-			before, _ := g.State(token)
-			s := execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: stage})
-			firstID := s.ActiveBattle.ID
-			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: firstID, Outcome: "lost", Report: carryReportForStage(stage, 3, false)})
-			if !reflect.DeepEqual(before.EventState, s.EventState) || !reflect.DeepEqual(carryResources(before), carryResources(s)) {
-				t.Fatal("loss consumed carry or changed persistent resources")
-			}
-			s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
-			if s.ActiveBattle == nil || s.ActiveBattle.ID != firstID || s.ActiveBattle.Status != "lost" || s.Phase != "preparation" {
-				t.Fatal("failed preparation lost its retry snapshot")
-			}
-			// Changes to pending mainline state must not overwrite a failed attempt.
-			editCarryFixture(t, g, token, func(s *domain.GameState) {
-				s.EventState.PendingModifiers = domain.BattleModifiers{ShadowPressure: 1, Carry: domain.CarryDove}
+		for _, carry := range []domain.BattleCarryID{domain.CarryDog, domain.CarryRats, domain.CarryKitten} {
+			t.Run(stage+"/"+string(carry), func(t *testing.T) {
+				g, token, path := prepareBoss(t, -1, map[string]int{"food": 7, "material": 3})
+				editCarryFixture(t, g, token, func(s *domain.GameState) { s.EventState.PendingModifiers.Carry = carry })
+				before, _ := g.State(token)
+				s := execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: stage})
+				firstID := s.ActiveBattle.ID
+				s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: firstID, Outcome: "lost", Report: carryReportForStage(stage, 3, false)})
+				if !reflect.DeepEqual(before.EventState, s.EventState) || !reflect.DeepEqual(carryResources(before), carryResources(s)) {
+					t.Fatal("loss consumed carry or changed persistent resources")
+				}
+				s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+				if s.ActiveBattle == nil || s.ActiveBattle.ID != firstID || s.ActiveBattle.Status != "lost" || s.Phase != "preparation" {
+					t.Fatal("failed preparation lost its retry snapshot")
+				}
+				// Changes to pending mainline state must not overwrite a failed attempt.
+				editCarryFixture(t, g, token, func(s *domain.GameState) {
+					s.EventState.PendingModifiers = domain.BattleModifiers{ShadowPressure: 1, Carry: domain.CarryDove}
+				})
+				for _, other := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss", "finale_boss"} {
+					if other != stage {
+						rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: other})
+					}
+				}
+				store, err := repository.Open(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				g = service.New(store, g.Catalog)
+				s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: stage})
+				if s.ActiveBattle.ID == firstID || s.ActiveBattle.Modifiers == nil || *s.ActiveBattle.Modifiers != (domain.BattleModifiers{ShadowPressure: -1, Carry: carry}) {
+					t.Fatal("retry reused identity or changed the saved pressure/carry")
+				}
+				if s.EventState.PendingModifiers.Carry != domain.CarryDove {
+					t.Fatal("retry rewrote mainline pending state")
+				}
+				wonReq := domain.CommandRequest{ExpectedRevision: &s.Revision, Command: domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: carryReportForStage(stage, 0, true)}}
+				won, err := g.Execute(token, "carry-win-once", wonReq)
+				if err != nil {
+					t.Fatal(err)
+				}
+				replay, err := g.Execute(token, "carry-win-once", wonReq)
+				if err != nil || !replay.Replayed || !reflect.DeepEqual(won.State, replay.State) {
+					t.Fatalf("carry completion was not idempotent: %v", err)
+				}
+				if stage == "market_boss" || stage == "greenhouse_boss" || stage == "tunnel_boss" || stage == "finale_boss" {
+					if won.State.EventState.PendingModifiers != (domain.BattleModifiers{ShadowPressure: 1, Carry: domain.CarryDove}) || !reflect.DeepEqual(carryResources(before), carryResources(won.State)) {
+						t.Fatal("standalone victory consumed pending carry or granted mainline rewards")
+					}
+				} else if won.State.EventState.PendingModifiers != (domain.BattleModifiers{}) {
+					t.Fatal("L01 victory did not clear pending pressure and carry")
+				}
 			})
-			for _, other := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss", "finale_boss"} {
-				if other != stage {
-					rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: other})
-				}
-			}
-			store, err := repository.Open(path)
-			if err != nil {
-				t.Fatal(err)
-			}
-			g = service.New(store, g.Catalog)
-			s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: stage})
-			if s.ActiveBattle.ID == firstID || s.ActiveBattle.Modifiers == nil || *s.ActiveBattle.Modifiers != (domain.BattleModifiers{ShadowPressure: -1, Carry: domain.CarryDog}) {
-				t.Fatal("retry reused identity or changed the saved pressure/carry")
-			}
-			if s.EventState.PendingModifiers.Carry != domain.CarryDove {
-				t.Fatal("retry rewrote mainline pending state")
-			}
-			wonReq := domain.CommandRequest{ExpectedRevision: &s.Revision, Command: domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: carryReportForStage(stage, 0, true)}}
-			won, err := g.Execute(token, "carry-win-once", wonReq)
-			if err != nil {
-				t.Fatal(err)
-			}
-			replay, err := g.Execute(token, "carry-win-once", wonReq)
-			if err != nil || !replay.Replayed || !reflect.DeepEqual(won.State, replay.State) {
-				t.Fatalf("carry completion was not idempotent: %v", err)
-			}
-			if stage == "market_boss" || stage == "greenhouse_boss" || stage == "tunnel_boss" || stage == "finale_boss" {
-				if won.State.EventState.PendingModifiers != (domain.BattleModifiers{ShadowPressure: 1, Carry: domain.CarryDove}) || !reflect.DeepEqual(carryResources(before), carryResources(won.State)) {
-					t.Fatal("standalone victory consumed pending carry or granted mainline rewards")
-				}
-			} else if won.State.EventState.PendingModifiers != (domain.BattleModifiers{}) {
-				t.Fatal("L01 victory did not clear pending pressure and carry")
-			}
-		})
+		}
 	}
 }
 
@@ -209,33 +211,35 @@ func TestCarryRetrySnapshotClearsWhenLeavingPreparation(t *testing.T) {
 
 func TestL00NeverEnablesCarryAndPreservesMainlinePending(t *testing.T) {
 	for _, retry := range []domain.Command{{Type: "CONTINUE"}, {Type: "START_BATTLE", StageID: "l00_tutorial"}} {
-		t.Run(retry.Type, func(t *testing.T) {
-			g, token, _ := setup(t)
-			editCarryFixture(t, g, token, func(s *domain.GameState) {
-				s.EventState = &domain.EventState{PendingModifiers: domain.BattleModifiers{ShadowPressure: -1, Carry: domain.CarryDove}}
+		for _, carry := range []domain.BattleCarryID{domain.CarryDove, domain.CarryRats, domain.CarryKitten} {
+			t.Run(retry.Type+"/"+string(carry), func(t *testing.T) {
+				g, token, _ := setup(t)
+				editCarryFixture(t, g, token, func(s *domain.GameState) {
+					s.EventState = &domain.EventState{PendingModifiers: domain.BattleModifiers{ShadowPressure: -1, Carry: carry}}
+				})
+				s, _ := g.State(token)
+				for s.Phase == "dialogue" {
+					s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+				}
+				if s.ActiveBattle.StageID != "l00_tutorial" || s.ActiveBattle.Modifiers != nil {
+					t.Fatal("first tutorial consumed event modifiers")
+				}
+				firstID := s.ActiveBattle.ID
+				// Legacy tutorial snapshots may contain carry; even their retry strips it.
+				editCarryFixture(t, g, token, func(s *domain.GameState) {
+					s.ActiveBattle.Modifiers = &domain.BattleModifiers{ShadowPressure: 1, Carry: carry}
+				})
+				execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: firstID, Outcome: "lost"})
+				s = execute(t, g, token, retry)
+				if s.ActiveBattle.ID == firstID || s.ActiveBattle.Modifiers == nil || *s.ActiveBattle.Modifiers != (domain.BattleModifiers{ShadowPressure: 1}) {
+					t.Fatal("tutorial retry enabled carry or changed the original tier")
+				}
+				s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+				if s.EventState.PendingModifiers != (domain.BattleModifiers{ShadowPressure: -1, Carry: carry}) {
+					t.Fatal("tutorial consumed pending mainline carry")
+				}
 			})
-			s, _ := g.State(token)
-			for s.Phase == "dialogue" {
-				s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
-			}
-			if s.ActiveBattle.StageID != "l00_tutorial" || s.ActiveBattle.Modifiers != nil {
-				t.Fatal("first tutorial consumed event modifiers")
-			}
-			firstID := s.ActiveBattle.ID
-			// Legacy tutorial snapshots may contain carry; even their retry strips it.
-			editCarryFixture(t, g, token, func(s *domain.GameState) {
-				s.ActiveBattle.Modifiers = &domain.BattleModifiers{ShadowPressure: 1, Carry: domain.CarryDog}
-			})
-			execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: firstID, Outcome: "lost"})
-			s = execute(t, g, token, retry)
-			if s.ActiveBattle.ID == firstID || s.ActiveBattle.Modifiers == nil || *s.ActiveBattle.Modifiers != (domain.BattleModifiers{ShadowPressure: 1}) {
-				t.Fatal("tutorial retry enabled carry or changed the original tier")
-			}
-			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
-			if s.EventState.PendingModifiers != (domain.BattleModifiers{ShadowPressure: -1, Carry: domain.CarryDove}) {
-				t.Fatal("tutorial consumed pending mainline carry")
-			}
-		})
+		}
 	}
 }
 
