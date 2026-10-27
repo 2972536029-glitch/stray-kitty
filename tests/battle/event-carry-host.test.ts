@@ -22,7 +22,7 @@ import {createTunnelContext} from '../../web/src/modules/battle/tunnel-context.t
 import {createTunnelBattle} from '../../web/src/modules/battle/tunnel/engine.ts';
 
 const catalog: Pick<Catalog, 'stages'> = JSON.parse(fs.readFileSync('web/content/catalog.json', 'utf8'));
-const ids: BattleCarryId[] = ['lantern','mirror','bell','box','dog','dove'];
+const ids: BattleCarryId[] = ['lantern','mirror','bell','box','dog','dove','rats','kitten'];
 const stages = [
   {id: 'alley_rescue', context: createChapterContext, create: createChapterBattle, anchor: {x:3,y:0}},
   {id: 'alley_boss', context: createChapterContext, create: createChapterBattle, anchor: {x:3,y:0}},
