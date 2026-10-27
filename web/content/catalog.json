@@ -3333,6 +3333,495 @@
           }
         }
       ]
+    },
+    {
+      "id": "pipe_echo_event",
+      "title": "管道深处的回声",
+      "text": "暗道里的脚步声被管道放大成一片嗡嗡的回响。分不清哪些是你们的,哪些——是别人的。",
+      "category": "risk",
+      "tags": [
+        "shadow"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "tunnel"
+      ],
+      "options": [
+        {
+          "id": "freeze_and_listen",
+          "label": "全体停下,屏息听",
+          "outcomes": {
+            "crit": {
+              "text": "你们听清了:回声里有第三种脚步,四拍一组,很轻——是猫的步子。循声轻唤,墙缝里探出一双耳朵:又一只躲藏的伙伴,顺着你们的光走出来了。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "echo_friend_found"
+              ]
+            },
+            "success": {
+              "text": "回声散了。在第三种脚步消失的地方,你们留了一点猫粮和一朵用小花做的记号——下次它敢出来的时候,会知道这里有人等它。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "echo_marker_left"
+              ]
+            },
+            "partial": {
+              "text": "回声里有黑影蹭过管壁的沙沙声。你们贴着有光的这一侧走完了这段路,谁也没说话。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "echo_shadow_near"
+              ]
+            },
+            "fail": {
+              "text": "回声越来越密,像整条暗道都在围拢。你们一路小跑冲过三个岔口,直到看见前方阀门上的反光才停下喘气。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "echo_fled"
+              ]
+            }
+          }
+        },
+        {
+          "id": "momo_still_listen",
+          "label": "让墨墨闭上眼,只用耳朵",
+          "requireCat": "momo",
+          "outcomes": {
+            "crit": {
+              "text": "墨墨阖眼静立,耳朵缓缓转动,像两片小雷达。半晌他睁眼:回声两拍是水,三拍是风,四拍——四拍那只,是友非敌,在西北支道。你们循声找到了又一处伙伴的藏身点。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "echo_momo_read"
+              ]
+            },
+            "success": {
+              "text": "墨墨把回声拆开了:水流、风、还有远处一声很轻的应答。他竖起尾巴指了指方向——那只猫还活着,明天带光来接它。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "echo_momo_read"
+              ]
+            },
+            "partial": {
+              "text": "墨墨听出了黑影的方位,却也因此多绕了一段黑路。他的眼睛在暗处亮得惊人,但连他也承认:这条道,比上周更挤了。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "echo_momo_read"
+              ]
+            },
+            "fail": {
+              "text": "一列货运火车从头顶的地面碾过,所有回声搅成一片轰鸣。等世界重新安静,那个四拍的脚步声也找不到了。墨墨把方位记在了心里。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "echo_lost_in_noise"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "rat_pipeline_event",
+      "title": "岔口的小道消息",
+      "text": "五岔口的管壁上,一串细小的爪印排成一列,尽头还整整齐齐码着两粒猫粮。这看着不像偶然——墙洞那家子的地盘,原来一直铺到地下。",
+      "category": "opportunity",
+      "tags": [
+        "pathfinding",
+        "social"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "requiresFlags": [
+        "rats_truce"
+      ],
+      "maps": [
+        "tunnel"
+      ],
+      "options": [
+        {
+          "id": "follow_crumbs",
+          "label": "顺着爪印和猫粮走",
+          "outcomes": {
+            "crit": {
+              "text": "爪印领着你们绕开了三处黑影盘踞的死角,猫粮的间隔不多不少正好一段路——这是一条被精心维护的友好通道。通道尽头,一小袋完好的物资正等着收件猫。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "material": 2,
+                "clue": 1
+              },
+              "flags": [
+                "rat_road_used"
+              ]
+            },
+            "success": {
+              "text": "爪印通道又快又稳。你们在一个岔口看见了用碎石摆的箭头,指向浅水区——鼠群的地图,比想象中贴心。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "rat_road_used"
+              ]
+            },
+            "partial": {
+              "text": "走到一半,爪印被新渗的积水淹了。剩下的路你们贴墙自己走完,但方向是对的。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "rat_road_faded"
+              ]
+            },
+            "fail": {
+              "text": "爪印在第三个岔口突然折返——它们自己也不往前走了。前面那段,连鼠群都绕着走。你们退回原路,换一条。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "rat_road_blocked"
+              ]
+            }
+          }
+        },
+        {
+          "id": "leave_payment",
+          "label": "在每个岔口回放一粒猫粮",
+          "outcomes": {
+            "crit": {
+              "text": "你们回放的猫粮,第二天变成了通道尽头的整袋物资和一小片压平的软纸——鼠群收了路费,还附赠了保修:那条通道,它们会一直替你们清着。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "material": 2
+              },
+              "flags": [
+                "rat_road_paid"
+              ]
+            },
+            "success": {
+              "text": "一来一回,账两清。之后的路,爪印通道走得格外顺。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "rat_road_paid"
+              ]
+            },
+            "partial": {
+              "text": "回放的猫粮丢了一粒在水洼里。小小的失约,但爪印通道第二天还在——它们不跟猫计较这个。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "rat_road_paid"
+              ]
+            },
+            "fail": {
+              "text": "回程的猫粮不够了,最后两个岔口空着。你们决定下次从地面多带一些下来——朋友的路,要付全套的路费。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "rat_road_short"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "seeping_conduit_event",
+      "title": "渗水的暗渠",
+      "text": "前方一段管道在渗水,水声哗哗地盖住了一切。要过这段路,就得走进一片听不见声音的水雾里。",
+      "category": "risk",
+      "tags": [
+        "shadow"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "tunnel"
+      ],
+      "options": [
+        {
+          "id": "hug_dry_wall",
+          "label": "贴着没渗水的干墙根走",
+          "outcomes": {
+            "crit": {
+              "text": "干墙根这一侧高出一截,你们走成了名副其实的'高架桥'。水雾底下黑影徘徊的影子一个都没沾到,还居高临下看清了它的巡逻路线——这趟等于免费侦察。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "conduit_scouted"
+              ]
+            },
+            "success": {
+              "text": "贴着干墙根,踩着点走完了这段水雾。什么也没听见,但什么也没遇上——在暗道,这就是好结果。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "conduit_passed"
+              ]
+            },
+            "partial": {
+              "text": "干墙根有一段塌了,你们在水雾里蹚了十几步。水声灌满耳朵的那几秒,后颈的毛一直是竖着的。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "conduit_wet_cross"
+              ]
+            },
+            "fail": {
+              "text": "水声里混进了一声不属于水的低响。你们没回头,连跑带蹚冲出水雾,直到灯光里才敢停。那段路,标记为禁行。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "conduit_banned"
+              ]
+            }
+          }
+        },
+        {
+          "id": "momo_scout_ford",
+          "label": "请墨墨先行探一遍水位",
+          "requireCat": "momo",
+          "outcomes": {
+            "crit": {
+              "text": "墨墨在雾里走了一个来回,回来时浑身湿了半边,嘴里叼着一样东西——从上游冲下来的、包着油纸的小包裹,里面是又干又暖的物资。黑影怕水,这段雾区反而是全暗道最安全的路。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "material": 2
+              },
+              "flags": [
+                "conduit_momo_ford"
+              ]
+            },
+            "success": {
+              "text": "墨墨探明了:水深不过爪,雾里没有黑影——它们讨厌水声。你们排成一列,跟着他的尾巴尖安然渡过。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "conduit_momo_ford"
+              ]
+            },
+            "partial": {
+              "text": "墨墨探路时惊起了一只栖息的水鸟,翅膀声在水雾里炸开。有惊无险,但全队的心跳快了一路。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "conduit_momo_ford"
+              ]
+            },
+            "fail": {
+              "text": "墨墨前脚刚进雾区,水位忽然涨了半掌。他退回来甩了甩爪子:改道。水的事,连他也说不准。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "conduit_flood_turn"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "valve_three_event",
+      "title": "第三泄洪阀",
+      "text": "锈红色的管壁上钉着一块旧铭牌:3 号泄洪阀。阀门后面,隐约有极轻的、断断续续的呼噜声。",
+      "category": "opportunity",
+      "tags": [
+        "pathfinding"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "tunnel"
+      ],
+      "options": [
+        {
+          "id": "answer_the_purr",
+          "label": "隔着阀门,轻轻回应一声",
+          "outcomes": {
+            "crit": {
+              "text": "呼噜声停了一下,然后爆发出一串急切的回应——里面真的有猫,而且听得出还很有精神!你们记下阀门的转轮位置和开阀需要的巧劲,这将是下一次营救行动的第一站。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "valve_three_found"
+              ]
+            },
+            "success": {
+              "text": "呼噜声应了。隔着铁皮,两边的猫把彼此的声音都记住了——下次带光回来,就来这里。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "valve_three_found"
+              ]
+            },
+            "partial": {
+              "text": "回应声惊动了管道另一头的东西,呼噜声立刻噤住了。你们贴着阀门多留了一刻,里面传来极轻的一下磕碰——它还在,只是先不说话了。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "valve_three_mute"
+              ]
+            },
+            "fail": {
+              "text": "呼噜声在你们回应之前就停了。阀门后面安安静静,像什么都没有过。你们在铭牌下留了记号——但愿下一次,它还肯出声。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "valve_three_silent"
+              ]
+            }
+          }
+        },
+        {
+          "id": "mark_and_report",
+          "label": "先做记号,回去搬救兵",
+          "outcomes": {
+            "crit": {
+              "text": "记号做得又隐蔽又清楚:只有猫看得懂的抓痕高度、指向灯位的反光片。花房的伙伴们看到记号就明白了——暗道深处,有猫在等。营救名单,加一。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "valve_three_marked"
+              ]
+            },
+            "success": {
+              "text": "记号留好了,回程的路也确认安全。这次不打草惊蛇,下次有备而来。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "valve_three_marked"
+              ]
+            },
+            "partial": {
+              "text": "做记号时,爪子刮铁皮的声音在管道里传了很远。也不知道里面那只听没听见,听见会不会误会。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "valve_three_marked"
+              ]
+            },
+            "fail": {
+              "text": "回程绕路时,水雾把来时的脚印全淹了。好在记号本身够高,希望下次还找得到。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "valve_marks_faded"
+              ]
+            }
+          }
+        }
+      ]
     }
   ],
   "eventsBalance": [
