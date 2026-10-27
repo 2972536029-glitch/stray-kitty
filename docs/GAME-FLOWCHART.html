@@ -60,34 +60,37 @@ flowchart TD
         D1 --> D2["立体街市探索 explore<br/>在货箱台阶、遮阳雨棚与石砖街道穿行"]
         D2 --> D3["老黑羽情报摊 interact / event<br/>与乌鸦商人讲价 · 掷骰打听失踪猫咪去向"]
         D2 --> D4["咕咕大盗传言棚 interact / event<br/>与鸽子探子盘旋交涉 · 探查地下暗道入口"]
-        D3 & D4 --> D5["满载情报与物资<br/>随时带着集市收获返回花房大本营"]
+        D3 & D4 --> D5["暗影渗透警报 preparation<br/>集市深处黑影逼近 · 规划集市防御路线"]
+        D5 --> D6["午夜集市保卫战 battle<br/>Stage: market_boss · 六猫布防七入口 · 击退集市首领"]
+        D6 --> D7["集市保卫战胜利 settlement<br/>击溃黑影 · 满载情报与物资返回花房大本营"]
     end
 
     subgraph S4["【第三章：废弃花房 · 要塞防线】（地图：温室花房 greenhouse）"]
-        D5 --> E1["第三章启程 dialogue<br/>黑猫墨墨潜行而至 · 带来暗影老巢动向"]
-        E1 --> E2["花房全面修缮与分工<br/>团子理物资 · 点点巡陷阱 · 墨墨探暗道 · 喵喵统筹"]
-        E2 --> E3["要塞正式升级 · 墨墨入队<br/>全员集结齐备 · 废弃花房升格为猫国核心要塞"]
+        D7 --> E1["第三章启程 dialogue<br/>黑猫墨墨潜行而至 · 带来暗影老巢动向"]
+        E1 --> E2["花房修缮与战前动员 dialogue<br/>greenhouse_intro_7 · 战前墨墨正式入队 momo_joined"]
+        E2 --> E3["花房要塞保卫战 battle<br/>Stage: greenhouse_boss · 墨墨巡光护盾铲荆棘 · 击退四格首领"]
+        E3 --> E4["花房要塞保卫战胜利 settlement<br/>防线经受考验 · 要塞正式加固 greenhouse_fortified"]
     end
 
     subgraph S5["【第四章：消失的猫咪们 · 暗道侦查】（地图：地下暗道 tunnel）"]
-        E3 --> F1["深入暗道剧情 dialogue<br/>从花房后井下潜暗渠 · 墨墨绿眸暗处引路"]
+        E4 --> F1["深入暗道剧情 dialogue<br/>从花房后井下潜暗渠 · 墨墨绿眸暗处引路"]
         F1 --> F2["排污蓄水管道探索 explore<br/>在潮湿暗渠管道与生锈铁阀间摸索推进"]
-        F2 --> F3["识破发条诱饵与陷阱<br/>点点敏锐嗅觉辨识绊线 · 规避碎石塌方与假叫声"]
-        F3 --> F4["合力冲破泄洪铁闸门<br/>团子喵喵破开卡死铁栓 · 救出第一批受困幼猫"]
-        F4 --> F5["护送猫咪安全撤离回花房<br/>探明黑影盘踞的最终老巢：老城废弃大仓库"]
+        F2 --> F3["识破发条诱饵与黑影突袭 dialogue<br/>灭灯危急时刻 · 墨墨觉醒夜视与全员护盾 rescue_intro_9"]
+        F3 --> F4["地下暗道破袭战 battle<br/>Stage: tunnel_boss · 夜视破除断灯 · 击溃暗渠首领"]
+        F4 --> F5["合力冲破泄洪铁闸门 settlement / dialogue<br/>rescue_intro_10 · 救出第一批幼猫 cats_rescued_batch1"]
     end
 
     subgraph S6["【终章：点亮流浪猫王国 · 终战与大团圆】（场景：大仓库 / 花房）"]
         F5 --> G1["进军废弃总仓库 dialogue<br/>最后一批伙伴困于深层防空隔间 · 黑影重重封锁"]
-        G1 --> G2["光之走廊战术推进<br/>集市手电 + 小巷蓄光镜片 + 移动灯具步步为营"]
-        G2 --> G3["光明大作 · 黑影退散<br/>强光照亮整座大仓库 · 破开铁锁全员循光安全突围"]
-        G3 --> G4["流浪猫王国落成庆典 home<br/>纸箱城堡落成 · 窗前挂起暖光串灯 · 街坊默契赠水粮"]
-        G4 --> G5["寻猫启事与感人相认 dialogue<br/>主人手持蓝色饭碗与金枪鱼罐头相拥 · 喵喵双重归宿"]
+        G1 --> G2["吹响冲锋号角 dialogue<br/>finale_intro_5 喵喵挺身号召冲锋 · 战术准备 finale_boss"]
+        G2 --> G3["大仓库光之决战 battle<br/>Stage: finale_boss · 移动灯具推进 · 击败永夜之王与两名精英"]
+        G3 --> G4["强光破暗 · 全员突围 dialogue<br/>finale_intro_6 破开铁锁循光撤离 ➔ 7~9 幕大团圆结局"]
+        G4 --> G5["流浪猫王国落成庆典 home<br/>finale_completed · kingdom_founded · 喵喵双重归宿"]
     end
 
     C4 -.-> D1
-    D5 -.-> E1
-    E3 -.-> F1
+    D7 -.-> E1
+    E4 -.-> F1
     F5 -.-> G1
 
     style S0 fill:#f0f7ff,stroke:#2b6cb0,stroke-width:2px
@@ -123,7 +126,8 @@ flowchart LR
         <tr>
           <th>章节编号与名称</th>
           <th>主要场景</th>
-          <th>核心角色行动</th>
+          <th>主线正式战斗与触发/衔接接点</th>
+          <th>核心角色行动与流程</th>
           <th>产生的关键 State Flags</th>
           <th>解锁的家园与系统要素</th>
         </tr>
@@ -132,44 +136,50 @@ flowchart LR
         <tr>
           <td><strong>序章</strong> · 金枪鱼事件</td>
           <td>雨夜小巷 (<code>alley</code>)</td>
-          <td>喵喵独自面对暗影，初光防线教学</td>
-          <td><code>l00_tutorial</code></td>
+          <td><code>l00_tutorial</code><br/>接点：<code>prologue_advisor</code> → 战斗 → <code>chapter1_intro</code></td>
+          <td>喵喵遭遇暗影遇险，伙伴救场引导初光防线教学</td>
+          <td><code>l00_tutorial</code>, <code>l00_completed</code></td>
           <td>激活移动与基础交互能力</td>
         </tr>
         <tr>
           <td><strong>第一章</strong> · 陌生小巷</td>
           <td>雨夜小巷 (<code>alley</code>)</td>
-          <td>结识团子，识破纸箱，营救点点</td>
+          <td><code>alley_rescue</code> / <code>alley_boss</code><br/>接点：<code>crate_event</code> (接应出箱) → 战斗 → <code>rescue_1</code></td>
+          <td>结识团子，接应暹罗点点出纸箱并合力守住撤离路线</td>
           <td><code>alley_rescued</code>, <code>rescue_story_done</code></td>
-          <td>点点入队、纸箱猫窝、解锁花房大本营</td>
+          <td>点点正式入队、纸箱猫窝、解锁花房大本营</td>
         </tr>
         <tr>
           <td><strong>第二章</strong> · 午夜集市</td>
           <td>午夜集市 (<code>market</code>)</td>
-          <td>与老黑羽、咕咕大盗交涉暗影线索</td>
-          <td><code>market_unlocked</code>, <code>chapter_2_started</code></td>
-          <td>猫国商店商品扩充、集市物资兑换</td>
+          <td><code>market_boss</code> (L02)<br/>接点：集市探索收集情报后 → 战斗 → 战后返程</td>
+          <td>与老黑羽、咕咕大盗交涉暗影线索，六猫守住集市7入口</td>
+          <td><code>market_unlocked</code>, <code>chapter_2_started</code>, <code>market_cleared</code></td>
+          <td>猫国商店商品扩充、集市物资兑换、开启第三章剧情</td>
         </tr>
         <tr>
           <td><strong>第三章</strong> · 废弃花房</td>
           <td>温室花房 (<code>greenhouse</code>)</td>
-          <td>墨墨带来情报，全员分工修缮要塞</td>
-          <td><code>chapter_3_started</code>, <code>greenhouse_fortified</code>, <code>momo_joined</code></td>
-          <td>墨墨入队、要塞坚固度提升</td>
+          <td><code>greenhouse_boss</code> (L03)<br/>接点：<code>greenhouse_intro_7</code> → 战斗 → 战后庆功</td>
+          <td>墨墨加入编队替代点点，全员防守34格通路铲荆棘</td>
+          <td><strong>战前</strong>：<code>momo_joined</code><br/><strong>战后</strong>：<code>greenhouse_fortified</code></td>
+          <td>墨墨正式入队出战、花房要塞加固完成、解锁第四章暗道</td>
         </tr>
         <tr>
           <td><strong>第四章</strong> · 消失的猫咪们</td>
           <td>地下暗道 (<code>tunnel</code>)</td>
-          <td>破除发条假叫声陷阱，营救第一批幼猫</td>
-          <td><code>chapter_4_started</code>, <code>tunnel_explored</code>, <code>cats_rescued_batch1</code></td>
+          <td><code>tunnel_boss</code> (L04)<br/>接点：<code>rescue_intro_9</code> → 战斗 → <code>rescue_intro_10</code></td>
+          <td>破除发条诱饵，墨墨觉醒夜视护盾，破开铁栓救出幼猫</td>
+          <td><strong>战前</strong>：墨墨觉醒夜视<br/><strong>战后</strong>：<code>tunnel_explored</code>, <code>cats_rescued_batch1</code></td>
           <td>暗道地图全通、锁定大仓库坐标</td>
         </tr>
         <tr>
           <td><strong>终章</strong> · 点亮流浪猫王国</td>
           <td>废弃大仓库 / 花房</td>
-          <td>聚光战术逼退黑影，王国落成，与主人团聚</td>
-          <td><code>finale_started</code>, <code>finale_completed</code>, <code>kingdom_founded</code></td>
-          <td>全剧终金色庆典、窗前暖光串灯、街坊水粮补给</td>
+          <td><code>finale_boss</code> (L05)<br/>接点：<code>finale_intro_5</code> → 战斗 → <code>finale_intro_6</code></td>
+          <td>聚光推进，击退永夜之王与双精英，受困猫全员突围</td>
+          <td><strong>战后</strong>：<code>finale_started</code>, <code>finale_completed</code>, <code>kingdom_founded</code></td>
+          <td>全剧终金色庆典、窗前暖光串灯、街坊水粮补给、与主人团聚</td>
         </tr>
       </tbody>
     </table>
