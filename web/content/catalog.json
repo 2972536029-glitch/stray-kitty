@@ -4795,6 +4795,483 @@
           }
         }
       ]
+    },
+    {
+      "id": "tunnel_lamp_map",
+      "title": "壁灯巡逻图",
+      "text": "管道壁上一盏壁灯忽明忽暗,灭了,又亮——远处第二盏跟着灭。掐灯的不是风:是有什么东西,在按顺序走过来。",
+      "category": "risk",
+      "tags": [
+        "shadow"
+      ],
+      "triggers": [
+        "node"
+      ],
+      "maps": [
+        "tunnel"
+      ],
+      "options": [
+        {
+          "id": "stake_out_pattern",
+          "label": "蹲在暗处,记下掐灯的顺序",
+          "outcomes": {
+            "crit": {
+              "text": "三盏,间隔九步,掐灯的东西比黑影更'实'——它怕的是灯亮的那一瞬间。你们把掐灯顺序画成了图:哪段灯会灭、灭多久、走哪条边能全程踩着亮处走。这份图,就是下一场硬仗的命。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "lamp_pattern_mapped"
+              ]
+            },
+            "success": {
+              "text": "掐灯有规律:三盏一组,九步一循环。记下了。下次灯灭的时候,你们知道该站在哪。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "lamp_pattern_mapped"
+              ]
+            },
+            "partial": {
+              "text": "记到第二组,那东西忽然停住,朝你们蹲的方向'看'了很久。你们贴墙不动直到它继续巡逻——图只记了一半,一半也够用。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "lamp_pattern_half"
+              ]
+            },
+            "fail": {
+              "text": "它掐灯的路线变了——它发现有人在数它。图没画成,但有一条收获同样值钱:这东西,会反侦察。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "lamp_pattern_busted"
+              ]
+            }
+          }
+        },
+        {
+          "id": "fix_one_lamp",
+          "label": "趁间隙修好一盏常明灯",
+          "outcomes": {
+            "crit": {
+              "text": "你们合力把第三盏壁灯的接触片重新压紧,它亮得稳稳当当。掐灯的东西绕着这盏灯转了三圈,始终没敢下手——常明的灯,是这条管道的钉子。以后每次路过,心里都有底。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "flags": [
+                "lamp_fixed"
+              ]
+            },
+            "success": {
+              "text": "壁灯修好了,光比以前还稳。黑暗里有一小段路,从今天起是安全的。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "lamp_fixed"
+              ]
+            },
+            "partial": {
+              "text": "灯是亮了,但接触片还是松的,光线时不时抖一下。像一句没说完的安全承诺——下次带工具再来。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "lamp_loose"
+              ]
+            },
+            "fail": {
+              "text": "刚碰到灯座,整段线路啪地跳了闸,连原本亮着的两盏都灭了。你们在彻底的黑里听着那东西的脚步,退了整整一条支道。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "lamp_shorted"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "tunnel_momo_marks",
+      "title": "独行侠的旧记号",
+      "text": "岔口下沿有几道极淡的抓痕——不是新的,风干了一年以上。爪距很稳,起落很轻:这是独行侠给自己留的路标。",
+      "category": "opportunity",
+      "tags": [
+        "pathfinding"
+      ],
+      "triggers": [
+        "node"
+      ],
+      "maps": [
+        "tunnel"
+      ],
+      "options": [
+        {
+          "id": "follow_old_marks",
+          "label": "顺着旧记号走一程",
+          "outcomes": {
+            "crit": {
+              "text": "旧记号避开的东西,一样一样应验了:塌方段、水淹段、还有一段你们完全看不出危险的空管——走到头才发现,头顶整片管壁都是黑影的旧巢。独行侠的记号,一年后还在救命。你们在他每个旧记号旁边,添了一道新爪印:路不改,人多了。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2,
+                "material": 1
+              },
+              "flags": [
+                "momo_marks_renewed"
+              ]
+            },
+            "success": {
+              "text": "记号指向的路又快又稳。你们在其中三个旁边补了新的、更深的方向爪印——以后救下来的猫,也能顺着走。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "momo_marks_renewed"
+              ]
+            },
+            "partial": {
+              "text": "记号走到一段新塌方前断了——一年过去,暗道也换过几次脸。但断点前那段路,依然是最快的走法。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "momo_marks_partial"
+              ]
+            },
+            "fail": {
+              "text": "最关键的一处记号被渗水蚀平了,队伍在岔口绕了远路。回来的路上,墨墨在同一个位置重新刻了一道——这次刻得很深。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "momo_marks_recarved"
+              ]
+            }
+          }
+        },
+        {
+          "id": "ask_momo_story",
+          "label": "让墨墨讲讲这些记号",
+          "requireCat": "momo",
+          "outcomes": {
+            "crit": {
+              "text": "墨墨在记号前站了很久,破天荒说了很多:哪道是躲水,哪道是躲影,哪一道刻的那天他饿得没力气,刻得最浅。末了他说:'以前刻这些,是怕自己回不来。'团子把爪子搭上他肩膀:'现在刻,是让别人回得来。'",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "momo_marks_story"
+              ]
+            },
+            "success": {
+              "text": "墨墨简单讲了每道记号的来历。都是一个人的暗道,一个人的记号。听完这些,你们看这暗道的眼光都不一样了。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "momo_marks_story"
+              ]
+            },
+            "partial": {
+              "text": "墨墨讲了个开头就不讲了。独行侠的习惯还没完全改过来——没关系,路还长,故事慢慢讲。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "momo_marks_halfstory"
+              ]
+            },
+            "fail": {
+              "text": "刚要开口,管道深处传来一声异响,全队戒备。故事没讲成,但墨墨把爪子按在旧记号上的那个瞬间,大家都看见了。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "momo_marks_silent"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "upstream_package",
+      "title": "上游漂来的包裹",
+      "text": "水道上游漂来一个油纸包,打着旋儿,不轻不重。说不清是两脚兽掉的,还是哪只猫托运的。",
+      "category": "risk",
+      "tags": [
+        "foraging"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "tunnel"
+      ],
+      "options": [
+        {
+          "id": "fish_it_out",
+          "label": "伸手捞,趁它还没漂远",
+          "outcomes": {
+            "crit": {
+              "text": "一爪精准!油纸包里是裹得严严实实的鱼干和一小包猫粮,还干着——上游有猫在定期托运物资,这条水路本身就是一条补给线。记下投放点的方位。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "fish": 2,
+                "material": 1
+              },
+              "flags": [
+                "water_supply_line"
+              ]
+            },
+            "success": {
+              "text": "捞上来了:一份裹得很用心的鱼干。上游不知道是谁,但谢谢你收货。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "fish": 1
+              },
+              "flags": [
+                "water_supply_line"
+              ]
+            },
+            "partial": {
+              "text": "捞的时候脱了爪,包裹散开冲走一半。剩下的半份鱼干,湿着也香。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "fish": 1
+              }
+            },
+            "fail": {
+              "text": "包裹漂进了暗渠深处,够不着的那一侧。正懊恼,水面忽然静了——有什么东西顺着包裹去了那边。不跟。让它去。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "package_lost_deep"
+              ]
+            }
+          }
+        },
+        {
+          "id": "wait_at_grate",
+          "label": "到下游栅栏口等它自己卡住",
+          "outcomes": {
+            "crit": {
+              "text": "守栅待包,一拿一个准。这次是个双份包裹——鱼干之外还有一小卷用油纸裹紧的布条,撕开来,是某只猫给'下游的朋友'留的字:加油。暗道里的温柔,是顺水漂的。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "fish": 2,
+                "material": 1
+              },
+              "flags": [
+                "water_mail"
+              ]
+            },
+            "success": {
+              "text": "包裹稳稳卡在栅栏上,收货成功。水路慢,但可靠。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "fish": 1
+              },
+              "flags": [
+                "water_mail"
+              ]
+            },
+            "partial": {
+              "text": "等到了,但包装进水了,鱼干泡涨。晒一晒还能吃——仓库的猫不挑。",
+              "tdMod": {
+                "shadowPressure": 0
+              }
+            },
+            "fail": {
+              "text": "栅栏口蹲了半天,包裹没来——上游今天没发货。倒是听见水底有动静,不敢多留,撤。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "upstream_silent"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "tunnel_light_switch",
+      "title": "应急灯闸",
+      "text": "管壁上有一排两脚兽的旧应急灯,闸盒开着,里面的按钮磨得发亮——在这地下,亮,是最贵的东西。",
+      "category": "opportunity",
+      "tags": [
+        "pathfinding"
+      ],
+      "triggers": [
+        "node"
+      ],
+      "maps": [
+        "tunnel"
+      ],
+      "options": [
+        {
+          "id": "take_a_lamp",
+          "label": "拍下闸,摘一盏能拿走的",
+          "outcomes": {
+            "crit": {
+              "text": "闸一拍,半排应急灯应声亮起!你们趁亮摘下最亮的一盏小应急灯——它还将亮很久,而且认得回家的路:下一场硬仗,它跟你们上。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "light_switch_found"
+              ],
+              "carry": "lantern"
+            },
+            "success": {
+              "text": "闸响了,灯亮了。你们摘下一盏还带着余温的小应急灯,揣进队里最稳的背上。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "light_switch_found"
+              ],
+              "carry": "lantern"
+            },
+            "partial": {
+              "text": "灯亮了,但能拿走的那盏接触不良,得一路拍一路走。带着总比不带强。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "light_switch_flicker"
+              ],
+              "carry": "lantern"
+            },
+            "fail": {
+              "text": "闸盒里啪的一声,整排灯闪了三下,彻底黑了。两脚兽的旧东西,脾气难说。黑暗里你们靠彼此的尾巴尖走出这段路。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "light_switch_dead"
+              ]
+            }
+          }
+        },
+        {
+          "id": "leave_it_on",
+          "label": "让这排灯一直亮着,留给后面的猫",
+          "outcomes": {
+            "crit": {
+              "text": "你们把闸固定在'常开',又清掉了灯罩里的灰。这排灯会一直亮下去——给之后每一只被救出来的、走这条暗道的猫。世上少一段黑路,就多一段回家的路。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "lit_path_left"
+              ]
+            },
+            "success": {
+              "text": "闸定在常开。转角时回头看,那排灯像一小截不肯熄的星。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "lit_path_left"
+              ]
+            },
+            "partial": {
+              "text": "闸定好了,但有两盏灯泡太旧,撑不了几天。尽力了——短亮的灯,也是灯。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "lit_path_partial"
+              ]
+            },
+            "fail": {
+              "text": "固定闸盒的螺丝滑了丝,闸随时可能弹回去。你们垫上了随身的碎石——能不能长亮,看它自己的造化。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "lit_path_shaky"
+              ]
+            }
+          }
+        }
+      ]
     }
   ],
   "eventsBalance": [
