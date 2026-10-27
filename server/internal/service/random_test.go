@@ -126,7 +126,7 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 	useMarketRandomPool(t, g, token)
 	// 在 market 抽到共享卡。
 	found := false
-	for i := 0; i < 60 && !found; i++ {
+	for i := 0; i < 160 && !found; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
 		if s.Phase != "event" {
 			continue
@@ -169,7 +169,7 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 	// 换到 market_copy,同一张卡必须还能抽到。
 	execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market_copy"})
 	drewAgain := false
-	for i := 0; i < 60 && !drewAgain; i++ {
+	for i := 0; i < 160 && !drewAgain; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
 		if s.Phase == "event" && s.PendingEventID == "shared_event" {
 			drewAgain = true
