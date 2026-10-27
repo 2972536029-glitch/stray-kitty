@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {act, advanceGame, createGame, getBattleSpeed} from '../../web/src/modules/battle/l00/engine.ts';
 import {CONFIG, ENEMY_TYPES, WAVES} from '../../web/src/modules/battle/l00/config.ts';
 import type {CombatAction, CombatEnemy, CombatState, PlaybackSpeed} from '../../web/src/modules/battle/l00/state.ts';
-import {finishSkillTutorial, useTutorialEnergyItem} from './helpers.ts';
+import {beginBattle} from './helpers.ts';
 
 const cat = (state: CombatState, id: string) => state.cats.find(value => value.id === id)!;
 const closeTo = (actual: number, expected: number) => assert.ok(Math.abs(actual - expected) < 1e-8, `${actual} != ${expected}`);
@@ -11,15 +11,7 @@ function until(state: CombatState, phase: CombatState['phase']) {
   for (let step = 0; step < 3000 && state.phase !== phase; step++) state = advanceGame(state, 0.1);
   assert.equal(state.phase, phase); return state;
 }
-function energyGate() {
-  let state = until(act(createGame(), {type: 'START'}), 'teach_bag');
-  for (const action of [
-    {type: 'OPEN_BAG'}, {type: 'SELECT_ITEM', itemId: 'warm-can'}, {type: 'SELECT_TARGET', catId: 'caster'},
-    {type: 'DEPLOY_CAT', catId: 'caster', x: 3, y: 0}, {type: 'MOVE_CAT', catId: 'guard', x: 4, y: 1},
-  ] as CombatAction[]) state = act(state, action);
-  assert.equal(state.phase, 'teach_energy'); return state;
-}
-const battle = () => finishSkillTutorial(energyGate());
+const battle = () => beginBattle();
 const enemy = (extra: Partial<CombatEnemy> = {}): CombatEnemy => ({...ENEMY_TYPES.scout, id: 'timing-target', type: 'scout', hp: 1000, maxHp: 1000, x: 6.7, y: 1, cooldown: 100, blockedBy: null, ...extra});
 function holdingBattle() {
   const state = battle(); state.spawnIndex = WAVES[0].length;
@@ -29,7 +21,7 @@ function mechanics(state: CombatState) {
   return {time: state.time, accumulator: state.accumulator, phase: state.phase, phaseTime: state.phaseTime,
     cats: state.cats, enemies: state.enemies, wave: state.wave, waveTime: state.waveTime, spawnIndex: state.spawnIndex,
     nextWaveIn: state.nextWaveIn, defeated: state.defeated, escaped: state.escaped, spawned: state.spawned,
-    projectiles: state.projectiles, effects: state.effects, inventory: state.inventory};
+    projectiles: state.projectiles, effects: state.effects};
 }
 
 for (const speed of [0.5, 1, 2] as PlaybackSpeed[]) test(`${speed}x scales wall time once for attacks, movement, shields and wave progression`, () => {
@@ -99,7 +91,6 @@ test('manual pause has priority over inspection, aiming and speed changes and su
   assert.equal(state.paused, true); assert.equal(state.skillAim, null); assert.equal(getBattleSpeed(state), 0);
   state = act(state, {type: 'PAUSE'}); assert.equal(getBattleSpeed(state), 2);
   state = act(state, {type: 'INSPECT_CAT', catId: 'caster'});
-  const bag = act(state, {type: 'OPEN_BAG'}); assert.equal(getBattleSpeed(bag), 0); assert.equal(advanceGame(bag, 10), bag);
   const external = {...state, externallyPaused: true};
   for (const action of [{type: 'SET_SPEED', speed: 1}, {type: 'INSPECT_CAT', catId: 'guard'}, {type: 'CLOSE_INSPECTION'}, {type: 'PAUSE'}]) {
     const next = act(external, action); assert.equal(next.lastAction!.ok, false);
@@ -117,7 +108,7 @@ test('speed and inspection reject invalid runtime parameters without changing ga
     assert.deepEqual(mechanics(rejected), mechanics(state));
   }
   for (const catId of ['hero', 'missing', null, 3]) assert.equal(act(state, {type: 'INSPECT_CAT', catId}).lastAction!.ok, false);
-  for (const status of ['resting', 'ready'] as const) {
+  for (const status of ['retired', 'retired'] as const) {
     const unavailable = structuredClone(state); cat(unavailable, 'caster').status = status;
     assert.equal(act(unavailable, {type: 'INSPECT_CAT', catId: 'caster'}).lastAction!.ok, false);
     assert.equal(getBattleSpeed({...unavailable, inspectedCatId: 'caster'}), 1);
@@ -131,61 +122,12 @@ test('speed and inspection reject invalid runtime parameters without changing ga
 
 for (const interaction of ['inspection', 'aim'] as const) test(`${interaction} is cleared if its cat retreats while combat keeps running`, () => {
   let state = act(holdingBattle(), {type: 'SET_SPEED', speed: 2});
-  Object.assign(cat(state, 'caster'), {x: 4, y: 1, hp: 30, energy: 100});
+  Object.assign(cat(state, 'caster'), {x: 4, y: 1, hp: 10, energy: 100});
   Object.assign(cat(state, 'guard'), {x: 0, y: 2});
   state.enemies = [enemy({x: 4.55, blockedBy: 'caster', cooldown: 0, damage: 15})];
   state = act(state, {type: interaction === 'aim' ? 'SELECT_SKILL' : 'INSPECT_CAT', catId: 'caster'});
   state = advanceGame(state, 0.1);
-  assert.equal(cat(state, 'caster').status, 'resting'); assert.equal(cat(state, 'caster').energy, 100);
+  assert.equal(cat(state, 'caster').status, 'retired'); assert.equal(cat(state, 'caster').energy, 0);
   assert.equal(state.inspectedCatId, null); assert.equal(state.skillAim, null); assert.equal(getBattleSpeed(state), 2);
   assert.equal(act(state, {type: 'MOVE_CAT', catId: 'guard', x: 1, y: 2}).lastAction!.ok, true);
-});
-
-for (const interaction of ['inspection', 'aim'] as const) test(`${interaction} cannot survive a win, loss or reform phase transition`, () => {
-  for (const terminal of ['won', 'failed', 'reform'] as const) {
-    let state = act(holdingBattle(), {type: 'SET_SPEED', speed: 2}); cat(state, 'caster').energy = 100;
-    if (terminal === 'won') {
-      state.wave = CONFIG.TOTAL_WAVES; state.spawnIndex = WAVES.at(-1)!.length; state.enemies = [enemy({hp: 1, x: 5})];
-      cat(state, 'caster').cooldown = 0;
-    } else {
-      state.mode = terminal === 'failed' ? 'standard' : 'tutorial'; state.leaks = 2;
-      state.enemies = [enemy({x: 0.01, speed: 1})];
-    }
-    state = act(state, {type: interaction === 'aim' ? 'SELECT_SKILL' : 'INSPECT_CAT', catId: 'caster'});
-    state = advanceGame(state, 0.1);
-    assert.equal(state.phase, terminal); assert.equal(state.inspectedCatId, null); assert.equal(state.skillAim, null);
-    assert.equal(getBattleSpeed(state), 0); assert.equal(state.playbackSpeed, 2);
-    if (terminal === 'reform') {
-      const reformed = act(state, {type: 'REFORM'});
-      assert.equal(reformed.lastAction!.ok, true); assert.equal(getBattleSpeed(reformed), 2);
-    }
-  }
-});
-
-test('speed controls cannot bypass teaching gates while charge practice supports slowdown and manual pause', () => {
-  const ready = act(createGame(), {type: 'SET_SPEED', speed: 2});
-  assert.equal(ready.playbackSpeed, 2); assert.equal(getBattleSpeed(ready), 0);
-  assert.equal(getBattleSpeed(act(ready, {type: 'START'})), 2);
-  let state = act(energyGate(), {type: 'SET_SPEED', speed: 2});
-  state = act(state, {type: 'INSPECT_CAT', catId: 'caster'});
-  assert.equal(getBattleSpeed(state), 0); assert.equal(advanceGame(state, 30), state);
-  assert.equal(act(state, {type: 'PAUSE'}).lastAction!.ok, false);
-  state = act(state, {type: 'BEGIN_SKILL_PRACTICE'});
-  assert.equal(state.inspectedCatId, null); assert.equal(getBattleSpeed(state), 2);
-  state = act(state, {type: 'INSPECT_CAT', catId: 'guard'}); assert.equal(getBattleSpeed(state), 0.5);
-  const slowed = advanceGame(state, 0.2); closeTo(slowed.time - state.time, 0.1); state = slowed;
-  state = act(state, {type: 'PAUSE'}); state = act(state, {type: 'SET_SPEED', speed: 1});
-  assert.equal(getBattleSpeed(state), 0); assert.equal(advanceGame(state, 20), state);
-  state = until(act(state, {type: 'PAUSE'}), 'teach_energy_item');
-  assert.equal(getBattleSpeed(state), 0); assert.equal(advanceGame(state, 20), state);
-  state = until(useTutorialEnergyItem(state), 'teach_guard_skill');
-  assert.equal(state.inspectedCatId, null); assert.equal(getBattleSpeed(state), 0);
-  state = act(state, {type: 'INSPECT_CAT', catId: 'guard'}); state = act(state, {type: 'CAST_SKILL', catId: 'guard'});
-  assert.equal(state.phase, 'teach_caster_skill'); assert.equal(state.inspectedCatId, null);
-  state = act(state, {type: 'SELECT_SKILL', catId: 'caster'});
-  assert.equal(getBattleSpeed(state), 0); assert.equal(advanceGame(state, 20), state);
-  state = act(state, {type: 'CAST_SKILL', catId: 'caster', x: 5, y: 1});
-  assert.equal(state.phase, 'battle'); assert.equal(getBattleSpeed(state), 1);
-  assert.equal(state.skillAim, null); assert.equal(state.inspectedCatId, null);
-  assert.equal(cat(state, 'guard').shieldRemaining, 8);
 });

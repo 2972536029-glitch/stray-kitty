@@ -1,26 +1,25 @@
-import type {BattleDifficulty, BasicSupplyId} from '../l00/types';
+import type {BattleDifficulty} from '../l00/types';
 
-export type {BattleDifficulty, BasicSupplyId};
+export type {BattleDifficulty};
 export interface Position {x: number; y: number}
-export type ChapterCatId = 'caster' | 'guard' | 'tabby' | 'hammer' | 'frost' | 'singer';
+export type ChapterCatId = 'caster' | 'guard' | 'tuanzi' | 'diandian';
 export type CatId = ChapterCatId;
 export type EnemyKind = 'scout' | 'runner' | 'heavy';
-export type Supplies = Record<BasicSupplyId, number>;
 export interface CatDefinition {
   id: ChapterCatId; name: string; breed: string; role: string; maxHp: number;
-  damage: number; interval: number; block: number; range: 'melee' | 'ranged' | 'hammer';
+  damage: number; interval: number; block: number; range: 'melee' | 'ranged' | 'claws';
   color: string; initial: Position;
 }
 export interface ChapterCat extends CatDefinition, Position {
   hp: number; energy: number; cooldown: number; shield: number; shieldRemaining: number;
-  status: 'active' | 'resting'; energyItemCooldown: number; buffRemaining: number;
+  status: 'active' | 'retired';
   attacks: number; skillUses: number; blockedCount: number;
 }
 export interface ChapterEnemy extends Position {
   id: string; kind: EnemyKind; name: string; hp: number; maxHp: number;
   route: 'upper' | 'lower' | 'branch';
   damage: number; speed: number; interval: number; cooldown: number;
-  blockedBy: ChapterCatId | null; slowRemaining: number;
+  blockedBy: ChapterCatId | null;
 }
 export interface ChapterBoss extends Position {
   id: 'alley-chief'; name: string; hp: number; maxHp: number;
@@ -43,12 +42,11 @@ export interface ChapterState {
   spawnIndex: number; nextWaveIn: number | null; spawned: number; defeated: number;
   totalEnemies: number; leaks: number; maxLeaks: number;
   boss: ChapterBoss; cats: ChapterCat[]; enemies: ChapterEnemy[];
-  inventory: Supplies; initialInventory: Supplies; usedSupplies: Supplies; healingCooldown: number;
   paused: boolean; externallyPaused: boolean; uiPaused: boolean; baseSpeed: 0.5 | 1 | 2;
   inspectedCatId: ChapterCatId | null; aim: {catId: ChapterCatId; target: Position | null} | null;
   logs: {id: number; time: number; text: string}[]; effects: ChapterEffect[]; sequence: number;
   lastAction: {ok: boolean; message: string} | null;
-  stats: {skills: number; healingItems: number; energyItems: number; dodgedSlams: number; damageTaken: number};
+  stats: {skills: number; dodgedSlams: number; damageTaken: number};
 }
 export type ChapterAction =
   | {type: 'START'} | {type: 'RETREAT'} | {type: 'PAUSE'; paused?: boolean}
@@ -57,7 +55,6 @@ export type ChapterAction =
   | {type: 'INSPECT'; catId: ChapterCatId} | {type: 'CLOSE_INSPECTION'}
   | {type: 'SELECT_SKILL'; catId: ChapterCatId} | {type: 'AIM_SKILL'; x: number; y: number}
   | {type: 'CANCEL_SKILL'} | {type: 'CAST_SKILL'; catId: ChapterCatId; target?: Position}
-  | {type: 'MOVE_CAT'; catId: ChapterCatId; x: number; y: number}
-  | {type: 'USE_ITEM'; itemId: BasicSupplyId; catId: ChapterCatId};
-export interface ChapterOptions {difficulty?: BattleDifficulty; loadout?: Partial<Supplies>}
+  | {type: 'MOVE_CAT'; catId: ChapterCatId; x: number; y: number};
+export interface ChapterOptions {difficulty?: BattleDifficulty}
 export interface WaveEntry {at: number; kind: EnemyKind; lane: 0 | 3 | 4}

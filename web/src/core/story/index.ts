@@ -1,6 +1,10 @@
 import type {Catalog, GameState} from '../../contracts';
 export const currentStory = (catalog: Catalog, state: GameState) => catalog.story.find(n => n.id === state.storyNodeId);
 export function objective(state: GameState): string {
+  if (state.phase === 'battle') return state.activeBattle?.stageId === 'l00_tutorial'
+    ? '练习伙伴站位、蓄能与技能配合，守住六波教学防线。'
+    : '与绒绒、斑斑、团子和点点守住八波黑影，击败小巷首领。';
+  if (state.phase === 'preparation') return '调整伙伴站位与技能安排，守住点点的撤离路线。';
   if (state.chapterId === 'finale' || state.flags.includes('finale_started')) {
     if (state.flags.includes('finale_completed')) {
       return '流浪猫王国落成！喵喵与伙伴们共同守护温暖家园，常回家看看。';
@@ -23,7 +27,5 @@ export function objective(state: GameState): string {
   }
   if (state.phase === 'home') return '把获救的伙伴安顿好，让花房多一点家的样子。';
   if (state.cats.includes('diandian')) return '点点已经安全了。回到花房，看看伙伴们吧。';
-  if (state.phase === 'battle') return '布置光源守住三条撤离路线，保护纸箱里的点点。';
-  if (state.phase === 'preparation') return '带上找到的物资，为点点照亮安全的路。';
   return '探索小巷，寻找纸箱里传来的微弱叫声。';
 }

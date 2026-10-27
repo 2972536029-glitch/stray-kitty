@@ -291,7 +291,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		}
 		if s.ActiveBattle != nil && s.ActiveBattle.StageID == "l00_tutorial" {
 			if s.LastResult.Outcome == "lost" {
-				return g.startTutorialBattle(s, "l00_tutorial", false)
+				return g.retryTutorialBattle(s)
 			}
 			s.Phase = "explore"
 			s.MapID = "alley"
@@ -419,8 +419,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	}
 }
 
-// startTutorialBattle 仅服务内部流程(序章教学战进入/失败重试)使用;
-// 玩家命令入口统一走 battle.go 的 startBattle,后者不开放 l00_tutorial。
+// startTutorialBattle creates a fresh attempt for story entry or a failed tutorial retry.
 func (g *Game) startTutorialBattle(s *domain.GameState, stageID string, includeModifiers bool) error {
 	for _, stage := range g.Catalog.Stages {
 		if stage.ID != stageID || stage.Status != "demo" {

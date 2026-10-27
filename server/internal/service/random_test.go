@@ -559,7 +559,7 @@ func TestRepeatWinDoesNotRefundPush(t *testing.T) {
 		t.Fatalf("initial token should be spent, got %d", s.PushTokens)
 	}
 	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
-	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
 	if s.PushTokens != 1 {
 		t.Fatalf("first win should refund to 1, got %d", s.PushTokens)
 	}
@@ -569,7 +569,7 @@ func TestRepeatWinDoesNotRefundPush(t *testing.T) {
 	}
 	// 第二次胜利:非首通,不回 token。
 	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
-	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
 	if s.PushTokens != 1 {
 		t.Fatalf("repeat win must not refund push, got %d", s.PushTokens)
 	}
@@ -717,7 +717,7 @@ func TestChapter3GreenhouseProgressionAndMomoUnlock(t *testing.T) {
 }
 
 // 战备物:结算写入 modifiers.carry,随 START_BATTLE 挂上 attempt,后得覆盖先得,胜利清零失败保留。
-func TestCarryLifecycle(t *testing.T) {
+func TestEventRewardCarryLifecycle(t *testing.T) {
 	g, token, _ := setup(t)
 	finishStory(t, g, token)
 	// crate/search 的 success 档带 lantern:恒 0 随机数掷 [1,1] fail 不带,改用 push 掷两组取 [1,1]+[1,1]?
@@ -740,7 +740,7 @@ func TestCarryLifecycle(t *testing.T) {
 		t.Fatal("battle attempt should receive carry")
 	}
 	// 失败保留:COMPLETE_BATTLE lost → CONTINUE → preparation,carry 仍在。
-	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "lost"})
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "lost", Report: bossReport(3, false)})
 	execute(t, g, token, domain.Command{Type: "CONTINUE"})
 	after, err := g.State(token)
 	if err != nil {
@@ -751,7 +751,7 @@ func TestCarryLifecycle(t *testing.T) {
 	}
 	// 胜利清零(沿用既有 PendingModifiers 清空,carry 随之)。
 	s2 := execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
-	s2 = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s2.ActiveBattle.ID, Outcome: "won"})
+	s2 = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s2.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
 	if s2.EventState.PendingModifiers.Carry != "" {
 		t.Fatal("win must clear carry")
 	}

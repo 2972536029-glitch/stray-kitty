@@ -15,27 +15,20 @@ type Attempt struct {
 	StageID   string           `json:"stageId"`
 	Status    string           `json:"status"`
 	Modifiers *BattleModifiers `json:"modifiers,omitempty"`
-	// Supplies are reserved from available inventory once, for this attempt.
+	// Legacy storage only: old active reservations are fully returned at settlement.
+	// New battles never reserve or consume supplies.
 	Supplies map[string]int `json:"supplies,omitempty"`
 }
 type BattleReport struct {
 	Leaks        *int  `json:"leaks"`
 	BossDefeated *bool `json:"bossDefeated"`
 }
-type BattleRewards struct {
-	Supplies        map[string]int `json:"supplies"`
-	BaseCount       int            `json:"baseCount"`
-	FirstClearBonus int            `json:"firstClearBonus"`
-	PerfectBonus    int            `json:"perfectBonus"`
-	Difficulty      string         `json:"difficulty"`
-}
 type Result struct {
-	Message       string         `json:"message"`
-	Roll          int            `json:"roll,omitempty"`
-	Outcome       string         `json:"outcome,omitempty"`
-	FirstClear    bool           `json:"firstClear,omitempty"`
-	StageID       string         `json:"stageId,omitempty"`
-	BattleRewards *BattleRewards `json:"battleRewards,omitempty"`
+	Message    string `json:"message"`
+	Roll       int    `json:"roll,omitempty"`
+	Outcome    string `json:"outcome,omitempty"`
+	FirstClear bool   `json:"firstClear,omitempty"`
+	StageID    string `json:"stageId,omitempty"`
 }
 type GameState struct {
 	SchemaVersion   int               `json:"schemaVersion"`
@@ -84,10 +77,8 @@ type Command struct {
 	MapID         string `json:"mapId,omitempty"`
 	ZoneID        string `json:"zoneId,omitempty"`
 	// REPORT_MOVE 携带的本次行走里程(画布像素)。
-	Distance     int            `json:"distance,omitempty"`
-	Supplies     map[string]int `json:"supplies,omitempty"`
-	UsedSupplies map[string]int `json:"usedSupplies,omitempty"`
-	Report       *BattleReport  `json:"report,omitempty"`
+	Distance int           `json:"distance,omitempty"`
+	Report   *BattleReport `json:"report,omitempty"`
 	// CHOOSE_EVENT 的伙伴鼓励声明:掷两组 2d6 取优,消耗一枚 PushTokens。
 	UsePush bool `json:"usePush,omitempty"`
 }

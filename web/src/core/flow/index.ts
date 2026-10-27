@@ -6,7 +6,7 @@ const allowed: Record<GamePhase, readonly GameCommand['type'][]> = {
   event: ['CHOOSE_EVENT'],
   preparation: ['START_BATTLE', 'GO_EXPLORE', 'GO_HOME', 'START_STORY'],
   battle: ['COMPLETE_BATTLE'],
-  settlement: ['CONTINUE', 'START_STORY', 'GO_EXPLORE', 'GO_HOME'],
+  settlement: ['CONTINUE', 'START_BATTLE', 'START_STORY', 'GO_EXPLORE', 'GO_HOME'],
   home: ['GO_EXPLORE', 'DRAW_FURNITURE', 'PLACE_FURNITURE', 'START_BATTLE', 'BUY_FURNITURE', 'START_STORY']
 };
 export function canDispatch(phase: GamePhase, command: GameCommand['type']): boolean {

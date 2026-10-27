@@ -1,8 +1,8 @@
 // 轩扬 MR !2（a553076）的 64×64 像素图稿，UI 与 Canvas 共用路径。
-// 团子沿用当前剧情和档案的橘猫设定。
+// 团子沿用橘猫设定；点点使用暹罗辅助形象，与奶牛猫盾卫斑斑区分。
 export const breeds = {
   miaomiao: {fur: '#f2dfb8', shade: '#d5bc87', patch: '#b77b32', point: '#3b3131', eye: '#262b31', accent: '#b54035', name: '英短 · 喵喵'},
-  diandian: {fur: '#f4ead7', shade: '#d2c5ae', patch: '#49464d', point: '#302d32', eye: '#4e6d54', accent: '#b54035', name: '奶牛猫 · 点点'},
+  diandian: {fur: '#d9c7a8', shade: '#b9a789', patch: '#63594d', point: '#443d35', eye: '#82aeb8', accent: '#d8a1a0', name: '暹罗猫 · 点点'},
   tuanzi: {fur: '#e7ad67', shade: '#c38343', patch: '#a66536', point: '#523729', eye: '#553d2e', accent: '#39698c', name: '橘猫 · 团子'},
   momo: {fur: '#46434a', shade: '#2c2a30', patch: '#69646d', point: '#211f24', eye: '#c99b35', accent: '#39698c', name: '孟买猫 · 墨墨'}
 } as const;
@@ -21,11 +21,11 @@ export function catShapes(breed: CatBreed, mood: CatMood): CatShape[] {
     outlined('M10 21v-8h6V8l8 7h16l8-7v5h6v8h4v20h-4v5H10v-5H6V21z', p.fur),
     flat('M45 14l3-4v5h6v7h3v19h-6V20z', p.shade)
   ];
-  if (breed === 'diandian') shapes.push(flat('M8 22v-8h14v9h-5v8H8z', p.patch), flat('M43 14h11v9h-7z', p.patch), flat('M37 44h11v12H36z', p.patch));
+  if (breed === 'diandian') shapes.push(flat('M10 14h6V9l8 7v7H10zM40 16l8-7v5h6v9H40z', p.patch), flat('M18 24h28v14H18zM23 38h18v5H23z', p.patch), flat('M45 43h6v-4h5v-9h-5v5h-6z', p.patch));
   if (breed === 'miaomiao') shapes.push(flat('M8 22v-7h9v13h-7z', p.patch), flat('M47 14h7v12h-9z', p.patch), flat('M37 44h11v11H36z', p.patch));
   if (breed === 'tuanzi') shapes.push(flat('M18 15h4v9h-4zM29 15h4v10h-4zM40 15h4v9h-4zM18 46h4v8h-4zM40 46h4v8h-4z', p.patch));
   if (breed === 'momo') shapes.push(flat('M20 34h24v9H20z', p.patch));
-  shapes.push(outlined('M15 52h12v7H14v-4zM37 52h13v7H37z', breed === 'momo' ? p.patch : '#fff4dc'));
+  shapes.push(outlined('M15 52h12v7H14v-4zM37 52h13v7H37z', breed === 'momo' || breed === 'diandian' ? p.patch : '#fff4dc'));
   if (mood === 'worried') shapes.push(flat('M19 29h8v2h-8zM37 29h8v2h-8z', p.point));
   else shapes.push(flat('M21 27h4v7h-4zM39 27h4v7h-4z', p.eye), flat('M22 27h1.5v2H22zM40 27h1.5v2H40z', '#fff'));
   if (mood === 'brave') shapes.push(flat('M19 24l8 2v2l-8-2zM37 26l8-2v2l-8 2z', p.point));

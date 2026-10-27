@@ -7,7 +7,7 @@ test('第一章首领关卡引用真实章节且尺寸、波次必须为正整�
  const catalog=readCatalog();
  const stage=catalog.stages.find((s:any)=>s.id==='alley_boss');
  assert.equal(stage.chapterId,'alley');
- assert.deepEqual([stage.lanes,stage.columns,stage.waves],[5,12,8]);
+ assert.deepEqual([stage.lanes,stage.columns,stage.waves],[5,10,8]);
  for(const patch of [{chapterId:'missing'},{columns:1.5},{waves:0}]){
   const c=readCatalog();Object.assign(c.stages.find((s:any)=>s.id==='alley_boss'),patch);assert.throws(()=>validateContent(c));
  }

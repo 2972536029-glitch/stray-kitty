@@ -48,7 +48,7 @@ test.beforeAll(async ({request}) => {
       chapterId: 'prologue', storyNodeId: '', mapId: 'alley', flags: [],
       cats: ['miaomiao', 'tuanzi'], inventory: {food: 0, material: 0}, currencies: {stamp: 0},
       furniture: [], placements: {}, completedStages: [], pendingEventId: '',
-      activeBattle: {id: `l00-pressure-${entry.difficulty}`, stageId: 'alley_rescue', status: 'active', modifiers: {shadowPressure: entry.pressure}},
+      activeBattle: {id: `l00-pressure-${entry.difficulty}`, stageId: 'l00_tutorial', status: 'active', modifiers: {shadowPressure: entry.pressure}},
       lastResult: {message: 'E2E 持久化场次 fixture：不经过随机骰子事件。'},
     };
     sessions.set(entry.difficulty, session);
@@ -97,71 +97,48 @@ async function moveCat(page: Page, cat: 'guard' | 'caster', target: string) {
 }
 
 for (const entry of cases) {
-  test(`持久化场次 fixture：压力 ${entry.pressure} → ${entry.difficulty}，免费重整与刷新保留难度`, async ({page, request}, testInfo) => {
-    test.setTimeout(90000);
+  test(`持久化场次：压力 ${entry.pressure} → ${entry.difficulty}，刷新不变且失败后新场次继承`, async ({page, request}, testInfo) => {
+    test.setTimeout(120000);
     page.setDefaultTimeout(10000);
-    const session = sessions.get(entry.difficulty)!;
-    const expectedState = savedStates.get(entry.difficulty)!;
-    const headers = {Authorization: `Bearer ${session.token}`};
-    const readSavedState = async () => {
-      const response = await request.get(`${fixtureOrigin}/api/v1/state`, {headers});
-      expect(response.status()).toBe(200);
-      return await response.json() as GameState;
-    };
+    const session=sessions.get(entry.difficulty)!;
+    const expectedState=savedStates.get(entry.difficulty)!;
+    const headers={Authorization:`Bearer ${session.token}`};
+    const readSavedState=async()=>{const response=await request.get(`${fixtureOrigin}/api/v1/state`,{headers});expect(response.status()).toBe(200);return await response.json() as GameState;};
     expect(await readSavedState()).toEqual(expectedState);
-    await page.addInitScript(({origin, session}) => {
-      if (location.origin === origin) localStorage.setItem('stray-kitty.session.v1', JSON.stringify(session));
-    }, {origin: fixtureOrigin, session});
-    const battleCommands: string[] = [];
-    page.on('request', request => {
-      if (request.url() === `${fixtureOrigin}/api/v1/commands` && request.method() === 'POST') {
-        const type = request.postDataJSON().command?.type;
-        if (type === 'START_BATTLE' || type === 'COMPLETE_BATTLE') battleCommands.push(type);
-      }
-    });
-    await page.goto(fixtureOrigin);
-    await page.getByRole('button', {name: '继续冒险'}).click();
-    const battle = page.locator('section[aria-label="序章塔防战斗"]');
-    const difficulty = page.getByRole('status', {name: '本次战斗难度'});
-    await expect(battle).toHaveAttribute('data-phase', 'ready');
-    await expect(difficulty).toContainText(`${entry.label} · 新手保护开启`);
+    await page.addInitScript(({origin,session})=>{if(location.origin===origin)localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));},{origin:fixtureOrigin,session});
+    const battleCommands:string[]=[];
+    page.on('request',request=>{if(request.url()===`${fixtureOrigin}/api/v1/commands`&&request.method()==='POST'){const type=request.postDataJSON().command?.type;if(type==='START_BATTLE'||type==='COMPLETE_BATTLE')battleCommands.push(type);}});
+    await page.goto(fixtureOrigin);await page.getByRole('button',{name:'继续冒险'}).click();
+    const battle=page.locator('section[aria-label="序章塔防战斗"]');
+    const difficulty=page.getByRole('status',{name:'本次战斗难度'});
+    await expect(battle).toHaveAttribute('data-phase','ready');await expect(difficulty).toContainText(`${entry.label} · 新手教学`);
+    await completeL00Tutorial(page,battle);await expect(difficulty).toContainText(`黑影体力 ${entry.hpPercent}%`);
+    await page.getByTestId('battle-play-toggle').click();await expect(battle).toHaveAttribute('data-effective-speed','0');
+    const time=await battle.getAttribute('data-battle-time');
+    const energy=await page.getByTestId('battle-energy-guard-compact').getAttribute('aria-valuenow');
+    await page.waitForTimeout(400);
+    await expect(battle).toHaveAttribute('data-battle-time',time!);
+    await expect(page.getByTestId('battle-energy-guard-compact')).toHaveAttribute('aria-valuenow',energy!);
+    await expect(page.getByTestId('battle-open-bag')).toHaveCount(0);
+    expect(await readSavedState()).toEqual(expectedState);
+    await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+    await expect(battle).toHaveAttribute('data-phase','ready');await expect(difficulty).toContainText(`${entry.label} · 新手教学`);
+    expect(await readSavedState()).toEqual(expectedState);expect(battleCommands).toEqual([]);
+    await page.screenshot({path:testInfo.outputPath(`pressure-${entry.difficulty}-same-attempt.png`),fullPage:true});
 
-    // All following battle actions are actual player controls, including teaching.
-    await completeL00Tutorial(page, battle);
-    await expect(difficulty).toContainText(`黑影体力 ${entry.hpPercent}%`);
+    // Actual player controls leave the middle lane unblocked; no battle-state injection.
+    await completeL00Tutorial(page,battle);await page.getByTestId('battle-play-toggle').click();
+    await moveCat(page,'caster','A7');await moveCat(page,'guard','C7');
     await page.getByTestId('battle-play-toggle').click();
-    await expect(battle).toHaveAttribute('data-effective-speed', '0');
-    // Leave the lane unblocked. Both cats only reach the entrance column, so
-    // normal movement/leak rules (not state injection) trigger the novice reform.
-    await moveCat(page, 'caster', 'A7');
-    await moveCat(page, 'guard', 'C7');
-    await page.getByTestId('battle-play-toggle').click();
-    await expect(battle).toHaveAttribute('data-phase', 'reform', {timeout: 45000});
-    const waveBeforeReform = await page.getByTestId('battle-wave-progress').textContent();
-    await expect(difficulty).toContainText(`${entry.label} · 黑影体力 ${entry.hpPercent}%`);
-    expect(await readSavedState()).toEqual(expectedState);
-    await page.getByRole('button', {name: '免费重整当前波'}).click();
-    await expect(battle).toHaveAttribute('data-phase', 'battle');
-    await page.getByTestId('battle-play-toggle').click();
-    await expect(battle).toHaveAttribute('data-effective-speed', '0');
-    await expect(page.getByTestId('battle-wave-progress')).toHaveText(waveBeforeReform!);
-    await expect(difficulty).toContainText(`${entry.label} · 黑影体力 ${entry.hpPercent}%`);
-    await expect(page.getByTestId('battle-cat-caster')).toHaveAttribute('aria-label', /体力 80 \/ 80，A4，/);
-    await expect(page.getByTestId('battle-cat-guard')).toHaveAttribute('aria-label', /体力 240 \/ 240，B5，/);
-    await page.screenshot({path: testInfo.outputPath(`pressure-${entry.difficulty}-reformed.png`), fullPage: true});
-
-    await page.reload();
-    await page.getByRole('button', {name: '继续冒险'}).click();
-    await expect(battle).toHaveAttribute('data-phase', 'ready');
-    await expect(difficulty).toContainText(`${entry.label} · 新手保护开启`);
-    await expect(page.getByRole('alert')).toHaveCount(0);
-    expect(await readSavedState()).toEqual(expectedState);
-    expect(battleCommands).toEqual([]);
-    await page.screenshot({path: testInfo.outputPath(`pressure-${entry.difficulty}-refreshed.png`), fullPage: true});
-    await testInfo.attach('persisted-pressure-fixture', {contentType: 'application/json', body: JSON.stringify({
-      setup: 'isolated persisted server fixture; no random-event coverage claim',
-      pressure: entry.pressure, difficulty: entry.difficulty, attemptId: expectedState.activeBattle!.id,
-      reformedWave: waveBeforeReform, refreshedPhase: 'ready', browserBattleCommands: battleCommands,
-    }, null, 2)});
+    await expect(page.getByRole('button',{name:'重新开始教学',exact:true})).toBeVisible({timeout:45000});
+    const failed=await readSavedState();expect(failed.phase).toBe('settlement');expect(failed.activeBattle).toMatchObject({id:expectedState.activeBattle!.id,stageId:'l00_tutorial',status:'lost',modifiers:{shadowPressure:entry.pressure}});
+    await expect(page.getByRole('button',{name:/免费重整|重新上阵/})).toHaveCount(0);
+    await page.getByRole('button',{name:'重新开始教学',exact:true}).click();
+    await expect(battle).toHaveAttribute('data-phase','ready');await expect(difficulty).toContainText(`${entry.label} · 新手教学`);
+    const retried=await readSavedState();expect(retried.phase).toBe('battle');expect(retried.activeBattle!.id).not.toBe(failed.activeBattle!.id);
+    expect(retried.activeBattle).toMatchObject({stageId:'l00_tutorial',status:'active',modifiers:{shadowPressure:entry.pressure}});
+    expect(battleCommands).toEqual(['COMPLETE_BATTLE','START_BATTLE']);
+    await page.screenshot({path:testInfo.outputPath(`pressure-${entry.difficulty}-new-attempt.png`),fullPage:true});
+    await testInfo.attach('persisted-pressure-fixture',{contentType:'application/json',body:JSON.stringify({setup:'isolated persisted fixture; not a random-event coverage claim',pressure:entry.pressure,difficulty:entry.difficulty,originalAttempt:failed.activeBattle!.id,retryAttempt:retried.activeBattle!.id,browserBattleCommands:battleCommands},null,2)});
   });
 }

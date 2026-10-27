@@ -17,7 +17,7 @@ func TestFurniturePurchasePersistsAndCannotDoubleCharge(t *testing.T) {
 		t.Fatal("purchase before home accepted")
 	}
 	s = toBattle(t, g, token)
-	execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+	execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
 	execute(t, g, token, domain.Command{Type: "CONTINUE"})
 	s = finishStory(t, g, token)
 	request.ExpectedRevision = &s.Revision
