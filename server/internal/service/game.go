@@ -183,12 +183,12 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					}
 					return nil
 				}
-				if n.ID == "prologue_2" {
+				if n.ID == "prologue_advisor" {
 					s.StoryNodeID = ""
 					if domain.Contains(s.CompletedStages, "l00_tutorial") {
-						s.Phase = "explore"
-						s.MapID = "alley"
-						s.ExploreDistance = -randomGrace
+						s.Phase = "dialogue"
+						s.ChapterID = "alley"
+						s.StoryNodeID = "chapter1_intro"
 						return nil
 					}
 					return g.startTutorialBattle(s, "l00_tutorial", false)
@@ -297,9 +297,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			if s.LastResult.Outcome == "lost" {
 				return g.retryTutorialBattle(s)
 			}
-			s.Phase = "explore"
+			s.Phase = "dialogue"
+			s.ChapterID = "alley"
+			s.StoryNodeID = "chapter1_intro"
 			s.MapID = "alley"
-			s.ExploreDistance = -randomGrace
 			s.ActiveBattle = nil
 			return nil
 		}

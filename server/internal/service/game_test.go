@@ -69,6 +69,12 @@ func finishStory(t *testing.T, g *service.Game, token string) domain.GameState {
 		s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
 		s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
 	}
+	for i := 0; s.Phase == "dialogue"; i++ {
+		if i >= 20 {
+			t.Fatal("story did not reach an exit")
+		}
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
 	return s
 }
 
@@ -89,8 +95,14 @@ func TestPrologueStartsAndCompletesDistinctL00Tutorial(t *testing.T) {
 		t.Fatalf("tutorial completion leaked rescue state: %+v", s)
 	}
 	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	if s.Phase != "dialogue" || s.StoryNodeID != "chapter1_intro" || s.ChapterID != "alley" {
+		t.Fatalf("tutorial did not hand off to chapter1_intro: %+v", s)
+	}
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
 	if s.Phase != "explore" || s.MapID != "alley" || s.ActiveBattle != nil {
-		t.Fatalf("tutorial did not hand off to Rainy Alley: %+v", s)
+		t.Fatalf("chapter 1 intro did not hand off to Rainy Alley: %+v", s)
 	}
 }
 
@@ -200,16 +212,23 @@ func TestChapter1TuanziEncounterAndReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 推进至序章末尾
-	for s.StoryNodeID != "prologue_lost" {
+	// 推进至序章末尾（阿策安抚布防）
+	for s.StoryNodeID != "prologue_advisor" {
 		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 	}
 	if s.ChapterID != "prologue" {
 		t.Fatalf("expected prologue chapter before intro, got %s", s.ChapterID)
 	}
 
-	// 序章结束，进入第一章小巷导言
-	s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: "prologue_lost"})
+	// 序章结束，进入教学战
+	s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: "prologue_advisor"})
+	if s.Phase != "battle" || s.ActiveBattle == nil || s.ActiveBattle.StageID != "l00_tutorial" {
+		t.Fatalf("expected battle l00_tutorial after prologue_advisor, got phase=%s", s.Phase)
+	}
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+
+	// 教学战胜利后进入第一章小巷导言
 	if s.StoryNodeID != "chapter1_intro" || s.ChapterID != "alley" {
 		t.Fatalf("expected chapter1_intro in alley, got node=%s, chapter=%s", s.StoryNodeID, s.ChapterID)
 	}
@@ -221,7 +240,9 @@ func TestChapter1TuanziEncounterAndReplay(t *testing.T) {
 	}
 
 	// 完成教学战并回放第一章
-	s = finishStory(t, g, token)
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
 	if s.Phase != "explore" {
 		t.Fatalf("expected explore after finishStory, got %s", s.Phase)
 	}
