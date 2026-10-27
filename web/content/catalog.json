@@ -3822,6 +3822,498 @@
           }
         }
       ]
+    },
+    {
+      "id": "fake_meow_event",
+      "title": "假猫叫",
+      "text": "货架深处传来一声猫叫——音准完美,尾音微颤,连'救命'的哭腔都有。可这声音每隔七步就重复一次,分毫不差。真的猫,不会叫得这么标准。",
+      "category": "risk",
+      "tags": [
+        "shadow",
+        "trap"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "warehouse"
+      ],
+      "options": [
+        {
+          "id": "call_back_differently",
+          "label": "回一声不完整的猫叫——真猫会接茬",
+          "outcomes": {
+            "crit": {
+              "text": "你们的叫声故意跑了调。货架后沉默了两秒,随即爆发出一声慌乱走板的真猫叫——有一只被困的伙伴听懂了!它顺着你们的声音挪到了货架边缘,眼睛在暗处亮着。声源位置,记下了。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "fake_meow_busted"
+              ]
+            },
+            "success": {
+              "text": "跑调的回叫换来了七零八落的应答。真假听懂了彼此:那声完美的才是假的,而货架深处,确实还有真的在等。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "fake_meow_busted"
+              ]
+            },
+            "partial": {
+              "text": "你们的回叫引来的不是应答,而是那声完美猫叫的逼近。真假已经不重要了——先退到过道有灯的这头再说。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "fake_meow_lured"
+              ]
+            },
+            "fail": {
+              "text": "回叫过后,整排货架的阴影同时安静了。这种安静比叫声更不对劲。你们贴着货架根退出了这条过道,下次带光再来。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "fake_meow_silenced"
+              ]
+            }
+          }
+        },
+        {
+          "id": "momo_tell_true_false",
+          "label": "让墨墨竖起耳朵验一下声",
+          "requireCat": "momo",
+          "outcomes": {
+            "crit": {
+              "text": "墨墨听了三轮,尾巴尖一点点指向货架第三层:\"左二那声是回声,右一那声后面带风——是东西在动嘴,不是喉咙。\"他还听出右一的位置有一处真的呼吸声。诱饵的坐标和真猫的坐标,一次全拿到。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "momo_heard_through"
+              ]
+            },
+            "success": {
+              "text": "墨墨闭眼听完:\"完美的那声是假的,每七步一次,是录下来的动静。但它旁边,有真的。\"假的排除了,真的还在,营救名单添一处。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "momo_heard_through"
+              ]
+            },
+            "partial": {
+              "text": "墨墨验声验到一半,那叫声忽然换了节奏,像是在反侦察。墨墨眯起眼:它听得懂我们在听。两边的较量,才刚开始。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "momo_heard_through"
+              ]
+            },
+            "fail": {
+              "text": "一声铁架倒塌的巨响盖过了一切。等回声散尽,那声完美的猫叫也停了。墨墨甩甩耳朵:下次它不会再叫得这么好听了。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "fake_meow_gone"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "moving_shelves_event",
+      "title": "会动的货架",
+      "text": "过道尽头那排货架,刚才明明和这排对齐——现在多出了一掌宽的缝。仓库里没有风。",
+      "category": "risk",
+      "tags": [
+        "shadow"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "warehouse"
+      ],
+      "options": [
+        {
+          "id": "watch_the_gap",
+          "label": "蹲下来,盯着那道缝看",
+          "outcomes": {
+            "crit": {
+              "text": "缝隙里的黑影以为没人看,慢慢探出了一角——正对上喵喵圆睁的双眼。它僵住,缩回,货架后传来一阵仓皇的窸窣。今天这一局,是猫赢了。撤退路线上多了一条它不敢用的道。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "shelf_stared_down"
+              ]
+            },
+            "success": {
+              "text": "缝里的黑影和你们对峙了十秒,先怂的是它。货架缓缓归位,过道恢复了对齐。谁也没说话,但都记住了:影子和猫,是可以互相吓的。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "shelf_stared_down"
+              ]
+            },
+            "partial": {
+              "text": "盯到一半,头顶的灯闪了一下。就这一下的工夫,货架又挪了半掌。它不怕被看,它怕的是光——这条信息本身就很值钱。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "shelf_fears_light"
+              ]
+            },
+            "fail": {
+              "text": "缝隙忽然张开成一个人宽,黑影贴地窜出,从你们头顶的货架跃过。等心跳落回原处,那排货架已经完全挡死了过道。绕路。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "shelf_blocked_path"
+              ]
+            }
+          }
+        },
+        {
+          "id": "squeeze_past_now",
+          "label": "趁缝还窄,现在就贴过去",
+          "outcomes": {
+            "crit": {
+              "text": "你们贴着货架侧身而过,快得像一道影子。过去之后回头看,那道缝正在无声合拢——再晚三步,今天就得多绕半个仓库。最快的路,是自己抢出来的。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "shelf_squeezed"
+              ]
+            },
+            "success": {
+              "text": "侧身,收腹,一条龙通过。缝隙在你们身后继续它的小动作,但已经与你们无关。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "shelf_squeezed"
+              ]
+            },
+            "partial": {
+              "text": "过是过去了,团子的尾巴被夹了一下。他坚称不疼,但接下来一路都把尾巴盘在身前走。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "tail_pinched"
+              ]
+            },
+            "fail": {
+              "text": "挤到一半,货架猛地一错位!全队倒退着滚回原侧,灰头土脸。这排货架是活的,这一条,用最狼狈的方式确认了。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "shelf_is_alive"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "warm_nest_event",
+      "title": "失踪猫的窝",
+      "text": "货架底层的角落里有一个窝:纸箱垫着塑料布,窝里压出的凹陷还是新的,旁边散着几粒吃了一半的猫粮——按粒数,不超过两天。",
+      "category": "opportunity",
+      "tags": [
+        "pathfinding"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "warehouse"
+      ],
+      "options": [
+        {
+          "id": "read_the_trail",
+          "label": "趴下来,读窝边的痕迹",
+          "outcomes": {
+            "crit": {
+              "text": "凹陷的朝向、爪印的深浅、猫粮拖出的弧线——点点一样一样读过去:它朝仓库深处去了,伤在左前爪,走得不快,'而且它把窝留成了回来还能住的样子'。它相信会有人来。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 3
+              },
+              "flags": [
+                "nest_trail_read"
+              ]
+            },
+            "success": {
+              "text": "窝是新的,爪印指向仓库深处,消失在一排货架后面。失踪名单上的名字,有一个此刻离你们很近。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "nest_trail_read"
+              ]
+            },
+            "partial": {
+              "text": "痕迹读了一半被一阵粉尘盖住。只看清了方向:深处。带手电,再来。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "nest_trail_faded"
+              ]
+            },
+            "fail": {
+              "text": "你们趴下的时候,仓库某处传来一声响动,窝边的痕迹被自己人踩乱了。没关系——窝在,它就会回来;你们也会。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "nest_trail_lost"
+              ]
+            }
+          }
+        },
+        {
+          "id": "leave_food_note",
+          "label": "在窝边补满猫粮,留个记号",
+          "outcomes": {
+            "crit": {
+              "text": "猫粮补满,记号用的是花房带来的小花。等你们巡查回来,窝边的猫粮少了一半,小花被挪到了窝口最显眼的位置——它收到了,而且它说:谢谢。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "nest_fed"
+              ]
+            },
+            "success": {
+              "text": "猫粮补满,小花放好。不管它什么时候回来,都能吃上一顿热的、冷的但管饱的。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "nest_fed"
+              ]
+            },
+            "partial": {
+              "text": "补猫粮时打翻了水碗,窝湿了一角。你们手忙脚乱垫了新塑料布——比原来的还厚实一点。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "nest_fed"
+              ]
+            },
+            "fail": {
+              "text": "猫粮刚放下,货架那头的动静就让你们撤了。第二天再来时窝是空的,猫粮也是满的——它回来过,又走了。它还在自己找路。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "nest_came_and_went"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "sack_row_event",
+      "title": "一排麻袋",
+      "text": "卸货区整整齐齐码着一排麻袋。七只。每一只,都动过。",
+      "category": "risk",
+      "tags": [
+        "trap",
+        "shadow"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "warehouse"
+      ],
+      "options": [
+        {
+          "id": "check_from_ends",
+          "label": "从两头往中间,一只只确认",
+          "outcomes": {
+            "crit": {
+              "text": "一头三只,空的;另一头三只,空的;中间那只——绳结是新的,袋底是温的。解开,一只吓傻的小猫冲出来扎进团子怀里。第七只麻袋自己倒了:是影子扮的,被识破后悻悻散开。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "sack_seventh_freed"
+              ]
+            },
+            "success": {
+              "text": "六只空麻袋,一只里面有货:受困的伙伴,救出。它抖着声音说,码这些袋子的是'会学麻袋喘气的影子'——和你们想到一块儿去了。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "sack_row_checked"
+              ]
+            },
+            "partial": {
+              "text": "查到第五只时,六七两只同时剧烈扭动起来。你们扑向第六只——是空的;第七只里的挣扎,在你们扑空的瞬间停了。差一步。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "sack_one_step_short"
+              ]
+            },
+            "fail": {
+              "text": "七只全空。正当你们松口气的瞬间,卸货区的大门在身后缓缓关上——这排麻袋本身,就是那个'请君入瓮'的瓮。全队冲刺,从合拢前的门缝里挤出。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "sack_trap_sprung"
+              ]
+            }
+          }
+        },
+        {
+          "id": "momo_smell_first",
+          "label": "墨墨先绕一圈,用鼻子点名",
+          "requireCat": "momo",
+          "outcomes": {
+            "crit": {
+              "text": "墨墨绕行一周,在第三只麻袋前停住:\"这只,有活物的暖。\"又在第七只前炸了毛:\"这只,没有味道。\"——没有味道的东西,才是最不对的东西。救出第三只里的伙伴,全员绕开第七只。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "momo_nose_counted"
+              ]
+            },
+            "success": {
+              "text": "墨墨的鼻子点名:三真四假,真的那只救出,假的绕行。省下的力气和风险,都是鼻子挣的。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "momo_nose_counted"
+              ]
+            },
+            "partial": {
+              "text": "墨墨闻到第四只时打了个喷嚏,点名中断。前四只按他的结论办,后三只——按运气办。运气尚可,有惊无险。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "momo_nose_interrupted"
+              ]
+            },
+            "fail": {
+              "text": "一阵穿堂风把七只麻袋的气味搅成了一锅粥。墨墨摇头:今天鼻子不管用。改天,或者改带灯。全队后撤,麻袋留给明天。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "sack_row_postponed"
+              ]
+            }
+          }
+        }
+      ]
     }
   ],
   "eventsBalance": [
