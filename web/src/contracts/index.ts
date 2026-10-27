@@ -1,5 +1,5 @@
 export type GamePhase = 'dialogue' | 'explore' | 'event' | 'preparation' | 'battle' | 'settlement' | 'home';
-export type BattleCarryId = 'lantern' | 'mirror' | 'bell' | 'box' | 'dog' | 'dove' | 'rats' | 'kitten';
+export type BattleCarryId = 'lantern' | 'mirror' | 'bell' | 'box' | 'dog' | 'dove';
 export interface BattleModifiers {shadowPressure: -1 | 0 | 1; situation?: 'detour' | 'forced_chase'; carry?: BattleCarryId}
 export interface BattleReport {leaks: number; bossDefeated: boolean; elitesDefeated?: number}
 export interface BattleAttempt {id: string; stageId: string; status: 'active' | 'won' | 'lost'; modifiers?: BattleModifiers}

@@ -16,9 +16,9 @@ interface CarryPanelProps {
   onUse: () => void;
 }
 const NAMES: Record<BattleCarryId, string> = {
-  lantern: '小灯', mirror: '镜片', bell: '铃铛', box: '纸箱', dog: '老黄大狗', dove: '咕咕鸽子', rats: '鼠群小队', kitten: '获救小猫',
+  lantern: '小灯', mirror: '镜片', bell: '铃铛', box: '纸箱', dog: '老黄大狗', dove: '咕咕鸽子',
 };
-const ICONS: Record<BattleCarryId, string> = {lantern: '◉', mirror: '◇', bell: '♧', box: '▣', dog: '♟', dove: '↗', rats: '≈', kitten: '✿'};
+const ICONS: Record<BattleCarryId, string> = {lantern: '◉', mirror: '◇', bell: '♧', box: '▣', dog: '♟', dove: '↗'};
 const cellName = ({x, y}: Position) => `${String.fromCharCode(65 + y)}${x + 1}`;
 
 /** Read the real wave table; scouting never changes the spawn clock or invents enemies. */
