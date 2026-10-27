@@ -10,6 +10,8 @@ import {createTunnelContext} from './tunnel-context';
 import {TunnelBattleViewport} from './tunnel/TunnelBattleViewport';
 import {createFinaleContext} from './finale-context';
 import {FinaleBattleViewport} from './finale/FinaleBattleViewport';
+import './scene-art.css';
+import './immersive.css';
 
 export function BattleHost({state, catalog, paused, onResult}: {
   state: GameState; catalog: Catalog; paused: boolean; onResult: (result: BattleResult) => void;

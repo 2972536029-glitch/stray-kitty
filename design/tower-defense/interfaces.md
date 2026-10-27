@@ -53,4 +53,4 @@ Go存档暂保留旧Attempt.Supplies读取字段。新版结算旧active场次�
 
 ## 分工
 
-战斗维护L00–L05引擎、教程、各章技能、棋盘、结果和必要接入；事件维护档位判定、携带物/协助者来源，主流程维护剧情、存档与长期奖励；探索地图和最终场景美术维持对应模块。军师目前为本地规则。模型接入仍不在本轮范围，不能因终章初版完成自动开始。L01–L05消费活动场次的shadowPressure和carry快照，正式ID为lantern/mirror/bell/box/dog/dove；只在开战时接收，不实现战斗中再次随机抽取或热替换奖励。墨墨的L04夜视恢复视野、L05夜视识破护幕均为本章技能变体，不新增事件枚举，不改变L03护盾与清荆棘。效果与职责见[事件战斗对接](../../docs/BATTLE-EVENT-CARRY.md)；四章试玩的主线边界分别见[第二章接入](../../docs/L02-INTEGRATION.md)、[第三章接入](../../docs/L03-INTEGRATION.md)、[第四章接入](../../docs/L04-INTEGRATION.md)、[第五章接入](../../docs/L05-INTEGRATION.md)。
+战斗维护L00–L05引擎、教程、各章技能、棋盘、结果和必要接入，并承接六章[战斗场景美术](scene-art.md)；页面UI与轩扬协作，探索地图仍由地图侧维护。事件维护档位判定、携带物/协助者来源，主流程维护剧情、存档与长期奖励。军师目前为本地规则。模型接入仍不在本轮范围，不能因终章初版完成自动开始。L01–L05消费活动场次的shadowPressure和carry快照，正式ID为lantern/mirror/bell/box/dog/dove；只在开战时接收，不实现战斗中再次随机抽取或热替换奖励。墨墨的L04夜视恢复视野、L05夜视识破护幕均为本章技能变体，不新增事件枚举，不改变L03护盾与清荆棘。效果与职责见[事件战斗对接](../../docs/BATTLE-EVENT-CARRY.md)；四章试玩的正式主线入口仍待对齐，边界分别见[第二章接入](../../docs/L02-INTEGRATION.md)、[第三章接入](../../docs/L03-INTEGRATION.md)、[第四章接入](../../docs/L04-INTEGRATION.md)、[第五章接入](../../docs/L05-INTEGRATION.md)。

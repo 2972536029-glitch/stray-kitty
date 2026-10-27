@@ -3,3 +3,21 @@
 .battle-l00 .battle-carry-copy{flex:1;min-width:0}.battle-l00 .battle-carry-copy>p{margin:0;font-size:11px;line-height:1.6}.battle-l00 .battle-carry-copy>small{display:block;margin-top:2px;color:#8a815e;font-size:10px}.battle-l00 .battle-carry-panel>button{flex-shrink:0;padding:7px 10px;border:1px solid #bacba6;border-radius:4px;background:#dae5ca;box-shadow:none;color:#5a7349;font-size:11px;white-space:nowrap}.battle-l00 .battle-carry-panel>button:disabled{opacity:.5;cursor:not-allowed}
 .battle-l00 .battle-carry-scout{display:grid;gap:3px;margin-top:5px;border-top:1px solid #d5dfc9;padding-top:4px}.battle-l00 .battle-carry-scout p{display:flex;flex-wrap:wrap;gap:2px 8px;margin:0;font-size:10px;line-height:1.5}.battle-l00 .battle-carry-scout b{font-weight:600;color:#6d805c}.battle-l00 .battle-carry-scout span{overflow-wrap:anywhere}.battle-l00 .battle-carry-panel.is-unrecognized{background:#f3edda;border-color:#d7c9a1;color:#8c7852}
 @media(max-width:600px){.battle-l00 .battle-carry-panel{align-items:flex-start;flex-wrap:wrap;gap:6px 9px;padding:7px 8px}.battle-l00 .battle-carry-heading{flex-basis:100%}.battle-l00 .battle-carry-heading>div{display:flex;align-items:center;gap:7px}.battle-l00 .battle-carry-heading small{font-size:9px}.battle-l00 .battle-carry-heading strong{font-size:11px}.battle-l00 .battle-carry-icon{width:21px;height:21px;font-size:15px}.battle-l00 .battle-carry-copy>p{font-size:10px}.battle-l00 .battle-carry-panel>button{font-size:10px;padding:7px 8px}}
+
+/* Opt-in compact carry: native details never changes simulation pause state. */
+.battle-l00 .battle-carry-panel.is-compact{align-items:center;flex-wrap:nowrap;gap:8px;padding:5px 7px;overflow:visible;max-height:none}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-details{position:relative;min-width:0}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-details>summary{display:flex;align-items:center;gap:9px;cursor:pointer;list-style:none;min-height:28px;border-radius:3px}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-details>summary::-webkit-details-marker{display:none}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-details>summary:focus-visible{outline:2px solid #f0d398;outline-offset:4px}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-heading{flex-basis:auto;gap:5px}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-heading>div{display:block}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-heading strong{font-size:11px;white-space:nowrap}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-icon{width:22px;height:22px;font-size:15px}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-detail-label{font-size:10px;white-space:nowrap;opacity:.85}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-detail-label::after{content:' ▾'}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-details[open] .battle-carry-detail-label::after{content:' ▴'}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-details>.battle-carry-copy{position:absolute;z-index:20;left:0;top:calc(100% + 10px);width:min(290px,calc(100vw - 32px));max-height:min(280px,45vh);overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;border:1px solid #8e9a7c;border-radius:5px;background:#203b33;color:#e0e1c7;box-shadow:0 5px 20px #10231f77}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-copy :is(p,small,b,span){color:inherit}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-scout{margin-top:8px;padding-top:7px;border-color:#617661}
+.battle-l00 .battle-carry-panel.is-compact>button{padding:6px 8px;font-size:10px}
