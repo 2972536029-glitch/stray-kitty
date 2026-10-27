@@ -36,6 +36,7 @@ stray-kitty/
 │        └─ L02-midnight-market/  第二章午夜集市设计
 ├─ docs/  需求、架构、接口与集成记录
 │  ├─ ARCHITECTURE.md  架构、目录与接入
+│  ├─ GAME-FLOWCHART.html
 │  ├─ GAME-FLOWCHART.md
 │  ├─ L00-INTEGRATION.md  L00 六波新手教学与接入
 │  ├─ L01-INTEGRATION.md  第一章四猫与当前接入
