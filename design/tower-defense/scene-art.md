@@ -1,6 +1,6 @@
 # L00–L05 战斗场景美术
 
-更新：2026-10-27。实现位于 `feat/battle-scene-art`，基于 `main` 的 `f74e6d1`；本说明不表示新增美术已合入主分支。
+更新：2026-10-27。实现已拆为 `feat/battle-art-core` 与六个 `feat/battle-art-l00` 至 `feat/battle-art-l05` 章节分支，基于 `main` 的 `f74e6d1`；原集成分支已删除。本说明不表示新增美术已合入主分支。
 
 ## 画风与阅读顺序
 
