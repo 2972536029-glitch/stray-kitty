@@ -11,5 +11,7 @@ export function createChapterContext(state: Pick<GameState, 'phase' | 'activeBat
   if (!stage || stage.columns !== MAP.columns || stage.lanes !== MAP.rows || stage.waves !== WAVES.length) {
     throw new Error('第一章关卡配置需要更新，请重新连接后再试。');
   }
-  return {attemptId: attempt.id, difficulty: difficultyFromPressure(attempt.modifiers?.shadowPressure)};
+  // Carry belongs to this persisted attempt, including an unknown legacy value for a non-blocking warning.
+  const carry: unknown = attempt.modifiers?.carry;
+  return {attemptId: attempt.id, difficulty: difficultyFromPressure(attempt.modifiers?.shadowPressure), ...(carry === undefined ? {} : {carry})};
 }

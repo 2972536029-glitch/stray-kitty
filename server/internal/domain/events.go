@@ -1,5 +1,26 @@
 package domain
 
+type BattleCarryID string
+
+const (
+	CarryLantern BattleCarryID = "lantern"
+	CarryMirror  BattleCarryID = "mirror"
+	CarryBell    BattleCarryID = "bell"
+	CarryBox     BattleCarryID = "box"
+	CarryDog     BattleCarryID = "dog"
+	CarryDove    BattleCarryID = "dove"
+)
+
+// Only new event content is validated; unknown historical save IDs remain readable.
+func IsBattleCarryID(id BattleCarryID) bool {
+	switch id {
+	case CarryLantern, CarryMirror, CarryBell, CarryBox, CarryDog, CarryDove:
+		return true
+	default:
+		return false
+	}
+}
+
 // 判定与 Outcome 契约来自余尧设计 v0.3；经济、流程和持久化由 service 接入。
 type EventReward struct {
 	Fish     int `json:"fish,omitempty"`
@@ -20,8 +41,8 @@ type EventOutcome struct {
 	TDMod     *TowerDefenseModifier `json:"tdMod,omitempty"`
 	Situation *EventSituation       `json:"situation,omitempty"`
 	Flags     []string              `json:"flags,omitempty"`
-	// Carry:该结果叼回的战备物(枚举:lantern/mirror/bell/box);结算写入待应用修正,随 attempt 进战斗。
-	Carry string `json:"carry,omitempty"`
+	// A new carry replaces the pending one; an outcome without carry preserves it.
+	Carry BattleCarryID `json:"carry,omitempty"`
 }
 type EventResolution struct {
 	EventID  string       `json:"eventId"`
@@ -33,9 +54,9 @@ type EventResolution struct {
 type BattleModifiers struct {
 	ShadowPressure int    `json:"shadowPressure"`
 	Situation      string `json:"situation,omitempty"`
-	// Carry:事件叼回的战备物(枚举:lantern/mirror/bell/box),与压力同通道;
-	// 事件侧保证任意时刻最多一件(后得覆盖先得),胜利清零、失败保留随重试。
-	Carry string `json:"carry,omitempty"`
+	// Single temporary carry, snapshotted per attempt. L01 wins clear pending;
+	// tutorials and standalone trials do not consume the mainline pending carry.
+	Carry BattleCarryID `json:"carry,omitempty"`
 }
 type EventState struct {
 	LastResolution   EventResolution `json:"lastResolution"`

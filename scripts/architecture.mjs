@@ -46,7 +46,7 @@ const labels = {
   '.gitlab-ci.yml': '检查与构建流水线', 'package.json': '依赖与工程命令',
   'package-lock.json': '锁定依赖', 'playwright.config.ts': '浏览器测试配置',
   '启动开发.cmd': 'Windows 开发入口', 'docs/PRD.md': '需求与分工',
-  'docs/ARCHITECTURE.md': '架构、目录与接入', 'docs/openapi.json': 'API 规范'
+  'docs/ARCHITECTURE.md': '架构、目录与接入', 'docs/openapi.json': 'API 规范', 'docs/BATTLE-EVENT-CARRY.md': '事件携带物与协助者六枚举对接'
 };
 let directoryCount = 0;
 function tree(relative = '', prefix = '') {
@@ -122,7 +122,7 @@ home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余
 - 公共契约在 web/src/contracts/index.ts；长期变更通过 app/controller.ts，不直接修改快照。
 - 战斗使用服务端 attemptId 和保存的难度快照，五个入口对应四套地图：l00_tutorial 为 3×7／六波教学；alley_rescue 和 alley_boss 共用 5×10 包围框内 26 格／八波四猫首领战；market_boss 为 5×8／八波六猫试玩；greenhouse_boss 为 6×9 包围框内 34 个真实格／八波六猫试玩。L03 缺失格不绘制、不部署、不作为技能中心，墨墨替代点点提供护盾并清除已生成荆棘，四格 Boss 共享体力。
 - 新命令无 supplies／usedSupplies；L01–L03 结果包含 leaks 与 bossDefeated。L02／L03 仅从家园独立进入，完成第一章救援即可分别试玩，不要求先赢 L02；胜利只记录本关完成，不发物资、长期伙伴或鼓励奖励，不推进剧情，不清理主线 PendingModifiers。失败回原关准备并保留失败场次快照，重新挑战创建新 ID、沿用难度；离开准备页清理临时失败身份。
-- 所有在场猫正常每模拟秒自动 +5 能量（L02 横扫可短暂停止自然蓄能），0 血本场退场，无道具或休整。暂停与卸载沿用宿主生命周期，刷新同场次从 ready 重建。
+- 所有在场猫正常每模拟秒自动 +5 能量（L02 横扫可短暂停止自然蓄能），0 血本场退场，无库存补给或休整。L01–L03 另外消费活动场次 carry 的六种事件加成（lantern/mirror/bell/box/dog/dove），不改基础数值，不恢复背包；L00 忽略 carry。L01 失败准备保留旧 attempt 完整快照，重试创建新 ID 并继承压力和 carry；离开准备清临时身份。暂停与卸载沿用宿主生命周期，刷新同场次从 ready 重建。
 - 新增长期规则时同步 Go service、TypeScript 契约与 [OpenAPI](openapi.json)。服务端负责奖励，UI 不直接加余额或发家具。
 - 修改内容后执行 npm run content:sync，提交 web/content/catalog.json 和 server/internal/platform/catalog.json 两份生成物。
 
@@ -189,7 +189,7 @@ npm run test:e2e
 
 当前入口、workspace 工程命令、JSON 存档、服务端定价与发货、双骰后果包均保留。王浩哲新增的序章、对话态度、环境观察及 protect 事件选项继续运行。外部库不增加 Zustand 或 Framer Motion。MR 的旧状态机、临时结算、根目录工程配置与旧剧情数据未纳入本次移植。
 
-## 9. 当前战斗集成\n\n当前已有 L00–L03 四套战斗地图、五个服务入口。正式序章 l00_tutorial 使用五步教学与六波实战；第一章首次救援 alley_rescue 与家园 alley_boss 共用四猫首领战。家园 market_boss 和 greenhouse_boss 分别提供第二、三章六猫独立试玩，不插入正式主线，不清理主线待用压力。L03 保留原图 34 格不规则边界，点点本章留守，墨墨以护盾与清棘补位；本关名单不改长期招募或其他模块故事。L04 及以后尚未实现。\n\n所有已实现章节无战斗道具、休整或同场复活，技能使用自然蓄能。旧 active 预留在新版结算时全额返还且只执行一次。公共规则和各章设计见 [塔防索引](../design/tower-defense/README.md)。\n\n目录变化后运行 npm run architecture:build；npm run architecture:check 会检查本文件与实际文件夹是否一致。需求见 [PRD](PRD.md)。
+## 9. 当前战斗集成\n\n当前已有 L00–L03 四套战斗地图、五个服务入口。正式序章 l00_tutorial 使用五步教学与六波实战；第一章首次救援 alley_rescue 与家园 alley_boss 共用四猫首领战。家园 market_boss 和 greenhouse_boss 分别提供第二、三章六猫独立试玩，不插入正式主线，不清理主线待用压力。L03 保留原图 34 格不规则边界，点点本章留守，墨墨以护盾与清棘补位；本关名单不改长期招募或其他模块故事。L04 及以后尚未实现。\n\n所有已实现章节无库存补给、休整或同场复活，技能使用自然蓄能；第一章起额外接收事件来源的单个 carry，六枚举、第一版效果与生命周期见 [事件战斗对接](BATTLE-EVENT-CARRY.md)。旧 active 预留在新版结算时全额返还且只执行一次。公共规则和各章设计见 [塔防索引](../design/tower-defense/README.md)。\n\n目录变化后运行 npm run architecture:build；npm run architecture:check 会检查本文件与实际文件夹是否一致。需求见 [PRD](PRD.md)。
 `;
 if (process.argv.includes('--check')) {
   if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== document) throw Error('架构目录已变化，请运行 npm run architecture:build');

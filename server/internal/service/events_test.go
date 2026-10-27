@@ -92,8 +92,8 @@ func TestFourEventTiersPersistAndAllLeadToRescue(t *testing.T) {
 				t.Fatal("loss cleared pending event pressure")
 			}
 			s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
-			if s.Phase != "preparation" || s.ActiveBattle != nil || s.EventState == nil || s.EventState.PendingModifiers.ShadowPressure != tc.pressure {
-				t.Fatal("retry preparation did not preserve pending pressure and clear the old attempt")
+			if s.Phase != "preparation" || s.ActiveBattle == nil || s.ActiveBattle.ID != firstAttemptID || s.ActiveBattle.Status != "lost" || s.EventState == nil || s.EventState.PendingModifiers.ShadowPressure != tc.pressure {
+				t.Fatal("retry preparation did not preserve the failed attempt and pending pressure")
 			}
 			s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
 			if s.ActiveBattle == nil || s.ActiveBattle.ID == firstAttemptID || s.ActiveBattle.Modifiers == nil || s.ActiveBattle.Modifiers.ShadowPressure != tc.pressure || s.EventState == nil || !reflect.DeepEqual(s.EventState.LastResolution, resolution) || rolls != 2 {

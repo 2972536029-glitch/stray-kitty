@@ -1,3 +1,4 @@
+import {paintCarryAnchor} from '../carry-painter';
 import {drawCat} from '../l00/painter';
 import type {ChapterState, ChapterCat, ChapterCatId as CatId, Position} from './types';
 import {getAttackCells, getBossCells, getSkillCells} from './engine';
@@ -121,6 +122,7 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
   for(const row of [3,4]){ctx.beginPath();ctx.moveTo(BOARD_WIDTH-35,(row+.5)*CELL);ctx.lineTo(40,(row+.5)*CELL);if(row===4)ctx.lineTo(40,280);ctx.stroke();}
   ctx.beginPath();ctx.moveTo((MAP.spawns[2].x+.5)*CELL,25);ctx.lineTo((MAP.spawns[2].x+.5)*CELL,3.5*CELL);ctx.lineTo(40,3.5*CELL);ctx.stroke();ctx.restore();
   drawCat(ctx,'hero',10,3*CELL+13,58);ctx.fillStyle='#8f784c';ctx.font='9px sans-serif';ctx.fillText('守护点',24,3*CELL+74);
+  paintCarryAnchor(ctx,state.carry,CELL,mapCell);
   const cat=state.cats.find(c=>c.id===selected&&c.status==='active');
   if(cat&&!state.aim){ctx.fillStyle='#788f6c32';ctx.strokeStyle='#7b916d';ctx.lineWidth=2;for(const p of getAttackCells(cat)){if(mapCell(p.x,p.y)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4.5,p.y*CELL+4.5,CELL-9,CELL-9);}}}
   if(state.aim){

@@ -1,3 +1,4 @@
+import {paintCarryAnchor} from '../carry-painter';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP, ROUTES} from './config';
@@ -103,6 +104,7 @@ export function paintMarket(ctx:CanvasRenderingContext2D,state:MarketState,selec
   rect(ctx,MAP.boss.x*CELL+3,MAP.boss.y*CELL+3,CELL-6,CELL-6,'#b3b6ad30');
   if(state.boss.phase==='defeated'){ctx.fillStyle='#89957e';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('首领已退去',(MAP.boss.x+.5)*CELL,(MAP.boss.y+.5)*CELL);}
   drawCat(ctx,'hero',8,MAP.goal.y*CELL+11,62);ctx.fillStyle='#8f784c';ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText('守护 C1',40,MAP.goal.y*CELL+73);
+  paintCarryAnchor(ctx,state.carry,CELL,mapCell);
   const selectedCat=state.cats.find(cat=>cat.id===selected&&cat.status==='active');
   if(selectedCat&&!state.aim){ctx.fillStyle='#788f6c32';ctx.strokeStyle='#7b916d';ctx.lineWidth=2;for(const p of getAttackCells(selectedCat)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);}}
   if(state.aim){

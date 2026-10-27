@@ -1217,7 +1217,7 @@
           "type",
           "stageId"
         ],
-        "description": "Starts L01 first rescue (alley_rescue), unlocked home replay (alley_boss), or a standalone home trial (market_boss / greenhouse_boss) after alley_rescued. Standalone trials do not require each other to be completed. A trial may restart only from its own failed preparation, preserving the old attempt tier. l00_tutorial is accepted only to retry a failed tutorial settlement. No battle inventory reservation."
+        "description": "Starts L01 first rescue (alley_rescue), unlocked home replay (alley_boss), or a standalone home trial (market_boss / greenhouse_boss) after alley_rescued. Standalone trials do not require each other to be completed. Failed preparation may retry only the original stage, preserving the failed attempt pressure and carry snapshot in a new attempt ID. l00_tutorial is accepted only to retry a failed tutorial settlement and does not enable carry. No battle inventory reservation."
       },
       "CompleteBattle": {
         "type": "object",
@@ -1679,16 +1679,8 @@
             ]
           },
           "carry": {
-            "type": "string",
-            "enum": [
-              "lantern",
-              "mirror",
-              "bell",
-              "box",
-              "dog",
-              "dove"
-            ],
-            "description": "事件叼回的战备物,随场次进战斗;事件侧保证唯一,后得覆盖先得"
+            "$ref": "#/components/schemas/BattleCarryId",
+            "description": "Saved per-attempt carry. New event carries replace older ones; events without carry preserve it. L00 ignores carry, L01 wins clear pending, standalone L02/L03 trials preserve pending on either outcome. Unknown historical save IDs are ignored by battle consumers so the base battle can continue."
           }
         },
         "required": [
@@ -1719,9 +1711,8 @@
             }
           },
           "carry": {
-            "type": "string",
-            "enum": ["lantern", "mirror", "bell", "box", "dog", "dove"],
-            "description": "该结果叼回的战备物,随下一场战斗的 modifiers 生效"
+            "$ref": "#/components/schemas/BattleCarryId",
+            "description": "Optional newly awarded carry. Omission does not clear the prior pending carry; unknown configured values are invalid content."
           }
         },
         "required": [
@@ -1837,6 +1828,18 @@
         },
         "deprecated": true,
         "readOnly": true
+      },
+      "BattleCarryId": {
+        "type": "string",
+        "enum": [
+          "lantern",
+          "mirror",
+          "bell",
+          "box",
+          "dog",
+          "dove"
+        ],
+        "description": "Single temporary battle carry supplied by event handoffs MR !23 and !24. dog identifies Old Huang and dove identifies the pigeon ally. No inventory transfer or extra result fields."
       }
     }
   },

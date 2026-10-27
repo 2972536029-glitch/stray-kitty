@@ -44,7 +44,7 @@ export function validateContent(c) {
     if(e.triggers.includes('random')&&(!Array.isArray(e.maps)||!e.maps.length||e.maps.some(id=>!c.maps.some(m=>m.id===id)))) errors.push(`event random zone: ${e.id}`);
     if(e.options.some(o=>o.requireCat&&!c.cats.some(cat=>cat.id===o.requireCat))) errors.push(`event option cat: ${e.id}`);
     const CARRIES=['lantern','mirror','bell','box','dog','dove'];
-    for(const o of e.options) for(const tier of ['crit','success','partial','fail']) if(o.outcomes?.[tier]?.carry && !CARRIES.includes(o.outcomes[tier].carry)) errors.push(`event carry: ${e.id}/${o.id}/${tier} 未知战备物`);
+    for(const o of e.options) for(const tier of ['crit','success','partial','fail']) if(o.outcomes?.[tier]?.carry !== undefined && !CARRIES.includes(o.outcomes[tier].carry)) errors.push(`event carry: ${e.id}/${o.id}/${tier} 未知战备物`);
     if(e.requiresFlags!==undefined&&(!Array.isArray(e.requiresFlags)||!e.requiresFlags.length||e.requiresFlags.some(f=>typeof f!=='string'||!f))) errors.push(`event chain flags: ${e.id}`);    for(const o of e.options) for(const tier of ['crit','success','partial','fail']) {
       const result=o.outcomes?.[tier];
       if(!result?.text||Object.values(result?.reward??{}).some(n=>!Number.isSafeInteger(n)||n<0)||result?.tdMod&&![-1,0,1].includes(result.tdMod.shadowPressure)) errors.push(`event outcome: ${e.id}/${o.id}/${tier}`);

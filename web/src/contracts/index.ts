@@ -1,11 +1,12 @@
 export type GamePhase = 'dialogue' | 'explore' | 'event' | 'preparation' | 'battle' | 'settlement' | 'home';
-export interface BattleModifiers {shadowPressure: -1 | 0 | 1; situation?: 'detour' | 'forced_chase'; carry?: 'lantern' | 'mirror' | 'bell' | 'box' | 'dog' | 'dove'}
+export type BattleCarryId = 'lantern' | 'mirror' | 'bell' | 'box' | 'dog' | 'dove';
+export interface BattleModifiers {shadowPressure: -1 | 0 | 1; situation?: 'detour' | 'forced_chase'; carry?: BattleCarryId}
 export interface BattleReport {leaks: number; bossDefeated: boolean}
 export interface BattleAttempt {id: string; stageId: string; status: 'active' | 'won' | 'lost'; modifiers?: BattleModifiers}
 export type EventTier = 'crit' | 'success' | 'partial' | 'fail';
 export interface EventReward {fish?: number; stamps?: number; clue?: number; material?: number}
 export interface EventOutcome {
-  text: string; reward?: EventReward; tdMod?: {shadowPressure: -1 | 0 | 1}; carry?: 'lantern' | 'mirror' | 'bell' | 'box' | 'dog' | 'dove';
+  text: string; reward?: EventReward; tdMod?: {shadowPressure: -1 | 0 | 1}; carry?: BattleCarryId;
   situation?: {kind: 'detour' | 'forced_chase'; storyNodeId: string}; flags?: string[];
 }
 export interface EventResolution {eventId: string; optionId: string; dice: [number, number]; tier: EventTier; outcome: EventOutcome}

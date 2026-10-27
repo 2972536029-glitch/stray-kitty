@@ -1,12 +1,14 @@
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {KeyboardEvent, PointerEvent} from 'react';
 import type {BattleDifficulty, MarketAction, MarketCat, MarketCatId, MarketState, Position} from './types';
-import {CELLS, DIFFICULTIES, MAP, RULES, SKILLS} from './config';
+import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES, ROUTES} from './config';
 import {advanceMarket, createMarketBattle, dispatchMarket, getAttackCells, getBossCells, getMarketAdvice, getMarketSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintMarket} from './painter';
 import {drawCat} from '../l00/painter';
 import {getMarketAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
+import {CarryPanel} from '../CarryPanel';
+import '../carry.css';
 import '../l00/battle.css';
 import './market.css';
 
@@ -14,7 +16,7 @@ export interface MarketBattleResult {
   outcome: 'won' | 'lost'; report: {leaks:number;bossDefeated:boolean};
 }
 export interface MarketBattleViewportProps {
-  attemptId: string; difficulty: BattleDifficulty; paused: boolean;
+  attemptId: string; difficulty: BattleDifficulty; carry?: unknown; paused: boolean;
   onResult: (result:MarketBattleResult)=>void;
 }
 interface DragGesture {catId:MarketCatId;pointerId:number;startX:number;startY:number;moved:boolean}
@@ -36,8 +38,8 @@ function Health({cat}:{cat:MarketCat}){
 }
 
 /** A single local simulation owns the attempt. Host state updates do not recreate its board. */
-export function MarketBattleViewport({attemptId,difficulty,paused,onResult}:MarketBattleViewportProps){
-  const [game,setGame]=useState(()=>createMarketBattle({difficulty}));
+export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult}:MarketBattleViewportProps){
+  const [game,setGame]=useState(()=>createMarketBattle({difficulty,carry}));
   const gameRef=useRef(game);
   const [selected,setSelected]=useState<MarketCatId|null>(null);
   const [moving,setMoving]=useState<MarketCatId|null>(null);
@@ -113,8 +115,8 @@ export function MarketBattleViewport({attemptId,difficulty,paused,onResult}:Mark
     attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);
     setSelected(null);setMoving(null);setHover(null);setChatOpen(false);setDragging(null);setNotice('');
     setQuestion('');setMessages([]);
-    publish(createMarketBattle({difficulty}));
-  },[attemptId,difficulty]);
+    publish(createMarketBattle({difficulty,carry}));
+  },[attemptId,difficulty,carry]);
 
   useEffect(()=>{
     if(paused){setSelected(null);setMoving(null);setHover(null);setDragging(null);gesture.current=null;}
@@ -298,6 +300,7 @@ export function MarketBattleViewport({attemptId,difficulty,paused,onResult}:Mark
     <div className="btl-subhead"><span>5 行 × 8 列 · 摊位占格不可部署</span><span>已上阵 {game.cats.filter(cat=>cat.status==='active').length} / {RULES.maxCats}</span><span>满能手动施法 · 横扫后暂时封能</span></div>
     <div className="btl-difficulty-strip" data-testid="market-difficulty"><strong>{DIFFICULTIES[difficulty].label} · 敌人体力 {Math.round(DIFFICULTIES[difficulty].hpMultiplier*100)}%</strong><span>守完全部波次并击退首领；3 次突破则失败。所有猫退场也会失败。</span></div>
     <div className={`market-boss-panel${bossWindup?' is-warning':''}`} data-testid="market-boss" data-boss-phase={game.boss.phase} data-target-row={game.boss.targetRow??undefined} data-boss-attacks={game.boss.attacks} data-boss-basic-attacking={bossBasicAttacking}><strong>{game.boss.phase==='defeated'?'首领已击退':game.boss.name}</strong><div className="market-boss-health" role="meter" aria-label="首领体力" aria-valuemin={0} aria-valuemax={game.boss.maxHp} aria-valuenow={Math.ceil(game.boss.hp)} data-testid="market-boss-health"><i style={{width:`${100*game.boss.hp/game.boss.maxHp}%`}}/><span>{Math.ceil(game.boss.hp)} / {game.boss.maxHp}</span></div><small>{bossWindup?`熄灯横扫锁定 ${game.boss.targetRow===null?"危险":String.fromCharCode(65+game.boss.targetRow)} 行！移到其他行，躲开伤害与封能。`:game.boss.phase==='recovery'?'横扫结束，灯光正在恢复。':game.boss.phase==='defeated'?'首领已击退，继续处理全部波次。':bossBasicAttacking?'普通攻击 · 灯杖点刺':'固定占据 C7 单格 · 普攻 / 熄灯横扫'}</small></div>
+    <CarryPanel carry={game.carry} phase={game.phase} wave={game.wave} waves={WAVES} entrances={Object.fromEntries(Object.entries(ROUTES).map(([route,path])=>[route,path[0]]))} enemies={ENEMY_DEFINITIONS} disabled={paused||hidden||game.paused||game.uiPaused||game.externallyPaused} onUse={()=>act({type:'USE_CARRY'})}/>
     <div className="btl-tactics"><button type="button" data-testid="market-advisor" aria-label="与军师阿策交谈" disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(value=>!value);}}><AdvisorPortrait/><strong>问问阿策</strong></button><p>{advice}</p></div>
     {game.cats.some(cat=>cat.status==='retired')&&<p className="btl-retirement-note" role="status" data-testid="market-retired">{game.cats.filter(cat=>cat.status==='retired').map(cat=>cat.name).join('、')}已退场，本场无法复活。</p>}
     <div className="btl-arena btl-arena-wide">

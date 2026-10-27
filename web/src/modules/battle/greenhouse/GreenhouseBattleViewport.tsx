@@ -1,12 +1,14 @@
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {KeyboardEvent, PointerEvent} from 'react';
 import type {BattleDifficulty, GreenhouseAction, GreenhouseCat, GreenhouseCatId, GreenhouseState, Position} from './types';
-import {CELLS, DIFFICULTIES, MAP, RULES, SKILLS} from './config';
+import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES, ROUTES} from './config';
 import {advanceGreenhouse, createGreenhouseBattle, dispatchGreenhouse, getAttackCells, getBossCells, getGreenhouseAdvice, getGreenhouseSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintGreenhouse} from './painter';
 import {drawCat} from '../l00/painter';
 import {getGreenhouseAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
+import {CarryPanel} from '../CarryPanel';
+import '../carry.css';
 import '../l00/battle.css';
 import './greenhouse.css';
 
@@ -14,7 +16,7 @@ export interface GreenhouseBattleResult {
   outcome: 'won' | 'lost'; report: {leaks:number;bossDefeated:boolean};
 }
 export interface GreenhouseBattleViewportProps {
-  attemptId: string; difficulty: BattleDifficulty; paused: boolean;
+  attemptId: string; difficulty: BattleDifficulty; carry?: unknown; paused: boolean;
   onResult: (result:GreenhouseBattleResult)=>void;
 }
 interface DragGesture {catId:GreenhouseCatId;pointerId:number;startX:number;startY:number;moved:boolean}
@@ -36,8 +38,8 @@ function Health({cat}:{cat:GreenhouseCat}){
 }
 
 /** A single local simulation owns the attempt. Host state updates do not recreate its board. */
-export function GreenhouseBattleViewport({attemptId,difficulty,paused,onResult}:GreenhouseBattleViewportProps){
-  const [game,setGame]=useState(()=>createGreenhouseBattle({difficulty}));
+export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onResult}:GreenhouseBattleViewportProps){
+  const [game,setGame]=useState(()=>createGreenhouseBattle({difficulty,carry}));
   const gameRef=useRef(game);
   const [selected,setSelected]=useState<GreenhouseCatId|null>(null);
   const [moving,setMoving]=useState<GreenhouseCatId|null>(null);
@@ -113,8 +115,8 @@ export function GreenhouseBattleViewport({attemptId,difficulty,paused,onResult}:
     attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);
     setSelected(null);setMoving(null);setHover(null);setChatOpen(false);setDragging(null);setNotice('');
     setQuestion('');setMessages([]);
-    publish(createGreenhouseBattle({difficulty}));
-  },[attemptId,difficulty]);
+    publish(createGreenhouseBattle({difficulty,carry}));
+  },[attemptId,difficulty,carry]);
 
   useEffect(()=>{
     if(paused){setSelected(null);setMoving(null);setHover(null);setDragging(null);gesture.current=null;}
@@ -298,6 +300,7 @@ export function GreenhouseBattleViewport({attemptId,difficulty,paused,onResult}:
     <div className="btl-subhead"><span>34 格不规则花房 · 缺口不可通行</span><span>已上阵 {game.cats.filter(cat=>cat.status==='active').length} / {RULES.maxCats}</span><span>零血退场 · 墨墨护盾并清除荆棘</span></div>
     <div className="btl-difficulty-strip" data-testid="greenhouse-difficulty"><strong>{DIFFICULTIES[difficulty].label} · 敌人体力 {Math.round(DIFFICULTIES[difficulty].hpMultiplier*100)}%</strong><span>守完全部波次并击退首领；3 次突破则失败。所有猫退场也会失败。</span></div>
     <div className={`greenhouse-boss-panel${bossWindup||game.hazards.length?' is-warning':''}`} data-testid="greenhouse-boss" data-boss-phase={game.boss.phase} data-boss-attacks={game.boss.attacks} data-boss-basic-attacking={bossBasicAttacking} data-hazards={game.hazards.length}><strong>{game.boss.phase==='defeated'?'首领已击退':game.boss.name}</strong><div className="greenhouse-boss-health" role="meter" aria-label="首领体力" aria-valuemin={0} aria-valuemax={game.boss.maxHp} aria-valuenow={Math.ceil(game.boss.hp)} data-testid="greenhouse-boss-health"><i style={{width:`${100*game.boss.hp/game.boss.maxHp}%`}}/><span>{Math.ceil(game.boss.hp)} / {game.boss.maxHp}</span></div><small>{bossWindup?`荆棘播种锁定 ${game.boss.targetCells.map(cellName).join('、')}！移开伙伴；墨墨只能清除已经长出的荆棘。`:game.hazards.length?`荆棘仍在 ${game.hazards.map(cellName).join('、')} 持续伤害！移开或使用巡光护行。`:game.boss.phase==='defeated'?'首领已击退，继续处理全部波次。':bossBasicAttacking?'普通攻击 · 荆枝鞭击':'固定占据 C6、C7、D6、D7 · 留意荆棘播种'}</small></div>
+    <CarryPanel carry={game.carry} phase={game.phase} wave={game.wave} waves={WAVES} entrances={Object.fromEntries(Object.entries(ROUTES).map(([route,path])=>[route,path[0]]))} enemies={ENEMY_DEFINITIONS} disabled={paused||hidden||game.paused||game.uiPaused||game.externallyPaused} onUse={()=>act({type:'USE_CARRY'})}/>
     <div className="btl-tactics"><button type="button" data-testid="greenhouse-advisor" aria-label="与军师阿策交谈" disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(value=>!value);}}><AdvisorPortrait/><strong>问问阿策</strong></button><p>{advice}</p></div>
     {game.cats.some(cat=>cat.status==='retired')&&<p className="btl-retirement-note" role="status" data-testid="greenhouse-retired">{game.cats.filter(cat=>cat.status==='retired').map(cat=>cat.name).join('、')}已退场，本场无法复活。</p>}
     <div className="btl-arena btl-arena-wide">

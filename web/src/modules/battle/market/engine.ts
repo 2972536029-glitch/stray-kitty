@@ -1,3 +1,4 @@
+import {createBattleCarry, finishCarryWave, getCarrySpeedMultiplier, startBattleCarry, tickBattleCarry, useBattleCarry} from '../carry';
 import {CAT_DEFINITIONS, CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, normalizeDifficulty, ROUTES, RULES, SKILLS, TOTAL_MINIONS, WAVES} from './config';
 import type {MarketAction, MarketBoss, MarketCat, MarketCatId, MarketEnemy, MarketOptions, MarketState, Position} from './types';
 
@@ -142,6 +143,7 @@ export function createMarketBattle(options: MarketOptions = {}): MarketState {
   const difficulty = normalizeDifficulty(options.difficulty);
   const bossHp = Math.round(RULES.bossHp * DIFFICULTIES[difficulty].hpMultiplier);
   return {
+    carry: createBattleCarry(options.carry, WAVES[0][0].route, ROUTES[WAVES[0][0].route][0]),
     stageId: 'market_boss', difficulty, phase: 'ready', elapsed: 0, accumulator: 0,
     wave: 0, totalWaves: WAVES.length, waveTime: 0, spawnIndex: 0, nextWaveIn: null, spawned: 0, defeated: 0,
     totalEnemies: TOTAL_MINIONS, leaks: 0, maxLeaks: RULES.maxLeaks,
@@ -154,13 +156,18 @@ export function createMarketBattle(options: MarketOptions = {}): MarketState {
     stats: {skills: 0, dodgedSlams: 0, damageTaken: 0},
   };
 }
-function moveEnemies(state: MarketState, dt: number): void {
+function moveEnemies(state: MarketState, dt: number, enemySeconds: ReadonlyMap<string, number>): void {
   releaseBlocks(state);
   const counts = new Map<MarketCatId, number>(state.cats.map(cat => [cat.id, cat.blockedCount]));
   for (const enemy of [...state.enemies].sort((a, b) => distanceRemaining(a) - distanceRemaining(b) || a.id.localeCompare(b.id))) {
     if (enemy.blockedBy) continue;
-    const slowed = Math.min(dt, enemy.slowRemaining);
-    let distance = enemy.speed * (slowed * enemy.slowMultiplier + dt - slowed);
+    const activeSeconds = enemySeconds.get(enemy.id) ?? dt;
+    if (activeSeconds <= EPS) continue;
+    const slowed = Math.min(activeSeconds, enemy.slowRemaining);
+    const routeMultiplier = getCarrySpeedMultiplier(state.carry, enemy.route);
+    let distance = routeMultiplier === 1
+      ? enemy.speed * (slowed * enemy.slowMultiplier + activeSeconds - slowed)
+      : enemy.speed * (slowed * Math.min(enemy.slowMultiplier, routeMultiplier) + (activeSeconds - slowed) * routeMultiplier);
     while (distance > EPS) {
       const direction = segment(enemy); if (!direction) break;
       const {dx, dy, target} = direction;
@@ -251,7 +258,6 @@ function tick(state: MarketState, dt: number): void {
     cat.shieldRemaining = Math.max(0, cat.shieldRemaining - dt);
     if (cat.shieldRemaining < EPS) {cat.shieldRemaining = 0; cat.shield = 0;}
   }
-  for (const enemy of state.enemies) {enemy.cooldown = Math.max(0, enemy.cooldown - dt);}
   state.effects = state.effects.filter(effect => (effect.remaining -= dt) > 0);
   if (state.nextWaveIn !== null) {state.nextWaveIn -= dt; if (state.nextWaveIn <= EPS) startWave(state, state.wave + 1);}
   if (state.nextWaveIn === null) {
@@ -264,7 +270,11 @@ function tick(state: MarketState, dt: number): void {
         route: entry.route, pathIndex: 1, slowRemaining: 0, slowMultiplier: 1, cooldown: 0, blockedBy: null}); state.spawned++;
     }
   }
-  moveEnemies(state, dt);
+  const carryTick = tickBattleCarry(state.carry, dt, state.wave, state.enemies);
+  for (const hit of carryTick.hits) effect(state, 'skill', state.carry.anchor, hit.position);
+  if (carryTick.hits.length) checkEnemyDeaths(state);
+  for (const enemy of state.enemies) enemy.cooldown = Math.max(0, enemy.cooldown - (carryTick.enemySeconds.get(enemy.id) ?? dt));
+  moveEnemies(state, dt, carryTick.enemySeconds);
   const escaped = state.enemies.filter(enemy => enemy.pathIndex >= ROUTES[enemy.route].length);
   if (escaped.length) {
     state.leaks += escaped.length; state.enemies = state.enemies.filter(enemy => !escaped.includes(enemy));
@@ -274,7 +284,7 @@ function tick(state: MarketState, dt: number): void {
   catsAttack(state);
   for (const enemy of state.enemies) {
     const cat = enemy.blockedBy && catById(state, enemy.blockedBy);
-    if (cat && cat.status === 'active' && enemy.cooldown <= EPS) {hurtCat(state, cat, enemy.damage); enemy.cooldown = enemy.interval; effect(state, 'attack', enemy, cat);}
+    if (cat && cat.status === 'active' && enemy.cooldown <= EPS && (carryTick.enemySeconds.get(enemy.id) ?? dt) > EPS) {hurtCat(state, cat, enemy.damage); enemy.cooldown = enemy.interval; effect(state, 'attack', enemy, cat);}
   }
   bossTick(state, dt); releaseBlocks(state);
   for (const cat of state.cats) {
@@ -286,6 +296,7 @@ function tick(state: MarketState, dt: number): void {
     completePhase(state, 'lost', '所有伙伴都已退场，本场守护结束。准备好后再来挑战。'); return;
   }
   if (state.nextWaveIn === null && state.spawnIndex === WAVES[state.wave - 1].length && state.enemies.length === 0) {
+    finishCarryWave(state.carry, state.wave);
     if (state.wave < WAVES.length) state.nextWaveIn = RULES.waveGap;
     else if (state.spawned === TOTAL_MINIONS && state.boss.phase === 'defeated') completePhase(state, 'won');
   }
@@ -351,7 +362,13 @@ export function dispatchMarket(state: MarketState, action: MarketAction): Market
   }
   if (action.type === 'START') {
     if (next.phase !== 'ready') return actionResult(next, false, '这场守护已经开始。');
-    next.phase = 'battle'; startWave(next, 1); return actionResult(next, true, '守护开始！');
+    next.phase = 'battle'; startBattleCarry(next.carry, next.cats); startWave(next, 1); return actionResult(next, true, '守护开始！');
+  }
+  if (action.type === 'USE_CARRY') {
+    if (next.phase !== 'battle' || next.paused || next.uiPaused) return actionResult(next, false, '准备、暂停或结束期间不能使用镜片。');
+    const problem = useBattleCarry(next.carry);
+    if (!problem) log(next, '镜片映出强光，普通黑影停止移动和攻击 3 秒，首领不受影响。');
+    return actionResult(next, !problem, problem ?? '镜片已使用。');
   }
   if (action.type === 'MOVE_CAT') {
     const problem = getDeployError(next, action.catId, action); if (problem) return actionResult(next, false, problem);
