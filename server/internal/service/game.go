@@ -136,6 +136,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				s.StoryNodeID = n.ID
 				switchChapter(n.ChapterID)
 				s.ChapterID = n.ChapterID
+				if n.ChapterID == "alley" || n.ID == "chapter1_intro" {
+					s.MapID = "alley"
+				}
 				if n.ChapterID == "market" {
 					s.MapID = "market"
 					s.Flags = domain.Add(s.Flags, "market_unlocked")
@@ -193,10 +196,23 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					}
 					return g.startTutorialBattle(s, "l00_tutorial", false)
 				}
+				if n.ID == "prologue_2" {
+					s.StoryNodeID = ""
+					if domain.Contains(s.CompletedStages, "l00_tutorial") {
+						s.Phase = "explore"
+						s.MapID = "alley"
+						s.ExploreDistance = -randomGrace
+						return nil
+					}
+					return g.startTutorialBattle(s, "l00_tutorial", false)
+				}
 				s.StoryNodeID = ""
 				s.Phase = n.Exit
 				if n.Exit == "explore" {
 					s.ExploreDistance = -randomGrace
+					if n.ChapterID == "alley" {
+						s.MapID = "alley"
+					}
 				}
 				if n.Exit == "home" {
 					s.MapID = "greenhouse"

@@ -260,6 +260,77 @@ func TestChapter1TuanziEncounterAndReplay(t *testing.T) {
 	}
 }
 
+func TestReplayChapter1FromHomeSwitchesToAlley(t *testing.T) {
+	g, token, _ := setup(t)
+	s := toBattle(t, g, token)
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
+	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	s = finishStory(t, g, token)
+	if s.Phase != "home" || s.MapID != "greenhouse" {
+		t.Fatalf("expected real home phase with greenhouse map, got phase=%s, map=%s", s.Phase, s.MapID)
+	}
+
+	// 从家园重温第一章剧情
+	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "chapter1_intro"})
+	if s.Phase != "dialogue" || s.StoryNodeID != "chapter1_intro" || s.ChapterID != "alley" || s.MapID != "alley" {
+		t.Fatalf("expected dialogue in alley on start replay, got phase=%s, node=%s, chapter=%s, map=%s", s.Phase, s.StoryNodeID, s.ChapterID, s.MapID)
+	}
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	// 重温对话读完后必须切回小巷探索阶段，不得保留花房地图
+	if s.Phase != "explore" || s.MapID != "alley" {
+		t.Fatalf("expected explore phase in alley map after replaying chapter 1, got phase=%s, map=%s", s.Phase, s.MapID)
+	}
+}
+
+func TestLegacySaveAtTuanziEncounterEntersTutorial(t *testing.T) {
+	for _, legacyNode := range []string{"chapter1_intro", "prologue_tuanzi", "prologue_banter", "prologue_2"} {
+		t.Run(legacyNode, func(t *testing.T) {
+			g, token, _ := setup(t)
+			s, err := g.State(token)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// 模拟旧版本尚未完成 L00 教学战、且停留在团子相遇节点的旧存档
+			_, err = g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+				p.State.CompletedStages = nil
+				p.State.Phase = "dialogue"
+				p.State.ChapterID = "alley"
+				p.State.StoryNodeID = legacyNode
+				p.State.MapID = "alley"
+				p.State.ActiveBattle = nil
+				return domain.CommandResponse{State: p.State}, nil
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			s, _ = g.State(token)
+
+			for s.Phase == "dialogue" {
+				s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+			}
+			// 验证旧存档能够正常触发并进入 L00 教学战，未跳过教学
+			if s.Phase != "battle" || s.ActiveBattle == nil || s.ActiveBattle.StageID != "l00_tutorial" {
+				t.Fatalf("[%s] expected battle l00_tutorial for legacy save, got phase=%s", legacyNode, s.Phase)
+			}
+			// 完成教学战并点击 CONTINUE
+			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+			s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+			if s.Phase != "dialogue" || s.StoryNodeID != "chapter1_intro" {
+				t.Fatalf("[%s] expected chapter1_intro after winning tutorial, got phase=%s, node=%s", legacyNode, s.Phase, s.StoryNodeID)
+			}
+			// 推进第一章剧情完毕，验证平稳进入雨夜小巷探索阶段，不发生死循环
+			for s.Phase == "dialogue" {
+				s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+			}
+			if s.Phase != "explore" || s.MapID != "alley" {
+				t.Fatalf("[%s] expected explore in alley after tutorial and chapter 1, got phase=%s, map=%s", legacyNode, s.Phase, s.MapID)
+			}
+		})
+	}
+}
+
 func TestFinaleKingdomFounded(t *testing.T) {
 	g, token, _ := setup(t)
 	s := toBattle(t, g, token)
