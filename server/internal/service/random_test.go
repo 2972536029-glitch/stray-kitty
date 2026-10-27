@@ -715,3 +715,80 @@ func TestChapter3GreenhouseProgressionAndMomoUnlock(t *testing.T) {
 		t.Fatal("expected cats_rescued_batch1 flag")
 	}
 }
+
+// 战备物:结算写入 modifiers.carry,随 START_BATTLE 挂上 attempt,后得覆盖先得,胜利清零失败保留。
+func TestEventRewardCarryLifecycle(t *testing.T) {
+	g, token, _ := setup(t)
+	finishStory(t, g, token)
+	// crate/search 的 success 档带 lantern:恒 0 随机数掷 [1,1] fail 不带,改用 push 掷两组取 [1,1]+[1,1]?
+	// 直接选 search + push:两组都是 [1,1] 还是 fail…… 换法:让随机数第一组 [6,6] → crit(也带 lantern)。
+	calls := 0
+	g.Random = func(max int) (int, error) {
+		calls++
+		if max == 6 {
+			return 5, nil // [6,6] crit
+		}
+		return 0, nil
+	}
+	execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "alley_crate"})
+	s := execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "crate_event", OptionID: "search"})
+	if s.EventState.PendingModifiers.Carry != "lantern" {
+		t.Fatalf("crit should carry lantern, got %q", s.EventState.PendingModifiers.Carry)
+	}
+	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
+	if s.ActiveBattle.Modifiers == nil || s.ActiveBattle.Modifiers.Carry != "lantern" {
+		t.Fatal("battle attempt should receive carry")
+	}
+	// 失败保留:COMPLETE_BATTLE lost → CONTINUE → preparation,carry 仍在。
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "lost", Report: bossReport(3, false)})
+	execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	after, err := g.State(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.EventState.PendingModifiers.Carry != "lantern" {
+		t.Fatal("loss must keep carry for retry")
+	}
+	// 胜利清零(沿用既有 PendingModifiers 清空,carry 随之)。
+	s2 := execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
+	s2 = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s2.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
+	if s2.EventState.PendingModifiers.Carry != "" {
+		t.Fatal("win must clear carry")
+	}
+}
+
+// 协助者轨:咕咕(现成摆点的节点卡)crit 携带 dove 挂上 attempt;老黄卡内容经 lint 校验。
+func TestAllyCarryViaDove(t *testing.T) {
+	g, token, _ := setup(t)
+	calls := 0
+	g.Random = func(max int) (int, error) {
+		calls++
+		if max == 6 {
+			return 5, nil // [6,6] crit
+		}
+		return 0, nil
+	}
+	// 新门禁:先完成序章教学战(!22 后 alley_rescue 需序章通关)。
+	s := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "prologue_1"})
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	if s.Phase == "battle" {
+		s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
+		s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	}
+	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_pigeon_perch"})
+	s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "pigeon_rumor_event", OptionID: "recruit_pigeon"})
+	if s.EventState.PendingModifiers.Carry != "dove" {
+		t.Fatalf("dove ally not carried, got %q", s.EventState.PendingModifiers.Carry)
+	}
+	// 节点事件结算后停在 preparation,直接开战(新门禁:explore 态开 alley_rescue 需通关标记)。
+	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
+	if s.ActiveBattle.Modifiers == nil || s.ActiveBattle.Modifiers.Carry != "dove" {
+		t.Fatal("battle attempt should receive dove carry")
+	}
+}
