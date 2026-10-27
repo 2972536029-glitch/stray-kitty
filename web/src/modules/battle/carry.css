@@ -15,6 +15,7 @@
 .battle-l00 .battle-carry-panel.is-compact .battle-carry-heading strong{font-size:11px;white-space:nowrap}
 .battle-l00 .battle-carry-panel.is-compact .battle-carry-icon{width:22px;height:22px;font-size:15px}
 .battle-l00 .battle-carry-panel.is-compact .battle-carry-detail-label{font-size:10px;white-space:nowrap;opacity:.85}
+.battle-l00 .battle-carry-panel.is-compact .battle-carry-live-status{font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .battle-l00 .battle-carry-panel.is-compact .battle-carry-detail-label::after{content:' ▾'}
 .battle-l00 .battle-carry-panel.is-compact .battle-carry-details[open] .battle-carry-detail-label::after{content:' ▴'}
 .battle-l00 .battle-carry-panel.is-compact .battle-carry-details>.battle-carry-copy{position:absolute;z-index:20;left:0;top:calc(100% + 10px);width:min(290px,calc(100vw - 32px));max-height:min(280px,45vh);overflow-y:auto;overscroll-behavior:contain;padding:10px 12px;border:1px solid #8e9a7c;border-radius:5px;background:#203b33;color:#e0e1c7;box-shadow:0 5px 20px #10231f77}

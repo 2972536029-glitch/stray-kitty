@@ -1,10 +1,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'docs/ARCHITECTURE.md');
+// Map-specific source is maintained separately; inject into the generated architecture.
+const explorationArchitecture = fs.readFileSync(path.join(root, 'docs/LEVEL-EXPLORATION-ARCHITECTURE.md'), 'utf8').trim();
 if (!process.argv.includes('--check') && !fs.existsSync(target)) fs.writeFileSync(target, '');
+// Only committed/staged source paths belong in the generated architecture tree.
+// Filesystem scans alone include local .zip/.exe/.patch files ignored by Git.
+const trackedFiles = new Set(execFileSync('git', ['ls-files', '--cached', '-z'], {cwd: root, encoding: 'utf8'})
+  .split('\0').filter(Boolean).map(name => name.replaceAll('\\', '/')));
+const trackedDirectories = new Set();
+for (const file of trackedFiles) {
+  const parts = file.split('/');
+  for (let i = 1; i < parts.length; i++) trackedDirectories.add(parts.slice(0, i).join('/'));
+}
 const excluded = new Set(['node_modules', '.git', '.runtime', 'data', 'output', 'tmp', 'test-results', 'playwright-report', 'dist', 'artifacts', 'coverage', '.idea', '.vscode']);
 const labels = {
   web: '浏览器前端', 'web/src': '运行代码', 'web/src/app': '启动、装配与 GameController',
@@ -53,9 +65,11 @@ const labels = {
 let directoryCount = 0;
 function tree(relative = '', prefix = '') {
   const entries = fs.readdirSync(path.join(root, relative), {withFileTypes: true})
-    .filter(entry => !excluded.has(entry.name))
-    .filter(entry => entry.isDirectory() || relative === '' || relative === 'docs')
-    .filter(entry => entry.isDirectory() || entry.isFile())
+    .filter(entry => {
+      const relativePath = relative ? `${relative}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) return !excluded.has(entry.name) && trackedDirectories.has(relativePath);
+      return entry.isFile() && (relative === '' || relative === 'docs') && trackedFiles.has(relativePath);
+    })
     .sort((a, b) => Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name, 'en'));
   return entries.flatMap((entry, index) => {
     const last = index === entries.length - 1;
@@ -124,7 +138,7 @@ home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余
 - 公共契约在 web/src/contracts/index.ts；长期变更通过 app/controller.ts，不直接修改快照。
 - 战斗使用服务端 attemptId 和保存的难度快照，七个入口对应六套地图：l00_tutorial 为 3×7／六波教学；alley_rescue 和 alley_boss 共用 5×10 包围框内 26 格／八波四猫首领战；market_boss 为 5×8／八波六猫试玩；greenhouse_boss 为 6×9 包围框内 34 个真实格／八波六猫试玩。L03 缺失格不绘制、不部署、不作为技能中心，墨墨替代点点提供护盾并清除已生成荆棘，四格 Boss 共享体力。tunnel_boss 为 5×8 包围框内 37 格／八波六猫试玩，九处障碍，墨墨以夜视和全员护盾应对断灯；L04 缺失格同样不可绘制、部署或作为技能中心。finale_boss 为 7×12 包围框内 74 格／十波终章试玩，六名可移动主力与三批固定援军，永夜之王占九格，另有两名独立精英；光路随第 3／5／7 波推进，夜视用于暂时识破护幕。
 - 新命令无 supplies／usedSupplies；L01–L05 结果包含 leaks 与 bossDefeated，L05 胜负另必报整数 elitesDefeated（0–2），胜利必须为 2，旧章可省略。L02／L03／L04／L05 仅从家园独立进入，完成第一章救援即可分别试玩，不要求按章节顺序先赢前一试玩；胜利只记录本关完成，不发物资、长期伙伴或鼓励奖励，不推进剧情，不清理主线 PendingModifiers。L05 不写终章及建国标记。失败回原关准备并保留失败场次快照，重新挑战创建新 ID、沿用难度；离开准备页清理临时失败身份。
-- 所有在场可移动主力猫正常每模拟秒自动 +5 能量（L02 横扫可短暂停止自然蓄能），0 血本场退场，无库存补给或休整。L05 固定援军按间隔自动支援、不能移动或复活，主力六猫全部退场仍判负；灯车与援军不占 carry 通道。L01–L05 另外消费活动场次 carry 的六种事件加成（lantern/mirror/bell/box/dog/dove），不改基础数值，不恢复背包；L00 忽略 carry。L01 失败准备保留旧 attempt 完整快照，重试创建新 ID 并继承压力和 carry；离开准备清临时身份。暂停与卸载沿用宿主生命周期，刷新同场次从 ready 重建。
+- 所有在场可移动主力猫正常每模拟秒自动 +5 能量（L02 横扫可短暂停止自然蓄能），0 血本场退场，无库存补给或休整。L05 固定援军按间隔自动支援、不能移动或复活，主力六猫全部退场仍判负；灯车与援军不占 carry 通道。L01–L05 另外消费活动场次 carry 的八种事件加成（lantern/mirror/bell/box/dog/dove/rats/kitten），不改基础数值，不恢复背包；L00 忽略 carry。L01 失败准备保留旧 attempt 完整快照，重试创建新 ID 并继承压力和 carry；离开准备清临时身份。暂停与卸载沿用宿主生命周期，刷新同场次从 ready 重建。
 - 新增长期规则时同步 Go service、TypeScript 契约与 [OpenAPI](openapi.json)。服务端负责奖励，UI 不直接加余额或发家具。
 - 修改内容后执行 npm run content:sync，提交 web/content/catalog.json 和 server/internal/platform/catalog.json 两份生成物。
 
@@ -193,9 +207,10 @@ npm run test:e2e
 
 ## 9. 当前战斗集成\n\n当前已有 L00–L05 六套战斗地图、七个服务入口。正式序章 l00_tutorial 使用五步教学与六波实战；第一章首次救援 alley_rescue 与家园 alley_boss 共用四猫首领战。家园 market_boss、greenhouse_boss、tunnel_boss 和 finale_boss 分别提供第二至第五章独立试玩，不插入正式主线，不清理主线待用压力。L03 保留原图 34 格不规则边界，点点本章留守，墨墨以护盾与清棘补位；本关名单不改长期招募或其他模块故事。L04 的 tunnel_boss 另提供地下通道独立试玩：37 格不规则边界，六猫含点点与墨墨，A2 暗管绕 A1/B1/C1 接近 C2。四格首领断灯脉冲暂时限制远处小怪可见性，所有猫保持可见且照常作战；墨墨本章以夜视加全员护盾应对。第三章技能不变。\n\nL05 的 finale_boss 使用 74 格不规则仓库、十波 44 小怪、九格永夜之王和两名各自计血的精英护卫。团子、点点、墨墨与绒绒、斑斑、栗栗构成六名主力；铃铃、桃桃、音音于第 3／5／7 波从固定位置支援，不能移动、复活或代替主力全退场判负。灯车同期推进光路，墨墨夜视识破首领护幕并提供全队护盾，不复用第四章断灯。结算除了 Boss 本体还必须报告 elitesDefeated，胜利要求两精英均败；十波普通敌人仍须全部生成处理。终章正式接点仅列为 finale_intro_5 → 战斗 → finale_intro_6 的候选，不写 finale_started／finale_completed／kingdom_founded。\n\n所有已实现章节无库存补给、休整或同场复活，主力技能使用自然蓄能；第一章起额外接收事件来源的单个 carry，六枚举、第一版效果与生命周期见 [事件战斗对接](BATTLE-EVENT-CARRY.md)。旧 active 预留在新版结算时全额返还且只执行一次。公共规则和各章设计见 [塔防索引](../design/tower-defense/README.md)。\n\n目录变化后运行 npm run architecture:build；npm run architecture:check 会检查本文件与实际文件夹是否一致。需求见 [PRD](PRD.md)。
 `;
+const finalDocument = document.replace('## 5. 启动与检查', explorationArchitecture + '\n\n## 5. 启动与检查');
 if (process.argv.includes('--check')) {
-  if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== document) throw Error('架构目录已变化，请运行 npm run architecture:build');
+  if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== finalDocument) throw Error('架构目录已变化，请运行 npm run architecture:build');
 } else {
-  fs.writeFileSync(target, document);
+  fs.writeFileSync(target, finalDocument);
 }
 console.log(`Architecture matches ${directoryCount} source directories.`);
