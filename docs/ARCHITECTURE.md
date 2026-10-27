@@ -35,6 +35,7 @@ stray-kitty/
 │        └─ L01-first-alley/
 ├─ docs/  需求、架构、接口与集成记录
 │  ├─ ARCHITECTURE.md  架构、目录与接入
+│  ├─ GAME-FLOWCHART.md
 │  ├─ L00-INTEGRATION.md  L00 历史接入与验证记录
 │  ├─ L01-INTEGRATION.md  第一章、补给服务与当前验证
 │  ├─ openapi.json  API 规范
