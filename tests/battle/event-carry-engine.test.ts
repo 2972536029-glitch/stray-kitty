@@ -27,7 +27,7 @@ const adapters=[
   {name:'L03',engine:greenhouse,config:greenhouseConfig,create:greenhouse.createGreenhouseBattle,tick:greenhouse.advanceGreenhouse,act:greenhouse.dispatchGreenhouse},
 ] as const;
 type Adapter=typeof adapters[number];
-const ids:BattleCarryId[]=['lantern','mirror','bell','box','dog','dove'];
+const ids:BattleCarryId[]=['lantern','mirror','bell','box','dog','dove','rats','kitten'];
 const close=(actual:number,expected:number)=>assert.ok(Math.abs(actual-expected)<1e-7,`${actual} != ${expected}`);
 const tick=(a:Adapter,s:State,seconds:number):State=>a.tick(s as never,seconds);
 const act=(a:Adapter,s:State,action:Action):State=>a.act(s as never,action as never);
