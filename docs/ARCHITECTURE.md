@@ -38,7 +38,9 @@ stray-kitty/
 │  ├─ L00-INTEGRATION.md  L00 历史接入与验证记录
 │  ├─ L01-INTEGRATION.md  第一章、补给服务与当前验证
 │  ├─ openapi.json  API 规范
-│  └─ PRD.md  需求与分工
+│  ├─ PRD.md  需求与分工
+│  ├─ STORY-SCRIPT.md
+│  └─ STORY-SCRIPT.txt
 ├─ level_design/
 │  ├─ maps/
 │  │  └─ reference/
