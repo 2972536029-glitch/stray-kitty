@@ -152,7 +152,6 @@ stray-kitty/
 ├─ package.json  依赖与工程命令
 ├─ playwright.config.ts  浏览器测试配置
 ├─ stray_kitty.zip
-├─ stray-kitty-map-architecture-only.patch
 └─ 启动开发.cmd  Windows 开发入口
 ```
 
