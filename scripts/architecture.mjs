@@ -4,6 +4,8 @@ import {fileURLToPath} from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'docs/ARCHITECTURE.md');
+// Map-specific source is maintained separately; inject into the generated architecture.
+const explorationArchitecture = fs.readFileSync(path.join(root, 'docs/LEVEL-EXPLORATION-ARCHITECTURE.md'), 'utf8').trim();
 if (!process.argv.includes('--check') && !fs.existsSync(target)) fs.writeFileSync(target, '');
 const excluded = new Set(['node_modules', '.git', '.runtime', 'data', 'output', 'tmp', 'test-results', 'playwright-report', 'dist', 'artifacts', 'coverage', '.idea', '.vscode']);
 const labels = {
@@ -193,9 +195,10 @@ npm run test:e2e
 
 ## 9. 当前战斗集成\n\n当前已有 L00–L05 六套战斗地图、七个服务入口。正式序章 l00_tutorial 使用五步教学与六波实战；第一章首次救援 alley_rescue 与家园 alley_boss 共用四猫首领战。家园 market_boss、greenhouse_boss、tunnel_boss 和 finale_boss 分别提供第二至第五章独立试玩，不插入正式主线，不清理主线待用压力。L03 保留原图 34 格不规则边界，点点本章留守，墨墨以护盾与清棘补位；本关名单不改长期招募或其他模块故事。L04 的 tunnel_boss 另提供地下通道独立试玩：37 格不规则边界，六猫含点点与墨墨，A2 暗管绕 A1/B1/C1 接近 C2。四格首领断灯脉冲暂时限制远处小怪可见性，所有猫保持可见且照常作战；墨墨本章以夜视加全员护盾应对。第三章技能不变。\n\nL05 的 finale_boss 使用 74 格不规则仓库、十波 44 小怪、九格永夜之王和两名各自计血的精英护卫。团子、点点、墨墨与绒绒、斑斑、栗栗构成六名主力；铃铃、桃桃、音音于第 3／5／7 波从固定位置支援，不能移动、复活或代替主力全退场判负。灯车同期推进光路，墨墨夜视识破首领护幕并提供全队护盾，不复用第四章断灯。结算除了 Boss 本体还必须报告 elitesDefeated，胜利要求两精英均败；十波普通敌人仍须全部生成处理。终章正式接点仅列为 finale_intro_5 → 战斗 → finale_intro_6 的候选，不写 finale_started／finale_completed／kingdom_founded。\n\n所有已实现章节无库存补给、休整或同场复活，主力技能使用自然蓄能；第一章起额外接收事件来源的单个 carry，六枚举、第一版效果与生命周期见 [事件战斗对接](BATTLE-EVENT-CARRY.md)。旧 active 预留在新版结算时全额返还且只执行一次。公共规则和各章设计见 [塔防索引](../design/tower-defense/README.md)。\n\n目录变化后运行 npm run architecture:build；npm run architecture:check 会检查本文件与实际文件夹是否一致。需求见 [PRD](PRD.md)。
 `;
+const finalDocument = document.replace('## 5. 启动与检查', explorationArchitecture + '\n\n## 5. 启动与检查');
 if (process.argv.includes('--check')) {
-  if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== document) throw Error('架构目录已变化，请运行 npm run architecture:build');
+  if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== finalDocument) throw Error('架构目录已变化，请运行 npm run architecture:build');
 } else {
-  fs.writeFileSync(target, document);
+  fs.writeFileSync(target, finalDocument);
 }
 console.log(`Architecture matches ${directoryCount} source directories.`);
