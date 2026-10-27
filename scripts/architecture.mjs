@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -7,6 +8,15 @@ const target = path.join(root, 'docs/ARCHITECTURE.md');
 // Map-specific source is maintained separately; inject into the generated architecture.
 const explorationArchitecture = fs.readFileSync(path.join(root, 'docs/LEVEL-EXPLORATION-ARCHITECTURE.md'), 'utf8').trim();
 if (!process.argv.includes('--check') && !fs.existsSync(target)) fs.writeFileSync(target, '');
+// Only committed/staged source paths belong in the generated architecture tree.
+// Filesystem scans alone include local .zip/.exe/.patch files ignored by Git.
+const trackedFiles = new Set(execFileSync('git', ['ls-files', '--cached', '-z'], {cwd: root, encoding: 'utf8'})
+  .split('\0').filter(Boolean).map(name => name.replaceAll('\\', '/')));
+const trackedDirectories = new Set();
+for (const file of trackedFiles) {
+  const parts = file.split('/');
+  for (let i = 1; i < parts.length; i++) trackedDirectories.add(parts.slice(0, i).join('/'));
+}
 const excluded = new Set(['node_modules', '.git', '.runtime', 'data', 'output', 'tmp', 'test-results', 'playwright-report', 'dist', 'artifacts', 'coverage', '.idea', '.vscode']);
 const labels = {
   web: '浏览器前端', 'web/src': '运行代码', 'web/src/app': '启动、装配与 GameController',
@@ -55,9 +65,11 @@ const labels = {
 let directoryCount = 0;
 function tree(relative = '', prefix = '') {
   const entries = fs.readdirSync(path.join(root, relative), {withFileTypes: true})
-    .filter(entry => !excluded.has(entry.name))
-    .filter(entry => entry.isDirectory() || relative === '' || relative === 'docs')
-    .filter(entry => entry.isDirectory() || entry.isFile())
+    .filter(entry => {
+      const relativePath = relative ? `${relative}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) return !excluded.has(entry.name) && trackedDirectories.has(relativePath);
+      return entry.isFile() && (relative === '' || relative === 'docs') && trackedFiles.has(relativePath);
+    })
     .sort((a, b) => Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name, 'en'));
   return entries.flatMap((entry, index) => {
     const last = index === entries.length - 1;

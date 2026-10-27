@@ -54,15 +54,6 @@ stray-kitty/
 │  ├─ STORY-SCRIPT.md
 │  └─ STORY-SCRIPT.txt
 ├─ level_design/
-│  ├─ .tiledmcp/
-│  │  ├─ checkpoints/
-│  │  └─ transactions/
-│  │     └─ staged/
-│  ├─ battle/
-│  │  ├─ 100/
-│  │  │  └─ handoff/
-│  │  └─ l00/
-│  │     └─ handoff/
 │  ├─ maps/
 │  │  └─ reference/
 │  ├─ night_market/
@@ -151,7 +142,6 @@ stray-kitty/
 ├─ package-lock.json  锁定依赖
 ├─ package.json  依赖与工程命令
 ├─ playwright.config.ts  浏览器测试配置
-├─ stray_kitty.zip
 └─ 启动开发.cmd  Windows 开发入口
 ```
 
