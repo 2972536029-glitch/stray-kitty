@@ -715,3 +715,44 @@ func TestChapter3GreenhouseProgressionAndMomoUnlock(t *testing.T) {
 		t.Fatal("expected cats_rescued_batch1 flag")
 	}
 }
+
+// 战备物:结算写入 modifiers.carry,随 START_BATTLE 挂上 attempt,后得覆盖先得,胜利清零失败保留。
+func TestCarryLifecycle(t *testing.T) {
+	g, token, _ := setup(t)
+	finishStory(t, g, token)
+	// crate/search 的 success 档带 lantern:恒 0 随机数掷 [1,1] fail 不带,改用 push 掷两组取 [1,1]+[1,1]?
+	// 直接选 search + push:两组都是 [1,1] 还是 fail…… 换法:让随机数第一组 [6,6] → crit(也带 lantern)。
+	calls := 0
+	g.Random = func(max int) (int, error) {
+		calls++
+		if max == 6 {
+			return 5, nil // [6,6] crit
+		}
+		return 0, nil
+	}
+	execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "alley_crate"})
+	s := execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "crate_event", OptionID: "search"})
+	if s.EventState.PendingModifiers.Carry != "lantern" {
+		t.Fatalf("crit should carry lantern, got %q", s.EventState.PendingModifiers.Carry)
+	}
+	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
+	if s.ActiveBattle.Modifiers == nil || s.ActiveBattle.Modifiers.Carry != "lantern" {
+		t.Fatal("battle attempt should receive carry")
+	}
+	// 失败保留:COMPLETE_BATTLE lost → CONTINUE → preparation,carry 仍在。
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "lost"})
+	execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	after, err := g.State(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.EventState.PendingModifiers.Carry != "lantern" {
+		t.Fatal("loss must keep carry for retry")
+	}
+	// 胜利清零(沿用既有 PendingModifiers 清空,carry 随之)。
+	s2 := execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
+	s2 = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s2.ActiveBattle.ID, Outcome: "won"})
+	if s2.EventState.PendingModifiers.Carry != "" {
+		t.Fatal("win must clear carry")
+	}
+}
