@@ -35,10 +35,13 @@ stray-kitty/
 │        └─ L01-first-alley/
 ├─ docs/  需求、架构、接口与集成记录
 │  ├─ ARCHITECTURE.md  架构、目录与接入
+│  ├─ GAME-FLOWCHART.md
 │  ├─ L00-INTEGRATION.md  L00 六波新手教学与接入
 │  ├─ L01-INTEGRATION.md  第一章四猫与当前接入
 │  ├─ openapi.json  API 规范
-│  └─ PRD.md  需求与分工
+│  ├─ PRD.md  需求与分工
+│  ├─ STORY-SCRIPT.md
+│  └─ STORY-SCRIPT.txt
 ├─ level_design/
 │  ├─ maps/
 │  │  └─ reference/

@@ -1676,6 +1676,18 @@
               "detour",
               "forced_chase"
             ]
+          },
+          "carry": {
+            "type": "string",
+            "enum": [
+              "lantern",
+              "mirror",
+              "bell",
+              "box",
+              "dog",
+              "dove"
+            ],
+            "description": "事件叼回的战备物,随场次进战斗;事件侧保证唯一,后得覆盖先得"
           }
         },
         "required": [
@@ -1704,6 +1716,11 @@
             "items": {
               "type": "string"
             }
+          },
+          "carry": {
+            "type": "string",
+            "enum": ["lantern", "mirror", "bell", "box", "dog", "dove"],
+            "description": "该结果叼回的战备物,随下一场战斗的 modifiers 生效"
           }
         },
         "required": [
