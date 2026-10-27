@@ -3040,6 +3040,299 @@
           }
         }
       ]
+    },
+    {
+      "id": "sunbeam_spot_event",
+      "title": "晒太阳的位置",
+      "text": "午后的阳光穿过修补过的天窗,在花房中央铺出一块暖烘烘的光斑。这可是整座花房最好的位置,谁都知道。",
+      "category": "opportunity",
+      "tags": [
+        "social"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "greenhouse"
+      ],
+      "repeatable": true,
+      "options": [
+        {
+          "id": "take_turns",
+          "label": "排个班,大家轮流晒",
+          "outcomes": {
+            "crit": {
+              "text": "排班表刚定好,光斑正好挪到了点点身上。她枕着自己的爪子睡熟了,尾巴尖还在轻轻晃。轮到下一个的猫,安静地坐在旁边等。",
+              "flags": [
+                "home_peace"
+              ]
+            },
+            "success": {
+              "text": "团子第一个让出了位置。阳光轮流落在每一只猫的背上,花房里安静得只剩呼噜声。",
+              "flags": [
+                "home_peace"
+              ]
+            },
+            "partial": {
+              "text": "排班排到一半,云飘过来把太阳挡了。大家挤在原地等云走,谁也没挪窝。"
+            },
+            "fail": {
+              "text": "排班表被一阵风掀跑了。算了,挤一挤,光斑够大家分。"
+            }
+          }
+        },
+        {
+          "id": "squeeze_together",
+          "label": "不排了,挤在一起晒",
+          "outcomes": {
+            "crit": {
+              "text": "大家挤成一团,暖得像一条大毛毯。喵喵被埋在最中间,只露出半张脸——本咪不是被埋,本咪是在视察队伍中心。",
+              "flags": [
+                "home_peace"
+              ]
+            },
+            "success": {
+              "text": "挤在一起的光斑刚刚好。你的左边是团子,右边是点点,谁的呼噜声都听得见。",
+              "flags": [
+                "home_peace"
+              ]
+            },
+            "partial": {
+              "text": "挤是挤下了,就是团子非要把爪子搭在别人脸上。抗议归抗议,没猫真的挪开。"
+            },
+            "fail": {
+              "text": "挤到一半发现光斑根本不够大,最边上的猫只晒到了半条尾巴。明天再来。"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "windowsill_bowl_event",
+      "title": "窗台的水碗",
+      "text": "花房矮窗的窗台上,不知什么时候多了一只碗沿磨旧的清水碗,旁边压着一小把猫粮。碗里的水很新,是今天换的。",
+      "category": "opportunity",
+      "tags": [
+        "social"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "greenhouse"
+      ],
+      "options": [
+        {
+          "id": "drink_and_thank",
+          "label": "喝一口,朝窗户里点点头",
+          "outcomes": {
+            "crit": {
+              "text": "水是凉丝丝的甜。你们齐齐朝窗户点头的时候,窗帘后面有一只手轻轻掀开了一条缝,又放下——放碗的人不想吓到谁。",
+              "reward": {
+                "fish": 1
+              },
+              "flags": [
+                "kind_neighbor"
+              ]
+            },
+            "success": {
+              "text": "清水解了渴。你们朝窗户的方向点了点头,不管放碗的两脚兽看不看得见。",
+              "flags": [
+                "kind_neighbor"
+              ]
+            },
+            "partial": {
+              "text": "刚喝了两口,远处传来狗叫,大家警觉地散开。水碗还留在原地,明天应该还会有。",
+              "flags": [
+                "kind_neighbor"
+              ]
+            },
+            "fail": {
+              "text": "一阵风把窗台上的落叶全卷进了碗里。没关系,心意收到了,水明天再喝。"
+            }
+          }
+        },
+        {
+          "id": "leave_flower",
+          "label": "从花房里衔一朵小花放在碗边",
+          "outcomes": {
+            "crit": {
+              "text": "第二天清晨,小花被小心地插进了窗台上的玻璃瓶里,旁边多了一小份鱼干。两边都没露面,但都懂了。",
+              "reward": {
+                "fish": 1,
+                "material": 1
+              },
+              "flags": [
+                "kind_neighbor",
+                "flower_gift"
+              ]
+            },
+            "success": {
+              "text": "小花稳稳地立在了碗边。这是猫的谢礼,不会说话的那种。",
+              "flags": [
+                "kind_neighbor",
+                "flower_gift"
+              ]
+            },
+            "partial": {
+              "text": "花放好了,可夜里一场雨把它打蔫了。明天换一朵更结实的。"
+            },
+            "fail": {
+              "text": "衔花的路上,花被门框碰掉了两片瓣。歪歪扭扭地放在碗边——心意是完整的就行。"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "box_castle_event",
+      "title": "纸箱城堡的扩建",
+      "text": "角落里的纸箱越攒越多,墨墨昨天用尾巴比划了半天,好像在说:够搭一座城堡了。",
+      "category": "opportunity",
+      "tags": [
+        "foraging"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "greenhouse"
+      ],
+      "options": [
+        {
+          "id": "build_together",
+          "label": "全队出动,搭它一座城堡",
+          "outcomes": {
+            "crit": {
+              "text": "喵喵坐镇指挥,团子搬箱,墨墨找平,点点验收——三层纸箱城堡落成,最高层的窗口正对天窗,夜里能看见星星。本咪宣布:此处为王座。",
+              "reward": {
+                "material": 1
+              },
+              "flags": [
+                "castle_built"
+              ]
+            },
+            "success": {
+              "text": "纸箱城堡搭好了,歪歪的,但结实。当晚就有两只猫搬了进去。",
+              "reward": {
+                "material": 1
+              },
+              "flags": [
+                "castle_built"
+              ]
+            },
+            "partial": {
+              "text": "搭到第二层,最底下那只箱子被压塌了角。城堡变矮了一层,但门廊更宽敞了。",
+              "flags": [
+                "castle_built"
+              ]
+            },
+            "fail": {
+              "text": "工程进行到一半全员睡着在了建材里。醒来的时候,纸箱堆本身已经挺像一座城堡的。"
+            }
+          }
+        },
+        {
+          "id": "plan_first",
+          "label": "让墨墨画个图纸再说",
+          "outcomes": {
+            "crit": {
+              "text": "墨墨用爪印画的图纸出乎意料地专业,连排水槽都留好了。按图施工,城堡一次成型,还带一个可以晒太阳的露台。",
+              "reward": {
+                "material": 1,
+                "clue": 1
+              },
+              "flags": [
+                "castle_built"
+              ]
+            },
+            "success": {
+              "text": "图纸画好了,施工也顺利。墨墨难得地站在城堡前多看了一会儿。",
+              "reward": {
+                "material": 1
+              },
+              "flags": [
+                "castle_built"
+              ]
+            },
+            "partial": {
+              "text": "图纸被大家的爪印踩花了。凭着记忆搭,城堡和图纸不太一样,但住起来一样舒服。",
+              "flags": [
+                "castle_built"
+              ]
+            },
+            "fail": {
+              "text": "图纸画完了,天黑了,大家决定明天再开工。纸箱们原地休整一晚。"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "night_purrs_event",
+      "title": "夜里的呼噜声",
+      "text": "夜深了,花房里此起彼伏的呼噜声轻轻响着。数一数,一只,两只,三只……都是熟悉的调子。",
+      "category": "opportunity",
+      "tags": [
+        "social"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "maps": [
+        "greenhouse"
+      ],
+      "repeatable": true,
+      "options": [
+        {
+          "id": "count_purrs",
+          "label": "闭着眼,一只一只数过去",
+          "outcomes": {
+            "crit": {
+              "text": "数到最后多出来一声——是新来的小猫,睡在最边上,呼噜打得又轻又认真。队伍,又长大了一点。",
+              "flags": [
+                "home_peace"
+              ]
+            },
+            "success": {
+              "text": "七声呼噜,一只不少。数完了,自己也安心地睡着了。",
+              "flags": [
+                "home_peace"
+              ]
+            },
+            "partial": {
+              "text": "数到第五声的时候数乱了,只好重头再数。这大概就是幸福的声音吧。"
+            },
+            "fail": {
+              "text": "今晚格外安静,只有雨点敲天窗的声音。大家都在,只是都睡得更沉了。"
+            }
+          }
+        },
+        {
+          "id": "night_watch",
+          "label": "换自己守一小会儿夜",
+          "outcomes": {
+            "crit": {
+              "text": "守夜的这一小会儿,天窗外的云散了,星星一颗一颗亮起来。花房里的呼噜声,和星星一样让人安心。",
+              "flags": [
+                "home_peace"
+              ]
+            },
+            "success": {
+              "text": "什么也没发生。这正是守夜最好的结果。",
+              "flags": [
+                "home_peace"
+              ]
+            },
+            "partial": {
+              "text": "守着守着,自己也开始打呼噜了。被团子用尾巴尖挠醒,换了岗。"
+            },
+            "fail": {
+              "text": "一阵风把窗户吹得响了一下,全队的耳朵齐刷刷立起来,又齐刷刷放下。虚惊,睡吧。"
+            }
+          }
+        }
+      ]
     }
   ],
   "eventsBalance": [
