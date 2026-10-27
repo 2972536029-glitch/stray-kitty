@@ -11,7 +11,7 @@ import {playVisibleControls as playGreenhouse} from './l03-battle';
 import type {GameState,Session} from '../../web/src/contracts';
 
 const port=8161,origin=`http://127.0.0.1:${port}`;
-const carries=['lantern','mirror','bell','box','dog','dove'] as const;
+const carries=['lantern','mirror','bell','box','dog','dove','rats','kitten'] as const;
 const sessions=new Map<string,Session>();
 const completeCases=[
   {id:'chapter',carry:'lantern',stage:'alley_boss',play:playChapter},
@@ -24,7 +24,7 @@ test.beforeAll(async({request})=>{
   const catalog=await(await request.get('/api/v1/content')).json();
   const directory=fs.mkdtempSync(path.join(os.tmpdir(),'kitty-event-carry-'));
   const players:Record<string,unknown>={};
-  for(const item of [...carries.map(carry=>({id:'ui-'+carry,carry})),{id:'ui-unknown',carry:'future-help'},...completeCases]){
+  for(const item of [...carries.map(carry=>({id:'ui-'+carry,carry})),{id:'ui-unknown',carry:'future-help'},{id:'retry-rats',carry:'rats'},{id:'retry-kitten',carry:'kitten'},...completeCases]){
     const session={playerId:'carry-'+item.id,token:'carry-browser-fixture-'+item.id};sessions.set(item.id,session);
     const state={schemaVersion:1,contentVersion:catalog.version,revision:1,phase:'home',chapterId:'alley',storyNodeId:'',mapId:'greenhouse',flags:['l00_completed','alley_rescued','rescue_story_done'],cats:['miaomiao','tuanzi','diandian'],inventory:{material:3,food:0,'warm-can':4},currencies:{stamp:2},furniture:['cardboard_nest'],placements:{},completedStages:['l00_tutorial','alley_rescue'],pendingEventId:'',activeBattle:null,eventState:{pendingModifiers:{shadowPressure:0,carry:item.carry}},lastResult:{message:'事件携带物联调的隔离持久化夹具。'}};
     players[createHash('sha256').update(session.token).digest('hex')]={id:session.playerId,state,receipts:{},receiptOrder:[]};
@@ -41,8 +41,8 @@ async function openFixture(page:Page,id:string){
   await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();
 }
 
-test('six event carries reach the real board, remain bounded and never create an inventory bag',async({browser},info)=>{
-  test.setTimeout(120000);
+test('eight event carries reach the real board, remain bounded and never create an inventory bag',async({browser},info)=>{
+  test.setTimeout(180000);
   for(const carry of carries){
     const page=await browser.newPage({viewport:{width:390,height:844}});
     try{
@@ -74,8 +74,48 @@ test('six event carries reach the real board, remain bounded and never create an
       }
       if(carry==='lantern')await expect.poll(async()=>Number(await panel.getAttribute('data-pulses')),{timeout:12000}).toBeGreaterThan(0);
       if(carry==='box')await expect(panel).toHaveAttribute('data-box-active','true');
+      if(carry==='rats'){
+        await expect(panel).toHaveAttribute('aria-label','动物来报恩');
+        const initialRoute=await panel.getAttribute('data-patrol-route');
+        await expect.poll(()=>panel.getAttribute('data-patrol-route'),{timeout:15000}).not.toBe(initialRoute);
+        await page.getByTestId('greenhouse-play-toggle').click();
+        const route=await panel.getAttribute('data-patrol-route'),status=await page.getByTestId('battle-carry-status').textContent();
+        await page.waitForTimeout(350);expect(await panel.getAttribute('data-patrol-route')).toBe(route);expect(await page.getByTestId('battle-carry-status').textContent()).toBe(status);
+      }
+      if(carry==='kitten'){
+        await expect(panel).toHaveAttribute('aria-label','动物来报恩');
+        await expect(panel).toHaveAttribute('data-kitten-wave','1');
+        await expect.poll(async()=>Number(await page.getByTestId('greenhouse-cat-guard').getAttribute('data-energy'))).toBeGreaterThanOrEqual(8);
+        await page.getByTestId('greenhouse-play-toggle').click();
+        const energy=await page.getByTestId('greenhouse-cat-guard').getAttribute('data-energy');
+        await page.waitForTimeout(350);expect(await page.getByTestId('greenhouse-cat-guard').getAttribute('data-energy')).toBe(energy);
+      }
       expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
       await panel.scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath(`carry-${carry}-mobile.png`),fullPage:true});
+    }finally{await page.close();}
+  }
+});
+
+test('new animal allies survive real retreat, retry and refresh without spending mainline rewards',async({browser,request})=>{
+  test.setTimeout(90000);
+  for(const entry of [{carry:'rats',prefix:'tunnel'},{carry:'kitten',prefix:'finale'}]){
+    const page=await browser.newPage();
+    try{
+      await openFixture(page,'retry-'+entry.carry);await page.getByTestId(entry.prefix+'-enter').click();
+      const headers={Authorization:'Bearer '+sessions.get('retry-'+entry.carry)!.token};
+      const before=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
+      await expect(page.getByTestId('battle-carry-panel')).toHaveAttribute('data-carry',entry.carry);
+      await page.getByTestId(entry.prefix+'-play-toggle').click();
+      await expect(page.getByTestId(entry.prefix+'-battle')).toHaveAttribute('data-phase','battle');
+      await page.getByTestId(entry.prefix+'-retreat').click();await page.getByTestId(entry.prefix+'-confirm-retreat').click();
+      await page.getByRole('button',{name:'调整防线，再试一次'}).click();await page.getByTestId(entry.prefix+'-enter').click();
+      const after=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
+      expect(after.activeBattle!.id).not.toBe(before.activeBattle!.id);expect(after.activeBattle!.modifiers).toEqual(before.activeBattle!.modifiers);
+      expect(after.eventState!.pendingModifiers.carry).toBe(entry.carry);expect(after.inventory).toEqual(before.inventory);
+      await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+      await expect(page.getByTestId(entry.prefix+'-battle')).toHaveAttribute('data-attempt-id',after.activeBattle!.id);
+      await expect(page.getByTestId('battle-carry-panel')).toHaveAttribute('data-carry',entry.carry);
+      if(entry.carry==='kitten')await expect(page.getByTestId('battle-carry-panel')).toHaveAttribute('data-kitten-wave','0');
     }finally{await page.close();}
   }
 });

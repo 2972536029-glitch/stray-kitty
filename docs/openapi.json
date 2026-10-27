@@ -1847,7 +1847,7 @@
           "rats",
           "kitten"
         ],
-        "description": "Single temporary battle carry supplied by event handoffs MR !23 and !24. dog identifies Old Huang and dove identifies the pigeon ally. No inventory transfer or extra result fields."
+        "description": "Single temporary battle carry supplied by event handoffs MR !23, !24, !39 and !40. dog identifies Old Huang, dove the pigeon ally, rats the friendly rat squad, and kitten the rescued kitten. No inventory transfer or extra result fields."
       }
     }
   },
