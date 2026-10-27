@@ -1,4 +1,4 @@
-import {createBattleCarry, finishCarryWave, getCarrySpeedMultiplier, startBattleCarry, tickBattleCarry, useBattleCarry} from '../carry';
+import {createBattleCarry, finishCarryWave, getCarrySpeedMultiplier, startBattleCarry, startCarryWave, tickBattleCarry, useBattleCarry} from '../carry';
 import {ALLY_DEFINITIONS, CAT_DEFINITIONS, CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, normalizeDifficulty, ROUTES, RULES, SKILLS, TOTAL_MINIONS, WAVES} from './config';
 import type {FinaleAction, FinaleAlly, FinaleBoss, FinaleElite, FinaleCat, FinaleCatId, FinaleEnemy, FinaleOptions, FinaleState, Position} from './types';
 
@@ -159,6 +159,7 @@ function checkEnemyDeaths(state: FinaleState): void {
 }
 function startWave(state: FinaleState, wave: number): void {
   state.wave = wave; state.waveTime = 0; state.spawnIndex = 0; state.nextWaveIn = null;
+  startCarryWave(state.carry, wave, state.cats);
   const lightStage = (wave >= 7 ? 3 : wave >= 5 ? 2 : wave >= 3 ? 1 : 0) as FinaleState['lightStage'];
   if (lightStage > state.lightStage) {
     state.lightStage = lightStage; effect(state, 'light', MAP.goal, MAP.lightWaypoints[lightStage]);
@@ -174,7 +175,7 @@ export function createFinaleBattle(options: FinaleOptions = {}): FinaleState {
   const difficulty = normalizeDifficulty(options.difficulty);
   const bossHp = Math.round(RULES.bossHp * DIFFICULTIES[difficulty].hpMultiplier);
   return {
-    carry: createBattleCarry(options.carry, WAVES[0][0].route, ROUTES[WAVES[0][0].route][0]),
+    carry: createBattleCarry(options.carry, WAVES[0][0].route, ROUTES[WAVES[0][0].route][0], Object.entries(ROUTES).map(([route, path]) => ({route, anchor: path[0]}))),
     stageId: 'finale_boss', difficulty, phase: 'ready', elapsed: 0, accumulator: 0,
     wave: 0, totalWaves: WAVES.length, waveTime: 0, spawnIndex: 0, nextWaveIn: null, spawned: 0, defeated: 0,
     totalEnemies: TOTAL_MINIONS, leaks: 0, maxLeaks: RULES.maxLeaks,

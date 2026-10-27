@@ -9,12 +9,14 @@ const (
 	CarryBox     BattleCarryID = "box"
 	CarryDog     BattleCarryID = "dog"
 	CarryDove    BattleCarryID = "dove"
+	CarryRats    BattleCarryID = "rats"
+	CarryKitten  BattleCarryID = "kitten"
 )
 
 // Only new event content is validated; unknown historical save IDs remain readable.
 func IsBattleCarryID(id BattleCarryID) bool {
 	switch id {
-	case CarryLantern, CarryMirror, CarryBell, CarryBox, CarryDog, CarryDove:
+	case CarryLantern, CarryMirror, CarryBell, CarryBox, CarryDog, CarryDove, CarryRats, CarryKitten:
 		return true
 	default:
 		return false

@@ -266,7 +266,7 @@ for(const difficulty of ['low','medium','high'] as const){
     context.diagnostic(JSON.stringify({difficulty,phase:state.phase,seconds:Number(state.elapsed.toFixed(2)),wave:state.wave,leaks:state.leaks}));
     assert.equal(state.phase,'lost');assert.equal(state.stats.skills,0);assert.ok(state.boss.hp>0);
   });
-  for(const carry of ['lantern','mirror','bell','box','dog','dove'])test(`${difficulty} + ${carry}: public carry contract remains completable without baseline compensation`,()=>{
+  for(const carry of ['lantern','mirror','bell','box','dog','dove','rats','kitten'])test(`${difficulty} + ${carry}: public carry contract remains completable without baseline compensation`,()=>{
     const {state}=playFinale(difficulty,carry);assert.equal(state.phase,'won');assert.equal(state.spawned,44);
     assert.equal(state.boss.hp,0);assert.ok(state.elites.every(value=>value.status==='defeated'));assert.ok(state.leaks<3);
   });

@@ -1,4 +1,4 @@
-import {createBattleCarry, finishCarryWave, getCarrySpeedMultiplier, startBattleCarry, tickBattleCarry, useBattleCarry} from '../carry';
+import {createBattleCarry, finishCarryWave, getCarrySpeedMultiplier, startBattleCarry, startCarryWave, tickBattleCarry, useBattleCarry} from '../carry';
 import {CAT_DEFINITIONS, CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, normalizeDifficulty, ROUTES, RULES, SKILLS, TOTAL_MINIONS, WAVES} from './config';
 import type {MarketAction, MarketBoss, MarketCat, MarketCatId, MarketEnemy, MarketOptions, MarketState, Position} from './types';
 
@@ -137,13 +137,14 @@ function checkEnemyDeaths(state: MarketState): void {
 }
 function startWave(state: MarketState, wave: number): void {
   state.wave = wave; state.waveTime = 0; state.spawnIndex = 0; state.nextWaveIn = null;
+  startCarryWave(state.carry, wave, state.cats);
   log(state, `第 ${wave} / ${WAVES.length} 波：留意上下支路与右侧三个入口。`);
 }
 export function createMarketBattle(options: MarketOptions = {}): MarketState {
   const difficulty = normalizeDifficulty(options.difficulty);
   const bossHp = Math.round(RULES.bossHp * DIFFICULTIES[difficulty].hpMultiplier);
   return {
-    carry: createBattleCarry(options.carry, WAVES[0][0].route, ROUTES[WAVES[0][0].route][0]),
+    carry: createBattleCarry(options.carry, WAVES[0][0].route, ROUTES[WAVES[0][0].route][0], Object.entries(ROUTES).map(([route, path]) => ({route, anchor: path[0]}))),
     stageId: 'market_boss', difficulty, phase: 'ready', elapsed: 0, accumulator: 0,
     wave: 0, totalWaves: WAVES.length, waveTime: 0, spawnIndex: 0, nextWaveIn: null, spawned: 0, defeated: 0,
     totalEnemies: TOTAL_MINIONS, leaks: 0, maxLeaks: RULES.maxLeaks,
