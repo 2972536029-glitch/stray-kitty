@@ -1,4 +1,4 @@
-import {createBattleCarry, finishCarryWave, getCarrySpeedMultiplier, startBattleCarry, tickBattleCarry, useBattleCarry} from '../carry';
+import {createBattleCarry, finishCarryWave, getCarrySpeedMultiplier, startBattleCarry, startCarryWave, tickBattleCarry, useBattleCarry} from '../carry';
 import {CAT_DEFINITIONS, CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, normalizeDifficulty, RULES, SKILLS, TOTAL_MINIONS, WAVES} from './config';
 import type {ChapterAction, ChapterBoss, ChapterCat, ChapterCatId, ChapterEnemy, ChapterOptions, ChapterState, Position} from './types';
 
@@ -126,6 +126,7 @@ function checkEnemyDeaths(state: ChapterState): void {
 }
 function startWave(state: ChapterState, wave: number): void {
   state.wave = wave; state.waveTime = 0; state.spawnIndex = 0; state.nextWaveIn = null;
+  startCarryWave(state.carry, wave, state.cats);
   log(state, `第 ${wave} / ${WAVES.length} 波：留意 A4 支巷与右侧上下两处巷口。`);
 }
 export function createChapterBattle(options: ChapterOptions = {}): ChapterState {
@@ -135,7 +136,7 @@ export function createChapterBattle(options: ChapterOptions = {}): ChapterState 
   const carryRoute = firstLane === 0 ? 'branch' : firstLane === 3 ? 'upper' : 'lower';
   const carryAnchor = firstLane === 0 ? MAP.spawns[2] : {x: MAP.columns - 1, y: firstLane};
   return {
-    carry: createBattleCarry(options.carry, carryRoute, carryAnchor),
+    carry: createBattleCarry(options.carry, carryRoute, carryAnchor, [{route: 'branch', anchor: MAP.spawns[2]}, {route: 'upper', anchor: MAP.spawns[0]}, {route: 'lower', anchor: MAP.spawns[1]}]),
     stageId: 'alley_boss', difficulty, phase: 'ready', elapsed: 0, accumulator: 0,
     wave: 0, totalWaves: WAVES.length, waveTime: 0, spawnIndex: 0, nextWaveIn: null, spawned: 0, defeated: 0,
     totalEnemies: TOTAL_MINIONS, leaks: 0, maxLeaks: RULES.maxLeaks,

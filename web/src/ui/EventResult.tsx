@@ -5,7 +5,7 @@ import {Dice} from './DiceEvent';
 export default function EventResult({resolution, compact = false}: {resolution: EventResolution; compact?: boolean}) {
   const {dice, tier, outcome} = resolution;
   const names = {fish: '鱼干', stamps: '邮票', clue: '线索', material: '材料'};
-  const carryNames: Record<BattleCarryId, string> = {lantern: '小灯', mirror: '镜片', bell: '铃铛', box: '纸箱', dog: '老黄协助', dove: '咕咕协助'};
+  const carryNames: Record<BattleCarryId, string> = {lantern: '小灯', mirror: '镜片', bell: '铃铛', box: '纸箱', dog: '老黄协助', dove: '咕咕协助', rats: '鼠群协助', kitten: '小猫协助'};
   const carryLabel = outcome.carry ? carryNames[outcome.carry] : undefined;
   const reward = Object.entries(outcome.reward ?? {}).filter(([, value]) => value > 0);
   const pressure = outcome.tdMod?.shadowPressure ?? 0;
