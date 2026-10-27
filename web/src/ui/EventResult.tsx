@@ -5,7 +5,7 @@ import {Dice} from './DiceEvent';
 export default function EventResult({resolution, compact = false}: {resolution: EventResolution; compact?: boolean}) {
   const {dice, tier, outcome} = resolution;
   const names = {fish: '鱼干', stamps: '邮票', clue: '线索', material: '材料'};
-  const carryNames = {lantern: '小灯', mirror: '镜片', bell: '铃铛', box: '纸箱'} as const;
+  const carryNames = {lantern: '小灯', mirror: '镜片', bell: '铃铛', box: '纸箱', dog: '老黄', dove: '咕咕'} as const;
   const reward = Object.entries(outcome.reward ?? {}).filter(([, value]) => value > 0);
   const pressure = outcome.tdMod?.shadowPressure ?? 0;
   return <div className={`event-resolution tier-${tier} ${compact ? 'compact' : ''}`} data-testid="event-resolution">
