@@ -1,6 +1,7 @@
 import type {Catalog, GameState} from '../../contracts';
 export const currentStory = (catalog: Catalog, state: GameState) => catalog.story.find(n => n.id === state.storyNodeId);
 export function objective(state: GameState): string {
+  if (state.activeBattle?.stageId === 'finale_boss' && ['battle', 'preparation', 'settlement'].includes(state.phase)) return '守住总仓库十波黑影与 D2 的喵喵，配合固定援军、照亮归路，击败九格永夜之王与两名精英；试玩结束后返回家园。';
   if (state.activeBattle?.stageId === 'tunnel_boss' && ['battle', 'preparation', 'settlement'].includes(state.phase)) return '六位伙伴守住地下通道的八波黑影，保护 C2；利用墨墨夜视与全员护盾击败四格首领，结束试玩后回到家园。';
   if (state.activeBattle?.stageId === 'greenhouse_boss' && ['battle', 'preparation', 'settlement'].includes(state.phase)) return '六位伙伴沿花房通路守住八波黑影，保护 B1 并击败四格首领，结束试玩后回到家园。';
   if (state.activeBattle?.stageId === 'market_boss' && ['battle', 'preparation', 'settlement'].includes(state.phase)) return '六位伙伴守住八波黑影，击败集市首领，结束试玩后回到家园。';

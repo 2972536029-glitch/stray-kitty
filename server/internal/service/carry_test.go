@@ -113,15 +113,22 @@ func TestUnknownConfiguredCarryIsRejectedAtomically(t *testing.T) {
 	}
 }
 
+func carryReportForStage(stage string, leaks int, defeated bool) *domain.BattleReport {
+	if stage == "finale_boss" {
+		return finaleReport(leaks, defeated)
+	}
+	return bossReport(leaks, defeated)
+}
+
 func TestCarryRetriesLockStageAndOriginalSnapshot(t *testing.T) {
-	for _, stage := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss"} {
+	for _, stage := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss", "finale_boss"} {
 		t.Run(stage, func(t *testing.T) {
 			g, token, path := prepareBoss(t, -1, map[string]int{"food": 7, "material": 3})
 			editCarryFixture(t, g, token, func(s *domain.GameState) { s.EventState.PendingModifiers.Carry = domain.CarryDog })
 			before, _ := g.State(token)
 			s := execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: stage})
 			firstID := s.ActiveBattle.ID
-			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: firstID, Outcome: "lost", Report: bossReport(3, false)})
+			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: firstID, Outcome: "lost", Report: carryReportForStage(stage, 3, false)})
 			if !reflect.DeepEqual(before.EventState, s.EventState) || !reflect.DeepEqual(carryResources(before), carryResources(s)) {
 				t.Fatal("loss consumed carry or changed persistent resources")
 			}
@@ -133,7 +140,7 @@ func TestCarryRetriesLockStageAndOriginalSnapshot(t *testing.T) {
 			editCarryFixture(t, g, token, func(s *domain.GameState) {
 				s.EventState.PendingModifiers = domain.BattleModifiers{ShadowPressure: 1, Carry: domain.CarryDove}
 			})
-			for _, other := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss"} {
+			for _, other := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss", "finale_boss"} {
 				if other != stage {
 					rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: other})
 				}
@@ -150,7 +157,7 @@ func TestCarryRetriesLockStageAndOriginalSnapshot(t *testing.T) {
 			if s.EventState.PendingModifiers.Carry != domain.CarryDove {
 				t.Fatal("retry rewrote mainline pending state")
 			}
-			wonReq := domain.CommandRequest{ExpectedRevision: &s.Revision, Command: domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)}}
+			wonReq := domain.CommandRequest{ExpectedRevision: &s.Revision, Command: domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: carryReportForStage(stage, 0, true)}}
 			won, err := g.Execute(token, "carry-win-once", wonReq)
 			if err != nil {
 				t.Fatal(err)
@@ -159,7 +166,7 @@ func TestCarryRetriesLockStageAndOriginalSnapshot(t *testing.T) {
 			if err != nil || !replay.Replayed || !reflect.DeepEqual(won.State, replay.State) {
 				t.Fatalf("carry completion was not idempotent: %v", err)
 			}
-			if stage == "market_boss" || stage == "greenhouse_boss" || stage == "tunnel_boss" {
+			if stage == "market_boss" || stage == "greenhouse_boss" || stage == "tunnel_boss" || stage == "finale_boss" {
 				if won.State.EventState.PendingModifiers != (domain.BattleModifiers{ShadowPressure: 1, Carry: domain.CarryDove}) || !reflect.DeepEqual(carryResources(before), carryResources(won.State)) {
 					t.Fatal("standalone victory consumed pending carry or granted mainline rewards")
 				}
@@ -233,20 +240,20 @@ func TestL00NeverEnablesCarryAndPreservesMainlinePending(t *testing.T) {
 }
 
 func TestUnknownHistoricalCarryDoesNotBlockExistingStages(t *testing.T) {
-	for _, stage := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss"} {
+	for _, stage := range []string{"alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss", "finale_boss"} {
 		for _, carry := range []domain.BattleCarryID{"retired-carry-id", "pigeon", "crow"} {
 			t.Run(stage+"/"+string(carry), func(t *testing.T) {
 				g, token, _ := prepareBoss(t, 0, nil)
 				editCarryFixture(t, g, token, func(s *domain.GameState) { s.EventState.PendingModifiers.Carry = carry })
 				s := execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: stage})
 				firstID := s.ActiveBattle.ID
-				execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: firstID, Outcome: "lost", Report: bossReport(3, false)})
+				execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: firstID, Outcome: "lost", Report: carryReportForStage(stage, 3, false)})
 				execute(t, g, token, domain.Command{Type: "CONTINUE"})
 				s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: stage})
 				if s.ActiveBattle.ID == firstID || s.ActiveBattle.Modifiers.Carry != carry {
 					t.Fatal("unknown saved carry prevented a stable retry")
 				}
-				execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
+				execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: carryReportForStage(stage, 0, true)})
 			})
 		}
 	}
