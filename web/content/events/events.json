@@ -3708,5 +3708,484 @@
         }
       }
     ]
+  },
+  {
+    "id": "shadow_captain_event",
+    "title": "黑影队长的巡逻线",
+    "text": "过道尽头有一只格外'分明'的黑影——别的影子是虚的,它有轮廓,有步幅,沿着一条精确的线来回。首领的哨兵,在替它的主子数着这座仓库。",
+    "category": "risk",
+    "tags": [
+      "shadow"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "maps": [
+      "warehouse"
+    ],
+    "options": [
+      {
+        "id": "map_the_patrol",
+        "label": "分工盯梢,画出它的巡逻线",
+        "outcomes": {
+          "crit": {
+            "text": "三班倒,盯满一整轮:巡逻线走'日'字,每圈第七步会在西南角停三拍——那是它唯一背对货架区的瞬间。这张巡逻图交给布防的猫,下一场硬仗的开局就赢了一半。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 2
+            },
+            "flags": [
+              "captain_patrol_mapped"
+            ]
+          },
+          "success": {
+            "text": "巡逻线记下来了:日字型,有规律,有死角。够了——布防的时候,从死角走。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "captain_patrol_mapped"
+            ]
+          },
+          "partial": {
+            "text": "盯到一半它忽然改走'8'字——它在换岗,还是察觉了什么?前半张图仍有效,但得快点用。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "captain_patrol_half"
+            ]
+          },
+          "fail": {
+            "text": "它停在过道正中,朝着你们藏身的方向,静止了很久很久。哨兵的第一职责是发现,而它,发现了。换一条过道,换一批盯梢的猫。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "captain_alerted"
+            ]
+          }
+        }
+      },
+      {
+        "id": "decoy_detour",
+        "label": "拍翻一只空纸箱,声东击西绕开它",
+        "outcomes": {
+          "crit": {
+            "text": "纸箱滚向左,全队向右——队长循声扑向空箱的瞬间,你们已经贴着货架背面穿过整条过道。它对着空箱子数了三圈才回位,而你们要办的事,一件没耽误。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "captain_decoyed"
+            ]
+          },
+          "success": {
+            "text": "声东,击西,通过。哨兵的反应很快,但猫更快。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "captain_decoyed"
+            ]
+          },
+          "partial": {
+            "text": "纸箱声骗到了它一半的注意力——通过是通过了,最后一只猫的尾巴尖在它眼前晃了一下。它记住了尾巴的颜色。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "flags": [
+              "captain_glimpsed"
+            ]
+          },
+          "fail": {
+            "text": "纸箱拍出去没滚两步就停了——空仓库里这点声音太突兀。队长循声而至,全队提前暴露,退回上一条过道重新规划。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "captain_spooked"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "warehouse_light_crate",
+    "title": "吊在半空的灯具箱",
+    "text": "行车吊钩上挂着一箱两脚兽的探照灯,离地三猫高,箱子破了一角,能看见里面成排的灯罩还挂着出厂的膜。终章要护送灯具逐段推进——这一箱,就是天生的军火库。",
+    "category": "opportunity",
+    "tags": [
+      "pathfinding"
+    ],
+    "triggers": [
+      "node"
+    ],
+    "maps": [
+      "warehouse"
+    ],
+    "options": [
+      {
+        "id": "lower_one_lamp",
+        "label": "叠猫塔,卸一盏下来",
+        "outcomes": {
+          "crit": {
+            "text": "墨墨打底,团子居中,喵喵居顶——一盏崭新的探照灯稳稳落地,连出厂的膜都还没撕。撕膜的那一刻灯'啪'地自动亮了,半条过道瞬间无影。这盏灯,跟着你们走下一场。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "light_crate_found"
+            ],
+            "carry": "lantern"
+          },
+          "success": {
+            "text": "叠猫塔成功,探照灯到手。灯很新,很亮,很沉——沉才好,沉说明它结实。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "light_crate_found"
+            ],
+            "carry": "lantern"
+          },
+          "partial": {
+            "text": "卸是卸下来了,吊带断了半根,灯罩磕出一道纹。还能亮,就是这盏灯从此有了自己的故事。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "light_crate_dinged"
+            ],
+            "carry": "lantern"
+          },
+          "fail": {
+            "text": "差半个爪位够不着。吊钩太高,箱子太稳——这箱灯搬不走,但位置记牢了:终章护送需要大灯的时候,先回这里。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 2
+            },
+            "flags": [
+              "light_crate_stashed"
+            ]
+          }
+        }
+      },
+      {
+        "id": "stash_for_finale",
+        "label": "搬不动就先藏好,留给终章的大计划",
+        "outcomes": {
+          "crit": {
+            "text": "你们用防雨布把破口重新封好,又把吊钩的记号刻在墙上:三道爪,一个灯形。终章护送灯具推进的时候,全队会回到这里——那一夜的每一条亮起来的路,今天就开始埋灯。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 2
+            },
+            "flags": [
+              "finale_light_stashed"
+            ]
+          },
+          "success": {
+            "text": "箱子藏严实了,位置刻进了墙。猫的军火库,不响,只亮。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "finale_light_stashed"
+            ]
+          },
+          "partial": {
+            "text": "藏到一半吊钩转了半圈,箱子晃出一声闷响。全队静止十秒——没有黑影来。继续,手都快一点。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "finale_light_stashed"
+            ]
+          },
+          "fail": {
+            "text": "防雨布不够大,盖了个七成。剩下的三成,靠这仓库没人来撞运气。终章来取灯的时候,但愿它还在。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "light_stash_rough"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "warehouse_lookout",
+    "title": "货架顶的瞭望位",
+    "text": "最高一排货架的顶上,两脚兽留了一块没搬走的栈板——干净,平稳,还晒不到漏下来的雨。整座仓库,再没有第二个这样的位置。",
+    "category": "opportunity",
+    "tags": [
+      "pathfinding"
+    ],
+    "triggers": [
+      "node"
+    ],
+    "maps": [
+      "warehouse"
+    ],
+    "options": [
+      {
+        "id": "climb_and_survey",
+        "label": "爬上去,把全仓看一遍",
+        "outcomes": {
+          "crit": {
+            "text": "从栈板上望出去,整座仓库在眼底摊开:哪排货架后面藏着窝,哪条过道有黑影的旧痕,吊钩上的灯箱、深处的铁门、以及——铁门后面极微弱、但确实存在的,好几处一起一伏的呼吸。整张营救地图,一眼装进脑子里。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 3
+            },
+            "flags": [
+              "lookout_surveyed"
+            ]
+          },
+          "success": {
+            "text": "登顶环视:仓库的骨架、通道、几处可疑的角落,尽收眼底。下来了,画图。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 2
+            },
+            "flags": [
+              "lookout_surveyed"
+            ]
+          },
+          "partial": {
+            "text": "看到一半,顶上的粉尘被踩得簌簌落,下面路过的黑影抬了抬头。趴低,屏息,等它过去。看到的部分,足够改掉两条错误路线。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "lookout_partial"
+            ]
+          },
+          "fail": {
+            "text": "刚爬到一半,栈板发出一声年老的开裂声。上不去了——但这次尝试摸清了货架的承重:哪几层能爬,哪几层是陷阱。给下次登顶画好了安全线。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "lookout_recce"
+            ]
+          }
+        }
+      },
+      {
+        "id": "set_watch_post",
+        "label": "就把它设成全队的瞭望哨",
+        "outcomes": {
+          "crit": {
+            "text": "栈板擦净,边缘磨上爪印记号,上下两条爬架路线都试了三遍。从此仓库里任何风吹草动,都有一个位置能第一时间看见——这座仓库最高的地方,姓猫了。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "watch_post_set"
+            ]
+          },
+          "success": {
+            "text": "瞭望哨设好了。轮值表排上,第一班的猫已经在顶上眯着眼扫全场。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "watch_post_set"
+            ]
+          },
+          "partial": {
+            "text": "哨位能用,但爬架路线只有一条通畅。再找一条备用路线之前,轮值得两猫一组。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "watch_post_one_route"
+            ]
+          },
+          "fail": {
+            "text": "设哨途中漏雨突然变大,栈板淋湿了一角。哨位先留着标记,等天晴干燥了再启用——好位置不怕晚。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "watch_post_wet"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "box_haul_event",
+    "title": "整箱的纸箱山",
+    "text": "搬运区堆着一托盘没用过的空纸箱,叠得整整齐齐,一只压一只,像一座小山。对两脚兽是废品,对猫,是宝山。",
+    "category": "opportunity",
+    "tags": [
+      "foraging"
+    ],
+    "triggers": [
+      "random"
+    ],
+    "maps": [
+      "warehouse"
+    ],
+    "options": [
+      {
+        "id": "pick_best_box",
+        "label": "挑一只最结实的带走",
+        "outcomes": {
+          "crit": {
+            "text": "千挑万选,选中箱底双层、四角带 reinforced 边的那只——团子绕着它转了一圈,郑重点头:'这只,能当路障,能当窝,能当车。'下一场硬仗,它有一个位置。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "box_hauled"
+            ],
+            "carry": "box"
+          },
+          "success": {
+            "text": "挑了一只最硬实的,一猫拖走。纸箱在猫的世界,永远是硬通货。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "box_hauled"
+            ],
+            "carry": "box"
+          },
+          "partial": {
+            "text": "挑中的箱子提手断了半边。用牙咬着断口拖走——猫从不嫌弃一只努力过的纸箱。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "box_hauled"
+            ],
+            "carry": "box"
+          },
+          "fail": {
+            "text": "刚抽出一箱,上面的山塌了半边,轰隆一路。全队僵在原地数了三十下——没有黑影来。换一只,快拿快走。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "box_slide_alerted"
+            ]
+          }
+        }
+      },
+      {
+        "id": "build_supply_post",
+        "label": "不搬了,就地把纸箱山搭成中转站",
+        "outcomes": {
+          "crit": {
+            "text": "一猫一句主意,纸箱山被改造成了中转站:顶层瞭望,中层储粮,底层留了一条随时能撤的通道。往后在这片仓库里救出的每一只猫,都先送到这里歇脚。山没有变矮,只是有了名字。",
+            "tdMod": {
+              "shadowPressure": -1
+            },
+            "reward": {
+              "material": 2
+            },
+            "flags": [
+              "supply_post_built"
+            ]
+          },
+          "success": {
+            "text": "中转站搭好了。第一只住进来的猫会在纸箱上留爪印——以后会有很多很多爪印。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "reward": {
+              "material": 1
+            },
+            "flags": [
+              "supply_post_built"
+            ]
+          },
+          "partial": {
+            "text": "搭到一半发现少一只'门箱',用提手断的那只凑数。中转站能用,就是门有点歪——歪门也是门。",
+            "tdMod": {
+              "shadowPressure": 0
+            },
+            "flags": [
+              "supply_post_built"
+            ]
+          },
+          "fail": {
+            "text": "改造声比预想的大。搭了一半的中转站先弃置,标记留好——等这片区域清净了,回来接着搭。",
+            "tdMod": {
+              "shadowPressure": 1
+            },
+            "reward": {
+              "clue": 1
+            },
+            "flags": [
+              "supply_post_paused"
+            ]
+          }
+        }
+      }
+    ]
   }
 ]
