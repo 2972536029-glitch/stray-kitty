@@ -1,6 +1,7 @@
 import type {Catalog, GameState} from '../../contracts';
 export const currentStory = (catalog: Catalog, state: GameState) => catalog.story.find(n => n.id === state.storyNodeId);
 export function objective(state: GameState): string {
+  if (state.activeBattle?.stageId === 'market_boss' && ['battle', 'preparation', 'settlement'].includes(state.phase)) return '六位伙伴守住八波黑影，击败集市首领，结束试玩后回到家园。';
   if (state.phase === 'battle') return state.activeBattle?.stageId === 'l00_tutorial'
     ? '练习伙伴站位、蓄能与技能配合，守住六波教学防线。'
     : '与绒绒、斑斑、团子和点点守住八波黑影，击败小巷首领。';

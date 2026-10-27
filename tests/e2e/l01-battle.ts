@@ -13,8 +13,16 @@ async function snapshot(page:Page){
 }
 async function inspectOnBoard(page:Page,id:string){
   const cat=page.getByTestId(`chapter-cat-${id}`);
-  await cat.click();
-  await expect(page.getByTestId('chapter-cat-menu')).toBeVisible();
+  try {
+    await cat.click({timeout:1500});
+    await expect(page.getByTestId('chapter-cat-menu')).toBeVisible();
+    return true;
+  } catch (error) {
+    // The final enemy can fall between the observed snapshot and this click.
+    // A completed host replaces the board; let the caller verify the real settlement.
+    if (!await page.getByTestId('chapter-battle').count()) return false;
+    throw error;
+  }
 }
 async function move(page:Page,id:string,x:number,y:number){
   await inspectOnBoard(page,id);await page.getByTestId('chapter-move').click();
@@ -53,7 +61,7 @@ export async function playVisibleControls(page:Page){
       const cat=s.cats.find(c=>c.id===id);
       if(!cat||cat.status!=='active'||cat.energy<100)continue;
       if(id==='diandian'&&s.cats.reduce((sum,c)=>sum+hp[c.id]-c.hp,0)<40)continue;
-      await inspectOnBoard(page,id);
+      if(!await inspectOnBoard(page,id))break;
       const button=page.getByTestId(`chapter-skill-${id}`);if(await button.getAttribute('aria-disabled')==='true'){await page.keyboard.press('Escape');continue;}
       await button.click();used.add(id);
       if(id==='caster'){

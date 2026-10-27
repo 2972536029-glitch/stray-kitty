@@ -23,3 +23,5 @@ App → BattleHost → L00BattleHost → BattleViewport → PrologueBattle。只
 结果只有attemptId与won/lost，不报告物品耗用。教学胜利只记录教学完成并进入雨夜小巷，不发点点救援奖励；第一章救援战胜利仍按既有故事结算。旧预留返还与版本边界见[模块接口](../design/tower-defense/interfaces.md)。
 
 关卡与技能见[序章设计](../design/tower-defense/levels/L00-prologue/design.md)、[公共规则](../design/tower-defense/rules.md)、[技能](../design/tower-defense/skills.md)。2026-10-26 本轮完整检查通过：125 项前端／战斗测试、Go 全包检查、类型／内容／API／架构检查及生产构建；16 项浏览器端到端测试全部通过。L00 包括六波新教程、宽窄屏、暂停、刷新同场次与三档失败后新场次继承难度。地图经基线对比保持原 3×7、B7→B1、19 个候选部署格。
+
+本轮 L02 开发同步移除本章伙伴名单侧栏，原地图和波次保持；上方旧测试计数为 9833c3e 前轮证据，本轮最终验证另见第二章接入。

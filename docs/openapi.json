@@ -1216,7 +1216,7 @@
           "type",
           "stageId"
         ],
-        "description": "Starts L01 first rescue (alley_rescue) or unlocked home replay (alley_boss). l00_tutorial is accepted only to retry a failed tutorial settlement. No battle inventory reservation."
+        "description": "Starts L01 first rescue (alley_rescue), unlocked home replay (alley_boss), or the standalone home trial market_boss after alley_rescued. market_boss can also restart from its own failed preparation, preserving the old attempt tier. l00_tutorial is accepted only to retry a failed tutorial settlement. No battle inventory reservation."
       },
       "CompleteBattle": {
         "type": "object",
@@ -1245,7 +1245,7 @@
           "attemptId",
           "outcome"
         ],
-        "description": "Both first-chapter stage IDs (alley_rescue and alley_boss) require report. l00_tutorial requires only attemptId and outcome. Battle completion grants no consumable supplies. Old active reservations are fully returned in the same durable, idempotent settlement transaction."
+        "description": "alley_rescue, alley_boss and market_boss require report. l00_tutorial requires only attemptId and outcome. Battle completion grants no consumable supplies. market_boss only records stage completion: no recruitment, items, currency, push tokens or story progression, and no clearing mainline pending event modifiers. Old active L01 reservations are fully returned in the durable, idempotent settlement transaction."
       },
       "Continue": {
         "type": "object",
@@ -1804,7 +1804,7 @@
       "BattleReport": {
         "type": "object",
         "additionalProperties": false,
-        "description": "Client-reported combat summary, required for alley_rescue and alley_boss. Victory requires bossDefeated and fewer than 3 leaks. The prototype does not run server-authoritative combat.",
+        "description": "Client-reported combat summary required for alley_rescue, alley_boss and market_boss. Victory requires bossDefeated and fewer than 3 leaks. The prototype does not run server-authoritative combat.",
         "properties": {
           "leaks": {
             "type": "integer",
