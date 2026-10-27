@@ -1843,7 +1843,9 @@
           "bell",
           "box",
           "dog",
-          "dove"
+          "dove",
+          "rats",
+          "kitten"
         ],
         "description": "Single temporary battle carry supplied by event handoffs MR !23 and !24. dog identifies Old Huang and dove identifies the pigeon ally. No inventory transfer or extra result fields."
       }
