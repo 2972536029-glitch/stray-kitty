@@ -40,11 +40,11 @@ flowchart TD
     subgraph S1["【第一章：陌生小巷 · 纸箱救援】（地图：雨夜小巷 alley）"]
         A4 --> B1["团子循光而至 dialogue<br/>初遇热心橘猫团子 · 结伴探寻雨巷"]
         B1 --> B2["雨巷自由探索 explore<br/>按键穿越窄道 · 寻找微弱喵声来源"]
-        B2 --> B3["发现受困纸箱 interact<br/>遭遇点点 · 触发纸箱抉择事件"]
-        B3 --> B4["双骰跑团检定 event<br/>2d6 掷骰判定 · 四档结果影响黑影攻击烈度"]
-        B4 --> B5["战前准备布防 preparation<br/>规划点点撤离路线 · 携带光源与补给"]
-        B5 --> B6["小巷守护战 battle<br/>Stage: alley_rescue · 三路布防击溃暗影波次"]
-        B6 --> B7["救援胜利结算 settlement<br/>点点加入队伍 · 获纸箱猫窝、邮票与材料"]
+        B2 --> B3["发现受困纸箱 interact<br/>遭遇暹罗猫点点 · 触发纸箱抉择事件"]
+        B3 --> B4["双骰跑团检定 event<br/>2d6 掷骰判定 · 接应点点出纸箱 · 影响黑影烈度"]
+        B4 --> B5["战前准备布防 preparation<br/>点点协同参战 · 规划撤离路线与补给"]
+        B5 --> B6["小巷守护战 battle<br/>Stage: alley_rescue · 四猫协同守住撤离路线"]
+        B6 --> B7["救援胜利结算 settlement<br/>点点正式入队 · 获纸箱猫窝、邮票与材料"]
         B7 --> B8["寻猫启事与营地提议 dialogue<br/>墙角发现寻猫启事 · 伙伴提议前往废弃温室花房"]
     end
 
@@ -139,9 +139,9 @@ flowchart LR
         <tr>
           <td><strong>第一章</strong> · 陌生小巷</td>
           <td>雨夜小巷 (<code>alley</code>)</td>
-          <td>结识团子，识破纸箱，营救点点</td>
+          <td>结识团子，接应暹罗点点出纸箱并合力守住撤离路线</td>
           <td><code>alley_rescued</code>, <code>rescue_story_done</code></td>
-          <td>点点入队、纸箱猫窝、解锁花房大本营</td>
+          <td>点点正式入队、纸箱猫窝、解锁花房大本营</td>
         </tr>
         <tr>
           <td><strong>第二章</strong> · 午夜集市</td>

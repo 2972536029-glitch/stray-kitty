@@ -20,11 +20,11 @@ flowchart TD
     subgraph S1["【第一章：陌生小巷 · 纸箱救援】（地图：雨夜小巷 alley）"]
         A4 --> B1["团子循光而至 dialogue<br/>初遇热心橘猫团子 · 结伴探寻雨巷"]
         B1 --> B2["雨巷自由探索 explore<br/>按键穿越窄道 · 寻找微弱喵声来源"]
-        B2 --> B3["发现受困纸箱 interact<br/>遭遇点点 · 触发纸箱抉择事件"]
-        B3 --> B4["双骰跑团检定 event<br/>2d6 掷骰判定 · 四档结果影响黑影攻击烈度"]
-        B4 --> B5["战前准备布防 preparation<br/>规划点点撤离路线 · 携带光源与补给"]
-        B5 --> B6["小巷守护战 battle<br/>Stage: alley_rescue · 三路布防击溃暗影波次"]
-        B6 --> B7["救援胜利结算 settlement<br/>点点加入队伍 · 获纸箱猫窝、邮票与材料"]
+        B2 --> B3["发现受困纸箱 interact<br/>遭遇暹罗猫点点 · 触发纸箱抉择事件"]
+        B3 --> B4["双骰跑团检定 event<br/>2d6 掷骰判定 · 接应点点出纸箱 · 影响黑影烈度"]
+        B4 --> B5["战前准备布防 preparation<br/>点点协同参战 · 规划撤离路线与补给"]
+        B5 --> B6["小巷守护战 battle<br/>Stage: alley_rescue · 四猫协同守住撤离路线"]
+        B6 --> B7["救援胜利结算 settlement<br/>点点正式入队 · 获纸箱猫窝、邮票与材料"]
         B7 --> B8["寻猫启事与营地提议 dialogue<br/>墙角发现寻猫启事 · 伙伴提议前往废弃温室花房"]
     end
 
@@ -105,7 +105,7 @@ flowchart LR
 | 章节编号与名称 | 主要场景 | 核心角色行动 | 产生的关键 State Flags | 解锁的家园与系统要素 |
 | :--- | :--- | :--- | :--- | :--- |
 | **序章** · 金枪鱼事件 | 雨夜小巷 (`alley`) | 喵喵独自面对暗影，初光防线教学 | `l00_tutorial` | 激活移动与基础交互能力 |
-| **第一章** · 陌生小巷 | 雨夜小巷 (`alley`) | 结识团子，识破纸箱，营救点点 | `alley_rescued`<br/>`rescue_story_done` | 点点入队、纸箱猫窝、解锁花房大本营 |
+| **第一章** · 陌生小巷 | 雨夜小巷 (`alley`) | 结识团子，接应暹罗点点出纸箱并合力守住撤离路线 | `alley_rescued`<br/>`rescue_story_done` | 点点正式入队、纸箱猫窝、解锁花房大本营 |
 | **第二章** · 午夜集市 | 午夜集市 (`market`) | 与老黑羽、咕咕大盗交涉暗影线索 | `market_unlocked`<br/>`chapter_2_started` | 猫国商店商品扩充、集市物资兑换 |
 | **第三章** · 废弃花房 | 温室花房 (`greenhouse`) | 墨墨带来情报，全员分工修缮要塞 | `chapter_3_started`<br/>`greenhouse_fortified`<br/>`momo_joined` | 墨墨入队、要塞坚固度提升 |
 | **第四章** · 消失的猫咪们 | 地下暗道 (`tunnel`) | 破除发条假叫声陷阱，营救第一批幼猫 | `chapter_4_started`<br/>`tunnel_explored`<br/>`cats_rescued_batch1` | 暗道地图全通、锁定大仓库坐标 |
