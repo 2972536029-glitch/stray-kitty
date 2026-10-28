@@ -168,7 +168,11 @@ func TestCarryRetriesLockStageAndOriginalSnapshot(t *testing.T) {
 					t.Fatalf("carry completion was not idempotent: %v", err)
 				}
 				if stage == "market_boss" || stage == "greenhouse_boss" || stage == "tunnel_boss" || stage == "finale_boss" {
-					if won.State.EventState.PendingModifiers != (domain.BattleModifiers{ShadowPressure: 1, Carry: domain.CarryDove}) || !reflect.DeepEqual(carryResources(before), carryResources(won.State)) {
+					expectedResources := before
+					if stage == "greenhouse_boss" {
+						expectedResources.Flags = domain.Add(expectedResources.Flags, "greenhouse_fortified")
+					}
+					if won.State.EventState.PendingModifiers != (domain.BattleModifiers{ShadowPressure: 1, Carry: domain.CarryDove}) || !reflect.DeepEqual(carryResources(expectedResources), carryResources(won.State)) {
 						t.Fatal("standalone victory consumed pending carry or granted mainline rewards")
 					}
 				} else if won.State.EventState.PendingModifiers != (domain.BattleModifiers{}) {
@@ -304,6 +308,7 @@ func TestMR24AllyCardsAwardCarryOnlyOnConfiguredCrit(t *testing.T) {
 func TestDoveCarryViaExistingMarketNode(t *testing.T) {
 	g, token, _ := setup(t)
 	finishStory(t, g, token)
+	markRescueStoryDoneForTest(t, g, token)
 	g.Random = func(int) (int, error) { return 5, nil }
 	execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
 	finishStory(t, g, token)

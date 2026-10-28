@@ -89,8 +89,8 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, bool, error) {
 	return g.drawRandomEventWithChance(s, -1)
 }
 
-// checkRandomZone 处理雨巷三块固定随机区(!21):每区一次判定机会,概率走
-// RainyZoneChance(千分比 550);雨巷已禁用 REPORT_MOVE 触发,区域判定是唯一入口。
+// checkRandomZone rolls when the player enters a Rainy Alley random zone.
+// The client edge-triggers entry; the shared deck enforces card prerequisites and no-replacement.
 func (g *Game) checkRandomZone(s *domain.GameState, zoneID string) error {
 	if err := domain.RequirePhase(*s, "explore"); err != nil {
 		return err
@@ -103,11 +103,6 @@ func (g *Game) checkRandomZone(s *domain.GameState, zoneID string) error {
 	default:
 		return domain.Fail("INVALID_COMMAND", "随机区域无效", 400)
 	}
-	flag := "attempted_" + zoneID
-	if domain.Contains(s.Flags, flag) {
-		return nil
-	}
-	s.Flags = domain.Add(s.Flags, flag)
 	id, triggered, repeatable, err := g.drawRandomEventWithChance(*s, g.RainyZoneChance)
 	if err != nil {
 		return err
