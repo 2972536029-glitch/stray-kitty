@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {isMarketSolid, marketArt, nightMarketSpatial, onMarketRoute, shouldTriggerMarketBoss} from '../web/src/modules/nightMarket/map';
+import {isMarketSolid, marketArt, marketEntry, nightMarketSpatial, onMarketRoute, shouldTriggerMarketBoss} from '../web/src/modules/nightMarket/map';
 
 test('Night Market keeps the approved native coordinate frame and three exact art assets',()=>{
   assert.deepEqual(nightMarketSpatial.coordinate_space,{width:1672,height:941,origin:'top-left',axis_x:'right',axis_y:'down',units:'native artwork pixels'});
@@ -16,6 +16,8 @@ test('authored routes and L0 collision geometry are layer-specific',()=>{
   assert.equal(isMarketSolid('L1',580,520),false);
 });
 test('market boss only triggers at its authored point before the mainline clear',()=>{
+  assert.deepEqual(marketEntry,{floor:'L0',x:670,y:781});
+  assert.notDeepEqual(marketEntry,{floor:'L0',x:1310,y:169});
   assert.equal(shouldTriggerMarketBoss('L0',true,false,1310,169),true);
   assert.equal(shouldTriggerMarketBoss('L0',false,false,1310,169),false);
   assert.equal(shouldTriggerMarketBoss('L0',true,false,670,781),false);

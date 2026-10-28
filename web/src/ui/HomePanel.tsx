@@ -5,6 +5,7 @@ import {MarketLoadout} from '../modules/battle/MarketLoadout';
 import {GreenhouseLoadout} from '../modules/battle/GreenhouseLoadout';
 import {TunnelLoadout} from '../modules/battle/TunnelLoadout';
 import {FinaleLoadout} from '../modules/battle/FinaleLoadout';
+import {exploreChapter2Command, startChapter2Command} from './chapterCommands';
 
 const CHATTER_CALLBACKS: {flag: string; speaker: string; text: string}[] = [
   {flag: 'sack_cat_freed', speaker: '团子', text: '“上回麻袋里那只小的，今天蹲在墙头冲我摆尾巴。这巷子啊，记情。”'},
@@ -88,15 +89,15 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     )}
     {(state.flags.includes('alley_rescued') || state.flags.includes('rescue_story_done')) && (
       !state.flags.includes('chapter_2_started') ? (
-        <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'market_intro_1'})}>
+        <button data-testid="chapter2-start" className="primary-action-btn" disabled={disabled} onClick={() => onCommand(startChapter2Command())}>
           🌙 启程：第二章《午夜集市》 →
         </button>
       ) : (
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-          <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'market'})}>
+          <button data-testid="chapter2-explore" className="primary-action-btn" disabled={disabled} onClick={() => onCommand(exploreChapter2Command())}>
             🌙 前往午夜集市 →
           </button>
-          <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'market_intro_1'})}>
+          <button className="quiet" disabled={disabled} onClick={() => onCommand(startChapter2Command())}>
             📖 重温第二章剧情
           </button>
         </div>

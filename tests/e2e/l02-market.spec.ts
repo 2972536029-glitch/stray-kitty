@@ -40,7 +40,7 @@ for(const entry of cases.filter(value=>value.id!=='retreat')){
     test.setTimeout(240000);page.setDefaultTimeout(12000);
     await openFixture(page,entry.id);
     const commands:string[]=[];page.on('request',req=>{if(req.url()===origin+'/api/v1/commands'&&req.method()==='POST')commands.push(req.postDataJSON().command.type);});
-    await page.getByTestId('market-enter').click();
+    await page.getByTestId('market-battle-trial-enter').click();
     await expect(page.getByTestId('market-battle')).toHaveAttribute('data-phase','ready');
     await expect(page.locator('[data-testid^="market-cat-"][data-status]')).toHaveCount(6);
     await expect(page.locator('.market-roster,.chapter-roster,.btl-party')).toHaveCount(0);
@@ -74,7 +74,7 @@ for(const entry of cases.filter(value=>value.id!=='retreat')){
     expect(actions.skills.length).toBeGreaterThanOrEqual(6);expect(actions.dodges).toBeGreaterThan(0);
     await page.screenshot({path:info.outputPath(`l02-${entry.id}-won.png`),fullPage:true});
     await page.getByRole('button',{name:'返回家园 →'}).click();
-    await expect(page.getByTestId('market-enter')).toBeVisible();
+    await expect(page.getByTestId('market-battle-trial-enter')).toBeVisible();
     await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
     expect((await(await request.get(origin+'/api/v1/state',{headers})).json()).inventory).toEqual(state.inventory);
     await info.attach('real-controls-result',{contentType:'application/json',body:JSON.stringify({difficulty:entry.id,...actions,commands,inventory:state.inventory})});
@@ -84,7 +84,7 @@ for(const entry of cases.filter(value=>value.id!=='retreat')){
 test('L02 has no bag or item loadout, preserves pause/title and retreats to retry on a narrow screen',async({page,request},info)=>{
   test.setTimeout(90000);await openFixture(page,'retreat');
   await expect(page.getByRole('button',{name:'增加暖心罐罐'})).toHaveCount(0);
-  await page.getByTestId('market-enter').click();
+  await page.getByTestId('market-battle-trial-enter').click();
   const headers={Authorization:`Bearer ${sessions.get('retreat')!.token}`};
   const entered=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
   expect(entered.inventory['warm-can']).toBe(4);expect(entered.inventory['bouncy-treat']).toBe(2);
@@ -108,10 +108,10 @@ test('L02 has no bag or item loadout, preserves pause/title and retreats to retr
   expect(ended.lastResult.outcome).toBe('lost');expect('battleRewards' in ended.lastResult).toBe(false);
   expect(ended.inventory).toEqual(entered.inventory);
   await page.getByRole('button',{name:'调整防线，再试一次'}).click();
-  await expect(page.getByTestId('market-enter')).toBeVisible();
+  await expect(page.getByTestId('market-battle-trial-enter')).toBeVisible();
   const retry=await(await request.get(origin+'/api/v1/state',{headers})).json();
   expect(retry.phase).toBe('preparation');expect(retry.lastResult.stageId).toBe('market_boss');
-  await page.getByTestId('market-enter').click();
+  await page.getByTestId('market-battle-trial-enter').click();
   expect(await page.getByTestId('market-battle').getAttribute('data-attempt-id')).not.toBe(entered.activeBattle!.id);
   const restarted=await(await request.get(origin+'/api/v1/state',{headers})).json();
   expect(restarted.activeBattle.modifiers).toEqual(entered.activeBattle!.modifiers);

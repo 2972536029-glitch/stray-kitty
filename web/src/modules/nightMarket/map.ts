@@ -8,6 +8,7 @@ export const marketArt: Record<MarketFloor, string> = {
   L1: '/assets/night-market/night_market_L1_rooftops_1672x941.png',
   Lm1: '/assets/night-market/night_market_Lminus1_tunnel_1672x941.png',
 };
+export const marketEntry = {floor:'L0',x:670,y:781} as const;
 
 export function distanceToSegment(x:number,y:number,a:number[],b:number[]) {
   const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy||1)));

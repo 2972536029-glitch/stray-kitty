@@ -169,6 +169,42 @@ func TestMarketEntryIsSeparateFromMainlineAndLockedBeforeRescue(t *testing.T) {
 	}
 }
 
+func TestGreenhouseChapterTwoEntryAndExplorationResumeDoNotStartBattle(t *testing.T) {
+	g, token, path := setup(t)
+	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Phase = "home"
+		p.State.ChapterID = "greenhouse"
+		p.State.MapID = "greenhouse"
+		p.State.Flags = domain.Add(p.State.Flags, "alley_rescued")
+		p.State.Flags = domain.Add(p.State.Flags, "rescue_story_done")
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
+	if s.Phase != "dialogue" || s.ChapterID != "market" || s.MapID != "market" || s.StoryNodeID != "market_intro_1" || s.ActiveBattle != nil {
+		t.Fatalf("greenhouse chapter action did not enter Chapter 2 dialogue: %+v", s)
+	}
+	s = finishStory(t, g, token)
+	if s.Phase != "explore" || s.ChapterID != "market" || s.MapID != "market" || s.ActiveBattle != nil || !domain.Contains(s.Flags, "chapter_2_started") {
+		t.Fatalf("Chapter 2 introduction did not enter market exploration: %+v", s)
+	}
+	store, err := repository.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g = service.New(store, g.Catalog)
+	s, err = g.State(token)
+	if err != nil || s.Phase != "explore" || s.MapID != "market" || s.ActiveBattle != nil {
+		t.Fatalf("reloaded Chapter 2 exploration restored the wrong state: state=%+v err=%v", s, err)
+	}
+	s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+	if s.Phase != "explore" || s.ChapterID != "market" || s.MapID != "market" || s.ActiveBattle != nil {
+		t.Fatalf("direct market exploration test path started or resumed battle: %+v", s)
+	}
+}
+
 func TestMarketStoryEntryStaysInExplorationUntilCluesAndAuthoredPoint(t *testing.T) {
 	g, token, _ := prepareBoss(t, 0, nil)
 	s := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})

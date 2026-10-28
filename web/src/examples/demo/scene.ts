@@ -5,7 +5,7 @@ import type {Direction} from '../../adapters/platform/input';
 import {CanvasPainter} from '../../adapters/canvas/painter';
 import {FollowCamera, type CameraFrame} from '../../adapters/canvas/camera';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
-import {distanceToSegment,isMarketSolid, marketArt, onMarketRoute, shouldTriggerMarketBoss, type MarketFloor} from '../../modules/nightMarket/map';
+import {distanceToSegment,isMarketSolid, marketArt, marketEntry, onMarketRoute, shouldTriggerMarketBoss, type MarketFloor} from '../../modules/nightMarket/map';
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
@@ -189,9 +189,9 @@ export class DemoScene {
           if (mapChanged || (this.lastMode === 'dialogue' && this.state.flags.includes('alley_rescued'))) this.rainyAlley.reset(this.state.flags, this.state.alleyBattleReturn);
         } else {
           if (!this.marketInitialized) {
-            this.marketFloor='L0';
-            this.x = this.state.flags.includes('market_cleared') ? 1310 : 670;
-            this.y = this.state.flags.includes('market_cleared') ? 169 : 781;
+            this.marketFloor=this.state.flags.includes('market_cleared')?'L0':marketEntry.floor;
+            this.x = this.state.flags.includes('market_cleared') ? 1310 : marketEntry.x;
+            this.y = this.state.flags.includes('market_cleared') ? 169 : marketEntry.y;
             this.marketInitialized=true;
           }
           this.snapMarketCamera();
