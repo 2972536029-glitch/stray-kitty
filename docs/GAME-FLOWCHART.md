@@ -11,8 +11,8 @@
 ```mermaid
 flowchart TD
     %% 阶段节点定义
-    subgraph S0["【序章：金枪鱼事件 · 独对暗影】（地图：雨夜小巷 alley）"]
-        A1["主线叙事 dialogue<br/>追寻金枪鱼香味走失 · 暴雨初临孤独无助"] --> A2["暗影逼近 dialogue<br/>小巷深处异响 · 喵喵勇敢点亮第一道微光"]
+    subgraph S0["【序章：金枪鱼事件 · 救场引导】（地图：雨夜小巷 alley）"]
+        A1["主线叙事 dialogue<br/>追寻金枪鱼香味走失 · 暴雨初临孤独无助"] --> A2["暗影遇险与救场 dialogue<br/>喵喵受伤遇险 · 绒绒斑斑与阿策救场引导"]
         A2 --> A3["L00 初光防线教学战 battle<br/>熟悉 3×7 棋盘 · 部署/治疗/蓄能/战术技能"]
         A3 --> A4["初战胜利结算 settlement<br/>驱散先头黑影 · 守住窗外第一道防线"]
     end
@@ -20,11 +20,11 @@ flowchart TD
     subgraph S1["【第一章：陌生小巷 · 纸箱救援】（地图：雨夜小巷 alley）"]
         A4 --> B1["团子循光而至 dialogue<br/>初遇热心橘猫团子 · 结伴探寻雨巷"]
         B1 --> B2["雨巷自由探索 explore<br/>按键穿越窄道 · 寻找微弱喵声来源"]
-        B2 --> B3["发现受困纸箱 interact<br/>遭遇点点 · 触发纸箱抉择事件"]
-        B3 --> B4["双骰跑团检定 event<br/>2d6 掷骰判定 · 四档结果影响黑影攻击烈度"]
-        B4 --> B5["战前准备布防 preparation<br/>规划点点撤离路线 · 携带光源与补给"]
-        B5 --> B6["小巷守护战 battle<br/>Stage: alley_rescue · 三路布防击溃暗影波次"]
-        B6 --> B7["救援胜利结算 settlement<br/>点点加入队伍 · 获纸箱猫窝、邮票与材料"]
+        B2 --> B3["发现受困纸箱 interact<br/>遭遇暹罗猫点点 · 触发纸箱抉择事件"]
+        B3 --> B4["双骰跑团检定 event<br/>2d6 掷骰判定 · 接应点点出纸箱 · 影响黑影烈度"]
+        B4 --> B5["战前准备布防 preparation<br/>点点协同参战 · 规划撤离路线与补给"]
+        B5 --> B6["小巷守护战 battle<br/>Stage: alley_rescue · 四猫协同守住撤离路线"]
+        B6 --> B7["救援胜利结算 settlement<br/>点点正式入队 · 获纸箱猫窝、邮票与材料"]
         B7 --> B8["寻猫启事与营地提议 dialogue<br/>墙角发现寻猫启事 · 伙伴提议前往废弃温室花房"]
     end
 
@@ -61,7 +61,9 @@ flowchart TD
     end
 
     subgraph S6["【终章：点亮流浪猫王国 · 终战与大团圆】（场景：大仓库 / 花房）"]
-        F5 --> G1["进军废弃总仓库 dialogue<br/>最后一批伙伴困于深层防空隔间 · 黑影重重封锁"]
+        GATE{"进军大仓库门槛<br/>线索 clue >= 3 ?"}
+        GATE -- "线索不足 (< 3)" --> LACK["阿策提示线索不足 dialogue<br/>finale_clue_insufficient ➔ 回午夜集市继续探索"]
+        GATE -- "线索齐备 (>= 3)" --> G1["进军废弃总仓库 dialogue<br/>最后一批伙伴困于深层防空隔间 · 黑影重重封锁"]
         G1 --> G2["吹响冲锋号角 dialogue<br/>finale_intro_5 喵喵挺身号召冲锋 · 战术准备 finale_boss"]
         G2 --> G3["大仓库光之决战 battle<br/>Stage: finale_boss · 移动灯具推进 · 击败永夜之王与两名精英"]
         G3 --> G4["强光破暗 · 全员突围 dialogue<br/>finale_intro_6 破开铁锁循光撤离 ➔ 7~9 幕大团圆结局"]
@@ -72,7 +74,8 @@ flowchart TD
     C4 -.-> D1
     D7 -.-> E1
     E4 -.-> F1
-    F5 -.-> G1
+    F5 -.-> GATE
+    LACK -.-> D2
 
     %% 阶段样式
     style S0 fill:#f0f7ff,stroke:#2b6cb0,stroke-width:2px
@@ -112,4 +115,21 @@ flowchart LR
 | **第二章** · 午夜集市 | 午夜集市 (`market`) | `market_boss` (L02)<br/>接点：集市探索收集情报后 → 战斗 → 战后返程 | 与老黑羽、咕咕大盗交涉暗影线索，六猫守住集市7入口 | `market_unlocked`<br/>`chapter_2_started`<br/>`market_cleared` | 猫国商店商品扩充、集市物资兑换、开启第三章剧情 |
 | **第三章** · 废弃花房 | 温室花房 (`greenhouse`) | `greenhouse_boss` (L03)<br/>接点：`greenhouse_intro_7` → 战斗 → 战后庆功 | 墨墨加入编队替代点点，全员防守34格通路铲荆棘 | **战前**：`momo_joined`<br/>**战后**：`greenhouse_fortified` | 墨墨正式入队出战、花房要塞加固完成、解锁第四章暗道 |
 | **第四章** · 消失的猫咪们 | 地下暗道 (`tunnel`) | `tunnel_boss` (L04)<br/>接点：`rescue_intro_9` → 战斗 → `rescue_intro_10` | 破除发条诱饵，墨墨觉醒夜视护盾，破开铁栓救出幼猫 | **战前**：墨墨觉醒夜视<br/>**战后**：`tunnel_explored`<br/>`cats_rescued_batch1` | 暗道地图全通、锁定大仓库坐标 |
-| **终章** · 点亮流浪猫王国 | 废弃大仓库 / 花房 | `finale_boss` (L05)<br/>接点：`finale_intro_5` → 战斗 → `finale_intro_6` | 聚光推进，击退永夜之王与双精英，受困猫全员突围 | **战后**：`finale_started`<br/>`finale_completed`<br/>`kingdom_founded` | 全剧终金色庆典、窗前暖光串灯、街坊水粮补给、与主人团聚 |
+| **终章** · 点亮流浪猫王国 | 废弃大仓库 / 花房 | `finale_boss` (L05)<br/>接点：线索 `clue >= 3` 门槛（不足则 `finale_clue_insufficient` 回集市）→ `finale_intro_5` → 战斗 → `finale_intro_6` | 聚光推进，击退永夜之王与双精英，受困猫全员突围 | **战后**：`finale_started`<br/>`finale_completed`<br/>`kingdom_founded` | 全剧终金色庆典、窗前暖光串灯、街坊水粮补给、与主人团聚 |
+
+---
+
+## 4. 随机事件选择与伙伴日常闲聊 Flag 呼应对照表
+
+| 事件 Flag | 对应事件选择 | 讲话角色 | 伙伴絮语与过场呼应 |
+| :--- | :--- | :--- | :--- |
+| `sack_cat_freed` | 会动的麻袋（解开绳结救出小猫） | 团子 | “上回麻袋里那只小的，今天蹲在墙头冲我摆尾巴。这巷子啊，记情。” |
+| `shadow_chased` | 墙角的黑影（遭遇黑影撤退回灯下） | 点点 | “那道影子……我一个人的时候也见过。别怕，在灯下站一会儿就好。” |
+| `thin_cat_fed` | 偷鱼干的瘦爪（循爪印追寻并分食） | 团子 | “那小崽子今天又远远跟着呢。喂过一口的，猫记一辈子。” |
+| `rats_truce` | 鼠群分粮（与鼠群和平分粮结下休战协定） | 团子 | “跟墙洞那家子处得不错。巷子里，多个朋友少堵墙。” |
+| `brave_miaomiao` | 纸箱微动（挺起胸膛护在纸箱前） | 点点 | “你挡在纸箱前的那下……我记着呢。” |
+| `trap_disarmed` | 草丛里的寒光（用树枝破坏捕兽夹） | 团子 | “那个夹子拆得好。老麻雀要是还在，也会这么说。” |
+| `light_found` | 纸箱微动（仔细搜索找到发光小灯） | 喵喵 | “小灯还亮着。有光的地方，就是路。” |
+| `shadow_weakness_known` | 乌鸦情报摊（买得情报：黑影怕光） | 喵喵 | “黑影怕光——这可是花钱买来的道理，本咪都记着呢。” |
+| `wall_kitten_friend` | 墙头的小猫（打招呼并递去食物结友） | 旁白 | 回花房的路上，墙头方向传来一声短促的招呼，像在替你们看着巷口。 |
+| `momo_met` | 墨墨的踪迹（发现墨墨巡夜留下的印记） | 墨墨 | “第三章开篇正式现身花房，暗夜引路并与猫咪小队并肩作战。” |

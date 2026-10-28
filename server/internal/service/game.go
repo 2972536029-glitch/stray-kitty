@@ -136,6 +136,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				s.StoryNodeID = n.ID
 				switchChapter(n.ChapterID)
 				s.ChapterID = n.ChapterID
+				if n.ChapterID == "alley" || n.ID == "chapter1_intro" {
+					s.MapID = "alley"
+				}
 				if n.ChapterID == "market" {
 					s.MapID = "market"
 					s.Flags = domain.Add(s.Flags, "market_unlocked")
@@ -153,6 +156,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				if n.ChapterID == "finale" {
 					s.MapID = "greenhouse"
 					s.Flags = domain.Add(s.Flags, "finale_started")
+				}
+				if n.ID == "finale_clue_insufficient" {
+					s.MapID = "market"
 				}
 				return nil
 			}
@@ -183,6 +189,16 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					}
 					return nil
 				}
+				if n.ID == "prologue_advisor" {
+					s.StoryNodeID = ""
+					if domain.Contains(s.CompletedStages, "l00_tutorial") {
+						s.Phase = "dialogue"
+						s.ChapterID = "alley"
+						s.StoryNodeID = "chapter1_intro"
+						return nil
+					}
+					return g.startTutorialBattle(s, "l00_tutorial", false)
+				}
 				if n.ID == "prologue_2" {
 					s.StoryNodeID = ""
 					if domain.Contains(s.CompletedStages, "l00_tutorial") {
@@ -197,6 +213,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				s.Phase = n.Exit
 				if n.Exit == "explore" {
 					s.ExploreDistance = -randomGrace
+					if n.ChapterID == "alley" {
+						s.MapID = "alley"
+					}
 				}
 				if n.Exit == "home" {
 					s.MapID = "greenhouse"
@@ -207,7 +226,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 						s.Flags = domain.Add(s.Flags, "momo_joined")
 						s.Cats = domain.Add(s.Cats, "momo")
 					}
-					if n.ChapterID == "rescue" || n.ID == "rescue_intro_7" {
+					if n.ChapterID == "rescue" || n.ID == "rescue_intro_10" || n.ID == "rescue_intro_7" {
 						s.Flags = domain.Add(s.Flags, "chapter_4_started")
 						s.Flags = domain.Add(s.Flags, "tunnel_explored")
 						s.Flags = domain.Add(s.Flags, "cats_rescued_batch1")
@@ -222,6 +241,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.MapID = "market"
 					s.Flags = domain.Add(s.Flags, "market_unlocked")
 					s.Flags = domain.Add(s.Flags, "chapter_2_started")
+				}
+				if n.ID == "finale_clue_insufficient" {
+					s.MapID = "market"
 				}
 				return nil
 			}
@@ -297,9 +319,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			if s.LastResult.Outcome == "lost" {
 				return g.retryTutorialBattle(s)
 			}
-			s.Phase = "explore"
+			s.Phase = "dialogue"
+			s.ChapterID = "alley"
+			s.StoryNodeID = "chapter1_intro"
 			s.MapID = "alley"
-			s.ExploreDistance = -randomGrace
 			s.ActiveBattle = nil
 			return nil
 		}
