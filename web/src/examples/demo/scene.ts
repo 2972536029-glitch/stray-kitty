@@ -3,8 +3,10 @@ import {drawPixelCat, type CatBreed} from '../../adapters/canvas/pixelCat';
 import {DemoBattle} from './battle';
 import type {Direction} from '../../adapters/platform/input';
 import {CanvasPainter} from '../../adapters/canvas/painter';
+import {FollowCamera, type CameraFrame} from '../../adapters/canvas/camera';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
 import {distanceToSegment,isMarketSolid, marketArt, onMarketRoute, shouldTriggerMarketBoss, type MarketFloor} from '../../modules/nightMarket/map';
+import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 花房家园的猫咪轻量 AI:pose 非空表示绑定专属家具姿态,否则按 sit→walk→sit 循环漫步。
@@ -35,6 +37,9 @@ export class DemoScene {
   private cityBackdrop: HTMLImageElement;
   private marketImages: Record<MarketFloor, HTMLImageElement> = {L0:new Image(),L1:new Image(),Lm1:new Image()};
   private marketFloor: MarketFloor = 'L0';
+  private marketCamera = new FollowCamera();
+  private marketFrame: CameraFrame | null = null;
+  private marketInitialized = false;
   private marketBossTriggered = false;
   private marketZonesSeen = new Set<string>();
   private held = new Set<Direction>();
@@ -104,8 +109,8 @@ export class DemoScene {
     if (!event.repeat && this.state?.mapId === 'market' && (key==='c'||key==='f')) {
       const pairs:Record<string,[MarketFloor,number,number,MarketFloor,number,number][]>={c:[['L0',745,287,'L1',675,257],['L0',735,408,'L1',628,368],['L0',1137,428,'L1',1260,420],['L0',859,717,'L0',933,745],['L0',1365,166,'L0',1365,88]],f:[['L0',669,674,'Lm1',651,553],['L0',1193,573,'Lm1',1170,658]]};
       for(const [a,ax,ay,b,bx,by] of pairs[key]??[]) {
-        if(this.marketFloor===a&&Math.hypot(this.x-ax,this.y-ay)<44&&!(ax===1365&&!this.state.flags.includes('market_cleared'))){if(ax===1365){this.onMarketExit?.('L0',{x:1365,y:88});return;}this.marketFloor=b;this.x=bx;this.y=by;break;}
-        if(this.marketFloor===b&&Math.hypot(this.x-bx,this.y-by)<44&&!(ax===1365&&!this.state.flags.includes('market_cleared'))){this.marketFloor=a;this.x=ax;this.y=ay;break;}
+        if(this.marketFloor===a&&Math.hypot(this.x-ax,this.y-ay)<44&&!(ax===1365&&!this.state.flags.includes('market_cleared'))){if(ax===1365){this.onMarketExit?.('L0',{x:1365,y:88});return;}this.marketFloor=b;this.x=bx;this.y=by;this.snapMarketCamera();break;}
+        if(this.marketFloor===b&&Math.hypot(this.x-bx,this.y-by)<44&&!(ax===1365&&!this.state.flags.includes('market_cleared'))){this.marketFloor=a;this.x=ax;this.y=ay;this.snapMarketCamera();break;}
       }
       event.preventDefault();
     }
@@ -174,6 +179,7 @@ export class DemoScene {
   };
   private update(delta: number) {
     if (!this.state) return;
+    if (this.state.mapId === 'market' || this.storyScene === 'market') this.marketFrame=measureMarketCameraFrame(this.canvas,this.viewWidth,this.viewHeight);
     const mode = this.state.phase;
     if (mode !== this.lastMode || this.state.mapId !== this.lastMapId) {
       const mapChanged = this.state.mapId !== this.lastMapId;
@@ -182,9 +188,13 @@ export class DemoScene {
         if (this.state.mapId === 'alley') {
           if (mapChanged || (this.lastMode === 'dialogue' && this.state.flags.includes('alley_rescued'))) this.rainyAlley.reset(this.state.flags, this.state.alleyBattleReturn);
         } else {
-          this.marketFloor='L0';
-          this.x = this.state.flags.includes('market_cleared') ? 1310 : 670;
-          this.y = this.state.flags.includes('market_cleared') ? 169 : 781;
+          if (!this.marketInitialized) {
+            this.marketFloor='L0';
+            this.x = this.state.flags.includes('market_cleared') ? 1310 : 670;
+            this.y = this.state.flags.includes('market_cleared') ? 169 : 781;
+            this.marketInitialized=true;
+          }
+          this.snapMarketCamera();
         }
       }
       this.moveBuffer = 0;
@@ -287,6 +297,7 @@ export class DemoScene {
           if(!inside)this.marketZonesSeen.delete(id);else if(!this.marketZonesSeen.has(id)){this.marketZonesSeen.add(id);void this.onMarketZone?.(id,floor,{x:this.x,y:this.y});}
         }
         this.onWorldPosition?.({x:this.x,y:this.y});
+        this.marketCamera.update({x:this.x,y:this.y},this.marketCameraFrame(),1672,941,delta/1000);
         if(!this.state.flags.includes('market_cleared'))this.marketBossTriggered=false;
       }
       const moved = Math.hypot(this.x - previousX, this.y - previousY);
@@ -793,14 +804,20 @@ export class DemoScene {
       return;
     }
   }
+  private marketCameraFrame() {return this.marketFrame??measureMarketCameraFrame(this.canvas,this.viewWidth,this.viewHeight);}
+  private snapMarketCamera() {this.marketCamera.snap({x:this.x,y:this.y},this.marketCameraFrame(),1672,941);}
   private drawMarket() {
     const image=this.marketImages[this.marketFloor];
-    const scale=Math.min(this.viewWidth/1672,this.viewHeight/941),ox=(this.viewWidth-1672*scale)/2,oy=(this.viewHeight-941*scale)/2;
-    if(image.complete&&image.naturalWidth>0)this.context.drawImage(image,ox,oy,1672*scale,941*scale);
-    else this.rect(0,0,this.viewWidth,this.viewHeight,0x181f2b);
-    const px=ox+this.x*scale,py=oy+this.y*scale;
-    this.context.save();this.context.translate(px-16*scale,py-38*scale);this.context.scale(.5*scale,.5*scale);drawPixelCat(this.context,'miaomiao','idle');this.context.restore();
-    this.context.fillStyle='#fff0c4';this.context.font='12px system-ui';this.context.fillText(`${this.marketFloor} · WASD move · E inspect · C climb · F stairs`,12,20);
+    const frame=this.marketCameraFrame(),camera=this.marketCamera;
+    this.context.save();
+    this.context.fillStyle='#181f2b';this.context.fillRect(0,0,this.viewWidth,this.viewHeight);
+    this.context.beginPath();this.context.rect(frame.viewport.x,frame.viewport.y,frame.viewport.width,frame.viewport.height);this.context.clip();
+    this.context.translate(frame.viewport.x-camera.x*frame.scale,frame.viewport.y-camera.y*frame.scale);
+    this.context.scale(frame.scale,frame.scale);
+    if(image.complete&&image.naturalWidth>0)this.context.drawImage(image,0,0,1672,941);
+    this.context.save();this.context.translate(this.x-16,this.y-38);this.context.scale(.5,.5);drawPixelCat(this.context,'miaomiao','idle');this.context.restore();
+    this.context.restore();
+    this.context.fillStyle='#fff0c4';this.context.font='12px system-ui';this.context.fillText(`${this.marketFloor} · WASD move · E inspect · C climb · F stairs`,frame.safe.x+8,Math.max(frame.safe.y+18,18));
   }  private drawTunnel() {
     // 阴暗地下管道拱门背景
     this.rect(0, 0, 800, 480, 0x11161d);
