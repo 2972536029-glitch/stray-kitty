@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"stray-kitty/server/internal/advisor"
+	"stray-kitty/server/internal/integrations/payment"
 	"stray-kitty/server/internal/platform"
 	"stray-kitty/server/internal/repository"
 	"stray-kitty/server/internal/service"
@@ -35,7 +36,7 @@ func main() {
 	}
 	game := service.New(store, catalog)
 	game.Advisor = advisor.NewFromEnv()
-	server := &http.Server{Addr: env("GAME_ADDR", "127.0.0.1:8017"), Handler: transport.New(game, env("GAME_WEB_DIR", "../web/dist")), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
+	server := &http.Server{Addr: env("GAME_ADDR", "127.0.0.1:8017"), Handler: transport.New(game, payment.New(store, catalog), env("GAME_WEB_DIR", "../web/dist")), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	go func() {

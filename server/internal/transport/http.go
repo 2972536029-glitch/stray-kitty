@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"stray-kitty/server/internal/domain"
+	"stray-kitty/server/internal/integrations/payment"
 	"stray-kitty/server/internal/platform"
 	"stray-kitty/server/internal/service"
 	"strings"
@@ -19,12 +20,13 @@ import (
 
 type API struct {
 	game     *service.Game
+	pay      *payment.Gateway
 	requests atomic.Uint64
 	failures atomic.Uint64
 }
 
-func New(game *service.Game, webDir string) http.Handler {
-	a := &API{game: game}
+func New(game *service.Game, pay *payment.Gateway, webDir string) http.Handler {
+	a := &API{game: game, pay: pay}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { a.json(w, 200, map[string]string{"status": "ok"}) })
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +101,61 @@ func New(game *service.Game, webDir string) http.Handler {
 			return
 		}
 		a.json(w, 200, result)
+	})
+	// 模拟支付:充值成功/失败双路径都是正常业务(HTTP 200);失败带治愈文案。
+	mux.HandleFunc("POST /api/payment/charge", func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/json") {
+			a.fail(w, r, domain.Fail("INVALID_CONTENT_TYPE", "需要 application/json", 415))
+			return
+		}
+		body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 8192))
+		if err != nil {
+			a.fail(w, r, domain.Fail("BODY_TOO_LARGE", "请求超过 8 KiB", 413))
+			return
+		}
+		var req struct {
+			PlayerID   string `json:"playerId"`
+			PackID     string `json:"packId"`
+			CardNumber string `json:"cardNumber"`
+		}
+		decoder := json.NewDecoder(strings.NewReader(string(body)))
+		decoder.DisallowUnknownFields()
+		if err = decoder.Decode(&req); err != nil {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "请求格式或字段无效", 400))
+			return
+		}
+		if err = decoder.Decode(new(any)); err != io.EOF {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "只接受单个 JSON 对象", 400))
+			return
+		}
+		if req.PlayerID == "" || req.PackID == "" {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 或 packId", 400))
+			return
+		}
+		result, err := a.pay.Charge(req.PlayerID, req.PackID, req.CardNumber)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		resp := map[string]any{"txnId": result.Txn.ID, "pack": result.Pack, "status": result.Txn.Status, "tunaGranted": result.Pack.TunaGranted, "tunaBalance": result.TunaBalance}
+		if result.Txn.Status == "declined" {
+			resp["reason"] = result.Txn.Reason
+			resp["healingMsg"] = a.pay.HealingMessage()
+		}
+		a.json(w, 200, resp)
+	})
+	mux.HandleFunc("GET /api/payment/history", func(w http.ResponseWriter, r *http.Request) {
+		playerID := strings.TrimSpace(r.URL.Query().Get("playerId"))
+		if playerID == "" {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 查询参数", 400))
+			return
+		}
+		txns, err := a.pay.History(playerID)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		a.json(w, 200, map[string]any{"playerId": playerID, "txns": txns})
 	})
 	mux.HandleFunc("POST /api/v1/advisor", a.advise)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {

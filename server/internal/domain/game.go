@@ -1,6 +1,9 @@
 package domain
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Fault struct {
 	Code, Message string
@@ -62,10 +65,23 @@ type GameState struct {
 	LastResult        Result      `json:"lastResult"`
 	EventState        *EventState `json:"eventState,omitempty"`
 	AlleyBattleReturn *WorldPoint `json:"alleyBattleReturn,omitempty"`
+	// Txns:金枪鱼充值与消费流水(最新的在末尾),供 /api/payment/history 展示;超出上限丢弃最旧。
+	Txns []Txn `json:"txns,omitempty"`
 }
 
 func InitialState(version string) GameState {
-	return GameState{SchemaVersion: 1, ContentVersion: version, Phase: "dialogue", ChapterID: "prologue", StoryNodeID: "prologue_1", MapID: "alley", Flags: []string{}, Cats: []string{"miaomiao", "tuanzi"}, Inventory: map[string]int{"material": 0, "food": 0}, Currencies: map[string]int{"stamp": 0}, Furniture: []string{}, Placements: map[string]string{}, CompletedStages: []string{}, PushTokens: 1, LastResult: Result{Message: "旅程从一缕金枪鱼的香味开始。"}}
+	return GameState{SchemaVersion: 1, ContentVersion: version, Phase: "dialogue", ChapterID: "prologue", StoryNodeID: "prologue_1", MapID: "alley", Flags: []string{}, Cats: []string{"miaomiao", "tuanzi"}, Inventory: map[string]int{"material": 0, "food": 0}, Currencies: map[string]int{"stamp": 0, "tuna": 0}, Furniture: []string{}, Placements: map[string]string{}, CompletedStages: []string{}, PushTokens: 1, LastResult: Result{Message: "旅程从一缕金枪鱼的香味开始。"}}
+}
+
+// MaxTxns 流水账本保留的最大条数;超出后丢弃最旧,防存档无限膨胀。
+const MaxTxns = 50
+
+// AppendTxn 追加一笔流水并裁剪到上限。
+func AppendTxn(s *GameState, t Txn) {
+	s.Txns = append(s.Txns, t)
+	if len(s.Txns) > MaxTxns {
+		s.Txns = s.Txns[len(s.Txns)-MaxTxns:]
+	}
 }
 
 type Command struct {
@@ -146,12 +162,30 @@ type Pool struct {
 	Cost         int     `json:"cost"`
 	RequiredFlag string  `json:"requiredFlag"`
 	Entries      []Entry `json:"entries"`
+	// Currency:该池扣哪种货币——stamp(免费)/tuna(付费);空值按 stamp 处理,旧目录无需迁移。
+	Currency string `json:"currency,omitempty"`
 }
 type Slot struct {
 	ID string `json:"id"`
+	// Name:槽位展示名(如"高空横梁"),供服务端错误信息与前端面板使用。
+	Name string `json:"name,omitempty"`
 }
 type Furniture struct {
 	ID string `json:"id"`
+}
+
+// Renovation:花房四阶修缮工程。按 stage 升序推进;cost 键 material 走背包、stamp 走邮票;
+// unlockSlots 列出的槽位在 grantsFlag 记录前保持锁定。
+type Renovation struct {
+	ID           string         `json:"id"`
+	Stage        int            `json:"stage"`
+	Name         string         `json:"name"`
+	Description  string         `json:"description,omitempty"`
+	Message      string         `json:"message,omitempty"`
+	RequiredFlag string         `json:"requiredFlag,omitempty"`
+	GrantsFlag   string         `json:"grantsFlag"`
+	Cost         map[string]int `json:"cost,omitempty"`
+	UnlockSlots  []string       `json:"unlockSlots,omitempty"`
 }
 type Product struct {
 	ID           string `json:"id"`
@@ -173,9 +207,36 @@ type Catalog struct {
 	Furniture     []Furniture    `json:"furniture"`
 	Products      []Product      `json:"products"`
 	EventsBalance []EventBalance `json:"eventsBalance"`
+	// Renovations:花房四阶修缮工程目录,按 stage 升序声明 REPAIR_HOME 的推进路径。
+	Renovations []Renovation `json:"renovations,omitempty"`
+	// RechargePacks:金枪鱼充值礼包目录(模拟支付网关的商品来源)。
+	RechargePacks []RechargePack `json:"rechargePacks"`
 }
 type Chapter struct {
 	ID string `json:"id"`
+}
+
+// RechargePack 一档金枪鱼充值礼包;PriceCents 为人民币分。
+type RechargePack struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Desc        string `json:"desc"`
+	PriceCents  int    `json:"priceCents"`
+	TunaGranted int    `json:"tunaGranted"`
+	Icon        string `json:"icon"`
+}
+
+// Txn 一笔充值或消费流水。充值:Amount=实付分、Status=confirmed/declined;
+// 消费(抽卡扣金枪鱼):Amount=0、Status=confirmed、Reason 记录去向。
+type Txn struct {
+	ID         string    `json:"id"`
+	PlayerID   string    `json:"playerId"`
+	PackID     string    `json:"packId"`
+	Amount     int       `json:"amount"`
+	Status     string    `json:"status"`
+	Reason     string    `json:"reason,omitempty"`
+	CardSuffix string    `json:"cardSuffix,omitempty"`
+	CreatedAt  time.Time `json:"createdAt"`
 }
 
 // EventsBalance:随机事件平衡表,内容驱动(危险度→触发概率/风险占比,千分比;echoShare 为回响卡参与门槛,取首个非零)。

@@ -1,0 +1,30 @@
+[
+  {
+    "id": "seal_windows",
+    "stage": 2,
+    "name": "封窗止水",
+    "description": "给破窗钉上整齐的木板，堵住屋顶漏缝，水洼晒干后花房变得干燥暖和。",
+    "message": "叮叮当当——木板钉得整整齐齐，屋顶不再漏雨，水洼慢慢晒干，花房变得干燥又温暖。",
+    "grantsFlag": "greenhouse_sealed",
+    "cost": {
+      "material": 10
+    }
+  },
+  {
+    "id": "timber_greenhouse",
+    "stage": 3,
+    "name": "原木温室与高空猫爬架",
+    "description": "架起原木横梁，天窗透进条形阳光；解锁高空横梁与阳光地板两个新位置。",
+    "message": "原木横梁架上花房，温煦阳光从天窗洒成一条条光斑——高空猫爬架也就位啦！解锁新位置：高空横梁、阳光地板。",
+    "requiredFlag": "greenhouse_sealed",
+    "grantsFlag": "greenhouse_fortified_full",
+    "cost": {
+      "material": 20,
+      "stamp": 1
+    },
+    "unlockSlots": [
+      "beam",
+      "sun_spot"
+    ]
+  }
+]

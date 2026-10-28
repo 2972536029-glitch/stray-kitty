@@ -58,6 +58,10 @@ export function useGame() {
     localStorage.removeItem('stray-kitty.pending.v1');
     window.location.reload();
   }, []);
+  // 支付充值绕过命令通道直接改存档,到账后用它重拉状态刷新钱包。
+  const refresh = useCallback(async () => {
+    try {store.replace(await port.load());} catch { /* 充值弹窗自己会提示,这里静默保留旧状态。 */ }
+  }, [port, store]);
   const retry = useCallback(async () => {
     const pending = port.pending();
     if (!pending) {await initialize();return;}
@@ -70,5 +74,5 @@ export function useGame() {
     finally {setBusy(false);}
   }, [port, store, initialize]);
   const pending = !!port.pending();
-  return {state, catalog, busy, error, pending, send, reportMove, skipDialogue, resetSession, retry, disabled: busy || pending};
+  return {state, catalog, busy, error, pending, send, reportMove, skipDialogue, resetSession, retry, refresh, port, disabled: busy || pending};
 }

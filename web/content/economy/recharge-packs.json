@@ -1,0 +1,26 @@
+[
+  {
+    "id": "pack_small",
+    "name": "一小罐金枪鱼",
+    "desc": "60 罐金枪鱼罐头，够换一次星空温室包裹。",
+    "priceCents": 600,
+    "tunaGranted": 60,
+    "icon": "tuna_s"
+  },
+  {
+    "id": "pack_medium",
+    "name": "金枪鱼野餐盒",
+    "desc": "150 罐金枪鱼罐头，花房伙伴能吃上一阵子。",
+    "priceCents": 1200,
+    "tunaGranted": 150,
+    "icon": "tuna_m"
+  },
+  {
+    "id": "pack_large",
+    "name": "整箱顶级金枪鱼",
+    "desc": "400 罐金枪鱼罐头，罐头山堆到天窗那么高。",
+    "priceCents": 3000,
+    "tunaGranted": 400,
+    "icon": "tuna_l"
+  }
+]

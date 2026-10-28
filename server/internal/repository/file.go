@@ -107,6 +107,48 @@ func (s *Store) Get(hash string) (*Player, error) {
 	}
 	return clone(p)
 }
+
+// findByID 按玩家 ID 定位存档;返回其在 Players 表里的键(token 哈希)以便写回。
+func (s *Store) findByID(playerID string) (string, *Player) {
+	for hash, p := range s.db.Players {
+		if p.ID == playerID {
+			return hash, p
+		}
+	}
+	return "", nil
+}
+func (s *Store) GetByPlayerID(playerID string) (*Player, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, p := s.findByID(playerID)
+	if p == nil {
+		return nil, domain.Fail("PLAYER_NOT_FOUND", "玩家不存在，请先开始新的旅程", 404)
+	}
+	return clone(p)
+}
+
+// TransactByPlayer 以玩家 ID 为准的原子变更(支付入账走这里,与命令事务同一把锁)。
+func (s *Store) TransactByPlayer(playerID string, fn func(*Player) error) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	hash, old := s.findByID(playerID)
+	if old == nil {
+		return domain.Fail("PLAYER_NOT_FOUND", "玩家不存在，请先开始新的旅程", 404)
+	}
+	p, err := clone(old)
+	if err != nil {
+		return err
+	}
+	if err = fn(p); err != nil {
+		return err
+	}
+	s.db.Players[hash] = p
+	if err = s.persist(); err != nil {
+		s.db.Players[hash] = old
+		return err
+	}
+	return nil
+}
 func (s *Store) Transact(hash string, fn func(*Player) (domain.CommandResponse, error)) (domain.CommandResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

@@ -1,1 +1,1 @@
-export const runtime = {apiBase: '/api/v1'} as const;
+export const runtime = {apiBase: '/api/v1', paymentBase: '/api/payment'} as const;

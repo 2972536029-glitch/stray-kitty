@@ -5,10 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"stray-kitty/server/internal/advisor"
 	"stray-kitty/server/internal/domain"
 	"stray-kitty/server/internal/repository"
+	"time"
 )
 
 type Game struct {
@@ -131,6 +133,8 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	switch c.Type {
 	case "BUY_FURNITURE":
 		return g.buyFurniture(s, c.ProductID)
+	case "REPAIR_HOME":
+		return g.repairHome(s)
 	case "START_STORY":
 		if c.NodeID == "market_intro_1" && !domain.Contains(s.Flags, "rescue_story_done") {
 			return domain.Fail("STORY_LOCKED", "请先完成小巷救援与寻猫启事", 409)
@@ -406,6 +410,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		if !found {
 			return invalid()
 		}
+		if err := g.requireSlotUnlocked(s, c.SlotID); err != nil {
+			return err
+		}
 		// 一件家具只占一个位置；目标位置原家具回到持有列表。
 		for slot, id := range s.Placements {
 			if id == c.FurnitureID {
@@ -420,10 +427,21 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		}
 		for _, p := range g.Catalog.Pools {
 			if p.ID == c.PoolID {
+				// 双货币卡池:池子里声明扣哪种货币;空值按 stamp 处理,旧目录无需迁移。
+				currency := p.Currency
+				if currency == "" {
+					currency = "stamp"
+				}
+				if currency != "stamp" && currency != "tuna" {
+					return invalid()
+				}
 				if !domain.Contains(s.Flags, p.RequiredFlag) {
 					return domain.Fail("POOL_LOCKED", "尚未解锁这个主题", 409)
 				}
-				if s.Currencies["stamp"] < p.Cost {
+				if s.Currencies[currency] < p.Cost {
+					if currency == "tuna" {
+						return domain.Fail("INSUFFICIENT_CURRENCY", "金枪鱼罐头不足，去补给小站看看吧", 409)
+					}
 					return domain.Fail("INSUFFICIENT_CURRENCY", "猫爪邮票不足", 409)
 				}
 				total := 0
@@ -445,13 +463,29 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 						break
 					}
 				}
-				s.Currencies["stamp"] -= p.Cost
+				s.Currencies[currency] -= p.Cost
 				if domain.Contains(s.Furniture, id) {
 					s.Inventory["material"] += 2
-					s.LastResult = domain.Result{Message: "收到了重复家具，转化为 2 份修缮材料。", Outcome: id}
+					if currency == "tuna" {
+						s.LastResult = domain.Result{Message: "星空温室的包裹里是熟悉的家具，化作了 2 份修缮材料。", Outcome: id}
+					} else {
+						s.LastResult = domain.Result{Message: "收到了重复家具，转化为 2 份修缮材料。", Outcome: id}
+					}
 				} else {
 					s.Furniture = domain.Add(s.Furniture, id)
-					s.LastResult = domain.Result{Message: "猫国包裹里有一件新家具！", Outcome: id}
+					if currency == "tuna" {
+						s.LastResult = domain.Result{Message: "星空温室包裹打开啦！一件会发光的新家具！", Outcome: id}
+					} else {
+						s.LastResult = domain.Result{Message: "猫国包裹里有一件新家具！", Outcome: id}
+					}
+				}
+				// 付费货币的消耗也记入流水账本,让 /api/payment/history 同时呈现充值与消费。
+				if currency == "tuna" {
+					txnID, err := ID()
+					if err != nil {
+						return err
+					}
+					domain.AppendTxn(s, domain.Txn{ID: "txn-" + txnID, PlayerID: "", PackID: p.ID, Amount: 0, Status: "confirmed", Reason: fmt.Sprintf("🥫 星空温室抽取 · 消耗 %d 罐，开出 %s", p.Cost, id), CreatedAt: time.Now()})
 				}
 				return nil
 			}
