@@ -13,7 +13,7 @@ flowchart TD
   HTTP --> Transport["Go transport：认证与校验"]
   Transport --> Service["Go service：判定、抽取与结算"]
   Service --> Repository["repository：状态与收据一起提交"]
-  Repository --> Save["data/game.json"]
+  Repository --> Save[".runtime/game.json via dev launcher; data/game.json API fallback"]
   Service -->|返回 GameState| Store["GameStore：界面状态快照"]
   Store --> View
   Module -->|手动提问与可见战况| Advisor["POST /api/v1/advisor：只读场次校验"]
@@ -51,6 +51,7 @@ stray-kitty/
 │  ├─ BATTLE-ADVISOR-MODEL.md  阿策模型配置、可见战况与回退边界
 │  ├─ BATTLE-EVENT-ALLIES.md
 │  ├─ BATTLE-EVENT-CARRY.md  事件携带物与协助者六枚举对接
+│  ├─ DEVELOPMENT.md
 │  ├─ GAME-FLOWCHART.html
 │  ├─ GAME-FLOWCHART.md
 │  ├─ L00-INTEGRATION.md  L00 六波新手教学与接入
@@ -284,6 +285,7 @@ flowchart TD
 - 本节由 `docs/LEVEL-EXPLORATION-ARCHITECTURE.md` 提供给 `scripts/architecture.mjs` 生成；**勿单独手改生成的 `ARCHITECTURE.md`**。地图制作步骤、审美/灵感材料放在 map 设计文档或个人 Notion，不进入团队架构。
 - 改目录后 `npm run architecture:build && npm run architecture:check`；改内容/事件映射跑 `npm run content:sync`、`npm run content:check`，核对双端 catalog；只运行与改动相关的移动/交互/战斗返回冒烟测试。
 - 历史章节集成文档保留现状；本节以 inspected baseline 为准，后续主分支变更需再核对。
+- 本地端口、worktree 切换、launcher 生命周期与按 worktree 隔离的开发存档见 [本地开发说明](DEVELOPMENT.md)。
 
 ### 4.4 Chapter 4 tunnel exploration integration
 
@@ -309,7 +311,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-开发存档在 data/game.json；浏览器测试用独立端口 8117 和 .runtime/e2e-save.json。环境变量示例见 .env.example，程序读取进程环境变量，不自动加载 .env。
+npm run dev 在当前 worktree 使用忽略的 .runtime/game.json；直接运行 API 时默认使用相对 data/game.json，GAME_DATA_FILE 可显式覆盖。不同 worktree 的存档彼此独立，不要合并。浏览器测试用独立端口 8117 和 .runtime/e2e-save.json。环境变量示例见 .env.example，程序读取进程环境变量，不自动加载 .env。端口冲突诊断、启动/停止、切换 worktree 与安全清理步骤见 [本地开发说明](DEVELOPMENT.md)。
 
 当前存档只支持单进程，MySQL 只有 DDL；战斗胜负仍由客户端原型上报。Docker、K8s 与 GitLab CI 是待团队环境验证的模板。GitLab main 已采用本架构；旧 main 保存在 react-demo 分支，历史不变。
 
