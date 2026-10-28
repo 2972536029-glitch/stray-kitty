@@ -89,6 +89,8 @@ stray-kitty/
 │  │  ├─ service/  长期规则、判定、奖励与结算
 │  │  └─ transport/  请求、认证与参数检查
 │  └─ migrations/  MySQL 结构 · 尚未接入
+├─ specs/
+│  └─ night-market/
 ├─ tests/  自动验证
 │  ├─ battle/
 │  └─ e2e/  浏览器流程
@@ -108,6 +110,7 @@ stray-kitty/
 │  │  └─ tutorials/  操作提示
 │  ├─ public/  静态资源
 │  │  └─ assets/  图片、动画、声音与字体
+│  │     └─ night-market/
 │  └─ src/  运行代码
 │     ├─ adapters/  具体运行能力
 │     │  ├─ api/  HTTP 请求
@@ -143,6 +146,7 @@ stray-kitty/
 │     │  ├─ inventory/  道具与家具持有
 │     │  ├─ lottery/  奖池、抽取与结果
 │     │  ├─ map/  地图 · Jenny
+│     │  ├─ nightMarket/  Chapter 2 Night Market spatial map and progression
 │     │  ├─ rainyAlley/
 │     │  └─ shop/  商品与购买
 │     ├─ shared/  通用工具 · 预留

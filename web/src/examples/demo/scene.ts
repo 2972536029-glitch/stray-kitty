@@ -4,6 +4,7 @@ import {DemoBattle} from './battle';
 import type {Direction} from '../../adapters/platform/input';
 import {CanvasPainter} from '../../adapters/canvas/painter';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
+import {distanceToSegment,isMarketSolid, marketArt, onMarketRoute, type MarketFloor} from '../../modules/nightMarket/map';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 花房家园的猫咪轻量 AI:pose 非空表示绑定专属家具姿态,否则按 sit→walk→sit 循环漫步。
@@ -32,6 +33,10 @@ export class DemoScene {
   private context: CanvasRenderingContext2D;
   private rainyAlley: IntegratedRainyAlley;
   private cityBackdrop: HTMLImageElement;
+  private marketImages: Record<MarketFloor, HTMLImageElement> = {L0:new Image(),L1:new Image(),Lm1:new Image()};
+  private marketFloor: MarketFloor = 'L0';
+  private marketBossTriggered = false;
+  private marketZonesSeen = new Set<string>();
   private held = new Set<Direction>();
   private keys = new Set<string>();
   private x = 180;
@@ -68,7 +73,10 @@ export class DemoScene {
     private onInspectHint?: (hint: string | null) => void,
     private onMove?: (distance: number) => void,
     private onRandomZone?: (zoneId: string) => Promise<boolean>,
-    private onWorldPosition?: (point: {x: number; y: number}) => void
+    private onWorldPosition?: (point: {x: number; y: number}) => void,
+    private onMarketBattle?: (floor:MarketFloor,point:{x:number;y:number}) => void,
+    private onMarketExit?: (floor: MarketFloor, point:{x:number;y:number}) => void,
+    private onMarketZone?: (zoneId:string,floor:MarketFloor,point:{x:number;y:number}) => Promise<boolean>
   ) {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('浏览器无法创建二维画布');
@@ -82,6 +90,7 @@ export class DemoScene {
     this.rainyAlley = new IntegratedRainyAlley();
     this.cityBackdrop = new Image();
     this.cityBackdrop.src = '/assets/city-backdrop.svg';
+    for(const floor of Object.keys(marketArt) as MarketFloor[]) this.marketImages[floor].src=marketArt[floor];
   }
   setDirection(direction: Direction, held: boolean) {if (held) this.held.add(direction);else this.held.delete(direction);}
   private keydown = (event: KeyboardEvent) => {
@@ -91,6 +100,14 @@ export class DemoScene {
     const key = event.key.toLowerCase();
     if (key === 's' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartSqueeze()) {
       event.preventDefault(); this.keys.delete('s'); return;
+    }
+    if (!event.repeat && this.state?.mapId === 'market' && (key==='c'||key==='f')) {
+      const pairs:Record<string,[MarketFloor,number,number,MarketFloor,number,number][]>={c:[['L0',745,287,'L1',675,257],['L0',735,408,'L1',628,368],['L0',1137,428,'L1',1260,420],['L0',859,717,'L0',933,745],['L0',1365,166,'L0',1365,88]],f:[['L0',669,674,'Lm1',651,553],['L0',1193,573,'Lm1',1170,658]]};
+      for(const [a,ax,ay,b,bx,by] of pairs[key]??[]) {
+        if(this.marketFloor===a&&Math.hypot(this.x-ax,this.y-ay)<44&&!(ax===1365&&!this.state.flags.includes('market_cleared'))){if(ax===1365){this.onMarketExit?.('L0',{x:1365,y:88});return;}this.marketFloor=b;this.x=bx;this.y=by;break;}
+        if(this.marketFloor===b&&Math.hypot(this.x-bx,this.y-by)<44&&!(ax===1365&&!this.state.flags.includes('market_cleared'))){this.marketFloor=a;this.x=ax;this.y=ay;break;}
+      }
+      event.preventDefault();
     }
     if (key === 'c' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartCrateClimb()) {
       event.preventDefault(); this.keys.delete('c'); return;
@@ -165,8 +182,9 @@ export class DemoScene {
         if (this.state.mapId === 'alley') {
           if (mapChanged || (this.lastMode === 'dialogue' && this.state.flags.includes('alley_rescued'))) this.rainyAlley.reset(this.state.flags, this.state.alleyBattleReturn);
         } else {
-          this.x = 180;
-          this.y = 290;
+          this.marketFloor='L0';
+          this.x = this.state.flags.includes('market_cleared') ? 1310 : 670;
+          this.y = this.state.flags.includes('market_cleared') ? 169 : 781;
         }
       }
       this.moveBuffer = 0;
@@ -211,8 +229,15 @@ export class DemoScene {
       let dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
       const distance = Math.hypot(dx, dy);if (distance) {dx /= distance;dy /= distance;}
       const previousX = this.x, previousY = this.y;
-      this.x = Math.min(710, Math.max(90, this.x + dx * delta * .18));
-      this.y = Math.min(410, Math.max(205, this.y + dy * delta * .18));
+      if(this.state.mapId==='market') {
+        const move=(x:number,y:number)=>{
+          if(!onMarketRoute(this.marketFloor,x,y)||isMarketSolid(this.marketFloor,x,y))return false;
+          if(this.marketFloor==='L0'&&(distanceToSegment(x,y,[897,702],[897,788])<10||distanceToSegment(x,y,[1320,126],[1410,126])<=(this.state?.flags.includes('market_cleared')?14:11)))return false;
+          return true;
+        };
+        const nx=this.x+dx*delta*.18,ny=this.y+dy*delta*.18;
+        if(move(nx,ny)){this.x=nx;this.y=ny;}else if(move(nx,this.y))this.x=nx;else if(move(this.x,ny))this.y=ny;
+      } else { this.x = Math.min(710, Math.max(90, this.x + dx * delta * .18)); this.y = Math.min(410, Math.max(205, this.y + dy * delta * .18)); }
       let nearInteraction = false;
 
       if (this.state.mapId === 'alley') {
@@ -233,8 +258,8 @@ export class DemoScene {
         }
         this.onInspectHint?.(inspect);
       } else if (this.state.mapId === 'market') {
-        const nearCrow = Math.hypot(this.x - 260, this.y - 280) < 78;
-        const nearPigeon = Math.hypot(this.x - 580, this.y - 270) < 78;
+        const nearCrow = this.marketFloor==='L0' && Math.hypot(this.x - 766, this.y - 330) < 65;
+        const nearPigeon = this.marketFloor==='L1' && Math.hypot(this.x - 1310, this.y - 426) < 65;
         nearInteraction = nearCrow || nearPigeon;
         if (nearCrow) {
           this.onNear(true, 'market_crow_stall', '老黑羽的情报摊 · E');
@@ -255,9 +280,17 @@ export class DemoScene {
           inspect = '【团子】“喵喵，集市里的鸟雀们消息很灵通，我们去打听一下吧！”';
         }
         this.onInspectHint?.(inspect);
+        const bossReady=this.state.flags.includes('market_crow_clue_completed')&&this.state.flags.includes('market_pigeon_clue_completed');
+        if(this.marketFloor==='L0'&&bossReady&&!this.marketBossTriggered&&Math.hypot(this.x-1310,this.y-169)<58){this.marketBossTriggered=true;this.onMarketBattle?.('L0',{x:this.x,y:this.y});}
+        for(const [id,floor,x,y] of [['market_random_r1','L0',652,632],['market_random_r2','L1',680,166],['market_random_r3','Lm1',975,429]] as const){
+          const inside=this.marketFloor===floor&&Math.hypot(this.x-x,this.y-y)<42;
+          if(!inside)this.marketZonesSeen.delete(id);else if(!this.marketZonesSeen.has(id)){this.marketZonesSeen.add(id);void this.onMarketZone?.(id,floor,{x:this.x,y:this.y});}
+        }
+        this.onWorldPosition?.({x:this.x,y:this.y});
+        if(!this.state.flags.includes('market_cleared'))this.marketBossTriggered=false;
       }
       const moved = Math.hypot(this.x - previousX, this.y - previousY);
-      if (moved > 0 && !nearInteraction) {
+      if (moved > 0 && !nearInteraction && this.state.mapId !== 'market') {
         this.moveBuffer += moved;
         if (this.moveBuffer >= DemoScene.moveSegment) {
           const report = Math.min(Math.round(this.moveBuffer), DemoScene.maxReport);
@@ -761,109 +794,14 @@ export class DemoScene {
     }
   }
   private drawMarket() {
-    // 夜幕背景
-    this.rect(0, 0, 800, 480, 0x181f2b);
-    if (this.cityBackdrop.complete && this.cityBackdrop.naturalWidth > 0) {
-      this.graphics.image(this.cityBackdrop, 0, -150, 800, 450);
-    }
-    this.rect(0, 0, 800, 200, 0x131a24, 0.65);
-
-    // 集市石砖地面
-    this.rect(35, 200, 730, 230, 0x242d38);
-    this.rect(65, 205, 670, 225, 0x2e3844);
-    for (let y = 210; y < 430; y += 28) {
-      for (let x = 70 + (y % 56 === 28 ? 20 : 0); x < 730; x += 44) {
-        this.rect(x, y, 38, 2, 0x3e4b5a, 0.4);
-      }
-    }
-
-    // 悬挂横跨街市的彩灯彩带
-    for (let x = 80; x < 720; x += 6) {
-      const sag = Math.sin((x - 80) / 640 * Math.PI) * 28;
-      this.rect(x, 70 + sag, 6, 2, 0x4a433a);
-    }
-    const lanternColors = [0xffd166, 0xf78c6b, 0xffd166, 0x06d6a0, 0xf78c6b, 0xffd166];
-    for (let i = 0; i < 6; i++) {
-      const lx = 140 + i * 100;
-      const ly = 70 + Math.sin((lx - 80) / 640 * Math.PI) * 28;
-      this.graphics.fillStyle(lanternColors[i], 0.15);
-      this.graphics.fillCircle(lx, ly + 8, 32);
-      this.rect(lx - 6, ly + 2, 12, 16, lanternColors[i]);
-      this.rect(lx - 4, ly, 8, 3, 0x3d3024);
-      this.rect(lx - 2, ly + 18, 4, 4, 0xffe8a3);
-    }
-
-    // 左侧摊位：老黑羽的情报摊 (x: 260, y: 280)
-    this.rect(190, 160, 140, 25, 0x6b2d35);
-    for (let i = 0; i < 7; i += 2) {
-      this.rect(190 + i * 20, 160, 20, 25, 0xb8860b);
-    }
-    this.rect(190, 185, 140, 6, 0x4a1e24);
-    this.rect(195, 185, 8, 95, 0x5c4033);
-    this.rect(317, 185, 8, 95, 0x5c4033);
-    this.rect(185, 255, 150, 32, 0x7a5230);
-    this.rect(180, 250, 160, 8, 0x8f6239);
-    // 卷轴与药水瓶
-    this.rect(205, 244, 22, 6, 0xd8caa8);
-    this.rect(208, 238, 16, 6, 0xe8dcbe);
-    this.rect(300, 240, 8, 10, 0x4a7c59);
-    this.rect(310, 236, 6, 14, 0x8a5a36);
-    this.lamp(210, 205);
-    // 乌鸦老黑羽 (x: 260, y: 240)
-    this.rect(252, 234, 18, 16, 0x1e242b);
-    this.rect(258, 226, 12, 10, 0x161a20);
-    this.rect(270, 230, 8, 4, 0xd4a373);
-    this.rect(265, 228, 3, 3, 0xffd166);
-    this.rect(246, 236, 10, 8, 0x11161d);
-    this.rect(244, 242, 6, 6, 0x0c0f14);
-    // 摊位招牌
-    this.rect(240, 192, 42, 18, 0x3d2716);
-    this.rect(244, 196, 34, 10, 0x22150a);
-
-    // 右侧摊位：咕咕大盗的传言棚 (x: 580, y: 270)
-    this.rect(510, 155, 140, 30, 0x264653);
-    this.rect(540, 160, 35, 18, 0x2a9d8f);
-    this.rect(600, 165, 30, 15, 0xe76f51);
-    this.rect(515, 185, 8, 95, 0x4d382c);
-    this.rect(637, 185, 8, 95, 0x4d382c);
-    this.rect(570, 242, 34, 40, 0x8b5a2b);
-    this.rect(567, 250, 40, 4, 0x332211);
-    this.rect(567, 268, 40, 4, 0x332211);
-    this.rect(525, 252, 32, 30, 0xa07142);
-    this.rect(612, 255, 30, 28, 0x936538);
-    this.rect(530, 242, 22, 14, 0xc2b280);
-    this.lamp(625, 205);
-    // 胖鸽子咕咕大盗 (x: 580, y: 235)
-    this.rect(578, 226, 20, 18, 0x7f8c8d);
-    this.rect(582, 222, 14, 8, 0x9b59b6);
-    this.rect(586, 216, 12, 10, 0x95a5a6);
-    this.rect(596, 220, 6, 3, 0xf39c12);
-    this.rect(592, 218, 2, 2, 0xe74c3c);
-    this.rect(584, 228, 12, 4, 0xe74c3c);
-
-    // 中间晾鱼木架
-    this.rect(395, 210, 50, 4, 0x5c4033);
-    this.rect(400, 214, 4, 45, 0x5c4033);
-    this.rect(440, 214, 4, 45, 0x5c4033);
-    for (let i = 0; i < 3; i++) {
-      this.rect(408 + i * 11, 214, 8, 14, 0x8d99ae);
-      this.rect(410 + i * 11, 228, 4, 4, 0x6c757d);
-    }
-
-    // 团子跟随在侧
-    this.cat(130, 310, 'tuanzi');
-
-    // 领队喵喵
-    this.cat(this.x, this.y, 'miaomiao');
-
-    // 漂浮夜市暖光粒子
-    for (let i = 0; i < 12; i++) {
-      const px = (i * 67 + this.now * 0.02) % 800;
-      const py = 200 + ((i * 41 + this.now * 0.015) % 220);
-      this.rect(px, py, 2, 2, 0xffe8a3, 0.5);
-    }
-  }
-  private drawTunnel() {
+    const image=this.marketImages[this.marketFloor];
+    const scale=Math.min(this.viewWidth/1672,this.viewHeight/941),ox=(this.viewWidth-1672*scale)/2,oy=(this.viewHeight-941*scale)/2;
+    if(image.complete&&image.naturalWidth>0)this.context.drawImage(image,ox,oy,1672*scale,941*scale);
+    else this.rect(0,0,this.viewWidth,this.viewHeight,0x181f2b);
+    const px=ox+this.x*scale,py=oy+this.y*scale;
+    this.context.save();this.context.translate(px-16*scale,py-38*scale);this.context.scale(.5*scale,.5*scale);drawPixelCat(this.context,'miaomiao','idle');this.context.restore();
+    this.context.fillStyle='#fff0c4';this.context.font='12px system-ui';this.context.fillText(`${this.marketFloor} · WASD move · E inspect · C climb · F stairs`,12,20);
+  }  private drawTunnel() {
     // 阴暗地下管道拱门背景
     this.rect(0, 0, 800, 480, 0x11161d);
     // 拱形砖墙与管道

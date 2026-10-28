@@ -38,6 +38,10 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 		return err
 	}
 	battleRetry := s.Phase == "preparation" && s.ActiveBattle != nil && s.ActiveBattle.Status == "lost"
+	mainlineMarket := c.StageID == "market_boss" && ((s.Phase == "explore" && s.MapID == "market") || (battleRetry && s.ActiveBattle.Mainline))
+	if mainlineMarket && !battleRetry && (c.Layer != "L0" || c.ReturnPosition == nil || math.Hypot(c.ReturnPosition.X-1310, c.ReturnPosition.Y-169) > 58) {
+		return domain.Fail("STAGE_LOCKED", "请抵达集市北侧防线入口", 409)
+	}
 	if battleRetry && s.ActiveBattle.StageID != c.StageID {
 		return domain.Fail("INVALID_PHASE", "请重试当前关卡，或先离开准备页再选择其他关卡", 409)
 	}
@@ -45,7 +49,11 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 		if !domain.Contains(s.Flags, "alley_rescued") {
 			return domain.Fail("STAGE_LOCKED", "请先完成第一章救援，再从家园进入独立试玩", 409)
 		}
-		if s.Phase != "home" && !battleRetry {
+		if c.StageID == "market_boss" && mainlineMarket {
+			if !domain.Contains(s.Flags, "market_crow_clue_completed") || !domain.Contains(s.Flags, "market_pigeon_clue_completed") {
+				return domain.Fail("STAGE_LOCKED", "先取得老黑羽与咕咕大盗的两条线索", 409)
+			}
+		} else if s.Phase != "home" && !battleRetry {
 			return domain.Fail("INVALID_PHASE", "独立试玩请从家园进入", 409)
 		}
 	}
@@ -75,6 +83,7 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 		return err
 	}
 	attempt := &domain.Attempt{ID: id, StageID: c.StageID, Status: "active"}
+	attempt.Mainline = mainlineMarket
 	if battleRetry {
 		if s.ActiveBattle.Modifiers != nil {
 			modifiers := *s.ActiveBattle.Modifiers
@@ -197,6 +206,9 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 				s.Flags = domain.Add(s.Flags, "alley_rescued")
 			}
 		} else if attempt.StageID == "market_boss" {
+			if attempt.Mainline {
+				s.Flags = domain.Add(s.Flags, "market_cleared")
+			}
 			result.Message = "午夜集市的防线守住了，六位伙伴击退了首领。"
 		} else if attempt.StageID == "finale_boss" {
 			result.Message = "伙伴们共同守住了光之归路，永夜之王与两名精英护卫已被击退。"

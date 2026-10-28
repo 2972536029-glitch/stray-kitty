@@ -44,6 +44,45 @@ func TestMarketTrialOnlyMarksCompletionAndKeepsMainlineState(t *testing.T) {
 	}
 }
 
+func TestMarketMainlineBattleRequiresCluesAndCExit(t *testing.T) {
+	g, token, _ := prepareBoss(t, 0, nil)
+	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Phase = "explore"
+		p.State.MapID = "market"
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "market_boss"})
+	_, err = g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Flags = domain.Add(p.State.Flags, "market_crow_clue_completed")
+		p.State.Flags = domain.Add(p.State.Flags, "market_pigeon_clue_completed")
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "market_boss", Layer: "L0", ReturnPosition: &domain.WorldPoint{X: 1310, Y: 169}})
+	if s.ActiveBattle == nil || !s.ActiveBattle.Mainline {
+		t.Fatal("market field battle was not recorded as mainline")
+	}
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
+	if !domain.Contains(s.Flags, "market_cleared") {
+		t.Fatal("mainline victory did not unlock exit")
+	}
+	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	if s.Phase != "explore" || s.MapID != "market" {
+		t.Fatal("mainline victory did not return to market")
+	}
+	rejectUnchanged(t, g, token, domain.Command{Type: "GO_HOME"})
+	rejectUnchanged(t, g, token, domain.Command{Type: "EXIT_MARKET", Layer: "L0", Position: &domain.WorldPoint{X: 1300, Y: 90}})
+	s = execute(t, g, token, domain.Command{Type: "EXIT_MARKET", Layer: "L0", Position: &domain.WorldPoint{X: 1365, Y: 88}})
+	if s.Phase != "home" || !domain.Contains(s.Flags, "market_exit_crossed") {
+		t.Fatal("valid climbed exit did not leave market")
+	}
+}
+
 func TestMarketFailureRetryKeepsSavedTierAndStageAcrossRestart(t *testing.T) {
 	for _, pressure := range []int{-1, 0, 1} {
 		t.Run(fmt.Sprint(pressure), func(t *testing.T) {

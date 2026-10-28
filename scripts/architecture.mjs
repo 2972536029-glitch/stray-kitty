@@ -25,6 +25,7 @@ const labels = {
   'web/src/core/state': 'GameStore 状态快照', 'web/src/core/rules': '公共条件与资源判断',
   'web/src/core/ports': 'API 与会话存储接口', 'web/src/modules': '正式模块接入口',
   'web/src/modules/map': '地图 · Jenny', 'web/src/modules/events': '随机事件 · 余尧',
+  'web/src/modules/nightMarket': 'Chapter 2 Night Market spatial map and progression',
   'web/src/modules/battle': '塔防 · 闫琦雯', 'web/src/modules/cats': '猫咪档案、救援与成长',
   'web/src/modules/home': '家园建设、摆放与互动', 'web/src/modules/inventory': '道具与家具持有',
   'web/src/modules/economy': '货币、扣费与奖励', 'web/src/modules/lottery': '奖池、抽取与结果',

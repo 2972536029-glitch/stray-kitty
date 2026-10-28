@@ -2,7 +2,7 @@ export type GamePhase = 'dialogue' | 'explore' | 'event' | 'preparation' | 'batt
 export type BattleCarryId = 'lantern' | 'mirror' | 'bell' | 'box' | 'dog' | 'dove' | 'rats' | 'kitten';
 export interface BattleModifiers {shadowPressure: -1 | 0 | 1; situation?: 'detour' | 'forced_chase'; carry?: BattleCarryId}
 export interface BattleReport {leaks: number; bossDefeated: boolean; elitesDefeated?: number}
-export interface BattleAttempt {id: string; stageId: string; status: 'active' | 'won' | 'lost'; modifiers?: BattleModifiers}
+export interface BattleAttempt {id: string; stageId: string; status: 'active' | 'won' | 'lost'; modifiers?: BattleModifiers; mainline?: boolean}
 export type EventTier = 'crit' | 'success' | 'partial' | 'fail';
 export interface EventReward {fish?: number; stamps?: number; clue?: number; material?: number}
 export interface EventOutcome {
@@ -26,13 +26,14 @@ export interface GameState {
 export type GameCommand =
   | {type: 'ADVANCE_STORY'; nodeId: string}
   | {type: 'START_STORY'; nodeId: string}
-  | {type: 'INTERACT'; interactionId: string}
+  | {type: 'INTERACT'; interactionId: string; layer?: string; position?: {x:number;y:number}}
   | {type: 'REPORT_MOVE'; distance: number}
-  | {type: 'CHECK_RANDOM_ZONE'; zoneId: string}
+  | {type: 'CHECK_RANDOM_ZONE'; zoneId: string; layer?: string; position?: {x:number;y:number}}
   | {type: 'CHOOSE_EVENT'; eventId: string; optionId: string; usePush?: boolean}
-  | {type: 'START_BATTLE'; stageId: string; returnPosition?: {x: number; y: number}}
+  | {type: 'START_BATTLE'; stageId: string; returnPosition?: {x: number; y: number}; layer?:string}
   | ({type: 'COMPLETE_BATTLE'} & BattleResult)
   | {type: 'CONTINUE'} | {type: 'GO_HOME'} | {type: 'GO_EXPLORE'; mapId?: string}
+  | {type: 'EXIT_MARKET'; layer: string; position: {x:number;y:number}}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
   | {type: 'DRAW_FURNITURE'; poolId: string}
   | {type: 'BUY_FURNITURE'; productId: string}

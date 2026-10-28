@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/big"
 	"stray-kitty/server/internal/advisor"
 	"stray-kitty/server/internal/domain"
@@ -139,8 +140,11 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		if c.NodeID == "market_intro_1" && !domain.Contains(s.Flags, "rescue_story_done") {
 			return domain.Fail("STORY_LOCKED", "请先完成小巷救援与寻猫启事", 409)
 		}
-		if c.NodeID == "greenhouse_intro_1" && !domain.Contains(s.Flags, "chapter_2_started") {
+		if c.NodeID == "greenhouse_intro_1" && !domain.Contains(s.Flags, "market_cleared") {
 			return domain.Fail("STORY_LOCKED", "请先完成午夜集市的探索", 409)
+		}
+		if c.NodeID == "greenhouse_intro_1" && !domain.Contains(s.Flags, "market_exit_crossed") {
+			return domain.Fail("STORY_LOCKED", "请先从午夜集市北侧出口离开", 409)
 		}
 		if c.NodeID == "rescue_intro_1" && !domain.Contains(s.Flags, "greenhouse_fortified") {
 			return domain.Fail("STORY_LOCKED", "请先守住花房防线", 409)
@@ -298,6 +302,11 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				return invalid()
 			}
 		}
+		if s.MapID == "market" {
+			if c.Position == nil || (c.InteractionID == "market_crow_stall" && (c.Layer != "L0" || math.Hypot(c.Position.X-766, c.Position.Y-330) > 75)) || (c.InteractionID == "market_pigeon_perch" && (c.Layer != "L1" || math.Hypot(c.Position.X-1310, c.Position.Y-426) > 75)) {
+				return domain.Fail("INTERACTION_WRONG_FLOOR", "请在正确楼层调查线索", 409)
+			}
+		}
 		for _, m := range g.Catalog.Maps {
 			if m.ID == s.MapID {
 				for _, p := range m.Interactions {
@@ -318,7 +327,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "REPORT_MOVE":
 		return g.reportMove(s, c.Distance)
 	case "CHECK_RANDOM_ZONE":
-		return g.checkRandomZone(s, c.ZoneID)
+		return g.checkRandomZone(s, c.ZoneID, c.Layer, c.Position)
 	case "CHOOSE_EVENT":
 		return g.chooseEvent(s, c.EventID, c.OptionID, c.UsePush)
 	case "START_BATTLE":
@@ -345,6 +354,11 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			if s.ActiveBattle != nil && s.ActiveBattle.Status == "lost" {
 				return nil
 			}
+		} else if s.LastResult.StageID == "market_boss" && s.ActiveBattle != nil && s.ActiveBattle.Mainline {
+			s.Phase = "explore"
+			s.MapID = "market"
+			s.ActiveBattle = nil
+			return nil
 		} else if s.LastResult.StageID != "alley_boss" && !isStandaloneBattle(s.LastResult.StageID) && !domain.Contains(s.Flags, "rescue_story_done") {
 			s.Phase = "dialogue"
 			s.StoryNodeID = "rescue_1"
@@ -361,6 +375,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		if !domain.Contains(s.Flags, "alley_rescued") {
 			return domain.Fail("HOME_LOCKED", "先帮助小巷里的伙伴", 409)
 		}
+		if s.MapID == "market" {
+			return domain.Fail("EXIT_LOCKED", "完成集市防卫并从北侧出口离开", 409)
+		}
 		if s.MapID == "alley" && !domain.Contains(s.Flags, "lost_poster_found") {
 			return domain.Fail("POSTER_NOT_FOUND", "先看看巷尾墙上的寻猫启事", 409)
 		}
@@ -374,6 +391,19 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			s.ChapterID = "greenhouse"
 		}
 		return nil
+	case "EXIT_MARKET":
+		if err := domain.RequirePhase(*s, "explore"); err != nil {
+			return err
+		}
+		p := c.Position
+		if s.MapID != "market" || !domain.Contains(s.Flags, "market_cleared") || c.Layer != "L0" || p == nil || math.IsNaN(p.X) || math.IsNaN(p.Y) || math.Abs(p.X-1365) > 48 || math.Abs(p.Y-88) > 48 {
+			return domain.Fail("EXIT_LOCKED", "需守住集市防线，并从北侧木箱翻越离开", 409)
+		}
+		s.Flags = domain.Add(s.Flags, "market_exit_crossed")
+		s.Phase = "home"
+		s.MapID = "greenhouse"
+		s.ChapterID = "market"
+		return nil
 	case "GO_EXPLORE":
 		targetMap := "alley"
 		if c.MapID != "" {
@@ -382,6 +412,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			targetMap = "market"
 		} else if s.MapID == "tunnel" {
 			targetMap = "tunnel"
+		}
+		if targetMap == "market" && !domain.Contains(s.Flags, "chapter_2_started") {
+			return domain.Fail("MAP_LOCKED", "请先开启第二章剧情", 409)
 		}
 		s.Phase = "explore"
 		s.MapID = targetMap

@@ -20,6 +20,18 @@ func markRescueStoryDoneForTest(t *testing.T, g *service.Game, token string) {
 	}
 }
 
+func exploreMarketForTest(t *testing.T, g *service.Game, token string) domain.GameState {
+	t.Helper()
+	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Flags = domain.Add(p.State.Flags, "chapter_2_started")
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+}
+
 func useMarketRandomPool(t *testing.T, g *service.Game, token string) domain.GameState {
 	t.Helper()
 	for index := range g.Catalog.Events {
@@ -27,7 +39,7 @@ func useMarketRandomPool(t *testing.T, g *service.Game, token string) domain.Gam
 			g.Catalog.Events[index].Maps = domain.Add(g.Catalog.Events[index].Maps, "market")
 		}
 	}
-	return execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+	return exploreMarketForTest(t, g, token)
 }
 
 // 进入探索后有保护里程;保护期内上报不触发,过保护后危险度 1 必触发(随机数恒为 0)。
@@ -99,7 +111,7 @@ func TestRandomPoolDrainsWithoutRepeat(t *testing.T) {
 			s = finishStory(t, g, token)
 		}
 		if s.Phase == "preparation" {
-			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+			s = exploreMarketForTest(t, g, token)
 		}
 		if s.Phase != "explore" {
 			t.Fatalf("expected explore after resolving %s, got %s", id, s.Phase)
@@ -152,7 +164,7 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 				s = finishStory(t, g, token)
 			}
 			if s.Phase == "preparation" {
-				s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+				s = exploreMarketForTest(t, g, token)
 			}
 			if s.Phase != "explore" {
 				t.Fatal("expected explore after resolving shared event")
@@ -170,7 +182,7 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 				s = finishStory(t, g, token)
 			}
 			if s.Phase == "preparation" {
-				s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+				s = exploreMarketForTest(t, g, token)
 			}
 		}
 	}
@@ -344,7 +356,7 @@ func TestEventChainRequiresFlags(t *testing.T) {
 			s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 		}
 		if s.Phase == "preparation" {
-			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+			s = exploreMarketForTest(t, g, token)
 		}
 	}
 	if !sawChain {
@@ -398,7 +410,7 @@ func TestNarrativeGatedCardDrawnAfterFlag(t *testing.T) {
 			s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 		}
 		if s.Phase == "preparation" {
-			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+			s = exploreMarketForTest(t, g, token)
 		}
 	}
 	if !gotGift {
@@ -418,7 +430,7 @@ func TestNodeEventOneShot(t *testing.T) {
 	for s.Phase == "dialogue" {
 		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 	}
-	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall"})
+	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall", Layer: "L0", Position: &domain.WorldPoint{X: 766, Y: 330}})
 	if s.Phase != "event" || s.PendingEventID != "crow_intel_event" {
 		t.Fatalf("first interact failed: %s %s", s.Phase, s.PendingEventID)
 	}
@@ -426,9 +438,9 @@ func TestNodeEventOneShot(t *testing.T) {
 	if s.Phase == "dialogue" {
 		s = finishStory(t, g, token)
 	}
-	s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+	s = exploreMarketForTest(t, g, token)
 	rev := s.Revision
-	if _, err = g.Execute(token, "crow-again", domain.CommandRequest{ExpectedRevision: &rev, Command: domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall"}}); err == nil {
+	if _, err = g.Execute(token, "crow-again", domain.CommandRequest{ExpectedRevision: &rev, Command: domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall", Layer: "L0", Position: &domain.WorldPoint{X: 766, Y: 330}}}); err == nil {
 		t.Fatal("repeat interact with crow stall was accepted")
 	}
 }
@@ -491,7 +503,7 @@ func TestCompanionPushTakesBetterPair(t *testing.T) {
 	for s.Phase == "dialogue" {
 		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 	}
-	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall"})
+	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall", Layer: "L0", Position: &domain.WorldPoint{X: 766, Y: 330}})
 	rev := s.Revision
 	if _, err := g.Execute(token, "push-empty", domain.CommandRequest{ExpectedRevision: &rev, Command: domain.Command{Type: "CHOOSE_EVENT", EventID: "crow_intel_event", OptionID: "trade_fish", UsePush: true}}); err == nil {
 		t.Fatal("push without token accepted")
@@ -531,7 +543,7 @@ func TestRepeatableEchoCard(t *testing.T) {
 			s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 		}
 		if s.Phase == "preparation" {
-			s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+			s = exploreMarketForTest(t, g, token)
 		}
 	}
 	if seen < 2 {
@@ -715,6 +727,7 @@ func TestChapter3GreenhouseProgressionAndMomoUnlock(t *testing.T) {
 	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
 		p.State.Flags = domain.Add(p.State.Flags, "alley_rescued")
 		p.State.Flags = domain.Add(p.State.Flags, "rescue_story_done")
+		p.State.Flags = domain.Add(p.State.Flags, "market_cleared")
 		p.State.Phase = "home"
 		p.State.MapID = "greenhouse"
 		return domain.CommandResponse{State: p.State}, nil
@@ -729,7 +742,7 @@ func TestChapter3GreenhouseProgressionAndMomoUnlock(t *testing.T) {
 	if !domain.Contains(s.Flags, "chapter_2_started") {
 		t.Fatal("expected chapter_2_started")
 	}
-	s = execute(t, g, token, domain.Command{Type: "GO_HOME"})
+	s = execute(t, g, token, domain.Command{Type: "EXIT_MARKET", Layer: "L0", Position: &domain.WorldPoint{X: 1365, Y: 88}})
 	if s.Phase != "home" || s.MapID != "greenhouse" {
 		t.Fatalf("expected home in greenhouse, got %+v", s)
 	}
@@ -831,7 +844,7 @@ func TestAllyCarryViaDove(t *testing.T) {
 	for s.Phase == "dialogue" {
 		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 	}
-	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_pigeon_perch"})
+	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_pigeon_perch", Layer: "L1", Position: &domain.WorldPoint{X: 1310, Y: 426}})
 	s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "pigeon_rumor_event", OptionID: "recruit_pigeon"})
 	if s.EventState.PendingModifiers.Carry != "dove" {
 		t.Fatalf("dove ally not carried, got %q", s.EventState.PendingModifiers.Carry)
