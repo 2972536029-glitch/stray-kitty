@@ -468,6 +468,15 @@
       ]
     },
     {
+      "id": "finale_clue_insufficient",
+      "chapterId": "rescue",
+      "speaker": "阿策",
+      "text": "军师阿策轻摇折扇拦住大家：“且慢。大仓库深层暗道纵横、戒备森严，目前我们掌握的线索还不够。大家先回午夜集市继续探索，向老黑羽和咕咕大盗多打听些情报再做决战准备！”",
+      "next": "",
+      "exit": "explore",
+      "scene": "home"
+    },
+    {
       "id": "finale_intro_1",
       "chapterId": "finale",
       "speaker": "墨墨",

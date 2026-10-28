@@ -78,7 +78,9 @@ flowchart TD
     end
 
     subgraph S6["【终章：点亮流浪猫王国 · 终战与大团圆】（场景：大仓库 / 花房）"]
-        F5 --> G1["进军废弃总仓库 dialogue<br/>最后一批伙伴困于深层防空隔间 · 黑影重重封锁"]
+        GATE{"进军大仓库门槛<br/>线索 clue >= 3 ?"}
+        GATE -- "线索不足 (< 3)" --> LACK["阿策提示线索不足 dialogue<br/>finale_clue_insufficient ➔ 回午夜集市继续探索"]
+        GATE -- "线索齐备 (>= 3)" --> G1["进军废弃总仓库 dialogue<br/>最后一批伙伴困于深层防空隔间 · 黑影重重封锁"]
         G1 --> G2["光之走廊战术推进<br/>集市手电 + 小巷蓄光镜片 + 移动灯具步步为营"]
         G2 --> G3["光明大作 · 黑影退散<br/>强光照亮整座大仓库 · 破开铁锁全员循光安全突围"]
         G3 --> G4["流浪猫王国落成庆典 home<br/>纸箱城堡落成 · 窗前挂起暖光串灯 · 街坊默契赠水粮"]
@@ -88,7 +90,8 @@ flowchart TD
     C4 -.-> D1
     D5 -.-> E1
     E3 -.-> F1
-    F5 -.-> G1
+    F5 -.-> GATE
+    LACK -.-> D2
 
     style S0 fill:#f0f7ff,stroke:#2b6cb0,stroke-width:2px
     style S1 fill:#fffaf0,stroke:#dd6b20,stroke-width:2px
@@ -171,6 +174,30 @@ flowchart LR
           <td><code>finale_started</code>, <code>finale_completed</code>, <code>kingdom_founded</code></td>
           <td>全剧终金色庆典、窗前暖光串灯、街坊水粮补给</td>
         </tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top: 2rem;">4. 随机事件选择与伙伴日常闲聊 Flag 呼应对照表</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>事件 Flag</th>
+          <th>对应事件选择</th>
+          <th>讲话角色</th>
+          <th>伙伴絮语与过场呼应</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>sack_cat_freed</code></td><td>会动的麻袋（解开绳结救出小猫）</td><td>团子</td><td>“上回麻袋里那只小的，今天蹲在墙头冲我摆尾巴。这巷子啊，记情。”</td></tr>
+        <tr><td><code>shadow_chased</code></td><td>墙角的黑影（遭遇黑影撤退回灯下）</td><td>点点</td><td>“那道影子……我一个人的时候也见过。别怕，在灯下站一会儿就好。”</td></tr>
+        <tr><td><code>thin_cat_fed</code></td><td>偷鱼干的瘦爪（循爪印追寻并分食）</td><td>团子</td><td>“那小崽子今天又远远跟着呢。喂过一口的，猫记一辈子。”</td></tr>
+        <tr><td><code>rats_truce</code></td><td>鼠群分粮（与鼠群和平分粮结下休战协定）</td><td>团子</td><td>“跟墙洞那家子处得不错。巷子里，多个朋友少堵墙。”</td></tr>
+        <tr><td><code>brave_miaomiao</code></td><td>纸箱微动（挺起胸膛护在纸箱前）</td><td>点点</td><td>“你挡在纸箱前的那下……我记着呢。”</td></tr>
+        <tr><td><code>trap_disarmed</code></td><td>草丛里的寒光（用树枝破坏捕兽夹）</td><td>团子</td><td>“那个夹子拆得好。老麻雀要是还在，也会这么说。”</td></tr>
+        <tr><td><code>light_found</code></td><td>纸箱微动（仔细搜索找到发光小灯）</td><td>喵喵</td><td>“小灯还亮着。有光的地方，就是路。”</td></tr>
+        <tr><td><code>shadow_weakness_known</code></td><td>乌鸦情报摊（买得情报：黑影怕光）</td><td>喵喵</td><td>“黑影怕光——这可是花钱买来的道理，本咪都记着呢。”</td></tr>
+        <tr><td><code>wall_kitten_friend</code></td><td>墙头的小猫（打招呼并递去食物结友）</td><td>旁白</td><td>回花房的路上，墙头方向传来一声短促的招呼，像在替你们看着巷口。</td></tr>
+        <tr><td><code>momo_met</code></td><td>墨墨的踪迹（发现墨墨巡夜留下的印记）</td><td>墨墨</td><td>“第三章开篇正式现身花房，暗夜引路并与猫咪小队并肩作战。”</td></tr>
       </tbody>
     </table>
   </section>
