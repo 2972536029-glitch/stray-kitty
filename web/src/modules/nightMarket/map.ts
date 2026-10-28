@@ -1,7 +1,7 @@
 import source from '../../../../specs/night-market/night_market_v016_spatial_reference.json';
 
 export type MarketFloor = 'L0' | 'L1' | 'Lm1';
-type Spatial = {R:Record<MarketFloor,[number,number[][]][]>;solids:({type:'rect';x:number;y:number;w:number;h:number}|{type:'poly';pts:number[][]})[];items:{id:string;x:number;y:number;layer:MarketFloor;label:string;kind:string;info?:string}[];portals:{id:string;kind:'climb'|'stairs';key:'c'|'f';label:string;requiresFlag?:string;a:{x:number;y:number;layer:MarketFloor};b:{x:number;y:number;layer:MarketFloor};radius:number}[];actionObstacles:{id:string;a:number[];b:number[];radius:number}[];battleBarrier:{layer:MarketFloor;a:number[];b:number[];radius:number}};
+type Spatial = {R:Record<MarketFloor,[number,number[][]][]>;walkableSurfaces:{id:string;layer:MarketFloor;points:number[][]}[];solids:({type:'rect';x:number;y:number;w:number;h:number}|{type:'poly';pts:number[][]})[];items:{id:string;x:number;y:number;layer:MarketFloor;label:string;kind:string;info?:string}[];portals:{id:string;kind:'climb'|'stairs';key:'c'|'f';label:string;requiresFlag?:string;a:{x:number;y:number;layer:MarketFloor};b:{x:number;y:number;layer:MarketFloor};radius:number}[];actionObstacles:{id:string;a:number[];b:number[];radius:number}[];battleBarrier:{layer:MarketFloor;a:number[];b:number[];radius:number}};
 export const nightMarketSpatial = source as unknown as Spatial;
 export const marketArt: Record<MarketFloor, string> = {
   L0: '/assets/night-market/night_market_L0_streets_1672x941.png',
@@ -31,7 +31,7 @@ export function nearestMarketRoadSign(floor:MarketFloor,x:number,y:number) {
   return marketRoadSigns.filter(sign=>sign.floor===floor).map(sign=>({sign,distance:Math.hypot(x-sign.x,y-sign.y)})).sort((a,b)=>a.distance-b.distance)[0]??null;
 }
 
-export type MarketMoveResult = {position:{x:number;y:number};blocked:boolean;condition:string|null};
+export type MarketMoveResult = {position:{x:number;y:number};blocked:boolean;condition:string|null;blockedAt:{x:number;y:number}|null};
 export type MarketEAction = {type:'interact';id:string;layer:MarketFloor}|{type:'battle'}|{type:'hint';text:string}|null;
 export type MarketPortalDisplay = {visible:boolean;active:boolean;alpha:number;label:string}|null;
 
@@ -91,10 +91,38 @@ function solidDistance(pts:number[][],x:number,y:number) {
 export function isMarketTraversable(floor:MarketFloor,x:number,y:number,cleared=false,radius=MARKET_CAT_RADIUS) {
   return marketMovementBlockReason(floor,x,y,cleared,radius)===null;
 }
+function isMarketStreetPoint(floor:MarketFloor,x:number,y:number) {
+  if(nightMarketSpatial.walkableSurfaces.some(surface=>surface.layer===floor&&insidePolygon(surface.points,x,y)))return true;
+  return nightMarketSpatial.R[floor].some(([width,points])=>points.slice(1).some((point,index)=>distanceToSegment(x,y,points[index],point)<=width/2));
+}
+function isMarketFootprintOnStreet(floor:MarketFloor,x:number,y:number,radius:number) {
+  if(!isMarketStreetPoint(floor,x,y))return false;
+  if(radius<=0)return true;
+  // Check the cat's full disk against the union of authored street polygons and
+  // route ribbons. This lets adjacent surfaces jointly support the footprint.
+  for(let index=0;index<16;index++){
+    const angle=index*Math.PI/8;
+    if(!isMarketStreetPoint(floor,x+Math.cos(angle)*radius,y+Math.sin(angle)*radius))return false;
+  }
+  return true;
+}
+export function marketNearestBoundary(floor:MarketFloor,x:number,y:number) {
+  let best={id:'map boundary',distance:Infinity};
+  const consider=(id:string,distance:number)=>{if(distance<best.distance)best={id,distance};};
+  let segmentIndex=0;
+  for(const [width,points] of nightMarketSpatial.R[floor])for(let index=1;index<points.length;index++)consider(`route ribbon ${segmentIndex++} edge`,Math.abs(distanceToSegment(x,y,points[index-1],points[index])-width/2));
+  for(const surface of nightMarketSpatial.walkableSurfaces.filter(value=>value.layer===floor))for(let index=0;index<surface.points.length;index++)consider(`walkable surface ${surface.id} edge`,distanceToSegment(x,y,surface.points[index],surface.points[(index+1)%surface.points.length]));
+  if(floor==='L0')for(let index=0;index<nightMarketSpatial.solids.length;index++){
+    const solid=nightMarketSpatial.solids[index];
+    if(solid.type==='poly')for(let edge=0;edge<solid.pts.length;edge++)consider(`solid polygon ${index} edge ${edge}`,distanceToSegment(x,y,solid.pts[edge],solid.pts[(edge+1)%solid.pts.length]));
+    else {const points=[[solid.x,solid.y],[solid.x+solid.w,solid.y],[solid.x+solid.w,solid.y+solid.h],[solid.x,solid.y+solid.h]];for(let edge=0;edge<points.length;edge++)consider(`solid rectangle ${index} edge ${edge}`,distanceToSegment(x,y,points[edge],points[(edge+1)%points.length]));}
+  }
+  for(const obstacle of nightMarketSpatial.actionObstacles)consider(`authored obstacle ${obstacle.id}`,Math.abs(distanceToSegment(x,y,obstacle.a,obstacle.b)-obstacle.radius));
+  const barrier=nightMarketSpatial.battleBarrier;if(floor===barrier.layer)consider('battle barricade',Math.abs(distanceToSegment(x,y,barrier.a,barrier.b)-barrier.radius));
+  return best.id;
+}
 export function marketMovementBlockReason(floor:MarketFloor,x:number,y:number,cleared=false,radius=MARKET_CAT_RADIUS):string|null {
   if(x<radius||y<radius||x>1672-radius||y>941-radius)return 'map boundary';
-  const route=nightMarketSpatial.R[floor].some(([width,points])=>points.slice(1).some((point,index)=>distanceToSegment(x,y,points[index],point)<=Math.max(0,width/2-radius)));
-  if(!route)return 'outside footprint-clear route';
   if(floor==='L0')for(const solid of nightMarketSpatial.solids){
     if(solid.type==='rect'){
       const dx=Math.max(solid.x-x,0,x-(solid.x+solid.w)),dy=Math.max(solid.y-y,0,y-(solid.y+solid.h));
@@ -104,19 +132,30 @@ export function marketMovementBlockReason(floor:MarketFloor,x:number,y:number,cl
   if(floor==='L0')for(const obstacle of nightMarketSpatial.actionObstacles){if(segmentDistance(x,y,obstacle.a,obstacle.b)<obstacle.radius+radius)return `authored obstacle ${obstacle.id}`;}
   const barrier=nightMarketSpatial.battleBarrier;
   if(floor===barrier.layer&&segmentDistance(x,y,barrier.a,barrier.b)<barrier.radius+radius+(cleared?3:0))return 'battle barricade';
+  if(!isMarketFootprintOnStreet(floor,x,y,radius))return `outside footprint-clear street surface near ${marketNearestBoundary(floor,x,y)}`;
   return null;
 }
 export function sweepMarketMove(floor:MarketFloor,position:{x:number;y:number},delta:{x:number;y:number},cleared=false,maxStep=2):MarketMoveResult {
   const steps=Math.max(1,Math.ceil(Math.max(Math.abs(delta.x),Math.abs(delta.y))/maxStep));
   const step={x:delta.x/steps,y:delta.y/steps},next={...position};
-  let blocked=false,condition:string|null=null;
+  let blocked=false,condition:string|null=null,blockedAt:{x:number;y:number}|null=null;
   for(let i=0;i<steps;i++){
     if(isMarketTraversable(floor,next.x+step.x,next.y+step.y,cleared)){next.x+=step.x;next.y+=step.y;continue;}
-    blocked=true;condition=marketMovementBlockReason(floor,next.x+step.x,next.y+step.y,cleared)??'blocked';
-    if(step.x&&isMarketTraversable(floor,next.x+step.x,next.y,cleared))next.x+=step.x;
-    if(step.y&&isMarketTraversable(floor,next.x,next.y+step.y,cleared))next.y+=step.y;
+    blocked=true;blockedAt??={x:next.x+step.x,y:next.y+step.y};condition??=marketMovementBlockReason(floor,next.x+step.x,next.y+step.y,cleared)??'blocked';
+    if(step.x&&step.y){
+      const xFirst={x:next.x,y:next.y},yFirst={x:next.x,y:next.y};
+      if(isMarketTraversable(floor,xFirst.x+step.x,xFirst.y,cleared))xFirst.x+=step.x;
+      if(isMarketTraversable(floor,xFirst.x,xFirst.y+step.y,cleared))xFirst.y+=step.y;
+      if(isMarketTraversable(floor,yFirst.x,yFirst.y+step.y,cleared))yFirst.y+=step.y;
+      if(isMarketTraversable(floor,yFirst.x+step.x,yFirst.y,cleared))yFirst.x+=step.x;
+      const xProgress=Math.hypot(xFirst.x-next.x,xFirst.y-next.y),yProgress=Math.hypot(yFirst.x-next.x,yFirst.y-next.y);
+      const chosen=xProgress>=yProgress?xFirst:yFirst;next.x=chosen.x;next.y=chosen.y;
+    } else {
+      if(step.x&&isMarketTraversable(floor,next.x+step.x,next.y,cleared))next.x+=step.x;
+      if(step.y&&isMarketTraversable(floor,next.x,next.y+step.y,cleared))next.y+=step.y;
+    }
   }
-  return {position:next,blocked,condition};
+  return {position:next,blocked,condition,blockedAt};
 }
 export function nearestMarketPosition(floor:MarketFloor,x:number,y:number,cleared=false,maxRadius=48) {
   if(isMarketTraversable(floor,x,y,cleared))return {x,y};

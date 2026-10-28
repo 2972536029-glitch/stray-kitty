@@ -46,8 +46,37 @@ test('market movement sweeps across frame steps, slides at obstacle edges, and b
   const start={x:670,y:781};assert.equal(isMarketTraversable('L0',start.x,start.y),true);
   const moved=sweepMarketMove('L0',start,{x:0,y:-60});assert.ok(moved.position.y<start.y-40,'long movement should advance in small collision-tested steps');
   assert.equal(isMarketTraversable('L0',580,520),false,'building interior remains blocked for the whole cat footprint');
+  assert.equal(isMarketTraversable('L0',900,350),false,'the central market building remains solid inside its walkable surface envelope');
   assert.equal(isMarketTraversable('L0',536,481),true,'a diagonal cat footprint may pass a building corner when its circular clearance remains open');
   const blocked=sweepMarketMove('L0',start,{x:40,y:-15});assert.equal(blocked.blocked,true);assert.ok(blocked.position.x>start.x||blocked.position.y<start.y,'movement should slide along a route boundary when an axis is clear');
+  assert.match(blocked.condition??'/',/solid|street surface|obstacle|barricade/);
+  assert.ok(blocked.blockedAt,'diagnostics retain the first rejected world position');
+  const corner=sweepMarketMove('L0',{x:532,y:480},{x:20,y:12});
+  assert.equal(corner.blocked,true,'a diagonal approach into the plaza building is rejected');
+  assert.ok(corner.position.x>532&&corner.position.y>480,'the cat slides along the genuine building edge instead of getting stuck');
+});
+
+test('actual swept movement works both ways across seven L0 streets and across their usable width',()=>{
+  const corridors=[
+    {name:'northward continuous street',x:760,y:370,dx:0,dy:-1},
+    {name:'south through central market',x:1035,y:350,dx:0,dy:1},
+    {name:'west around plaza connector',x:700,y:500,dx:-1,dy:0},
+    {name:'south through eastern junction',x:1150,y:375,dx:0,dy:1},
+    {name:'south outer market road',x:1204,y:590,dx:0,dy:1},
+    {name:'south entrance street',x:670,y:743,dx:0,dy:1},
+    {name:'battle approach street',x:1310,y:169,dx:0,dy:1},
+  ];
+  for(const road of corridors)for(const offset of [-15,0,15]){
+    const start={x:road.x+(road.dy?offset:0),y:road.y+(road.dx?offset:0)};
+    assert.equal(isMarketTraversable('L0',start.x,start.y),true,`${road.name} offset ${offset} belongs to the cat-safe street union`);
+    for(const sign of [-1,1]){
+      const result=sweepMarketMove('L0',start,{x:road.dx*sign*12,y:road.dy*sign*12});
+      assert.equal(result.blocked,false,`${road.name} offset ${offset} direction ${sign} must not hit an artificial ribbon edge`);
+      assert.ok(Math.hypot(result.position.x-start.x,result.position.y-start.y)>10,`${road.name} should advance the cat`);
+    }
+  }
+  const cameraIndependent=sweepMarketMove('L0',{x:1150,y:375},{x:0,y:12});
+  assert.deepEqual(cameraIndependent.position,{x:1150,y:387},'world collision results do not depend on camera projection');
 });
 
 test('repositioned crow can be approached from every accessible direction',()=>{
