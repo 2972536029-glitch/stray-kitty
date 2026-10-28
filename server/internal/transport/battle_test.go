@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"stray-kitty/server/internal/domain"
+	"stray-kitty/server/internal/integrations/payment"
 	"stray-kitty/server/internal/platform"
 	"stray-kitty/server/internal/repository"
 	"stray-kitty/server/internal/service"
@@ -38,7 +39,7 @@ func TestBattleRejectsRemovedSupplyFieldsAndRequiresBossReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := transport.New(g, "")
+	handler := transport.New(g, payment.New(store, catalog), "")
 	requestNumber := 0
 	request := func(body string) *httptest.ResponseRecorder {
 		requestNumber++
@@ -109,7 +110,7 @@ func TestAlleyRescueStartAcceptsFrontendReturnPosition(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	handler := transport.New(g, "")
+	handler := transport.New(g, payment.New(store, catalog), "")
 	body := `{"expectedRevision":0,"command":{"type":"START_BATTLE","stageId":"alley_rescue","returnPosition":{"x":111,"y":626}}}`
 	r := httptest.NewRequest("POST", "/api/v1/commands", strings.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")

@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"stray-kitty/server/internal/domain"
+	"stray-kitty/server/internal/integrations/payment"
 	"stray-kitty/server/internal/platform"
 	"stray-kitty/server/internal/repository"
 	"stray-kitty/server/internal/service"
@@ -35,7 +36,7 @@ func TestAdvisorHTTPAuthenticationStrictBodyAndLocalFallback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := transport.New(g, "")
+	handler := transport.New(g, payment.New(store, catalog), "")
 	request := func(body, auth, contentType string) *httptest.ResponseRecorder {
 		r := httptest.NewRequest("POST", "/api/v1/advisor", strings.NewReader(body))
 		if auth != "" {

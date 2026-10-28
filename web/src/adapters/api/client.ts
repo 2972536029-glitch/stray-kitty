@@ -1,4 +1,4 @@
-import type {ApiErrorBody, Catalog, CommandRequest, CommandResponse, GameState, Session} from '../../contracts';
+import type {ApiErrorBody, Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentHistoryResponse, Session} from '../../contracts';
 import type {GameApiPort} from '../../core/ports';
 import {runtime} from '../../config/runtime';
 import {BrowserSessionStore} from '../storage/BrowserSessionStore';
@@ -13,6 +13,18 @@ export class HttpGameApi implements GameApiPort {
     if(!response.ok){const body=await response.json() as ApiErrorBody;throw new ApiError(body.error.code,body.error.message,response.status);}
     return response.json() as Promise<T>;
   }
+  // 支付网关挂在 /api/payment 下,不在 /api/v1 前缀里;沿用同一错误结构与超时。
+  async paymentRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+    const response=await fetch(runtime.paymentBase+path,{signal:AbortSignal.timeout(15000),...init,headers:{'Content-Type':'application/json',...init.headers}});
+    if(!response.ok){const body=await response.json() as ApiErrorBody;throw new ApiError(body.error.code,body.error.message,response.status);}
+    return response.json() as Promise<T>;
+  }
+  charge(playerId: string, packId: string, cardNumber: string) {
+    return this.paymentRequest<ChargeResponse>('/charge',{method:'POST',body:JSON.stringify({playerId,packId,cardNumber})});
+  }
+  paymentHistory(playerId: string) {
+    return this.paymentRequest<PaymentHistoryResponse>(`/history?playerId=${encodeURIComponent(playerId)}`);
+  }
   async createSession() {
     this.session=await this.request<Session>('/sessions',{method:'POST'});
     this.cache.write(this.session);return this.session;
@@ -26,6 +38,8 @@ export class HttpGameApi implements GameApiPort {
   load() {return this.request<GameState>('/state');}
   catalog() {return this.request<Catalog>('/content');}
   pending() {return this.cache.pending(this.session?.playerId);}
+  // 支付网关按 playerId 寻账,不认 Bearer 令牌;给充值弹窗取当前会话的玩家 ID。
+  playerId() {return this.session?.playerId ?? '';}
   async execute(request: CommandRequest, key: string): Promise<CommandResponse> {
     if(!this.session) throw new Error('请先开始旅程');
     const existing=this.pending();

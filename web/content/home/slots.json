@@ -10,5 +10,13 @@
   {
     "id": "courtyard",
     "name": "小庭院"
+  },
+  {
+    "id": "beam",
+    "name": "高空横梁"
+  },
+  {
+    "id": "sun_spot",
+    "name": "阳光地板"
   }
 ]

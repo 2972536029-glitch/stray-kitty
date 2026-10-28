@@ -5516,6 +5516,16 @@
       "id": "box_castle",
       "name": "纸箱小城堡",
       "theme": "点点最爱"
+    },
+    {
+      "id": "star_glass",
+      "name": "星彩玻璃吊灯",
+      "theme": "星空温室"
+    },
+    {
+      "id": "cloud_nest",
+      "name": "云朵绒窝",
+      "theme": "星空温室"
     }
   ],
   "slots": [
@@ -5530,6 +5540,44 @@
     {
       "id": "courtyard",
       "name": "小庭院"
+    },
+    {
+      "id": "beam",
+      "name": "高空横梁"
+    },
+    {
+      "id": "sun_spot",
+      "name": "阳光地板"
+    }
+  ],
+  "renovations": [
+    {
+      "id": "seal_windows",
+      "stage": 2,
+      "name": "封窗止水",
+      "description": "给破窗钉上整齐的木板，堵住屋顶漏缝，水洼晒干后花房变得干燥暖和。",
+      "message": "叮叮当当——木板钉得整整齐齐，屋顶不再漏雨，水洼慢慢晒干，花房变得干燥又温暖。",
+      "grantsFlag": "greenhouse_sealed",
+      "cost": {
+        "material": 10
+      }
+    },
+    {
+      "id": "timber_greenhouse",
+      "stage": 3,
+      "name": "原木温室与高空猫爬架",
+      "description": "架起原木横梁，天窗透进条形阳光；解锁高空横梁与阳光地板两个新位置。",
+      "message": "原木横梁架上花房，温煦阳光从天窗洒成一条条光斑——高空猫爬架也就位啦！解锁新位置：高空横梁、阳光地板。",
+      "requiredFlag": "greenhouse_sealed",
+      "grantsFlag": "greenhouse_fortified_full",
+      "cost": {
+        "material": 20,
+        "stamp": 1
+      },
+      "unlockSlots": [
+        "beam",
+        "sun_spot"
+      ]
     }
   ],
   "items": [
@@ -5589,6 +5637,31 @@
           "weight": 100
         }
       ]
+    },
+    {
+      "id": "starlight_greenhouse",
+      "name": "星空温室包裹",
+      "cost": 60,
+      "currency": "tuna",
+      "requiredFlag": "alley_rescued",
+      "entries": [
+        {
+          "furnitureId": "moon_hammock",
+          "weight": 30
+        },
+        {
+          "furnitureId": "sun_lamp",
+          "weight": 30
+        },
+        {
+          "furnitureId": "star_glass",
+          "weight": 25
+        },
+        {
+          "furnitureId": "cloud_nest",
+          "weight": 15
+        }
+      ]
     }
   ],
   "products": [
@@ -5623,6 +5696,32 @@
       "currencyId": "stamp",
       "requiredFlag": "alley_rescued",
       "status": "available"
+    }
+  ],
+  "rechargePacks": [
+    {
+      "id": "pack_small",
+      "name": "一小罐金枪鱼",
+      "desc": "60 罐金枪鱼罐头，够换一次星空温室包裹。",
+      "priceCents": 600,
+      "tunaGranted": 60,
+      "icon": "tuna_s"
+    },
+    {
+      "id": "pack_medium",
+      "name": "金枪鱼野餐盒",
+      "desc": "150 罐金枪鱼罐头，花房伙伴能吃上一阵子。",
+      "priceCents": 1200,
+      "tunaGranted": 150,
+      "icon": "tuna_m"
+    },
+    {
+      "id": "pack_large",
+      "name": "整箱顶级金枪鱼",
+      "desc": "400 罐金枪鱼罐头，罐头山堆到天窗那么高。",
+      "priceCents": 3000,
+      "tunaGranted": 400,
+      "icon": "tuna_l"
     }
   ],
   "tutorials": [

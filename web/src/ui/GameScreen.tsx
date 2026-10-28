@@ -24,9 +24,9 @@ interface Props {
   onSkip?: () => void;
   onReset?: () => void;
   onCommand: (command: GameCommand) => void; onInteract: (interactionId?: string) => void; onDirection: (direction: Direction, held: boolean) => void;
-  onPause: () => void; onMap: () => void; onShop: () => void; onTitle: () => void; children: ReactNode;
+  onPause: () => void; onMap: () => void; onShop: () => void; onRecharge: () => void; onTitle: () => void; children: ReactNode;
 }
-export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, onJournal, onSkip, onReset, onCommand, onInteract, onDirection, onPause, onMap, onShop, onTitle, children}: Props) {
+export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, onJournal, onSkip, onReset, onCommand, onInteract, onDirection, onPause, onMap, onShop, onRecharge, onTitle, children}: Props) {
   const [devOpen, setDevOpen] = useState(false);
   // Exploration shortcuts must not carry an overlay over the next battle's controls.
   useEffect(() => {if (state.phase === 'battle') setDevOpen(false);}, [state.phase, state.activeBattle?.id]);
@@ -65,7 +65,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
   return <div className="app-shell" data-phase={state.phase}>
     <header className="topbar"><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
       <span className="chapter-pill">{finaleBattle ? '第五章 · 终局试玩' : tunnelBattle ? '第四章 · 地下通道试玩' : greenhouseBattle ? '第三章 · 废弃花房试玩' : marketBattle ? '第二章 · 午夜集市试玩' : tutorialBattle ? '序章 · 金枪鱼事件' : chapterBattle ? '第一章 · 陌生小巷' : chapter?.title}</span>
-      <div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span></div>
+      <div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>
       <nav aria-label="旅程工具">{state.phase === 'battle' && <button className="battle-host-pause" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button><button className="map-button" aria-label="章节地图" onClick={onMap}>▦ <span>章节地图</span></button><button className="shop-button" aria-label="猫国商店" onClick={onShop}>▣ <span>猫国商店</span></button>{isDevelopment && <button className="dev-button" aria-label="验收工具" onClick={() => setDevOpen(!devOpen)}>🛠️ <span>验收</span></button>}</nav></header>
     <main><h1 className="visually-hidden">一只猫的旅程，一群猫的家。</h1>
       <div className="game-layout"><section className="world-panel"><div className="world-toolbar"><div><span className="live-dot"/><strong>{finaleBattle && state.phase === 'battle' ? '终局试玩' : tunnelBattle && state.phase === 'battle' ? '第四章试玩' : greenhouseBattle && state.phase === 'battle' ? '第三章试玩' : marketBattle && state.phase === 'battle' ? '第二章试玩' : chapterBattle && state.phase === 'battle' ? '第一章守护' : phases[state.phase]}</strong><span className="area-label">{finaleBattle ? '总仓库决战' : tunnelBattle ? '暗道守护' : greenhouseBattle ? '花房守护' : marketBattle ? '集市守护' : chapterBattle ? '深巷守护' : map?.name}</span></div>{state.phase !== 'battle' && <button className="quiet" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}</div>
@@ -94,7 +94,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
         )}
         <div className="world-wrap">{children}
           {alleyObjective && <div className="alley-objective" role="status"><span>雨巷线索</span><strong>{alleyObjective}</strong></div>}
-          {state.phase === 'home' && <div className="home-controls"><HomePanel state={state} catalog={catalog} disabled={disabled} onCommand={onCommand} onShop={onShop}/></div>}
+          {state.phase === 'home' && <div className="home-controls"><HomePanel state={state} catalog={catalog} disabled={disabled} onCommand={onCommand} onShop={onShop} onRecharge={onRecharge}/></div>}
           {state.phase === 'dialogue' && node && <DialoguePanel node={node} disabled={disabled} onNext={() => onCommand({type: 'ADVANCE_STORY', nodeId: node.id})} onSkip={onSkip} eventResult={resolution?.outcome.situation?.storyNodeId === node.id ? <EventResult resolution={resolution} compact/> : undefined}/>}
           {state.phase === 'event' && event && <DiceEvent key={event.id} event={event} disabled={disabled} rolling={busy} random={state.pendingEventSource === 'random'} teaser={state.pendingEventSource === 'random' ? state.lastResult.message : undefined} partyCats={state.cats} pushTokens={state.pushTokens ?? 0} onChoose={(optionId, usePush) => onCommand({type: 'CHOOSE_EVENT', eventId: event.id, optionId, usePush})}/>}
           {state.phase === 'preparation' && finaleBattle && <section className="event-card preparation-card"><p>{state.lastResult.message}</p><FinaleLoadout disabled={disabled} onCommand={onCommand}/><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回家园</button></section>}
