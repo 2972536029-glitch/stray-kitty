@@ -3,8 +3,8 @@ import { CONFIG, CAT_TYPES, ENEMY_TYPES, TUTORIAL_TARGETS, TUTORIAL_STEPS, WAVES
 import {getAttackCells, getSkillCells, isEnemyInCells, isSkillTargetAllowed} from './ranges.ts';
 
 const EPS = 1e-8;
-const PHASES = new Set(['ready', 'hero_danger', 'caster_rescue', 'teach_position', 'teach_move', 'teach_energy', 'skill_charge', 'teach_guard_skill', 'teach_caster_skill', 'battle', 'won', 'failed']);
-const RUNNING = new Set(['hero_danger', 'caster_rescue', 'skill_charge', 'battle']);
+const PHASES = new Set(['ready', 'hero_danger', 'caster_rescue', 'teach_position', 'teach_move', 'teach_live_move', 'teach_energy', 'skill_charge', 'teach_guard_skill', 'teach_caster_skill', 'battle', 'won', 'failed']);
+const RUNNING = new Set(['hero_danger', 'caster_rescue', 'teach_live_move', 'skill_charge', 'battle']);
 const validState = (state: CombatState) => state && PHASES.has(state.phase) && Array.isArray(state.cats) && Array.isArray(state.enemies);
 const copy = (state: CombatState): CombatState => structuredClone(state);
 const normalizePressure = (value: unknown): number => typeof value === 'number' && Number.isFinite(value) && value !== 0 ? Math.sign(value) : 0;
@@ -19,6 +19,7 @@ export const getDeployedCatCount = (state: CombatState): number => state.cats.fi
 /** Effective simulation speed; inspection and aiming never change the chosen baseline. */
 export function getBattleSpeed(state: CombatState): number {
   if (state.paused || state.externallyPaused || !RUNNING.has(state.phase)) return 0;
+  if (state.phase === 'teach_live_move') return 0.5;
   if (state.skillAim) return 1;
   if (activeCombatCat(state, state.inspectedCatId)) return 0.5;
   return state.playbackSpeed;
@@ -71,6 +72,7 @@ export function createGame(options: CombatOptions | null = {}): CombatState {
   const difficulty = normalizeDifficulty(options?.difficulty);
   return {
     version: 2, phase: 'ready', tutorialStep: null, time: 0, phaseTime: 0, accumulator: 0, sequence: 0,
+    tutorialProgress: {moved: false, guardSkill: false, casterSkill: false},
     cats: [makeCat('hero', 3, 1)], advisor: { id: 'advisor', name: '阿策', role: '军师喵', visible: false, x: -1, y: 0 },
     enemies: [], projectiles: [], effects: [],
     skillAim: null,
@@ -80,14 +82,20 @@ export function createGame(options: CombatOptions | null = {}): CombatState {
     leaks: 0, maxLeaks: CONFIG.MAX_LEAKS, paused: false, externallyPaused: false, sourceModifiers: [],
     mode: options?.mode === 'standard' ? 'standard' : 'tutorial', difficulty, requestedPressure: normalizePressure(options?.shadowPressure), effectivePressure: 0,
     lastAction: null,
-    logs: [{ id: 'initial', text: '序章：喵喵负责指挥，不参加攻击。完成站位、自动蓄能与技能教学后开始守线。体力归零的伙伴本场退场。', time: 0 }],
+    logs: [{ id: 'initial', text: '序章：喵喵是需要保护的指挥目标，不参加攻击。战斗伙伴可以在全棋盘合法格之间随时调动；在真实战斗中学习移动、自然蓄能和手动技能。', time: 0 }],
   };
 }
 function finishCasterRescue(state: CombatState) {
   state.defeated += state.enemies.length; state.enemies = []; state.projectiles = [];
   state.cats.push(makeCat('guard', 2, 1)); state.advisor.visible = true;
+  if (state.mode === 'standard') {
+    Object.assign(catById(state, 'caster')!, TUTORIAL_TARGETS.position_caster);
+    Object.assign(catById(state, 'guard')!, TUTORIAL_TARGETS.move_guard);
+    state.tutorialProgress = {moved: true, guardSkill: true, casterSkill: true};
+    phase(state, 'battle'); startWave(state, 1); return;
+  }
   phase(state, 'teach_position');
-  log(state, '斑斑和军师阿策赶到，逼退眼前的黑影。绒绒仍在战场，现在学习让远程伙伴站到侧面支援。');
+  log(state, '斑斑和阿策赶到。先把绒绒移到任意合法的其他格：A4 只是推荐站位，不是固定岗位。');
 }
 function hurtCat(state: CombatState, cat: CombatCatState, damage: number) {
   if (!cat.combatant || cat.status !== 'active') return;
@@ -237,21 +245,42 @@ export function advanceGame(state: CombatState, dtSeconds: unknown): CombatState
     next.effects = next.effects.map((item) => ({ ...item, ttl: item.ttl - CONFIG.STEP })).filter((item) => item.ttl > 0);
     next.projectiles = next.projectiles.map((item) => ({ ...item, ttl: item.ttl - CONFIG.STEP })).filter((item) => item.ttl > 0);
     for (const cat of next.cats) {
-      if (cat.combatant && cat.status === 'active' && (next.phase === 'battle' || next.phase === 'skill_charge')) {
+      if (cat.combatant && cat.status === 'active' && ['battle', 'skill_charge', 'teach_live_move'].includes(next.phase)) {
         cat.energy = Math.min(CONFIG.MAX_ENERGY, cat.energy + CONFIG.ENERGY_PER_SECOND * CONFIG.STEP);
       }
       cat.shieldRemaining = Math.max(0, cat.shieldRemaining - CONFIG.STEP);
       if (cat.shieldRemaining < EPS) { cat.shieldRemaining = 0; cat.shield = 0; }
     }
-    if (next.phase === 'battle') battleTick(next, CONFIG.STEP);
-    else if (next.phase === 'skill_charge') {
-      catsAttack(next, CONFIG.STEP);
-      if (next.cats.filter(cat => cat.combatant).every(cat => cat.energy === CONFIG.MAX_ENERGY)) {
-        phase(next, 'teach_guard_skill'); log(next, '两位伙伴的能量都满了。先点击斑斑的罐盖护盾，学习给自己加护盾。');
-      }
+    if (['battle', 'skill_charge', 'teach_live_move'].includes(next.phase)) {
+      battleTick(next, CONFIG.STEP);
+      if (next.phase === 'skill_charge') advanceLiveTutorial(next);
     } else scriptedTick(next, CONFIG.STEP);
   }
   return next;
+}
+/** Teaching pauses the existing encounter; it never replaces enemies or restarts waves. */
+function advanceLiveTutorial(state: CombatState) {
+  const guard = activeCombatCat(state, 'guard');
+  const caster = activeCombatCat(state, 'caster');
+  if (!guard) {state.tutorialProgress.moved = true; state.tutorialProgress.guardSkill = true;}
+  if (!caster) state.tutorialProgress.casterSkill = true;
+  const visibleEnemy = state.enemies.some(enemy => enemy.hp > 0 && enemy.x <= CONFIG.VISIBLE_MAX_X);
+  if (!state.tutorialProgress.moved && visibleEnemy) {
+    phase(state, 'teach_move');
+    log(state, '黑影已经进入战场，先暂停片刻。把斑斑调到另一个合法格接敌；战斗开始后也能随时换位，不消耗能量。');
+    return;
+  }
+  if (state.tutorialProgress.moved && visibleEnemy) {
+    if (!state.tutorialProgress.guardSkill && guard && guard.energy >= CONFIG.MAX_ENERGY) {
+      phase(state, 'teach_guard_skill'); log(state, '斑斑自然蓄能已满。点击斑斑，再手动释放罐盖护盾。'); return;
+    }
+    if (state.tutorialProgress.guardSkill && !state.tutorialProgress.casterSkill && caster && caster.energy >= CONFIG.MAX_ENERGY) {
+      phase(state, 'teach_caster_skill'); log(state, '绒绒自然蓄能已满。点击技能，再让十字区域覆盖当前战场上的黑影。'); return;
+    }
+  }
+  if (state.tutorialProgress.moved && state.tutorialProgress.guardSkill && state.tutorialProgress.casterSkill) {
+    phase(state, 'battle'); log(state, '实战教学完成，继续守住剩余波次。伙伴可在全棋盘合法格之间自由移动或交换；喵喵留在 B1。');
+  }
 }
 function response(state: CombatState, action: {type: string}, ok: boolean, reason: string) { state.lastAction = { id: ++state.sequence, type: action.type, ok, reason }; return state; }
 const reject = (state: CombatState, action: {type: string}, reason: string) => response(copy(state), action, false, reason);
@@ -312,11 +341,9 @@ export function act(state: CombatState, input: unknown): CombatState {
   if (action.type === 'PAUSE' && RUNNING.has(state.phase)) return response({ ...state, paused: !state.paused }, action, true, state.paused ? '继续' : '已暂停');
   if (action.type === 'BEGIN_SKILL_PRACTICE' && state.phase === 'teach_energy' && !state.paused) {
     const next = copy(state);
-    for (const cat of next.cats) { cat.energy = 0; cat.shield = 0; cat.shieldRemaining = 0; }
-    spawn(next, 'scout', 1, {id: 'skill-training-dummy', name: '练习木偶', training: true, x: 5, y: 1, maxHp: 1000, hp: 1000, speed: 0, damage: 0});
-    phase(next, 'skill_charge');
-    log(next, '技能练习开始：能量从 0 起，每秒战斗时间自动增长 5 点；满 100 后保留，等待手动释放。木偶不会移动或攻击。');
-    return response(next, action, true, '观察自动蓄能，练习阵型暂时固定');
+    phase(next, 'skill_charge'); startWave(next, 1);
+    log(next, '真实战斗开始：能量随战斗时间每秒增长 5 点，满 100 后保留。可以继续自由调动猫咪，能量不因移动而丢失。');
+    return response(next, action, true, '开始实战，留意黑影与能量条');
   }
   if (action.type === 'CANCEL_SKILL') {
     if (!state.skillAim) return reject(state, action, '当前没有正在选择的技能。');
@@ -346,7 +373,7 @@ export function act(state: CombatState, input: unknown): CombatState {
     if (skill.targeting === 'area' && (!target || !isSkillTargetAllowed(cat, target))) return reject(state, action, '请选择地图内的完整格子作为技能落点。');
     if (skill.targeting === 'self' && hasCoordinates && (action.x !== cat.x || action.y !== cat.y)) return reject(state, action, '罐盖护盾只能作用于斑斑自己。');
     const cells = getSkillCells(cat, target);
-    if (state.phase === 'teach_caster_skill' && !state.enemies.some(enemy => enemy.training && isEnemyInCells(enemy, cells))) return reject(state, action, '这次练习请让十字区域覆盖 B6 的木偶。');
+    if (state.phase === 'teach_caster_skill' && !state.enemies.some(enemy => enemy.hp > 0 && isEnemyInCells(enemy, cells))) return reject(state, action, '请让十字范围覆盖当前战场上的黑影；高亮只是建议落点。');
     const next = copy(state); const caster = catById(next, cat.id)!;
     caster.energy -= skill.cost; next.skillAim = null; next.inspectedCatId = null;
     if (skill.shield !== undefined) {
@@ -362,27 +389,29 @@ export function act(state: CombatState, input: unknown): CombatState {
       next.enemies = next.enemies.filter(enemy => enemy.hp > 0);
     }
     log(next, `${cat.name}释放${skill.name}，消耗 ${skill.cost} 能量。`);
-    if (state.phase === 'teach_guard_skill') phase(next, 'teach_caster_skill');
+    if (state.phase === 'teach_guard_skill') {
+      next.tutorialProgress.guardSkill = true; phase(next, 'skill_charge'); advanceLiveTutorial(next);
+    }
     else if (state.phase === 'teach_caster_skill') {
-      next.enemies = next.enemies.filter(enemy => !enemy.training);
-      log(next, '教学完成，接下来守住六波黑影。每秒自动蓄能，血量归零本场退场；三次突破或全员退场会结束本次挑战。');
-      phase(next, 'battle'); startWave(next, 1);
+      next.tutorialProgress.casterSkill = true; phase(next, 'skill_charge'); advanceLiveTutorial(next);
     }
     releaseInvalidBlocks(next);
     return response(next, action, true, `${skill.name}已释放`);
   }
-  if (action.type === 'MOVE_CAT' && ['teach_position', 'teach_move', 'battle'].includes(state.phase)) {
+  if (action.type === 'MOVE_CAT' && ['teach_position', 'teach_move', 'teach_live_move', 'skill_charge', 'battle'].includes(state.phase)) {
+    if (state.phase === 'teach_live_move' && state.paused) return reject(state, action, '请先继续战斗，再试着一边观察黑影、一边移动伙伴。');
     const cat = catById(state, action.catId);
-    if (state.phase === 'teach_position' && (action.catId !== 'caster' || action.x !== TUTORIAL_TARGETS.position_caster.x || action.y !== TUTORIAL_TARGETS.position_caster.y)) return reject(state, action, '这一步请把绒绒移到高亮 A4 格。');
-    if (state.phase === 'teach_move' && (action.catId !== 'guard' || action.x !== TUTORIAL_TARGETS.move_guard.x || action.y !== TUTORIAL_TARGETS.move_guard.y)) return reject(state, action, '这一步请把斑斑拖到高亮格（第 2 行、第 5 列）。');
+    if (state.phase === 'teach_position' && action.catId !== 'caster') return reject(state, action, '先试着移动绒绒：棋盘上的其他合法格都可以，A4 只是推荐。');
+    if (state.phase === 'teach_move' && action.catId !== 'guard') return reject(state, action, '这次请亲手调动斑斑，体验战斗中换位；其他合法格都可以。');
     if (!cat?.combatant || cat.status !== 'active') return reject(state, action, '只有战场上的战斗猫可以移动；喵喵留在指挥位。');
     if (cat.x === action.x && cat.y === action.y) return reject(state, action, '请拖到另一个格子。');
     const error = validatePlacement(state, cat, action.x, action.y, true); if (error) return reject(state, action, error);
     const next = copy(state); const moved = catById(next, cat.id)!;
     const occupant = next.cats.find((item) => item.id !== cat.id && item.status === 'active' && item.x === action.x && item.y === action.y);
     if (occupant) Object.assign(occupant, { x: moved.x, y: moved.y }); Object.assign(moved, { x: action.x, y: action.y }); releaseInvalidBlocks(next);
-    if (state.phase === 'teach_position') phase(next, 'teach_move');
-    else if (state.phase === 'teach_move') { phase(next, 'teach_energy'); log(next, '站位已就绪。接下来学习自动蓄能与手动技能，再进入守线。'); }
+    if (state.phase === 'teach_position') {phase(next, 'teach_energy'); log(next, '站位不是固定的。接下来边守线边自然蓄能，战斗中仍可自由移动。');}
+    else if (state.phase === 'teach_move') {phase(next, 'teach_live_move'); log(next, '黑影继续前进，战斗以半速进行。现在再把任意一只伙伴移动到其他合法格，亲手试试边战斗边换位。');}
+    else if (state.phase === 'teach_live_move') {next.tutorialProgress.moved = true; phase(next, 'skill_charge'); log(next, '实战换位成功！战斗中随时可移动或交换伙伴，不消耗能量。继续守线并留意自然蓄能。');}
     return response(next, action, true, occupant ? '两只战斗猫已交换位置' : '位置已调整');
   }
   return reject(state, action, '当前步骤不能执行这个操作，请按军师提示完成眼前的教学。');
