@@ -38,7 +38,10 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 		return err
 	}
 	battleRetry := s.Phase == "preparation" && s.ActiveBattle != nil && s.ActiveBattle.Status == "lost"
-	mainlineMarket := c.StageID == "market_boss" && ((s.Phase == "explore" && s.MapID == "market") || (battleRetry && s.ActiveBattle.Mainline))
+	mainlineMarket := c.StageID == "market_boss" && ((s.Phase == "explore" && s.MapID == "market" && domain.Contains(s.Flags, "chapter_2_started")) || (battleRetry && s.ActiveBattle.Mainline))
+	if mainlineMarket && !battleRetry && domain.Contains(s.Flags, "market_cleared") {
+		return domain.Fail("STAGE_LOCKED", "集市防线已经守住", 409)
+	}
 	if mainlineMarket && !battleRetry && (c.Layer != "L0" || c.ReturnPosition == nil || math.Hypot(c.ReturnPosition.X-1310, c.ReturnPosition.Y-169) > 58) {
 		return domain.Fail("STAGE_LOCKED", "请抵达集市北侧防线入口", 409)
 	}

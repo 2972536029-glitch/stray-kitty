@@ -169,6 +169,39 @@ func TestMarketEntryIsSeparateFromMainlineAndLockedBeforeRescue(t *testing.T) {
 	}
 }
 
+func TestMarketStoryEntryStaysInExplorationUntilCluesAndAuthoredPoint(t *testing.T) {
+	g, token, _ := prepareBoss(t, 0, nil)
+	s := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
+	if s.ChapterID != "market" || s.MapID != "market" || s.Phase != "dialogue" || s.ActiveBattle != nil {
+		t.Fatalf("market introduction entered an invalid state: chapter=%q map=%q phase=%q battle=%v", s.ChapterID, s.MapID, s.Phase, s.ActiveBattle)
+	}
+	s = finishStory(t, g, token)
+	if s.ChapterID != "market" || s.MapID != "market" || s.Phase != "explore" || s.ActiveBattle != nil {
+		t.Fatalf("market introduction did not end in exploration: chapter=%q map=%q phase=%q battle=%v", s.ChapterID, s.MapID, s.Phase, s.ActiveBattle)
+	}
+	for _, flag := range []string{"market_crow_clue_completed", "market_pigeon_clue_completed"} {
+		rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "market_boss", Layer: "L0", ReturnPosition: &domain.WorldPoint{X: 1310, Y: 169}})
+		_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+			p.State.Flags = domain.Add(p.State.Flags, flag)
+			return domain.CommandResponse{State: p.State}, nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "market_boss", Layer: "L0", ReturnPosition: &domain.WorldPoint{X: 670, Y: 781}})
+	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "market_boss", Layer: "L0", ReturnPosition: &domain.WorldPoint{X: 1310, Y: 169}})
+	if s.ActiveBattle == nil || !s.ActiveBattle.Mainline || s.Phase != "battle" {
+		t.Fatal("market boss did not start at the authored point after both clues")
+	}
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
+	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	if s.Phase != "explore" || s.MapID != "market" || !domain.Contains(s.Flags, "market_cleared") {
+		t.Fatal("market victory did not return to cleared exploration")
+	}
+	rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "market_boss", Layer: "L0", ReturnPosition: &domain.WorldPoint{X: 1310, Y: 169}})
+}
+
 func TestMarketTrialStartAndSettlementAreDurablyIdempotent(t *testing.T) {
 	g, token, path := prepareBoss(t, 1, nil)
 	before, _ := g.State(token)
