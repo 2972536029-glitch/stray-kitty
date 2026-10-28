@@ -9,7 +9,7 @@ import path from 'node:path';
 import type {GameState, Session} from '../../web/src/contracts';
 
 const port = 8164, origin = `http://127.0.0.1:${port}`;
-const cases = [{id:'low',pressure:-1},{id:'medium',pressure:0},{id:'high',pressure:1},{id:'retreat',pressure:0},{id:'navigation',pressure:0},{id:'battle-route',pressure:0}] as const;
+const cases = [{id:'low',pressure:-1},{id:'medium',pressure:0},{id:'high',pressure:1},{id:'retreat',pressure:0},{id:'navigation',pressure:0},{id:'battle-route',pressure:0},{id:'story-entry',pressure:0}] as const;
 const sessions = new Map<string,Session>();
 let child:ChildProcess|undefined, closed:Promise<void>|undefined, directory='';
 test.beforeAll(async({request})=>{
@@ -23,6 +23,10 @@ test.beforeAll(async({request})=>{
     if(entry.id==='navigation'||entry.id==='battle-route'){
       state.chapterId='rescue';
       state.flags.push('chapter_4_started','greenhouse_fortified','lost_poster_found');
+    }
+    if(entry.id==='story-entry'){
+      state.chapterId='greenhouse';
+      state.flags.push('greenhouse_fortified');
     }
     players[createHash('sha256').update(session.token).digest('hex')]={id:session.playerId,state,receipts:{},receiptOrder:[]};
   }
@@ -87,7 +91,14 @@ test('L04 battle trial: the standalone button enters only the tunnel_boss battle
   await expect(page.getByTestId('tunnel-battle')).toHaveAttribute('data-scene','tunnel');
 });
 
-for(const entry of cases.filter(value=>!['retreat','navigation','battle-route'].includes(value.id))){
+test('L04 story entry: the Chapter 4 Home action begins its authored introduction',async({page,request})=>{
+  const headers={Authorization:`Bearer ${sessions.get('story-entry')!.token}`};
+  await openFixture(page,'story-entry');
+  await page.getByRole('button',{name:/启程：第四章/}).click();
+  await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(state=>({chapterId:state.chapterId,phase:state.phase,storyNodeId:state.storyNodeId}))).toEqual({chapterId:'rescue',phase:'dialogue',storyNodeId:'rescue_intro_1'});
+});
+
+for(const entry of cases.filter(value=>!['retreat','navigation','battle-route','story-entry'].includes(value.id))){
   test(`L04 ${entry.id}: real six-cat controls finish eight waves and a boss without changing item inventory`,async({page,request},info)=>{
     // 全量套件串行跑到这里时浏览器累积负载会拖慢战斗快照查询,6s 会饿死 evaluate;放宽一倍防抖。
     test.setTimeout(300000);page.setDefaultTimeout(12000);
