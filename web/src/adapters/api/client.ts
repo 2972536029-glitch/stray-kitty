@@ -43,6 +43,13 @@ export class HttpGameApi implements GameApiPort {
     this.cache.write(this.session);return this.session;
   }
   async initialize() {
+    if(this.session) {
+      // 服务端已不认识本地令牌(存档重置/换数据目录)时,自动重建匿名会话而不是卡死在"重新连接"。
+      try {await this.load();} catch(error) {
+        if(error instanceof ApiError&&error.status===401) {this.cache.clear();this.session=null;}
+        else throw error;
+      }
+    }
     if(!this.session) await this.createSession();
     const pending=this.pending();
     if(pending) await this.execute(pending.request,pending.key);
