@@ -3,6 +3,8 @@
 !package.json
 !package-lock.json
 !web/
+!level_design/
+!level_design/**
 !web/**
 !server/
 !server/**
