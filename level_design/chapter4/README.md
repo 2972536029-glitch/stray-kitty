@@ -1,0 +1,55 @@
+# Chapter 4 — Underground Tunnel · Visual-to-repo handoff v1.2
+
+**Status:** approved standalone visual *reference* ready for Codex integration; not a claim that all backend stage/event content exists. This handoff was assembled from playable v1.1, with event labels restored in reference v1.2. No repository files have been modified by this package.
+
+## Source-of-truth order
+
+1. **Paintings:** `art/chapter4_L0_approved.png`, `art/chapter4_Lminus1_tunnel_v11.png` (each exactly 1672 × 941)
+2. **Gameplay walkability:** `collision/chapter4_L0_walkable.png`, `collision/chapter4_Lminus1_walkable.png` (same world frame; white walkable, black blocked)
+3. **Interaction placements and traversal:** `data/chapter4.map.json` (13 event/zone location records; 8 reversible connectors)
+4. **Lighting:** `data/chapter4.lighting.json` (v1.1 monotonic-compositing canvas fog; no dark bubbles)
+5. **Visual/behavior reference:** `reference/Chapter4_Reference_Playtest_v12.html` (standalone self-contained QA preview; **event labels shown by default**) and `svg/chapter4_anchor_overlay.svg` (pure vector world-space annotations, **not collision**)
+
+Do not source collision from the old v0.2 SVG `draft-walkable-footprint`. It predates the painted-mask corrections. The integration should use these exact PNGs and layer names, not regenerate artwork by tracing from screenshots.
+
+## Essential controls and spatial rules
+
+- WASD / arrows: move; E: inspect fixed event; F: underground stairs E1/E2; C: climb onto a walkable ridge/platform; Space: contextual bidirectional jump.
+- M: event label display toggle (reference defaults ON); V: collision debug; G: **automatic battle trigger**, not an inspection prompt.
+- Jump and climb are valid in **both directions** and must end on the corresponding layer's walkable mask. The long wooden bridge needs ordinary walking; no redundant Space jump.
+- Each layer has its own artwork, mask and lamp sources but shares world size and camera coordinate system. L−1 visual is darker. The lighting must smoothly reveal scenery around the cat without the old black-circle artifact.
+
+## Authored story / battle
+
+- `tunnel_false_kitten_trap` (D): mandatory inspect, unlocks lower access.
+- `tunnel_valve_three` (F as narrative marker): mandatory E inspect after D. The F **key** still controls stairs.
+- `tunnel_exit_boss` (G area): enters the `tunnel_boss` battle only after both mandatory objectives. Battle win comes from the official battle flow, **never from the reference HTML's QA success button**.
+- The three L0 and one L−1 random zones are placement candidates. Their selection must be delegated to current server-owned zone/event logic, with authored encounters taking priority.
+- Optional labels: `独行侠的旧记号`, `壁灯巡逻图`, `应急灯闸`. Their backing event definitions and active contracts must be checked in the current repository; the static prototype does not prove those event cards exist.
+
+## Changes since v1.1
+
+- **Event labels restored** on the main exploration canvas by default, rendered after lighting so they remain readable; M toggles them.
+- Display and runtime use the same event positions. E2, R2, and R3 anchors were synchronized; R3 was shifted to valid walkable ground by the southern stair. The standalone map now also shows L−1's R4 design marker in the correct layer.
+- Preserved the approved artwork, collision masks, darkness radii/opacity, lamp positions, battle-state preview, controls, and connectors. The production renderer uses a source-over darkness gradient plus screen-blended lamp glow: the handoff's `destination-out` composite erased the map artwork and exposed the page backdrop. Event labels render above lighting; duplicate E1/E2/G marker labels were removed where the F stair markers and G trigger already identify them.
+
+## Known limitations / integration dependencies
+
+- v1.1 HTML has local state and a test-only simulated battle success; production must dispatch through the game's existing controller/backend. The `tunnel_boss` stage was **absent** from the provided Oct 28 repository snapshot; Codex must check current main before assuming it exists.
+- The L−1 artwork is the selected generated prototype and the collision was refined against it, but isolated art/collision discrepancies may still be found in formal gameplay QA. The L0 third-flood-valve interaction is near (867,743), while the painted red wheel is near (865,692); do not silently move the interaction before story/interaction owner review.
+- The reference HTML is deliberately a **single-file QA artifact**; use native asset imports and structured data for production. All per-layer masks are raster, not the outdated SVG path.
+- The starter HTML has an ordinary QA collision editor, a teleport menu, dev-only interactions, and a fake battle-win button. These are *not* production features.
+
+## Files
+
+| Path | Description |
+|---|---|
+| `reference/Chapter4_Reference_Playtest_v12.html` | Standalone browser reference, labels visible, v1.1 light retained |
+| `art/*.png` | Two complete full-resolution paintings |
+| `collision/*.png` | Two embedded walkable masks extracted from accepted v1.1 HTML |
+| `data/chapter4.map.json` | Canonical event, zone, connector and story positions |
+| `data/chapter4.lighting.json` | Lamp positions, darkness and cat-visibility radii |
+| `svg/chapter4_anchor_overlay.svg` | Independent vector annotation layer for React/SVG |
+| `handoff/ACCEPTANCE.md` | Exact review and test checklist |
+| `CODEX_PROMPT.md` | Single ready-to-copy integration instruction |
+| `data/integrity_manifest.json` | SHA-256 file integrity checks |

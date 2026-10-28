@@ -51,3 +51,11 @@ E7／E8 的三号泄洪阀与铁栅配合受困花猫姐妹、幼猫的叙事，
 - 37 格棋盘、三处缺口、破管绕行、断灯／夜视、390 像素窄屏已截图检查；独立截图流程无浏览器脚本错误。私人试玩与截图保存在正式仓库之外。
 
 正式第四章主线入口、剧情战斗胜负后跳转与救援标记的写入职责仍待浩哲对齐；本章墨墨能力变体需告知余尧。现有 carry 开战快照可直接沿用，新的战中事件标准仍须另行约定。
+
+## Chapter 4 map and story integration
+
+The mainline exploration is now integrated separately from the standalone home trial described above. After Chapter 3 greenhouse progression, the existing Chapter 4 introduction enters the tunnel map. The rescue trap (`D`) is mandatory; investigating the valve (`F`) then unlocks the boss region. The mainline boss battle requires a validated return position inside its authored region. Victory continues into the existing post-battle scene, while defeat/retry leaves the required progression flags unchanged. Node-origin tunnel events return to exploration after resolution.
+
+The two-floor approved art, walkability masks, portal endpoints, lighting and event locations are tracked in `level_design/chapter4/` and `web/content/maps/maps.json`. The renderer uses a source-over darkness gradient and screen-blended warm lamp glow with the supplied lighting values; destructive destination-out compositing erased the map artwork and exposed the page backdrop. Exploration movement and camera coordinates are client-runtime state and reset to the authored spawn on a page refresh. Battle return coordinates and battle outcome are validated server-side. The standalone home trial remains available and does not set the mainline rescue flag.
+
+The development-only `模拟胜利（QA）` control is a shared utility for configured battle stages. It sends `QA_SIMULATE_VICTORY`; the local API enables that command through `GAME_QA_ENABLED` and routes it through normal completion validation. Production API processes reject the command, and production frontend builds omit the control.

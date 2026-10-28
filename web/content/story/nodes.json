@@ -371,8 +371,8 @@
     "chapterId": "rescue",
     "speaker": "墨墨",
     "text": "“跟紧我。从废弃花房后院的暗井下去，就是穿过老城地下的排污与蓄水暗道。普通猫咪在黑暗中寸步难行，但我能看清每块砖的缝隙。”",
-    "next": "rescue_intro_2",
-    "exit": "",
+    "next": "",
+    "exit": "explore",
     "scene": "tunnel"
   },
   {
@@ -389,9 +389,12 @@
     "chapterId": "rescue",
     "speaker": "团子",
     "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
-    "next": "rescue_intro_4",
-    "exit": "",
-    "scene": "tunnel"
+    "next": "",
+    "exit": "explore",
+    "scene": "tunnel",
+    "setFlags": [
+      "tunnel_false_kitten_trap_found"
+    ]
   },
   {
     "id": "rescue_intro_4",

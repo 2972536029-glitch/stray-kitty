@@ -3097,12 +3097,12 @@
     "id": "valve_three_event",
     "title": "第三泄洪阀",
     "text": "锈红色的管壁上钉着一块旧铭牌:3 号泄洪阀。阀门后面,隐约有极轻的、断断续续的呼噜声。",
-    "category": "opportunity",
+    "category": "story",
     "tags": [
       "pathfinding"
     ],
     "triggers": [
-      "random"
+      "node"
     ],
     "maps": [
       "tunnel"
@@ -3121,7 +3121,8 @@
               "clue": 2
             },
             "flags": [
-              "valve_three_found"
+              "valve_three_found",
+              "valve_three_investigated"
             ]
           },
           "success": {
@@ -3133,7 +3134,8 @@
               "clue": 1
             },
             "flags": [
-              "valve_three_found"
+              "valve_three_found",
+              "valve_three_investigated"
             ]
           },
           "partial": {
@@ -3145,7 +3147,8 @@
               "clue": 1
             },
             "flags": [
-              "valve_three_mute"
+              "valve_three_mute",
+              "valve_three_investigated"
             ]
           },
           "fail": {
@@ -3157,7 +3160,8 @@
               "clue": 1
             },
             "flags": [
-              "valve_three_silent"
+              "valve_three_silent",
+              "valve_three_investigated"
             ]
           }
         }
@@ -3175,7 +3179,8 @@
               "clue": 2
             },
             "flags": [
-              "valve_three_marked"
+              "valve_three_marked",
+              "valve_three_investigated"
             ]
           },
           "success": {
@@ -3187,7 +3192,8 @@
               "clue": 1
             },
             "flags": [
-              "valve_three_marked"
+              "valve_three_marked",
+              "valve_three_investigated"
             ]
           },
           "partial": {
@@ -3199,7 +3205,8 @@
               "clue": 1
             },
             "flags": [
-              "valve_three_marked"
+              "valve_three_marked",
+              "valve_three_investigated"
             ]
           },
           "fail": {
@@ -3211,7 +3218,8 @@
               "clue": 1
             },
             "flags": [
-              "valve_marks_faded"
+              "valve_marks_faded",
+              "valve_three_investigated"
             ]
           }
         }
@@ -4661,6 +4669,53 @@
             },
             "flags": [
               "lit_path_shaky"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "tunnel_false_kitten_trap",
+    "title": "假猫叫诱饵与绊线",
+    "text": "点点停下脚步，竖起胡须：“大家等等！前面拐角水管下有一根极细的绊线，还放着一只会发出小猫哭叫的旧发条铁盒——是黑影设下的假目标诱饵！”",
+    "category": "story",
+    "tags": [
+      "pathfinding"
+    ],
+    "triggers": [
+      "node"
+    ],
+    "maps": [
+      "tunnel"
+    ],
+    "options": [
+      {
+        "id": "mark_a_safe_route",
+        "label": "标记安全路线，再靠近检查",
+        "outcomes": {
+          "crit": {
+            "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
+            "flags": [
+              "tunnel_false_kitten_trap_found"
+            ]
+          },
+          "success": {
+            "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
+            "flags": [
+              "tunnel_false_kitten_trap_found"
+            ]
+          },
+          "partial": {
+            "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
+            "flags": [
+              "tunnel_false_kitten_trap_found"
+            ]
+          },
+          "fail": {
+            "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
+            "flags": [
+              "tunnel_false_kitten_trap_found"
             ]
           }
         }

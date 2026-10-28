@@ -4,6 +4,7 @@ import {DemoBattle} from './battle';
 import type {Direction} from '../../adapters/platform/input';
 import {CanvasPainter} from '../../adapters/canvas/painter';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
+import {TunnelMap} from '../../modules/chapter4/TunnelMap';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 花房家园的猫咪轻量 AI:pose 非空表示绑定专属家具姿态,否则按 sit→walk→sit 循环漫步。
@@ -31,6 +32,7 @@ export class DemoScene {
   private graphics: CanvasPainter;
   private context: CanvasRenderingContext2D;
   private rainyAlley: IntegratedRainyAlley;
+  private tunnelMap: TunnelMap;
   private cityBackdrop: HTMLImageElement;
   private held = new Set<Direction>();
   private keys = new Set<string>();
@@ -80,6 +82,7 @@ export class DemoScene {
     this.context = context;
     this.graphics = new CanvasPainter(context);
     this.rainyAlley = new IntegratedRainyAlley();
+    this.tunnelMap = new TunnelMap();
     this.cityBackdrop = new Image();
     this.cityBackdrop.src = '/assets/city-backdrop.svg';
   }
@@ -89,6 +92,13 @@ export class DemoScene {
     if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
     if (this.state?.phase !== 'explore' || this.pausedByUser) return;
     const key = event.key.toLowerCase();
+    if (this.state?.mapId === 'tunnel') {
+      if (this.tunnelMap.keyDown(key, import.meta.env.DEV)) {event.preventDefault(); return;}
+      if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','f','c',' '].includes(key)) event.preventDefault();
+      if (!event.repeat && ['f','c',' '].includes(key)) this.tunnelMap.traverse(key as 'f'|'c'|' ', this.state.flags);
+      this.keys.add(key);
+      return;
+    }
     if (key === 's' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartSqueeze()) {
       event.preventDefault(); this.keys.delete('s'); return;
     }
@@ -108,7 +118,7 @@ export class DemoScene {
       }
     }
   };
-  private keyup = (event: KeyboardEvent) => {this.keys.delete(event.key.toLowerCase());};
+  private keyup = (event: KeyboardEvent) => {this.keys.delete(event.key.toLowerCase());this.tunnelMap.keyUp(event.key.toLowerCase());};
   private clearInput = () => {this.keys.clear();this.held.clear();};
   private pointerdown = (event: PointerEvent) => {
     if (this.state?.phase === 'explore' && this.state.mapId === 'alley' && !this.pausedByUser) {
@@ -164,6 +174,8 @@ export class DemoScene {
       if (mode === 'explore') {
         if (this.state.mapId === 'alley') {
           if (mapChanged || (this.lastMode === 'dialogue' && this.state.flags.includes('alley_rescued'))) this.rainyAlley.reset(this.state.flags, this.state.alleyBattleReturn);
+        } else if (this.state.mapId === 'tunnel') {
+          if (mapChanged) this.tunnelMap.reset();
         } else {
           this.x = 180;
           this.y = 290;
@@ -206,6 +218,18 @@ export class DemoScene {
         this.onInspectHint?.(hint);
       }
       this.onWorldPosition?.(this.rainyAlley.worldPosition());
+    } else if (mode === 'explore' && active && this.state.mapId === 'tunnel') {
+      const dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
+      const dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
+      this.tunnelMap.update(delta, dx, dy, this.state.flags, zoneId => this.onRandomZone?.(zoneId) ?? Promise.resolve(false), id => this.onInteract(id));
+      const target = this.tunnelMap.nearTarget;
+      const id = target?.id ?? '';
+      if (id !== this.nearbyInteractionId) {
+        this.nearbyInteractionId = id;
+        this.onNear(!!target, id || undefined, target?.label);
+      }
+      this.onInspectHint?.(this.tunnelMap.hint);
+      this.onWorldPosition?.(this.tunnelMap.positionNow());
     } else if (mode === 'explore' && active) {
       let dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
       let dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
@@ -282,8 +306,9 @@ export class DemoScene {
     this.context.imageSmoothingEnabled = false;
     if (mode === 'battle') this.drawBattle();
     else if (mode === 'dialogue' && this.storyScene === 'home') this.drawHome();
-    else if (mode === 'dialogue' && this.storyScene === 'tunnel') this.drawTunnel();
-    else if (this.state.mapId === 'tunnel' || this.storyScene === 'tunnel') this.drawTunnel();
+    else if (mode === 'dialogue' && this.storyScene === 'tunnel' && this.state.mapId !== 'tunnel') this.drawTunnel();
+    else if (this.state.mapId === 'tunnel') this.tunnelMap.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags);
+    else if (this.storyScene === 'tunnel') this.drawTunnel();
     else if (this.state.mapId === 'market' || this.storyScene === 'market') this.drawMarket();
     else if (mode === 'home' || this.state.mapId === 'greenhouse') this.drawHome();
     else if (this.state.mapId === 'alley') this.rainyAlley.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, {phase: mode, eventId: this.state.pendingEventId, pendingEventSource: this.state.pendingEventSource, randomEligible: this.randomEligible});

@@ -32,6 +32,7 @@ export type GameCommand =
   | {type: 'CHOOSE_EVENT'; eventId: string; optionId: string; usePush?: boolean}
   | {type: 'START_BATTLE'; stageId: string; returnPosition?: {x: number; y: number}}
   | ({type: 'COMPLETE_BATTLE'} & BattleResult)
+  | {type: 'QA_SIMULATE_VICTORY'; attemptId: string}
   | {type: 'CONTINUE'} | {type: 'GO_HOME'} | {type: 'GO_EXPLORE'; mapId?: string}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
   | {type: 'DRAW_FURNITURE'; poolId: string}

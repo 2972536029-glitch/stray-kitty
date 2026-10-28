@@ -757,12 +757,11 @@ func TestChapter3GreenhouseProgressionAndMomoUnlock(t *testing.T) {
 	if s.Phase != "dialogue" || s.ChapterID != "rescue" || s.MapID != "tunnel" {
 		t.Fatalf("chapter 4 did not unlock after defense victory: %+v", s)
 	}
-	for s.StoryNodeID != "" && s.Phase == "dialogue" {
-		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	if s.Phase != "explore" || s.MapID != "tunnel" || !domain.Contains(s.Flags, "chapter_4_started") || domain.Contains(s.Flags, "tunnel_explored") || domain.Contains(s.Flags, "cats_rescued_batch1") {
+		t.Fatalf("chapter 4 entry should start exploration without skipping D/F/G: %+v", s)
 	}
-	if s.Phase != "home" || !domain.Contains(s.Flags, "chapter_4_started") || !domain.Contains(s.Flags, "tunnel_explored") || !domain.Contains(s.Flags, "cats_rescued_batch1") {
-		t.Fatalf("chapter 4 story failed to complete: %+v", s)
-	}
+	rejectUnchanged(t, g, token, domain.Command{Type: "START_STORY", NodeID: "rescue_intro_10"})
 }
 
 // 战备物:结算写入 modifiers.carry,随 START_BATTLE 挂上 attempt,后得覆盖先得,胜利清零失败保留。

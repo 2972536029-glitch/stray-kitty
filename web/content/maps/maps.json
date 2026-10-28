@@ -67,9 +67,45 @@
     "id": "tunnel",
     "name": "地下通道",
     "status": "demo",
-    "width": 800,
-    "height": 480,
-    "interactions": [],
+    "width": 1672,
+    "height": 941,
+    "interactions": [
+      {
+        "id": "tunnel_false_kitten_trap",
+        "x": 402,
+        "y": 239,
+        "label": "假猫叫诱饵与绊线",
+        "eventId": "tunnel_false_kitten_trap"
+      },
+      {
+        "id": "tunnel_valve_three",
+        "x": 867,
+        "y": 743,
+        "label": "第三泄洪阀",
+        "eventId": "valve_three_event"
+      },
+      {
+        "id": "tunnel_momo_marks",
+        "x": 328,
+        "y": 698,
+        "label": "独行侠的旧记号",
+        "eventId": "tunnel_momo_marks"
+      },
+      {
+        "id": "tunnel_lamp_map",
+        "x": 1178,
+        "y": 176,
+        "label": "壁灯巡逻图",
+        "eventId": "tunnel_lamp_map"
+      },
+      {
+        "id": "tunnel_light_switch",
+        "x": 1434,
+        "y": 450,
+        "label": "应急灯闸",
+        "eventId": "tunnel_light_switch"
+      }
+    ],
     "dangerLevel": 3
   },
   {

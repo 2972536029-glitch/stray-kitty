@@ -35,6 +35,7 @@ func main() {
 		os.Exit(1)
 	}
 	game := service.New(store, catalog)
+	game.QAVictoryEnabled = os.Getenv("GAME_QA_ENABLED") == "true"
 	game.Advisor = advisor.NewFromEnv()
 	webDir := env("GAME_WEB_DIR", "../web/dist")
 	if webDir == "disabled" { // 拆分部署:静态文件由独立前端容器托管,游戏不挂文件服务

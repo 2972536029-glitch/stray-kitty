@@ -5,7 +5,7 @@ const allowed: Record<GamePhase, readonly GameCommand['type'][]> = {
   explore: ['INTERACT', 'REPORT_MOVE', 'CHECK_RANDOM_ZONE', 'GO_HOME', 'START_BATTLE', 'GO_EXPLORE', 'START_STORY'],
   event: ['CHOOSE_EVENT'],
   preparation: ['START_BATTLE', 'GO_EXPLORE', 'GO_HOME', 'START_STORY'],
-  battle: ['COMPLETE_BATTLE'],
+  battle: ['COMPLETE_BATTLE', 'QA_SIMULATE_VICTORY'],
   settlement: ['CONTINUE', 'START_BATTLE', 'START_STORY', 'GO_EXPLORE', 'GO_HOME'],
   home: ['GO_EXPLORE', 'DRAW_FURNITURE', 'PLACE_FURNITURE', 'START_BATTLE', 'BUY_FURNITURE', 'START_STORY']
 };

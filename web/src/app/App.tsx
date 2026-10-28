@@ -20,9 +20,14 @@ export default function App() {
   const [overlay, setOverlay] = useState<'map' | 'shop' | 'journal' | 'recharge' | null>(null);
   const direction = useRef<(direction: Direction, held: boolean) => void>(() => {});
   const rainyPosition = useRef<{x: number; y: number} | undefined>(undefined);
+  const tunnelPosition = useRef<{x: number; y: number} | undefined>(undefined);
   const interact = useCallback((targetId?: string) => {
     const id = targetId || nearTarget?.id;
     if (!id) return;
+    if (id === 'tunnel_exit_boss') {
+      void send({type: 'START_BATTLE', stageId: 'tunnel_boss', ...(tunnelPosition.current ? {returnPosition:tunnelPosition.current} : {})});
+      return;
+    }
     const object = rainyAlleyObject(id);
     if (object?.kind === 'inspection') {
       setInspectHint(object.text ?? null);
@@ -45,7 +50,7 @@ export default function App() {
           <GameScreen state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} onReset={resetSession} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onDirection={(d, held) => direction.current(d, held)} onPause={() => setPaused(!paused)} onMap={() => setOverlay('map')} onShop={() => setOverlay('shop')} onRecharge={() => setOverlay('recharge')} onTitle={() => {setEntered(false);setPaused(false);}}>
             {state.phase === 'battle'
               ? <BattleHost state={state} catalog={catalog} paused={frozen} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})}/>
-              : <Viewport state={state} storyScene={currentStory(catalog, state)?.scene} paused={frozen} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onDirectionReady={fn => {direction.current = fn;}} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone} onWorldPosition={point => {rainyPosition.current = point;}} randomEligible={randomEligible}/>}
+            : <Viewport state={state} storyScene={currentStory(catalog, state)?.scene} paused={frozen} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onDirectionReady={fn => {direction.current = fn;}} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone} onWorldPosition={point => {rainyPosition.current = point;if(state.mapId==='tunnel')tunnelPosition.current=point;}} randomEligible={randomEligible}/>}
           </GameScreen>
         </div>}
       </>}
