@@ -1,17 +1,14 @@
-# Allow only source inputs needed for this release image.
+# 前端镜像需要 web 源码、根包清单、level_design 数据与 nginx 配置。
 *
 !package.json
 !package-lock.json
 !web/
+!web/**
 !level_design/
 !level_design/**
-!web/**
-!server/
-!server/**
+!deploy/team-preview-haozhe/frontend/
 web/node_modules
 web/dist
-server/data
-server/.runtime
 **/.env
 **/.env.*
 **/*.kubeconfig

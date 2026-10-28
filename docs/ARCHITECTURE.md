@@ -33,6 +33,7 @@ stray-kitty/
 │  ├─ team-preview/
 │  │  └─ k8s/
 │  └─ team-preview-haozhe/
+│     ├─ frontend/
 │     └─ k8s/
 ├─ design/  模块设计
 │  ├─ events/
@@ -76,7 +77,8 @@ stray-kitty/
 ├─ scripts/  启动、生成与检查
 ├─ server/  Go 服务端
 │  ├─ cmd/  服务入口
-│  │  └─ api/  HTTP 启动
+│  │  ├─ api/  HTTP 启动
+│  │  └─ paymentd/
 │  ├─ internal/  服务实现
 │  │  ├─ advisor/  阿策服务端模型客户端与限流
 │  │  ├─ domain/  状态、命令与错误

@@ -18,14 +18,22 @@ import (
 	"time"
 )
 
+// PaymentGateway 支付能力:进程内网关(单机形态)与远程客户端(拆分形态)都实现它,
+// 充值/流水 HTTP 契约对前端保持不变。
+type PaymentGateway interface {
+	Charge(playerID, packID, cardNumber string) (payment.ChargeResult, error)
+	History(playerID string) ([]domain.Txn, error)
+	HealingMessage() string
+}
+
 type API struct {
 	game     *service.Game
-	pay      *payment.Gateway
+	pay      PaymentGateway
 	requests atomic.Uint64
 	failures atomic.Uint64
 }
 
-func New(game *service.Game, pay *payment.Gateway, webDir string) http.Handler {
+func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 	a := &API{game: game, pay: pay}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { a.json(w, 200, map[string]string{"status": "ok"}) })

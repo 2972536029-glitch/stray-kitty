@@ -517,3 +517,18 @@ func (g *Game) startTutorialBattle(s *domain.GameState, stageID string, includeM
 	}
 	return domain.Fail("INVALID_COMMAND", "命令参数或目标无效", 400)
 }
+
+// ApplyCharge 应用一笔已由支付服务判定并记账的充值:确认则入账金枪鱼,
+// 流水以展示副本落在游戏存档(权威账本在支付侧),返回到账后的最新余额。
+func (g *Game) ApplyCharge(playerID string, txn domain.Txn, pack domain.RechargePack) (int, error) {
+	balance := 0
+	err := g.Store.TransactByPlayer(playerID, func(p *repository.Player) error {
+		if txn.Status == "confirmed" {
+			p.State.Currencies["tuna"] += pack.TunaGranted
+		}
+		domain.AppendTxn(&p.State, txn)
+		balance = p.State.Currencies["tuna"]
+		return nil
+	})
+	return balance, err
+}
