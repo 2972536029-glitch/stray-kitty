@@ -10,7 +10,7 @@ COPY web web
 RUN npm run build --workspace web
 
 # unprivileged 变体:默认以 uid 101 运行,配合 8080 监听无需 root。
-FROM nginx:1.27-alpine-unprivileged
+FROM nginxinc/nginx-unprivileged:1.27-alpine
 ARG BUILD_REVISION=unverified
 LABEL org.opencontainers.image.revision="${BUILD_REVISION}"
 COPY --from=web /app/web/dist /usr/share/nginx/html
