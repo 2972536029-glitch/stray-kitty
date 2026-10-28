@@ -33,6 +33,7 @@ stray-kitty/
 ├─ design/  模块设计
 │  ├─ events/
 │  └─ tower-defense/  塔防规则与关卡规格
+│     ├─ art-chapters/
 │     └─ levels/
 │        ├─ L00-prologue/
 │        ├─ L01-first-alley/
@@ -122,6 +123,7 @@ stray-kitty/
 │     │  └─ demo/  可替换的贯通 Demo
 │     ├─ modules/  正式模块接入口
 │     │  ├─ battle/  塔防 · 闫琦雯
+│     │  │  ├─ assets/
 │     │  │  ├─ chapter/  第一章紧凑棋盘、四猫与固定首领
 │     │  │  ├─ finale/  第五章74格仓库、九格终极首领、双精英与固定援军
 │     │  │  ├─ greenhouse/  第三章34格不规则棋盘、墨墨与四格荆冠首领

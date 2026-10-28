@@ -14,6 +14,7 @@ interface CarryPanelProps {
   enemies: Readonly<Record<string, {name: string}>>;
   disabled: boolean;
   onUse: () => void;
+  compact?: boolean;
 }
 const NAMES: Record<BattleCarryId, string> = {
   lantern: '小灯', mirror: '镜片', bell: '铃铛', box: '纸箱', dog: '老黄大狗', dove: '咕咕鸽子',
@@ -60,7 +61,7 @@ export function carryDescription(carry: BattleCarryState): string {
   }
 }
 
-export function CarryPanel({carry, phase, wave, waves, entrances, enemies, disabled, onUse}: CarryPanelProps) {
+export function CarryPanel({carry, phase, wave, waves, entrances, enemies, disabled, onUse, compact = false}: CarryPanelProps) {
   if (!carry.id && !carry.warning) return null;
   const animal = carry.id === 'dog' || carry.id === 'dove' || carry.id === 'rats' || carry.id === 'kitten';
   const usable = canUseCarry(carry, phase, disabled);
@@ -72,11 +73,14 @@ export function CarryPanel({carry, phase, wave, waves, entrances, enemies, disab
     : carry.id === 'lantern' ? `已触发 ${carry.pulses} 次`
     : patrol ? `${phase === 'ready' ? '首站' : '当前巡逻'}：${cellName(patrol.anchor)} 入口路线${phase === 'ready' ? ' · 开始守护后轮换' : phase === 'battle' ? ` · ${Math.max(1,Math.ceil(8-carry.elapsed%8))} 秒后换路` : ' · 本场结束'}`
     : carry.id === 'kitten' ? carry.kittenWave > 0 ? `已完成第 ${carry.kittenWave} 波补能${phase === 'won' || phase === 'lost' ? ' · 本场结束' : ''}` : '第一波开始时首次补能' : null;
-  return <section className={`battle-carry-panel${carry.warning ? ' is-unrecognized' : ''}`} aria-label={animal ? '动物来报恩' : '从事件带来'} data-testid="battle-carry-panel" data-carry={carry.id ?? 'unknown'} data-used={carry.used} data-freeze={carry.freezeRemaining.toFixed(2)} data-pulses={carry.pulses} data-box-active={carry.boxActive} data-patrol-route={patrol?.route} data-kitten-wave={carry.id === 'kitten' ? carry.kittenWave : undefined}>
-    <div className="battle-carry-heading"><span className="battle-carry-icon" aria-hidden="true">{carry.id ? ICONS[carry.id] : '?'}</span><div><small>{animal ? '动物来报恩' : '从事件带来'}</small><strong>{carry.id ? NAMES[carry.id] : '未识别的事件带入'}</strong></div></div>
-    <div className="battle-carry-copy"><p>{carryDescription(carry)}</p>{status && <small data-testid="battle-carry-status">{status}</small>}
+  const compactStatus = patrol ? phase === 'ready' ? `首站 ${cellName(patrol.anchor)}` : phase === 'battle' ? `${cellName(patrol.anchor)} · ${Math.max(1,Math.ceil(8-carry.elapsed%8))}秒换路` : '本场结束'
+    : carry.id === 'kitten' ? phase === 'won' || phase === 'lost' ? '本场结束' : carry.kittenWave > 0 ? `第${carry.kittenWave}波已补能` : '首波补能' : null;
+  const heading = <div className="battle-carry-heading"><span className="battle-carry-icon" aria-hidden="true">{carry.id ? ICONS[carry.id] : '?'}</span><div><small>{animal ? '动物来报恩' : '从事件带来'}</small><strong>{carry.id ? NAMES[carry.id] : '未识别的事件带入'}</strong></div></div>;
+  const copy = <div className="battle-carry-copy"><p>{carryDescription(carry)}</p>{status && <small data-testid="battle-carry-status">{status}</small>}
       {preview.length > 0 && <div className="battle-carry-scout" data-testid="battle-carry-preview">{preview.map(item => <p key={item.wave} data-wave={item.wave}><b>{item.label} · 第 {item.wave} 波 · 共 {item.total} 只</b><span>{item.groups.map(group => `${group.entrance} ${group.enemy} ×${group.count}`).join('；')}</span></p>)}</div>}
-    </div>
+    </div>;
+  return <section className={`battle-carry-panel${compact ? ' is-compact' : ''}${carry.warning ? ' is-unrecognized' : ''}`} aria-label={animal ? '动物来报恩' : '从事件带来'} data-testid="battle-carry-panel" data-carry={carry.id ?? 'unknown'} data-used={carry.used} data-freeze={carry.freezeRemaining.toFixed(2)} data-pulses={carry.pulses} data-box-active={carry.boxActive} data-patrol-route={patrol?.route} data-kitten-wave={carry.id === 'kitten' ? carry.kittenWave : undefined}>
+    {compact ? <details className="battle-carry-details"><summary>{heading}{compactStatus && <span className="battle-carry-live-status" data-testid="battle-carry-compact-status">{compactStatus}</span>}<span className="battle-carry-detail-label">效果</span></summary>{copy}</details> : <>{heading}{copy}</>}
     {carry.id === 'mirror' && <button type="button" data-testid="battle-carry-use" disabled={!usable} onClick={onUse}>使用镜片</button>}
   </section>;
 }
