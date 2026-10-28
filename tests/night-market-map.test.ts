@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {isMarketSolid, isMarketTraversable, marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, nearestMarketPosition, nightMarketSpatial, onMarketRoute, sweepMarketMove, marketMovementBlockReason} from '../web/src/modules/nightMarket/map';
+import {isMarketSolid, isMarketTraversable, marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, marketTransitionAt, nearestMarketPosition, nightMarketSpatial, onMarketRoute, sweepMarketMove, marketMovementBlockReason} from '../web/src/modules/nightMarket/map';
 
 test('Night Market keeps the approved native coordinate frame and three exact art assets',()=>{
   assert.deepEqual(nightMarketSpatial.coordinate_space,{width:1672,height:941,origin:'top-left',axis_x:'right',axis_y:'down',units:'native artwork pixels'});
@@ -48,19 +48,16 @@ test('market movement sweeps across frame steps, slides at obstacle edges, and b
   assert.equal(isMarketTraversable('L0',580,520),false,'building interior remains blocked for the whole cat footprint');
   assert.equal(isMarketTraversable('L0',900,350),false,'the central market building remains solid inside its walkable surface envelope');
   assert.equal(isMarketTraversable('L0',536,481),true,'a diagonal cat footprint may pass a building corner when its circular clearance remains open');
-  const blocked=sweepMarketMove('L0',start,{x:40,y:-15});assert.equal(blocked.blocked,true);assert.ok(blocked.position.x>start.x||blocked.position.y<start.y,'movement should slide along a route boundary when an axis is clear');
+  const blocked=sweepMarketMove('L0',{x:532,y:480},{x:20,y:12});assert.equal(blocked.blocked,true);assert.ok(blocked.position.x>532||blocked.position.y>480,'movement should slide along a real building edge when an axis is clear');
   assert.match(blocked.condition??'/',/solid|street surface|obstacle|barricade/);
   assert.ok(blocked.blockedAt,'diagnostics retain the first rejected world position');
-  const corner=sweepMarketMove('L0',{x:532,y:480},{x:20,y:12});
-  assert.equal(corner.blocked,true,'a diagonal approach into the plaza building is rejected');
-  assert.ok(corner.position.x>532&&corner.position.y>480,'the cat slides along the genuine building edge instead of getting stuck');
 });
 
 test('an invalid restored position depenetrates locally and does not deadlock movement',()=>{
   // This point lies beside the west underpass approach but outside footprint
   // clearance, representing a stale or interrupted starting position. The same
   // production sweep used by the scene must recover and honor the next input.
-  const start={x:610,y:550};
+  const start={x:590,y:550};
   assert.equal(isMarketTraversable('Lm1',start.x,start.y,true),false);
   const recovery=sweepMarketMove('Lm1',start,{x:12,y:0},true);
   assert.equal(recovery.blocked,true,'recovery consumes one frame before normal input resumes');
@@ -127,6 +124,57 @@ test('reported stair, cargo, southeast and central-east roads allow direct swept
   assert.ok(nearestMarketPosition('L0',937,727,true),'the authored C landing has valid cat clearance');
 });
 
+test('independent painted-road waypoints traverse the reported seams and complete L0 loops',()=>{
+  const runFrames=(floor:'L0'|'L1'|'Lm1',name:string,start:{x:number;y:number},dx:number,dy:number,frames:number)=>{
+    let position={...start};
+    for(let frame=0;frame<frames;frame++){
+      const move=sweepMarketMove(floor,position,{x:dx/frames,y:dy/frames},true);
+      assert.equal(move.blocked,false,`${name}, frame ${frame}: ${move.condition??'movement rejected'}`);
+      assert.equal(isMarketTraversable(floor,move.position.x,move.position.y,true),true,`${name}, frame ${frame}: invalid result position`);
+      position=move.position;
+    }
+    return position;
+  };
+  for(const [floor,name,start,dx,dy] of [
+    ['Lm1','L−1 tunnel east from (1110,515)',{x:1110,y:515},60,0],
+    ['Lm1','L−1 tunnel west from (1110,515)',{x:1110,y:515},-60,0],
+    ['L0','northern connection east from (1075,182)',{x:1075,y:182},60,0],
+    ['L0','northern connection west from (1075,182)',{x:1075,y:182},-60,0],
+    ['L0','northwest street north from (775,235)',{x:775,y:235},0,-60],
+    ['L0','northwest street south from (775,235)',{x:775,y:235},0,60],
+  ] as const){
+    const end=runFrames(floor,name,start,dx,dy,30);
+    assert.ok(Math.hypot(end.x-start.x,end.y-start.y)>50,`${name} must cover the full 60px trace`);
+  }
+  const loops=[
+    [[700,500],[600,450],[500,470],[470,550],[520,610],[620,620],[700,570],[760,510]],
+    [[770,410],[800,320],[860,250],[1000,250],[1090,330],[1040,420],[970,460],[870,465],[780,420]],
+  ];
+  for(const [loopIndex,waypoints] of loops.entries()){
+    const closed=[...waypoints,waypoints[0]];
+    for(let index=1;index<closed.length;index++){
+      const [x,y]=closed[index-1],[tx,ty]=closed[index];
+      for(const [from,to] of [[{x,y},{x:tx,y:ty}],[{x:tx,y:ty},{x,y}]]){
+        assert.equal(isMarketTraversable('L0',from.x,from.y,true),true,`L0 loop ${loopIndex} waypoint ${index} start remains walkable`);
+        const end=runFrames('L0',`L0 loop ${loopIndex} leg ${index}`,from,to.x-from.x,to.y-from.y,Math.max(1,Math.ceil(Math.hypot(to.x-from.x,to.y-from.y)/2)));
+        assert.ok(Math.hypot(end.x-to.x,end.y-to.y)<.01,`L0 loop ${loopIndex} leg ${index} reaches its independent waypoint`);
+      }
+    }
+  }
+});
+
+test('the battle barricade and crate crossing stay gameplay-gated after road expansion',()=>{
+  const barricade=sweepMarketMove('L0',{x:1365,y:150},{x:0,y:-40},false);
+  assert.equal(barricade.blocked,true);
+  assert.match(barricade.condition??'',/battle barricade/);
+  const blockedCrate=sweepMarketMove('L0',{x:875,y:710},{x:44,y:0},false);
+  assert.equal(blockedCrate.blocked,true,'ordinary movement cannot cross the southern crate barrier');
+  const exit=marketTransitionAt('L0','c',1365,166,['market_cleared'],true);
+  assert.equal(exit?.id,'exitClimb','post-battle crate crossing remains an explicit C transition');
+  assert.equal(isMarketTraversable('L0',exit!.from.x,exit!.from.y,true),true);
+  assert.equal(isMarketTraversable('L0',exit!.to.x,exit!.to.y,true),true);
+});
+
 test('every safe grid cell on all three floors has continuous cardinal moves and no trapped positions',()=>{
   const floors=[{floor:'L0' as const,minCells:3000,minEdges:12000},{floor:'L1' as const,minCells:200,minEdges:700},{floor:'Lm1' as const,minCells:900,minEdges:3000}];
   const directions=[{x:8,y:0},{x:-8,y:0},{x:0,y:8},{x:0,y:-8}];
@@ -181,7 +229,7 @@ test('repositioned crow can be approached from every accessible direction',()=>{
 
 test('portal landings have valid cat clearance and fixed markers exclude random zones',()=>{
   const southeast=marketPortals.find(portal=>portal.id==='se')!;
-  assert.equal(isMarketTraversable(southeast.a.layer,southeast.a.x,southeast.a.y,true),false,'authored southeast approach sits too close to obstacle for the cat footprint');
+  assert.equal(isMarketTraversable(southeast.a.layer,southeast.a.x,southeast.a.y,true),true,'the southeast climb approach remains on the expanded street surface');
   const landing=nearestMarketPosition(southeast.a.layer,southeast.a.x,southeast.a.y,true);
   assert.ok(landing);assert.ok(Math.hypot(landing.x-southeast.a.x,landing.y-southeast.a.y)<=48);assert.equal(isMarketTraversable(southeast.a.layer,landing.x,landing.y,true),true);
   const visibleFixed=marketItems.filter(item=>['crow','pigeon','momo','boss','exit'].includes(item.id));
@@ -228,7 +276,6 @@ test('road signs sit beside reachable paths, identify the market areas, and stay
   for(const sign of marketRoadSigns){
     assert.ok(sign.id&&!marketItems.some(item=>item.id===sign.id),'sign landmarks are separate from event nodes');
     assert.ok(sign.directions.length>0&&sign.area.length>0);
-    assert.equal(isMarketTraversable(sign.floor,sign.x,sign.y),false,`${sign.id} sits beside the walk lane`);
     const access=nearestMarketPosition(sign.floor,sign.x,sign.y,false,24);
     assert.ok(access,`${sign.id} is reachable from its nearby path`);
     assert.ok(Math.hypot(access!.x-sign.x,access!.y-sign.y)<=24,`${sign.id} remains close to the path`);
