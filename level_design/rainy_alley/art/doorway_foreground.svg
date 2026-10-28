@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="34" viewBox="0 0 80 34" shape-rendering="crispEdges">
+  <title>小巷门洞 · 像素化活动栅门</title>
+  <path fill="#253943" d="M0 0h6v34H0zm74 0h6v34h-6z"/>
+  <path fill="#9b714b" d="M6 1h68v5H6zm0 26h68v4H6z"/>
+  <path fill="#b58d62" d="M8 7h64v20H8z"/>
+  <path fill="#48382f" d="M19 7h4v20h-4zm18 0h4v20h-4zm18 0h4v20h-4z"/>
+  <path fill="#dbc08a" d="M8 9h64v3H8zm0 12h64v3H8z"/>
+  <path fill="#48382f" d="M67 16h5v3h-5z"/>
+</svg>

@@ -84,6 +84,7 @@ test('真实浏览器贯通前两章、双 NPC 事件、救援、家园和刷新
  const tutorialRun=await playL00ThroughHost(page);
  await testInfo.attach('l00-new-tutorial-six-waves',{body:JSON.stringify(tutorialRun),contentType:'application/json'});
  await page.getByRole('button',{name:'进入雨夜小巷 →'}).click();
+ await finishDialogue(page);
  await page.screenshot({path:'output/preview/explore.png',fullPage:true});
  await triggerCrateFromDevTools(page);
  await page.getByRole('button',{name:'仔细搜索周围的物资'}).click();await expect(page.getByRole('button',{name:'掷出骰子'})).toBeEnabled();
@@ -194,6 +195,7 @@ test('章节地图按进度显示，弹窗冻结移动并恢复焦点',async({pa
 test('双骰已提交但响应丢失，刷新沿用原骰点与奖励',async({page,request})=>{
  await page.setViewportSize({width:390,height:844});await page.goto('/');await enterGame(page);await finishDialogue(page);
  await settleTutorial(page,request);
+ await finishDialogue(page);
  await triggerCrateFromDevTools(page);
  await page.getByRole('button',{name:'先安抚点点，再寻找安全路线'}).click();await expect(page.getByLabel('双骰四档规则')).toBeVisible();
  await page.screenshot({path:'output/preview/mobile-event.png',fullPage:true});
