@@ -18,6 +18,14 @@ test('all authored C/F portals resolve to collision-valid approaches and landing
         return !moved.blocked&&Math.hypot(moved.position.x-request.to.x,moved.position.y-request.to.y)>4&&isMarketTraversable(request.toFloor,moved.position.x,moved.position.y,true);
       });
       assert.equal(escapes,true,`${portal.id} landing permits movement back onto its floor`);
+      for(const [dx,dy] of [[8,0],[-8,0],[0,8],[0,-8]]){
+        let position={...request.to};
+        for(let frame=0;frame<4;frame++){
+          const move=sweepMarketMove(request.toFloor,position,{x:dx/4,y:dy/4},true);
+          assert.equal(isMarketTraversable(request.toFloor,move.position.x,move.position.y,true),true,`${portal.id} frame ${frame} stays clear on its landing floor`);
+          position=move.position;
+        }
+      }
       assert.equal(request.animation,portal.animation);assert.equal(request.durationMs,portal.durationMs);
     }
   }

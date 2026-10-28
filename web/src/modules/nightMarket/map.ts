@@ -151,6 +151,27 @@ export function sweepMarketMove(floor:MarketFloor,position:{x:number;y:number},d
   const steps=Math.max(1,Math.ceil(Math.max(Math.abs(delta.x),Math.abs(delta.y))/maxStep));
   const step={x:delta.x/steps,y:delta.y/steps},next={...position};
   let blocked=false,condition:string|null=null,blockedAt:{x:number;y:number}|null=null;
+  // Old saves and interrupted floor transitions can leave the cat just outside
+  // the current floor's legal surface. Never let that invalid state deadlock
+  // every subsequent input: depenetrate by the smallest local correction before
+  // sweeping the requested move. The correction is bounded and uses the same
+  // footprint and obstacle tests as normal movement.
+  if(!isMarketTraversable(floor,next.x,next.y,cleared)){
+    const origin={...next};let recovered:{x:number;y:number}|null=null;
+    for(let radius=2;radius<=MARKET_CAT_RADIUS*2&&!recovered;radius+=2){
+      for(let angle=0;angle<Math.PI*2;angle+=Math.PI/24){
+        const candidate={x:origin.x+Math.cos(angle)*radius,y:origin.y+Math.sin(angle)*radius};
+        if(isMarketTraversable(floor,candidate.x,candidate.y,cleared)){recovered=candidate;break;}
+      }
+    }
+    if(recovered){
+      next.x=recovered.x;next.y=recovered.y;
+      // Finish the correction as its own collision step. Applying the input in
+      // this same frame could carry a corrupt spawn across the obstacle that
+      // caused the overlap (notably the battle-gated exit barricade).
+      return {position:next,blocked:true,condition:`recovered invalid starting position near ${marketNearestBoundary(floor,origin.x,origin.y)}`,blockedAt:origin};
+    }
+  }
   for(let i=0;i<steps;i++){
     if(isMarketTraversable(floor,next.x+step.x,next.y+step.y,cleared)){next.x+=step.x;next.y+=step.y;continue;}
     blocked=true;blockedAt??={x:next.x+step.x,y:next.y+step.y};condition??=marketMovementBlockReason(floor,next.x+step.x,next.y+step.y,cleared)??'blocked';
@@ -170,9 +191,21 @@ export function sweepMarketMove(floor:MarketFloor,position:{x:number;y:number},d
   return {position:next,blocked,condition,blockedAt};
 }
 export function nearestMarketPosition(floor:MarketFloor,x:number,y:number,cleared=false,maxRadius=48) {
-  if(isMarketTraversable(floor,x,y,cleared))return {x,y};
-  let best:{x:number;y:number}|null=null,bestDistance=Infinity;
-  for(let radius=2;radius<=maxRadius;radius+=2)for(let angle=0;angle<Math.PI*2;angle+=Math.PI/24){const candidate={x:x+Math.cos(angle)*radius,y:y+Math.sin(angle)*radius};if(!isMarketTraversable(floor,candidate.x,candidate.y,cleared))continue;if(radius<bestDistance){best=candidate;bestDistance=radius;}}
+  const cardinal=[[8,0],[-8,0],[0,8],[0,-8]] as const;
+  let best:{x:number;y:number}|null=null,bestDistance=Infinity,bestMobility=-1;
+  const consider=(candidate:{x:number;y:number},distance:number)=>{
+    if(!isMarketTraversable(floor,candidate.x,candidate.y,cleared))return;
+    const mobility=cardinal.reduce((count,[dx,dy])=>{
+      const moved=sweepMarketMove(floor,candidate,{x:dx,y:dy},cleared).position;
+      return count+(Math.hypot(moved.x-candidate.x,moved.y-candidate.y)>=6?1:0);
+    },0);
+    if(mobility>bestMobility||(mobility===bestMobility&&distance<bestDistance)){
+      best=candidate;bestDistance=distance;bestMobility=mobility;
+    }
+  };
+  consider({x,y},0);
+  for(let radius=2;radius<=maxRadius;radius+=2)for(let angle=0;angle<Math.PI*2;angle+=Math.PI/24)
+    consider({x:x+Math.cos(angle)*radius,y:y+Math.sin(angle)*radius},radius);
   return best;
 }
 export function isMarketSolid(floor:MarketFloor,x:number,y:number) {

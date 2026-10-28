@@ -56,6 +56,20 @@ test('market movement sweeps across frame steps, slides at obstacle edges, and b
   assert.ok(corner.position.x>532&&corner.position.y>480,'the cat slides along the genuine building edge instead of getting stuck');
 });
 
+test('an invalid restored position depenetrates locally and does not deadlock movement',()=>{
+  // This point lies beside the west underpass approach but outside footprint
+  // clearance, representing a stale or interrupted starting position. The same
+  // production sweep used by the scene must recover and honor the next input.
+  const start={x:610,y:550};
+  assert.equal(isMarketTraversable('Lm1',start.x,start.y,true),false);
+  const recovery=sweepMarketMove('Lm1',start,{x:12,y:0},true);
+  assert.equal(recovery.blocked,true,'recovery consumes one frame before normal input resumes');
+  assert.match(recovery.condition??'',/recovered invalid starting position/);
+  const move=sweepMarketMove('Lm1',recovery.position,{x:12,y:0},true);
+  assert.ok(move.position.x>recovery.position.x,'the next eastward input must move instead of trapping');
+  assert.equal(isMarketTraversable('Lm1',move.position.x,move.position.y,true),true);
+});
+
 test('actual swept movement works both ways across seven L0 streets and across their usable width',()=>{
   const corridors=[
     {name:'northward continuous street',x:760,y:370,dx:0,dy:-1},
@@ -148,7 +162,8 @@ test('sampled authored corridors traverse both ways on every floor, with only au
       const from={x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t},to={x:a[0]+(b[0]-a[0])*u,y:a[1]+(b[1]-a[1])*u};
       for(const [start,end] of [[from,to],[to,from]]){
         const result=sweepMarketMove(floor,start,{x:end.x-start.x,y:end.y-start.y},true);
-        if(result.blocked)assert.match(result.condition??'',/authored obstacle|battle barricade|solid building/,'route centerlines may be blocked only by real environment geometry');
+        if(result.condition?.startsWith('recovered invalid starting position'))assert.equal(isMarketTraversable(floor,result.position.x,result.position.y,true),true,'invalid route sample is locally depenetrated without crossing its obstacle');
+        else if(result.blocked)assert.match(result.condition??'',/authored obstacle|battle barricade|solid building/,'route centerlines may be blocked only by real environment geometry');
         else assert.ok(Math.hypot(result.position.x-end.x,result.position.y-end.y)<.01,`${floor} route ${index} step ${step} reaches its next sample`);
         if(isMarketTraversable(floor,result.position.x,result.position.y,true))testedSegments++;
       }
