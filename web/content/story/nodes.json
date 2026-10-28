@@ -67,7 +67,43 @@
     "chapterId": "prologue",
     "speaker": "喵喵",
     "text": "哇啊！泥巴全溅到肚皮上了……咪才没有害怕。咪只是……暂时不知道家在哪边。",
-    "next": "chapter1_intro",
+    "next": "prologue_shadows",
+    "exit": "",
+    "scene": "alley"
+  },
+  {
+    "id": "prologue_shadows",
+    "chapterId": "prologue",
+    "speaker": "旁白",
+    "text": "还没等喵喵抖落爪子上的冰冷雨水，小巷深处的水洼里忽然翻涌起诡异的黑雾！一道道冰冷扭曲的黑影从破旧铁桶与断墙缝隙中无声蔓延，发出低沉压抑的嘶吼，将孤立无援的小猫步步逼向死角！",
+    "next": "prologue_injured",
+    "exit": "",
+    "scene": "alley"
+  },
+  {
+    "id": "prologue_injured",
+    "chapterId": "prologue",
+    "speaker": "喵喵",
+    "text": "“哈——嘶！（弓起后背，毛发倒竖哈气）你、你们别过来！本咪可是很凶的！”黑影呼啸扑来，喵喵慌乱后撤躲避，脚下一滑摔在湿滑碎砖上，后腿擦破了皮，“呜……好痛……谁来救救咪……”",
+    "next": "prologue_rescue",
+    "exit": "",
+    "scene": "alley"
+  },
+  {
+    "id": "prologue_rescue",
+    "chapterId": "prologue",
+    "speaker": "旁白",
+    "text": "危急关头，一道纯白的身影踏水疾驰而来，星绒法杖挥出道道清辉逼退逼近的黑影；紧接着，一只敦实的奶牛猫从天而降，厚重坚固的罐头铁盾重重扎进泥水中，牢牢挡在受惊受伤的喵喵身前！",
+    "next": "prologue_advisor",
+    "exit": "",
+    "scene": "alley"
+  },
+  {
+    "id": "prologue_advisor",
+    "chapterId": "prologue",
+    "speaker": "阿策",
+    "text": "屋檐阴影下，一只手持折扇的斯芬克斯军师沉稳安抚道：“莫慌，小家伙。在下阿策，这两位是白猫绒绒与盾卫斑斑。黑影虽众，然其畏光惧阻。喵喵退至阵后安全处，由伙伴筑起防线——请依在下之策，指挥布阵迎敌！”",
+    "next": "",
     "exit": "",
     "scene": "alley"
   },
@@ -75,7 +111,7 @@
     "id": "chapter1_intro",
     "chapterId": "alley",
     "speaker": "旁白",
-    "text": "暴雨中的陌生小巷昏暗而冰冷，雨水拍打着锈蚀的铁皮招牌。就在喵喵蜷着身子不知所措时，旁边垃圾桶后的旧木箱微晃，探出了一个圆滚滚、毛茸茸的橘色大脑袋……",
+    "text": "第一道防线上的黑影终于溃退消散。暴雨渐歇，就在喵喵蜷在屋檐下包扎擦伤的小腿时，旁边垃圾桶后的旧木箱微晃，探出了一个圆滚滚、毛茸茸的橘色大脑袋……",
     "next": "prologue_tuanzi",
     "exit": "",
     "scene": "alley"
@@ -84,7 +120,7 @@
     "id": "prologue_tuanzi",
     "chapterId": "alley",
     "speaker": "团子",
-    "text": "哟，哪来的小少爷？圆滚滚、一身奶香味，爪子都踩成泥巴球了，脖子上的小铃铛还在晃呢。",
+    "text": "“哟，哪来的小少爷？圆滚滚、一身奶香味，爪子都踩成泥巴球了，脖子上的小铃铛还在晃呢。”",
     "next": "prologue_banter",
     "exit": "",
     "scene": "alley"
@@ -93,7 +129,7 @@
     "id": "prologue_banter",
     "chapterId": "alley",
     "speaker": "喵喵",
-    "text": "谁是小少爷！本咪是微服私访的领地巡察官！……咕噜噜（肚子大声抗议）……本咪只是出来视察民情！",
+    "text": "“谁是小少爷！本咪是微服私访的领地巡察官！……咕噜噜（肚子大声抗议）……本咪只是出来视察民情！”",
     "next": "prologue_2",
     "exit": "",
     "scene": "alley"
@@ -102,7 +138,7 @@
     "id": "prologue_2",
     "chapterId": "alley",
     "speaker": "团子",
-    "text": "行行行，大巡察官。不过先别逞强了——听，那边垃圾桶后的破纸箱里有求救声！附近黑影正在逼近，阿策军师他们也在往这边赶，快去看看！",
+    "text": "“行行行，大巡察官。不过先别逞强了——听，那边垃圾桶后的破纸箱里有微弱的求救声！附近黑影还在盘踞，咱们快去四周探查探查！”",
     "next": "",
     "exit": "explore",
     "scene": "alley"
@@ -111,9 +147,9 @@
     "id": "rescue_1",
     "chapterId": "alley",
     "speaker": "点点",
-    "text": "呜……谢谢你们！多亏喵喵沉着指挥，绒绒的星绒、还有斑斑和阿策及时赶来支援，不然我早就被黑影抓走了……小巷深处最近经常有暗影游荡，已经有好几个伙伴无声无息地失踪了。",
-    "next": "poster_1",
-    "exit": "",
+    "text": "“呜……谢谢你们！多亏喵喵沉着指挥，大家合力守住撤离路线，把我从破纸箱里接应出来……我的辅助治疗也能帮上忙，请让我和你们一起守护大家！……小巷深处最近经常有黑影游荡，已经有好几个伙伴无声无息地失踪了。”",
+    "next": "",
+    "exit": "explore",
     "scene": "alley"
   },
   {
@@ -193,7 +229,7 @@
   },
   {
     "id": "rescue_2",
-    "chapterId": "greenhouse",
+    "chapterId": "alley",
     "speaker": "喵喵",
     "text": "那就先把这座旧花房收拾一下吧。一只猫的纸箱，也可以变成大家的家。",
     "next": "",
@@ -316,7 +352,10 @@
     "text": "墨墨微微颔首：“算我一个。黑影怕光，但正在向花房暗处渗透。只要咱们加固天窗防线、封锁地下通风道，这里就会成为谁也攻不破的猫咪王国要塞！”",
     "next": "greenhouse_intro_7",
     "exit": "",
-    "scene": "home"
+    "scene": "home",
+    "setFlags": [
+      "momo_joined"
+    ]
   },
   {
     "id": "greenhouse_intro_7",
@@ -325,12 +364,7 @@
     "text": "喵喵昂起毛茸茸的小脑瓜，神情坚定：“大家分工协作！团子整理物资，点点巡视陷阱，墨墨侦查暗道，阿策指挥布防！让我们把废弃花房彻底修缮成最温暖坚固的猫国要塞！”",
     "next": "",
     "exit": "home",
-    "scene": "home",
-    "setFlags": [
-      "chapter_3_started",
-      "greenhouse_fortified",
-      "momo_joined"
-    ]
+    "scene": "home"
   },
   {
     "id": "rescue_intro_1",
@@ -380,8 +414,8 @@
   {
     "id": "rescue_intro_6",
     "chapterId": "rescue",
-    "speaker": "喵喵",
-    "text": "喵喵毫不犹豫地上前：“墨墨带路，点点警戒陷阱，团子跟我合力把卡死的阀门铁栓顶开！有光的地方就不用害怕暗影，我们这就带你们回花房！”",
+    "speaker": "团子",
+    "text": "正当大家准备靠近阀门时，管道深处骤然传来刺耳的刮擦声！一道浓稠的庞大黑影掠过，顶壁仅存的应急黄灯被硬生生掐灭，整个暗道陷入绝对死寂的浓黑！团子吓得尾巴炸毛：“呜哇！灯灭了！好浓的黑雾……我什么都看不见了！四周全都是黑影磨爪子的窸窣声！”",
     "next": "rescue_intro_7",
     "exit": "",
     "scene": "tunnel"
@@ -389,8 +423,35 @@
   {
     "id": "rescue_intro_7",
     "chapterId": "rescue",
+    "speaker": "墨墨",
+    "text": "黑暗中，墨墨轻盈落在大伙身前。听着幼猫的哭喊与伙伴们慌乱的喘息，它双瞳骤敛，一双碧绿眸子迸发出璀璨如极光的清冽幽光！“别怕，把呼吸借给我——”莹绿微芒如水波荡开，化作坚韧的气流护盾护住全员，原本漆黑的死角瞬间被彻底看穿！墨墨目光如炬：“以前我只为自己看路……但现在，我的夜视与护盾属于大家！所有黑影的伏击路线，都在我眼里！”",
+    "next": "rescue_intro_8",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "rescue_intro_8",
+    "chapterId": "rescue",
+    "speaker": "阿策",
+    "text": "阿策折扇凌空一展，抚掌赞道：“妙极！墨墨兄竟在绝境中破茧觉醒，引幽瞳破障、分护盾安邦！黑影以为断灯弄险能困住我们，反落入我方洞若观火之局！”",
+    "next": "rescue_intro_9",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "rescue_intro_9",
+    "chapterId": "rescue",
+    "speaker": "喵喵",
+    "text": "喵喵昂首挺立在防线核心，果断挥爪指挥：“大家各就各位！斑斑顶住主渠，团子策应侧翼，点点戒备陷阱，墨墨夜视洞悉全场！无论黑暗有多深，我们彼此的光芒绝不会熄灭——掩护泄洪阀门，迎战黑影监守！”",
+    "next": "rescue_intro_10",
+    "exit": "",
+    "scene": "tunnel"
+  },
+  {
+    "id": "rescue_intro_10",
+    "chapterId": "rescue",
     "speaker": "旁白",
-    "text": "伴随着铁闸门被顶开的声响，受困的伙伴们终于重见天光。在猫咪小队的护送下，第一批失踪的猫咪们安全转移到了花房大本营。而暗道的更深处，正是黑影盘踞的最终据点——废弃大仓库！",
+    "text": "伴随着首领黑影的溃散与铁闸门被顶开的声响，受困的伙伴们终于重见天光。在猫咪小队的严密护送下，第一批失踪的猫咪安全转移到了花房大本营。而暗道更深处，正是黑影盘踞的最终据点——废弃大仓库！",
     "next": "",
     "exit": "home",
     "scene": "home",
@@ -399,6 +460,15 @@
       "tunnel_explored",
       "cats_rescued_batch1"
     ]
+  },
+  {
+    "id": "finale_clue_insufficient",
+    "chapterId": "rescue",
+    "speaker": "阿策",
+    "text": "军师阿策轻摇折扇拦住大家：“且慢。大仓库深层暗道纵横、戒备森严，目前我们掌握的线索还不够。大家先回午夜集市继续探索，向老黑羽和咕咕大盗多打听些情报再做决战准备！”",
+    "next": "",
+    "exit": "explore",
+    "scene": "home"
   },
   {
     "id": "finale_intro_1",

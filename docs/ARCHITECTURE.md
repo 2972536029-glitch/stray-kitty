@@ -16,6 +16,9 @@ flowchart TD
   Repository --> Save["data/game.json"]
   Service -->|返回 GameState| Store["GameStore：界面状态快照"]
   Store --> View
+  Module -->|手动提问与可见战况| Advisor["POST /api/v1/advisor：只读场次校验"]
+  Advisor --> Model["服务端模型客户端：限时、限流、密钥隔离"]
+  Model -->|建议或本地回退| View
 ```
 
 移动、碰撞和逐帧战斗在前端运行；事件判定、抽奖、长期奖励、摆放和游戏内家具购买经过 Go。真实付费尚未实现。
@@ -40,6 +43,7 @@ stray-kitty/
 │        └─ L05-final-warehouse/  第五章终极仓库设计
 ├─ docs/  需求、架构、接口与集成记录
 │  ├─ ARCHITECTURE.md  架构、目录与接入
+│  ├─ BATTLE-ADVISOR-MODEL.md  阿策模型配置、可见战况与回退边界
 │  ├─ BATTLE-EVENT-ALLIES.md
 │  ├─ BATTLE-EVENT-CARRY.md  事件携带物与协助者六枚举对接
 │  ├─ GAME-FLOWCHART.html
@@ -70,6 +74,7 @@ stray-kitty/
 │  ├─ cmd/  服务入口
 │  │  └─ api/  HTTP 启动
 │  ├─ internal/  服务实现
+│  │  ├─ advisor/  阿策服务端模型客户端与限流
 │  │  ├─ domain/  状态、命令与错误
 │  │  ├─ integrations/  外部集成
 │  │  │  └─ payment/  支付渠道 · 预留
@@ -157,6 +162,7 @@ stray-kitty/
 | 当前面板、选中家具、按钮状态 | React UI |
 | 剧情、地图、事件、猫咪、关卡、家具、道具与奖池定义 | web/content |
 | 会话与结果未知的原始请求 | adapters/storage；不作为权威存档 |
+| 阿策最近三轮手动问答、请求取消状态 | 战斗页面内存；切换场次清空，不写存档 |
 
 home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余额与结算，inventory 统一拥有状态。抽到／买到家具后再交 home 摆放。真实付费预留在前后端 payment 目录，本次没有支付实现。
 
@@ -173,6 +179,7 @@ home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余
 上表代码路径相对 web/src，内容路径相对 web；战斗引擎、结果结算和联调由闫琦雯维护，家园仓库展示由 UI 协作；其余经济、运维与数据库适配继续按团队认领。app/App.tsx 装配，app/useGame.ts 处理会话、请求和恢复，ui 提供受控展示组件。战斗阶段由 modules/battle/BattleHost.tsx 按场次路由 L00、L01、L02、L03、L04 与 L05 六套实现，其他阶段保留 examples/demo 的探索、地图、家园及剧情场景；其余模块按各自接口继续接入。
 
 - 公共契约在 web/src/contracts/index.ts；长期变更通过 app/controller.ts，不直接修改快照。
+- 阿策手动问答走同源只读 API，服务端保管模型配置并在调用前后校验活动场次；只发送可见战况白名单，模型不可用时保留本地规则。自动教学不调用模型，建议不获得游戏操作权限。详见 docs/BATTLE-ADVISOR-MODEL.md。
 - 战斗使用服务端 attemptId 和保存的难度快照，七个入口对应六套地图：l00_tutorial 为 3×7／六波教学；alley_rescue 和 alley_boss 共用 5×10 包围框内 26 格／八波四猫首领战；market_boss 为 5×8／八波六猫试玩；greenhouse_boss 为 6×9 包围框内 34 个真实格／八波六猫试玩。L03 缺失格不绘制、不部署、不作为技能中心，墨墨替代点点提供护盾并清除已生成荆棘，四格 Boss 共享体力。tunnel_boss 为 5×8 包围框内 37 格／八波六猫试玩，九处障碍，墨墨以夜视和全员护盾应对断灯；L04 缺失格同样不可绘制、部署或作为技能中心。finale_boss 为 7×12 包围框内 74 格／十波终章试玩，六名可移动主力与三批固定援军，永夜之王占九格，另有两名独立精英；光路随第 3／5／7 波推进，夜视用于暂时识破护幕。
 - 新命令无 supplies／usedSupplies；L01–L05 结果包含 leaks 与 bossDefeated，L05 胜负另必报整数 elitesDefeated（0–2），胜利必须为 2，旧章可省略。L02／L03／L04／L05 仅从家园独立进入，完成第一章救援即可分别试玩，不要求按章节顺序先赢前一试玩；胜利只记录本关完成，不发物资、长期伙伴或鼓励奖励，不推进剧情，不清理主线 PendingModifiers。L05 不写终章及建国标记。失败回原关准备并保留失败场次快照，重新挑战创建新 ID、沿用难度；离开准备页清理临时失败身份。
 - 所有在场可移动主力猫正常每模拟秒自动 +5 能量（L02 横扫可短暂停止自然蓄能），0 血本场退场，无库存补给或休整。L05 固定援军按间隔自动支援、不能移动或复活，主力六猫全部退场仍判负；灯车与援军不占 carry 通道。L01–L05 另外消费活动场次 carry 的八种事件加成（lantern/mirror/bell/box/dog/dove/rats/kitten），不改基础数值，不恢复背包；L00 忽略 carry。L01 失败准备保留旧 attempt 完整快照，重试创建新 ID 并继承压力和 carry；离开准备清临时身份。暂停与卸载沿用宿主生命周期，刷新同场次从 ready 重建。

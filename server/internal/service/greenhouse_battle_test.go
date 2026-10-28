@@ -80,8 +80,8 @@ func TestGreenhouseTrialRetryAndCompletionPreserveMainline(t *testing.T) {
 				t.Fatal(err)
 			}
 			s = won.State
-			if !reflect.DeepEqual(greenhouseProgress(before), greenhouseProgress(s)) || s.EventState.PendingModifiers.ShadowPressure != pending {
-				t.Fatal("victory granted rewards, changed story or consumed pending event")
+			if s.EventState.PendingModifiers.ShadowPressure != pending || !domain.Contains(s.Flags, "greenhouse_fortified") {
+				t.Fatal("victory must fortify the greenhouse without consuming pending event")
 			}
 			if !s.LastResult.FirstClear || !reflect.DeepEqual(s.CompletedStages, []string{"greenhouse_boss"}) {
 				t.Fatal("only greenhouse completion should be added")
@@ -100,12 +100,13 @@ func TestGreenhouseTrialRetryAndCompletionPreserveMainline(t *testing.T) {
 			if s.Phase != "home" || s.MapID != "greenhouse" || s.ActiveBattle != nil || s.StoryNodeID != before.StoryNodeID {
 				t.Fatal("trial victory entered a mainline story")
 			}
+			fortifiedHome := s
 			s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "greenhouse_boss"})
 			if s.ActiveBattle.Modifiers.ShadowPressure != pending {
 				t.Fatal("new home trial reused an obsolete retry tier")
 			}
 			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
-			if s.LastResult.FirstClear || !reflect.DeepEqual(greenhouseProgress(before), greenhouseProgress(s)) || s.EventState.PendingModifiers.ShadowPressure != pending {
+			if s.LastResult.FirstClear || !reflect.DeepEqual(greenhouseProgress(fortifiedHome), greenhouseProgress(s)) || s.EventState.PendingModifiers.ShadowPressure != pending {
 				t.Fatal("repeat victory changed rewards or pending event")
 			}
 		})
@@ -166,5 +167,27 @@ func TestGreenhouseTrialDoesNotReplaceExistingStoryExits(t *testing.T) {
 	s = finishStory(t, g, token)
 	if s.ActiveBattle != nil || s.Phase == "battle" || domain.Contains(s.CompletedStages, "greenhouse_boss") {
 		t.Fatal("market story automatically opened greenhouse trial")
+	}
+}
+
+func TestGreenhouseBossRequiresChapterThreeAndMomo(t *testing.T) {
+	for _, missingFlag := range []string{"chapter_3_started", "momo_joined"} {
+		t.Run(missingFlag, func(t *testing.T) {
+			g, token, _ := prepareBoss(t, 0, nil)
+			_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+				flags := p.State.Flags[:0]
+				for _, flag := range p.State.Flags {
+					if flag != missingFlag {
+						flags = append(flags, flag)
+					}
+				}
+				p.State.Flags = flags
+				return domain.CommandResponse{State: p.State}, nil
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "greenhouse_boss"})
+		})
 	}
 }
