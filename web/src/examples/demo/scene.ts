@@ -5,7 +5,7 @@ import type {Direction} from '../../adapters/platform/input';
 import {CanvasPainter} from '../../adapters/canvas/painter';
 import {FollowCamera, type CameraFrame} from '../../adapters/canvas/camera';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
-import {marketArt, marketEntry, marketItems, marketPortals, marketEAction, marketOptionalHint, marketPortalDisplay, nearestMarketPosition, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
+import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, nearestMarketPosition, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
@@ -830,11 +830,31 @@ export class DemoScene {
     this.context.translate(frame.viewport.x-camera.x*frame.scale,frame.viewport.y-camera.y*frame.scale);
     this.context.scale(frame.scale,frame.scale);
     if(image.complete&&image.naturalWidth>0)this.context.drawImage(image,0,0,1672,941);
+    this.drawMarketRoadSigns();
     this.drawMarketMarkers();
     this.context.save();this.context.translate(this.x-16,this.y-38);this.context.scale(.5,.5);drawPixelCat(this.context,'miaomiao','idle');this.context.restore();
     if(this.marketDebug)this.drawMarketDebug();
     this.context.restore();
-    this.context.fillStyle='#fff0c4';this.context.font='12px system-ui';this.context.fillText(`${this.marketFloor} · WASD move · E inspect · C climb · F stairs`,frame.safe.x+8,Math.max(frame.safe.y+18,18));
+    const nearbySign=nearestMarketRoadSign(this.marketFloor,this.x,this.y),area=nearbySign&&nearbySign.distance<=nearbySign.sign.revealRadius?`${nearbySign.sign.area} · `:'';
+    this.context.fillStyle='#fff0c4';this.context.font='12px system-ui';this.context.fillText(`${area}${this.marketFloor} · WASD move · E inspect · C climb · F stairs`,frame.safe.x+8,Math.max(frame.safe.y+18,18));
+  }
+  private drawMarketRoadSigns() {
+    const ctx=this.context,nearby=nearestMarketRoadSign(this.marketFloor,this.x,this.y);
+    for(const sign of marketRoadSigns.filter(value=>value.floor===this.marketFloor)){
+      const close=nearby?.sign.id===sign.id&&nearby.distance<=sign.revealRadius;
+      ctx.save();ctx.translate(sign.x,sign.y);
+      // A compact timber signpost built from pixel-sized rectangles; it is visual only.
+      ctx.fillStyle='rgba(12,18,22,.35)';ctx.fillRect(-12,9,24,4);
+      ctx.fillStyle='#533728';ctx.fillRect(-3,1,6,14);ctx.fillRect(-5,13,10,3);
+      ctx.fillStyle='#302b2a';ctx.fillRect(-15,-15,30,17);ctx.fillStyle='#9a633e';ctx.fillRect(-13,-13,26,13);
+      ctx.fillStyle='#d8a85d';ctx.fillRect(-12,-12,24,2);ctx.fillRect(-12,-2,24,1);
+      ctx.fillStyle='#f5e3b2';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(sign.directions.includes('↑')||sign.directions.includes('↗')?'↑':sign.directions.includes('↓')?'↓':'→',0,-6);
+      if(close){
+        const label=`${sign.area} · ${sign.directions}`;ctx.font='14px "Microsoft YaHei",system-ui,sans-serif';const width=ctx.measureText(label).width+14,bx=18,by=-19;
+        ctx.fillStyle='rgba(16,28,38,.93)';ctx.fillRect(bx,by,width,24);ctx.strokeStyle='#d8a85d';ctx.lineWidth=1;ctx.strokeRect(bx+.5,by+.5,width-1,23);ctx.fillStyle='#fff0c4';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(label,bx+7,by+12);
+      }
+      ctx.restore();
+    }
   }
   private drawMarketMarkers() {
     const ctx=this.context,flags=this.state?.flags??[];

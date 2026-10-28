@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {isMarketSolid, isMarketTraversable, marketArt, marketEntry, marketItems, marketPortals, marketEAction, marketOptionalHint, marketPortalDisplay, nearestMarketPosition, nightMarketSpatial, onMarketRoute, sweepMarketMove} from '../web/src/modules/nightMarket/map';
+import {isMarketSolid, isMarketTraversable, marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, nearestMarketPosition, nightMarketSpatial, onMarketRoute, sweepMarketMove} from '../web/src/modules/nightMarket/map';
 
 test('Night Market keeps the approved native coordinate frame and three exact art assets',()=>{
   assert.deepEqual(nightMarketSpatial.coordinate_space,{width:1672,height:941,origin:'top-left',axis_x:'right',axis_y:'down',units:'native artwork pixels'});
@@ -97,4 +97,22 @@ test('optional-content guidance gets more specific as the player approaches',()=
   assert.ok(far&&middle&&near);assert.notEqual(far,middle);assert.notEqual(middle,near);
   assert.equal(marketOptionalHint('L1',947,160,false),null);
   assert.equal(marketOptionalHint('L0',300,700,true),null);
+});
+
+test('road signs sit beside reachable paths, identify the market areas, and stay separate from gameplay triggers',()=>{
+  assert.equal(marketRoadSigns.length,8);
+  assert.deepEqual(new Set(marketRoadSigns.map(sign=>sign.floor)),new Set(['L0','Lm1']));
+  for(const sign of marketRoadSigns){
+    assert.ok(sign.id&&!marketItems.some(item=>item.id===sign.id),'sign landmarks are separate from event nodes');
+    assert.ok(sign.directions.length>0&&sign.area.length>0);
+    assert.equal(isMarketTraversable(sign.floor,sign.x,sign.y),false,`${sign.id} sits beside the walk lane`);
+    const access=nearestMarketPosition(sign.floor,sign.x,sign.y,false,24);
+    assert.ok(access,`${sign.id} is reachable from its nearby path`);
+    assert.ok(Math.hypot(access!.x-sign.x,access!.y-sign.y)<=24,`${sign.id} remains close to the path`);
+  }
+  assert.equal(marketRoadSigns.find(sign=>sign.id==='northwest-market-junction')?.directions.includes('北街'),true,'the northern sign indirectly guides players toward Momo without exposing her marker');
+  assert.equal(nearestMarketRoadSign('L0',704,748)?.sign.area,'南侧入口');
+  assert.equal(nearestMarketRoadSign('Lm1',610,550)?.sign.area,'地下暗道 · 西段');
+  assert.equal(nearestMarketRoadSign('L1',610,550),null);
+  assert.ok(!marketRoadSigns.some(sign=>/^R[123]/.test(sign.directions)),'random zones never appear on signs');
 });

@@ -15,6 +15,22 @@ export const MARKET_BOSS_RADIUS = 58;
 export const marketItems = nightMarketSpatial.items;
 export const marketPortals = nightMarketSpatial.portals;
 
+export type MarketRoadSign={id:string;floor:MarketFloor;x:number;y:number;area:string;directions:string;revealRadius:number};
+export const marketRoadSigns:readonly MarketRoadSign[]=[
+  {id:'south-market-entry',floor:'L0',x:704,y:748,area:'南侧入口',directions:'↑ 主集市',revealRadius:150},
+  {id:'central-market-junction',floor:'L0',x:795,y:528,area:'中央集市',directions:'← 主集市  |  ↑ 北街',revealRadius:150},
+  {id:'northwest-market-junction',floor:'L0',x:850,y:211,area:'西北绿道',directions:'← 西北绿道  |  → 北街',revealRadius:150},
+  {id:'east-market-junction',floor:'L0',x:1162,y:418,area:'东侧高街',directions:'↙ 东侧高台  |  ↗ 北街',revealRadius:150},
+  {id:'west-underpass-entrance',floor:'L0',x:632,y:674,area:'西侧地下入口',directions:'F ↓ 地下暗道',revealRadius:135},
+  {id:'east-underpass-entrance',floor:'L0',x:1243,y:551,area:'东侧地下入口',directions:'F ↓ 地下暗道',revealRadius:135},
+  {id:'west-underpass',floor:'Lm1',x:610,y:550,area:'地下暗道 · 西段',directions:'F ↑ 返回西侧街面',revealRadius:135},
+  {id:'east-underpass',floor:'Lm1',x:1206,y:686,area:'地下暗道 · 东段',directions:'F ↑ 返回东侧街面',revealRadius:135},
+];
+
+export function nearestMarketRoadSign(floor:MarketFloor,x:number,y:number) {
+  return marketRoadSigns.filter(sign=>sign.floor===floor).map(sign=>({sign,distance:Math.hypot(x-sign.x,y-sign.y)})).sort((a,b)=>a.distance-b.distance)[0]??null;
+}
+
 export type MarketMoveResult = {position:{x:number;y:number};blocked:boolean;condition:string|null};
 export type MarketEAction = {type:'interact';id:string;layer:MarketFloor}|{type:'battle'}|{type:'hint';text:string}|null;
 export type MarketPortalDisplay = {visible:boolean;active:boolean;alpha:number;label:string}|null;
