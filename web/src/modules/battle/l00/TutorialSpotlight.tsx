@@ -33,13 +33,13 @@ const rounded = (value: number) => Math.round(value * 2) / 2;
 const intersection = (a: Box, b: Box) => Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
 
 /** Prefer an empty corner, then the empty strips beside the current controls. */
-function placeCard(frame: Box, width: number, height: number, protectedBoxes: Box[], secondaryBoxes: Box[]): Box {
+function placeCard(frame: Box, width: number, height: number, protectedBoxes: Box[], secondaryBoxes: Box[], preferLeft = false): Box {
   const gap = 12;
   const maxX = Math.max(gap, frame.width - width - gap), maxY = Math.max(gap, frame.height - height - gap);
-  const xs = [maxX, gap, Math.max(gap, (frame.width - width) / 2)];
+  const xs = preferLeft ? [gap] : [maxX, gap, Math.max(gap, (frame.width - width) / 2)];
   const ys = [maxY, gap];
   for (const box of protectedBoxes) {
-    xs.push(box.x - width - gap, box.x + box.width + gap);
+    if (!preferLeft) xs.push(box.x - width - gap, box.x + box.width + gap);
     ys.push(box.y - height - gap, box.y + box.height + gap);
   }
   let best: Box = {x: maxX, y: maxY, width, height}, bestScore = Infinity;
@@ -47,7 +47,7 @@ function placeCard(frame: Box, width: number, height: number, protectedBoxes: Bo
     const candidate = {x: rounded(Math.max(gap, Math.min(maxX, x))), y: rounded(Math.max(gap, Math.min(maxY, y))), width, height};
     const score = protectedBoxes.reduce((sum, box) => sum + intersection(candidate, box) * 1000, 0)
       + secondaryBoxes.reduce((sum, box) => sum + intersection(candidate, box), 0)
-      + Math.abs(candidate.y - maxY) * .01 + Math.abs(candidate.x - maxX) * .005;
+      + Math.abs(candidate.y - maxY) * .01 + Math.abs(candidate.x - (preferLeft ? gap : maxX)) * .005;
     if (score < bestScore) {best = candidate; bestScore = score;}
   }
   return best;
@@ -60,6 +60,7 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
   const [layout, setLayout] = useState<Layout>(initialLayout);
   const cardRef = useRef<HTMLElement>(null);
   const selectorsKey = JSON.stringify(focusSelectors);
+  const preferLeft = phase.startsWith('skill_charge');
 
   useLayoutEffect(() => {
     if (!containerRef.current) return;
@@ -100,7 +101,7 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
       };
       for (const node of nodes) {track(node); const box = boxFor(node); if (box) holes.push(box);}
       const protectedBoxes: Box[] = [], secondaryBoxes: Box[] = [];
-      for (const selector of [sourceSelector, targetSelector, '.btl-cat-menu', '.btl-skill-tooltip.btl-tooltip-visible']) {
+      for (const selector of [sourceSelector, targetSelector, '.btl-cat-menu', '.btl-skill-tooltip.btl-tooltip-visible', ...(preferLeft ? ['.btl-unit'] : [])]) {
         if (selector) for (const node of container.querySelectorAll(selector)) {
           track(node); const box = boxFor(node); if (box) protectedBoxes.push(box);
         }
@@ -131,22 +132,24 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
         width: Math.max(1, (Math.min(right, boardRect.right) - Math.max(left, boardRect.left)) / scaleX),
         height: Math.max(1, (Math.min(bottom, boardRect.bottom) - Math.max(top, boardRect.top)) / scaleY),
       } : {x: 0, y: 0, width: frame.width, height: frame.height};
-      const cardWidth = Math.min(520, Math.max(1, cardBounds.width - 24));
+      const cardWidth = Math.min(preferLeft ? 400 : 520, Math.max(1, cardBounds.width - 24));
       const cardHeight = Math.min(cardRef.current?.offsetHeight || 180, Math.max(1, frame.height - 24));
       const boardBounds = {...cardBounds};
       cardBounds.height = Math.max(cardBounds.height, cardHeight + 24);
       cardBounds.y = Math.max(0, Math.min(cardBounds.y, frame.height - cardBounds.height));
       const relativeBox = (box: Box): Box => ({...box, x: box.x - cardBounds.x, y: box.y - cardBounds.y});
-      const localCard = placeCard(cardBounds, cardWidth, cardHeight, protectedBoxes.map(relativeBox), secondaryBoxes.map(relativeBox));
+      const localCard = placeCard(cardBounds, cardWidth, cardHeight, protectedBoxes.map(relativeBox), secondaryBoxes.map(relativeBox), preferLeft);
       let card = {...localCard, x: rounded(localCard.x + cardBounds.x), y: rounded(localCard.y + cardBounds.y)};
       const focusHeight = Math.max(72, ...protectedBoxes.map(box => box.height));
-      if (frame.width < 700 && boardBounds.height < cardHeight + focusHeight + 24) {
-        const x = Math.max(12, Math.min(frame.width - cardWidth - 12, boardBounds.x + (boardBounds.width - cardWidth) / 2));
+      const coversCat = preferLeft && protectedBoxes.some(box => intersection(card, box) > 0);
+      if (coversCat || frame.width < 700 && boardBounds.height < cardHeight + focusHeight + 24) {
+        const x = Math.max(12, Math.min(frame.width - cardWidth - 12, preferLeft ? boardBounds.x + 12 : boardBounds.x + (boardBounds.width - cardWidth) / 2));
         const above = {x, y: Math.max(12, boardBounds.y - cardHeight - 12), width: cardWidth, height: cardHeight};
         const below = {x, y: Math.max(12, Math.min(frame.height - cardHeight - 12, boardBounds.y + boardBounds.height + 12)), width: cardWidth, height: cardHeight};
         const obstruction = (box: Box) => protectedBoxes.reduce((sum, focus) => sum + intersection(box, focus) * 1000, 0)
           + secondaryBoxes.reduce((sum, cat) => sum + intersection(box, cat) * 10, 0) + intersection(box, boardBounds);
-        card = obstruction(above) <= obstruction(below) ? above : below;
+        const outside = obstruction(above) <= obstruction(below) ? above : below;
+        if (!preferLeft || obstruction(outside) < obstruction(card)) card = outside;
       }
       const next: Layout = {frame, holes, source, target, targetOutside: !!targetSelector && !!container.querySelector(targetSelector) && !target, card, cardMeasured: !!cardRef.current};
       setLayout(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
@@ -165,7 +168,7 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
       window.removeEventListener('resize', schedule); window.removeEventListener('scroll', schedule, true);
       window.visualViewport?.removeEventListener('resize', schedule);
     };
-  }, [containerRef, phase, sourceSelector, targetSelector, selectorsKey, host]);
+  }, [containerRef, phase, sourceSelector, targetSelector, selectorsKey, host, preferLeft]);
 
   const {frame, holes, source, target} = layout;
   const from = gesture === 'tap' ? target ?? source : source;
