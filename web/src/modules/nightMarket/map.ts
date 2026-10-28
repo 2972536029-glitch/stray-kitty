@@ -23,6 +23,9 @@ export function isMarketSolid(floor:MarketFloor,x:number,y:number) {
     ? x>s.x-8&&x<s.x+s.w+8&&y>s.y-8&&y<s.y+s.h+8
     : insidePolygon(s.pts,x,y));
 }
+export function shouldTriggerMarketBoss(floor:MarketFloor, cluesComplete:boolean, cleared:boolean, x:number, y:number) {
+  return floor==='L0'&&cluesComplete&&!cleared&&Math.hypot(x-1310,y-169)<58;
+}
 function insidePolygon(points:number[][],x:number,y:number) {
   let inside=false;
   for(let i=0,j=points.length-1;i<points.length;j=i++) {const [xi,yi]=points[i],[xj,yj]=points[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)inside=!inside;}

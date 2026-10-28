@@ -4,7 +4,7 @@ import {DemoBattle} from './battle';
 import type {Direction} from '../../adapters/platform/input';
 import {CanvasPainter} from '../../adapters/canvas/painter';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
-import {distanceToSegment,isMarketSolid, marketArt, onMarketRoute, type MarketFloor} from '../../modules/nightMarket/map';
+import {distanceToSegment,isMarketSolid, marketArt, onMarketRoute, shouldTriggerMarketBoss, type MarketFloor} from '../../modules/nightMarket/map';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 花房家园的猫咪轻量 AI:pose 非空表示绑定专属家具姿态,否则按 sit→walk→sit 循环漫步。
@@ -281,7 +281,7 @@ export class DemoScene {
         }
         this.onInspectHint?.(inspect);
         const bossReady=this.state.flags.includes('market_crow_clue_completed')&&this.state.flags.includes('market_pigeon_clue_completed');
-        if(this.marketFloor==='L0'&&bossReady&&!this.marketBossTriggered&&Math.hypot(this.x-1310,this.y-169)<58){this.marketBossTriggered=true;this.onMarketBattle?.('L0',{x:this.x,y:this.y});}
+        if(shouldTriggerMarketBoss(this.marketFloor,bossReady,this.state.flags.includes('market_cleared'),this.x,this.y)&&!this.marketBossTriggered){this.marketBossTriggered=true;this.onMarketBattle?.('L0',{x:this.x,y:this.y});}
         for(const [id,floor,x,y] of [['market_random_r1','L0',652,632],['market_random_r2','L1',680,166],['market_random_r3','Lm1',975,429]] as const){
           const inside=this.marketFloor===floor&&Math.hypot(this.x-x,this.y-y)<42;
           if(!inside)this.marketZonesSeen.delete(id);else if(!this.marketZonesSeen.has(id)){this.marketZonesSeen.add(id);void this.onMarketZone?.(id,floor,{x:this.x,y:this.y});}
