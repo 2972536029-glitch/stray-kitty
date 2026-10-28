@@ -12,6 +12,7 @@ import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
 import {useBattleBoardFit} from '../useBattleBoardFit';
 import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
+import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
 import '../carry.css';
 import '../l00/battle.css';
 import './chapter.css';
@@ -45,6 +46,7 @@ function Health({cat}:{cat:ChapterCat}){
 export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty,carry,paused,onResult}:ChapterBattleViewportProps){
   const [game,setGame]=useState(()=>createChapterBattle({difficulty,carry}));
   const gameRef=useRef(game);
+  const skillFeedback=useSkillFeedback();
   const [selected,setSelected]=useState<ChapterCatId|null>(null);
   const [moving,setMoving]=useState<ChapterCatId|null>(null);
   const [hover,setHover]=useState<Position|null>(null);
@@ -80,7 +82,20 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
 
   function publish(next:ChapterState){gameRef.current=next;setGame(next);return next;}
   function act(action:ChapterAction){
-    const next=publish(dispatchChapter(gameRef.current,action));
+    const previous=gameRef.current;
+    const next=publish(dispatchChapter(previous,action));
+    // Emit only for an accepted cast, including skills released by SELECT_SKILL.
+    if(action.type==='SELECT_SKILL'||action.type==='CAST_SKILL'){
+      const cat=previous.cats.find(candidate=>candidate.id===action.catId);
+      const cast=next.cats.find(candidate=>candidate.id===action.catId);
+      if(cat&&cast&&cast.skillUses>cat.skillUses){
+        const skill=SKILLS[cat.id];
+        const target=action.type==='CAST_SKILL'?action.target??previous.aim?.target:previous.aim?.target;
+        skillFeedback.emit({catId:cat.id,name:skill.name,origin:{x:cat.x,y:cat.y},
+          cells:skill.targeting==='team'?undefined:getSkillCells(cat,target),
+          recipients:skill.targeting==='team'?next.cats.filter(friend=>friend.status==='active').map(friend=>({x:friend.x,y:friend.y})):skill.targeting==='self'?[{x:cat.x,y:cat.y}]:undefined});
+      }
+    }
     if(next.lastAction&&!next.lastAction.ok)setNotice(next.lastAction.message);
     else if(action.type!=='AIM_SKILL'&&action.type!=='SET_UI_PAUSE')setNotice('');
     return next;
@@ -121,7 +136,7 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
 
   useEffect(()=>{
     if(attemptRef.current===attemptId)return;
-    attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);
+    attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);skillFeedback.clear();
     setSelected(null);setMoving(null);setHover(null);setChatOpen(false);setDragging(null);setNotice('');
     setQuestion('');
     publish(createChapterBattle({difficulty,carry}));
@@ -324,6 +339,7 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
         <div className="chapter-battlefield" ref={battlefieldRef}>
           <div ref={scrollRef} className="chapter-board-scroll" role="region" aria-label="小巷战场，窄屏可横向滚动"><div ref={boardRef} tabIndex={-1} className={`chapter-board${overview?' is-overview':''}${moving?' is-moving':''}${game.aim?' is-aiming':''}`} style={{width:overview?fittedWidth:Math.max(MAP.columns*80,(fittedWidth??0)*1.25)}} data-testid="chapter-board" onClick={event=>{if(event.target===event.currentTarget){if(suppressClick.current)suppressClick.current=false;else closeInspection();}}} onPointerDown={event=>{if(gameRef.current.aim&&event.pointerType!=='mouse'&&event.button===0){aimPointer.current=event.pointerId;event.currentTarget.setPointerCapture(event.pointerId);previewTouch(event);}}} onPointerMove={previewTouch} onPointerUp={event=>finishTouchAim(event)} onPointerCancel={event=>finishTouchAim(event,true)} onLostPointerCapture={()=>{aimPointer.current=null;}} onContextMenu={event=>{event.preventDefault();if(gameRef.current.aim)cancelAim();else closeInspection();}} onPointerLeave={()=>{if(!gesture.current){setHover(null);if(gameRef.current.aim)act({type:'AIM_SKILL',x:-1,y:-1});}}}>
             <canvas ref={canvasRef} width={BOARD_WIDTH} height={BOARD_HEIGHT} aria-label="凸形小巷、三格垃圾障碍、三个出怪口与占据四格的固定首领"/>
+            <SkillFeedback columns={MAP.columns} rows={MAP.rows} bursts={skillFeedback.bursts} shields={game.cats.filter(cat=>cat.status==='active'&&cat.shield>0)}/>
 
             <div className="chapter-cells">{CELLS.map(position=>{
               const cat=game.cats.find(c=>c.status==='active'&&c.x===position.x&&c.y===position.y);

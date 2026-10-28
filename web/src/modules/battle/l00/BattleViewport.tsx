@@ -7,6 +7,7 @@ import {getBattleSpeed, getDeployedCatCount} from './engine';
 import {getAdvice} from './advisor';
 import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
+import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
 import {COMMANDER_POSITION, CONFIG, DIFFICULTY_CONFIG, SKILLS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, isSkillTargetAllowed} from './ranges';
 import {drawCat, paintBattle} from './painter';
@@ -52,6 +53,7 @@ function CatEnergy({cat,compact=false}:{cat:CombatCatState;compact?:boolean}){
 export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,autoComplete=false}:Props){
   const [runtime]=useState(()=>new PrologueBattle({mode:'tutorial'}));
   const [game,setGame]=useState<CombatState|null>(null);
+  const skillFeedback=useSkillFeedback();
   const [selected,setSelected]=useState<CatId|null>(null);
   const [moveSelection,setMoveSelection]=useState<CatId|null>(null);
   const [skillTooltipOpen,setSkillTooltipOpen]=useState(false);
@@ -95,6 +97,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     inspectedRef.current=null;setSkillTooltipOpen(false);
   }
   useEffect(()=>{
+    skillFeedback.clear();
     const unsubscribe=runtime.subscribe(setGame);
     runtime.start(context,result=>{setSubmitted(true);callbackRef.current(result);});
     runtime.pause(pausedRef.current||document.hidden);
@@ -179,7 +182,21 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const skillCells=aimCat?getSkillCells(aimCat,aim?.target):[];
   const movementPhase=isBattle||game.phase==='teach_move'||game.phase==='teach_position';
   const skillsIntroduced=['teach_energy','skill_charge','teach_guard_skill','teach_caster_skill','battle','won','failed'].includes(game.phase);
-  const dispatch=(action:CombatAction)=>{if(!blocked)runtime.dispatch(action);};
+  const dispatch=(action:CombatAction)=>{
+    if(blocked)return;
+    const previous=runtime.getSnapshot();
+    runtime.dispatch(action);
+    const next=runtime.getSnapshot();
+    if(action.type==='CAST_SKILL'&&next?.lastAction?.ok){
+      const cat=previous?.cats.find(candidate=>candidate.id===action.catId);
+      const cast=next.cats.find(candidate=>candidate.id===action.catId);
+      if(cat&&cat.id!=='hero'&&cast&&cast.energy<cat.energy){
+        const target=action.x!==undefined&&action.y!==undefined?{x:action.x,y:action.y}:previous?.skillAim?.target;
+        skillFeedback.emit({catId:cat.id,name:SKILLS[cat.id].name,origin:{x:cat.x,y:cat.y},cells:getSkillCells(cat,target),
+          recipients:cat.id==='guard'?[{x:cat.x,y:cat.y}]:undefined});
+      }
+    }
+  };
   const skillTeaching=(cat:CombatCatState)=>game.phase==='teach_guard_skill'&&cat.id==='guard'||game.phase==='teach_caster_skill'&&cat.id==='caster';
   const canCast=(cat:CombatCatState)=>cat.id!=='hero'&&!blocked&&!game.paused&&!chatOpen&&!aim&&cat.status==='active'&&cat.energy>=SKILLS[cat.id].cost&&(isBattle||skillTeaching(cat));
   const canMove=(cat:CombatCatState)=>!blocked&&!chatOpen&&!aim&&cat.combatant&&cat.status==='active'&&(isBattle||game.phase==='teach_position'&&cat.id==='caster'||game.phase==='teach_move'&&cat.id==='guard');
@@ -332,6 +349,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
           <div className="prologue-board-scroll" ref={scrollRef} role="region" aria-label="序章战场，窄屏可横向滚动">
         <div className={`btl-board${overview?' is-overview':''}${aim?' btl-board-aiming':''}`} ref={boardRef} style={{width:boardWidth}} data-testid="battle-board" onPointerDown={aimDown} onPointerMove={aimMove} onPointerLeave={()=>previewAt(null)} onPointerUp={event=>finishAim(event)} onPointerCancel={event=>finishAim(event,true)} onLostPointerCapture={()=>{if(aimPointerRef.current!==null){aimPointerRef.current=null;previewAt(null);}}}>
           <canvas width={700} height={300} ref={canvasRef} aria-hidden="true"/>
+          <SkillFeedback columns={CONFIG.COLUMNS} rows={CONFIG.ROWS} bursts={skillFeedback.bursts} shields={game.cats.filter(cat=>cat.status==='active'&&cat.shield>0)}/>
           <div className="btl-cells" role="group" aria-label={aim?'技能瞄准，全地图 21 格均可选择中心，鼠标移动预览最多 5 格十字，左键释放，右键或 Esc 取消；方向键预览，回车释放':'3 行 7 列战斗地格，B1 为固定保护终点，B7 为唯一出怪口，禁止部署，19 格可部署'}>{Array.from({length:21},(_,i)=>{
             const x=i%7,y=Math.floor(i/7),name=cellName({x,y}),goal=x===COMMANDER_POSITION.x&&y===COMMANDER_POSITION.y,spawn=isSpawnCell(x,y);
             const highlighted=game.phase==='teach_position'&&x===3&&y===0||game.phase==='teach_move'&&x===4&&y===1;
