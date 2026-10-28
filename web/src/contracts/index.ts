@@ -40,6 +40,8 @@ export type GameCommand =
 export interface CommandRequest {expectedRevision: number; command: GameCommand}
 export interface CommandResponse {state: GameState; replayed: boolean}
 export interface Session {playerId: string; token: string}
+// 账号体系:注册把当前匿名进度绑定到用户名密码,登录可在任意设备取回(返回新会话)。
+export interface AuthRegistration {username: string}
 export interface ApiErrorBody {error: {code: string; message: string; requestId: string}}
 // 双货币:stamp=猫爪邮票(免费),tuna=金枪鱼罐头(付费,经模拟支付网关充值)。
 export type CurrencyId = 'stamp' | 'tuna';
