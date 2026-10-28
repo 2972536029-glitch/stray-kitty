@@ -8,6 +8,8 @@ import {drawCat} from '../l00/painter';
 import {getTunnelAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
+import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
+import {useBattleBoardFit} from '../useBattleBoardFit';
 import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
 import '../carry.css';
@@ -29,8 +31,8 @@ function RoleBadge({id}:{id:TunnelCatId}){
 }
 function AdvisorPortrait(){
   const ref=useRef<HTMLCanvasElement>(null);
-  useEffect(()=>{const context=ref.current?.getContext('2d');if(context)drawCat(context,'advisor',0,0,64);},[]);
-  return <canvas ref={ref} width={64} height={64} className="btl-portrait" aria-hidden="true"/>;
+  useEffect(()=>{const context=ref.current?.getContext('2d');if(context)drawCat(context,'advisor',0,0,96);},[]);
+  return <canvas ref={ref} width={96} height={96} className="btl-portrait" aria-hidden="true"/>;
 }
 function Health({cat}:{cat:TunnelCat}){
   return <div className="tunnel-cat-meters">
@@ -52,7 +54,7 @@ export function TunnelBattleViewport({attemptId,difficulty,carry,paused,onResult
   const [hidden,setHidden]=useState(document.hidden);
   const [notice,setNotice]=useState('');
   const [submitted,setSubmitted]=useState(false);
-  const [overview,setOverview]=useState(()=>window.innerWidth<700);
+  const [overview,setOverview]=useState(()=>window.innerWidth>=700);
   const [menuPosition,setMenuPosition]=useState({left:0,top:0});
   const [tooltipPosition,setTooltipPosition]=useState({left:0,top:0});
   const [skillTooltipOpen,setSkillTooltipOpen]=useState(false);
@@ -63,6 +65,7 @@ export function TunnelBattleViewport({attemptId,difficulty,carry,paused,onResult
     getSnapshot:()=>gameRef.current,localAnswer:getTunnelAnswer,
   });
   const canvasRef=useRef<HTMLCanvasElement>(null),boardRef=useRef<HTMLDivElement>(null),scrollRef=useRef<HTMLDivElement>(null);
+  const fittedWidth=useBattleBoardFit(scrollRef,MAP.columns,MAP.rows);
   const battlefieldRef=useRef<HTMLDivElement>(null),menuRef=useRef<HTMLDivElement>(null);
   const tooltipRef=useRef<HTMLDivElement>(null);
   const chatLogRef=useRef<HTMLDivElement>(null);
@@ -301,26 +304,31 @@ export function TunnelBattleViewport({attemptId,difficulty,carry,paused,onResult
     return()=>{observer.disconnect();window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);};
   },[inspected?.id,inspected?.x,inspected?.y,overview,skillTooltipOpen]);
 
-  return <section className="battle-l00 battle-tunnel" data-testid="tunnel-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} data-darkened={darkened} data-darkness-remaining={game.darknessRemaining.toFixed(2)} data-night-vision-remaining={game.nightVisionRemaining.toFixed(2)} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.tunnel-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
+  return <section className="battle-l00 battle-tunnel battle-immersive" data-scene="tunnel" data-testid="tunnel-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} data-darkened={darkened} data-darkness-remaining={game.darknessRemaining.toFixed(2)} data-night-vision-remaining={game.nightVisionRemaining.toFixed(2)} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.tunnel-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
+    <BattleSceneBackdrop scene="tunnel" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS} darkened={darkened}/>
     <div className="btl-head"><div><span className="btl-eyebrow">CHAPTER 04 · CAT DEFENSE</span><strong>第四章 · 地下通道</strong></div><div className="btl-progress"><span>黑影已离场 {game.defeated+game.leaks} / {game.totalEnemies}</span><span data-testid="tunnel-leaks" aria-label={`已漏过 ${game.leaks} 只黑影，最多 ${game.maxLeaks} 次`}>防线 {'●'.repeat(Math.max(0,game.maxLeaks-game.leaks))}{'○'.repeat(Math.min(game.maxLeaks,game.leaks))}</span></div></div>
     <div className="btl-wave-status"><strong data-testid="tunnel-wave">第 {game.wave} / {game.totalWaves} 波 · 剩余 {remaining} 只黑影</strong><span>A2、B8、D8 来敌 · 守住 C2</span></div>
-    <div className="btl-subhead"><span>{CELLS.length} 格不规则通道 · 缺口不可通行</span><span>已上阵 {game.cats.filter(cat=>cat.status==='active').length} / {RULES.maxCats}</span><span>零血退场 · 墨墨夜视与全队护盾</span></div>
-    <div className="btl-difficulty-strip" data-testid="tunnel-difficulty"><strong>{DIFFICULTIES[difficulty].label} · 敌人体力 {Math.round(DIFFICULTIES[difficulty].hpMultiplier*100)}%</strong><span>守完全部波次并击退首领；3 次突破则失败。所有猫退场也会失败。</span></div>
-    <div className={`tunnel-boss-panel${bossWindup?' is-warning':''}`} data-testid="tunnel-boss" data-boss-phase={game.boss.phase} data-boss-attacks={game.boss.attacks} data-boss-basic-attacking={bossBasicAttacking} data-boss-pulses={game.boss.slams}>
+    <details className="battle-hud-details"><summary>战况说明</summary>
+      <div className="btl-subhead"><span>{CELLS.length} 格不规则通道 · 缺口不可通行</span><span>已上阵 {game.cats.filter(cat=>cat.status==='active').length} / {RULES.maxCats}</span><span>零血退场 · 墨墨夜视与全队护盾</span></div>
+      <div className="btl-difficulty-strip" data-testid="tunnel-difficulty"><strong>{DIFFICULTIES[difficulty].label} · 敌人体力 {Math.round(DIFFICULTIES[difficulty].hpMultiplier*100)}%</strong><span>守完全部波次并击退首领；3 次突破则失败。所有猫退场也会失败。</span></div>
+      {game.phase==='ready'&&<p className="tunnel-ready" data-testid="tunnel-ready">推荐阵型已就位，可拖动小猫调整。点猫查看技能，点击开始守护。</p>}
+      <p>断灯期间只隐藏远处普通黑影；伙伴与喵喵始终可见、可操作。墨墨在场且满能时可用夜视恢复全场敌情，并为队伍提供护盾；未使用夜视也会自然恢复。</p>
+      <p className="battle-advisor-summary">{advice}</p>
+    </details>
+    <div className={`tunnel-boss-panel battle-hud-boss${bossWindup?' is-warning':''}`} data-testid="tunnel-boss" data-boss-phase={game.boss.phase} data-boss-attacks={game.boss.attacks} data-boss-basic-attacking={bossBasicAttacking} data-boss-pulses={game.boss.slams}>
       <strong>{game.boss.phase==='defeated'?'首领已击退':game.boss.name}</strong><div className="tunnel-boss-health" role="meter" aria-label="首领体力" aria-valuemin={0} aria-valuemax={game.boss.maxHp} aria-valuenow={Math.ceil(game.boss.hp)} data-testid="tunnel-boss-health"><i style={{width:`${100*game.boss.hp/game.boss.maxHp}%`}}/><span>{Math.ceil(game.boss.hp)} / {game.boss.maxHp}</span></div>
       <small>{bossWindup?`断灯脉冲预警！${Math.max(0,RULES.bossPulseWindup-game.boss.phaseTime).toFixed(1)} 秒后全场受击，可提前开盾。`:game.boss.phase==='defeated'?'首领已击退，继续处理全部波次。':bossBasicAttacking?'普通攻击 · 闸臂拍击':'固定占据 C6、C7、D6、D7 · 留意断灯脉冲'}</small>
     </div>
-    <p className={`tunnel-vision-status${darkened?' is-dark':game.nightVisionRemaining>0?' is-night-vision':''}`} data-testid="tunnel-vision-status"><strong>{darkened?'通道断灯':game.nightVisionRemaining>0?'墨墨 · 夜视生效':'通道视野正常'}</strong><span>{darkened?`远处黑影暂不可见 · ${game.darknessRemaining.toFixed(1)} 秒后自然恢复 · 墨墨在场且满能时可恢复视野`:game.nightVisionRemaining>0?`全场敌情可见 · 夜视剩余 ${game.nightVisionRemaining.toFixed(1)} 秒`:'断灯时伙伴与喵喵始终可见、可操作；墨墨可恢复全场视野。'}</span></p>
-    <CarryPanel carry={game.carry} phase={game.phase} wave={game.wave} waves={WAVES} entrances={Object.fromEntries(Object.entries(ROUTES).map(([route,path])=>[route,path[0]]))} enemies={ENEMY_DEFINITIONS} disabled={paused||hidden||game.paused||game.uiPaused||game.externallyPaused} onUse={()=>act({type:'USE_CARRY'})}/>
-    <div className="btl-tactics"><button type="button" data-testid="tunnel-advisor" aria-label="与军师阿策交谈" disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(value=>!value);}}><AdvisorPortrait/><strong>问问阿策</strong></button><p>{advice}</p></div>
+    <p className={`tunnel-vision-status battle-hud-mechanic${darkened?' is-dark':game.nightVisionRemaining>0?' is-night-vision':''}`} data-testid="tunnel-vision-status"><strong>{darkened?'通道断灯':game.nightVisionRemaining>0?'墨墨 · 夜视生效':'通道视野正常'}</strong><span>{darkened?`远处黑影暂不可见 · ${game.darknessRemaining.toFixed(1)} 秒后自然恢复`:game.nightVisionRemaining>0?`全场敌情可见 · 夜视剩余 ${game.nightVisionRemaining.toFixed(1)} 秒`:'墨墨可用夜视恢复全场敌情'}</span></p>
+    <CarryPanel compact carry={game.carry} phase={game.phase} wave={game.wave} waves={WAVES} entrances={Object.fromEntries(Object.entries(ROUTES).map(([route,path])=>[route,path[0]]))} enemies={ENEMY_DEFINITIONS} disabled={paused||hidden||game.paused||game.uiPaused||game.externallyPaused} onUse={()=>act({type:'USE_CARRY'})}/>
+    <div className="btl-tactics battle-advisor"><button title={advice} type="button" data-testid="tunnel-advisor" aria-label="与军师阿策交谈" disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(value=>!value);}}><AdvisorPortrait/><strong>阿策</strong><span>聊聊战况</span></button></div>
     {game.cats.some(cat=>cat.status==='retired')&&<p className="btl-retirement-note" role="status" data-testid="tunnel-retired">{game.cats.filter(cat=>cat.status==='retired').map(cat=>cat.name).join('、')}已退场，本场无法复活。</p>}
     <div className="btl-arena btl-arena-wide">
       <div className="btl-board-column">
         <div className="btl-playback" role="group" aria-label="战斗速度与开始暂停"><button type="button" className={game.baseSpeed===.5?'btl-speed-selected':''} disabled={ended||paused||hidden} aria-pressed={game.baseSpeed===.5} data-testid="tunnel-speed-half" onClick={()=>act({type:'SET_SPEED',speed:.5})}>×0.5</button><button type="button" className={game.baseSpeed!==.5?'btl-speed-selected':''} disabled={ended||paused||hidden} aria-pressed={game.baseSpeed!==.5} data-testid="tunnel-speed-toggle" aria-label={`常速或倍速，当前基础 ×${game.baseSpeed}`} onClick={()=>act({type:'SET_SPEED',speed:game.baseSpeed===1?2:1})}>{game.baseSpeed===.5?'×1 / ×2':`×${game.baseSpeed}`}</button><button type="button" className="btl-play-toggle" data-testid="tunnel-play-toggle" disabled={paused||hidden||ended||chatOpen||retreatOpen} onClick={startOrToggle}>{game.phase==='ready'?'开始守护':game.paused?'继续战斗':'暂停战斗'}</button><span data-testid="tunnel-effective-speed">{speed===0?'当前暂停':game.aim?'技能瞄准 ×1':inspected?'查看猫咪 · 临时 ×0.5':`当前 ×${speed}`} · {game.elapsed.toFixed(0)} 秒</span></div>
-        {game.phase==='ready'&&<p className="tunnel-ready" data-testid="tunnel-ready">推荐阵型已就位，可拖动小猫调整。点猫查看技能，点击开始守护。</p>}
         <div className="tunnel-map-tools"><button type="button" className="btl-quiet" aria-pressed={overview} onClick={()=>setOverview(value=>!value)}>{overview?'放大战场':'查看全图'}</button><button type="button" className="btl-quiet" onClick={()=>showMapArea('goal')}>← 守护点</button><button type="button" className="btl-quiet" onClick={()=>showMapArea('branch')}>通道右侧 →</button><button type="button" className="btl-quiet" onClick={()=>showMapArea('boss')}>首领 →</button></div>
         <div className="tunnel-battlefield" ref={battlefieldRef}>
-          <div ref={scrollRef} className="tunnel-board-scroll" role="region" aria-label="地下通道战场，窄屏可横向滚动"><div ref={boardRef} tabIndex={-1} className={`tunnel-board${darkened?' is-darkened':game.nightVisionRemaining>0?' has-night-vision':''}${overview?' is-overview':''}${moving?' is-moving':''}${game.aim?' is-aiming':''}`} data-testid="tunnel-board" onClick={event=>{if(event.target===event.currentTarget){if(suppressClick.current)suppressClick.current=false;else closeInspection();}}} onPointerDown={event=>{if(gameRef.current.aim&&event.pointerType!=='mouse'&&event.button===0){aimPointer.current=event.pointerId;event.currentTarget.setPointerCapture(event.pointerId);previewTouch(event);}}} onPointerMove={previewTouch} onPointerUp={event=>finishTouchAim(event)} onPointerCancel={event=>finishTouchAim(event,true)} onLostPointerCapture={()=>{aimPointer.current=null;}} onContextMenu={event=>{event.preventDefault();if(gameRef.current.aim)cancelAim();else closeInspection();}} onPointerLeave={()=>{if(!gesture.current){setHover(null);if(gameRef.current.aim)act({type:'AIM_SKILL',x:-1,y:-1});}}}>
+          <div ref={scrollRef} className="tunnel-board-scroll" role="region" aria-label="地下通道战场，窄屏可横向滚动"><div ref={boardRef} tabIndex={-1} className={`tunnel-board${darkened?' is-darkened':game.nightVisionRemaining>0?' has-night-vision':''}${overview?' is-overview':''}${moving?' is-moving':''}${game.aim?' is-aiming':''}`} data-testid="tunnel-board" data-overview={overview} style={{width:overview?fittedWidth:Math.max(MAP.columns*80,(fittedWidth??0)*1.25)}} onClick={event=>{if(event.target===event.currentTarget){if(suppressClick.current)suppressClick.current=false;else closeInspection();}}} onPointerDown={event=>{if(gameRef.current.aim&&event.pointerType!=='mouse'&&event.button===0){aimPointer.current=event.pointerId;event.currentTarget.setPointerCapture(event.pointerId);previewTouch(event);}}} onPointerMove={previewTouch} onPointerUp={event=>finishTouchAim(event)} onPointerCancel={event=>finishTouchAim(event,true)} onLostPointerCapture={()=>{aimPointer.current=null;}} onContextMenu={event=>{event.preventDefault();if(gameRef.current.aim)cancelAim();else closeInspection();}} onPointerLeave={()=>{if(!gesture.current){setHover(null);if(gameRef.current.aim)act({type:'AIM_SKILL',x:-1,y:-1});}}}>
             <canvas ref={canvasRef} width={BOARD_WIDTH} height={BOARD_HEIGHT} aria-label="五行八列外框内三十七格地下通道，九格障碍与四格断灯监守；E1至E3缺口透明，喵喵在C2，黑暗中所有猫始终可见"/>
 
             <div className="tunnel-cells">{CELLS.map(position=>{
