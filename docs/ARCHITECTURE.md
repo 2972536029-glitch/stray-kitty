@@ -30,7 +30,9 @@ flowchart TD
 ```text
 stray-kitty/
 ├─ deploy/  部署模板
-│  └─ team-preview/
+│  ├─ team-preview/
+│  │  └─ k8s/
+│  └─ team-preview-haozhe/
 │     └─ k8s/
 ├─ design/  模块设计
 │  ├─ events/
