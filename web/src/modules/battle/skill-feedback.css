@@ -1,0 +1,39 @@
+/* Shared by L00–L05. Only cast receipts and actual shields drive these visuals. */
+.battle-skill-feedback{--skill-label-margin:100px;position:absolute;inset:0;z-index:5;pointer-events:none!important;overflow:visible;isolation:isolate;contain:layout style}
+.battle-skill-feedback *{pointer-events:none!important}
+.battle-skill-feedback .skill-fx-canvas{display:block;width:100%;height:100%;overflow:hidden}
+.battle-skill-feedback .skill-fx-burst{filter:drop-shadow(0 0 4px currentColor);animation:skill-fx-lifetime 1.8s ease-out both}
+.battle-skill-feedback .skill-fx-release{transform-box:fill-box;transform-origin:center;animation:skill-fx-release .75s cubic-bezier(.18,.72,.23,1) both}
+.battle-skill-feedback .skill-fx-emblem{animation:skill-fx-emblem 1.35s ease-out both;filter:drop-shadow(0 0 3px currentColor)}
+.battle-skill-feedback .skill-fx-hit{animation:skill-fx-strike 1.45s ease-out both;transform-box:fill-box;transform-origin:center}
+.battle-skill-feedback .skill-fx-claws{animation:skill-fx-claw .45s ease-out both}
+.battle-skill-feedback .skill-fx-recipient{animation:skill-fx-recipient 1.6s ease-out both}
+.battle-skill-feedback .skill-fx-rising{animation:skill-fx-rise 1.5s ease-out both}
+.battle-skill-feedback .skill-fx-wave{animation:skill-fx-wave 1.3s ease-out both;transform-origin:0 0}
+.battle-skill-feedback .skill-fx-shield{color:#8bffff;filter:drop-shadow(0 0 3px #37e4ff)}
+.battle-skill-feedback .skill-fx-shield-floor{fill:#5df4ff12;stroke:#57edff;stroke-width:2}
+.battle-skill-feedback .skill-fx-shield-shell{fill:none;stroke:#a3ffff;stroke-width:2.8;stroke-linecap:round}
+.battle-skill-feedback .skill-fx-shield-glint{fill:none;stroke:#f1ffff;stroke-width:3;stroke-linecap:round}
+.battle-skill-feedback .skill-fx-label{position:absolute;display:flex;align-items:center;gap:7px;max-width:90%;padding:6px 12px;border:1px solid var(--skill-color);border-top:3px solid var(--skill-color);border-radius:3px;background:#0a202bf0;box-shadow:0 3px 9px #06121f99,0 0 12px color-mix(in srgb,var(--skill-color) 38%,transparent);color:#fffdf2;transform:translate(-50%,-100%);font-family:"Microsoft YaHei UI","Microsoft YaHei",sans-serif;text-shadow:0 1px 2px #000;white-space:nowrap;animation:skill-fx-label 1.8s ease-out both}
+.battle-skill-feedback .skill-fx-label.is-below{transform:translate(-50%,0)}
+.battle-skill-feedback .skill-fx-label strong{font-size:clamp(13px,1.15vw,19px);line-height:1.35;font-weight:800;color:#fffdf2}
+.battle-skill-feedback .skill-fx-label span{font-size:clamp(11px,.9vw,14px);line-height:1.4;color:var(--skill-color);font-weight:700}
+@keyframes skill-fx-lifetime{0%{opacity:1}72%{opacity:1}100%{opacity:0}}
+@keyframes skill-fx-release{0%{opacity:1;scale:.4}45%{opacity:1;scale:1.2}100%{opacity:0;scale:1.65}}
+@keyframes skill-fx-emblem{0%{opacity:0;translate:0 6px;scale:.7}14%,65%{opacity:1;translate:0 0;scale:1}100%{opacity:0;translate:0 -12px;scale:1.05}}
+@keyframes skill-fx-strike{0%{opacity:.25;scale:.65}16%,45%{opacity:1;scale:1}100%{opacity:0;scale:1.04}}
+@keyframes skill-fx-claw{0%{opacity:0;translate:12px -20px}35%,100%{opacity:1;translate:0 0}}
+@keyframes skill-fx-recipient{0%{opacity:.15}15%,65%{opacity:1}100%{opacity:0}}
+@keyframes skill-fx-rise{0%{translate:0 10px;opacity:.4}25%{opacity:1}100%{translate:0 -18px;opacity:0}}
+@keyframes skill-fx-wave{0%{scale:.25;opacity:.9}60%{opacity:.5}100%{scale:2.4;opacity:0}}
+@keyframes skill-fx-label{0%{opacity:0;translate:0 6px}12%,78%{opacity:1;translate:0 0}100%{opacity:0;translate:0 -5px}}
+@media(max-width:699px){
+ .battle-skill-feedback{--skill-label-margin:72px}
+ .battle-skill-feedback .skill-fx-label{padding:4px 7px;gap:4px;flex-direction:column;line-height:1.2}
+ .battle-skill-feedback .skill-fx-label strong{font-size:13px}
+ .battle-skill-feedback .skill-fx-label span{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+ .battle-skill-feedback .skill-fx-burst,.battle-skill-feedback .skill-fx-burst *,.battle-skill-feedback .skill-fx-label{animation:none!important}
+ .battle-skill-feedback .skill-fx-wave,.battle-skill-feedback .skill-fx-release{display:none}
+}

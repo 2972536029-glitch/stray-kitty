@@ -12,6 +12,7 @@ import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
 import {useBattleBoardFit} from '../useBattleBoardFit';
 import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
+import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
 import '../carry.css';
 import '../l00/battle.css';
 import './market.css';
@@ -45,6 +46,7 @@ function Health({cat}:{cat:MarketCat}){
 export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult}:MarketBattleViewportProps){
   const [game,setGame]=useState(()=>createMarketBattle({difficulty,carry}));
   const gameRef=useRef(game);
+  const skillFeedback=useSkillFeedback();
   const [selected,setSelected]=useState<MarketCatId|null>(null);
   const [moving,setMoving]=useState<MarketCatId|null>(null);
   const [hover,setHover]=useState<Position|null>(null);
@@ -80,7 +82,20 @@ export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult
 
   function publish(next:MarketState){gameRef.current=next;setGame(next);return next;}
   function act(action:MarketAction){
-    const next=publish(dispatchMarket(gameRef.current,action));
+    const previous=gameRef.current;
+    const next=publish(dispatchMarket(previous,action));
+    // Emit only for an accepted cast, including skills released by SELECT_SKILL.
+    if(action.type==='SELECT_SKILL'||action.type==='CAST_SKILL'){
+      const cat=previous.cats.find(candidate=>candidate.id===action.catId);
+      const cast=next.cats.find(candidate=>candidate.id===action.catId);
+      if(cat&&cast&&cast.skillUses>cat.skillUses){
+        const skill=SKILLS[cat.id];
+        const target=action.type==='CAST_SKILL'?action.target??previous.aim?.target:previous.aim?.target;
+        skillFeedback.emit({catId:cat.id,name:skill.name,origin:{x:cat.x,y:cat.y},
+          cells:skill.targeting==='team'?undefined:getSkillCells(cat,target),
+          recipients:skill.targeting==='team'?next.cats.filter(friend=>friend.status==='active').map(friend=>({x:friend.x,y:friend.y})):skill.targeting==='self'?[{x:cat.x,y:cat.y}]:undefined});
+      }
+    }
     if(next.lastAction&&!next.lastAction.ok)setNotice(next.lastAction.message);
     else if(action.type!=='AIM_SKILL'&&action.type!=='SET_UI_PAUSE')setNotice('');
     return next;
@@ -121,7 +136,7 @@ export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult
 
   useEffect(()=>{
     if(attemptRef.current===attemptId)return;
-    attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);
+    attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);skillFeedback.clear();
     setSelected(null);setMoving(null);setHover(null);setChatOpen(false);setDragging(null);setNotice('');
     setQuestion('');
     publish(createMarketBattle({difficulty,carry}));
@@ -324,6 +339,7 @@ export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult
         <div className="market-battlefield" ref={battlefieldRef}>
           <div ref={scrollRef} className="market-board-scroll" role="region" aria-label="集市战场，窄屏可横向滚动"><div ref={boardRef} tabIndex={-1} className={`market-board${overview?' is-overview':''}${moving?' is-moving':''}${game.aim?' is-aiming':''}`} style={{width:overview?fittedWidth:Math.max(MAP.columns*80,(fittedWidth??0)*1.25)}} data-testid="market-board" onClick={event=>{if(event.target===event.currentTarget){if(suppressClick.current)suppressClick.current=false;else closeInspection();}}} onPointerDown={event=>{if(gameRef.current.aim&&event.pointerType!=='mouse'&&event.button===0){aimPointer.current=event.pointerId;event.currentTarget.setPointerCapture(event.pointerId);previewTouch(event);}}} onPointerMove={previewTouch} onPointerUp={event=>finishTouchAim(event)} onPointerCancel={event=>finishTouchAim(event,true)} onLostPointerCapture={()=>{aimPointer.current=null;}} onContextMenu={event=>{event.preventDefault();if(gameRef.current.aim)cancelAim();else closeInspection();}} onPointerLeave={()=>{if(!gesture.current){setHover(null);if(gameRef.current.aim)act({type:'AIM_SKILL',x:-1,y:-1});}}}>
             <canvas ref={canvasRef} width={BOARD_WIDTH} height={BOARD_HEIGHT} aria-label="完整五行八列集市、十四格摊位、七个入口与单格熄灯首领"/>
+            <SkillFeedback columns={MAP.columns} rows={MAP.rows} bursts={skillFeedback.bursts} shields={game.cats.filter(cat=>cat.status==='active'&&cat.shield>0)}/>
 
             <div className="market-cells">{CELLS.map(position=>{
               const cat=game.cats.find(c=>c.status==='active'&&c.x===position.x&&c.y===position.y);
