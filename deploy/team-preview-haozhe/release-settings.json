@@ -2,10 +2,14 @@
   "context": "haozhe-wang@gcp-k8s-xsolla-school-experiments",
   "namespace": "cn-haozhe-wang",
   "application": "stray-kitty-preview",
-  "imageRepository": "school-gitlab.xsolla.dev:5050/haozhe_wang/stray-kitty/game",
+  "images": {
+    "game": "school-gitlab.xsolla.dev:5050/haozhe_wang/stray-kitty/game",
+    "payment": "school-gitlab.xsolla.dev:5050/haozhe_wang/stray-kitty/payment",
+    "frontend": "school-gitlab.xsolla.dev:5050/haozhe_wang/stray-kitty/frontend"
+  },
   "advisorSecret": "stray-kitty-preview-advisor",
   "registrySecret": "stray-kitty-preview-registry",
   "sourceCommit": null,
-  "imageDigest": null,
-  "status": "prepared-only-awaiting-final-art-and-advisor"
+  "imageDigests": null,
+  "status": "split-three-services"
 }

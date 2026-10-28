@@ -1,14 +1,5 @@
-# Build context: the final approved stray-kitty project root.
-# This file contains no credentials or private configuration.
-FROM node:24-alpine AS web
-WORKDIR /app
-COPY package.json package-lock.json ./
-COPY web/package.json web/package.json
-RUN npm ci --ignore-scripts
-COPY level_design level_design
-COPY web web
-RUN npm run build --workspace web
-
+# 游戏服务镜像:仅 Go API(目录 go:embed 内嵌),静态文件由独立前端容器托管。
+# 构建上下文:仓库根目录。
 FROM golang:1.26-alpine AS api
 WORKDIR /app/server
 COPY server ./
@@ -25,10 +16,9 @@ RUN apk add --no-cache ca-certificates \
     && chown 10001:10001 /data
 WORKDIR /app
 COPY --from=api /kitty-api /app/kitty-api
-COPY --from=web /app/web/dist /app/web
 USER 10001:10001
 ENV GAME_ADDR=0.0.0.0:8080 \
     GAME_DATA_FILE=/data/game.json \
-    GAME_WEB_DIR=/app/web
+    GAME_WEB_DIR=disabled
 EXPOSE 8080
 ENTRYPOINT ["/app/kitty-api"]

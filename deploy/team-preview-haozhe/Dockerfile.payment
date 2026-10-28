@@ -1,0 +1,23 @@
+# 支付服务镜像:独立进程、独立账本(payments.json),不读写游戏存档。
+# 构建上下文:仓库根目录。
+FROM golang:1.26-alpine AS api
+WORKDIR /app/server
+COPY server ./
+RUN CGO_ENABLED=0 go build -trimpath -o /paymentd ./cmd/paymentd
+
+FROM alpine:3.23
+ARG BUILD_REVISION=unverified
+LABEL org.opencontainers.image.revision="${BUILD_REVISION}"
+RUN apk add --no-cache ca-certificates \
+    && update-ca-certificates \
+    && addgroup -S -g 10001 kitty \
+    && adduser -S -u 10001 kitty -G kitty \
+    && mkdir /data \
+    && chown 10001:10001 /data
+WORKDIR /app
+COPY --from=api /paymentd /app/paymentd
+USER 10001:10001
+ENV PAYMENT_ADDR=0.0.0.0:8082 \
+    PAYMENT_DATA_FILE=/data/payments.json
+EXPOSE 8082
+ENTRYPOINT ["/app/paymentd"]

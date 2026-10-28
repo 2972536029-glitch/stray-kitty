@@ -1,0 +1,12 @@
+# 游戏镜像只需要 server 源码。
+*
+!server/
+!server/**
+server/data
+server/.runtime
+**/.env
+**/.env.*
+**/*.kubeconfig
+**/*.pem
+**/*.key
+**/*secret-values*
