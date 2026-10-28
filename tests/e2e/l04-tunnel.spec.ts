@@ -9,7 +9,7 @@ import path from 'node:path';
 import type {GameState, Session} from '../../web/src/contracts';
 
 const port = 8164, origin = `http://127.0.0.1:${port}`;
-const cases = [{id:'low',pressure:-1},{id:'medium',pressure:0},{id:'high',pressure:1},{id:'retreat',pressure:0}] as const;
+const cases = [{id:'low',pressure:-1},{id:'medium',pressure:0},{id:'high',pressure:1},{id:'retreat',pressure:0},{id:'navigation',pressure:0},{id:'battle-route',pressure:0}] as const;
 const sessions = new Map<string,Session>();
 let child:ChildProcess|undefined, closed:Promise<void>|undefined, directory='';
 test.beforeAll(async({request})=>{
@@ -20,6 +20,10 @@ test.beforeAll(async({request})=>{
   for(const entry of cases){
     const session={playerId:`l04-${entry.id}`,token:`l04-browser-fixture-${entry.id}`};sessions.set(entry.id,session);
     const state:GameState={schemaVersion:1,contentVersion:catalog.version,revision:1,phase:'home',chapterId:'alley',storyNodeId:'',mapId:'greenhouse',flags:['l00_completed','alley_rescued','rescue_story_done'],cats:['miaomiao','tuanzi','diandian'],inventory:{material:3,food:0,'warm-can':4,'bouncy-treat':2},currencies:{stamp:2},furniture:['cardboard_nest'],placements:{},completedStages:['l00_tutorial','alley_rescue'],pendingEventId:'',activeBattle:null,eventState:{pendingModifiers:{shadowPressure:entry.pressure,...(entry.id==='retreat'?{carry:'dog' as const}:{})}},lastResult:{message:'独立持久化浏览器夹具：序章已完成。'}};
+    if(entry.id==='navigation'||entry.id==='battle-route'){
+      state.chapterId='rescue';
+      state.flags.push('chapter_4_started','greenhouse_fortified','lost_poster_found');
+    }
     players[createHash('sha256').update(session.token).digest('hex')]={id:session.playerId,state,receipts:{},receiptOrder:[]};
   }
   const save=path.join(directory,'save.json');fs.writeFileSync(save,JSON.stringify({schemaVersion:1,players}));
@@ -34,7 +38,56 @@ async function openFixture(page:Page,id:string){
   await page.addInitScript(({origin,session})=>{if(location.origin===origin)localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));},{origin,session:sessions.get(id)!});
   await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();
 }
-for(const entry of cases.filter(value=>value.id!=='retreat')){
+test('L04 navigation: Chapter 1 and Chapter 4 map entries select their real scenes and allow movement',async({page,request})=>{
+  const headers={Authorization:`Bearer ${sessions.get('navigation')!.token}`},assets:string[]=[];
+  page.on('response',response=>{if(response.url().includes('chapter4_L0_approved')&&response.ok())assets.push(response.url());});
+  await openFixture(page,'navigation');
+  await page.getByRole('button',{name:'章节地图'}).click();
+  const map=page.getByRole('dialog',{name:'猫爪地图'});
+  await map.getByRole('button',{name:'前往雨后小巷'}).click();
+  await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(state=>({chapterId:state.chapterId,mapId:state.mapId,phase:state.phase}))).toEqual({chapterId:'rescue',mapId:'alley',phase:'explore'});
+  let canvas=page.locator('canvas');
+  await expect(canvas).toHaveAttribute('data-rendered-scene','rainy-alley');
+  await expect(canvas).toHaveAttribute('data-map-id','alley');
+  await page.getByRole('button',{name:'回到花房'}).click();
+  await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(state=>state.phase)).toBe('home');
+  await page.getByRole('button',{name:/再去小巷走走/}).click();
+  await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(state=>({mapId:state.mapId,phase:state.phase}))).toEqual({mapId:'alley',phase:'explore'});
+  await expect(canvas).toHaveAttribute('data-rendered-scene','rainy-alley');
+  await page.getByRole('button',{name:'回到花房'}).click();
+  await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(state=>state.phase)).toBe('home');
+  await page.getByRole('button',{name:/前往地下暗道/}).click();
+  await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(state=>({chapterId:state.chapterId,mapId:state.mapId,phase:state.phase}))).toEqual({chapterId:'rescue',mapId:'tunnel',phase:'explore'});
+  canvas=page.locator('canvas');
+  await expect(canvas).toHaveAttribute('data-rendered-scene','chapter4-tunnel');
+  await expect(canvas).toHaveAttribute('data-floor','L0');
+  await page.getByRole('button',{name:'回到花房'}).click();
+  await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(state=>state.phase)).toBe('home');
+  await page.getByRole('button',{name:'章节地图'}).click();
+  await page.getByRole('dialog',{name:'猫爪地图'}).getByRole('button',{name:'前往地下通道'}).click();
+  await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(state=>({chapterId:state.chapterId,mapId:state.mapId,phase:state.phase}))).toEqual({chapterId:'rescue',mapId:'tunnel',phase:'explore'});
+  canvas=page.locator('canvas');
+  await expect(canvas).toHaveAttribute('data-rendered-scene','chapter4-tunnel');
+  await expect(canvas).toHaveAttribute('data-map-id','tunnel');
+  await expect(canvas).toHaveAttribute('data-phase','explore');
+  await expect(canvas).toHaveAttribute('data-floor','L0');
+  await expect.poll(()=>assets.some(asset=>asset.includes('chapter4_L0_approved'))).toBe(true);
+  const start=Number(await canvas.getAttribute('data-player-x'));
+  await page.keyboard.down('ArrowRight');await page.waitForTimeout(800);await page.keyboard.up('ArrowRight');
+  await expect.poll(async()=>Number(await canvas.getAttribute('data-player-x'))).toBeGreaterThan(start+20);
+  const state=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
+  expect(state.activeBattle).toBeNull();
+});
+
+test('L04 battle trial: the standalone button enters only the tunnel_boss battle',async({page,request})=>{
+  await openFixture(page,'battle-route');
+  await page.getByTestId('tunnel-enter').click();
+  const headers={Authorization:`Bearer ${sessions.get('battle-route')!.token}`};
+  await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(state=>({chapterId:state.chapterId,phase:state.phase,mapId:state.mapId,stageId:state.activeBattle?.stageId}))).toEqual({chapterId:'rescue',phase:'battle',mapId:'greenhouse',stageId:'tunnel_boss'});
+  await expect(page.getByTestId('tunnel-battle')).toHaveAttribute('data-scene','tunnel');
+});
+
+for(const entry of cases.filter(value=>!['retreat','navigation','battle-route'].includes(value.id))){
   test(`L04 ${entry.id}: real six-cat controls finish eight waves and a boss without changing item inventory`,async({page,request},info)=>{
     // 全量套件串行跑到这里时浏览器累积负载会拖慢战斗快照查询,6s 会饿死 evaluate;放宽一倍防抖。
     test.setTimeout(300000);page.setDefaultTimeout(12000);
