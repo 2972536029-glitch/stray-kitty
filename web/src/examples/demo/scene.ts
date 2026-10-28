@@ -360,6 +360,23 @@ export class DemoScene {
     else if (this.state.mapId === 'alley') this.rainyAlley.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, {phase: mode, eventId: this.state.pendingEventId, pendingEventSource: this.state.pendingEventSource, randomEligible: this.randomEligible});
     else this.drawAlley();
     if (this.pausedByUser) {this.graphics.fillStyle(0x18282a, .6);this.graphics.fillRect(0, 0, 800, 480);}
+    if (import.meta.env.DEV || import.meta.env.MODE === 'e2e') this.publishNavigationDiagnostics();
+  }
+  private publishNavigationDiagnostics() {
+    if (!this.state) return;
+    const state = this.state;
+    let scene = 'fallback', floor = this.marketFloor, position = {x: this.x, y: this.y};
+    if (state.phase === 'battle') scene = 'battle';
+    else if (state.mapId === 'market' || this.storyScene === 'market') scene = 'night-market';
+    else if (state.mapId === 'alley') {scene = 'rainy-alley';floor = 'L0';position = this.rainyAlley.worldPosition();}
+    else if (state.phase === 'home' || state.mapId === 'greenhouse') scene = 'home';
+    else if (this.storyScene === 'tunnel') scene = 'tunnel-story-preview';
+    this.canvas.dataset.renderedScene = scene;
+    this.canvas.dataset.mapId = state.mapId;
+    this.canvas.dataset.phase = state.phase;
+    this.canvas.dataset.playerX = position.x.toFixed(2);
+    this.canvas.dataset.playerY = position.y.toFixed(2);
+    this.canvas.dataset.floor = floor;
   }
   private rect(x:number,y:number,w:number,h:number,color:number,alpha=1){this.graphics.fillStyle(color,alpha);this.graphics.fillRect(Math.round(x),Math.round(y),w,h);}
   private cat(x:number,y:number,breed:CatBreed='miaomiao'){this.graphics.cat(x,y,breed);}

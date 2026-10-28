@@ -32,7 +32,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
   const [devOpen, setDevOpen] = useState(false);
   // Exploration shortcuts must not carry an overlay over the next battle's controls.
   useEffect(() => {if (state.phase === 'battle') setDevOpen(false);}, [state.phase, state.activeBattle?.id]);
-  const isDevelopment = import.meta.env.DEV;
+  const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'e2e';
   const node = currentStory(catalog, state);
   const chapter = catalog.chapters.find(c => c.id === state.chapterId);
   const event = catalog.events.find(e => e.id === state.pendingEventId);
@@ -112,7 +112,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
           {paused && <div className="pause-label"><span>旅程已暂停</span><button onClick={onPause}>继续旅程</button></div>}
         </div>
         <div className="world-footer"><p className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : finaleBattle && state.phase === 'battle' ? '躲开预告的横扫与坠击，选择护卫与首领的攻击顺序。十波清完、两精英与九格首领全部击败后获胜；援军固定支援，主力仍需你的指挥。' : tunnelBattle && state.phase === 'battle' ? '保护 C2 的喵喵；断灯时可用墨墨夜视恢复视野并为全队加盾。守完八波并击败首领；打开地图、商店或返回标题会暂停战斗。' : greenhouseBattle && state.phase === 'battle' ? '沿花房的不规则通路布阵，守住 B1；守完八波并击败四格首领。打开地图、商店或返回标题会暂停战斗。' : marketBattle && state.phase === 'battle' ? '点选伙伴查看与释放技能；守完八波并击败集市首领。打开地图、商店或返回标题会暂停战斗。' : chapterBattle && state.phase === 'battle' ? '点场上的猫查看和释放技能，守住 A4 与右侧两处巷口；守完八波并击败首领。打开地图、商店或返回标题会暂停战斗。' : (explorationFooterText(state.phase,state.mapId,catalog.tutorials.find(t => t.phase === state.phase)?.text,objective(state)) ?? '每次相遇，都可能成为回家路上的一点光。')}</p>
-          {state.phase === 'explore' && <><div className="direction-pad">{(['up', 'left', 'down', 'right'] as Direction[]).map((d, i) => <button key={d} aria-label={`向${['上', '左', '下', '右'][i]}移动`} disabled={disabled} onPointerDown={e => {e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);onDirection(d, true);}} onPointerUp={() => onDirection(d, false)} onLostPointerCapture={() => onDirection(d, false)}>{['↑', '←', '↓', '→'][i]}</button>)}</div>{near && nearTarget && <button disabled={disabled} onClick={() => onInteract(nearTarget.id)}>{nearTarget.label}</button>}{((state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued')) || state.mapId === 'market')&& <button disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>回到花房</button>}</>}
+          {state.phase === 'explore' && <><div className="direction-pad">{(['up', 'left', 'down', 'right'] as Direction[]).map((d, i) => <button key={d} aria-label={`向${['上', '左', '下', '右'][i]}移动`} disabled={disabled} onPointerDown={e => {e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);onDirection(d, true);}} onPointerUp={() => onDirection(d, false)} onLostPointerCapture={() => onDirection(d, false)}>{['↑', '←', '↓', '→'][i]}</button>)}</div>{near && nearTarget && <button disabled={disabled} onClick={() => onInteract(nearTarget.id)}>{nearTarget.label}</button>}{state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued') && state.mapId !== 'market' && <button disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>回到花房</button>}</>}
         </div>
       </section></div>
     </main>
