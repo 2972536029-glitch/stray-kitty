@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY web/package.json web/package.json
 RUN npm ci --ignore-scripts
+COPY level_design level_design
 COPY web web
 RUN npm run build --workspace web
 
