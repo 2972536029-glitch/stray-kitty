@@ -100,6 +100,7 @@ func New(game *service.Game, webDir string) http.Handler {
 		}
 		a.json(w, 200, result)
 	})
+	mux.HandleFunc("POST /api/v1/advisor", a.advise)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, domain.Fail("NOT_FOUND", "API 路径或方法不存在", 404))
 	})
@@ -164,7 +165,7 @@ func validateCommand(body []byte, kind string) error {
 		"INTERACT":          {"interactionId"},
 		"REPORT_MOVE":       {"distance"},
 		"CHOOSE_EVENT":      {"eventId", "optionId", "usePush"},
-		"START_BATTLE":      {"stageId"},
+		"START_BATTLE":      {"stageId", "returnPosition"},
 		"COMPLETE_BATTLE":   {"attemptId", "outcome", "report"},
 		"CONTINUE":          {},
 		"GO_HOME":           {},
@@ -207,6 +208,11 @@ func validateCommand(body []byte, kind string) error {
 		var value string
 		if err := json.Unmarshal(raw.Command[key], &value); err != nil || value == "" {
 			return domain.Fail("INVALID_REQUEST", "命令缺少有效的 "+key, 400)
+		}
+	}
+	if kind == "START_BATTLE" {
+		if rawVal, exists := raw.Command["returnPosition"]; exists && (len(rawVal) == 0 || rawVal[0] != '{') {
+			return domain.Fail("INVALID_REQUEST", "returnPosition must be an object", 400)
 		}
 	}
 	for _, key := range []string{"report"} {

@@ -2,6 +2,7 @@ package transport_test
 
 import (
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"stray-kitty/server/internal/domain"
@@ -81,5 +82,52 @@ func TestBattleRejectsRemovedSupplyFieldsAndRequiresBossReport(t *testing.T) {
 	s, _ = g.State(token)
 	if s.Inventory["warm-can"] != 3 || strings.Contains(w.Body.String(), "battleRewards") {
 		t.Fatal("settlement consumed or awarded supplies")
+	}
+}
+
+func TestAlleyRescueStartAcceptsFrontendReturnPosition(t *testing.T) {
+	store, err := repository.Open(filepath.Join(t.TempDir(), "save.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := platform.LoadCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := service.New(store, catalog)
+	_, token, err := g.CreateSession()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Phase = "preparation"
+		p.State.MapID = "alley"
+		p.State.DrawnEvents = []string{"node:crate_event"}
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := transport.New(g, "")
+	body := `{"expectedRevision":0,"command":{"type":"START_BATTLE","stageId":"alley_rescue","returnPosition":{"x":111,"y":626}}}`
+	r := httptest.NewRequest("POST", "/api/v1/commands", strings.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set("Authorization", "Bearer "+token)
+	r.Header.Set("Idempotency-Key", "frontend-alley-start-001")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+	if w.Code != http.StatusOK {
+		t.Fatalf("frontend START_BATTLE request returned %d: %s", w.Code, w.Body.String())
+	}
+	state, err := g.State(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.Phase != "battle" || state.ActiveBattle == nil || state.ActiveBattle.StageID != "alley_rescue" {
+		t.Fatalf("rescue battle did not start: %+v", state)
+	}
+	if state.AlleyBattleReturn == nil || state.AlleyBattleReturn.X != 111 || state.AlleyBattleReturn.Y != 626 {
+		t.Fatalf("battle-entry position was not persisted: %+v", state.AlleyBattleReturn)
 	}
 }
