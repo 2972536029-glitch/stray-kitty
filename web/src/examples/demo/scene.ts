@@ -5,8 +5,9 @@ import type {Direction} from '../../adapters/platform/input';
 import {CanvasPainter} from '../../adapters/canvas/painter';
 import {FollowCamera, type CameraFrame} from '../../adapters/canvas/camera';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
-import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, nearestMarketPosition, marketNearestBoundary, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
+import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
+import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 花房家园的猫咪轻量 AI:pose 非空表示绑定专属家具姿态,否则按 sit→walk→sit 循环漫步。
@@ -38,6 +39,8 @@ export class DemoScene {
   private marketImages: Record<MarketFloor, HTMLImageElement> = {L0:new Image(),L1:new Image(),Lm1:new Image()};
   private marketFloor: MarketFloor = 'L0';
   private marketCamera = new FollowCamera();
+  private marketTransition = new MarketTransitionController();
+  private marketTransitionHeight = 0;
   private marketFrame: CameraFrame | null = null;
   private marketInitialized = false;
   private marketDebug = false;
@@ -98,22 +101,21 @@ export class DemoScene {
     this.cityBackdrop.src = '/assets/city-backdrop.svg';
     for(const floor of Object.keys(marketArt) as MarketFloor[]) this.marketImages[floor].src=marketArt[floor];
   }
-  setDirection(direction: Direction, held: boolean) {if (held) this.held.add(direction);else this.held.delete(direction);}
+  setDirection(direction: Direction, held: boolean) {if(this.marketTransition.active)return;if (held) this.held.add(direction);else this.held.delete(direction);}
   private keydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null;
     if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
     if (this.state?.phase !== 'explore' || this.pausedByUser) return;
     const key = event.key.toLowerCase();
+    if(this.marketTransition.active&&this.state.mapId==='market'){if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','c','f'].includes(key))event.preventDefault();return;}
     if (key === 's' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartSqueeze()) {
       event.preventDefault(); this.keys.delete('s'); return;
     }
     if (!event.repeat && this.state?.mapId === 'market' && (key==='c'||key==='f')) {
-      const pairs:Record<string,[MarketFloor,number,number,MarketFloor,number,number][]>={c:[['L0',745,287,'L1',675,257],['L0',735,408,'L1',628,368],['L0',1137,428,'L1',1260,420],['L0',859,717,'L0',933,745],['L0',1365,166,'L0',1365,88]],f:[['L0',669,674,'Lm1',651,553],['L0',1193,573,'Lm1',1170,658]]};
-      for(const [a,ax,ay,b,bx,by] of pairs[key]??[]) {
-        if(this.marketFloor===a&&Math.hypot(this.x-ax,this.y-ay)<44&&!(ax===1365&&!this.state.flags.includes('market_cleared'))){if(ax===1365){this.onMarketExit?.('L0',{x:1365,y:88});return;}const landing=nearestMarketPosition(b,bx,by,this.state.flags.includes('market_cleared'));if(!landing)continue;this.marketFloor=b;this.x=landing.x;this.y=landing.y;this.snapMarketCamera();break;}
-        if(this.marketFloor===b&&Math.hypot(this.x-bx,this.y-by)<44&&!(ax===1365&&!this.state.flags.includes('market_cleared'))){const landing=nearestMarketPosition(a,ax,ay,this.state.flags.includes('market_cleared'));if(!landing)continue;this.marketFloor=a;this.x=landing.x;this.y=landing.y;this.snapMarketCamera();break;}
-      }
+      const request=marketTransitionAt(this.marketFloor,key,this.x,this.y,this.state.flags,this.state.flags.includes('market_cleared'));
+      if(request&&this.marketTransition.begin(request,{x:this.x,y:this.y})){this.clearInput();this.onNear(false);this.onInspectHint?.(null);}
       event.preventDefault();
+      return;
     }
     if(import.meta.env.DEV&&key==='g'&&!event.repeat&&this.state?.mapId==='market')this.marketDebug=!this.marketDebug;
     if(import.meta.env.DEV&&key==='y'&&!event.repeat&&this.marketDebug&&this.state?.mapId==='market'){
@@ -191,6 +193,7 @@ export class DemoScene {
     if (!this.state) return;
     if (this.state.mapId === 'market' || this.storyScene === 'market') this.marketFrame=measureMarketCameraFrame(this.canvas,this.viewWidth,this.viewHeight);
     const mode = this.state.phase;
+    if(this.marketTransition.active&&(mode!=='explore'||this.state.mapId!=='market')){const interrupted=this.marketTransition.cancel();if(interrupted){this.marketFloor=interrupted.floor;this.x=interrupted.position.x;this.y=interrupted.position.y;}this.marketTransitionHeight=0;}
     if (mode !== this.lastMode || this.state.mapId !== this.lastMapId) {
       const mapChanged = this.state.mapId !== this.lastMapId;
       this.held.clear();
@@ -223,7 +226,10 @@ export class DemoScene {
     }
     const active = !this.pausedByUser && document.visibilityState !== 'hidden';
     if (!active) this.clearInput();
-    if (mode === 'explore' && active && this.state.mapId === 'alley') {
+    if (mode === 'explore' && active && this.state.mapId==='market'&&this.marketTransition.active) {
+      const transition=this.marketTransition.advance(delta);
+      if(transition){this.x=transition.x;this.y=transition.y;this.marketTransitionHeight=transition.height;this.marketFloor=transition.floor;this.onWorldPosition?.({x:this.x,y:this.y});if(transition.done){this.marketTransitionHeight=0;if(transition.exit)this.onMarketExit?.('L0',{x:this.x,y:this.y});}}
+    } else if (mode === 'explore' && active && this.state.mapId === 'alley') {
       const dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
       const dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
       this.rainyAlley.move(delta / 1000, dx, dy, this.state.flags, zoneId => this.onRandomZone?.(zoneId) ?? Promise.resolve(false));
@@ -838,7 +844,8 @@ export class DemoScene {
     if(image.complete&&image.naturalWidth>0)this.context.drawImage(image,0,0,1672,941);
     this.drawMarketRoadSigns();
     this.drawMarketMarkers();
-    this.context.save();this.context.translate(this.x-16,this.y-38);this.context.scale(.5,.5);drawPixelCat(this.context,'miaomiao','idle');this.context.restore();
+    this.context.fillStyle='rgba(10,16,22,.38)';this.context.beginPath();this.context.ellipse(this.x,this.y+3,9,3,0,0,Math.PI*2);this.context.fill();
+    this.context.save();this.context.translate(this.x-16,this.y-30-this.marketTransitionHeight);this.context.scale(.5,.5);drawPixelCat(this.context,'miaomiao','idle');this.context.restore();
     if(this.marketDebug)this.drawMarketDebug();
     this.context.restore();
     if(this.marketDebug){this.context.fillStyle='#fff0c4';this.context.font='11px monospace';this.context.fillText('QA collision diagnostics · press Y to copy last movement',frame.safe.x+8,Math.max(frame.safe.y+18,18));}

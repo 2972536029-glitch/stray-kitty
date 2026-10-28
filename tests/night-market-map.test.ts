@@ -79,6 +79,34 @@ test('actual swept movement works both ways across seven L0 streets and across t
   assert.deepEqual(cameraIndependent.position,{x:1150,y:387},'world collision results do not depend on camera projection');
 });
 
+test('reported stair, cargo, southeast and central-east roads allow direct swept travel',()=>{
+  const traverse=(name:string,start:{x:number;y:number},delta:{x:number;y:number})=>{
+    assert.equal(isMarketTraversable('L0',start.x,start.y),true,`${name} start has full cat clearance`);
+    const moved=sweepMarketMove('L0',start,delta);
+    assert.equal(moved.blocked,false,`${name} direct road is continuously walkable`);
+    assert.ok(Math.hypot(moved.position.x-start.x,moved.position.y-start.y)>=Math.hypot(delta.x,delta.y)-2,`${name} advances without a hidden wall`);
+    const back=sweepMarketMove('L0',moved.position,{x:-delta.x,y:-delta.y});
+    assert.equal(back.blocked,false,`${name} reverse road is continuously walkable`);
+    assert.ok(Math.hypot(back.position.x-start.x,back.position.y-start.y)<2,`${name} returns to its origin`);
+  };
+  traverse('western underground stair road',{x:669,y:680},{x:0,y:24});
+  traverse('southeastern street downward',{x:1204,y:617},{x:0,y:26});
+  traverse('southeastern street to the right',{x:1204,y:617},{x:24,y:0});
+  traverse('central/eastern junction upward',{x:1150,y:375},{x:0,y:-24});
+  const junctions=[{name:'west underground stairs',point:{x:669,y:674}},{name:'southeast street',point:{x:1204,y:617}},{name:'central/east junction',point:{x:1150,y:375}}];
+  for(const junction of junctions)for(const direction of [{x:12,y:0},{x:-12,y:0},{x:0,y:12},{x:0,y:-12}]){
+    const moved=sweepMarketMove('L0',junction.point,direction);
+    assert.equal(moved.blocked,false,`${junction.name} cardinal movement ${direction.x},${direction.y} stays on the walkable surface`);
+    assert.ok(Math.hypot(moved.position.x-junction.point.x,moved.position.y-junction.point.y)>10,`${junction.name} advances in each cardinal direction`);
+  }
+  const westOfCrate={x:875,y:710},eastOfCrate={x:919,y:710};
+  assert.equal(isMarketTraversable('L0',westOfCrate.x,westOfCrate.y),true,'southern crate approach is walkable');
+  assert.equal(isMarketTraversable('L0',eastOfCrate.x,eastOfCrate.y),true,'crate landing side is walkable');
+  assert.equal(sweepMarketMove('L0',westOfCrate,{x:eastOfCrate.x-westOfCrate.x,y:0}).blocked,true,'the cargo obstacle cannot be crossed by ordinary walking');
+  assert.ok(nearestMarketPosition('L0',859,717,true),'the authored C approach has valid cat clearance');
+  assert.ok(nearestMarketPosition('L0',937,727,true),'the authored C landing has valid cat clearance');
+});
+
 test('repositioned crow can be approached from every accessible direction',()=>{
   const crow=marketItems.find(item=>item.id==='crow')!,directions=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]] as const;let reachable=0;
   for(const [dx,dy] of directions){const length=Math.hypot(dx,dy),start={x:crow.x-dx/length*28,y:crow.y-dy/length*28};if(!isMarketTraversable('L0',start.x,start.y))continue;reachable++;const result=sweepMarketMove('L0',start,{x:dx/length*8,y:dy/length*8});assert.ok(Math.hypot(result.position.x-crow.x,result.position.y-crow.y)<Math.hypot(start.x-crow.x,start.y-crow.y),`approach from ${dx},${dy} should make progress`);}

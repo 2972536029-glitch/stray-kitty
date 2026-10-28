@@ -855,6 +855,9 @@
       "id": "nw",
       "kind": "climb",
       "key": "c",
+      "animation": "climb",
+      "durationMs": 900,
+      "arcHeight": 18,
       "label": "C · 登上西北绿道",
       "a": {
         "x": 745,
@@ -872,6 +875,9 @@
       "id": "nwReturn",
       "kind": "climb",
       "key": "c",
+      "animation": "climb",
+      "durationMs": 900,
+      "arcHeight": 18,
       "label": "C · 西北屋顶回环",
       "a": {
         "x": 735,
@@ -889,6 +895,9 @@
       "id": "se",
       "kind": "climb",
       "key": "c",
+      "animation": "jump",
+      "durationMs": 1100,
+      "arcHeight": 24,
       "label": "C · 攀上东侧鸽子高台",
       "a": {
         "x": 1137,
@@ -906,6 +915,9 @@
       "id": "underpassN",
       "kind": "stairs",
       "key": "f",
+      "animation": "stairs",
+      "durationMs": 760,
+      "arcHeight": 0,
       "label": "F · 西侧地下入口",
       "a": {
         "x": 669,
@@ -923,6 +935,9 @@
       "id": "underpassE",
       "kind": "stairs",
       "key": "f",
+      "animation": "stairs",
+      "durationMs": 760,
+      "arcHeight": 0,
       "label": "F · 东侧地下出口",
       "a": {
         "x": 1193,
@@ -940,6 +955,9 @@
       "id": "southCrate",
       "kind": "climb",
       "key": "c",
+      "animation": "jump",
+      "durationMs": 840,
+      "arcHeight": 24,
       "label": "C · 越过货箱堆",
       "a": {
         "x": 859,
@@ -957,6 +975,9 @@
       "id": "exitClimb",
       "kind": "climb",
       "key": "c",
+      "animation": "climb",
+      "durationMs": 900,
+      "arcHeight": 18,
       "requiresFlag": "market_cleared",
       "label": "C · 翻过战后木箱",
       "a": {

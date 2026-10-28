@@ -1,7 +1,7 @@
 import source from '../../../../specs/night-market/night_market_v016_spatial_reference.json';
 
 export type MarketFloor = 'L0' | 'L1' | 'Lm1';
-type Spatial = {R:Record<MarketFloor,[number,number[][]][]>;walkableSurfaces:{id:string;layer:MarketFloor;points:number[][]}[];solids:({type:'rect';x:number;y:number;w:number;h:number}|{type:'poly';pts:number[][]})[];items:{id:string;x:number;y:number;layer:MarketFloor;label:string;kind:string;info?:string}[];portals:{id:string;kind:'climb'|'stairs';key:'c'|'f';label:string;requiresFlag?:string;a:{x:number;y:number;layer:MarketFloor};b:{x:number;y:number;layer:MarketFloor};radius:number}[];actionObstacles:{id:string;a:number[];b:number[];radius:number}[];battleBarrier:{layer:MarketFloor;a:number[];b:number[];radius:number}};
+type Spatial = {R:Record<MarketFloor,[number,number[][]][]>;walkableSurfaces:{id:string;layer:MarketFloor;points:number[][]}[];solids:({type:'rect';x:number;y:number;w:number;h:number}|{type:'poly';pts:number[][]})[];items:{id:string;x:number;y:number;layer:MarketFloor;label:string;kind:string;info?:string}[];portals:{id:string;kind:'climb'|'stairs';key:'c'|'f';animation:'climb'|'jump'|'stairs';durationMs:number;arcHeight:number;label:string;requiresFlag?:string;a:{x:number;y:number;layer:MarketFloor};b:{x:number;y:number;layer:MarketFloor};radius:number}[];actionObstacles:{id:string;a:number[];b:number[];radius:number}[];battleBarrier:{layer:MarketFloor;a:number[];b:number[];radius:number}};
 export const nightMarketSpatial = source as unknown as Spatial;
 export const marketArt: Record<MarketFloor, string> = {
   L0: '/assets/night-market/night_market_L0_streets_1672x941.png',
@@ -29,6 +29,19 @@ export const marketRoadSigns:readonly MarketRoadSign[]=[
 
 export function nearestMarketRoadSign(floor:MarketFloor,x:number,y:number) {
   return marketRoadSigns.filter(sign=>sign.floor===floor).map(sign=>({sign,distance:Math.hypot(x-sign.x,y-sign.y)})).sort((a,b)=>a.distance-b.distance)[0]??null;
+}
+
+export type MarketTransitionRequest={id:string;animation:'climb'|'jump'|'stairs';durationMs:number;arcHeight:number;fromFloor:MarketFloor;toFloor:MarketFloor;from:{x:number;y:number};to:{x:number;y:number};exit:boolean};
+export function marketTransitionAt(floor:MarketFloor,key:'c'|'f',x:number,y:number,flags:readonly string[],cleared:boolean):MarketTransitionRequest|null {
+  const candidates=marketPortals.flatMap(portal=>[{portal,from:portal.a,to:portal.b},{portal,from:portal.b,to:portal.a}])
+    .filter(value=>value.portal.key===key&&value.from.layer===floor&&(!value.portal.requiresFlag||flags.includes(value.portal.requiresFlag))&&Math.hypot(x-value.from.x,y-value.from.y)<=44)
+    .sort((a,b)=>Math.hypot(x-a.from.x,y-a.from.y)-Math.hypot(x-b.from.x,y-b.from.y));
+  for(const value of candidates){
+    const landing=nearestMarketPosition(value.to.layer,value.to.x,value.to.y,cleared);if(!landing)continue;
+    const source=nearestMarketPosition(value.from.layer,value.from.x,value.from.y,cleared)??{x:value.from.x,y:value.from.y};
+    return {id:value.portal.id,animation:value.portal.animation,durationMs:value.portal.durationMs,arcHeight:value.portal.arcHeight,fromFloor:value.from.layer,toFloor:value.to.layer,from:source,to:landing,exit:value.portal.id==='exitClimb'};
+  }
+  return null;
 }
 
 export type MarketMoveResult = {position:{x:number;y:number};blocked:boolean;condition:string|null;blockedAt:{x:number;y:number}|null};
@@ -98,8 +111,7 @@ function isMarketStreetPoint(floor:MarketFloor,x:number,y:number) {
 function isMarketFootprintOnStreet(floor:MarketFloor,x:number,y:number,radius:number) {
   if(!isMarketStreetPoint(floor,x,y))return false;
   if(radius<=0)return true;
-  // Check the cat's full disk against the union of authored street polygons and
-  // route ribbons. This lets adjacent surfaces jointly support the footprint.
+  // Treat authored surfaces and legacy route ribbons as one continuous walkable field.
   for(let index=0;index<16;index++){
     const angle=index*Math.PI/8;
     if(!isMarketStreetPoint(floor,x+Math.cos(angle)*radius,y+Math.sin(angle)*radius))return false;
