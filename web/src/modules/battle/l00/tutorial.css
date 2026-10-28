@@ -31,6 +31,7 @@
 .battle-l00 .btl-tutorial-card .btl-guide-error{color:#ffddae;font-size:16px;line-height:1.45}
 .battle-l00 .btl-tutorial-scroll-hint{display:block;margin-top:8px;color:#bff7ff;font-size:15px;line-height:1.5}
 .battle-l00 .btl-cell.btl-deploy-available{background:#29bfe457!important;border:2px solid #76eaffb3;border-radius:2px;box-shadow:inset 0 0 15px #47c8f129}
+.battle-l00 .btl-cell.btl-move-target{background:transparent!important;outline:3px solid #fff1b2;outline-offset:-5px;box-shadow:inset 0 0 0 1px #17353a;border-radius:2px}
 .battle-l00 .btl-cell.btl-deploy-available:enabled:hover{background:#65e9ff80!important;border-color:#fff3b7}
 .battle-l00 .btl-cell.btl-deploy-available .btl-cell-marker{color:#fffbe8;font-size:15px;font-weight:700;line-height:1.3;text-shadow:none;background:#153f4b;padding:4px 2px;white-space:normal;border:1px solid #a2ecf0;border-radius:2px}
 /* Teaching uses the full field; its dialogue card floats in a measured gap. */

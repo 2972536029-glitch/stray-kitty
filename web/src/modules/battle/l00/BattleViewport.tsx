@@ -184,6 +184,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const freeCombatMovement=isBattle||game.phase==='skill_charge'||game.phase==='teach_live_move';
   const movementLesson=game.phase==='teach_move'||game.phase==='teach_position'||game.phase==='teach_live_move';
   const movementPhase=freeCombatMovement||movementLesson;
+  const dragTarget=drag?boardPosition(drag.x,drag.y):null;
   const skillsIntroduced=['teach_energy','skill_charge','teach_guard_skill','teach_caster_skill','battle','won','failed'].includes(game.phase);
   const dispatch=(action:CombatAction)=>{if(!blocked)runtime.dispatch(action);};
   const skillTeaching=(cat:CombatCatState)=>game.phase==='teach_guard_skill'&&cat.id==='guard'||game.phase==='teach_caster_skill'&&cat.id==='caster';
@@ -327,7 +328,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     <div className="btl-wave-status"><strong data-testid="battle-wave-progress">{game.wave>0?`第 ${game.wave} / ${game.totalWaves} 波`:`救援与教学 · 实战共 ${game.totalWaves} 波`}</strong><span data-testid="battle-wave-status">{isBattle&&game.nextWaveIn!==null?`下一波 ${Math.max(0,Math.ceil(game.nextWaveIn))} 秒后${effectiveSpeed===0?'（已暂停）':''}`:game.phase==='won'?'所有波次已完成':game.phase==='failed'?'本次守线结束':game.wave===0?'救援后进入实战引导':'黑影从 B7 进入'}</span></div>
     <details className="battle-hud-details"><summary>战况说明</summary>
       <div className="btl-subhead"><span>3 行 × 7 列 · 19 格可部署</span><span data-testid="battle-deployed-count">已上阵 {deployedCount}/{CONFIG.MAX_DEPLOYED_CATS} · 主角和军师不占位</span><span>猫咪朝右 → · 右侧来敌</span></div>
-      <div className="btl-difficulty-strip" role="status" aria-label="本次战斗难度"><strong>{difficulty.label} · 新手教学</strong><span>{game.phase==='battle'?`自由战斗 · ${difficultyText} · 3 次突破或全员退场则失败`:game.phase==='won'?'本次守线完成':game.phase==='ready'?`救援后边战边学，当前${difficulty.label}实战`:'实战教学 · 操作提示出现时暂停等待'}</span></div>
+      <div className="btl-difficulty-strip" role="status" aria-label="本次战斗难度"><strong>{difficulty.label} · 新手教学</strong><span>{game.phase==='battle'?`自由战斗 · ${difficultyText} · 3 次突破或全员退场则失败`:game.phase==='won'?'本次守线完成':game.phase==='ready'?`救援后边战边学，当前${difficulty.label}实战`:effectiveSpeed>0?'实战教学 · 边战边学，自由换位':'实战教学 · 完成当前操作后继续'}</span></div>
       <div className="btl-range-legend" aria-label="范围图例"><span><i/>薄荷绿 · 普攻可达，单体攻击</span><span><i className="btl-legend-aim"/>浅青 · 可释放中心区域</span><span><i className="btl-legend-effect"/>黄色 · 技能作用范围</span></div>
     </details>
     {game.advisor.visible&&<div className="btl-tactics battle-advisor"><button type="button" title={proactive} data-testid="battle-advisor" disabled={blocked||!!aim||!!inspectedCat||terminal} onClick={()=>setChatOpen(value=>!value)} aria-label="与军师阿策交谈" aria-expanded={chatOpen}><CatPortrait kind="advisor" size={96}/><strong>阿策</strong><span>聊聊战况</span></button></div>}
@@ -351,9 +352,10 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
             const targetAllowed=!!aimCat&&isSkillTargetAllowed(aimCat,{x,y});
             const enemyOccupied=game.enemies.some(enemy=>Math.abs(enemy.x-x)<.45&&Math.abs(enemy.y-y)<.45);
             const allowed=aim?targetAllowed:!goal&&!spawn&&!enemyOccupied&&movementPhase&&!chatOpen;
-            const showMoveCells=!aim&&allowed&&(movementLesson||!!moveSelection||!!drag);
+            const showMoveCells=!aim&&allowed&&movementLesson;
+            const moveTarget=!aim&&!movementLesson&&allowed&&dragTarget?.x===x&&dragTarget?.y===y;
             const effect=contains(skillCells,x,y),attack=contains(attackCells,x,y),target=aim?.target?.x===x&&aim.target.y===y;
-            return <button key={name} className={`btl-cell${goal?' btl-goal':''}${spawn?' btl-spawn':''}${highlighted?' btl-focus':''}${showMoveCells?' btl-deploy-available':''}${aim&&targetAllowed?' btl-aim-allowed':''}${effect?' btl-skill-effect':''}${target?' btl-aim-center':''}`}
+            return <button key={name} className={`btl-cell${goal?' btl-goal':''}${spawn?' btl-spawn':''}${highlighted?' btl-focus':''}${showMoveCells?' btl-deploy-available':''}${moveTarget?' btl-move-target':''}${aim&&targetAllowed?' btl-aim-allowed':''}${effect?' btl-skill-effect':''}${target?' btl-aim-center':''}`}
               aria-label={`地格 ${name}${aim?`${targetAllowed?'，可选技能中心':'，超出可选范围'}${effect?'，技能覆盖':''}${target?'，当前落点':''}`:goal?'，保护终点，禁止部署':spawn?'，本关出怪口，禁止部署':attack?'，普通攻击可达':''}`} aria-pressed={aim?target:undefined}
               data-testid={`battle-cell-${name}`} data-attack-range={attack||undefined} data-skill-range={effect||undefined} disabled={blocked||!allowed}
               onClick={event=>cellClick(x,y,event.detail!==0)} onKeyDown={event=>cellKey(event,x,y)} onFocus={()=>{if(runtime.getSnapshot()?.skillAim)previewAt({x,y});}}>
@@ -386,7 +388,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
           {game.lastAction?.ok===false&&<span role="status" className="btl-guide-error">{game.lastAction.reason}</span>}
           {game.phase==='teach_energy'&&<button data-testid="battle-begin-skill-practice" disabled={blocked} onClick={()=>{closeInspection();dispatch({type:'BEGIN_SKILL_PRACTICE'});}}>迎战</button>}
         </TutorialSpotlight>}
-        {(!guide||aim)&&<p className="btl-board-caption" data-testid={aim?'battle-skill-aim':undefined}>{aim?<>{!guide&&<span>{aimOutside?'已移出棋盘 · ':''}点击落点释放 · 右键 / Esc 取消</span>}<button className="btl-quiet btl-inline-cancel" data-testid="battle-cancel-skill" disabled={blocked} onClick={()=>{dispatch({type:'CANCEL_SKILL'});clearPointers();}}>取消施法</button></>:moveSelection?`移动${game.cats.find(cat=>cat.id===moveSelection)?.name}：点选蓝格，或与伙伴交换位置`:inspected?`点图标使用技能 · 按住猫咪可直接拖动`:'战斗中可随时拖动猫咪换位 · 任意合法格都能部署'}</p>}
+        {(!guide||aim)&&<p className="btl-board-caption" data-testid={aim?'battle-skill-aim':undefined}>{aim?<>{!guide&&<span>{aimOutside?'已移出棋盘 · ':''}点击落点释放 · 右键 / Esc 取消</span>}<button className="btl-quiet btl-inline-cancel" data-testid="battle-cancel-skill" disabled={blocked} onClick={()=>{dispatch({type:'CANCEL_SKILL'});clearPointers();}}>取消施法</button></>:moveSelection?`移动${game.cats.find(cat=>cat.id===moveSelection)?.name}：点选落点，或与伙伴交换位置`:inspected?`点图标使用技能 · 按住猫咪可直接拖动`:'战斗中可随时拖动猫咪换位 · 任意合法格都能部署'}</p>}
       </div>
     </div>
     <div className="btl-controls"><p role="status">{blocked?'战斗已暂停。':game.lastAction?.type==='INSPECT_CAT'&&!inspectedCat?speedStatus:game.lastAction?.reason??'先观察喵喵的遭遇，伙伴很快就会赶来。'}{!blocked&&(game.paused||chatOpen||aim||inspectedCat)&&<small>{speedStatus}</small>}</p></div>

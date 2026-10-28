@@ -74,6 +74,7 @@ test('序章用真实进攻教学自由部署与拖动，并对真实黑影施�
   await page.screenshot({path:testInfo.outputPath('ready-desktop.png'),fullPage:true});
   await page.getByTestId('battle-speed-toggle').click();await page.getByTestId('battle-play-toggle').click();
   await expect(battle).toHaveAttribute('data-phase','teach_position',{timeout:20000});
+  await expect(page.locator('.btl-deploy-available')).not.toHaveCount(0);
   await expect(page.getByTestId('battle-cell-B1')).toBeDisabled();
   await expect(page.getByTestId('battle-cell-B7')).toBeDisabled();
   await expect(page.getByTestId('battle-cell-A7')).toBeEnabled();
@@ -89,12 +90,15 @@ test('序章用真实进攻教学自由部署与拖动，并对真实黑影施�
   await page.screenshot({path:testInfo.outputPath('running-move-guide-desktop.png'),fullPage:true});
   await drag(page,page.getByTestId('battle-cat-guard'),page.getByTestId('battle-cell-B5'));
   await expect(battle).toHaveAttribute('data-phase','skill_charge');
+  await expect(page.locator('.btl-deploy-available')).toHaveCount(0);
   await expect(page.getByTestId('battle-cat-guard')).toHaveAttribute('aria-label',/，B5，/);
   await expect(battle).toHaveAttribute('data-phase','teach_guard_skill',{timeout:40000});
+  await expect(page.locator('.btl-deploy-available')).toHaveCount(0);
   const waveBefore=await page.getByTestId('battle-wave-progress').textContent();
   const clockBefore=await battle.getAttribute('data-battle-time');
   await page.getByTestId('battle-cat-guard').click();await page.getByTestId('battle-skill-guard').click();
   await expect(battle).toHaveAttribute('data-phase','teach_caster_skill');
+  await expect(page.locator('.btl-deploy-available')).toHaveCount(0);
   const enemy=page.locator('.btl-live-enemy[data-cell]').first();
   const target=await enemy.getAttribute('data-cell');expect(target).toBeTruthy();
   await page.getByTestId('battle-cat-caster').click();await page.getByTestId('battle-skill-caster').click();
@@ -106,6 +110,28 @@ test('序章用真实进攻教学自由部署与拖动，并对真实黑影施�
   await expect(page.getByTestId('battle-tutorial-card')).toHaveCount(0);
   await expect(page.getByTestId('battle-open-bag')).toHaveCount(0);
   await expect(page.getByText(/练习木偶|练习木桩/)).toHaveCount(0);
+  await expect(page.locator('.btl-deploy-available')).toHaveCount(0);
+  await page.screenshot({path:testInfo.outputPath('tutorial-complete-original-colors.png'),fullPage:true});
+  // After the movement lesson, dragging highlights only the current legal drop
+  // tile instead of washing the entire playable board in deployment blue.
+  const source=await center(page.getByTestId('battle-cat-caster'));
+  const drop=await center(page.getByTestId('battle-cell-C3'));
+  await page.mouse.move(source.x,source.y);await page.mouse.down();
+  await page.mouse.move(drop.x,drop.y,{steps:8});
+  await expect(page.locator('.btl-deploy-available')).toHaveCount(0);
+  await expect(page.locator('.btl-move-target')).toHaveCount(1);
+  await expect(page.getByTestId('battle-cell-C3')).toHaveClass(/btl-move-target/);
+  await page.screenshot({path:testInfo.outputPath('post-tutorial-single-drop-target.png'),fullPage:true});
+  await page.mouse.up();
+  await expect(page.getByTestId('battle-cat-caster')).toHaveAttribute('aria-label',/，C3，/);
+  await expect(page.locator('.btl-move-target')).toHaveCount(0);
+  await expect(page.locator('.btl-deploy-available')).toHaveCount(0);
+  await page.getByTestId('battle-cat-caster').click();
+  await page.getByTestId('battle-move-selected').click();
+  await expect(page.locator('.btl-deploy-available')).toHaveCount(0);
+  await page.getByTestId('battle-cell-C4').press('Enter');
+  await expect(page.getByTestId('battle-cat-caster')).toHaveAttribute('aria-label',/，C4，/);
+  await expect(page.locator('.btl-deploy-available')).toHaveCount(0);
 });
 
 test('新实战教学连续完成六波并通过宿主正常结算',async({page,request},testInfo)=>{
