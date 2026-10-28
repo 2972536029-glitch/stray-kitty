@@ -379,6 +379,50 @@
           }
         }
       }
+    },
+    "/api/v1/advisor": {
+      "post": {
+        "operationId": "askBattleAdvisor",
+        "summary": "阿策只读战斗问答",
+        "description": "需要有效会话和匹配的活动战斗。单次模型请求12秒，无自动重试；未配置、限流或提供商故障时200 source=local，客户端用本章本地规则回答。每会话1并发/6次每分钟，全局4并发/200次UTC日（单进程内存，重启重置）。不执行游戏命令或改变revision。正文最多128KiB。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdvisorRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "模型建议或本地回退信号",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvisorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "字段或上下文无效"
+          },
+          "401": {
+            "description": "会话无效"
+          },
+          "409": {
+            "description": "活动场次不匹配或已结束"
+          },
+          "413": {
+            "description": "正文超过128KiB"
+          },
+          "415": {
+            "description": "需要application/json"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1848,6 +1892,102 @@
           "kitten"
         ],
         "description": "Single temporary battle carry supplied by event handoffs MR !23, !24, !39 and !40. dog identifies Old Huang, dove the pigeon ally, rats the friendly rat squad, and kitten the rescued kitten. No inventory transfer or extra result fields."
+      },
+      "AdvisorRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "attemptId",
+          "stageId",
+          "question",
+          "context"
+        ],
+        "properties": {
+          "attemptId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "stageId": {
+            "type": "string",
+            "enum": [
+              "l00_tutorial",
+              "alley_rescue",
+              "alley_boss",
+              "market_boss",
+              "greenhouse_boss",
+              "tunnel_boss",
+              "finale_boss"
+            ]
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "context": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 24000,
+            "description": "客户端白名单构建的当前可见战况 JSON 对象字符串，不是完整引擎状态。服务端额外解析校验对象。"
+          },
+          "history": {
+            "type": "array",
+            "maxItems": 6,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role",
+                "content"
+              ],
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "assistant"
+                  ]
+                },
+                "content": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1200
+                }
+              }
+            }
+          }
+        }
+      },
+      "AdvisorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "title",
+          "text"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "model",
+              "local"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1200
+          },
+          "reason": {
+            "type": "string",
+            "description": "本地回退原因代码，不包含提供商响应正文或密钥。"
+          }
+        }
       }
     }
   },

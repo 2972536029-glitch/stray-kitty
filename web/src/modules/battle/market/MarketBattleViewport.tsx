@@ -10,6 +10,8 @@ import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
 import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
 import {useBattleBoardFit} from '../useBattleBoardFit';
+import {useModelAdvisor} from '../useModelAdvisor';
+import {AdvisorChatMessages} from '../AdvisorChatMessages';
 import '../carry.css';
 import '../l00/battle.css';
 import './market.css';
@@ -57,7 +59,11 @@ export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult
   const [tooltipPosition,setTooltipPosition]=useState({left:0,top:0});
   const [skillTooltipOpen,setSkillTooltipOpen]=useState(false);
   const [question,setQuestion]=useState('');
-  const [messages,setMessages]=useState<Array<{question:string;answer:ReturnType<typeof getMarketAnswer>}>>([]);
+  const advisorChat=useModelAdvisor({
+    attemptId,stageId:'market_boss',open:chatOpen,
+    blocked:paused||hidden||submitted||retreatOpen||game.phase==='won'||game.phase==='lost',
+    getSnapshot:()=>gameRef.current,localAnswer:getMarketAnswer,
+  });
   const canvasRef=useRef<HTMLCanvasElement>(null),boardRef=useRef<HTMLDivElement>(null),scrollRef=useRef<HTMLDivElement>(null);
   const fittedWidth=useBattleBoardFit(scrollRef,MAP.columns,MAP.rows);
   const battlefieldRef=useRef<HTMLDivElement>(null),menuRef=useRef<HTMLDivElement>(null);
@@ -117,7 +123,7 @@ export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult
     if(attemptRef.current===attemptId)return;
     attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);
     setSelected(null);setMoving(null);setHover(null);setChatOpen(false);setDragging(null);setNotice('');
-    setQuestion('');setMessages([]);
+    setQuestion('');
     publish(createMarketBattle({difficulty,carry}));
   },[attemptId,difficulty,carry]);
 
@@ -161,7 +167,7 @@ export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult
     if(cat&&previous?.id===cat.id&&previous.status==='active'&&cat.status==='retired')setMoving(null);
     previousSelectedStatus.current=cat?{id:cat.id,status:cat.status}:null;
   },[game.cats,selected]);
-  useEffect(()=>{if(chatOpen&&chatLogRef.current)chatLogRef.current.scrollTop=chatLogRef.current.scrollHeight;},[messages,chatOpen]);
+  useEffect(()=>{if(chatOpen&&chatLogRef.current)chatLogRef.current.scrollTop=chatLogRef.current.scrollHeight;},[advisorChat.messages,advisorChat.loading,advisorChat.notice,chatOpen]);
 
   function suppressSyntheticClick(){suppressClick.current=true;}
 
@@ -215,8 +221,7 @@ export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult
     if(cat)inspect(cat.id);else closeInspection();
   }
   function ask(text:string){
-    const value=text.trim().slice(0,200);if(!value||paused||hidden)return;
-    setMessages(previous=>[...previous,{question:value,answer:getMarketAnswer(gameRef.current,value)}]);setQuestion('');
+    if(advisorChat.ask(text))setQuestion('');
   }
   function previewTouch(event:PointerEvent<HTMLDivElement>){
     if(aimPointer.current!==event.pointerId||!gameRef.current.aim)return;
@@ -336,7 +341,7 @@ export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult
       </div>
     </div>
     <div className="btl-controls"><p role="status" className={notice?'market-notice':''}>{notice||game.logs.at(-1)?.text||'伙伴们准备好了。'}<small>{ended?submitted?'正在交回主流程结算…':'守护结束':'每模拟秒 +5 能量 · 满 100 手动施法 · 体力归零退场'}</small></p>{game.phase==='battle'&&<button type="button" className="btl-quiet market-retreat" disabled={paused||hidden} data-testid="market-retreat" onClick={()=>{cancelAim();closeInspection();setChatOpen(false);setRetreatOpen(true);}}>撤离本场</button>}</div>
-    {chatOpen&&<section className="btl-chat" aria-label="军师阿策聊天"><div className="btl-panel-heading"><span><strong>阿策的战术小纸条</strong><small>本地规则顾问 · 只参考眼前战况</small></span><button type="button" className="btl-quiet" onClick={()=>setChatOpen(false)}>收起聊天</button></div><div ref={chatLogRef} className="btl-chat-log" aria-live="polite"><article><strong>眼前战况</strong><p>{advice}</p></article>{messages.map((message,index)=><div key={index}><p className="btl-question">{message.question}</p><article><strong>{message.answer.title}</strong><p>{message.answer.text}</p></article></div>)}</div><div className="btl-suggestions">{['现在怎么摆阵？','如何躲熄灯横扫？','封能时能放技能吗？','栗栗和铃铃有什么能力？'].map(text=><button type="button" key={text} disabled={paused||hidden} onClick={()=>ask(text)}>{text}</button>)}</div><form onSubmit={event=>{event.preventDefault();ask(question);}}><label className="btl-sr-only" htmlFor="market-question">询问军师</label><input id="market-question" value={question} disabled={paused||hidden} onChange={event=>setQuestion(event.target.value)} maxLength={200} placeholder="问问阵型、治疗、蓄能或猫咪能力……"/><button type="submit" disabled={paused||hidden||!question.trim()}>询问</button></form></section>}
+    {chatOpen&&<section className="btl-chat" aria-label="军师阿策聊天"><div className="btl-panel-heading"><span><strong>阿策的战术小纸条</strong><small>当前战况 · 模型建议 / 本地兜底</small></span><button type="button" className="btl-quiet" onClick={()=>setChatOpen(false)}>收起聊天</button></div><div ref={chatLogRef} className="btl-chat-log" aria-live="polite" aria-busy={advisorChat.loading}><article><strong>眼前战况</strong><p>{advice}</p></article><AdvisorChatMessages {...advisorChat}/></div><div className="btl-suggestions">{['现在怎么摆阵？','如何躲熄灯横扫？','封能时能放技能吗？','栗栗和铃铃有什么能力？'].map(text=><button type="button" key={text} disabled={paused||hidden||advisorChat.loading} onClick={()=>ask(text)}>{text}</button>)}</div><form onSubmit={event=>{event.preventDefault();ask(question);}}><label className="btl-sr-only" htmlFor="market-question">询问军师</label><input id="market-question" value={question} disabled={paused||hidden||advisorChat.loading} onChange={event=>setQuestion(event.target.value)} maxLength={500} placeholder="问问阵型、治疗、蓄能或猫咪能力……"/><button type="submit" disabled={paused||hidden||advisorChat.loading||!question.trim()}>{advisorChat.loading?'思考中…':'询问'}</button></form></section>}
     {retreatOpen&&<div className="market-modal"><section className="market-dialog" role="dialog" aria-modal="true" aria-labelledby="market-retreat-title"><h3 id="market-retreat-title">让伙伴撤离本场？</h3><p>本场按失败结束；之后沿主流程回到准备阶段，重新挑战时六位伙伴恢复出战状态。</p><div><button type="button" autoFocus onClick={()=>setRetreatOpen(false)}>继续守护</button><button type="button" disabled={paused} data-testid="market-confirm-retreat" onClick={()=>{setRetreatOpen(false);act({type:'SET_UI_PAUSE',paused:false});act({type:'RETREAT'});}}>确认撤离</button></div></section></div>}
   </section>;
 }

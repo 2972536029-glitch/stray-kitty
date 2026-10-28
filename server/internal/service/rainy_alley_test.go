@@ -25,7 +25,7 @@ func TestRainyAlleyFishClaimPersistsExactlyOnce(t *testing.T) {
 	}
 }
 
-func TestRainyAlleyZoneAttemptsArePersistentAndSingleUse(t *testing.T) {
+func TestRainyAlleyZoneCanRollAgainAfterMissAndUsesNoReplacementDeck(t *testing.T) {
 	g, token, path := setup(t)
 	finishStory(t, g, token)
 	if g.RainyZoneChance != 550 {
@@ -33,29 +33,28 @@ func TestRainyAlleyZoneAttemptsArePersistentAndSingleUse(t *testing.T) {
 	}
 	g.RainyZoneChance = 0
 	s := execute(t, g, token, domain.Command{Type: "CHECK_RANDOM_ZONE", ZoneID: "rainy_random_west"})
-	if s.Phase != "explore" || !domain.Contains(s.Flags, "attempted_rainy_random_west") {
-		t.Fatal("failed probability did not consume the west-zone attempt")
+	if s.Phase != "explore" || domain.Contains(s.Flags, "attempted_rainy_random_west") {
+		t.Fatal("a miss must not permanently exhaust the zone")
 	}
 	store, err := repository.Open(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	g = service.New(store, g.Catalog)
-	g.Random = func(int) (int, error) { t.Fatal("duplicate zone request rolled again"); return 0, nil }
-	s = execute(t, g, token, domain.Command{Type: "CHECK_RANDOM_ZONE", ZoneID: "rainy_random_west"})
-	if s.Phase != "explore" || s.PendingEventID != "" {
-		t.Fatal("duplicate west-zone request changed encounter state")
-	}
-
 	g.RainyZoneChance = 1000
 	g.Random = func(int) (int, error) { return 0, nil }
-	s = execute(t, g, token, domain.Command{Type: "CHECK_RANDOM_ZONE", ZoneID: "rainy_random_central"})
-	if s.Phase != "event" || s.PendingEventID != "rats_grain_event" || !domain.Contains(s.Flags, "attempted_rainy_random_central") {
-		t.Fatalf("controlled zone trigger did not use existing event pipeline: phase=%s event=%s", s.Phase, s.PendingEventID)
+	s = execute(t, g, token, domain.Command{Type: "CHECK_RANDOM_ZONE", ZoneID: "rainy_random_west"})
+	if s.Phase != "event" || s.PendingEventID != "rats_grain_event" {
+		t.Fatalf("re-entry did not roll through the shared event deck: %s %s", s.Phase, s.PendingEventID)
 	}
 	s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: s.PendingEventID, OptionID: "negotiate_share"})
-	if s.Phase != "explore" || s.EventState == nil || s.EventState.LastResolution.Dice != [2]int{1, 1} {
-		t.Fatal("zone event did not retain the original 2d6 resolution")
+	if s.Phase != "explore" || !domain.Contains(s.DrawnEvents, "alley:rats_grain_event") {
+		t.Fatal("one-time random card did not return to exploration and persist its draw")
+	}
+	g.Random = func(int) (int, error) { return 0, nil }
+	s = execute(t, g, token, domain.Command{Type: "CHECK_RANDOM_ZONE", ZoneID: "rainy_random_central"})
+	if s.Phase != "event" || s.PendingEventID == "rats_grain_event" {
+		t.Fatalf("completed one-time card was selected again: phase=%s event=%s", s.Phase, s.PendingEventID)
 	}
 }
 
