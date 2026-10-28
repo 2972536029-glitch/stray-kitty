@@ -34,7 +34,7 @@ html,body,#root{min-height:100%;width:100%}
 .dialogue-actions .skip-button{margin-right:auto}
 .lost-poster{top:170px;left:8%}
 .event-card{max-height:calc(100dvh - 200px);margin:90px 24px 100px}
-.home-controls{position:absolute;z-index:2;top:104px;right:22px;width:min(330px,calc(100% - 44px));max-height:calc(100dvh - 190px);overflow:auto;scrollbar-width:thin;scrollbar-color:#8b906d #e9dfc8;border:2px solid #594536;border-radius:4px;background:#e9dfc8;box-shadow:4px 4px 0 #24312e}
+.home-controls{position:absolute;z-index:2;top:104px;right:22px;width:min(330px,calc(100% - 44px));max-height:calc(100dvh - 190px);overflow:visible;pointer-events:none}
 .home-controls .home-panel{border:0;box-shadow:none}
 .journey-modal>.journal{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
 .journey-modal .journal-card{box-shadow:none}
@@ -85,3 +85,26 @@ html,body,#root{min-height:100%;width:100%}
 .alley-objective span{display:block;color:#e2b87a;font-size:10px;margin-bottom:3px}
 .alley-objective strong{display:block;font-weight:600;line-height:1.5}
 @media(max-width:800px){.alley-objective{top:165px;left:14px;font-size:11px;max-width:calc(100% - 28px)}}
+
+/* ===== 移植：对话气泡/序章/家园抽屉定位层 ===== */
+.app-shell .topbar{background:linear-gradient(180deg,rgba(24,39,39,.9),rgba(24,39,39,.58) 45%,transparent);box-shadow:none;border:0;backdrop-filter:blur(5px);padding-bottom:22px}
+.dev-bar{top:64px;left:auto;right:18px;width:min(310px,calc(100% - 36px));padding:12px;background:rgba(238,225,197,.96);box-shadow:5px 5px 0 #24312e;animation:story-in .16s ease-out}
+.dialogue-card{position:relative;width:min(510px,calc(100% - 44px));justify-self:start;align-self:center;margin:0 0 118px 12%;padding:14px 17px;background:rgba(245,235,211,.94);border:0;border-radius:12px;box-shadow:5px 5px 0 rgba(28,42,38,.7);backdrop-filter:blur(7px)}.dialogue-card:after{content:"";position:absolute;left:46px;bottom:-16px;border:9px solid transparent;border-top-color:rgba(245,235,211,.94);border-left-width:3px;transform:rotate(7deg)}.dialogue-portrait{position:absolute;left:-76px;bottom:-52px;z-index:2}.dialogue-copy p{font-size:14px;line-height:1.75;margin:10px 0;min-height:0}.dialogue-actions{justify-content:flex-end}.dialogue-actions .skip-button{font-size:10px}.speaker-row{gap:8px}
+.home-controls{position:absolute;z-index:2;top:104px;right:22px;width:min(330px,calc(100% - 44px));max-height:calc(100dvh - 190px);overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#8b906d #e9dfc8;border:2px solid #594536;border-radius:4px;background:#e9dfc8;box-shadow:4px 4px 0 #24312e;transition:width .55s cubic-bezier(.25,.85,.3,1),background-color .55s ease,border-color .55s ease,box-shadow .55s ease}
+.home-controls:has(.home-panel-entering){transition-duration:1s}
+.home-controls:has(.home-panel-closed){width:80px;background:transparent;border-color:transparent;box-shadow:none;overflow:visible}
+/* 对话气泡定位：锚定角色头顶（anchored）/ 角色脚下（below）/ 底部字幕条（caption）；坐标由 DialogueBubble 按画布比例计算 */
+.dialogue-bubble{grid-area:1/1;z-index:4}
+.dialogue-bubble-anchored,.dialogue-bubble-below{position:absolute;width:min(500px,calc(100% - 88px))}
+/* 首次落位后开启位移过渡：锚点/角色移动时气泡平滑跟随 */
+.dialogue-bubble-settled.dialogue-bubble-anchored,.dialogue-bubble-settled.dialogue-bubble-below{transition:left .18s ease-out,top .18s ease-out}
+.dialogue-bubble-caption{position:absolute;left:50%;transform:translateX(-50%);bottom:84px;width:min(660px,calc(100% - 44px))}
+/* 线索物件（寻猫启事等）永远压在气泡之上；气泡仍重叠时会自动避让到字幕条 */
+.lost-poster{z-index:6}
+/* AI 顾问常驻右下角；家园面板展开时左移避让，收起时回到角落 */
+.ai-advisor{position:absolute;z-index:7;right:24px;bottom:24px;transition:right .45s cubic-bezier(.25,.85,.3,1)}
+.world-wrap:has(.home-panel-open) .ai-advisor{right:364px}
+/* 序章引导全屏覆盖层与教学高亮蒙版 */
+.prologue-overlay{position:absolute;inset:0;z-index:60;display:grid;place-items:center}
+.tutorial-highlight{position:absolute;inset:0;z-index:40}
+@media(max-width:800px){.dialogue-bubble-caption{bottom:76px}.dialogue-bubble-anchored,.dialogue-bubble-below{width:calc(100% - 30px)}.ai-advisor{right:14px;bottom:14px}.world-wrap:has(.home-panel-open) .ai-advisor{right:372px}.prologue-skip{top:14px;right:14px}.tutorial-card{width:230px}}

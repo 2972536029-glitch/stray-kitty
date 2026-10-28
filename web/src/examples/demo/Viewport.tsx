@@ -18,6 +18,8 @@ interface Props {
   onRandomZone?: (zoneId: string) => Promise<boolean>;
   onWorldPosition?: (point: Point) => void;
   randomEligible?: boolean;
+  /** 场景实例就绪/销毁时回调：App 用它拿到 DemoScene 查询说话者锚点（对话气泡跟随）。 */
+  onSceneReady?: (scene: DemoScene | null) => void;
 }
 
 export function Viewport(props: Props) {
@@ -39,6 +41,8 @@ export function Viewport(props: Props) {
     );
     runtime.state = latest.current.state;runtime.pausedByUser = latest.current.paused;runtime.storyScene = latest.current.storyScene;runtime.randomEligible = latest.current.randomEligible ?? true;scene.current = runtime;
     latest.current.onDirectionReady((direction, held) => runtime.setDirection(direction, held));runtime.start();
-    return runtime;
+    latest.current.onSceneReady?.(runtime);
+    // CanvasViewport 只认 destroy；在这里补一次 onSceneReady(null) 的通知。
+    return {destroy() {runtime.destroy();scene.current = null;latest.current.onSceneReady?.(null);}};
   }}/>;
 }

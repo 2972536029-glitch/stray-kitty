@@ -1,6 +1,8 @@
 import {useEffect, useRef, useState, type ReactNode} from 'react';
 import type {Catalog, GameCommand, GameState} from '../contracts';
 import type {Direction} from '../adapters/platform/input';
+import type {CatBreed} from '../adapters/canvas/pixelCat';
+import type {SceneAnchor} from './DialogueBubble';
 import {currentStory, objective} from '../core/story';
 import PixelCat from './PixelCat';
 import DialoguePanel from './DialoguePanel';
@@ -8,6 +10,8 @@ import DiceEvent, {Dice} from './DiceEvent';
 import HomePanel from './HomePanel';
 import EventResult from './EventResult';
 import Modal from './Modal';
+import {TutorialHighlight} from './PrologueSequence';
+import {playSound} from './soundEffects';
 import {ChapterLoadout} from '../modules/battle/ChapterLoadout';
 import {MarketLoadout} from '../modules/battle/MarketLoadout';
 import {GreenhouseLoadout} from '../modules/battle/GreenhouseLoadout';
@@ -20,14 +24,17 @@ interface Props {
   nearTarget?: {id: string; label: string} | null;
   inspectHint?: string | null;
   journalOpen: boolean;
+  speakerAnchor?: (breed: CatBreed) => SceneAnchor | null;
   onJournal: () => void;
   onSkip?: () => void;
   onReset?: () => void;
   onCommand: (command: GameCommand) => void; onInteract: (interactionId?: string) => void; onDirection: (direction: Direction, held: boolean) => void;
-  onPause: () => void; onMap: () => void; onShop: () => void; onRecharge: () => void; onTitle: () => void; children: ReactNode;
+  onPause: () => void; onMap: () => void; onShop: () => void; onRecharge: () => void; onSettings: () => void; onWarehouse: () => void; onTitle: () => void; children: ReactNode;
 }
-export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, onJournal, onSkip, onReset, onCommand, onInteract, onDirection, onPause, onMap, onShop, onRecharge, onTitle, children}: Props) {
+export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, speakerAnchor, onJournal, onSkip, onReset, onCommand, onInteract, onDirection, onPause, onMap, onShop, onRecharge, onSettings, onWarehouse, onTitle, children}: Props) {
   const [devOpen, setDevOpen] = useState(false);
+  // 首次进入守护准备时的教学高亮；完成后记在本地，不再打扰。
+  const [battleTutorialDone, setBattleTutorialDone] = useState(() => {try {return localStorage.getItem('stray-kitty.tutorial.battle') === 'done';} catch {return true;}});
   // Exploration shortcuts must not carry an overlay over the next battle's controls.
   useEffect(() => {if (state.phase === 'battle') setDevOpen(false);}, [state.phase, state.activeBattle?.id]);
   const isDevelopment = import.meta.env.DEV;
@@ -56,6 +63,9 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
   // 随机事件结算后直接回到探索,这里补一个结果卡让玩家看清骰点与收获,再继续赶路。
   const resolutionKey = resolution ? `${resolution.eventId}:${resolution.optionId}:${resolution.dice[0]}${resolution.dice[1]}` : '';
   const [dismissedResult, setDismissedResult] = useState('');
+  // 首次通关奖励卡出现时来一声“拾取”叮咚（按 revision 记忆，避免重复播）。
+  const rewardMoment = state.phase === 'settlement' && state.lastResult.firstClear ? state.revision : null;
+  useEffect(() => {if (rewardMoment !== null) playSound('pickup');}, [rewardMoment]);
   const arrivedFromEvent = useRef(false);
   useEffect(() => {
     if (state.phase === 'event') arrivedFromEvent.current = true;
@@ -66,7 +76,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
     <header className="topbar"><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
       <span className="chapter-pill">{finaleBattle ? '第五章 · 终局试玩' : tunnelBattle ? '第四章 · 地下通道试玩' : greenhouseBattle ? '第三章 · 废弃花房试玩' : marketBattle ? '第二章 · 午夜集市试玩' : tutorialBattle ? '序章 · 金枪鱼事件' : chapterBattle ? '第一章 · 陌生小巷' : chapter?.title}</span>
       <div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>
-      <nav aria-label="旅程工具">{state.phase === 'battle' && <button className="battle-host-pause" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button><button className="map-button" aria-label="章节地图" onClick={onMap}>▦ <span>章节地图</span></button><button className="shop-button" aria-label="猫国商店" onClick={onShop}>▣ <span>猫国商店</span></button>{isDevelopment && <button className="dev-button" aria-label="验收工具" onClick={() => setDevOpen(!devOpen)}>🛠️ <span>验收</span></button>}</nav></header>
+      <nav aria-label="旅程工具">{state.phase === 'battle' && <button className="battle-host-pause" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button><button className="map-button" aria-label="章节地图" onClick={onMap}>▦ <span>章节地图</span></button><button className="shop-button" aria-label="猫国商店" onClick={onShop}>▣ <span>猫国商店</span></button><button className="settings-button" aria-label="游戏设置" onClick={onSettings}>⚙ <span>设置</span></button>{isDevelopment && <button className="dev-button" aria-label="验收工具" onClick={() => setDevOpen(!devOpen)}>🛠️ <span>验收</span></button>}</nav></header>
     <main><h1 className="visually-hidden">一只猫的旅程，一群猫的家。</h1>
       <div className="game-layout"><section className="world-panel"><div className="world-toolbar"><div><span className="live-dot"/><strong>{finaleBattle && state.phase === 'battle' ? '终局试玩' : tunnelBattle && state.phase === 'battle' ? '第四章试玩' : greenhouseBattle && state.phase === 'battle' ? '第三章试玩' : marketBattle && state.phase === 'battle' ? '第二章试玩' : chapterBattle && state.phase === 'battle' ? '第一章守护' : phases[state.phase]}</strong><span className="area-label">{finaleBattle ? '总仓库决战' : tunnelBattle ? '暗道守护' : greenhouseBattle ? '花房守护' : marketBattle ? '集市守护' : chapterBattle ? '深巷守护' : map?.name}</span></div>{state.phase !== 'battle' && <button className="quiet" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}</div>
         {isDevelopment && devOpen && (
@@ -94,15 +104,16 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
         )}
         <div className="world-wrap">{children}
           {alleyObjective && <div className="alley-objective" role="status"><span>雨巷线索</span><strong>{alleyObjective}</strong></div>}
-          {state.phase === 'home' && <div className="home-controls"><HomePanel state={state} catalog={catalog} disabled={disabled} onCommand={onCommand} onShop={onShop} onRecharge={onRecharge}/></div>}
-          {state.phase === 'dialogue' && node && <DialoguePanel node={node} disabled={disabled} onNext={() => onCommand({type: 'ADVANCE_STORY', nodeId: node.id})} onSkip={onSkip} eventResult={resolution?.outcome.situation?.storyNodeId === node.id ? <EventResult resolution={resolution} compact/> : undefined}/>}
+          {state.phase === 'home' && <div className="home-controls"><HomePanel state={state} catalog={catalog} disabled={disabled} onCommand={onCommand} onShop={onShop} onRecharge={onRecharge} onWarehouse={onWarehouse}/></div>}
+          {state.phase === 'dialogue' && node && <DialoguePanel node={node} disabled={disabled} onNext={() => onCommand({type: 'ADVANCE_STORY', nodeId: node.id})} onSkip={onSkip} getSpeakerAnchor={speakerAnchor} eventResult={resolution?.outcome.situation?.storyNodeId === node.id ? <EventResult resolution={resolution} compact/> : undefined}/>}
           {state.phase === 'event' && event && <DiceEvent key={event.id} event={event} disabled={disabled} rolling={busy} random={state.pendingEventSource === 'random'} teaser={state.pendingEventSource === 'random' ? state.lastResult.message : undefined} partyCats={state.cats} pushTokens={state.pushTokens ?? 0} onChoose={(optionId, usePush) => onCommand({type: 'CHOOSE_EVENT', eventId: event.id, optionId, usePush})}/>}
           {state.phase === 'preparation' && finaleBattle && <section className="event-card preparation-card"><p>{state.lastResult.message}</p><FinaleLoadout disabled={disabled} onCommand={onCommand}/><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回家园</button></section>}
           {state.phase === 'preparation' && tunnelBattle && <section className="event-card preparation-card"><p>{state.lastResult.message}</p><TunnelLoadout disabled={disabled} onCommand={onCommand}/><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回家园</button></section>}
           {state.phase === 'preparation' && greenhouseBattle && <section className="event-card preparation-card"><p>{state.lastResult.message}</p><GreenhouseLoadout disabled={disabled} onCommand={onCommand}/><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回家园</button></section>}
           {state.phase === 'preparation' && marketBattle && <section className="event-card preparation-card"><p>{state.lastResult.message}</p><MarketLoadout disabled={disabled} onCommand={onCommand}/><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回家园</button></section>}
           {state.phase === 'preparation' && chapterBattle && <section className="event-card preparation-card"><p>{state.lastResult.message}</p><ChapterLoadout stageId={retryStage} disabled={disabled} onCommand={onCommand}/></section>}
-          {state.phase === 'preparation' && !chapterBattle && !standaloneBattle && <section className="event-card preparation-card"><span className="eyebrow">{state.mapId === 'market' ? 'MIDNIGHT MARKET INTEL' : 'RESCUE MISSION 01'}</span><h2>{state.mapId === 'market' ? '集市情报与收获' : '为伙伴点亮一条路'}</h2>{resolution ? <EventResult resolution={resolution}/> : state.lastResult.roll ? <div className="roll-result"><Dice value={state.lastResult.roll}/><span>骰子 · {state.lastResult.roll} 点</span></div> : <PixelCat breed="tuanzi" size={78}/>}<p>{!resolution || state.lastResult.outcome === 'lost' ? state.lastResult.message : state.mapId === 'market' ? '从鸟雀们那里得到了重要的线索与物资。' : '点点会跟上我们。准备好，就一起守住撤离路线。'}</p>{state.mapId === 'market' ? <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}><button disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'market'})}>带着收获继续探索集市 →</button><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回花房基地</button></div> : <><p className="muted">第一章守护 · 四位伙伴与八波黑影<br/>利用站位、蓄能与技能击败首领，最多允许 2 次突破。</p><button disabled={disabled} onClick={() => onCommand({type: 'START_BATTLE', stageId: 'alley_rescue'})}>开始守护 →</button></>}</section>}
+          {state.phase === 'preparation' && !chapterBattle && !standaloneBattle && <section className="event-card preparation-card"><span className="eyebrow">{state.mapId === 'market' ? 'MIDNIGHT MARKET INTEL' : 'RESCUE MISSION 01'}</span><h2>{state.mapId === 'market' ? '集市情报与收获' : '为伙伴点亮一条路'}</h2>{resolution ? <EventResult resolution={resolution}/> : state.lastResult.roll ? <div className="roll-result"><Dice value={state.lastResult.roll}/><span>骰子 · {state.lastResult.roll} 点</span></div> : <PixelCat breed="tuanzi" size={78}/>}<p>{!resolution || state.lastResult.outcome === 'lost' ? state.lastResult.message : state.mapId === 'market' ? '从鸟雀们那里得到了重要的线索与物资。' : '点点会跟上我们。准备好，就一起守住撤离路线。'}</p>{state.mapId === 'market' ? <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}><button disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'market'})}>带着收获继续探索集市 →</button><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回花房基地</button></div> : <><p className="muted">第一章守护 · 四位伙伴与八波黑影<br/>利用站位、蓄能与技能击败首领，最多允许 2 次突破。</p><button className="tutorial-target-battle" disabled={disabled} onClick={() => onCommand({type: 'START_BATTLE', stageId: 'alley_rescue'})}>开始守护 →</button></>}</section>}
+          {state.phase === 'preparation' && !battleTutorialDone && <TutorialHighlight selector=".tutorial-target-battle" kicker="守护教学" text="每盏灯消耗 2 格能量，每 4 秒回复 1 格。点击「开始守护」，为点点点亮第一条撤离路线。" storageKey="stray-kitty.tutorial.battle" onDone={() => setBattleTutorialDone(true)}/>}
           {state.phase === 'settlement' && state.activeBattle?.stageId === 'l00_tutorial' && <section className="event-card rescue-card"><span className="eyebrow">L00 · FIRST LIGHT</span><div className="rescue-cats"><PixelCat size={90} mood="brave"/></div><h2>{state.lastResult.outcome === 'won' ? '第一道防线守住了。' : '再调整一次站位与技能时机。'}</h2><p>{state.lastResult.message}</p><button disabled={disabled} onClick={() => onCommand(state.lastResult.outcome === 'won' ? {type: 'CONTINUE'} : {type: 'START_BATTLE', stageId: 'l00_tutorial'})}>{state.lastResult.outcome === 'won' ? '进入雨夜小巷 →' : '重新开始教学'}</button></section>}
           {state.phase === 'settlement' && !standaloneBattle && state.activeBattle?.stageId !== 'l00_tutorial' && <section className="event-card rescue-card"><span className="eyebrow">{state.lastResult.outcome === 'won' ? 'A SAFE WAY HOME' : 'TRY A LITTLE DIFFERENTLY'}</span><div className="rescue-cats"><PixelCat size={90} mood="brave"/>{state.cats.includes('diandian') && <PixelCat breed="diandian" size={80}/>}<PixelCat breed="tuanzi" size={86}/></div><h2>{state.lastResult.outcome === 'won' ? activeStage === 'alley_boss' ? '深巷里的黑影散去了' : '回家的路，也是救援的开始。' : '再一起想想办法。'}</h2><p>{state.lastResult.message}</p>{state.lastResult.firstClear && state.lastResult.stageId === 'alley_rescue' && <p className="reward-note">点点加入 · 纸箱猫窝<br/>✦ 猫爪邮票 ×2 · ◆ 材料 ×3</p>}<button disabled={disabled} onClick={() => onCommand({type: 'CONTINUE'})}>{state.lastResult.outcome === 'won' ? '带伙伴回家 →' : '调整防线，再试一次'}</button></section>}
           {state.phase === 'settlement' && standaloneBattle && <section className="event-card rescue-card"><span className="eyebrow">{finaleBattle ? 'L05 · LIGHT THE WAY HOME' : tunnelBattle ? 'L04 · UNDERGROUND TUNNEL' : greenhouseBattle ? 'L03 · ABANDONED GREENHOUSE' : 'L02 · MIDNIGHT MARKET'}</span><h2>{state.lastResult.outcome === 'won' ? finaleBattle ? '所有的光，终于照亮归途' : tunnelBattle ? '暗道的归路守住了' : greenhouseBattle ? '花房的归路守住了' : '集市的灯火守住了' : finaleBattle ? '伙伴们还在，重新安排终局防线' : tunnelBattle ? '再调整一次暗道防线' : greenhouseBattle ? '再调整一次花房防线' : '再调整一次集市防线'}</h2><p>{state.lastResult.message}</p><button data-testid={finaleBattle ? 'finale-continue' : tunnelBattle ? 'tunnel-continue' : greenhouseBattle ? 'greenhouse-continue' : 'market-continue'} disabled={disabled} onClick={() => onCommand({type: 'CONTINUE'})}>{state.lastResult.outcome === 'won' ? '返回家园 →' : '调整防线，再试一次'}</button></section>}

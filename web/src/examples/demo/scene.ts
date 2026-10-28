@@ -293,6 +293,128 @@ export class DemoScene {
   private rect(x:number,y:number,w:number,h:number,color:number,alpha=1){this.graphics.fillStyle(color,alpha);this.graphics.fillRect(Math.round(x),Math.round(y),w,h);}
   private cat(x:number,y:number,breed:CatBreed='miaomiao'){this.graphics.cat(x,y,breed);}
   private lamp(x:number,y:number){this.graphics.fillStyle(0xf9d78a,.12);this.graphics.fillCircle(x,y,45);this.rect(x-8,y-18,16,24,0x60786c);this.rect(x-5,y-15,10,16,0xffe1a0);this.rect(x-11,y+6,22,5,0x496259);}
+  // —— 以下立体像素家具绘制法移植自 feat/ui-immersion-polish（阴影腔/瓦楞/流苏/绗缝细节） ——
+  private pixelEllipse(cx:number,cy:number,rx:number,ry:number,color:number,alpha=1){
+    if(ry<=0){this.rect(cx-rx,cy,rx*2,1,color,alpha);return;}
+    for(let dy=-ry;dy<=ry;dy++){
+      const w=Math.round(rx*Math.sqrt(Math.max(0,1-(dy/ry)**2)));
+      if(w>0)this.rect(cx-w,cy+dy,w*2,1,color,alpha);
+    }
+  }
+  // 对话气泡锚点：返回说话猫头顶在画布中的位置（不在场返回 null，走旁白字幕条）。
+  speakerAnchor(breed:CatBreed):{x:number;y:number}|null{
+    const st=this.state;if(!st||st.phase==='battle')return null;
+    if(st.mapId==='market'||st.chapterId==='market'||this.storyScene==='market'){
+      if(breed==='tuanzi')return{x:130,y:258};
+      if(breed==='miaomiao')return{x:this.x,y:this.y-52};
+      return null;
+    }
+    if(st.phase==='home'||this.storyScene==='home'||(st.flags.includes('rescue_story_done')&&st.phase!=='explore')){
+      if(breed==='miaomiao')return{x:265,y:298};
+      if(breed==='tuanzi'&&st.chapterId!=='prologue')return{x:390,y:288};
+      if(breed==='diandian'&&st.cats.includes('diandian'))return{x:515,y:303};
+      return null;
+    }
+    if(breed==='miaomiao')return{x:this.x,y:this.y-52};
+    if(breed==='tuanzi'&&!st.flags.includes('alley_rescued'))return{x:120,y:248};
+    if(breed==='diandian'&&!st.flags.includes('alley_rescued'))return{x:570,y:227};
+    return null;
+  }
+  private bowl(cx:number,cy:number){
+    this.pixelEllipse(cx,cy+15,26,5,0x24312e,.28);            // 地面投影
+    this.pixelEllipse(cx,cy+11,23,6,0x085aa6);                // 碗底暗面
+    this.rect(cx-24,cy+6,48,5,0x0a6fbe);                      // 碗身中段（过渡色）
+    this.rect(cx-27,cy+3,54,4,0x0f86d6);                      // 碗身上段（受光面）
+    this.rect(cx-27,cy+3,54,1,0x47b4e6);                      // 上缘反光
+    this.rect(cx-26,cy+4,2,9,0x47b4e6,.75);                   // 左侧竖向高光
+    this.rect(cx+24,cy+5,2,8,0x06508f,.8);                    // 右侧暗面
+    this.pixelEllipse(cx,cy-1,27,7,0x47b4e6);                 // 碗口外沿（亮蓝）
+    this.pixelEllipse(cx,cy,21,5,0x084f86);                   // 内腔深色
+    this.pixelEllipse(cx,cy+1,16,3,0xd9b877);                 // 猫粮堆
+    const bits=[[-12,0],[-6,-1],[0,0],[6,-1],[12,0],[-9,2],[3,2],[9,2]];
+    for(const [dx,dy] of bits)this.rect(cx+dx-1,cy+dy,3,2,(dx+dy)%2?0xc9a86b:0xefd9a8);
+    this.rect(cx-20,cy-7,9,2,0xbfe9fb);                       // 碗口左上像素高光
+    this.rect(cx-25,cy-5,4,2,0xbfe9fb,.85);
+    this.rect(cx+13,cy-7,6,2,0x6fc6f0,.6);                    // 右上弱高光（过渡）
+  }
+  // 纸箱猫窝：立体半包围纸箱——高后壁 + 矮前壁的开口、箱内阴影腔、瓦楞褶皱、前翻盖与胶带小标签。
+  private boxNest(cx:number,cy:number){
+    const board=0xc2a179, boardLit=0xd9bc8f, boardDeep=0x8a6f4c, inner=0x5d4830, innerDeep=0x41311f;
+    this.pixelEllipse(cx,cy+18,34,7,0x24312e,.24);            // 立体厚落影
+    // 后壁（半包围高墙）+ 顶面受光
+    this.rect(cx-32,cy-26,64,6,boardDeep);
+    this.rect(cx-30,cy-24,60,20,board);
+    this.rect(cx-30,cy-24,60,2,boardLit);
+    // 侧壁（左右收束）
+    this.rect(cx-32,cy-8,6,26,board);this.rect(cx-32,cy-8,2,26,boardDeep);
+    this.rect(cx+26,cy-8,6,26,board);this.rect(cx+30,cy-8,2,26,boardDeep);
+    // 箱内：阴影腔 + 内壁受光沿（猫卧进去的深度感）
+    this.rect(cx-26,cy-8,52,18,inner);
+    this.rect(cx-22,cy-2,44,10,innerDeep);
+    this.rect(cx-26,cy-8,52,2,0x6e583d);
+    // 前壁（矮，留出开口剪影）
+    this.rect(cx-32,cy+6,64,10,board);
+    this.rect(cx-32,cy+6,64,2,boardLit);
+    this.rect(cx-32,cy+14,64,2,boardDeep);
+    // 瓦楞褶皱：前后壁横向波纹
+    for(let i=0;i<6;i++)this.rect(cx-28+i*10,cy+8+(i%2),7,1,0x7d603f,.85);
+    for(let i=0;i<6;i++)this.rect(cx-28+i*10,cy-18+(i%2),7,1,0x7d603f,.65);
+    // 前翻盖（左右各一，阶梯斜折下来）
+    this.rect(cx-34,cy+10,16,6,boardLit,.9);this.rect(cx-34,cy+16,14,4,board,.85);this.rect(cx-34,cy+20,11,3,boardDeep,.8);
+    this.rect(cx+18,cy+10,16,6,boardLit,.9);this.rect(cx+20,cy+16,14,4,board,.85);this.rect(cx+23,cy+20,11,3,boardDeep,.8);
+    // 封箱胶带（加深加宽，压住箱顶中缝）+ 白色小标签
+    this.rect(cx-4,cy-26,8,22,0x8a6a3e);this.rect(cx-4,cy-26,8,1,0xb08a52);this.rect(cx-3,cy-19,2,14,0xa8813f,.8);
+    this.rect(cx+12,cy-16,10,7,0xe8dcc0);this.rect(cx+12,cy-16,10,1,0xf4ecd8);
+    this.rect(cx+14,cy-13,6,1,0x8a6f4c,.7);this.rect(cx+14,cy-11,4,1,0x8a6f4c,.5);
+  }
+  // 毛毯：完全平铺的扁毯——圆角毯身 + 暖色花纹内框 + 横向折痕 + 两端流苏，与立体猫窝拉开剪影差异。
+  private blanket(cx:number,cy:number){
+    const base=0xe8b9a0, light=0xf5d9c2, warm=0xc98a6b, deep=0x9c6e60, fringe=0xb87f63;
+    this.pixelEllipse(cx,cy+11,33,4,0x24312e,.13);            // 极浅投影（贴地扁平，无厚度）
+    const w=66,h=16;
+    for(let dy=0;dy<h;dy++){
+      const inset=dy<2?2:dy>h-3?3:0;                          // 上下行收角 → 像素圆角矩形
+      this.rect(cx-w/2+inset,cy-h/2+dy,w-inset*2,1,base);
+    }
+    this.rect(cx-w/2+4,cy-h/2+2,w-8,1,light,.7);              // 顶缘受光
+    this.rect(cx-w/2+4,cy+h/2-3,w-8,1,deep,.5);               // 底缘暗面
+    // 暖色花纹：内框描边一圈 + 中列菱形纹
+    this.rect(cx-w/2+5,cy-h/2+4,w-10,1,warm,.8);
+    this.rect(cx-w/2+5,cy+h/2-5,w-10,1,warm,.8);
+    this.rect(cx-w/2+5,cy-h/2+4,1,h-8,warm,.7);this.rect(cx+w/2-6,cy-h/2+4,1,h-8,warm,.7);
+    for(let i=-3;i<=3;i++)this.rect(cx+i*9-1,cy+((i%2)?-1:0),2,2,warm,.9);
+    this.rect(cx-2,cy-3,4,1,light,.9);                        // 花纹上高光
+    // 横向折痕：暗痕 + 各自 1px 亮脊，布料铺开的起伏
+    this.rect(cx-24,cy-2,22,1,deep,.45);this.rect(cx-24,cy-3,22,1,light,.5);
+    this.rect(cx+4,cy+3,20,1,deep,.4);this.rect(cx+4,cy+2,20,1,light,.45);
+    // 两端流苏：左右边缘交替双色短穗
+    for(let i=0;i<5;i++){
+      const fy=cy-h/2+3+i*3, c=i%2?fringe:light;
+      this.rect(cx-w/2-3,fy,3,1,c,.9);this.rect(cx-w/2-3,fy+1,2,1,c,.55);
+      this.rect(cx+w/2,fy,3,1,c,.9);this.rect(cx+w/2+1,fy+1,2,1,c,.55);
+    }
+  }
+  // 软垫：绗缝软垫（红 = 蝴蝶结软垫，红面高对比 + 正面小蝴蝶结）；无 bow 时作为其余杂项家具的朴素兜底款。
+  private cushion(cx:number,cy:number,bow=false){
+    const [face,light,deep,seam]=bow?[0xe31b23,0xff6b5e,0xa7121a,0xffa199]:[0xa88962,0xc7a87d,0x7d6446,0xd9c092];
+    const seamAlpha=bow?.8:.5;
+    this.pixelEllipse(cx,cy+13,29,6,0x24312e,.22);            // 地面投影
+    this.pixelEllipse(cx,cy+10,28,7,deep);                    // 侧壁（厚度暗面）
+    this.pixelEllipse(cx,cy+7,28,7,face);                     // 顶面
+    this.pixelEllipse(cx-3,cy+5,20,4,light,.55);              // 顶面左上受光
+    for(let i=-2;i<=2;i++)for(let yy=cy+2;yy<cy+11;yy+=3)if((i+yy)%2===0)this.rect(cx+i*9-1,yy,2,2,seam,seamAlpha);  // 纵向缝线
+    for(let xx=-24;xx<=24;xx+=8)if(xx%16!==0)this.rect(cx+xx,cy+6,3,2,seam,seamAlpha);                            // 横向缝线
+    this.rect(cx-16,cy+9,7,2,deep,.65);this.rect(cx-10,cy+10,5,2,deep,.5);    // 褶皱暗弧（阶梯）
+    this.rect(cx+7,cy+8,6,2,deep,.65);this.rect(cx+12,cy+9,4,2,deep,.5);
+    this.rect(cx-19,cy+1,9,2,light,.85);this.rect(cx+11,cy+1,9,2,light,.85);  // 边缘高光
+    this.rect(cx-24,cy+4,3,2,light,.6);this.rect(cx+22,cy+4,3,2,light,.6);
+    if(bow){                                                                   // 蝴蝶结：系在前缘——深红描边结翼 + 亮粉高光 + 结扣 + 垂下的飘带
+      this.rect(cx-11,cy+8,7,5,0xc40f16);this.rect(cx-10,cy+8,5,1,0xff8d80);this.rect(cx-11,cy+12,2,2,0x8f0a10,.85);
+      this.rect(cx+4,cy+8,7,5,0xc40f16);this.rect(cx+5,cy+8,5,1,0xff8d80);this.rect(cx+9,cy+12,2,2,0x8f0a10,.85);
+      this.rect(cx-3,cy+7,6,7,0xd4121a);this.rect(cx-3,cy+7,6,1,0xffa199);
+      this.rect(cx-5,cy+14,4,3,0xd4121a,.9);this.rect(cx+1,cy+14,4,3,0xd4121a,.9);
+    }
+  }
   private drawAlley(){
     this.rect(0,0,800,480,0x738f98);
     if(this.cityBackdrop.complete && this.cityBackdrop.naturalWidth > 0)this.graphics.image(this.cityBackdrop,0,-150,800,450);
@@ -376,11 +498,9 @@ export class DemoScene {
     this.rect(270,88,260,173,0xb2c8b6);this.rect(395,88,8,173,0x7c9986);this.rect(270,164,260,8,0x7c9986);
     this.rect(135,240,55,75,0x8f9c73);for(let i=0;i<5;i++)this.rect(130+i*13,210-(i%2)*18,14,45,0x6d8d6a);
     this.cat(265,350);
-    this.rect(235, 345, 65, 24, 0xc69482);
-    this.rect(240, 348, 55, 18, 0xe0c7a0);
-    this.rect(335-27, 350+4, 54, 17, 0x0878c9);
-    this.rect(335-31, 350, 62, 8, 0x47b4e6);
-    this.rect(335-20, 350-3, 40, 8, 0xefe0b3);
+    // 晒着阳光的柔软毛毯（平铺毯身 + 花纹 + 折痕 + 流苏）与标志性天蓝色饭碗（立体透视碗口）。
+    this.blanket(267, 348);
+    this.bowl(335, 352);
     this.graphics.fillStyle(0xfff0ad, 0.15);
     this.graphics.fillCircle(280, 340, 70);
     this.lamp(610,200);for(let i=0;i<8;i++)this.rect(145+i*70,98+(i%2)*6,5,9,0xf4d68e);
@@ -451,7 +571,9 @@ export class DemoScene {
   // 家具层:按槽位摆放逐件绘制;moon_hammock 的挂绳通向横梁。
   private drawFurniturePiece(id:string,x:number,y:number,stage:number){
     if(id==='tin_lamp'||id==='sun_lamp'){this.lamp(x,y);return;}
-    if(id==='blue_bowl'){this.rect(x-27,y+4,54,17,0x0878c9);this.rect(x-31,y,62,8,0x47b4e6);this.rect(x-20,y-3,40,8,0xefe0b3);return;}
+    // 落地型立体家具(饭碗/纸箱窝/软垫/毛毯)若被摆到墙上槽位,平移到窗下地板,避免悬空。
+    const floorY = y < 310 ? y + 58 : y;
+    if(id==='blue_bowl'){this.bowl(x,floorY);return;}
     if(id==='box_castle'){this.rect(x-30,y-18,60,46,0xd5a44b);this.rect(x-34,y-27,15,15,0xeac474);this.rect(x-7,y-27,15,15,0xeac474);this.rect(x+20,y-27,15,15,0xeac474);this.rect(x-9,y+2,18,26,0x835b36);return;}
     if(id==='moon_hammock'){
       const ropeTop = stage>=3 ? 150 : y-46;
@@ -461,11 +583,13 @@ export class DemoScene {
       return;
     }
     if(id==='snack_cushion'){this.rect(x-26,y-4,52,22,0xd9a05f);this.rect(x-20,y,40,13,0xf0c98d);this.rect(x-9,y+3,18,4,0xb47a3f);this.rect(x-3,y+1,3,3,0x8d6134);this.rect(x+4,y+4,3,3,0x8d6134);return;}
-    if(id==='cardboard_nest'){this.rect(x-24,y-14,48,32,0xad8b64);this.rect(x-27,y-19,54,8,0xc2a179);this.rect(x-12,y-6,24,22,0x7f694e);return;}
+    if(id==='cardboard_nest'){this.boxNest(x,floorY+5);return;}
     if(id==='star_glass'){this.rect(x-2,y-44,4,30,0x8b8f9a);this.rect(x-10,y-16,20,8,0x9fa8b8);for(let i=0;i<3;i++)this.rect(x-7+i*6,y-8,4,8,i===1?0xfff4c2:0xdfe9ff);this.graphics.fillStyle(0xcfe0ff,.14);this.graphics.fillCircle(x,y,34);return;}
     if(id==='cloud_nest'){this.rect(x-26,y-8,52,20,0xf3ecdd);this.rect(x-20,y-14,12,8,0xf8f3e7);this.rect(x+8,y-14,12,8,0xf8f3e7);this.rect(x-18,y-4,36,12,0xe4dcc8);return;}
-    this.rect(x-28,y,58,24,id==='red_cushion'?0xe31b23:id==='soft_blanket'?0xc69482:0xa88962);
-    this.rect(x-22,y+4,46,12,id==='red_cushion'?0xff8a80:0xe0c7a0);
+    if(id==='red_cushion'){this.cushion(x,floorY+5,true);return;}
+    if(id==='soft_blanket'){this.blanket(x,floorY+5);return;}
+    this.rect(x-28,y,58,24,0xa88962);
+    this.rect(x-22,y+4,46,12,0xc7a87d);
   }
   private drawHomeFurniture(stage:number){
     for(const [slot,id] of Object.entries(this.state?.placements??{})){

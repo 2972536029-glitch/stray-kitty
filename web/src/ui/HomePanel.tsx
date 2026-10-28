@@ -1,10 +1,22 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import type {Catalog, GameCommand, GameState} from '../contracts';
 import {ChapterLoadout} from '../modules/battle/ChapterLoadout';
 import {MarketLoadout} from '../modules/battle/MarketLoadout';
 import {GreenhouseLoadout} from '../modules/battle/GreenhouseLoadout';
 import {TunnelLoadout} from '../modules/battle/TunnelLoadout';
 import {FinaleLoadout} from '../modules/battle/FinaleLoadout';
+import {playSound} from './soundEffects';
+
+const PANEL_OPEN_KEY = 'stray-kitty.make-it-ours.open';
+// 记忆玩家上次的折叠/展开状态；第一次进花房（还没有记忆）默认展开。
+function rememberedOpen(): boolean {
+  try {
+    const saved = localStorage.getItem(PANEL_OPEN_KEY);
+    return saved === null || saved === 'open';
+  } catch {
+    return true;
+  }
+}
 
 const CHATTER_CALLBACKS: {flag: string; speaker: string; text: string}[] = [
   {flag: 'sack_cat_freed', speaker: '团子', text: '“上回麻袋里那只小的，今天蹲在墙头冲我摆尾巴。这巷子啊，记情。”'},
@@ -18,8 +30,28 @@ const CHATTER_CALLBACKS: {flag: string; speaker: string; text: string}[] = [
   {flag: 'wall_kitten_friend', speaker: '旁白', text: '回花房的路上，墙头方向传来一声短促的招呼，像在替你们看着巷口。'},
 ];
 
-export default function HomePanel({state, catalog, disabled, onCommand, onShop, onRecharge}: {state: GameState; catalog: Catalog; disabled: boolean; onCommand: (command: GameCommand) => void; onShop: () => void; onRecharge: () => void}) {
+export default function HomePanel({state, catalog, disabled, onCommand, onShop, onRecharge, onWarehouse}: {state: GameState; catalog: Catalog; disabled: boolean; onCommand: (command: GameCommand) => void; onShop: () => void; onRecharge: () => void; onWarehouse: () => void}) {
   const [selected, setSelected] = useState('cardboard_nest');
+  // 伸缩抽屉：先按收缩态挂载，延迟一拍再展开，让玩家看清“这里有一个可以伸缩的面板”。
+  const [open, setOpen] = useState(rememberedOpen);
+  const [revealed, setRevealed] = useState(false);
+  // 首次展开走 1s 的慢速滑入，之后恢复常规速度。
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setRevealed(true), 180);
+    return () => clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    if (!revealed || !open || settled) return;
+    const timer = setTimeout(() => setSettled(true), 1100);
+    return () => clearTimeout(timer);
+  }, [revealed, open, settled]);
+  const expanded = revealed && open;
+  const toggle = (next: boolean) => {
+    setOpen(next);
+    playSound(next ? 'open' : 'close');
+    try {localStorage.setItem(PANEL_OPEN_KEY, next ? 'open' : 'closed');} catch {/* 隐私模式下记忆失败，不影响本次游玩 */}
+  };
   const furniture = state.furniture.includes(selected) ? selected : state.furniture[0] ?? '';
   const name = (id: string) => catalog.furniture.find(f => f.id === id)?.name ?? id;
   // 双货币包裹:免费邮票包裹与付费金枪鱼豪华包裹在家园并列,一键抽取并播开箱反馈。
@@ -39,7 +71,11 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
   // 尚未完成修缮工程解锁的槽位保持锁定(如高空横梁需先完成阶段 3)。
   const lockedSlots = new Set<string>();
   for (const r of renovations) if (!state.flags.includes(r.grantsFlag)) for (const slotId of r.unlockSlots ?? []) lockedSlots.add(slotId);
-  return <section className="journal-card home-panel"><span className="eyebrow">MAKE IT OURS</span><h2>整理我们的家</h2>
+  return <section className={`journal-card home-panel ${expanded ? 'home-panel-open' : 'home-panel-closed'}${settled ? '' : ' home-panel-entering'}`}>
+    {!expanded && <button className="home-drawer-tab" aria-expanded={false} aria-controls="make-it-ours-panel" onClick={() => toggle(true)}><span aria-hidden="true">◀</span><small>整理家园</small></button>}
+    <div className="home-panel-content" id="make-it-ours-panel">
+      <div className="home-panel-head"><div className="home-panel-title"><span className="eyebrow">MAKE IT OURS</span><h2>整理我们的家</h2></div><button className="home-panel-close" aria-expanded onClick={() => toggle(false)} aria-controls="make-it-ours-panel"><span aria-hidden="true">✕</span><small>收起</small></button></div>
+      <button className="home-warehouse-entry" data-sound="open" onClick={() => {playSound('open');onWarehouse();}}>▧ 家园仓库<small>查看库存 · 选择出战补给</small></button>
     {state.flags.includes('alley_rescued') && <ChapterLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('alley_rescued') && <MarketLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('momo_joined') && <GreenhouseLoadout disabled={disabled} onCommand={onCommand}/>}
@@ -58,7 +94,7 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
           <span className="muted" style={{fontSize: '13px'}}>所需：◆ 材料 ×{nextMaterial}{nextStamp > 0 ? ` ＋ ✦ 邮票 ×${nextStamp}` : ''}（现有 ◆{material} ✦{stamp}）</span>
           {nextMaterial > 0 && <span style={{flexBasis: '100%', height: '6px', borderRadius: '3px', background: 'var(--line-subtle, #3d4a44)', overflow: 'hidden'}}><span style={{display: 'block', width: `${Math.min(100, Math.round(material / nextMaterial * 100))}%`, height: '100%', background: 'linear-gradient(90deg, #8fbf9f, #5f9d74)'}}/></span>}
         </div>
-        <button disabled={disabled || !affordable} onClick={() => onCommand({type: 'REPAIR_HOME'})}>{affordable ? `🔨 动手修缮：${nextRenovation.name}` : `🔨 材料还不够（◆${material}/${nextMaterial}）`}</button>
+        <button disabled={disabled || !affordable} data-sound="pickup" onClick={() => {playSound('pickup');onCommand({type: 'REPAIR_HOME'});}}>{affordable ? `🔨 动手修缮：${nextRenovation.name}` : `🔨 材料还不够（◆${material}/${nextMaterial}）`}</button>
       </> : kingdomFounded
         ? <p style={{margin: 0, fontSize: '13px'}} className="muted">🎉 修缮全部完成！暖黄串灯下的流浪猫王国正热闹着，街坊们常来送水碗和猫粮。</p>
         : <p style={{margin: 0, fontSize: '13px'}} className="muted">花房已经修缮完毕，点亮终章后，这里会成为真正的流浪猫王国。</p>}
@@ -68,7 +104,7 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     <button className="shop-home" disabled={disabled} onClick={onShop}>去猫国商店挑一件家具 ↗</button>
     {drawPools.map(pool => {const tunaPool = (pool.currency ?? 'stamp') === 'tuna';const total = pool.entries.reduce((sum, e) => sum + e.weight, 0) || 1;const balance = tunaPool ? state.currencies.tuna ?? 0 : state.currencies.stamp ?? 0;const short = balance < pool.cost;return <div className={`pool-card ${tunaPool ? 'pool-tuna' : 'pool-stamp'}`} key={pool.id}>
       <div className="pool-head"><b>{tunaPool ? '🥫 金枪鱼豪华包裹' : '✦ 邮票包裹'}</b><span>{pool.name}</span></div>
-      <button disabled={disabled || short} onClick={() => onCommand({type: 'DRAW_FURNITURE', poolId: pool.id})} aria-label={tunaPool ? `打开星空温室包裹，消耗 ${pool.cost} 罐金枪鱼` : `打开雨夜包裹，消耗 ${pool.cost} 邮票`}>{tunaPool ? `✨ 打开星空温室包裹 · 🥫 ${pool.cost} 罐` : `打开雨夜包裹 · ✦ ${pool.cost} 邮票`}{short ? (tunaPool ? '（罐头不足）' : '（邮票不足）') : ''}</button>
+      <button disabled={disabled || short} data-sound="pickup" onClick={() => {playSound('pickup');onCommand({type: 'DRAW_FURNITURE', poolId: pool.id});}} aria-label={tunaPool ? `打开星空温室包裹，消耗 ${pool.cost} 罐金枪鱼` : `打开雨夜包裹，消耗 ${pool.cost} 邮票`}>{tunaPool ? `✨ 打开星空温室包裹 · 🥫 ${pool.cost} 罐` : `打开雨夜包裹 · ✦ ${pool.cost} 邮票`}{short ? (tunaPool ? '（罐头不足）' : '（邮票不足）') : ''}</button>
       {tunaPool && short && <button className="secondary pool-recharge" disabled={disabled} onClick={onRecharge}>🥫 罐头不足，去补给小站看看 ↗</button>}
       <p className="muted">{pool.entries.map(e => `${name(e.furnitureId)} ${Math.round(e.weight / total * 100)}%`).join('，')}；重复家具转化为 2 份材料。</p>
     </div>;})}
@@ -174,6 +210,7 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
       <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE'})}>再去小巷走走 →</button>
       <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'chapter1_intro'})}>📖 重温第一章剧情</button>
+    </div>
     </div>
   </section>;
 }
