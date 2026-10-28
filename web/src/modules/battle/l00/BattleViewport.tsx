@@ -1,10 +1,12 @@
 import {useEffect, useRef, useState} from 'react';
 import type {KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent} from 'react';
 import type {BattleContext, BattleResult} from './types';
-import type {Advice, CatId, CombatAction, CombatCatState, CombatPhase, CombatState, Position} from './state';
+import type {CatId, CombatAction, CombatCatState, CombatPhase, CombatState, Position} from './state';
 import {PrologueBattle} from './runtime';
 import {getBattleSpeed, getDeployedCatCount} from './engine';
 import {getAdvice} from './advisor';
+import {useModelAdvisor} from '../useModelAdvisor';
+import {AdvisorChatMessages} from '../AdvisorChatMessages';
 import {COMMANDER_POSITION, CONFIG, DIFFICULTY_CONFIG, SKILLS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, isSkillTargetAllowed} from './ranges';
 import {drawCat, paintBattle} from './painter';
@@ -19,7 +21,6 @@ interface Props {
   autoComplete?:boolean;
 }
 interface Drag {catId:CatId;pointerId:number;startX:number;startY:number;x:number;y:number}
-interface Message {id:number;question?:string;advice:Advice}
 const phaseNames:Record<CombatPhase,string>={ready:'序章 · 守住回家的路',hero_danger:'迷路的金吉拉',caster_rescue:'布偶赶来救援',teach_position:'让绒绒站在侧面',teach_move:'调整前排站位',teach_energy:'认识自动蓄能',skill_charge:'观察伙伴积攒能量',teach_guard_skill:'试试斑斑的罐盖护盾',teach_caster_skill:'为星绒绽放选择落点',battle:'一起守住防线',won:'伙伴们守住了小巷',failed:'本次守线结束'};
 const guides:Partial<Record<CombatPhase,{step:number;title:string;text:string}>>={
   teach_position:{step:1,title:'把远程伙伴移到侧面',text:'我是军师阿策。把仍在场的绒绒移到高亮 A4 格：可以拖动，也可以点绒绒后点格子。伙伴体力归零就会本场退场，不能重新上阵。'},
@@ -54,11 +55,15 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const [drag,setDrag]=useState<Drag|null>(null);
   const [aimOutside,setAimOutside]=useState(false);
   const [chatOpen,setChatOpen]=useState(false);
-  const [messages,setMessages]=useState<Message[]>([]);
   const [question,setQuestion]=useState('');
   const [submitted,setSubmitted]=useState(false);
   const [starting,setStarting]=useState(false);
   const [startError,setStartError]=useState('');
+  const advisorChat=useModelAdvisor({
+    attemptId:context.attempt.id,stageId:context.attempt.stageId,open:chatOpen,
+    blocked:paused||!!game?.externallyPaused||submitted||starting||game?.phase==='won'||game?.phase==='failed',
+    getSnapshot:()=>runtime.getSnapshot(),localAnswer:getAdvice,
+  });
   const startingRef=useRef(false);
   const attemptRef=useRef(context.attempt.id);attemptRef.current=context.attempt.id;
   const inspectedCat=game?.inspectedCatId??null;
@@ -70,7 +75,6 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const dragRef=useRef<Drag|null>(null),aimPointerRef=useRef<number|null>(null);
   const suppressClick=useRef(false),suppressBoardClick=useRef(false);
   const animationRef=useRef<AnimationBook>(new Map());
-  const messageId=useRef(0);
   const guideRef=useRef<HTMLDivElement>(null),chatLogRef=useRef<HTMLDivElement>(null);
 
   function clearPointers(){
@@ -86,7 +90,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     const unsubscribe=runtime.subscribe(setGame);
     runtime.start(context,result=>{setSubmitted(true);callbackRef.current(result);});
     runtime.pause(pausedRef.current||document.hidden);
-    setSelected(null);setMoveSelection(null);closeInspection();clearPointers();setChatOpen(false);setMessages([]);setSubmitted(false);setStarting(false);setStartError('');startingRef.current=false;animationRef.current.clear();
+    setSelected(null);setMoveSelection(null);closeInspection();clearPointers();setChatOpen(false);setSubmitted(false);setStarting(false);setStartError('');startingRef.current=false;animationRef.current.clear();
     let frame=0,last=performance.now();
     const loop=(now:number)=>{const dt=Math.min((now-last)/1000,.1);last=now;if(!document.hidden&&!pausedRef.current&&!holdRef.current)runtime.tick(dt);frame=requestAnimationFrame(loop);};
     const visibility=()=>{last=performance.now();if(document.hidden){if(runtime.getSnapshot()?.skillAim)runtime.dispatch({type:'CANCEL_SKILL'});closeInspection();clearPointers();setMoveSelection(null);}runtime.pause(pausedRef.current||document.hidden);};
@@ -98,9 +102,8 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   useEffect(()=>{if(paused){if(runtime.getSnapshot()?.skillAim)runtime.dispatch({type:'CANCEL_SKILL'});closeInspection();clearPointers();setMoveSelection(null);}runtime.pause(paused||document.hidden);},[runtime,paused,context.attempt.id]);
   useEffect(()=>{if(autoComplete&&!paused&&!submitted&&(game?.phase==='won'||game?.phase==='failed'))runtime.complete();},[autoComplete,paused,submitted,game?.phase,game?.externallyPaused,runtime]);
   useEffect(()=>{if(game&&canvasRef.current){const ctx=canvasRef.current.getContext('2d');if(ctx)paintBattle(ctx,game,selected,animationRef.current);}},[game,selected]);
-  useEffect(()=>{if(game?.advisor.visible&&messages.length===0)setMessages([{id:++messageId.current,advice:{title:'阿策 · 军师喵',text:'我会陪你观察战场。先完成站位和技能教学，之后可以问我怎么摆阵、怎样蓄能、伙伴退场后怎么办。'}}]);},[game?.advisor.visible,messages.length]);
   useEffect(()=>{if(game&&guides[game.phase])guideRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'});},[game?.phase]);
-  useEffect(()=>{const log=chatLogRef.current;if(log)log.scrollTop=log.scrollHeight;},[messages.length,chatOpen]);
+  useEffect(()=>{const log=chatLogRef.current;if(log)log.scrollTop=log.scrollHeight;},[advisorChat.messages,advisorChat.loading,advisorChat.notice,chatOpen]);
   useEffect(()=>{
     const cancel=(event:KeyboardEvent)=>{if(event.key!=='Escape')return;if(runtime.getSnapshot()?.skillAim){event.preventDefault();runtime.dispatch({type:'CANCEL_SKILL'});clearPointers();}else if(inspectedRef.current){event.preventDefault();closeInspection();}else setMoveSelection(null);};
     const cancelWithMouse=(event:MouseEvent)=>{if(!runtime.getSnapshot()?.skillAim)return;event.preventDefault();runtime.dispatch({type:'CANCEL_SKILL'});clearPointers();};
@@ -257,7 +260,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
       finally{startingRef.current=false;setStarting(false);}
     }else dispatch({type:'PAUSE'});
   }
-  function ask(text:string){if(blocked||aim||!text.trim())return;const current=runtime.getSnapshot();if(!current)return;setMessages(old=>[...old,{id:++messageId.current,question:text.trim().slice(0,500),advice:getAdvice(current,text)}]);setQuestion('');}
+  function ask(text:string){if(!aim&&advisorChat.ask(text))setQuestion('');}
   const moveHandlers=(cat:CombatCatState)=>({onPointerDown:(event:ReactPointerEvent<HTMLButtonElement>)=>pointerDown(event,cat),onPointerMove:pointerMove,onPointerUp:(event:ReactPointerEvent<HTMLButtonElement>)=>finishDrag(event),onPointerCancel:(event:ReactPointerEvent<HTMLButtonElement>)=>finishDrag(event,true),onLostPointerCapture:()=>{if(dragRef.current?.catId===cat.id){dragRef.current=null;holdRef.current=chatOpen;setDrag(null);}}});
   const proactive=guide?.text??(game.phase==='won'?'守住了！点击完成战斗，查看本次结果。':`现在是${difficulty.label}实战。斑斑挡 2 只，绒绒在旁边支援；能量满后记得挑时机用技能。`);
   const retired=game.cats.filter(cat=>cat.combatant&&cat.status==='retired');
@@ -318,10 +321,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
       </div>
     </div>
     <div className="btl-controls"><p role="status">{blocked?'战斗已暂停。':game.lastAction?.type==='INSPECT_CAT'&&!inspectedCat?speedStatus:game.lastAction?.reason??'先观察喵喵的遭遇，伙伴很快就会赶来。'}{!blocked&&(game.paused||chatOpen||aim||inspectedCat)&&<small>{speedStatus}</small>}</p></div>
-    {chatOpen&&<section className="btl-chat" aria-label="军师阿策聊天"><div className="btl-panel-heading"><span><strong>阿策的战术小纸条</strong><small>本地规则顾问 · 只参考眼前战况</small></span><button className="btl-quiet" disabled={blocked} onClick={()=>setChatOpen(false)}>收起聊天</button></div><div className="btl-chat-log" aria-live="polite" ref={chatLogRef}>{messages.map(message=>{
-      const advice=message.advice;
-      return <div key={message.id}>{message.question&&<p className="btl-question">{message.question}</p>}<article><strong>{advice.title}</strong><p>{advice.text}</p></article></div>;
-    })}</div><div className="btl-suggestions">{['现在怎么摆阵？','伙伴退场怎么办？','怎样蓄能？','猫咪有什么能力？'].map(text=><button key={text} disabled={blocked} onClick={()=>ask(text)}>{text}</button>)}</div><form onSubmit={event=>{event.preventDefault();ask(question);}}><label className="btl-sr-only" htmlFor="battle-question">询问军师</label><input id="battle-question" value={question} disabled={blocked} onChange={event=>setQuestion(event.target.value)} maxLength={500} placeholder="问问阵型、退场、蓄能或猫咪能力……"/><button disabled={blocked||!question.trim()}>询问</button></form></section>}
+    {chatOpen&&<section className="btl-chat" aria-label="军师阿策聊天"><div className="btl-panel-heading"><span><strong>阿策的战术小纸条</strong><small>当前战况 · 模型建议 / 本地兜底</small></span><button className="btl-quiet" disabled={blocked} onClick={()=>setChatOpen(false)}>收起聊天</button></div><div className="btl-chat-log" aria-live="polite" aria-busy={advisorChat.loading} ref={chatLogRef}><article><strong>阿策 · 军师喵</strong><p>我会陪你观察战场。先完成站位和技能教学，之后可以问我怎么摆阵、怎样蓄能、伙伴退场后怎么办。</p></article><AdvisorChatMessages {...advisorChat}/></div><div className="btl-suggestions">{['现在怎么摆阵？','伙伴退场怎么办？','怎样蓄能？','猫咪有什么能力？'].map(text=><button key={text} disabled={blocked||advisorChat.loading} onClick={()=>ask(text)}>{text}</button>)}</div><form onSubmit={event=>{event.preventDefault();ask(question);}}><label className="btl-sr-only" htmlFor="battle-question">询问军师</label><input id="battle-question" value={question} disabled={blocked||advisorChat.loading} onChange={event=>setQuestion(event.target.value)} maxLength={500} placeholder="问问阵型、退场、蓄能或猫咪能力……"/><button disabled={blocked||advisorChat.loading||!question.trim()}>{advisorChat.loading?'思考中…':'询问'}</button></form></section>}
     {(game.phase==='won'||game.phase==='failed')&&<div className="btl-milestone"><CatPortrait kind="hero" size={70}/><div><h2>{game.phase==='won'?'大家一起守住了！':'伙伴们已经撤离'}</h2><p>{game.phase==='won'?'站位、移动、自动蓄能与技能释放都学会了。本次战斗已经完成。':'防线被突破或伙伴全部退场。本场已经结束，结算后可重新挑战。'}</p><button disabled={blocked} onClick={()=>runtime.complete()}>{submitted?'战斗结果已提交':'完成战斗'}</button></div></div>}
     {drag&&Math.hypot(drag.x-drag.startX,drag.y-drag.startY)>7&&<div className="btl-drag-ghost" style={{left:drag.x,top:drag.y}}><CatPortrait kind={drag.catId} size={70}/></div>}
   </section>;

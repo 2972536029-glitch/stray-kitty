@@ -6,7 +6,7 @@
 
 新增入口 `tunnel_boss`，家园在 `alley_rescued` 后可进入“第四章·地下通道”试玩，无须先完成第二、三章试玩。它是独立战斗场次，不自动接管当前第四章剧情。catalog 的 lanes=5、columns=8、waves=8 表示包围尺寸与波数；棋盘实际只有 37 格，E1–E3 不存在。地形、编队与数值见[地下通道设计](../design/tower-defense/levels/L04-underground-tunnel/design.md)。
 
-正式剧情的候选插入点是 `rescue_intro_6` 之后、`rescue_intro_7` 之前，目前只作为团队对齐方案。已有剧情通过 `rescue_intro_7` 完成救援并返回家园；本轮不改这些节点，不在试玩写入 `tunnel_explored`、`cats_rescued_batch1` 或其他主线标记，也不让试玩胜利强行跳入该剧情。
+正式剧情的候选插入点是 `rescue_intro_9` 之后、`rescue_intro_10` 之前（墨墨夜视与全员护盾觉醒位于 `rescue_intro_7`，战前动员布阵位于 `rescue_intro_9`），目前只作为团队对齐方案。已有剧情通过 `rescue_intro_10` 完成救援并返回家园；本轮不改这些节点，不在试玩写入 `tunnel_explored`、`cats_rescued_batch1` 或其他主线标记，也不让试玩胜利强行跳入该剧情。
 
 `BattleHost` 按活动 attempt 的 stage 路由地下通道页面；战斗只读取真实场次快照，不从家园按钮、剧情文案或库存推测难度与携带物。
 

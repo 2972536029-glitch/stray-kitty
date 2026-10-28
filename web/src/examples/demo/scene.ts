@@ -33,6 +33,8 @@ export class DemoScene {
   private moveBuffer = 0;
   private nearbyInteractionId = '';
   private squeezePromptVisible = false;
+  private movementHint: string | null = null;
+  randomEligible = true;
   private static readonly moveSegment = 150;
   private static readonly maxReport = 300; // 服务端单次上报上限,超出整段会被拒,剩余里程留到下一段。
   constructor(
@@ -42,7 +44,8 @@ export class DemoScene {
     private onResult: (result: BattleResult) => void,
     private onInspectHint?: (hint: string | null) => void,
     private onMove?: (distance: number) => void,
-    private onRandomZone?: (zoneId: string) => Promise<boolean>
+    private onRandomZone?: (zoneId: string) => Promise<boolean>,
+    private onWorldPosition?: (point: {x: number; y: number}) => void
   ) {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('浏览器无法创建二维画布');
@@ -66,8 +69,11 @@ export class DemoScene {
     if (key === 's' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartSqueeze()) {
       event.preventDefault(); this.keys.delete('s'); return;
     }
+    if (key === 'c' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartCrateClimb()) {
+      event.preventDefault(); this.keys.delete('c'); return;
+    }
     this.keys.add(key);
-    if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','g'].includes(key)) event.preventDefault();
+    if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','g','c'].includes(key)) event.preventDefault();
     if (key === 'g' && !event.repeat && this.state?.mapId === 'alley') this.rainyAlley.toggleDebug();
     if (key === 'e' && !event.repeat) {
       if (this.state?.mapId === 'market') {
@@ -125,7 +131,7 @@ export class DemoScene {
       this.held.clear();
       if (mode === 'explore') {
         if (this.state.mapId === 'alley') {
-          if (mapChanged) this.rainyAlley.reset();
+          if (mapChanged || (this.lastMode === 'dialogue' && this.state.flags.includes('alley_rescued'))) this.rainyAlley.reset(this.state.flags, this.state.alleyBattleReturn);
         } else {
           this.x = 180;
           this.y = 290;
@@ -134,6 +140,8 @@ export class DemoScene {
       this.moveBuffer = 0;
       this.nearbyInteractionId = '';
       this.squeezePromptVisible = false;
+      this.movementHint = null;
+      this.onInspectHint?.(null);
       this.onNear(false);
       if (mode === 'event') this.rainyAlley.pauseForEvent();
       this.lastMode = mode;
@@ -157,10 +165,15 @@ export class DemoScene {
         this.onInspectHint?.(null);
       }
       const squeezePrompt = this.rainyAlley.squeezePromptActive();
-      if (squeezePrompt !== this.squeezePromptVisible) {
-        this.squeezePromptVisible = squeezePrompt;
-        this.onInspectHint?.(squeezePrompt ? 'S · 挤过去' : null);
+      const climbPrompt = this.rainyAlley.climbPromptActive();
+      const hint = climbPrompt ? 'C · 爬过木箱' : squeezePrompt ? 'S · 挤过去' : null;
+      const showPrompt = !!hint;
+      if (showPrompt !== this.squeezePromptVisible || hint !== this.movementHint) {
+        this.squeezePromptVisible = showPrompt;
+        this.movementHint = hint;
+        this.onInspectHint?.(hint);
       }
+      this.onWorldPosition?.(this.rainyAlley.worldPosition());
     } else if (mode === 'explore' && active) {
       let dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
       let dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
@@ -237,7 +250,7 @@ export class DemoScene {
     else if (this.state.mapId === 'tunnel' || this.storyScene === 'tunnel') this.drawTunnel();
     else if (this.state.mapId === 'market' || this.storyScene === 'market') this.drawMarket();
     else if (mode === 'home' || this.state.mapId === 'greenhouse') this.drawHome();
-    else if (this.state.mapId === 'alley') this.rainyAlley.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, {phase: mode, eventId: this.state.pendingEventId, pendingEventSource: this.state.pendingEventSource});
+    else if (this.state.mapId === 'alley') this.rainyAlley.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, {phase: mode, eventId: this.state.pendingEventId, pendingEventSource: this.state.pendingEventSource, randomEligible: this.randomEligible});
     else this.drawAlley();
     if (this.pausedByUser) {this.graphics.fillStyle(0x18282a, .6);this.graphics.fillRect(0, 0, 800, 480);}
   }

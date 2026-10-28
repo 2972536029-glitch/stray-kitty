@@ -9,6 +9,17 @@ import (
 	"stray-kitty/server/internal/service"
 )
 
+func markRescueStoryDoneForTest(t *testing.T, g *service.Game, token string) {
+	t.Helper()
+	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Flags = domain.Add(p.State.Flags, "rescue_story_done")
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func useMarketRandomPool(t *testing.T, g *service.Game, token string) domain.GameState {
 	t.Helper()
 	for index := range g.Catalog.Events {
@@ -398,6 +409,7 @@ func TestNarrativeGatedCardDrawnAfterFlag(t *testing.T) {
 // 节点事件一次性:market 的摊位事件结算后重触发被拒(修复无限重掷刷奖励)。
 func TestNodeEventOneShot(t *testing.T) {
 	g, token, _ := setup(t)
+	markRescueStoryDoneForTest(t, g, token)
 	execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
 	s, err := g.State(token)
 	if err != nil {
@@ -455,6 +467,7 @@ func dropRepeatable(g *service.Game) {
 // 伙伴鼓励:usePush 掷两组取优(低组 [1,1] 被高组 [6,6] 替换→crit),消耗 token;无 token 明确拒绝。
 func TestCompanionPushTakesBetterPair(t *testing.T) {
 	g, token, _ := setup(t)
+	markRescueStoryDoneForTest(t, g, token)
 	calls := 0
 	g.Random = func(max int) (int, error) {
 		calls++
@@ -529,6 +542,7 @@ func TestRepeatableEchoCard(t *testing.T) {
 // 换章重置:进入第二章后,小巷已抽卡清空(区域换了新鲜事)。
 func TestChapterSwitchResetsDrawn(t *testing.T) {
 	g, token, _ := setup(t)
+	markRescueStoryDoneForTest(t, g, token)
 	finishStory(t, g, token)
 	useMarketRandomPool(t, g, token)
 	for i := 0; i < 60; i++ {
@@ -584,6 +598,7 @@ func TestRepeatWinDoesNotRefundPush(t *testing.T) {
 // 回跳章节不清池:只有章节序前进才重置,来回跳无法刷新鲜度。
 func TestBackwardChapterJumpKeepsDrawn(t *testing.T) {
 	g, token, _ := setup(t)
+	markRescueStoryDoneForTest(t, g, token)
 	dropRepeatable(g)
 	execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
 	s, err := g.State(token)
@@ -707,7 +722,6 @@ func TestChapter3GreenhouseProgressionAndMomoUnlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 解锁第二章集市
 	s := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
 	for s.StoryNodeID != "" && s.Phase == "dialogue" {
 		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
@@ -715,51 +729,39 @@ func TestChapter3GreenhouseProgressionAndMomoUnlock(t *testing.T) {
 	if !domain.Contains(s.Flags, "chapter_2_started") {
 		t.Fatal("expected chapter_2_started")
 	}
-	// 回到花房
 	s = execute(t, g, token, domain.Command{Type: "GO_HOME"})
 	if s.Phase != "home" || s.MapID != "greenhouse" {
-		t.Fatalf("expected home phase in greenhouse, got phase=%s map=%s", s.Phase, s.MapID)
+		t.Fatalf("expected home in greenhouse, got %+v", s)
 	}
-	// 启程第三章
 	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "greenhouse_intro_1"})
-	if s.Phase != "dialogue" || s.ChapterID != "greenhouse" {
-		t.Fatalf("expected dialogue phase in greenhouse, got phase=%s chapter=%s", s.Phase, s.ChapterID)
+	if s.Phase != "dialogue" || s.ChapterID != "greenhouse" || !domain.Contains(s.Flags, "chapter_3_started") {
+		t.Fatalf("chapter 3 did not start correctly: %+v", s)
 	}
 	for s.StoryNodeID != "" && s.Phase == "dialogue" {
 		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 	}
-	if s.Phase != "home" {
-		t.Fatalf("expected return to home phase after chapter 3 story, got %s", s.Phase)
+	if s.Phase != "home" || !domain.Contains(s.Flags, "momo_joined") || !domain.Contains(s.Cats, "momo") {
+		t.Fatalf("Momo should join during the story: %+v", s)
 	}
-	if !domain.Contains(s.Flags, "chapter_3_started") {
-		t.Fatal("expected chapter_3_started flag")
+	if domain.Contains(s.Flags, "greenhouse_fortified") {
+		t.Fatal("story completion cannot award fortification before the defense battle")
 	}
-	if !domain.Contains(s.Flags, "momo_joined") {
-		t.Fatal("expected momo_joined flag")
+	rejectUnchanged(t, g, token, domain.Command{Type: "START_STORY", NodeID: "rescue_intro_1"})
+	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "greenhouse_boss"})
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
+	if !domain.Contains(s.Flags, "greenhouse_fortified") {
+		t.Fatal("defense victory did not fortify greenhouse")
 	}
-	if !domain.Contains(s.Cats, "momo") {
-		t.Fatal("expected momo in cats list")
-	}
-
-	// 启程第四章
+	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
 	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "rescue_intro_1"})
 	if s.Phase != "dialogue" || s.ChapterID != "rescue" || s.MapID != "tunnel" {
-		t.Fatalf("expected dialogue phase in tunnel for chapter 4, got phase=%s chapter=%s map=%s", s.Phase, s.ChapterID, s.MapID)
+		t.Fatalf("chapter 4 did not unlock after defense victory: %+v", s)
 	}
 	for s.StoryNodeID != "" && s.Phase == "dialogue" {
 		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 	}
-	if s.Phase != "home" {
-		t.Fatalf("expected return to home phase after chapter 4 story, got %s", s.Phase)
-	}
-	if !domain.Contains(s.Flags, "chapter_4_started") {
-		t.Fatal("expected chapter_4_started flag")
-	}
-	if !domain.Contains(s.Flags, "tunnel_explored") {
-		t.Fatal("expected tunnel_explored flag")
-	}
-	if !domain.Contains(s.Flags, "cats_rescued_batch1") {
-		t.Fatal("expected cats_rescued_batch1 flag")
+	if s.Phase != "home" || !domain.Contains(s.Flags, "chapter_4_started") || !domain.Contains(s.Flags, "tunnel_explored") || !domain.Contains(s.Flags, "cats_rescued_batch1") {
+		t.Fatalf("chapter 4 story failed to complete: %+v", s)
 	}
 }
 
@@ -807,6 +809,7 @@ func TestEventRewardCarryLifecycle(t *testing.T) {
 // 协助者轨:咕咕(现成摆点的节点卡)crit 携带 dove 挂上 attempt;老黄卡内容经 lint 校验。
 func TestAllyCarryViaDove(t *testing.T) {
 	g, token, _ := setup(t)
+	markRescueStoryDoneForTest(t, g, token)
 	calls := 0
 	g.Random = func(max int) (int, error) {
 		calls++
