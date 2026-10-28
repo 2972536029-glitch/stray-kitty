@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import contentCatalog from '../web/content/catalog.json';
@@ -10,8 +11,9 @@ import {
 } from '../web/src/modules/rainyAlley/runtimeGeometry.ts';
 
 const authoredSvg = readFileSync(new URL('../level_design/rainy_alley/source/rainy_alley_v09.svg', import.meta.url), 'utf8');
+const sourceManifest = JSON.parse(readFileSync(new URL('../level_design/rainy_alley/SOURCE_MANIFEST.json', import.meta.url), 'utf8'));
 
-test('Rainy Alley crate and random zones match source and authored SVG coordinates', () => {
+test('Rainy Alley crate and random zones match gameplay source coordinates, and the authored floorplan stays locked', () => {
   const crate = rainyAlleyMapData.objects.fixed.find(object => object.id === 'alley_crate');
   assert.deepEqual({x: crate?.x, y: crate?.y, eventId: crate?.eventId}, {x: 975, y: 453, eventId: 'crate_event'});
   const contentCrate = contentCatalog.maps.find(map => map.id === 'alley')?.interactions.find(item => item.id === 'alley_crate');
@@ -22,8 +24,8 @@ test('Rainy Alley crate and random zones match source and authored SVG coordinat
     rainy_random_central: {x: 455, y: 560, r: 28},
     rainy_random_east: {x: 780, y: 400, r: 30}
   });
-  assert.match(authoredSvg, /zone-rainy_random_central"><circle[^>]+cx="455" cy="560" r="28"/);
-  assert.match(authoredSvg, /obj-alley_crate[^>]+translate\(975 453\)/);
+  const expectedHash = sourceManifest.hashes_sha256['level_design/rainy_alley/source/rainy_alley_v09.svg'];
+  assert.equal(createHash('sha256').update(authoredSvg).digest('hex'), expectedHash);
 });
 
 test('closed gate collision has a reachable interaction point beside the mandatory crate', () => {
