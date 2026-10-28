@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"math/big"
+	"stray-kitty/server/internal/advisor"
 	"stray-kitty/server/internal/domain"
 	"stray-kitty/server/internal/repository"
 )
@@ -15,6 +16,7 @@ type Game struct {
 	Catalog         domain.Catalog
 	Random          func(int) (int, error)
 	RainyZoneChance int
+	Advisor         *advisor.Client
 }
 
 func New(store *repository.Store, c domain.Catalog) *Game {
