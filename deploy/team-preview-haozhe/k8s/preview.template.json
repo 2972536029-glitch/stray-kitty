@@ -8,11 +8,21 @@
       "metadata": {
         "name": "stray-kitty-preview-data",
         "namespace": "cn-haozhe-wang",
-        "labels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "game"}
+        "labels": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "game"
+        }
       },
       "spec": {
-        "accessModes": ["ReadWriteOnce"],
-        "resources": {"requests": {"storage": "1Gi"}}
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "1Gi"
+          }
+        }
       }
     },
     {
@@ -21,11 +31,21 @@
       "metadata": {
         "name": "stray-kitty-payment-data",
         "namespace": "cn-haozhe-wang",
-        "labels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "payment"}
+        "labels": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "payment"
+        }
       },
       "spec": {
-        "accessModes": ["ReadWriteOnce"],
-        "resources": {"requests": {"storage": "1Gi"}}
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "1Gi"
+          }
+        }
       }
     },
     {
@@ -34,64 +54,176 @@
       "metadata": {
         "name": "stray-kitty-game",
         "namespace": "cn-haozhe-wang",
-        "labels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "game"}
+        "labels": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "game"
+        }
       },
       "spec": {
         "replicas": 1,
-        "strategy": {"type": "Recreate"},
+        "strategy": {
+          "type": "Recreate"
+        },
         "revisionHistoryLimit": 3,
-        "selector": {"matchLabels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "game"}},
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/name": "stray-kitty",
+            "app.kubernetes.io/instance": "haozhe-preview",
+            "app.kubernetes.io/component": "game"
+          }
+        },
         "template": {
           "metadata": {
-            "labels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "game"}
+            "labels": {
+              "app.kubernetes.io/name": "stray-kitty",
+              "app.kubernetes.io/instance": "haozhe-preview",
+              "app.kubernetes.io/component": "game"
+            }
           },
           "spec": {
             "automountServiceAccountToken": false,
             "terminationGracePeriodSeconds": 30,
-            "imagePullSecrets": [{"name": "stray-kitty-preview-registry"}],
+            "imagePullSecrets": [
+              {
+                "name": "stray-kitty-preview-registry"
+              }
+            ],
             "securityContext": {
               "runAsNonRoot": true,
               "runAsUser": 10001,
               "runAsGroup": 10001,
               "fsGroup": 10001,
               "fsGroupChangePolicy": "OnRootMismatch",
-              "seccompProfile": {"type": "RuntimeDefault"}
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
             },
             "containers": [
               {
                 "name": "game",
                 "image": "RELEASE_IMAGE_NOT_SELECTED",
                 "imagePullPolicy": "IfNotPresent",
-                "ports": [{"name": "http", "containerPort": 8080, "protocol": "TCP"}],
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080,
+                    "protocol": "TCP"
+                  }
+                ],
                 "env": [
-                  {"name": "GAME_ADDR", "value": "0.0.0.0:8080"},
-                  {"name": "GAME_DATA_FILE", "value": "/data/game.json"},
-                  {"name": "GAME_WEB_DIR", "value": "disabled"},
-                  {"name": "PAYMENT_URL", "value": "http://stray-kitty-payment:8082"},
-                  {"name": "ADVISOR_BASE_URL", "value": "https://api.deepseek.com"},
-                  {"name": "ADVISOR_MODEL", "value": "deepseek-flash"},
-                  {"name": "ADVISOR_API_KEY", "valueFrom": {"secretKeyRef": {"name": "stray-kitty-preview-advisor", "key": "api-key", "optional": true}}},
-                  {"name": "ADVISOR_MAX_CONCURRENT", "value": "4"},
-                  {"name": "ADVISOR_DAILY_REQUEST_LIMIT", "value": "200"}
+                  {
+                    "name": "GAME_ADDR",
+                    "value": "0.0.0.0:8080"
+                  },
+                  {
+                    "name": "GAME_DATA_FILE",
+                    "value": "/data/game.json"
+                  },
+                  {
+                    "name": "GAME_WEB_DIR",
+                    "value": "disabled"
+                  },
+                  {
+                    "name": "PAYMENT_URL",
+                    "value": "http://stray-kitty-payment:8082"
+                  },
+                  {
+                    "name": "ADVISOR_BASE_URL",
+                    "value": "https://api.deepseek.com"
+                  },
+                  {
+                    "name": "ADVISOR_MODEL",
+                    "value": "deepseek-flash"
+                  },
+                  {
+                    "name": "ADVISOR_API_KEY",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-advisor",
+                        "key": "api-key",
+                        "optional": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "ADVISOR_MAX_CONCURRENT",
+                    "value": "4"
+                  },
+                  {
+                    "name": "ADVISOR_DAILY_REQUEST_LIMIT",
+                    "value": "200"
+                  }
                 ],
                 "securityContext": {
                   "allowPrivilegeEscalation": false,
                   "readOnlyRootFilesystem": true,
-                  "capabilities": {"drop": ["ALL"]}
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
                 },
                 "resources": {
-                  "requests": {"cpu": "100m", "memory": "128Mi"},
-                  "limits": {"cpu": "1", "memory": "512Mi"}
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "512Mi"
+                  }
                 },
-                "startupProbe": {"httpGet": {"path": "/healthz", "port": "http"}, "periodSeconds": 2, "failureThreshold": 30},
-                "readinessProbe": {"httpGet": {"path": "/readyz", "port": "http"}, "periodSeconds": 5, "timeoutSeconds": 2},
-                "livenessProbe": {"httpGet": {"path": "/healthz", "port": "http"}, "periodSeconds": 10, "timeoutSeconds": 2},
-                "volumeMounts": [{"name": "progress", "mountPath": "/data"}, {"name": "tmp", "mountPath": "/tmp"}]
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": "http"
+                  },
+                  "periodSeconds": 2,
+                  "failureThreshold": 30
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/readyz",
+                    "port": "http"
+                  },
+                  "periodSeconds": 5,
+                  "timeoutSeconds": 2
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": "http"
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 2
+                },
+                "volumeMounts": [
+                  {
+                    "name": "progress",
+                    "mountPath": "/data"
+                  },
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  }
+                ]
               }
             ],
             "volumes": [
-              {"name": "progress", "persistentVolumeClaim": {"claimName": "stray-kitty-preview-data"}},
-              {"name": "tmp", "emptyDir": {"medium": "Memory", "sizeLimit": "16Mi"}}
+              {
+                "name": "progress",
+                "persistentVolumeClaim": {
+                  "claimName": "stray-kitty-preview-data"
+                }
+              },
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "medium": "Memory",
+                  "sizeLimit": "16Mi"
+                }
+              }
             ]
           }
         }
@@ -103,12 +235,27 @@
       "metadata": {
         "name": "stray-kitty-game",
         "namespace": "cn-haozhe-wang",
-        "labels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "game"}
+        "labels": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "game"
+        }
       },
       "spec": {
         "type": "ClusterIP",
-        "selector": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "game"},
-        "ports": [{"name": "http", "protocol": "TCP", "port": 8080, "targetPort": "http"}]
+        "selector": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "game"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "protocol": "TCP",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
       }
     },
     {
@@ -117,57 +264,142 @@
       "metadata": {
         "name": "stray-kitty-payment",
         "namespace": "cn-haozhe-wang",
-        "labels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "payment"}
+        "labels": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "payment"
+        }
       },
       "spec": {
         "replicas": 1,
-        "strategy": {"type": "Recreate"},
+        "strategy": {
+          "type": "Recreate"
+        },
         "revisionHistoryLimit": 3,
-        "selector": {"matchLabels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "payment"}},
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/name": "stray-kitty",
+            "app.kubernetes.io/instance": "haozhe-preview",
+            "app.kubernetes.io/component": "payment"
+          }
+        },
         "template": {
           "metadata": {
-            "labels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "payment"}
+            "labels": {
+              "app.kubernetes.io/name": "stray-kitty",
+              "app.kubernetes.io/instance": "haozhe-preview",
+              "app.kubernetes.io/component": "payment"
+            }
           },
           "spec": {
             "automountServiceAccountToken": false,
             "terminationGracePeriodSeconds": 30,
-            "imagePullSecrets": [{"name": "stray-kitty-preview-registry"}],
+            "imagePullSecrets": [
+              {
+                "name": "stray-kitty-preview-registry"
+              }
+            ],
             "securityContext": {
               "runAsNonRoot": true,
               "runAsUser": 10001,
               "runAsGroup": 10001,
               "fsGroup": 10001,
               "fsGroupChangePolicy": "OnRootMismatch",
-              "seccompProfile": {"type": "RuntimeDefault"}
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
             },
             "containers": [
               {
                 "name": "payment",
                 "image": "RELEASE_IMAGE_NOT_SELECTED",
                 "imagePullPolicy": "IfNotPresent",
-                "ports": [{"name": "http", "containerPort": 8082, "protocol": "TCP"}],
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8082,
+                    "protocol": "TCP"
+                  }
+                ],
                 "env": [
-                  {"name": "PAYMENT_ADDR", "value": "0.0.0.0:8082"},
-                  {"name": "PAYMENT_DATA_FILE", "value": "/data/payments.json"}
+                  {
+                    "name": "PAYMENT_ADDR",
+                    "value": "0.0.0.0:8082"
+                  },
+                  {
+                    "name": "PAYMENT_DATA_FILE",
+                    "value": "/data/payments.json"
+                  }
                 ],
                 "securityContext": {
                   "allowPrivilegeEscalation": false,
                   "readOnlyRootFilesystem": true,
-                  "capabilities": {"drop": ["ALL"]}
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
                 },
                 "resources": {
-                  "requests": {"cpu": "50m", "memory": "64Mi"},
-                  "limits": {"cpu": "500m", "memory": "256Mi"}
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "256Mi"
+                  }
                 },
-                "startupProbe": {"httpGet": {"path": "/healthz", "port": "http"}, "periodSeconds": 2, "failureThreshold": 30},
-                "readinessProbe": {"httpGet": {"path": "/readyz", "port": "http"}, "periodSeconds": 5, "timeoutSeconds": 2},
-                "livenessProbe": {"httpGet": {"path": "/healthz", "port": "http"}, "periodSeconds": 10, "timeoutSeconds": 2},
-                "volumeMounts": [{"name": "ledger", "mountPath": "/data"}, {"name": "tmp", "mountPath": "/tmp"}]
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": "http"
+                  },
+                  "periodSeconds": 2,
+                  "failureThreshold": 30
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/readyz",
+                    "port": "http"
+                  },
+                  "periodSeconds": 5,
+                  "timeoutSeconds": 2
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": "http"
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 2
+                },
+                "volumeMounts": [
+                  {
+                    "name": "ledger",
+                    "mountPath": "/data"
+                  },
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  }
+                ]
               }
             ],
             "volumes": [
-              {"name": "ledger", "persistentVolumeClaim": {"claimName": "stray-kitty-payment-data"}},
-              {"name": "tmp", "emptyDir": {"medium": "Memory", "sizeLimit": "16Mi"}}
+              {
+                "name": "ledger",
+                "persistentVolumeClaim": {
+                  "claimName": "stray-kitty-payment-data"
+                }
+              },
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "medium": "Memory",
+                  "sizeLimit": "16Mi"
+                }
+              }
             ]
           }
         }
@@ -179,12 +411,27 @@
       "metadata": {
         "name": "stray-kitty-payment",
         "namespace": "cn-haozhe-wang",
-        "labels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "payment"}
+        "labels": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "payment"
+        }
       },
       "spec": {
         "type": "ClusterIP",
-        "selector": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "payment"},
-        "ports": [{"name": "http", "protocol": "TCP", "port": 8082, "targetPort": "http"}]
+        "selector": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "payment"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "protocol": "TCP",
+            "port": 8082,
+            "targetPort": "http"
+          }
+        ]
       }
     },
     {
@@ -193,53 +440,128 @@
       "metadata": {
         "name": "stray-kitty-frontend",
         "namespace": "cn-haozhe-wang",
-        "labels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "frontend"}
+        "labels": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "frontend"
+        }
       },
       "spec": {
         "replicas": 1,
-        "strategy": {"type": "Recreate"},
+        "strategy": {
+          "type": "Recreate"
+        },
         "revisionHistoryLimit": 3,
-        "selector": {"matchLabels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "frontend"}},
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/name": "stray-kitty",
+            "app.kubernetes.io/instance": "haozhe-preview",
+            "app.kubernetes.io/component": "frontend"
+          }
+        },
         "template": {
           "metadata": {
-            "labels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "frontend"}
+            "labels": {
+              "app.kubernetes.io/name": "stray-kitty",
+              "app.kubernetes.io/instance": "haozhe-preview",
+              "app.kubernetes.io/component": "frontend"
+            }
           },
           "spec": {
             "automountServiceAccountToken": false,
             "terminationGracePeriodSeconds": 30,
-            "imagePullSecrets": [{"name": "stray-kitty-preview-registry"}],
+            "imagePullSecrets": [
+              {
+                "name": "stray-kitty-preview-registry"
+              }
+            ],
             "securityContext": {
               "runAsNonRoot": true,
               "runAsUser": 101,
               "runAsGroup": 101,
-              "seccompProfile": {"type": "RuntimeDefault"}
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
             },
             "containers": [
               {
                 "name": "frontend",
                 "image": "RELEASE_IMAGE_NOT_SELECTED",
                 "imagePullPolicy": "IfNotPresent",
-                "ports": [{"name": "http", "containerPort": 8080, "protocol": "TCP"}],
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080,
+                    "protocol": "TCP"
+                  }
+                ],
                 "securityContext": {
                   "allowPrivilegeEscalation": false,
                   "readOnlyRootFilesystem": true,
-                  "capabilities": {"drop": ["ALL"]}
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
                 },
                 "resources": {
-                  "requests": {"cpu": "50m", "memory": "64Mi"},
-                  "limits": {"cpu": "500m", "memory": "256Mi"}
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "256Mi"
+                  }
                 },
-                "readinessProbe": {"httpGet": {"path": "/healthz", "port": "http"}, "periodSeconds": 5, "timeoutSeconds": 2},
-                "livenessProbe": {"httpGet": {"path": "/healthz", "port": "http"}, "periodSeconds": 10, "timeoutSeconds": 2},
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": "http"
+                  },
+                  "periodSeconds": 5,
+                  "timeoutSeconds": 2
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": "http"
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 2
+                },
                 "volumeMounts": [
-                  {"name": "nginx-cache", "mountPath": "/var/cache/nginx"},
-                  {"name": "nginx-run", "mountPath": "/var/run"}
+                  {
+                    "name": "nginx-cache",
+                    "mountPath": "/var/cache/nginx"
+                  },
+                  {
+                    "name": "nginx-run",
+                    "mountPath": "/var/run"
+                  },
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  }
                 ]
               }
             ],
             "volumes": [
-              {"name": "nginx-cache", "emptyDir": {}},
-              {"name": "nginx-run", "emptyDir": {}}
+              {
+                "name": "nginx-cache",
+                "emptyDir": {}
+              },
+              {
+                "name": "nginx-run",
+                "emptyDir": {}
+              },
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "medium": "Memory",
+                  "sizeLimit": "16Mi"
+                }
+              }
             ]
           }
         }
@@ -251,13 +573,28 @@
       "metadata": {
         "name": "stray-kitty-preview",
         "namespace": "cn-haozhe-wang",
-        "labels": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "frontend"}
+        "labels": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "frontend"
+        }
       },
       "spec": {
         "type": "LoadBalancer",
         "externalTrafficPolicy": "Cluster",
-        "selector": {"app.kubernetes.io/name": "stray-kitty", "app.kubernetes.io/instance": "haozhe-preview", "app.kubernetes.io/component": "frontend"},
-        "ports": [{"name": "http", "protocol": "TCP", "port": 80, "targetPort": "http"}]
+        "selector": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "frontend"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "protocol": "TCP",
+            "port": 80,
+            "targetPort": "http"
+          }
+        ]
       }
     }
   ]
