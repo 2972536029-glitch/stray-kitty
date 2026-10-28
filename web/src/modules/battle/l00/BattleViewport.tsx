@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent} from 'react';
 import type {BattleContext, BattleResult} from './types';
 import type {CatId, CombatAction, CombatCatState, CombatPhase, CombatState, Position} from './state';
@@ -10,6 +10,9 @@ import {AdvisorChatMessages} from '../AdvisorChatMessages';
 import {COMMANDER_POSITION, CONFIG, DIFFICULTY_CONFIG, SKILLS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, isSkillTargetAllowed} from './ranges';
 import {drawCat, paintBattle} from './painter';
+import {whenSceneArtReady} from '../scene-art';
+import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
+import {useBattleBoardFit} from '../useBattleBoardFit';
 import type {AnimationBook, CatKind, CatPose} from './painter';
 import './battle.css';
 
@@ -52,6 +55,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const [selected,setSelected]=useState<CatId|null>(null);
   const [moveSelection,setMoveSelection]=useState<CatId|null>(null);
   const [skillTooltipOpen,setSkillTooltipOpen]=useState(false);
+  const [tooltipPosition,setTooltipPosition]=useState({left:0,top:0,maxHeight:240});
   const [drag,setDrag]=useState<Drag|null>(null);
   const [aimOutside,setAimOutside]=useState(false);
   const [chatOpen,setChatOpen]=useState(false);
@@ -59,6 +63,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const [submitted,setSubmitted]=useState(false);
   const [starting,setStarting]=useState(false);
   const [startError,setStartError]=useState('');
+  const [overview,setOverview]=useState(()=>window.innerWidth>=700);
   const advisorChat=useModelAdvisor({
     attemptId:context.attempt.id,stageId:context.attempt.stageId,open:chatOpen,
     blocked:paused||!!game?.externallyPaused||submitted||starting||game?.phase==='won'||game?.phase==='failed',
@@ -67,7 +72,10 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const startingRef=useRef(false);
   const attemptRef=useRef(context.attempt.id);attemptRef.current=context.attempt.id;
   const inspectedCat=game?.inspectedCatId??null;
-  const boardRef=useRef<HTMLDivElement>(null),canvasRef=useRef<HTMLCanvasElement>(null);
+  const boardRef=useRef<HTMLDivElement>(null),canvasRef=useRef<HTMLCanvasElement>(null),scrollRef=useRef<HTMLDivElement>(null);
+  const battlefieldRef=useRef<HTMLDivElement>(null),menuRef=useRef<HTMLDivElement>(null),tooltipRef=useRef<HTMLDivElement>(null);
+  const fittedWidth=useBattleBoardFit(scrollRef,7,3);
+  const boardWidth=overview?fittedWidth:Math.max(700,Math.round((fittedWidth??560)*1.25));
   const callbackRef=useRef(onResult);callbackRef.current=onResult;
   const pausedRef=useRef(paused);pausedRef.current=paused;
   const holdRef=useRef(false);holdRef.current=chatOpen||!!drag;
@@ -75,7 +83,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const dragRef=useRef<Drag|null>(null),aimPointerRef=useRef<number|null>(null);
   const suppressClick=useRef(false),suppressBoardClick=useRef(false);
   const animationRef=useRef<AnimationBook>(new Map());
-  const guideRef=useRef<HTMLDivElement>(null),chatLogRef=useRef<HTMLDivElement>(null);
+  const chatLogRef=useRef<HTMLDivElement>(null);
 
   function clearPointers(){
     const pointerId=aimPointerRef.current;aimPointerRef.current=null;
@@ -101,8 +109,10 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   },[runtime,context.attempt.id]);
   useEffect(()=>{if(paused){if(runtime.getSnapshot()?.skillAim)runtime.dispatch({type:'CANCEL_SKILL'});closeInspection();clearPointers();setMoveSelection(null);}runtime.pause(paused||document.hidden);},[runtime,paused,context.attempt.id]);
   useEffect(()=>{if(autoComplete&&!paused&&!submitted&&(game?.phase==='won'||game?.phase==='failed'))runtime.complete();},[autoComplete,paused,submitted,game?.phase,game?.externallyPaused,runtime]);
-  useEffect(()=>{if(game&&canvasRef.current){const ctx=canvasRef.current.getContext('2d');if(ctx)paintBattle(ctx,game,selected,animationRef.current);}},[game,selected]);
-  useEffect(()=>{if(game&&guides[game.phase])guideRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'});},[game?.phase]);
+  useEffect(()=>{
+    const paint=()=>{if(game&&canvasRef.current){const ctx=canvasRef.current.getContext('2d');if(ctx)paintBattle(ctx,game,selected,animationRef.current);}};
+    paint();return whenSceneArtReady(paint);
+  },[game,selected]);
   useEffect(()=>{const log=chatLogRef.current;if(log)log.scrollTop=log.scrollHeight;},[advisorChat.messages,advisorChat.loading,advisorChat.notice,chatOpen]);
   useEffect(()=>{
     const cancel=(event:KeyboardEvent)=>{if(event.key!=='Escape')return;if(runtime.getSnapshot()?.skillAim){event.preventDefault();runtime.dispatch({type:'CANCEL_SKILL'});clearPointers();}else if(inspectedRef.current){event.preventDefault();closeInspection();}else setMoveSelection(null);};
@@ -115,6 +125,38 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const inspectedStatus=game?.cats.find(cat=>cat.id===inspectedCat)?.status;
   useEffect(()=>{if(inspectedCat&&inspectedStatus!=='active')closeInspection();},[inspectedCat,inspectedStatus]);
   useEffect(()=>{setSkillTooltipOpen(false);},[inspectedCat]);
+  // Keep the description outside the scrolling board and leave the skill button unobstructed.
+  const inspectedPosition=game?.cats.find(cat=>cat.id===inspectedCat);
+  useLayoutEffect(()=>{
+    if(!inspectedCat)return;
+    let frame=0;
+    const update=()=>{
+      frame=0;
+      const field=battlefieldRef.current,scroll=scrollRef.current,menu=menuRef.current,tooltip=tooltipRef.current;
+      if(!field||!scroll||!menu||!tooltip)return;
+      const box=field.getBoundingClientRect(),view=scroll.getBoundingClientRect(),anchor=menu.getBoundingClientRect();
+      const minLeft=Math.max(view.left+6,6),maxRight=Math.min(view.right-6,window.innerWidth-6);
+      const minTop=Math.max(view.top+6,6),maxBottom=Math.min(view.bottom-6,window.innerHeight-6);
+      const width=tooltip.offsetWidth,maxLeft=Math.max(minLeft,maxRight-width);
+      let left:number,top:number,maxHeight=Math.max(24,maxBottom-minTop);
+      if(anchor.right+8+width<=maxRight){left=anchor.right+8;top=anchor.top;}
+      else if(anchor.left-width-8>=minLeft){left=anchor.left-width-8;top=anchor.top;}
+      else{
+        left=Math.min(maxLeft,Math.max(minLeft,anchor.left+anchor.width/2-width/2));
+        const above=Math.max(0,anchor.top-minTop-8),below=Math.max(0,maxBottom-anchor.bottom-8);
+        const placeBelow=below>=above;maxHeight=Math.max(24,placeBelow?below:above);
+        top=placeBelow?anchor.bottom+8:anchor.top-Math.min(tooltip.scrollHeight,maxHeight)-8;
+      }
+      top=Math.max(minTop,Math.min(maxBottom-Math.min(tooltip.scrollHeight,maxHeight),top));
+      const next={left:Math.max(minLeft,Math.min(maxLeft,left))-box.left,top:top-box.top,maxHeight};
+      setTooltipPosition(previous=>Math.abs(previous.left-next.left)<.5&&Math.abs(previous.top-next.top)<.5&&Math.abs(previous.maxHeight-next.maxHeight)<.5?previous:next);
+    };
+    const schedule=()=>{if(!frame)frame=requestAnimationFrame(update);};
+    const observer=new ResizeObserver(schedule);
+    for(const node of [battlefieldRef.current,scrollRef.current,boardRef.current,menuRef.current,tooltipRef.current])if(node)observer.observe(node);
+    update();window.addEventListener('resize',schedule);window.addEventListener('scroll',schedule,true);
+    return()=>{observer.disconnect();cancelAnimationFrame(frame);window.removeEventListener('resize',schedule);window.removeEventListener('scroll',schedule,true);};
+  },[inspectedCat,inspectedPosition?.x,inspectedPosition?.y,overview,skillTooltipOpen]);
   if(!game)return <div className="battle-l00 btl-loading">正在整理战斗地格……</div>;
 
   const blocked=paused||game.externallyPaused||submitted||starting;
@@ -264,14 +306,18 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const moveHandlers=(cat:CombatCatState)=>({onPointerDown:(event:ReactPointerEvent<HTMLButtonElement>)=>pointerDown(event,cat),onPointerMove:pointerMove,onPointerUp:(event:ReactPointerEvent<HTMLButtonElement>)=>finishDrag(event),onPointerCancel:(event:ReactPointerEvent<HTMLButtonElement>)=>finishDrag(event,true),onLostPointerCapture:()=>{if(dragRef.current?.catId===cat.id){dragRef.current=null;holdRef.current=chatOpen;setDrag(null);}}});
   const proactive=guide?.text??(game.phase==='won'?'守住了！点击完成战斗，查看本次结果。':`现在是${difficulty.label}实战。斑斑挡 2 只，绒绒在旁边支援；能量满后记得挑时机用技能。`);
   const retired=game.cats.filter(cat=>cat.combatant&&cat.status==='retired');
-  return <section className={`battle-l00${guide?' btl-teaching':''}`} aria-label="序章塔防战斗" data-phase={game.phase} data-inspecting={inspectedCat??undefined} data-effective-speed={effectiveSpeed} data-playback-speed={game.playbackSpeed} data-battle-time={game.time.toFixed(3)} onPointerDown={event=>{if(inspectedRef.current&&!(event.target as HTMLElement).closest('.btl-unit,.btl-cat-menu,.btl-playback'))closeInspection();}}>
+  return <section className={`battle-l00 battle-immersive${guide?' btl-teaching':''}`} data-scene="prologue" aria-label="序章塔防战斗" data-phase={game.phase} data-inspecting={inspectedCat??undefined} data-effective-speed={effectiveSpeed} data-playback-speed={game.playbackSpeed} data-battle-time={game.time.toFixed(3)} onPointerDown={event=>{if(inspectedRef.current&&!(event.target as HTMLElement).closest('.btl-unit,.btl-cat-menu,.btl-playback'))closeInspection();}}>
+    <BattleSceneBackdrop scene="prologue" boardRef={boardRef} columns={7} rows={3}/>
     {startError&&<p role="alert">{startError}</p>}
     <div className="btl-head"><div><span className="btl-eyebrow">PROLOGUE · CAT DEFENSE</span><strong>{phaseNames[game.phase]}</strong></div><div className="btl-progress"><span data-testid="battle-enemy-progress" aria-label={`全程共 ${game.totalEnemies} 只黑影，已有 ${game.defeated+game.escaped} 只离场，包含开场救援，不含练习木偶`}>黑影已离场 {game.defeated+game.escaped} / {game.totalEnemies}<small>含开场救援 · 木偶不计</small></span><span aria-label={`已漏过 ${game.leaks} 只黑影，最多 ${game.maxLeaks} 次`}>防线 {'●'.repeat(Math.max(0,game.maxLeaks-game.leaks))}{'○'.repeat(Math.min(game.maxLeaks,game.leaks))}</span></div></div>
     <div className="btl-wave-status"><strong data-testid="battle-wave-progress">{game.wave>0?`第 ${game.wave} / ${game.totalWaves} 波`:`救援与教学 · 实战共 ${game.totalWaves} 波`}</strong><span data-testid="battle-wave-status">{isBattle&&game.nextWaveIn!==null?`下一波 ${Math.max(0,Math.ceil(game.nextWaveIn))} 秒后${effectiveSpeed===0?'（已暂停）':''}`:game.phase==='won'?'所有波次已完成':game.phase==='failed'?'本次守线结束':game.wave===0?'完成五步教学后开始守线':'黑影从 B7 进入'}</span></div>
-    <div className="btl-subhead"><span>3 行 × 7 列 · 19 格可部署</span><span data-testid="battle-deployed-count">已上阵 {deployedCount}/{CONFIG.MAX_DEPLOYED_CATS} · 主角和军师不占位</span><span>猫咪朝右 → · 右侧来敌</span></div>
-    <div className="btl-difficulty-strip" role="status" aria-label="本次战斗难度"><strong>{difficulty.label} · 新手教学</strong><span>{game.phase==='battle'?`教学已完成 · ${difficultyText} · 3 次突破或全员退场则失败`:game.phase==='won'?'本次守线完成':game.phase==='ready'?`救援与教学固定，教学后进入${difficulty.label}实战`:'固定教学阶段 · 练习木偶不计入黑影战绩'}</span></div>
-    {guide&&<div className="btl-tutorial" ref={guideRef} role="status"><CatPortrait kind="advisor" size={58}/><div><small>军师阿策 · 新手引导 {guide.step} / 5 · {speedStatus}</small><strong>{guide.title}</strong><p>{guide.text}</p>{game.phase==='teach_energy'&&<button className="btl-practice-button btl-focus" data-testid="battle-begin-skill-practice" disabled={blocked} onClick={()=>{closeInspection();dispatch({type:'BEGIN_SKILL_PRACTICE'});}}>开始蓄能练习</button>}</div></div>}
-    {game.advisor.visible&&!guide&&<div className="btl-tactics"><button type="button" data-testid="battle-advisor" disabled={blocked||!!aim||!!inspectedCat||terminal} onClick={()=>setChatOpen(true)} aria-label="与军师阿策交谈"><CatPortrait kind="advisor" size={30}/><strong>问问阿策</strong></button><p>{proactive}</p></div>}
+    <details className="battle-hud-details"><summary>战况说明</summary>
+      <div className="btl-subhead"><span>3 行 × 7 列 · 19 格可部署</span><span data-testid="battle-deployed-count">已上阵 {deployedCount}/{CONFIG.MAX_DEPLOYED_CATS} · 主角和军师不占位</span><span>猫咪朝右 → · 右侧来敌</span></div>
+      <div className="btl-difficulty-strip" role="status" aria-label="本次战斗难度"><strong>{difficulty.label} · 新手教学</strong><span>{game.phase==='battle'?`教学已完成 · ${difficultyText} · 3 次突破或全员退场则失败`:game.phase==='won'?'本次守线完成':game.phase==='ready'?`救援与教学固定，教学后进入${difficulty.label}实战`:'固定教学阶段 · 练习木偶不计入黑影战绩'}</span></div>
+      <div className="btl-range-legend" aria-label="范围图例"><span><i/>薄荷绿 · 普攻可达，单体攻击</span><span><i className="btl-legend-aim"/>浅青 · 可释放中心区域</span><span><i className="btl-legend-effect"/>黄色 · 技能作用范围</span></div>
+    </details>
+    {guide&&<div className="btl-tutorial" role="status"><CatPortrait kind="advisor" size={58}/><div className="prologue-guide-copy"><small>军师阿策 · 新手引导 {guide.step} / 5 · {speedStatus}</small><strong>{guide.title}</strong><p>{guide.text}</p></div>{game.phase==='teach_energy'&&<button className="btl-practice-button btl-focus" data-testid="battle-begin-skill-practice" disabled={blocked} onClick={()=>{closeInspection();dispatch({type:'BEGIN_SKILL_PRACTICE'});}}>开始蓄能练习</button>}</div>}
+    {game.advisor.visible&&<div className="btl-tactics battle-advisor"><button type="button" title={proactive} data-testid="battle-advisor" disabled={blocked||!!aim||!!inspectedCat||terminal} onClick={()=>setChatOpen(value=>!value)} aria-label="与军师阿策交谈" aria-expanded={chatOpen}><CatPortrait kind="advisor" size={96}/><strong>阿策</strong><span>聊聊战况</span></button></div>}
     {retired.length>0&&<p className="btl-retirement-note" role="status" data-testid="battle-retired">{retired.map(cat=>cat.name).join('、')}已退场，本场无法再次上阵。</p>}
     <div className="btl-arena btl-arena-wide">
       <div className="btl-board-column">
@@ -281,7 +327,10 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
           <button className="btl-play-toggle" data-testid="battle-play-toggle" aria-label={game.phase==='ready'?'开始序章战斗':game.paused?'开始，继续战斗':'暂停战斗'} disabled={blocked||terminal||chatOpen||game.phase!=='ready'&&!runningPhase} onClick={startOrPause}>{game.phase==='ready'||game.paused||!runningPhase?'开始':'暂停'}</button>
           <span data-testid="battle-speed-status" role="status">{speedStatus}</span>
         </div>
-        <div className={`btl-board${aim?' btl-board-aiming':''}`} ref={boardRef} data-testid="battle-board" onPointerDown={aimDown} onPointerMove={aimMove} onPointerLeave={()=>previewAt(null)} onPointerUp={event=>finishAim(event)} onPointerCancel={event=>finishAim(event,true)} onLostPointerCapture={()=>{if(aimPointerRef.current!==null){aimPointerRef.current=null;previewAt(null);}}}>
+        <div className="prologue-map-tools"><button type="button" className="btl-quiet" aria-pressed={overview} onClick={()=>setOverview(value=>!value)}>{overview?'放大战场':'查看全图'}</button></div>
+        <div className="prologue-battlefield" ref={battlefieldRef}>
+          <div className="prologue-board-scroll" ref={scrollRef} role="region" aria-label="序章战场，窄屏可横向滚动">
+        <div className={`btl-board${overview?' is-overview':''}${aim?' btl-board-aiming':''}`} ref={boardRef} style={{width:boardWidth}} data-testid="battle-board" onPointerDown={aimDown} onPointerMove={aimMove} onPointerLeave={()=>previewAt(null)} onPointerUp={event=>finishAim(event)} onPointerCancel={event=>finishAim(event,true)} onLostPointerCapture={()=>{if(aimPointerRef.current!==null){aimPointerRef.current=null;previewAt(null);}}}>
           <canvas width={700} height={300} ref={canvasRef} aria-hidden="true"/>
           <div className="btl-cells" role="group" aria-label={aim?'技能瞄准，全地图 21 格均可选择中心，鼠标移动预览最多 5 格十字，左键释放，右键或 Esc 取消；方向键预览，回车释放':'3 行 7 列战斗地格，B1 为固定保护终点，B7 为唯一出怪口，禁止部署，19 格可部署'}>{Array.from({length:21},(_,i)=>{
             const x=i%7,y=Math.floor(i/7),name=cellName({x,y}),goal=x===COMMANDER_POSITION.x&&y===COMMANDER_POSITION.y,spawn=isSpawnCell(x,y);
@@ -300,23 +349,24 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
           {active.map(cat=><button key={cat.id} className={`btl-unit${cat.id==='hero'?' btl-hero-unit':''}${selected===cat.id?' btl-selected':''}${game.phase==='teach_move'&&cat.id==='guard'||skillTeaching(cat)&&inspectedCat!==cat.id&&!aim?' btl-focus':''}`} style={{left:`${cat.x/7*100}%`,top:`${cat.y/3*100}%`}} aria-label={`${cat.name}，${cat.breed}，体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}，${cellName(cat)}，${cat.combatant?`阻挡 ${cat.blockedCount} / ${cat.maxBlocks}，能量 ${Math.floor(cat.energy)} / 100${cat.shield>0?`，护盾 ${Math.ceil(cat.shield)}`:''}`:'固定指挥，不攻击，不可移动'}`} data-testid={`battle-cat-${cat.id}`} disabled={!selectable(cat)} onClick={()=>catClick(cat)} {...moveHandlers(cat)}><span className="btl-unit-name">{cat.name}{cat.combatant&&<small>挡 {cat.blockedCount}/{cat.maxBlocks}</small>}</span><CatHealth cat={cat}/>{cat.combatant&&<CatEnergy cat={cat} compact/>}{cat.shield>0&&<span className="btl-unit-shield">盾 {Math.ceil(cat.shield)}</span>}</button>)}
           {game.enemies.filter(enemy=>enemy.training).map(enemy=><span key={enemy.id} className="btl-training-label" style={{left:`${(enemy.x+.5)/7*100}%`,top:`${enemy.y/3*100}%`}}>练习木偶<small>不反击</small></span>)}
           {inspected&&inspectedSkill&&<>
-            <div className="btl-cat-menu" role="group" aria-label={`${inspected.name}的技能菜单，查看时临时半速，教学和手动暂停优先`} data-testid="battle-cat-menu" style={{left:inspected.x<3?`calc(${(inspected.x+1)/7*100}% + 3px)`:`calc(${inspected.x/7*100}% - 95px)`,top:`clamp(6px, calc(${(inspected.y+.5)/3*100}% - 46px), calc(100% - 98px))`}} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}>
+            <div className="btl-cat-menu" ref={menuRef} role="group" aria-label={`${inspected.name}的技能菜单，查看时临时半速，教学和手动暂停优先`} data-testid="battle-cat-menu" style={{left:inspected.x<3?`calc(${(inspected.x+1)/7*100}% + 3px)`:`calc(${inspected.x/7*100}% - 95px)`,top:`clamp(6px, calc(${(inspected.y+.5)/3*100}% - 46px), calc(100% - 98px))`}} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}>
               <div className="btl-cat-menu-heading"><strong>{inspected.name}</strong><button className="btl-cat-menu-close" data-testid="battle-close-cat-menu" aria-label="关闭猫咪菜单" onClick={closeInspection}>×</button></div>
               <button className={`btl-skill-orb${canCast(inspected)?' btl-skill-orb-ready':''}${skillTeaching(inspected)&&canCast(inspected)?' btl-focus':''}`} data-testid={`battle-skill-${inspected.id}`} aria-label={`${inspectedSkill.name}，能量 ${Math.floor(inspected.energy)} / ${inspectedSkill.cost}${canCast(inspected)?'，点击释放':'，当前不可释放，可查看说明'}`} aria-disabled={!canCast(inspected)} aria-describedby={`battle-skill-description-${inspected.id}`} onMouseEnter={()=>setSkillTooltipOpen(true)} onMouseLeave={event=>{if(document.activeElement!==event.currentTarget)setSkillTooltipOpen(false);}} onFocus={()=>setSkillTooltipOpen(true)} onBlur={()=>setSkillTooltipOpen(false)} onClick={()=>chooseSkill(inspected)}>
                 <svg viewBox="0 0 24 24" aria-hidden="true" shapeRendering="crispEdges">{inspected.id==='guard'?<><path d="M5 3h14v11h-2v3h-3v3h-4v-3H7v-3H5z"/><path className="btl-skill-icon-cut" d="M8 6h8v7h-2v3h-4v-3H8z"/></>:<><path d="M10 2h4v6h3v3h5v3h-5v3h-3v5h-4v-5H7v-3H2v-3h5V8h3z"/><path className="btl-skill-icon-cut" d="M10 10h4v4h-4z"/></>}</svg>
               </button>
               <div className="btl-cat-menu-footer"><span>{Math.floor(inspected.energy)} / {inspectedSkill.cost}</span>{isBattle&&<button className="btl-cat-move" data-testid="battle-move-selected" disabled={!canMove(inspected)} onClick={()=>{setMoveSelection(inspected.id);setSelected(inspected.id);closeInspection();}} aria-label={`移动${inspected.name}，随后选择地格`}>移动</button>}</div>
             </div>
-            <div className={`btl-skill-tooltip${skillTooltipOpen?' btl-tooltip-visible':''}`} role="tooltip" id={`battle-skill-description-${inspected.id}`} data-testid="battle-skill-tooltip" style={{left:`clamp(6px, ${inspected.x/7*100}%, calc(100% - 234px))`}} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}>
-              <small>{inspected.name} · {inspected.role} · {effectiveSpeed===0?'当前暂停':'查看时 ×0.5'}</small><strong>{inspectedSkill.name}</strong>
-              <p>{inspectedSkill.targeting==='self'?`自身获得 ${inspectedSkill.shield} 点额外护盾，持续 ${inspectedSkill.duration} 秒。护盾先承伤，不恢复体力。`:`全地图任选中心，黄色十字最多作用 5 格，每个目标 ${inspectedSkill.damage} 伤害。鼠标移动预览，左键释放，右键取消；触摸可拖动后松手释放。`}</p>
-              <CatEnergy cat={inspected}/><span className="btl-tooltip-status">消耗 {inspectedSkill.cost} 能量 · {blocked||game.paused?'暂停期间不可释放':canCast(inspected)?'已就绪，点击圆形图标释放':inspected.energy<inspectedSkill.cost?`尚未蓄满，每秒自动 +${CONFIG.ENERGY_PER_SECOND}`:'按新手引导依次练习'}</span>
-              {inspected.shield>0&&<span className="btl-shield-detail" data-testid={`battle-shield-${inspected.id}`}>额外护盾 {Math.ceil(inspected.shield)} · 剩余 {inspected.shieldRemaining.toFixed(1)} 秒</span>}
-            </div>
           </>}
           {game.phase==='ready'&&<div className="btl-board-intro"><CatPortrait kind="hero" size={60}/><div><h2>陪喵喵守住这段路</h2><p>观察伙伴救援，学习站位、自动蓄能与技能。<br/>本次难度：{difficulty.label} · 血量归零后本场退场</p><button disabled={blocked} onClick={startOrPause}>开始序章战斗</button></div></div>}
         </div>
-        <div className="btl-range-legend" aria-label="范围图例"><span><i/>灰绿 · 普攻可达，单体攻击</span><span><i className="btl-legend-aim"/>浅青 · 可释放中心区域</span><span><i className="btl-legend-effect"/>黄色 · 技能作用范围</span></div>
+          </div>
+          {inspected&&inspectedSkill&&<div ref={tooltipRef} className={`btl-skill-tooltip${skillTooltipOpen?' btl-tooltip-visible':''}`} role="tooltip" id={`battle-skill-description-${inspected.id}`} data-testid="battle-skill-tooltip" style={{...tooltipPosition,overflowY:'auto'}} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}>
+            <small>{inspected.name} · {inspected.role} · {effectiveSpeed===0?'当前暂停':'查看时 ×0.5'}</small><strong>{inspectedSkill.name}</strong>
+            <p>{inspectedSkill.targeting==='self'?`自身获得 ${inspectedSkill.shield} 点额外护盾，持续 ${inspectedSkill.duration} 秒。护盾先承伤，不恢复体力。`:`全地图任选中心，黄色十字最多作用 5 格，每个目标 ${inspectedSkill.damage} 伤害。鼠标移动预览，左键释放，右键取消；触摸可拖动后松手释放。`}</p>
+            <CatEnergy cat={inspected}/><span className="btl-tooltip-status">消耗 {inspectedSkill.cost} 能量 · {blocked||game.paused?'暂停期间不可释放':canCast(inspected)?'已就绪，点击圆形图标释放':inspected.energy<inspectedSkill.cost?`尚未蓄满，每秒自动 +${CONFIG.ENERGY_PER_SECOND}`:'按新手引导依次练习'}</span>
+            {inspected.shield>0&&<span className="btl-shield-detail" data-testid={`battle-shield-${inspected.id}`}>额外护盾 {Math.ceil(inspected.shield)} · 剩余 {inspected.shieldRemaining.toFixed(1)} 秒</span>}
+          </div>}
+        </div>
         <p className="btl-board-caption" data-testid={aim?'battle-skill-aim':undefined}>{aim?<><span>{aimOutside?'已移出地图，预览已清空 · ':''}全地图任选中心 · 黄色十字最多作用 5 格 · 左键释放 · 右键 / Esc 取消</span><button className="btl-quiet btl-inline-cancel" data-testid="battle-cancel-skill" disabled={blocked} onClick={()=>{dispatch({type:'CANCEL_SKILL'});clearPointers();}}>取消</button></>:moveSelection?`正在移动${game.cats.find(cat=>cat.id===moveSelection)?.name}：选择可部署地格 · Esc 取消`:inspected?`查看${inspected.name}中 · 临时 ×0.5（暂停优先）· 点击空白、× 或 Esc 关闭`:selectedCat?`${selectedCat.name}普攻：${selectedCat.id==='guard'?'自身＋前方1格＋两侧各1格（朝右）':'宽 3 格、向前含自身列共 4 列的矩形'}`:'点击猫咪以 ×0.5 查看技能 · 也可直接拖动猫咪换位'}<br/>{aim?`${effectiveSpeed===0?'当前暂停；恢复运行后瞄准为 ×1':'瞄准以 ×1 继续战斗'} · 移动鼠标或触摸拖动预览 · 方向键预览 / Enter 释放`:'本关从 B7 来敌 · B7 是唯一出怪口，禁止部署'}</p>
       </div>
     </div>
