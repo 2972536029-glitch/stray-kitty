@@ -6,6 +6,18 @@ import {GreenhouseLoadout} from '../modules/battle/GreenhouseLoadout';
 import {TunnelLoadout} from '../modules/battle/TunnelLoadout';
 import {FinaleLoadout} from '../modules/battle/FinaleLoadout';
 
+const CHATTER_CALLBACKS: {flag: string; speaker: string; text: string}[] = [
+  {flag: 'sack_cat_freed', speaker: '团子', text: '“上回麻袋里那只小的，今天蹲在墙头冲我摆尾巴。这巷子啊，记情。”'},
+  {flag: 'shadow_chased', speaker: '点点', text: '“那道影子……我一个人的时候也见过。别怕，在灯下站一会儿就好。”'},
+  {flag: 'thin_cat_fed', speaker: '团子', text: '“那小崽子今天又远远跟着呢。喂过一口的，猫记一辈子。”'},
+  {flag: 'rats_truce', speaker: '团子', text: '“跟墙洞那家子处得不错。巷子里，多个朋友少堵墙。”'},
+  {flag: 'brave_miaomiao', speaker: '点点', text: '“你挡在纸箱前的那下……我记着呢。”'},
+  {flag: 'trap_disarmed', speaker: '团子', text: '“那个夹子拆得好。老麻雀要是还在，也会这么说。”'},
+  {flag: 'light_found', speaker: '喵喵', text: '“小灯还亮着。有光的地方，就是路。”'},
+  {flag: 'shadow_weakness_known', speaker: '喵喵', text: '“黑影怕光——这可是花钱买来的道理，本咪都记着呢。”'},
+  {flag: 'wall_kitten_friend', speaker: '旁白', text: '回花房的路上，墙头方向传来一声短促的招呼，像在替你们看着巷口。'},
+];
+
 export default function HomePanel({state, catalog, disabled, onCommand, onShop}: {state: GameState; catalog: Catalog; disabled: boolean; onCommand: (command: GameCommand) => void; onShop: () => void}) {
   const [selected, setSelected] = useState('cardboard_nest');
   const furniture = state.furniture.includes(selected) ? selected : state.furniture[0] ?? '';
@@ -23,6 +35,19 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop}:
     <button className="shop-home" disabled={disabled} onClick={onShop}>去猫国商店挑一件家具 ↗</button>
     {pool && <><button disabled={disabled || (state.currencies.stamp ?? 0) < pool.cost} onClick={() => onCommand({type: 'DRAW_FURNITURE', poolId: pool.id})}>打开雨夜包裹 · {pool.cost} 邮票</button><p className="muted">{pool.entries.map(e => `${name(e.furnitureId)} ${Math.round(e.weight / total * 100)}%`).join('，')}；重复家具转化为 2 份材料。</p></>}
     <p className="home-result" role="status">{state.lastResult.message}</p>
+    {CHATTER_CALLBACKS.some(c => state.flags.includes(c.flag)) && (
+      <div className="cat-chatter-box" style={{margin: '10px 0', padding: '10px 14px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '10px', borderLeft: '3px solid #ffb300', fontSize: '13px'}}>
+        <div style={{fontWeight: 'bold', color: '#ffb300', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px'}}>
+          <span>🐾 伙伴日常絮语</span>
+          <span style={{fontSize: '11px', color: 'var(--text-subtle, #a0aec0)', fontWeight: 'normal'}}>（世界记住了你的善意与选择）</span>
+        </div>
+        {CHATTER_CALLBACKS.filter(c => state.flags.includes(c.flag)).map((c, i) => (
+          <div key={i} style={{marginTop: i > 0 ? '6px' : '0', color: 'var(--text-normal, #e2e8f0)', lineHeight: '1.4'}}>
+            <strong style={{color: '#90cdf4'}}>{c.speaker}</strong>：{c.text}
+          </div>
+        ))}
+      </div>
+    )}
     {(state.flags.includes('alley_rescued') || state.flags.includes('rescue_story_done')) && (
       !state.flags.includes('chapter_2_started') ? (
         <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'market_intro_1'})}>
@@ -70,9 +95,28 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop}:
     )}
     {(state.flags.includes('chapter_4_started') || state.flags.includes('tunnel_explored')) && (
       !state.flags.includes('finale_started') ? (
-        <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_intro_1'})}>
-          🌟 启程：终章《点亮流浪猫王国》 →
-        </button>
+        (state.inventory.clue ?? 0) < 3 ? (
+          <div style={{marginTop: '8px', padding: '10px 12px', background: 'rgba(255, 180, 0, 0.08)', borderRadius: '8px', border: '1px dashed #e2a03f'}}>
+            <div style={{fontSize: '13px', color: '#ffb300', fontWeight: 'bold', marginBottom: '4px'}}>
+              🔍 废弃大仓库线索不足（当前收集：{state.inventory.clue ?? 0} / 3）
+            </div>
+            <div style={{fontSize: '12px', color: 'var(--text-subtle, #a0aec0)', marginBottom: '8px', lineHeight: '1.4'}}>
+              前往总仓库需至少 3 条线索。线索不足无法锁定据点，大家决定先回集市多打听些情报再行动。
+            </div>
+            <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+              <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_clue_insufficient'})}>
+                💬 听阿策分析线索 →
+              </button>
+              <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'market'})}>
+                🌙 回集市收集线索 →
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_intro_1'})}>
+            🌟 启程：终章《点亮流浪猫王国》（线索已齐备 {state.inventory.clue ?? 3}/3） →
+          </button>
+        )
       ) : (
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
           <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_intro_1'})}>

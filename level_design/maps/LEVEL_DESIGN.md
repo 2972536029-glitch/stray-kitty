@@ -1,5 +1,7 @@
 # Exploration Maps — Level Design v0.1
 
+> **2026-10-27 integration note:** This v0.1 document retains early proposals and historical examples. For implemented Rainy Alley behavior, use the locked `level_design/rainy_alley/` assets and the generated `docs/ARCHITECTURE.md` §4.1–4.7 (maintained in `docs/LEVEL-EXPLORATION-ARCHITECTURE.md`). Its older L00 assumptions and three-layer Night Market proposal are **not current implementation requirements**. Night Market elevation (fake height or L0/L1) and random-event system remain design decisions. Battle mechanics stay under the battle team; level design verifies entry and safe return.
+
 **Project:** 小猫回家记：流浪猫王国 (*A Cat's Way Home: Stray Cat Kingdom*)  
 **Status:** First design draft; the maps, APIs and coordinate examples are **proposals**, not implemented functionality  
 **Owner:** Map / level design  
