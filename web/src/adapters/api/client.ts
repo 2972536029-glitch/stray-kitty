@@ -35,6 +35,12 @@ export class HttpGameApi implements GameApiPort {
     if(pending) await this.execute(pending.request,pending.key);
     return this.load();
   }
+  async startNewJourney() {
+    this.cache.archiveUnavailableSession();
+    this.session=null;
+    await this.createSession();
+    return this.load();
+  }
   load() {return this.request<GameState>('/state');}
   catalog() {return this.request<Catalog>('/content');}
   pending() {return this.cache.pending(this.session?.playerId);}
@@ -50,7 +56,7 @@ export class HttpGameApi implements GameApiPort {
       this.cache.clearPending();return response;
     } catch(error) {
       // 4xx 表示明确拒绝；网络或 5xx 结果未知，保留同一个请求和幂等键。
-      if(error instanceof ApiError&&error.status<500) this.cache.clearPending();
+      if(error instanceof ApiError&&error.status<500&&error.code!=='UNAUTHORIZED') this.cache.clearPending();
       throw error;
     }
   }
