@@ -19,6 +19,7 @@ export interface GameState {
   pendingEventId: string; activeBattle: BattleAttempt | null;
   pendingEventSource?: 'node' | 'random'; drawnEvents?: string[]; exploreDistance?: number; pushTokens?: number;
   eventState?: EventState;
+  alleyBattleReturn?: {x: number; y: number};
   lastResult: {message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string};
 }
 export type GameCommand =
@@ -28,7 +29,7 @@ export type GameCommand =
   | {type: 'REPORT_MOVE'; distance: number}
   | {type: 'CHECK_RANDOM_ZONE'; zoneId: string}
   | {type: 'CHOOSE_EVENT'; eventId: string; optionId: string; usePush?: boolean}
-  | {type: 'START_BATTLE'; stageId: string}
+  | {type: 'START_BATTLE'; stageId: string; returnPosition?: {x: number; y: number}}
   | ({type: 'COMPLETE_BATTLE'} & BattleResult)
   | {type: 'CONTINUE'} | {type: 'GO_HOME'} | {type: 'GO_EXPLORE'; mapId?: string}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
@@ -43,7 +44,7 @@ export interface FurnitureProduct {id: string; furnitureId: string; price: numbe
 export interface MapInteraction {id: string; x: number; y: number; label: string; eventId: string}
 export interface MapDefinition {id: string; name: string; status: string; width: number; height: number; interactions: MapInteraction[]; dangerLevel?: 0 | 1 | 2 | 3}
 export interface EventOption {id: string; label: string; requireCat?: string; outcomes: Record<EventTier, EventOutcome>}
-export interface EventDefinition {id: string; title: string; text: string; category: 'opportunity' | 'risk' | 'story'; tags: ('trap' | 'shadow' | 'foraging' | 'pathfinding' | 'social')[]; triggers: ('node' | 'random')[]; requiresFlags?: string[]; options: EventOption[]}
+export interface EventDefinition {id: string; title: string; text: string; maps?: string[]; repeatable?: boolean; category: 'opportunity' | 'risk' | 'story'; tags: ('trap' | 'shadow' | 'foraging' | 'pathfinding' | 'social')[]; triggers: ('node' | 'random')[]; requiresFlags?: string[]; options: EventOption[]}
 export interface StageDefinition {id: string; name: string; status: string; lanes: number; columns: number; waves: number; chapterId?: string}
 export interface ModuleResult<T> {status: 'completed' | 'cancelled'; data: T}
 export interface BattleContext {attempt: BattleAttempt; stage: StageDefinition; catIds: string[]; modifiers: BattleModifiers}

@@ -13,6 +13,15 @@
       "once": true
     },
     {
+      "id": "alley_dog_friend_point",
+      "label": "巷尾的老黄",
+      "kind": "node_event",
+      "eventId": "alley_dog_friend",
+      "x": 333,
+      "y": 179,
+      "once": true
+    },
+    {
       "id": "alley_scratch_marks",
       "label": "爪痕",
       "kind": "inspection",
@@ -53,7 +62,7 @@
       "kind": "node_event",
       "eventId": "crate_event",
       "x": 975,
-      "y": 415,
+      "y": 453,
       "once": true
     },
     {
@@ -76,8 +85,8 @@
     },
     {
       "id": "rainy_random_central",
-      "x": 650,
-      "y": 510,
+      "x": 455,
+      "y": 560,
       "r": 28
     },
     {

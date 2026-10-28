@@ -37,7 +37,7 @@ START_BATTLE不接受supplies；COMPLETE_BATTLE不接受usedSupplies。两个L01
 
 L00胜利设置l00_completed并进入探索，不提前完成alley_rescued或发放救援奖励；失败后重新开始教学创建新attempt，保留失败档位，不启用carry。L01首次alley_rescue胜利沿用点点、猫窝、邮票／材料及原战后剧情。alley_boss重玩不重复救援首奖。L01失败结算继续回preparation，保留lost attempt作为同关重试快照；新开战创建新ID并复制其难度与carry，仍非失败直接回探索。离开失败准备时清理临时身份，不能串到另一stage。
 
-L02／L03／L04／L05均为家园独立试玩，只要求已有alley_rescued，不要求按章节顺序完成试玩。胜利只记对应关卡完成，不发物资、货币、家具、长期伙伴或鼓励奖励，不改剧情标志或推进故事，继续返回家园。不改原剧情／探索按钮，也不新增正式主线插入点。L04不写tunnel_explored或cats_rescued_batch1；rescue_intro_6之后、rescue_intro_7之前仅是待团队确认的正式接点候选。L05不写finale_started、finale_completed或kingdom_founded；finale_intro_5之后、finale_intro_6之前只列为正式接点候选。灯车推进和援军入场只保存在本场模拟，不改变长期库存或猫册。
+L02／L03／L04／L05均为家园独立试玩，只要求已有alley_rescued，不要求按章节顺序完成试玩。胜利只记对应关卡完成，不发物资、货币、家具、长期伙伴或鼓励奖励，不改剧情标志或推进故事，继续返回家园。不改原剧情／探索按钮，也不新增正式主线插入点。L04不写tunnel_explored或cats_rescued_batch1；rescue_intro_9之后、rescue_intro_10之前（已完成墨墨夜视护盾觉醒）仅是待团队确认的正式接点候选。L05不写finale_started、finale_completed或kingdom_founded；finale_intro_5之后、finale_intro_6之前只列为正式接点候选。灯车推进和援军入场只保存在本场模拟，不改变长期库存或猫册。
 
 四个独立试玩失败后，从结算回到原关卡preparation，并保留已失败attempt作为重试快照；再按START_BATTLE创建新ID，复制失败场次难度与carry。即使主线PendingModifiers随后变化，也不改变本次重试快照。离开到家园、探索或剧情时清理这份临时失败场次，避免污染之后的入口。不能通过另一试玩的stageId把原失败准备误接到其他关卡。
 
@@ -53,4 +53,4 @@ Go存档暂保留旧Attempt.Supplies读取字段。新版结算旧active场次�
 
 ## 分工
 
-战斗维护L00–L05引擎、教程、各章技能、棋盘、结果和必要接入，并承接六章[战斗场景美术](scene-art.md)；页面UI与轩扬协作，探索地图仍由地图侧维护。事件维护档位判定、携带物/协助者来源，主流程维护剧情、存档与长期奖励。军师目前为本地规则。模型接入仍不在本轮范围，不能因终章初版完成自动开始。L01–L05消费活动场次的shadowPressure和carry快照，正式ID为lantern/mirror/bell/box/dog/dove/rats/kitten；只在开战时接收，不实现战斗中再次随机抽取或热替换奖励。墨墨的L04夜视恢复视野、L05夜视识破护幕均为本章技能变体，不新增事件枚举，不改变L03护盾与清荆棘。效果与职责见[事件战斗对接](../../docs/BATTLE-EVENT-CARRY.md)；四章试玩的正式主线入口仍待对齐，边界分别见[第二章接入](../../docs/L02-INTEGRATION.md)、[第三章接入](../../docs/L03-INTEGRATION.md)、[第四章接入](../../docs/L04-INTEGRATION.md)、[第五章接入](../../docs/L05-INTEGRATION.md)。
+战斗维护L00–L05引擎、教程、各章技能、棋盘、结果和必要接入，并承接六章[战斗场景美术](scene-art.md)；页面UI与轩扬协作，探索地图仍由地图侧维护。事件维护档位判定、携带物/协助者来源，主流程维护剧情、存档与长期奖励。军师手动问答通过同源服务端模型接口接入，只读当前可见战况；自动教学及异常回退保留本地规则。配置和边界见[阿策模型接入](../../docs/BATTLE-ADVISOR-MODEL.md)。L01–L05消费活动场次的shadowPressure和carry快照，正式ID为lantern/mirror/bell/box/dog/dove/rats/kitten；只在开战时接收，不实现战斗中再次随机抽取或热替换奖励。墨墨的L04夜视恢复视野、L05夜视识破护幕均为本章技能变体，不新增事件枚举，不改变L03护盾与清荆棘。效果与职责见[事件战斗对接](../../docs/BATTLE-EVENT-CARRY.md)；四章试玩的主线边界分别见[第二章接入](../../docs/L02-INTEGRATION.md)、[第三章接入](../../docs/L03-INTEGRATION.md)、[第四章接入](../../docs/L04-INTEGRATION.md)、[第五章接入](../../docs/L05-INTEGRATION.md)。

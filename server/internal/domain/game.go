@@ -31,6 +31,11 @@ type Result struct {
 	FirstClear bool   `json:"firstClear,omitempty"`
 	StageID    string `json:"stageId,omitempty"`
 }
+type WorldPoint struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
 type GameState struct {
 	SchemaVersion   int               `json:"schemaVersion"`
 	ContentVersion  string            `json:"contentVersion"`
@@ -52,10 +57,11 @@ type GameState struct {
 	DrawnEvents        []string `json:"drawnEvents,omitempty"`
 	ExploreDistance    int      `json:"exploreDistance,omitempty"`
 	// PushTokens:伙伴鼓励次数——掷骰前声明使用,掷两组 2d6 取优;初始 1,每关首次守护成功恢复 1(上限 2,重复通关不回)。
-	PushTokens   int         `json:"pushTokens,omitempty"`
-	ActiveBattle *Attempt    `json:"activeBattle"`
-	LastResult   Result      `json:"lastResult"`
-	EventState   *EventState `json:"eventState,omitempty"`
+	PushTokens        int         `json:"pushTokens,omitempty"`
+	ActiveBattle      *Attempt    `json:"activeBattle"`
+	LastResult        Result      `json:"lastResult"`
+	EventState        *EventState `json:"eventState,omitempty"`
+	AlleyBattleReturn *WorldPoint `json:"alleyBattleReturn,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -78,8 +84,9 @@ type Command struct {
 	MapID         string `json:"mapId,omitempty"`
 	ZoneID        string `json:"zoneId,omitempty"`
 	// REPORT_MOVE 携带的本次行走里程(画布像素)。
-	Distance int           `json:"distance,omitempty"`
-	Report   *BattleReport `json:"report,omitempty"`
+	Distance       int           `json:"distance,omitempty"`
+	ReturnPosition *WorldPoint   `json:"returnPosition,omitempty"`
+	Report         *BattleReport `json:"report,omitempty"`
 	// CHOOSE_EVENT 的伙伴鼓励声明:掷两组 2d6 取优,消耗一枚 PushTokens。
 	UsePush bool `json:"usePush,omitempty"`
 }

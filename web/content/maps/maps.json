@@ -14,9 +14,16 @@
         "eventId": "moving_blanket_event"
       },
       {
+        "id": "alley_dog_friend_point",
+        "x": 333,
+        "y": 179,
+        "label": "巷尾的老黄",
+        "eventId": "alley_dog_friend"
+      },
+      {
         "id": "alley_crate",
         "x": 975,
-        "y": 415,
+        "y": 453,
         "label": "纸箱里的叫声",
         "eventId": "crate_event"
       }
