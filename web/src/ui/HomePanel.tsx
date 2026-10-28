@@ -15,7 +15,7 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop}:
   return <section className="journal-card home-panel"><span className="eyebrow">MAKE IT OURS</span><h2>整理我们的家</h2>
     {state.flags.includes('alley_rescued') && <ChapterLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('alley_rescued') && <MarketLoadout disabled={disabled} onCommand={onCommand}/>}
-    {state.flags.includes('alley_rescued') && <GreenhouseLoadout disabled={disabled} onCommand={onCommand}/>}
+    {state.flags.includes('momo_joined') && <GreenhouseLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('alley_rescued') && <TunnelLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('alley_rescued') && <FinaleLoadout disabled={disabled} onCommand={onCommand}/>}
     <label className="select-label">选择家具<select value={furniture} onChange={e => setSelected(e.target.value)} disabled={disabled}>{state.furniture.map(id => <option key={id} value={id}>{name(id)}</option>)}</select></label>
@@ -52,7 +52,7 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop}:
         </div>
       )
     )}
-    {(state.flags.includes('chapter_3_started') || state.flags.includes('greenhouse_fortified')) && (
+    {state.flags.includes('greenhouse_fortified') && (
       !state.flags.includes('chapter_4_started') ? (
         <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'rescue_intro_1'})}>
           🐾 启程：第四章《消失的猫咪们》 →

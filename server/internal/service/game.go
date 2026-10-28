@@ -130,6 +130,15 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "BUY_FURNITURE":
 		return g.buyFurniture(s, c.ProductID)
 	case "START_STORY":
+		if c.NodeID == "market_intro_1" && !domain.Contains(s.Flags, "rescue_story_done") {
+			return domain.Fail("STORY_LOCKED", "请先完成小巷救援与寻猫启事", 409)
+		}
+		if c.NodeID == "greenhouse_intro_1" && !domain.Contains(s.Flags, "chapter_2_started") {
+			return domain.Fail("STORY_LOCKED", "请先完成午夜集市的探索", 409)
+		}
+		if c.NodeID == "rescue_intro_1" && !domain.Contains(s.Flags, "greenhouse_fortified") {
+			return domain.Fail("STORY_LOCKED", "请先守住花房防线", 409)
+		}
 		for _, n := range g.Catalog.Story {
 			if n.ID == c.NodeID {
 				s.Phase = "dialogue"
@@ -141,7 +150,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.Flags = domain.Add(s.Flags, "market_unlocked")
 					s.Flags = domain.Add(s.Flags, "chapter_2_started")
 				}
-				if n.ChapterID == "greenhouse" {
+				if n.ID == "greenhouse_intro_1" {
 					s.MapID = "greenhouse"
 					s.Flags = domain.Add(s.Flags, "chapter_3_started")
 				}
@@ -169,6 +178,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			if n.ID == c.NodeID {
 				for _, flag := range n.SetFlags {
 					s.Flags = domain.Add(s.Flags, flag)
+					if flag == "momo_joined" {
+						s.Cats = domain.Add(s.Cats, "momo")
+					}
 				}
 				// 注意:章节内 ADVANCE(含局势跳转节点,其 chapterId 可能属于别的章节)
 				// 不触发重置——只有 START_STORY 主动开启新章节才清空已抽卡。
@@ -201,12 +213,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				if n.Exit == "home" {
 					s.MapID = "greenhouse"
 					s.Flags = domain.Add(s.Flags, "rescue_story_done")
-					if n.ChapterID == "greenhouse" || n.ID == "greenhouse_intro_7" {
-						s.Flags = domain.Add(s.Flags, "chapter_3_started")
-						s.Flags = domain.Add(s.Flags, "greenhouse_fortified")
-						s.Flags = domain.Add(s.Flags, "momo_joined")
-						s.Cats = domain.Add(s.Cats, "momo")
-					}
+
 					if n.ChapterID == "rescue" || n.ID == "rescue_intro_7" {
 						s.Flags = domain.Add(s.Flags, "chapter_4_started")
 						s.Flags = domain.Add(s.Flags, "tunnel_explored")
@@ -254,6 +261,8 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				if domain.Contains(s.Flags, "alley_rescued") {
 					return domain.Fail("ALREADY_COMPLETED", "伙伴已经获救", 409)
 				}
+			case "alley_dog_friend_point":
+				// Existing event card owns the outcome; the map only supplies its anchor.
 			case "alley_blanket_stack":
 				if domain.Contains(s.Flags, "blanket_secured") || domain.Contains(s.Flags, "blanket_half") || domain.Contains(s.Flags, "blanket_lost") {
 					return domain.Fail("ALREADY_COMPLETED", "旧毛毯已经检查过了", 409)
@@ -323,6 +332,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		}
 		if !domain.Contains(s.Flags, "alley_rescued") {
 			return domain.Fail("HOME_LOCKED", "先帮助小巷里的伙伴", 409)
+		}
+		if s.MapID == "alley" && !domain.Contains(s.Flags, "lost_poster_found") {
+			return domain.Fail("POSTER_NOT_FOUND", "先看看巷尾墙上的寻猫启事", 409)
 		}
 		s.Phase = "home"
 		s.MapID = "greenhouse"

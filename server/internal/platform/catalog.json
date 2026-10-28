@@ -152,8 +152,8 @@
       "chapterId": "alley",
       "speaker": "点点",
       "text": "呜……谢谢你们！多亏喵喵沉着指挥，绒绒的星绒、还有斑斑和阿策及时赶来支援，不然我早就被黑影抓走了……小巷深处最近经常有暗影游荡，已经有好几个伙伴无声无息地失踪了。",
-      "next": "poster_1",
-      "exit": "",
+      "next": "",
+      "exit": "explore",
       "scene": "alley"
     },
     {
@@ -233,7 +233,7 @@
     },
     {
       "id": "rescue_2",
-      "chapterId": "greenhouse",
+      "chapterId": "alley",
       "speaker": "喵喵",
       "text": "那就先把这座旧花房收拾一下吧。一只猫的纸箱，也可以变成大家的家。",
       "next": "",
@@ -356,7 +356,10 @@
       "text": "墨墨微微颔首：“算我一个。黑影怕光，但正在向花房暗处渗透。只要咱们加固天窗防线、封锁地下通风道，这里就会成为谁也攻不破的猫咪王国要塞！”",
       "next": "greenhouse_intro_7",
       "exit": "",
-      "scene": "home"
+      "scene": "home",
+      "setFlags": [
+        "momo_joined"
+      ]
     },
     {
       "id": "greenhouse_intro_7",
@@ -365,12 +368,7 @@
       "text": "喵喵昂起毛茸茸的小脑瓜，神情坚定：“大家分工协作！团子整理物资，点点巡视陷阱，墨墨侦查暗道，阿策指挥布防！让我们把废弃花房彻底修缮成最温暖坚固的猫国要塞！”",
       "next": "",
       "exit": "home",
-      "scene": "home",
-      "setFlags": [
-        "chapter_3_started",
-        "greenhouse_fortified",
-        "momo_joined"
-      ]
+      "scene": "home"
     },
     {
       "id": "rescue_intro_1",
@@ -543,9 +541,16 @@
           "eventId": "moving_blanket_event"
         },
         {
+          "id": "alley_dog_friend_point",
+          "x": 333,
+          "y": 179,
+          "label": "巷尾的老黄",
+          "eventId": "alley_dog_friend"
+        },
+        {
           "id": "alley_crate",
           "x": 975,
-          "y": 415,
+          "y": 453,
           "label": "纸箱里的叫声",
           "eventId": "crate_event"
         }

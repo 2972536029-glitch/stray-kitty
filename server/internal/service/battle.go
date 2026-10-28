@@ -1,6 +1,9 @@
 package service
 
-import "stray-kitty/server/internal/domain"
+import (
+	"math"
+	"stray-kitty/server/internal/domain"
+)
 
 // Standalone trials share battle contracts without changing mainline progression.
 func isStandaloneBattle(stageID string) bool {
@@ -46,6 +49,12 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 			return domain.Fail("INVALID_PHASE", "独立试玩请从家园进入", 409)
 		}
 	}
+	if c.StageID == "greenhouse_boss" && (!domain.Contains(s.Flags, "chapter_3_started") || !domain.Contains(s.Flags, "momo_joined")) {
+		return domain.Fail("STAGE_LOCKED", "请先完成第三章启程并与墨墨汇合", 409)
+	}
+	if c.StageID == "alley_rescue" && s.MapID == "alley" && !domain.Contains(s.Flags, "alley_rescued") && !domain.Contains(s.DrawnEvents, "node:crate_event") {
+		return domain.Fail("STAGE_LOCKED", "请先发现纸箱里的伙伴", 409)
+	}
 	if (s.Phase != "preparation" || c.StageID == "alley_boss") && !domain.Contains(s.Flags, "alley_rescued") {
 		return domain.Fail("STAGE_LOCKED", "请先完成第一章救援，再从家园重玩小巷首领", 409)
 	}
@@ -77,6 +86,13 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 	}
 	if _, err := battleDifficulty(attempt.Modifiers); err != nil {
 		return err
+	}
+	if c.StageID == "alley_rescue" && s.MapID == "alley" && c.ReturnPosition != nil {
+		p := c.ReturnPosition
+		if math.IsNaN(p.X) || math.IsNaN(p.Y) || math.IsInf(p.X, 0) || math.IsInf(p.Y, 0) || p.X < 0 || p.X >= 1188 || p.Y < 0 || p.Y >= 726 {
+			return domain.Fail("INVALID_COMMAND", "救援返回位置无效", 400)
+		}
+		s.AlleyBattleReturn = &domain.WorldPoint{X: p.X, Y: p.Y}
 	}
 	s.ActiveBattle = attempt
 	s.Phase = "battle"
@@ -187,6 +203,7 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 		} else if attempt.StageID == "tunnel_boss" {
 			result.Message = "地下通道的归路守住了，六位伙伴击退了断灯监守。"
 		} else if attempt.StageID == "greenhouse_boss" {
+			s.Flags = domain.Add(s.Flags, "greenhouse_fortified")
 			result.Message = "废弃花房的防线守住了，六位伙伴击退了首领。"
 		} else {
 			result.Message = "小巷首领已被击退，伙伴们守住了撤离路线。"

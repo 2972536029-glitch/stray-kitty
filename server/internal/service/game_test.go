@@ -69,6 +69,14 @@ func finishStory(t *testing.T, g *service.Game, token string) domain.GameState {
 		s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won"})
 		s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
 	}
+	// The poster is now a physical interaction after rescue, rather than
+	// an automatic continuation from rescue_1.
+	if s.Phase == "explore" && s.MapID == "alley" && domain.Contains(s.Flags, "alley_rescued") && !domain.Contains(s.Flags, "lost_poster_found") {
+		s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "alley_poster"})
+		for s.Phase == "dialogue" {
+			s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+		}
+	}
 	return s
 }
 
@@ -154,8 +162,13 @@ func TestFailureAndInvalidTargetsDoNotGrantRewards(t *testing.T) {
 		t.Fatal("failure rewarded")
 	}
 	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
-	if s.Phase != "preparation" {
-		t.Fatal("cannot retry")
+	if s.Phase != "preparation" || s.ActiveBattle == nil || s.ActiveBattle.Status != "lost" {
+		t.Fatal("defeat did not return to the same retry preparation")
+	}
+	failedAttempt := s.ActiveBattle.ID
+	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "alley_rescue"})
+	if s.Phase != "battle" || s.ActiveBattle == nil || s.ActiveBattle.ID == failedAttempt || s.ActiveBattle.StageID != "alley_rescue" {
+		t.Fatal("retry did not start a fresh rescue attempt")
 	}
 }
 func TestOptimisticConcurrency(t *testing.T) {
