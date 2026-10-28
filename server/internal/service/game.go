@@ -207,7 +207,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 						s.Flags = domain.Add(s.Flags, "momo_joined")
 						s.Cats = domain.Add(s.Cats, "momo")
 					}
-					if n.ChapterID == "rescue" || n.ID == "rescue_intro_7" {
+					if n.ChapterID == "rescue" || n.ID == "rescue_intro_10" || n.ID == "rescue_intro_7" {
 						s.Flags = domain.Add(s.Flags, "chapter_4_started")
 						s.Flags = domain.Add(s.Flags, "tunnel_explored")
 						s.Flags = domain.Add(s.Flags, "cats_rescued_batch1")
