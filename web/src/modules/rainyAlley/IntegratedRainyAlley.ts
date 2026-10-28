@@ -4,16 +4,19 @@ import {findPath, sweepMove} from './collision';
 import {
   rainyAlleyFieldClosed, rainyAlleyFieldOpen, rainyAlleyGeometryClosed, rainyAlleyGeometryOpen,
   rainyAlleySqueezeFieldClosed, rainyAlleySqueezeFieldOpen, SQUEEZE_BOUNDS, SQUEEZE_CENTER_X,
-  SQUEEZE_FOOTPRINT_RADIUS, SQUEEZE_OPENING_WIDTH
+  SQUEEZE_OPENING_WIDTH, battleReturnPositionTarget, crateClimbTarget, squeezeExitTarget
 } from './runtimeGeometry';
 import type {Point, WorldPolygon} from './types';
 
 const spawn = {x: 111, y: 626};
+// When a page reloads between rescue and poster discovery, restore near the story anchor.
+const pendingPosterReturn = {x: 990, y: 396};
 const speed = 96;
 const cameraSize = {width: 530, height: 325};
 const squeezeSpeed = 58;
+const CLIMB_DURATION = 0.55;
 type ZoneCheckResult = 'checking' | 'accepted' | 'failed';
-interface DebugState {phase: string; eventId?: string; pendingEventSource?: string}
+interface DebugState {phase: string; eventId?: string; pendingEventSource?: string; randomEligible?: boolean}
 
 function image(source: string) {const result = new Image(); result.src = source; return result;}
 function polygonPath(context: CanvasRenderingContext2D, polygon: WorldPolygon) {
@@ -31,19 +34,30 @@ export class IntegratedRainyAlley {
   private gateOpen = false;
   private nearby: RainyFixedObject | null = null;
   private zonesInside = new Set<string>();
-  private zonesAttemptedLocally = new Set<string>();
-  private zonesTriggeredLocally = new Set<string>();
   private lastZoneAttempt: string | null = null;
   private zoneChecksInFlight = new Set<string>();
   private zoneCheckStatus = new Map<string, ZoneCheckResult>();
   private squeezeTargetY: number | null = null;
+  private climbTime = 0;
+  private climbFrom: Point | null = null;
+  private climbTo: Point | null = null;
+  private climbCrateId: 'west' | 'east' | null = null;
 
-  reset() {
-    this.position = {...spawn};
+  reset(flags: readonly string[] = [], battleReturn?: Point) {
+    this.gateOpen = flags.includes('alley_rescued');
+    const restoreField = rainyAlleyFieldOpen;
+    const savedPosition = battleReturnPositionTarget(battleReturn, restoreField);
+    const canRestoreBattlePosition = flags.includes('alley_rescued') && !flags.includes('lost_poster_found') && savedPosition;
+    this.position = canRestoreBattlePosition
+      ? savedPosition
+      : flags.includes('alley_rescued') && !flags.includes('lost_poster_found')
+        ? (restoreField.nearestTraversable(pendingPosterReturn) ?? {...spawn})
+        : {...spawn};
     this.camera = {x: 0, y: rainyAlleyRegistration.worldHeight - cameraSize.height};
     this.path = []; this.destination = null; this.nearby = null;
-    this.zonesInside.clear(); this.zonesAttemptedLocally.clear();
-    this.zoneChecksInFlight.clear(); this.squeezeTargetY = null;
+    this.zonesInside.clear();
+    for (const zone of rainyAlleySource.objects.zones) if (Math.hypot(this.position.x - zone.x, this.position.y - zone.y) <= zone.r) this.zonesInside.add(zone.id);
+    this.zoneChecksInFlight.clear(); this.squeezeTargetY = null; this.climbTime = 0; this.climbFrom = null; this.climbTo = null; this.climbCrateId = null;
   }
 
   toggleDebug() {this.debug = !this.debug;}
@@ -54,9 +68,25 @@ export class IntegratedRainyAlley {
     const direction = this.squeezeDirection();
     if (!direction || this.squeezeTargetY !== null) return false;
     this.path = []; this.destination = null;
-    this.squeezeTargetY = direction > 0 ? SQUEEZE_BOUNDS.bottom + SQUEEZE_FOOTPRINT_RADIUS : SQUEEZE_BOUNDS.top - SQUEEZE_FOOTPRINT_RADIUS;
+    const normalField = this.gateOpen ? rainyAlleyFieldOpen : rainyAlleyFieldClosed;
+    const squeezeField = this.gateOpen ? rainyAlleySqueezeFieldOpen : rainyAlleySqueezeFieldClosed;
+    const exit = squeezeExitTarget(normalField, squeezeField, direction);
+    if (!exit) return false;
+    this.squeezeTargetY = exit.y;
     return true;
   }
+
+  climbPromptActive() {return this.climbTarget() !== null && this.climbTime <= 0;}
+  tryStartCrateClimb() {
+    const field = this.gateOpen ? rainyAlleyFieldOpen : rainyAlleyFieldClosed;
+    const crossing = crateClimbTarget(this.position, field, this.gateOpen);
+    if (!crossing || this.climbTime > 0) return false;
+    this.path = []; this.destination = null;
+    this.climbFrom = {...crossing.from}; this.climbTo = {...crossing.to}; this.climbCrateId = crossing.crateId; this.position = {...crossing.from}; this.climbTime = CLIMB_DURATION;
+    return true;
+  }
+  worldPosition(): Point {return {...this.position};}
+  private climbTarget() {return crateClimbTarget(this.position, this.gateOpen ? rainyAlleyFieldOpen : rainyAlleyFieldClosed, this.gateOpen);}
 
   move(
     deltaSeconds: number,
@@ -66,10 +96,15 @@ export class IntegratedRainyAlley {
     onZoneEntry: (zoneId: string) => Promise<boolean>
   ) {
     const gateOpen = flags.includes('alley_rescued');
+    const previous = {...this.position};
     if (gateOpen !== this.gateOpen) {this.gateOpen = gateOpen; this.path = []; this.destination = null;}
     const field = gateOpen ? rainyAlleyFieldOpen : rainyAlleyFieldClosed;
-    const previous = {...this.position};
-    if (this.squeezeTargetY !== null) {
+    if (this.climbTime > 0 && this.climbFrom && this.climbTo) {
+      this.climbTime = Math.max(0, this.climbTime - deltaSeconds);
+      const progress = 1 - this.climbTime / CLIMB_DURATION, eased = progress * progress * (3 - 2 * progress);
+      this.position = {x: this.climbFrom.x + (this.climbTo.x - this.climbFrom.x) * eased, y: this.climbFrom.y + (this.climbTo.y - this.climbFrom.y) * eased};
+      if (this.climbTime === 0) {this.position = {...this.climbTo}; this.climbFrom = null; this.climbTo = null; this.climbCrateId = null;}
+    } else if (this.squeezeTargetY !== null) {
       const squeezeField = gateOpen ? rainyAlleySqueezeFieldOpen : rainyAlleySqueezeFieldClosed;
       const dx = SQUEEZE_CENTER_X - this.position.x, dy = this.squeezeTargetY - this.position.y;
       const distance = Math.hypot(dx, dy);
@@ -127,8 +162,6 @@ export class IntegratedRainyAlley {
   }
 
   draw(context: CanvasRenderingContext2D, width: number, height: number, flags: readonly string[], debugState: DebugState) {
-    const randomEncounterActive = debugState.phase === 'event' && debugState.pendingEventSource === 'random';
-    if (randomEncounterActive && this.lastZoneAttempt) this.zonesTriggeredLocally.add(this.lastZoneAttempt);
     context.save();
     context.imageSmoothingEnabled = true;
     context.fillStyle = '#061525'; context.fillRect(0, 0, width, height);
@@ -145,6 +178,11 @@ export class IntegratedRainyAlley {
     context.save();
     context.translate(this.position.x, this.position.y);
     if (this.squeezeTargetY !== null) context.scale(.7, 1.04);
+    if (this.climbTime > 0) {
+      const westClimb = this.climbCrateId === 'west';
+      const lift = Math.sin(Math.PI * (1 - this.climbTime / CLIMB_DURATION)) * (westClimb ? 12 : 5);
+      context.translate(0, -lift); context.scale(westClimb ? .9 : .94, westClimb ? 1.16 : 1.12);
+    }
     context.scale(.62, .62);
     context.translate(-26, -32);
     context.scale(.85, .85);
@@ -163,18 +201,16 @@ export class IntegratedRainyAlley {
       .sort((a, b) => a.distance - b.distance)[0]?.object ?? null;
   }
 
-  private updateZones(flags: readonly string[], onZoneEntry: (zoneId: string) => Promise<boolean>) {
+  private updateZones(_flags: readonly string[], onZoneEntry: (zoneId: string) => Promise<boolean>) {
     const next = new Set<string>();
     for (const zone of rainyAlleySource.objects.zones) {
       if (Math.hypot(this.position.x - zone.x, this.position.y - zone.y) > zone.r) continue;
       next.add(zone.id);
-      const attemptedFlag = `attempted_${zone.id}`;
-      if (!this.zonesInside.has(zone.id) && !this.zonesAttemptedLocally.has(zone.id) && !this.zoneChecksInFlight.has(zone.id) && !flags.includes(attemptedFlag)) {
+      if (!this.zonesInside.has(zone.id) && !this.zoneChecksInFlight.has(zone.id)) {
         this.lastZoneAttempt = zone.id;
         this.zoneChecksInFlight.add(zone.id); this.zoneCheckStatus.set(zone.id, 'checking');
         void onZoneEntry(zone.id).then(accepted => {
           this.zoneCheckStatus.set(zone.id, accepted ? 'accepted' : 'failed');
-          if (accepted) this.zonesAttemptedLocally.add(zone.id);
         }).finally(() => this.zoneChecksInFlight.delete(zone.id));
       }
     }
@@ -233,6 +269,12 @@ export class IntegratedRainyAlley {
       context.save();
       context.globalAlpha = completed(object) || !rainyAlleyObjectEligible(object, flags) ? .42 : 1;
       context.translate(object.x, object.y);
+      const isObjective = (object.id === 'alley_crate' && !flags.includes('alley_rescued')) ||
+        (object.id === 'alley_poster' && flags.includes('alley_rescued') && !flags.includes('lost_poster_found'));
+      if (isObjective) {
+        context.beginPath(); context.arc(0, 0, 15, 0, Math.PI * 2);
+        context.fillStyle = '#f8eac087'; context.fill();
+      }
       context.beginPath(); context.arc(0, 0, 11, 0, Math.PI * 2);
       context.fillStyle = marker.fill; context.fill(); context.strokeStyle = '#153438'; context.lineWidth = 2.5; context.stroke();
       context.fillStyle = '#163337'; context.font = 'bold 11px system-ui, sans-serif'; context.textAlign = 'center'; context.textBaseline = 'middle';
@@ -254,7 +296,7 @@ export class IntegratedRainyAlley {
     context.restore();
   }
 
-  private drawDebug(context: CanvasRenderingContext2D, flags: readonly string[], debugState: DebugState) {
+  private drawDebug(context: CanvasRenderingContext2D, _flags: readonly string[], debugState: DebugState) {
     const geometry = this.gateOpen ? rainyAlleyGeometryOpen : rainyAlleyGeometryClosed;
     context.lineWidth = 1.5;
     for (const polygon of geometry.walkable) {
@@ -264,12 +306,12 @@ export class IntegratedRainyAlley {
       context.beginPath(); polygonPath(context, polygon); context.fillStyle = '#ff174444'; context.fill(); context.strokeStyle = '#ff3d5a'; context.stroke();
     }
     for (const zone of rainyAlleySource.objects.zones) {
-      const attempted = flags.includes(`attempted_${zone.id}`) || this.zonesAttemptedLocally.has(zone.id);
-      const triggered = this.zonesTriggeredLocally.has(zone.id);
+      const eligible = debugState.randomEligible !== false;
+      const inside = this.zonesInside.has(zone.id);
       context.beginPath(); context.arc(zone.x, zone.y, zone.r, 0, Math.PI * 2);
-      context.fillStyle = attempted ? '#6f778033' : '#9c7bd033'; context.fill();
-      context.strokeStyle = attempted ? '#9ba5ad' : '#d0a7fa'; context.setLineDash([6, 5]); context.stroke(); context.setLineDash([]);
-      const status = !attempted ? 'ready' : triggered ? 'attempted · encounter' : 'attempted · missed';
+      context.fillStyle = eligible ? '#9c7bd033' : '#6f778033'; context.fill();
+      context.strokeStyle = eligible ? '#d0a7fa' : '#9ba5ad'; context.setLineDash([6, 5]); context.stroke(); context.setLineDash([]);
+      const status = !eligible ? 'no eligible cards' : inside ? 'inside · roll on re-entry' : 'eligible';
       context.font = '10px system-ui, sans-serif'; context.lineWidth = 3; context.strokeStyle = '#122b31'; context.fillStyle = '#f1d9ff';
       context.strokeText(`${zone.id.replace('rainy_random_', '')} · ${status}`, zone.x + zone.r + 5, zone.y - 5);
       context.fillText(`${zone.id.replace('rainy_random_', '')} · ${status}`, zone.x + zone.r + 5, zone.y - 5);
