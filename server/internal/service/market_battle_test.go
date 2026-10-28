@@ -205,6 +205,22 @@ func TestGreenhouseChapterTwoEntryAndExplorationResumeDoNotStartBattle(t *testin
 	}
 }
 
+func TestMarketMomoOptionalEventUsesAuthoredLocationAndNarrativeState(t *testing.T) {
+	g, token, _ := setup(t)
+	s := exploreMarketForTest(t, g, token)
+	if _, err := g.Execute(token, "momo-wrong-location", domain.CommandRequest{Command: domain.Command{Type: "INTERACT", InteractionID: "market_momo_trace", Layer: "L0", Position: &domain.WorldPoint{X: 900, Y: 240}}}); err == nil {
+		t.Fatal("Momo interaction accepted outside its authored radius")
+	}
+	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_momo_trace", Layer: "L0", Position: &domain.WorldPoint{X: 947, Y: 160}})
+	if s.Phase != "event" || s.PendingEventID != "momo_trail_event" || s.PendingEventSource != "node" {
+		t.Fatalf("optional clue did not open its narrative event: phase=%s event=%s source=%s", s.Phase, s.PendingEventID, s.PendingEventSource)
+	}
+	s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "momo_trail_event", OptionID: "follow_trail"})
+	if !domain.Contains(s.DrawnEvents, "node:momo_trail_event") {
+		t.Fatalf("optional event completion was not recorded authoritatively: %v", s.DrawnEvents)
+	}
+}
+
 func TestMarketStoryEntryStaysInExplorationUntilCluesAndAuthoredPoint(t *testing.T) {
 	g, token, _ := prepareBoss(t, 0, nil)
 	s := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})

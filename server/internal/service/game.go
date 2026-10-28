@@ -303,7 +303,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			}
 		}
 		if s.MapID == "market" {
-			if c.Position == nil || (c.InteractionID == "market_crow_stall" && (c.Layer != "L0" || math.Hypot(c.Position.X-766, c.Position.Y-330) > 75)) || (c.InteractionID == "market_pigeon_perch" && (c.Layer != "L1" || math.Hypot(c.Position.X-1310, c.Position.Y-426) > 75)) {
+			if c.Position == nil || (c.InteractionID == "market_crow_stall" && (c.Layer != "L0" || math.Hypot(c.Position.X-910, c.Position.Y-245) > 75)) || (c.InteractionID == "market_pigeon_perch" && (c.Layer != "L1" || math.Hypot(c.Position.X-1310, c.Position.Y-426) > 75)) || (c.InteractionID == "market_momo_trace" && (c.Layer != "L0" || math.Hypot(c.Position.X-947, c.Position.Y-160) > 75)) {
 				return domain.Fail("INTERACTION_WRONG_FLOOR", "请在正确楼层调查线索", 409)
 			}
 		}

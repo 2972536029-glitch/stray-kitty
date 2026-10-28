@@ -638,8 +638,8 @@
       "interactions": [
         {
           "id": "market_crow_stall",
-          "x": 766,
-          "y": 330,
+          "x": 910,
+          "y": 245,
           "label": "乌鸦老黑羽的情报摊",
           "eventId": "crow_intel_event"
         },
@@ -649,6 +649,13 @@
           "y": 426,
           "label": "咕咕大盗的传言棚",
           "eventId": "pigeon_rumor_event"
+        },
+        {
+          "id": "market_momo_trace",
+          "x": 947,
+          "y": 160,
+          "label": "墨墨的踪迹",
+          "eventId": "momo_trail_event"
         }
       ],
       "dangerLevel": 2

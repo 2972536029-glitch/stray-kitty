@@ -42,6 +42,18 @@ func useMarketRandomPool(t *testing.T, g *service.Game, token string) domain.Gam
 	return exploreMarketForTest(t, g, token)
 }
 
+func TestMarketRandomZoneStillDispatchesEligibleServerEvent(t *testing.T) {
+	g, token, _ := setup(t)
+	g.RainyZoneChance = 1000
+	g.Random = func(int) (int, error) { return 0, nil }
+	finishStory(t, g, token)
+	useMarketRandomPool(t, g, token)
+	s := execute(t, g, token, domain.Command{Type: "CHECK_RANDOM_ZONE", ZoneID: "market_random_r1", Layer: "L0", Position: &domain.WorldPoint{X: 652, Y: 632}})
+	if s.Phase != "event" || s.PendingEventID == "" || s.PendingEventSource != "random" {
+		t.Fatalf("eligible authored random zone did not use the server event draw: phase=%s event=%s source=%s", s.Phase, s.PendingEventID, s.PendingEventSource)
+	}
+}
+
 // 进入探索后有保护里程;保护期内上报不触发,过保护后危险度 1 必触发(随机数恒为 0)。
 func TestRandomEventTriggersAfterGraceAndReturnsToExplore(t *testing.T) {
 	g, token, _ := setup(t)
@@ -430,7 +442,7 @@ func TestNodeEventOneShot(t *testing.T) {
 	for s.Phase == "dialogue" {
 		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 	}
-	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall", Layer: "L0", Position: &domain.WorldPoint{X: 766, Y: 330}})
+	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall", Layer: "L0", Position: &domain.WorldPoint{X: 910, Y: 245}})
 	if s.Phase != "event" || s.PendingEventID != "crow_intel_event" {
 		t.Fatalf("first interact failed: %s %s", s.Phase, s.PendingEventID)
 	}
@@ -440,7 +452,7 @@ func TestNodeEventOneShot(t *testing.T) {
 	}
 	s = exploreMarketForTest(t, g, token)
 	rev := s.Revision
-	if _, err = g.Execute(token, "crow-again", domain.CommandRequest{ExpectedRevision: &rev, Command: domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall", Layer: "L0", Position: &domain.WorldPoint{X: 766, Y: 330}}}); err == nil {
+	if _, err = g.Execute(token, "crow-again", domain.CommandRequest{ExpectedRevision: &rev, Command: domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall", Layer: "L0", Position: &domain.WorldPoint{X: 910, Y: 245}}}); err == nil {
 		t.Fatal("repeat interact with crow stall was accepted")
 	}
 }
@@ -503,7 +515,7 @@ func TestCompanionPushTakesBetterPair(t *testing.T) {
 	for s.Phase == "dialogue" {
 		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 	}
-	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall", Layer: "L0", Position: &domain.WorldPoint{X: 766, Y: 330}})
+	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_crow_stall", Layer: "L0", Position: &domain.WorldPoint{X: 910, Y: 245}})
 	rev := s.Revision
 	if _, err := g.Execute(token, "push-empty", domain.CommandRequest{ExpectedRevision: &rev, Command: domain.Command{Type: "CHOOSE_EVENT", EventID: "crow_intel_event", OptionID: "trade_fish", UsePush: true}}); err == nil {
 		t.Fatal("push without token accepted")

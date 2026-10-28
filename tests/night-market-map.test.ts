@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {isMarketSolid, isMarketTraversable, marketArt, marketEntry, marketItems, marketPortals, nearestMarketPosition, nightMarketSpatial, onMarketRoute, shouldTriggerMarketBoss, sweepMarketMove} from '../web/src/modules/nightMarket/map';
+import {isMarketSolid, isMarketTraversable, marketArt, marketEntry, marketItems, marketPortals, marketEAction, marketOptionalHint, marketPortalDisplay, nearestMarketPosition, nightMarketSpatial, onMarketRoute, sweepMarketMove} from '../web/src/modules/nightMarket/map';
 
 test('Night Market keeps the approved native coordinate frame and three exact art assets',()=>{
   assert.deepEqual(nightMarketSpatial.coordinate_space,{width:1672,height:941,origin:'top-left',axis_x:'right',axis_y:'down',units:'native artwork pixels'});
@@ -15,14 +15,15 @@ test('authored routes and L0 collision geometry are layer-specific',()=>{
   assert.equal(isMarketSolid('L0',580,520),true);
   assert.equal(isMarketSolid('L1',580,520),false);
 });
-test('market boss only triggers at its authored point before the mainline clear',()=>{
+test('market boss is an explicit E action gated by both clues and the authored approach',()=>{
   assert.deepEqual(marketEntry,{floor:'L0',x:670,y:781});
   assert.notDeepEqual(marketEntry,{floor:'L0',x:1310,y:169});
-  assert.equal(shouldTriggerMarketBoss('L0',true,false,1310,169),true);
-  assert.equal(shouldTriggerMarketBoss('L0',false,false,1310,169),false);
-  assert.equal(shouldTriggerMarketBoss('L0',true,false,670,781),false);
-  assert.equal(shouldTriggerMarketBoss('L1',true,false,1310,169),false);
-  assert.equal(shouldTriggerMarketBoss('L0',true,true,1310,169),false);
+  assert.equal(marketEAction('L0',1310,169,[],[])?.type,'hint');
+  assert.equal(marketEAction('L0',1310,169,['market_crow_clue_completed'],[])?.type,'hint');
+  assert.deepEqual(marketEAction('L0',1310,169,['market_crow_clue_completed','market_pigeon_clue_completed'],[]),{type:'battle'});
+  assert.equal(marketEAction('L0',670,781,['market_crow_clue_completed','market_pigeon_clue_completed'],[]),null);
+  assert.equal(marketEAction('L1',1310,169,['market_crow_clue_completed','market_pigeon_clue_completed'],[]),null);
+  assert.equal(marketEAction('L0',1310,169,['market_crow_clue_completed','market_pigeon_clue_completed','market_cleared'],[])?.type,'hint');
 });
 
 test('all authored market waypoints connect through footprint-safe routes and intended portals',()=>{
@@ -45,7 +46,14 @@ test('market movement sweeps across frame steps, slides at obstacle edges, and b
   const start={x:670,y:781};assert.equal(isMarketTraversable('L0',start.x,start.y),true);
   const moved=sweepMarketMove('L0',start,{x:0,y:-60});assert.ok(moved.position.y<start.y-40,'long movement should advance in small collision-tested steps');
   assert.equal(isMarketTraversable('L0',580,520),false,'building interior remains blocked for the whole cat footprint');
+  assert.equal(isMarketTraversable('L0',536,481),true,'a diagonal cat footprint may pass a building corner when its circular clearance remains open');
   const blocked=sweepMarketMove('L0',start,{x:40,y:-15});assert.equal(blocked.blocked,true);assert.ok(blocked.position.x>start.x||blocked.position.y<start.y,'movement should slide along a route boundary when an axis is clear');
+});
+
+test('repositioned crow can be approached from every accessible direction',()=>{
+  const crow=marketItems.find(item=>item.id==='crow')!,directions=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]] as const;let reachable=0;
+  for(const [dx,dy] of directions){const length=Math.hypot(dx,dy),start={x:crow.x-dx/length*28,y:crow.y-dy/length*28};if(!isMarketTraversable('L0',start.x,start.y))continue;reachable++;const result=sweepMarketMove('L0',start,{x:dx/length*8,y:dy/length*8});assert.ok(Math.hypot(result.position.x-crow.x,result.position.y-crow.y)<Math.hypot(start.x-crow.x,start.y-crow.y),`approach from ${dx},${dy} should make progress`);}
+  assert.ok(reachable>=3,`expected multiple accessible approaches, got ${reachable}`);
 });
 
 test('portal landings have valid cat clearance and fixed markers exclude random zones',()=>{
@@ -58,4 +66,35 @@ test('portal landings have valid cat clearance and fixed markers exclude random 
   assert.ok(visibleFixed.some(item=>item.id==='crow'&&item.layer==='L0'));
   assert.ok(visibleFixed.some(item=>item.id==='pigeon'&&item.layer==='L1'));
   assert.ok(!visibleFixed.some(item=>item.kind==='random'));
+});
+
+test('crow and optional Momo events are reachable, floor-correct and E-selectable',()=>{
+  const crow=marketItems.find(item=>item.id==='crow')!,momo=marketItems.find(item=>item.id==='momo')!;
+  assert.deepEqual([crow.x,crow.y,crow.layer],[910,245,'L0']);
+  assert.equal(isMarketTraversable('L0',crow.x,crow.y),true);
+  assert.ok(Math.hypot(crow.x-745,crow.y-287)>48,'crow does not overlap the western C point');
+  assert.deepEqual(marketEAction('L0',crow.x,crow.y,[],[]),{type:'interact',id:'market_crow_stall',layer:'L0'});
+  assert.equal(marketEAction('L1',crow.x,crow.y,[],[]),null);
+  assert.deepEqual([momo.x,momo.y,momo.layer],[947,160,'L0']);
+  assert.equal(isMarketTraversable('L0',momo.x,momo.y),true);
+  assert.deepEqual(marketEAction('L0',momo.x,momo.y,['market_crow_clue_completed'],[]),{type:'interact',id:'market_momo_trace',layer:'L0'});
+  assert.equal(marketEAction('L0',momo.x,momo.y,['market_crow_clue_completed'],['node:momo_trail_event'])?.type,'hint');
+});
+
+test('C and F markers follow floor, approach, active range and locked exit state',()=>{
+  const exit=marketPortals.find(portal=>portal.id==='exitClimb')!,stairs=marketPortals.find(portal=>portal.id==='underpassN')!;
+  assert.equal(marketPortalDisplay(exit,exit.a,'L0',exit.a.x,exit.a.y,[]) ,null);
+  assert.equal(marketPortalDisplay(exit,exit.a,'L0',exit.a.x,exit.a.y,['market_cleared'])?.active,true);
+  assert.equal(marketPortalDisplay(exit,exit.a,'L1',exit.a.x,exit.a.y,['market_cleared']),null);
+  assert.equal(marketPortalDisplay(stairs,stairs.a,'L0',stairs.a.x+70,stairs.a.y,['market_cleared'])?.alpha,.22);
+  assert.equal(marketPortalDisplay(stairs,stairs.a,'L0',stairs.a.x+10,stairs.a.y,['market_cleared'])?.label.startsWith('F · 进入'),true);
+  assert.equal(marketPortalDisplay(stairs,stairs.b,'Lm1',stairs.b.x,stairs.b.y,[])?.label.startsWith('F · 返回'),true);
+  assert.equal(marketPortalDisplay(exit,exit.a,'L0',exit.a.x+45,exit.a.y,['market_cleared'])?.active,false);
+});
+
+test('optional-content guidance gets more specific as the player approaches',()=>{
+  const far=marketOptionalHint('L0',300,700,false),middle=marketOptionalHint('L0',650,300,false),near=marketOptionalHint('L0',800,160,false);
+  assert.ok(far&&middle&&near);assert.notEqual(far,middle);assert.notEqual(middle,near);
+  assert.equal(marketOptionalHint('L1',947,160,false),null);
+  assert.equal(marketOptionalHint('L0',300,700,true),null);
 });

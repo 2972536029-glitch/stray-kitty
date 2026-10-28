@@ -28,7 +28,7 @@ export default function App() {
       setInspectHint(object.text ?? null);
       return;
     }
-    void send({type: 'INTERACT', interactionId: id, ...(id==='market_crow_stall'?{layer:'L0',position:rainyPosition.current}:id==='market_pigeon_perch'?{layer:'L1',position:rainyPosition.current}:{})});
+    void send({type: 'INTERACT', interactionId: id, ...(id==='market_crow_stall'||id==='market_momo_trace'?{layer:'L0',position:rainyPosition.current}:id==='market_pigeon_perch'?{layer:'L1',position:rainyPosition.current}:{})});
   }, [send, nearTarget]);
   const checkRandomZone = useCallback((zoneId: string, layer?:string,position?:{x:number;y:number}) => busy || pending
     ? Promise.resolve(false)
