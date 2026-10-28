@@ -3,7 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-for(const args of [[path.join(root,'scripts/content.mjs'),'--check'],[path.join(root,'node_modules/typescript/bin/tsc'),'--noEmit','-p',path.join(root,'web')],[path.join(root,'node_modules/vite/bin/vite.js'),'build']]) {
+const viteCli=['node_modules/vite/bin/vite.js','web/node_modules/vite/bin/vite.js'].map(candidate=>path.join(root,candidate)).find(candidate=>fs.existsSync(candidate));
+if(!viteCli)throw new Error('Vite CLI is not installed in the root or web workspace.');
+for(const args of [[path.join(root,'scripts/content.mjs'),'--check'],[path.join(root,'node_modules/typescript/bin/tsc'),'--noEmit','-p',path.join(root,'web')],[viteCli,'build']]) {
  const result=spawnSync(process.execPath,args,{cwd:args[0].includes('vite')?path.join(root,'web'):root,stdio:'inherit'});if(result.status!==0)process.exit(result.status??1);
 }
 fs.mkdirSync(path.join(root,'.runtime'),{recursive:true});
