@@ -100,6 +100,7 @@ func New(game *service.Game, webDir string) http.Handler {
 		}
 		a.json(w, 200, result)
 	})
+	mux.HandleFunc("POST /api/v1/advisor", a.advise)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, domain.Fail("NOT_FOUND", "API 路径或方法不存在", 404))
 	})

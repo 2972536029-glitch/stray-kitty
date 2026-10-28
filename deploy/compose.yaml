@@ -5,6 +5,12 @@ services:
       dockerfile: deploy/Dockerfile
     ports:
       - "127.0.0.1:8080:8080"
+    environment:
+      ADVISOR_BASE_URL: ${ADVISOR_BASE_URL:-https://api.deepseek.com}
+      ADVISOR_MODEL: ${ADVISOR_MODEL:-deepseek-flash}
+      ADVISOR_API_KEY: ${ADVISOR_API_KEY:-}
+      ADVISOR_MAX_CONCURRENT: ${ADVISOR_MAX_CONCURRENT:-4}
+      ADVISOR_DAILY_REQUEST_LIMIT: ${ADVISOR_DAILY_REQUEST_LIMIT:-200}
     volumes:
       - kitty-data:/data
     restart: unless-stopped
