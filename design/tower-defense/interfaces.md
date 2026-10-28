@@ -1,6 +1,6 @@
 # 战斗模块接口与章节入口
 
-更新：2026-10-27。各章无库存补给，L00 六波，L01 四猫首领战，L02／L03／L04 为六猫独立试玩，L05 为六名可移动主力加三名分批固定援军的终章试玩。第一章起按 MR !24 接收事件 carry 的六种正向加成，见[事件战斗契约](../../docs/BATTLE-EVENT-CARRY.md)。七个入口对应六套战斗地图。当前接口定义见 [TS契约](../../web/src/contracts/index.ts)、[OpenAPI](../../docs/openapi.json)与[Go服务](../../server/internal/service/battle.go)。
+更新：2026-10-27。各章无库存补给，L00 六波，L01 四猫首领战，L02／L03／L04 为六猫独立试玩，L05 为六名可移动主力加三名分批固定援军的终章试玩。第一章起沿用 MR !24 的通道，并按 !39／!40 追加鼠群与小猫，接收事件 carry 的八种正向加成，见[事件战斗契约](../../docs/BATTLE-EVENT-CARRY.md)。七个入口对应六套战斗地图。当前接口定义见 [TS契约](../../web/src/contracts/index.ts)、[OpenAPI](../../docs/openapi.json)与[Go服务](../../server/internal/service/battle.go)。
 
 ## 入口对应
 
@@ -53,4 +53,4 @@ Go存档暂保留旧Attempt.Supplies读取字段。新版结算旧active场次�
 
 ## 分工
 
-战斗维护L00–L05引擎、教程、各章技能、棋盘、结果和必要接入；事件维护档位判定、携带物/协助者来源，主流程维护剧情、存档与长期奖励；探索地图和最终场景美术维持对应模块。军师目前为本地规则。模型接入仍不在本轮范围，不能因终章初版完成自动开始。L01–L05消费活动场次的shadowPressure和carry快照，正式ID为lantern/mirror/bell/box/dog/dove；只在开战时接收，不实现战斗中再次随机抽取或热替换奖励。墨墨的L04夜视恢复视野、L05夜视识破护幕均为本章技能变体，不新增事件枚举，不改变L03护盾与清荆棘。效果与职责见[事件战斗对接](../../docs/BATTLE-EVENT-CARRY.md)；四章试玩的主线边界分别见[第二章接入](../../docs/L02-INTEGRATION.md)、[第三章接入](../../docs/L03-INTEGRATION.md)、[第四章接入](../../docs/L04-INTEGRATION.md)、[第五章接入](../../docs/L05-INTEGRATION.md)。
+战斗维护L00–L05引擎、教程、各章技能、棋盘、结果和必要接入；事件维护档位判定、携带物/协助者来源，主流程维护剧情、存档与长期奖励；探索地图和最终场景美术维持对应模块。军师目前为本地规则。模型接入仍不在本轮范围，不能因终章初版完成自动开始。L01–L05消费活动场次的shadowPressure和carry快照，正式ID为lantern/mirror/bell/box/dog/dove/rats/kitten；只在开战时接收，不实现战斗中再次随机抽取或热替换奖励。墨墨的L04夜视恢复视野、L05夜视识破护幕均为本章技能变体，不新增事件枚举，不改变L03护盾与清荆棘。效果与职责见[事件战斗对接](../../docs/BATTLE-EVENT-CARRY.md)；四章试玩的主线边界分别见[第二章接入](../../docs/L02-INTEGRATION.md)、[第三章接入](../../docs/L03-INTEGRATION.md)、[第四章接入](../../docs/L04-INTEGRATION.md)、[第五章接入](../../docs/L05-INTEGRATION.md)。
