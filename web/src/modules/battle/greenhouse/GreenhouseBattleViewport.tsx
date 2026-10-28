@@ -8,6 +8,8 @@ import {drawCat} from '../l00/painter';
 import {getGreenhouseAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
+import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
+import {useBattleBoardFit} from '../useBattleBoardFit';
 import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
 import '../carry.css';
@@ -29,8 +31,8 @@ function RoleBadge({id}:{id:GreenhouseCatId}){
 }
 function AdvisorPortrait(){
   const ref=useRef<HTMLCanvasElement>(null);
-  useEffect(()=>{const context=ref.current?.getContext('2d');if(context)drawCat(context,'advisor',0,0,64);},[]);
-  return <canvas ref={ref} width={64} height={64} className="btl-portrait" aria-hidden="true"/>;
+  useEffect(()=>{const context=ref.current?.getContext('2d');if(context)drawCat(context,'advisor',0,0,96);},[]);
+  return <canvas ref={ref} width={96} height={96} className="btl-portrait" aria-hidden="true"/>;
 }
 function Health({cat}:{cat:GreenhouseCat}){
   return <div className="greenhouse-cat-meters">
@@ -52,7 +54,7 @@ export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onRe
   const [hidden,setHidden]=useState(document.hidden);
   const [notice,setNotice]=useState('');
   const [submitted,setSubmitted]=useState(false);
-  const [overview,setOverview]=useState(()=>window.innerWidth<700);
+  const [overview,setOverview]=useState(()=>window.innerWidth>=700);
   const [menuPosition,setMenuPosition]=useState({left:0,top:0});
   const [tooltipPosition,setTooltipPosition]=useState({left:0,top:0});
   const [skillTooltipOpen,setSkillTooltipOpen]=useState(false);
@@ -63,6 +65,7 @@ export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onRe
     getSnapshot:()=>gameRef.current,localAnswer:getGreenhouseAnswer,
   });
   const canvasRef=useRef<HTMLCanvasElement>(null),boardRef=useRef<HTMLDivElement>(null),scrollRef=useRef<HTMLDivElement>(null);
+  const fittedWidth=useBattleBoardFit(scrollRef,MAP.columns,MAP.rows);
   const battlefieldRef=useRef<HTMLDivElement>(null),menuRef=useRef<HTMLDivElement>(null);
   const tooltipRef=useRef<HTMLDivElement>(null);
   const chatLogRef=useRef<HTMLDivElement>(null);
@@ -299,22 +302,26 @@ export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onRe
     return()=>{observer.disconnect();window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);};
   },[inspected?.id,inspected?.x,inspected?.y,overview,skillTooltipOpen]);
 
-  return <section className="battle-l00 battle-greenhouse" data-testid="greenhouse-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.greenhouse-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
+  return <section className="battle-l00 battle-greenhouse battle-immersive" data-scene="greenhouse" data-testid="greenhouse-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.greenhouse-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
+    <BattleSceneBackdrop scene="greenhouse" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS}/>
     <div className="btl-head"><div><span className="btl-eyebrow">CHAPTER 03 · CAT DEFENSE</span><strong>第三章 · 废弃花房</strong></div><div className="btl-progress"><span>黑影已离场 {game.defeated+game.leaks} / {game.totalEnemies}</span><span data-testid="greenhouse-leaks" aria-label={`已漏过 ${game.leaks} 只黑影，最多 ${game.maxLeaks} 次`}>防线 {'●'.repeat(Math.max(0,game.maxLeaks-game.leaks))}{'○'.repeat(Math.min(game.maxLeaks,game.leaks))}</span></div></div>
     <div className="btl-wave-status"><strong data-testid="greenhouse-wave">第 {game.wave} / {game.totalWaves} 波 · 剩余 {remaining} 只黑影</strong><span>C8、E8、F7 来敌 · 守住 B1</span></div>
-    <div className="btl-subhead"><span>34 格不规则花房 · 缺口不可通行</span><span>已上阵 {game.cats.filter(cat=>cat.status==='active').length} / {RULES.maxCats}</span><span>零血退场 · 墨墨护盾并清除荆棘</span></div>
-    <div className="btl-difficulty-strip" data-testid="greenhouse-difficulty"><strong>{DIFFICULTIES[difficulty].label} · 敌人体力 {Math.round(DIFFICULTIES[difficulty].hpMultiplier*100)}%</strong><span>守完全部波次并击退首领；3 次突破则失败。所有猫退场也会失败。</span></div>
-    <div className={`greenhouse-boss-panel${bossWindup||game.hazards.length?' is-warning':''}`} data-testid="greenhouse-boss" data-boss-phase={game.boss.phase} data-boss-attacks={game.boss.attacks} data-boss-basic-attacking={bossBasicAttacking} data-hazards={game.hazards.length}><strong>{game.boss.phase==='defeated'?'首领已击退':game.boss.name}</strong><div className="greenhouse-boss-health" role="meter" aria-label="首领体力" aria-valuemin={0} aria-valuemax={game.boss.maxHp} aria-valuenow={Math.ceil(game.boss.hp)} data-testid="greenhouse-boss-health"><i style={{width:`${100*game.boss.hp/game.boss.maxHp}%`}}/><span>{Math.ceil(game.boss.hp)} / {game.boss.maxHp}</span></div><small>{bossWindup?`荆棘播种锁定 ${game.boss.targetCells.map(cellName).join('、')}！移开伙伴；墨墨只能清除已经长出的荆棘。`:game.hazards.length?`荆棘仍在 ${game.hazards.map(cellName).join('、')} 持续伤害！移开或使用巡光护行。`:game.boss.phase==='defeated'?'首领已击退，继续处理全部波次。':bossBasicAttacking?'普通攻击 · 荆枝鞭击':'固定占据 C6、C7、D6、D7 · 留意荆棘播种'}</small></div>
-    <CarryPanel carry={game.carry} phase={game.phase} wave={game.wave} waves={WAVES} entrances={Object.fromEntries(Object.entries(ROUTES).map(([route,path])=>[route,path[0]]))} enemies={ENEMY_DEFINITIONS} disabled={paused||hidden||game.paused||game.uiPaused||game.externallyPaused} onUse={()=>act({type:'USE_CARRY'})}/>
-    <div className="btl-tactics"><button type="button" data-testid="greenhouse-advisor" aria-label="与军师阿策交谈" disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(value=>!value);}}><AdvisorPortrait/><strong>问问阿策</strong></button><p>{advice}</p></div>
+    <details className="battle-hud-details"><summary>战况说明</summary>
+      <div className="btl-subhead"><span>34 格不规则花房 · 缺口不可通行</span><span>已上阵 {game.cats.filter(cat=>cat.status==='active').length} / {RULES.maxCats}</span><span>零血退场 · 墨墨护盾并清除荆棘</span></div>
+      <div className="btl-difficulty-strip" data-testid="greenhouse-difficulty"><strong>{DIFFICULTIES[difficulty].label} · 敌人体力 {Math.round(DIFFICULTIES[difficulty].hpMultiplier*100)}%</strong><span>守完全部波次并击退首领；3 次突破则失败。所有猫退场也会失败。</span></div>
+      {game.phase==='ready'&&<p className="greenhouse-ready" data-testid="greenhouse-ready">推荐阵型已就位，可拖动小猫调整。点猫查看技能，点击开始守护。</p>}
+      <p className="battle-advisor-summary">{advice}</p>
+    </details>
+    <div className={`greenhouse-boss-panel battle-hud-boss${bossWindup||game.hazards.length?' is-warning':''}`} data-testid="greenhouse-boss" data-boss-phase={game.boss.phase} data-boss-attacks={game.boss.attacks} data-boss-basic-attacking={bossBasicAttacking} data-hazards={game.hazards.length}><strong>{game.boss.phase==='defeated'?'首领已击退':game.boss.name}</strong><div className="greenhouse-boss-health" role="meter" aria-label="首领体力" aria-valuemin={0} aria-valuemax={game.boss.maxHp} aria-valuenow={Math.ceil(game.boss.hp)} data-testid="greenhouse-boss-health"><i style={{width:`${100*game.boss.hp/game.boss.maxHp}%`}}/><span>{Math.ceil(game.boss.hp)} / {game.boss.maxHp}</span></div><small>{bossWindup?`荆棘播种锁定 ${game.boss.targetCells.map(cellName).join('、')}！移开伙伴；墨墨只能清除已经长出的荆棘。`:game.hazards.length?`荆棘仍在 ${game.hazards.map(cellName).join('、')} 持续伤害！移开或使用巡光护行。`:game.boss.phase==='defeated'?'首领已击退，继续处理全部波次。':bossBasicAttacking?'普通攻击 · 荆枝鞭击':'固定占据 C6、C7、D6、D7 · 留意荆棘播种'}</small></div>
+    <CarryPanel compact carry={game.carry} phase={game.phase} wave={game.wave} waves={WAVES} entrances={Object.fromEntries(Object.entries(ROUTES).map(([route,path])=>[route,path[0]]))} enemies={ENEMY_DEFINITIONS} disabled={paused||hidden||game.paused||game.uiPaused||game.externallyPaused} onUse={()=>act({type:'USE_CARRY'})}/>
+    <div className="btl-tactics battle-advisor"><button title={advice} type="button" data-testid="greenhouse-advisor" aria-label="与军师阿策交谈" disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(value=>!value);}}><AdvisorPortrait/><strong>阿策</strong><span>聊聊战况</span></button></div>
     {game.cats.some(cat=>cat.status==='retired')&&<p className="btl-retirement-note" role="status" data-testid="greenhouse-retired">{game.cats.filter(cat=>cat.status==='retired').map(cat=>cat.name).join('、')}已退场，本场无法复活。</p>}
     <div className="btl-arena btl-arena-wide">
       <div className="btl-board-column">
         <div className="btl-playback" role="group" aria-label="战斗速度与开始暂停"><button type="button" className={game.baseSpeed===.5?'btl-speed-selected':''} disabled={ended||paused||hidden} aria-pressed={game.baseSpeed===.5} data-testid="greenhouse-speed-half" onClick={()=>act({type:'SET_SPEED',speed:.5})}>×0.5</button><button type="button" className={game.baseSpeed!==.5?'btl-speed-selected':''} disabled={ended||paused||hidden} aria-pressed={game.baseSpeed!==.5} data-testid="greenhouse-speed-toggle" aria-label={`常速或倍速，当前基础 ×${game.baseSpeed}`} onClick={()=>act({type:'SET_SPEED',speed:game.baseSpeed===1?2:1})}>{game.baseSpeed===.5?'×1 / ×2':`×${game.baseSpeed}`}</button><button type="button" className="btl-play-toggle" data-testid="greenhouse-play-toggle" disabled={paused||hidden||ended||chatOpen||retreatOpen} onClick={startOrToggle}>{game.phase==='ready'?'开始守护':game.paused?'继续战斗':'暂停战斗'}</button><span data-testid="greenhouse-effective-speed">{speed===0?'当前暂停':game.aim?'技能瞄准 ×1':inspected?'查看猫咪 · 临时 ×0.5':`当前 ×${speed}`} · {game.elapsed.toFixed(0)} 秒</span></div>
-        {game.phase==='ready'&&<p className="greenhouse-ready" data-testid="greenhouse-ready">推荐阵型已就位，可拖动小猫调整。点猫查看技能，点击开始守护。</p>}
         <div className="greenhouse-map-tools"><button type="button" className="btl-quiet" aria-pressed={overview} onClick={()=>setOverview(value=>!value)}>{overview?'放大战场':'查看全图'}</button><button type="button" className="btl-quiet" onClick={()=>showMapArea('goal')}>← 守护点</button><button type="button" className="btl-quiet" onClick={()=>showMapArea('branch')}>花房中央 ↓</button><button type="button" className="btl-quiet" onClick={()=>showMapArea('boss')}>首领 →</button></div>
         <div className="greenhouse-battlefield" ref={battlefieldRef}>
-          <div ref={scrollRef} className="greenhouse-board-scroll" role="region" aria-label="花房战场，窄屏可横向滚动"><div ref={boardRef} tabIndex={-1} className={`greenhouse-board${overview?' is-overview':''}${moving?' is-moving':''}${game.aim?' is-aiming':''}`} data-testid="greenhouse-board" onClick={event=>{if(event.target===event.currentTarget){if(suppressClick.current)suppressClick.current=false;else closeInspection();}}} onPointerDown={event=>{if(gameRef.current.aim&&event.pointerType!=='mouse'&&event.button===0){aimPointer.current=event.pointerId;event.currentTarget.setPointerCapture(event.pointerId);previewTouch(event);}}} onPointerMove={previewTouch} onPointerUp={event=>finishTouchAim(event)} onPointerCancel={event=>finishTouchAim(event,true)} onLostPointerCapture={()=>{aimPointer.current=null;}} onContextMenu={event=>{event.preventDefault();if(gameRef.current.aim)cancelAim();else closeInspection();}} onPointerLeave={()=>{if(!gesture.current){setHover(null);if(gameRef.current.aim)act({type:'AIM_SKILL',x:-1,y:-1});}}}>
+          <div ref={scrollRef} className="greenhouse-board-scroll" role="region" aria-label="花房战场，窄屏可横向滚动"><div ref={boardRef} tabIndex={-1} className={`greenhouse-board${overview?' is-overview':''}${moving?' is-moving':''}${game.aim?' is-aiming':''}`} data-testid="greenhouse-board" data-overview={overview} style={{width:overview?fittedWidth:Math.max(MAP.columns*80,(fittedWidth??0)*1.25)}} onClick={event=>{if(event.target===event.currentTarget){if(suppressClick.current)suppressClick.current=false;else closeInspection();}}} onPointerDown={event=>{if(gameRef.current.aim&&event.pointerType!=='mouse'&&event.button===0){aimPointer.current=event.pointerId;event.currentTarget.setPointerCapture(event.pointerId);previewTouch(event);}}} onPointerMove={previewTouch} onPointerUp={event=>finishTouchAim(event)} onPointerCancel={event=>finishTouchAim(event,true)} onLostPointerCapture={()=>{aimPointer.current=null;}} onContextMenu={event=>{event.preventDefault();if(gameRef.current.aim)cancelAim();else closeInspection();}} onPointerLeave={()=>{if(!gesture.current){setHover(null);if(gameRef.current.aim)act({type:'AIM_SKILL',x:-1,y:-1});}}}>
             <canvas ref={canvasRef} width={BOARD_WIDTH} height={BOARD_HEIGHT} aria-label="六行九列包围框内三十四格花房，三格花房障碍与四格荆冠首领，缺口透明"/>
 
             <div className="greenhouse-cells">{CELLS.map(position=>{
