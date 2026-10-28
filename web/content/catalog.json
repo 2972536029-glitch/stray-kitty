@@ -5272,6 +5272,492 @@
           }
         }
       ]
+    },
+    {
+      "id": "wall_kitten_visit",
+      "title": "墙头的回访",
+      "text": "巷口的墙头上蹲着一个熟悉的小身影——上次从麻袋里救出来的小猫,长大了些,胆子也大了。它爪子底下按着什么,远远地朝你们晃。",
+      "category": "opportunity",
+      "tags": [
+        "social"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "requiresFlags": [
+        "sack_cat_freed",
+        "wall_kitten_friend"
+      ],
+      "maps": [
+        "alley"
+      ],
+      "options": [
+        {
+          "id": "accept_gift",
+          "label": "走过去收下它的心意",
+          "outcomes": {
+            "crit": {
+              "text": "小猫把东西推过来:一小包晒得干干的鱼干,还有一枚它不知道从哪捡的亮纽扣。它绕着你们的脚边转了三圈,然后头前带路——它在邀请你们去看它的新领地:一处干燥隐蔽、能看见整条巷子的墙洞。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "fish": 2,
+                "clue": 1
+              },
+              "flags": [
+                "kitten_guide"
+              ]
+            },
+            "success": {
+              "text": "礼物收下:鱼干和纽扣。小猫心满意足地眯起眼——被救助过的猫,最会表达感谢。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "fish": 1
+              },
+              "flags": [
+                "kitten_gift"
+              ]
+            },
+            "partial": {
+              "text": "它把礼物放在墙头就害羞地缩回去了。你们朝它挥挥爪,约定下次再玩。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "fish": 1
+              },
+              "flags": [
+                "kitten_shy"
+              ]
+            },
+            "fail": {
+              "text": "一只路过的野猫半路截胡,小猫吓得连滚带爬躲回墙头。礼物没了,但它探出的半个脑袋还在偷偷看你们——下次一定送成。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "kitten_shy"
+              ]
+            }
+          }
+        },
+        {
+          "id": "share_news",
+          "label": "把花房的事讲给它听",
+          "outcomes": {
+            "crit": {
+              "text": "你们比划着讲了花房:天窗、灯串、纸箱城堡,还有每晚的呼噜声。小猫听得眼睛越来越亮——讲到末尾,它主动往巷子深处走了几步,回头等你们:它想去看看。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "kitten_curious"
+              ]
+            },
+            "success": {
+              "text": "小猫听得很认真,尾巴尖一晃一晃。花房的故事,它记下了。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "kitten_curious"
+              ]
+            },
+            "partial": {
+              "text": "小猫听着听着就困了,当场蜷成一团猫饼。也好——能在这里睡熟,说明它觉得这里安全。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "kitten_sleepy"
+              ]
+            },
+            "fail": {
+              "text": "一阵野猫的嘶叫从巷子那头炸开,小猫炸毛窜上屋檐。讲故事的兴致全无,但你们记住了:下次带点吃的,边吃边讲。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "kitten_spooked"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "old_huang_patrol",
+      "title": "老黄的巡逻",
+      "text": "熟悉的吠声从巷尾传来——老黄!它没被拴,没被关,正沿着一条固定的路线在巷尾巡逻,每走几步就停下来嗅一嗅。它把这里,当成了自己的岗位。",
+      "category": "risk",
+      "tags": [
+        "social",
+        "shadow"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "requiresFlags": [
+        "dog_ally_met",
+        "wall_kitten_friend"
+      ],
+      "maps": [
+        "alley"
+      ],
+      "options": [
+        {
+          "id": "join_patrol",
+          "label": "跟着老黄巡一段",
+          "outcomes": {
+            "crit": {
+              "text": "老黄巡逻到一半忽然停住,对着墙角的暗处低吼——黑影的先头,果然摸到了这里。一猫一狗背靠背,灯光所及之处寸步不让。黑影退散后,老黄把爪子搭在喵喵爪上:下一场硬仗,带它一起上。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "huang_allied"
+              ],
+              "carry": "dog"
+            },
+            "success": {
+              "text": "跟着老黄走完一圈,黑影远远绕道。它把巷尾守得铁桶一般——有它巡着,这条巷子就是安全的。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "huang_patrol"
+              ]
+            },
+            "partial": {
+              "text": "巡逻到一半,老黄被一只路过的蝴蝶吸引了全部注意力。军纪堪忧,但快乐是真的。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "huang_distracted"
+              ]
+            },
+            "fail": {
+              "text": "巡到一半下起大雨,老黄抖了抖一身水,示意今天的巡逻到此为止。它冲你们摇摇尾巴,跑回屋檐下的窝。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "huang_rain"
+              ]
+            }
+          }
+        },
+        {
+          "id": "bring_snack",
+          "label": "给巡逻的老黄带份加餐",
+          "outcomes": {
+            "crit": {
+              "text": "老黄吃完加餐,郑重地领你们看了它的发现:一处只有大型动物才钻得进去的墙洞,洞里的风带着外面食物的香气——这是条两脚兽都没发现的送餐通道,鼠群和它,轮流守着。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2,
+                "fish": 1
+              },
+              "flags": [
+                "huang_secret_shared"
+              ]
+            },
+            "success": {
+              "text": "加餐下肚,老黄巡得更起劲了。它冲你们摇尾巴:岗位继续,放心。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "huang_patrol"
+              ]
+            },
+            "partial": {
+              "text": "老黄吃了加餐,但今天的它有点心不在焉——耳朵一直朝着巷子外竖着。也许,它在等什么人。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "huang_waitful"
+              ]
+            },
+            "fail": {
+              "text": "加餐被一只不知好歹的野猫抢了,老黄追出去半条巷子才回来,狼狈又委屈。加餐改日再补。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "snack_robbed"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "fake_meow_source",
+      "title": "假叫的真源",
+      "text": "那声每七步一次的完美猫叫又响起来了。上次墨墨听出了破绽,这次你们循着声摸到了货架底层——一台小小的八音盒,发条还在走,猫叫是它放出来的。谁把它放在这的?",
+      "category": "risk",
+      "tags": [
+        "trap",
+        "shadow"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "requiresFlags": [
+        "fake_meow_busted",
+        "momo_heard_through"
+      ],
+      "maps": [
+        "market"
+      ],
+      "options": [
+        {
+          "id": "take_music_box",
+          "label": "把八音盒拆下来带走研究",
+          "outcomes": {
+            "crit": {
+              "text": "八音盒拆开的瞬间,机关里掉出一小卷纸条,写着歪歪扭扭的字:'给找猫的猫——往铁皮屋去。'原来放录音的不是敌人,是一个不敢露面的帮手,在用自己的方式给被困的猫指路!铁皮屋的方向,记下了。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 3
+              },
+              "flags": [
+                "music_box_clue"
+              ]
+            },
+            "success": {
+              "text": "八音盒是有人特意放的:它没法来,只能用声音帮困在里面的猫引开注意。善意藏在机关里,方向也藏在机关里。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "music_box_clue"
+              ]
+            },
+            "partial": {
+              "text": "八音盒的发条走到一半断了,猫叫戛然而止。纸条泡了水,字迹晕成一团,只认出'往……去'。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "music_box_broken"
+              ]
+            },
+            "fail": {
+              "text": "刚碰到八音盒,整排货架的灯忽地全灭——有人在暗处盯着,不许你们碰这个机关。你们空手退出,那声猫叫还在黑暗里一遍遍响。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "flags": [
+                "music_box_guarded"
+              ]
+            }
+          }
+        },
+        {
+          "id": "wait_and_watch",
+          "label": "退到暗处,看看谁来上发条",
+          "outcomes": {
+            "crit": {
+              "text": "等到集市将散,一个瘦小的身影从货架后溜出来——是只独眼老猫,上发条的手抖得厉害。它上完发条对着八音盒喃喃:'叫吧,叫吧,总会有一只好猫听见的。'——原来它在用八音盒,替它失踪的孩子喊。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 3
+              },
+              "flags": [
+                "one_eye_cat_story"
+              ]
+            },
+            "success": {
+              "text": "上发条的是只独眼老猫。它放好猫叫,对着黑暗轻声说了句'坚持下去',蹒跚离开——它在用自己的方式,陪着困在里面的什么人。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "one_eye_cat_story"
+              ]
+            },
+            "partial": {
+              "text": "老猫上完发条就走,快得没给你们任何搭话的机会。但它上发条的手法那么熟练——这不是第一次了。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "one_eye_routine"
+              ]
+            },
+            "fail": {
+              "text": "集市散场得太快,老猫没出现,八音盒的发条也走完了。今晚一无所获,但明天它还会来——你们也还会来。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "flags": [
+                "no_show_tonight"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "rat_king_trust",
+      "title": "鼠王的托付",
+      "text": "管道小队簇拥着鼠王出现在岔口,吱吱声急促而不安。鼠王叼着你们的裤脚往暗道深处拽——它需要你们,而且只要你们。",
+      "category": "risk",
+      "tags": [
+        "social"
+      ],
+      "triggers": [
+        "random"
+      ],
+      "requiresFlags": [
+        "rats_truce",
+        "rat_road_used"
+      ],
+      "maps": [
+        "tunnel"
+      ],
+      "options": [
+        {
+          "id": "follow_deep",
+          "label": "跟鼠王往深处走",
+          "outcomes": {
+            "crit": {
+              "text": "鼠王把你们带到一处隐秘的产房产奶的洞窟,三只粉嫩嫩的幼崽挤在草垫上——鼠王夫妇把最脆弱的宝库,托付给了猫。从今天起,暗道深处的黑影要动它们,就得先过你们这一关。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "rat_king_trusted"
+              ]
+            },
+            "success": {
+              "text": "洞窟里暖烘烘的,幼崽的呼噜和鼠王的不安交织。你们郑重地点头:这份托付,接了。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "rat_king_trusted"
+              ]
+            },
+            "partial": {
+              "text": "鼠王带你们看了洞窟,却始终没让你们靠近最深处。信任需要时间——但门,已经开了一条缝。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "rat_king_wary"
+              ]
+            },
+            "fail": {
+              "text": "走到半途,鼠王忽然勒停,眼神警觉地扫视四野,然后坚决地掉头把你们往回引——它在保护你们,也在保护它的秘密。今天还不到时候。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "rat_king_deferred"
+              ]
+            }
+          }
+        },
+        {
+          "id": "rat_gift",
+          "label": "给幼崽备一份见面礼",
+          "outcomes": {
+            "crit": {
+              "text": "软布垫上摆好鱼干和小窝,鼠王盯着看了半晌,忽然转身冲管道深处吱了一声——黑暗里滚出一颗被磨得溜圆的猫爪铜铃,是鼠群三代守护的宝物。它们把它,交给了你们。",
+              "tdMod": {
+                "shadowPressure": -1
+              },
+              "reward": {
+                "clue": 2
+              },
+              "flags": [
+                "rat_king_heirloom"
+              ],
+              "carry": "bell"
+            },
+            "success": {
+              "text": "见面礼备下,鼠王的戒心肉眼可见地松了。它的世界很小,小到一份鱼干就是天大的善意。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "rat_king_trusted"
+              ]
+            },
+            "partial": {
+              "text": "鼠王收了礼,却把你们拦在洞口一步之外。礼到了,信任还在路上。",
+              "tdMod": {
+                "shadowPressure": 0
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "rat_king_wary"
+              ]
+            },
+            "fail": {
+              "text": "一阵渗水声惊得鼠群集体转移,见面礼被冲散在暗渠里。鼠王在原地站了很久——下次,它们会准备更好的位置。",
+              "tdMod": {
+                "shadowPressure": 1
+              },
+              "reward": {
+                "clue": 1
+              },
+              "flags": [
+                "rat_nest_flooded"
+              ]
+            }
+          }
+        }
+      ]
     }
   ],
   "eventsBalance": [
