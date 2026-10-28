@@ -9,12 +9,21 @@ export function skillTutorialSnapshots(initial: CombatState): CombatState[] {
   assert.equal(initial.phase, 'teach_energy');
   let state = act(initial, {type: 'BEGIN_SKILL_PRACTICE'});
   const snapshots = [state];
-  for (let step = 0; step < 500 && state.phase === 'skill_charge'; step++) state = advanceGame(state, 0.1);
+  for (let step = 0; step < 2000 && state.phase !== 'teach_move'; step++) state = advanceGame(state, 0.05);
+  assert.equal(state.phase, 'teach_move'); snapshots.push(state);
+  state = act(state, {type: 'MOVE_CAT', catId: 'guard', ...RECOMMENDED_POSITIONS.guard}); snapshots.push(state);
+  assert.equal(state.phase, 'teach_live_move');
+  state = advanceGame(state, 0.2); snapshots.push(state);
+  state = act(state, {type: 'MOVE_CAT', catId: 'caster', x: 3, y: 2}); snapshots.push(state);
+  assert.equal(state.phase, 'skill_charge');
+  state = act(state, {type: 'MOVE_CAT', catId: 'caster', ...RECOMMENDED_POSITIONS.caster});
+  for (let step = 0; step < 2000 && state.phase === 'skill_charge'; step++) state = advanceGame(state, 0.05);
   assert.equal(state.phase, 'teach_guard_skill'); snapshots.push(state);
   state = act(state, {type: 'CAST_SKILL', catId: 'guard'});
   assert.equal(state.phase, 'teach_caster_skill'); snapshots.push(state);
+  const enemy = state.enemies.find(enemy => enemy.x <= CONFIG.VISIBLE_MAX_X)!;
   state = act(state, {type: 'SELECT_SKILL', catId: 'caster'}); snapshots.push(state);
-  state = act(state, {type: 'AIM_SKILL', x: 5, y: 1}); snapshots.push(state);
+  state = act(state, {type: 'AIM_SKILL', x: Math.round(enemy.x), y: Math.round(enemy.y)}); snapshots.push(state);
   state = act(state, {type: 'CAST_SKILL', catId: 'caster'});
   assert.equal(state.phase, 'battle'); snapshots.push(state);
   return snapshots;
@@ -22,16 +31,12 @@ export function skillTutorialSnapshots(initial: CombatState): CombatState[] {
 
 export function finishSkillTutorial(initial: CombatState): CombatState {return skillTutorialSnapshots(initial).at(-1)!;}
 
-/** Reach real wave one exclusively through the same legal tutorial actions as the player. */
+/** Standard-mode fixture reaches real wave one without the interactive tutorial gates. */
 export function beginBattle(options: CombatOptions = {}): CombatState {
-  let state = act(createGame(options), {type: 'START'});
-  for (let step = 0; step < 1000 && state.phase !== 'teach_position'; step++) state = advanceGame(state, 0.05);
-  assert.equal(state.phase, 'teach_position');
-  for (const action of [
-    {type: 'MOVE_CAT', catId: 'caster', ...RECOMMENDED_POSITIONS.caster},
-    {type: 'MOVE_CAT', catId: 'guard', ...RECOMMENDED_POSITIONS.guard},
-  ] as CombatAction[]) state = act(state, action);
-  return finishSkillTutorial(state);
+  let state = act(createGame({...options, mode: 'standard'}), {type: 'START'});
+  for (let step = 0; step < 1000 && state.phase !== 'battle'; step++) state = advanceGame(state, 0.05);
+  assert.equal(state.phase, 'battle');
+  return state;
 }
 
 export interface ManualPlayOptions {

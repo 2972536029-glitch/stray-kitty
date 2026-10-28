@@ -12,6 +12,16 @@ function until(state: CombatState, phase: CombatState['phase']) {
   assert.equal(state.phase, phase); return state;
 }
 const battle = () => beginBattle();
+function shieldedBattle() {
+  const state = battle();
+  // This timing fixture explicitly grants a charged skill, then uses the real cast.
+  // Live teaching no longer gives every fresh wave-one fixture a free shield.
+  cat(state, 'guard').energy = CONFIG.MAX_ENERGY;
+  const shielded = act(state, {type: 'CAST_SKILL', catId: 'guard'});
+  assert.equal(shielded.lastAction?.ok, true);
+  assert.equal(cat(shielded, 'guard').energy, 0);
+  return shielded;
+}
 const enemy = (extra: Partial<CombatEnemy> = {}): CombatEnemy => ({...ENEMY_TYPES.scout, id: 'timing-target', type: 'scout', hp: 1000, maxHp: 1000, x: 6.7, y: 1, cooldown: 100, blockedBy: null, ...extra});
 function holdingBattle() {
   const state = battle(); state.spawnIndex = WAVES[0].length;
@@ -25,7 +35,7 @@ function mechanics(state: CombatState) {
 }
 
 for (const speed of [0.5, 1, 2] as PlaybackSpeed[]) test(`${speed}x scales wall time once for attacks, movement, shields and wave progression`, () => {
-  const initial = battle();
+  const initial = shieldedBattle();
   const actual = advanceGame(act(initial, {type: 'SET_SPEED', speed}), 6);
   const expected = advanceGame(act(initial, {type: 'SET_SPEED', speed: 1}), 6 * speed);
   assert.deepEqual(mechanics(actual), mechanics(expected));
@@ -51,7 +61,7 @@ test('raw dt is clamped before scaling and fractional simulation steps survive s
 });
 
 test('inspection uses half speed, aiming uses normal speed, and ending either restores the chosen baseline', () => {
-  let state = act(battle(), {type: 'SET_SPEED', speed: 2});
+  let state = act(shieldedBattle(), {type: 'SET_SPEED', speed: 2});
   cat(state, 'caster').energy = 100;
   state = act(state, {type: 'INSPECT_CAT', catId: 'caster'});
   assert.equal(state.inspectedCatId, 'caster'); assert.equal(getBattleSpeed(state), 0.5);

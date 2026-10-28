@@ -8,22 +8,29 @@ const cat=(s:CombatState,id:string)=>s.cats.find(c=>c.id===id)!;
 const enemy=(extra:Partial<CombatEnemy>={}):CombatEnemy=>({...ENEMY_TYPES.scout,id:'test',type:'scout',hp:10000,maxHp:10000,x:4.55,y:1,cooldown:0,blockedBy:'guard',...extra});
 function holding(){const s=beginBattle();s.spawnIndex=2;s.enemies=[enemy({x:6.7,y:0,speed:0,blockedBy:null,cooldown:100})];for(const c of s.cats){c.energy=0;c.shield=0;c.shieldRemaining=0;c.cooldown=100;}return s;}
 function teaching(){let s=act(createGame(),{type:'START'});for(let i=0;i<1000&&s.phase!=='teach_position';i++)s=advanceGame(s,.05);assert.equal(s.phase,'teach_position');return s;}
-test('five teaching steps use live cats and require placement, charging and both manual skills',()=>{
+test('live teaching uses a real moving wave and keeps the encounter through both manual skills',()=>{
  let s=teaching();assert.ok(s.cats.filter(c=>c.combatant).every(c=>c.status==='active'&&c.hp>0));
  assert.equal(cat(s,'hero').hp,50);assert.equal(cat(s,'caster').hp,65);
  assert.equal(advanceGame(s,30),s);assert.equal(act(s,{type:'BEGIN_SKILL_PRACTICE'}).lastAction!.ok,false);
- assert.equal(act(s,{type:'MOVE_CAT',catId:'caster',x:2,y:0}).lastAction!.ok,false);
- s=act(s,{type:'MOVE_CAT',catId:'caster',x:3,y:0});assert.equal(s.phase,'teach_move');
- s=act(s,{type:'MOVE_CAT',catId:'guard',x:4,y:1});assert.equal(s.phase,'teach_energy');
- assert.equal(advanceGame(s,30),s);const originalHp=s.cats.map(c=>c.hp);
- s=act(s,{type:'BEGIN_SKILL_PRACTICE'});const start=s.time;s=advanceGame(s,19.95);
- assert.equal(s.phase,'skill_charge');assert.equal(cat(s,'guard').energy,99.75);assert.equal(cat(s,'caster').energy,99.75);
- s=advanceGame(s,.05);assert.equal(s.phase,'teach_guard_skill');assert.ok(Math.abs(s.time-start-20)<1e-8);
- assert.deepEqual(s.cats.map(c=>c.hp),originalHp);assert.equal(s.spawned,1);assert.equal(s.defeated,1);
+ s=act(s,{type:'MOVE_CAT',catId:'caster',x:3,y:0});assert.equal(s.phase,'teach_energy');
+ assert.equal(advanceGame(s,30),s);
+ s=act(s,{type:'BEGIN_SKILL_PRACTICE'});const start=s.time;
+ for(let i=0;i<200&&s.phase!=='teach_move';i++)s=advanceGame(s,.05);
+ assert.equal(s.phase,'teach_move');assert.equal(s.wave,1);assert.ok(s.enemies.length>0);
+ assert.ok(s.enemies.every(enemy=>!enemy.training&&enemy.speed>0&&enemy.damage>0));assert.equal(advanceGame(s,30),s);
+ const pausedWaveTime=s.waveTime;
+ s=act(s,{type:'MOVE_CAT',catId:'guard',x:4,y:1});assert.equal(s.phase,'teach_live_move');assert.equal(s.waveTime,pausedWaveTime);
+ s=advanceGame(s,.2);assert.ok(s.waveTime>pausedWaveTime);
+ s=act(s,{type:'MOVE_CAT',catId:'caster',x:3,y:2});assert.equal(s.phase,'skill_charge');
+ s=act(s,{type:'MOVE_CAT',catId:'caster',x:3,y:0});
+ for(let i=0;i<2000&&s.phase==='skill_charge';i++)s=advanceGame(s,.05);
+ assert.equal(s.phase,'teach_guard_skill');assert.ok(s.time-start>=20);
  assert.equal(act(s,{type:'CAST_SKILL',catId:'caster',x:5,y:1}).lastAction!.ok,false);
  s=act(s,{type:'CAST_SKILL',catId:'guard'});assert.equal(s.phase,'teach_caster_skill');
  const miss=act(s,{type:'CAST_SKILL',catId:'caster',x:0,y:0});assert.equal(miss.lastAction!.ok,false);assert.equal(cat(miss,'caster').energy,100);
- s=act(s,{type:'CAST_SKILL',catId:'caster',x:5,y:1});assert.equal(s.phase,'battle');assert.equal(s.wave,1);assert.equal(s.enemies.length,0);
+ const target=s.enemies.find(e=>e.x<=6)!,wave=s.wave,waveTime=s.waveTime,spawned=s.spawned;
+ s=act(s,{type:'CAST_SKILL',catId:'caster',x:Math.round(target.x),y:Math.round(target.y)});
+ assert.equal(s.phase,'battle');assert.equal(s.wave,wave);assert.equal(s.waveTime,waveTime);assert.equal(s.spawned,spawned);
  assert.equal(cat(s,'guard').shield,60);assert.equal(cat(s,'guard').energy,0);assert.equal(cat(s,'caster').energy,0);
 });
 test('removed item, redeploy, reform and same-attempt restart commands never change mechanics',()=>{
