@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {marketPortals,marketTransitionAt,isMarketTraversable} from '../web/src/modules/nightMarket/map';
+import {marketPortals,marketTransitionAt,isMarketTraversable,sweepMarketMove} from '../web/src/modules/nightMarket/map';
 import {MarketTransitionController,sampleMarketTransition} from '../web/src/modules/nightMarket/transitions';
 import {explorationFooterText} from '../web/src/ui/explorationFooter';
 
@@ -13,6 +13,11 @@ test('all authored C/F portals resolve to collision-valid approaches and landing
       assert.equal(request.fromFloor,from.layer);assert.equal(request.toFloor,to.layer);
       assert.equal(isMarketTraversable(request.fromFloor,request.from.x,request.from.y,true),true,`${portal.id} source is walkable`);
       assert.equal(isMarketTraversable(request.toFloor,request.to.x,request.to.y,true),true,`${portal.id} landing is walkable`);
+      const escapes=[[8,0],[-8,0],[0,8],[0,-8]].some(([dx,dy])=>{
+        const moved=sweepMarketMove(request.toFloor,request.to,{x:dx,y:dy},true);
+        return !moved.blocked&&Math.hypot(moved.position.x-request.to.x,moved.position.y-request.to.y)>4&&isMarketTraversable(request.toFloor,moved.position.x,moved.position.y,true);
+      });
+      assert.equal(escapes,true,`${portal.id} landing permits movement back onto its floor`);
       assert.equal(request.animation,portal.animation);assert.equal(request.durationMs,portal.durationMs);
     }
   }

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {isMarketSolid, isMarketTraversable, marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, nearestMarketPosition, nightMarketSpatial, onMarketRoute, sweepMarketMove} from '../web/src/modules/nightMarket/map';
+import {isMarketSolid, isMarketTraversable, marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, nearestMarketPosition, nightMarketSpatial, onMarketRoute, sweepMarketMove, marketMovementBlockReason} from '../web/src/modules/nightMarket/map';
 
 test('Night Market keeps the approved native coordinate frame and three exact art assets',()=>{
   assert.deepEqual(nightMarketSpatial.coordinate_space,{width:1672,height:941,origin:'top-left',axis_x:'right',axis_y:'down',units:'native artwork pixels'});
@@ -90,6 +90,12 @@ test('reported stair, cargo, southeast and central-east roads allow direct swept
     assert.ok(Math.hypot(back.position.x-start.x,back.position.y-start.y)<2,`${name} returns to its origin`);
   };
   traverse('western underground stair road',{x:669,y:680},{x:0,y:24});
+  traverse('northwest market junction right',{x:759,y:343},{x:24,y:0});
+  traverse('central/eastern street down',{x:1150,y:375},{x:0,y:24});
+  traverse('northern market approach right',{x:1310,y:169},{x:24,y:0});
+  const eastLeft=sweepMarketMove('L0',{x:1204,y:617},{x:-8,y:0});
+  assert.equal(eastLeft.blocked,false,'the eastern road accepts its immediate leftward step');
+  assert.equal(sweepMarketMove('L0',eastLeft.position,{x:8,y:0}).blocked,false,'the eastern road accepts the reverse step');
   traverse('southeastern street downward',{x:1204,y:617},{x:0,y:26});
   traverse('southeastern street to the right',{x:1204,y:617},{x:24,y:0});
   traverse('central/eastern junction upward',{x:1150,y:375},{x:0,y:-24});
@@ -105,6 +111,51 @@ test('reported stair, cargo, southeast and central-east roads allow direct swept
   assert.equal(sweepMarketMove('L0',westOfCrate,{x:eastOfCrate.x-westOfCrate.x,y:0}).blocked,true,'the cargo obstacle cannot be crossed by ordinary walking');
   assert.ok(nearestMarketPosition('L0',859,717,true),'the authored C approach has valid cat clearance');
   assert.ok(nearestMarketPosition('L0',937,727,true),'the authored C landing has valid cat clearance');
+});
+
+test('every safe grid cell on all three floors has continuous cardinal moves and no trapped positions',()=>{
+  const floors=[{floor:'L0' as const,minCells:3000,minEdges:12000},{floor:'L1' as const,minCells:200,minEdges:700},{floor:'Lm1' as const,minCells:900,minEdges:3000}];
+  const directions=[{x:8,y:0},{x:-8,y:0},{x:0,y:8},{x:0,y:-8}];
+  for(const {floor,minCells,minEdges} of floors){
+    let safeCells=0,validEdges=0,trapped=0;
+    for(let y=12;y<929;y+=8)for(let x=12;x<1661;x+=8){
+      if(!isMarketTraversable(floor,x,y,true))continue;
+      safeCells++;
+      let exits=0;
+      for(const delta of directions){
+        const destination={x:x+delta.x,y:y+delta.y};
+        if(!isMarketTraversable(floor,destination.x,destination.y,true))continue;
+        exits++;validEdges++;
+        const moved=sweepMarketMove(floor,{x,y},delta,true);
+        assert.equal(moved.blocked,false,`${floor} walkable move ${x},${y} → ${destination.x},${destination.y} must not cross a collision seam`);
+        assert.ok(Math.hypot(moved.position.x-destination.x,moved.position.y-destination.y)<.01,`${floor} sweep reaches the validated destination`);
+        assert.equal(isMarketTraversable(floor,moved.position.x,moved.position.y,true),true,`${floor} movement cannot leave the player in an invalid footprint position`);
+      }
+      if(exits===0)trapped++;
+    }
+    assert.ok(safeCells>minCells,`${floor} scan covers a substantial walkable area`);
+    assert.ok(validEdges>minEdges,`${floor} scan checks many actual movement edges`);
+    assert.equal(trapped,0,`${floor} contains no walkable positions with no cardinal continuation`);
+  }
+});
+
+test('sampled authored corridors traverse both ways on every floor, with only authored barriers allowed to block',()=>{
+  let testedSegments=0;
+  for(const floor of ['L0','L1','Lm1'] as const)for(const [,points] of nightMarketSpatial.R[floor])for(let index=1;index<points.length;index++){
+    const a=points[index-1],b=points[index],length=Math.hypot(b[0]-a[0],b[1]-a[1]),steps=Math.ceil(length/8);
+    for(let step=0;step<steps;step++){
+      const t=step/steps,u=(step+1)/steps;
+      const from={x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t},to={x:a[0]+(b[0]-a[0])*u,y:a[1]+(b[1]-a[1])*u};
+      for(const [start,end] of [[from,to],[to,from]]){
+        const result=sweepMarketMove(floor,start,{x:end.x-start.x,y:end.y-start.y},true);
+        if(result.blocked)assert.match(result.condition??'',/authored obstacle|battle barricade|solid building/,'route centerlines may be blocked only by real environment geometry');
+        else assert.ok(Math.hypot(result.position.x-end.x,result.position.y-end.y)<.01,`${floor} route ${index} step ${step} reaches its next sample`);
+        if(isMarketTraversable(floor,result.position.x,result.position.y,true))testedSegments++;
+      }
+    }
+  }
+  assert.ok(testedSegments>1800,`expected broad all-floor route coverage, checked ${testedSegments} movement steps`);
+  assert.match(marketMovementBlockReason('L0',879,714,true)??'',/southCrate/,'the authored cargo barrier remains solid');
 });
 
 test('repositioned crow can be approached from every accessible direction',()=>{
