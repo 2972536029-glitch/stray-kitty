@@ -300,6 +300,7 @@ func validateCommand(body []byte, kind string) error {
 		"DRAW_FURNITURE":      {"poolId"},
 		"CHECK_RANDOM_ZONE":   {"zoneId", "layer", "position"},
 		"BUY_FURNITURE":       {"productId"},
+		"REPAIR_HOME":         {},
 	}
 	required := map[string][]string{
 		"ADVANCE_STORY":       {"nodeId"},
@@ -316,6 +317,7 @@ func validateCommand(body []byte, kind string) error {
 		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
 		"DRAW_FURNITURE":      {"poolId"},
 		"BUY_FURNITURE":       {"productId"},
+		"REPAIR_HOME":         {},
 	}
 	allowedKeys, ok := allowed[kind]
 	if !ok {
