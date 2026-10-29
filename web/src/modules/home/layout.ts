@@ -20,7 +20,10 @@ export const HOME_SHELTER_NODES: readonly HomePoint[] = [
   {x: 240, y: 310}, {x: 268, y: 334}, {x: 224, y: 348},
 ];
 
-export function homeStage(state: Pick<GameState, 'flags'>): number {
+export function homeStage(state: Pick<GameState, 'flags'> & Partial<Pick<GameState, 'phase' | 'storyNodeId'>>): number {
+  // The celebration is visible while it is narrated; completion flags are still
+  // committed by the existing server story flow, not by the canvas.
+  if (state.phase === 'dialogue' && /^finale_intro_[789]$/.test(state.storyNodeId ?? '')) return 4;
   if (state.flags.some(flag => flag === 'finale_completed' || flag === 'kingdom_founded')) return 4;
   if (state.flags.includes('greenhouse_fortified_full')) return 3;
   if (state.flags.includes('greenhouse_sealed')) return 2;

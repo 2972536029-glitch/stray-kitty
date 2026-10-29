@@ -1685,6 +1685,9 @@
             "$ref": "#/components/schemas/BuyFurniture"
           },
           {
+            "$ref": "#/components/schemas/RepairHome"
+          },
+          {
             "$ref": "#/components/schemas/StartStory"
           }
         ]
@@ -1927,6 +1930,20 @@
         "required": [
           "type",
           "productId"
+        ]
+      },
+      "RepairHome": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "家园阶段推进下一项修缮；服务端按修缮目录检查前置条件、扣除材料与邮票并解锁对应位置。",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "REPAIR_HOME"
+          }
+        },
+        "required": [
+          "type"
         ]
       },
       "EventReward": {

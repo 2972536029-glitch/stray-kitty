@@ -19,7 +19,7 @@ test.beforeAll(async({request})=>{
   const players:Record<string,unknown>={};
   for(const id of ids){
     const session={playerId:`nav-${id}`,token:`nav-browser-${id}`};sessions.set(id,session);
-    const state:GameState={schemaVersion:1,contentVersion:catalog.version,revision:1,phase:'home',chapterId:'market',storyNodeId:'',mapId:'market',flags:['l00_completed','alley_rescued','rescue_story_done','chapter_2_started','momo_joined','greenhouse_fortified','chapter_4_started'],cats:['miaomiao','tuanzi','diandian'],inventory:{material:3,food:0,clue:3,'warm-can':4,'bouncy-treat':2},currencies:{stamp:2},furniture:['cardboard_nest'],placements:{},completedStages:['l00_tutorial','alley_rescue'],pendingEventId:'',activeBattle:null,eventState:{pendingModifiers:{}},lastResult:{message:'Navigation fixture.'}};
+    const state:GameState={schemaVersion:1,contentVersion:catalog.version,revision:1,phase:'home',chapterId:'market',storyNodeId:'',mapId:'market',flags:['l00_completed','alley_rescued','rescue_story_done','chapter_2_started','market_cleared','market_exit_crossed','momo_joined','greenhouse_fortified','chapter_4_started'],cats:['miaomiao','tuanzi','diandian'],inventory:{material:3,food:0,clue:3,'warm-can':4,'bouncy-treat':2},currencies:{stamp:2},furniture:['cardboard_nest'],placements:{},completedStages:['l00_tutorial','alley_rescue'],pendingEventId:'',activeBattle:null,eventState:{pendingModifiers:{}},lastResult:{message:'Navigation fixture.'}};
     if(id==='chapter3-trial')state.flags.push('chapter_3_started');
     players[createHash('sha256').update(session.token).digest('hex')]={id:session.playerId,state,receipts:{},receiptOrder:[]};
   }
