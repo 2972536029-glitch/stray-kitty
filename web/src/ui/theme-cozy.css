@@ -18,3 +18,76 @@ button{border-color:#382f2b;box-shadow:3px 3px 0 #c59a55;border-radius:3px}butto
 @media(prefers-reduced-motion:reduce){.pixel-cat,.pixel-star{animation:none!important}}
 /* Immersive UI overrides: floating tools, readable type and softer pixel controls. */
 :root{font-size:17px}.topbar{background:transparent;border:0;border-radius:0;box-shadow:none;margin-top:16px;padding:10px 4px;min-height:68px}.topbar nav{padding:0;background:transparent}.topbar nav button,.wallet>span,.chapter-pill{border:0;box-shadow:3px 3px 0 #24312e80;backdrop-filter:blur(5px)}.wallet>span{background:#f1e8d3dc}.topbar nav button:hover{box-shadow:3px 5px 0 #24312e80}.start-reset{background:#6f5748}.start-reset:hover{background:#806555;color:#fff1d5}.journal-card p,.dialogue-copy p,.event-card p{font-size:13px}.world-footer p,.quiet,.map-button,.shop-button{font-size:12px}
+/* —— 阶段3 星露谷像素化:弹层滑入 + 猫爪地图 + 补给小站 + 修缮/抽奖/絮语卡 —— */
+.game-modal{animation:cozy-modal-in .3s ease-in-out}
+@keyframes cozy-modal-in{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+/* 猫爪地图:每站是一块木牌——顶亮面/底暗面/内缝,当前站点点亮呼吸 */
+.map-stop{border:2px solid #594536;border-radius:3px;background:linear-gradient(#f6edd8,#e5d9bd 70%,#d8c9a6);box-shadow:inset 0 2px 0 #fff9e8,inset 0 -3px 0 #b49d76,3px 3px 0 #24312e66;transition:translate .3s ease-in-out,box-shadow .3s ease-in-out}
+.map-stop:not(.locked):hover{translate:0 -2px;box-shadow:inset 0 2px 0 #fff9e8,inset 0 -3px 0 #b49d76,4px 5px 0 #24312e66}
+.map-stop.current{border-color:#382f2b;background:linear-gradient(#ffeaa6,#f0cf7d 70%,#d9ad53);box-shadow:inset 0 2px 0 #fff7d6,inset 0 -3px 0 #a5813d,0 0 0 3px #c59a5599,4px 4px 0 #24312e;animation:cozy-map-glow 2.4s ease-in-out infinite}
+@keyframes cozy-map-glow{50%{box-shadow:inset 0 2px 0 #fff7d6,inset 0 -3px 0 #a5813d,0 0 0 6px #c59a5566,4px 4px 0 #24312e}}
+.map-dot{border:2px solid #382f2b;border-radius:3px;box-shadow:inset 0 2px 0 #ffffff88,inset 0 -2px 0 #00000022,2px 2px 0 #24312e55}
+.map-stop.current .map-dot{background:#e8c766}
+.map-stop.locked{filter:saturate(.55);box-shadow:inset 0 2px 0 #ffffff55,inset 0 -3px 0 #b49d7688,2px 2px 0 #24312e33}
+.map-origin{border:2px solid #66513e;border-radius:3px;box-shadow:inset 0 2px 0 #f7edd2,3px 3px 0 #24312e55}
+.map-stop button{box-shadow:2px 2px 0 #24312e66}
+.world-map>footer b{color:#925140}
+/* 补给小站:礼包=木质包裹箱,选中亮起;支付框=木托盘;结果=收据纸 */
+.pack-card{border:2px solid #594536;border-radius:3px;background:linear-gradient(#f6edd8,#e5d9bd 65%,#d8c9a6);box-shadow:inset 0 2px 0 #fff9e8,inset 0 -3px 0 #b49d76,3px 3px 0 #24312e66;transition:translate .3s ease-in-out,box-shadow .3s ease-in-out}
+.pack-card:hover{translate:0 -2px}
+.pack-card.selected{border-color:#382f2b;background:linear-gradient(#ffeaa6,#f0cf7d 65%,#d9ad53);box-shadow:inset 0 2px 0 #fff7d6,inset 0 -3px 0 #a5813d,0 0 0 3px #c59a5599,4px 4px 0 #24312e;animation:cozy-map-glow 2.4s ease-in-out infinite}
+.pack-card b{color:#7c4a22}
+.recharge-paybox{border:2px solid #594536;border-radius:3px;background:linear-gradient(#dccfa9,#cbb98d);box-shadow:inset 0 2px 0 #efe4c4,inset 0 -3px 0 #a8946d}
+.recharge-paybox input{border:2px solid #594536;border-radius:3px;background:#fbf4e0;box-shadow:inset 2px 2px 0 #d8c9a6}
+.recharge-demo-tips .secondary{border:2px solid #66513e;border-radius:3px;background:#f1e8d3;box-shadow:2px 2px 0 #24312e55;color:#3d5d4c}
+.recharge-demo-tips .secondary:hover{box-shadow:2px 3px 0 #24312e55}
+.recharge-result{border:2px solid #382f2b;border-radius:3px;position:relative}
+.recharge-result.ok{background:repeating-linear-gradient(#eaf3d9 0 22px,#e0ecd0 22px 23px)}
+.recharge-result.declined{background:repeating-linear-gradient(#f7e8d4 0 22px,#eddcc4 22px 23px)}
+.recharge-result small{color:#62695d}
+.receipt-art{filter:drop-shadow(3px 4px 0 #24312e55);animation:cozy-receipt-bounce .55s cubic-bezier(.3,1.6,.5,1)}
+@keyframes cozy-receipt-bounce{from{transform:translateY(-14px) scale(.7);opacity:0}to{transform:none;opacity:1}}
+.recharge-history{border:2px dashed #a8946d;border-radius:3px;background:#f4ecd8aa}
+.recharge-history summary{color:#594536}
+.recharge-history .is-good{border-radius:2px}
+.recharge-history .is-declined{border-radius:2px}
+.recharge-dialog>footer{border-top:2px dashed #c9b892;padding-top:10px}
+/* 家园抽卡池:包裹箱卡面 + 金枪鱼池暖金渐变 */
+.pool-card{border:2px solid #594536;border-radius:3px;background:linear-gradient(#f6edd8,#e9dbb9);box-shadow:inset 0 2px 0 #fff9e8,3px 3px 0 #24312e55;padding:13px 15px}
+.pool-card.pool-tuna{background:linear-gradient(150deg,#ffe9b8,#f2d492 60%,#e2bb72);box-shadow:inset 0 2px 0 #fff7d6,inset 0 -3px 0 #c69b4e,3px 3px 0 #24312e55}
+.pool-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px}
+.pool-head b{font-size:14px;color:#59431f}
+.pool-head span{font-size:10px;color:#62695d}
+.pool-card button{width:100%}
+.pool-card .pool-recharge{margin-top:8px}
+/* 花房修缮卡:工程木牌 + 四段像素进度槽(亮面填充) */
+.renovation-card{margin-top:4px;padding:11px 13px;border:2px solid #594536;border-radius:3px;background:linear-gradient(150deg,#dce7d2,#e6d8b4 70%,#e2cfa4);box-shadow:inset 0 2px 0 #f4f0da,3px 3px 0 #24312e55}
+.renovation-title{margin:2px 0 7px;font-size:15px;color:#59431f}
+.renovation-track{display:flex;gap:4px;margin-bottom:8px}
+.renovation-seg{flex:1;height:10px;border:2px solid #594536;border-radius:2px;background:#cbbf9f;box-shadow:inset 0 2px 0 #00000022}
+.renovation-seg.done{background:linear-gradient(90deg,#f4d689,#e2a03f);box-shadow:inset 0 2px 0 #fff3c4,inset 0 -2px 0 #a5741f}
+.renovation-hint{margin:0 0 8px;font-size:13px;line-height:1.5}
+.renovation-next{margin:0 0 4px;font-size:13px;line-height:1.5;color:#393a35}
+.renovation-cost-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.renovation-cost-label{font-size:13px}
+.renovation-progress{flex-basis:100%;display:block;height:8px;border:2px solid #594536;border-radius:2px;background:#cbbf9f;overflow:hidden}
+.renovation-progress>span{display:block;height:100%;background:linear-gradient(90deg,#8fbf9f,#5f9d74)}
+.renovation-done{margin:0;font-size:13px}
+/* 伙伴絮语:羊皮纸 + 金边 */
+.cat-chatter-box{margin:10px 0;padding:11px 14px;border:2px solid #a8946d;border-left:4px solid #c59a55;border-radius:3px;background:#f4ecd8;font-size:13px;color:#393a35;box-shadow:inset 0 2px 0 #fdf7e4,2px 2px 0 #24312e33}
+.cat-chatter-head{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-weight:700;color:#925140}
+.cat-chatter-sub{font-size:11px;color:#62695d;font-weight:400}
+.cat-chatter-item{margin-top:6px;line-height:1.5}
+.cat-chatter-item:first-of-type{margin-top:0}
+.cat-chatter-item strong{color:#4f6e78}
+/* 线索提示卡 / 庆典卡 / 按钮排 */
+.clue-card{margin-top:8px;padding:11px 13px;border:2px dashed #b08a3e;border-radius:3px;background:#f2e3bd;box-shadow:2px 2px 0 #24312e33}
+.clue-card-title{font-size:13px;color:#925140;font-weight:700;margin-bottom:5px}
+.clue-card-hint{font-size:12px;color:#62695d;margin-bottom:8px;line-height:1.45}
+.celebration-card{margin-top:10px;padding:12px 16px;border:2px solid #b08a3e;border-radius:3px;background:linear-gradient(150deg,#ffe9a8,#f4c877 60%,#e8ae4e);box-shadow:inset 0 2px 0 #fff7d6,0 0 0 3px #c59a5566,4px 4px 0 #24312e55}
+.celebration-title{font-weight:700;color:#6e4712;font-size:15px;margin-bottom:5px}
+.celebration-text{font-size:13px;color:#59431f;line-height:1.55}
+.home-action-row{display:flex;gap:8px;flex-wrap:wrap}
+.home-action-gap{margin-top:8px}
+.home-panel .renovation-card .eyebrow,.home-panel .renovation-card h3{color:#59431f}
+@media(prefers-reduced-motion:reduce){.game-modal,.map-stop.current,.pack-card.selected,.receipt-art{animation:none}}

@@ -81,23 +81,23 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     {state.flags.includes('momo_joined') && <GreenhouseLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('alley_rescued') && <TunnelLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('alley_rescued') && <FinaleLoadout disabled={disabled} onCommand={onCommand}/>}
-    <div className="renovation-card" style={{marginTop: '4px', padding: '10px 12px', border: '1px solid var(--line-subtle, #3d4a44)', borderRadius: '12px', background: 'linear-gradient(135deg, rgba(122, 156, 130, .12), rgba(244, 214, 137, .10))'}}>
+    <div className="renovation-card">
       <span className="eyebrow">GREENHOUSE RENOVATION</span>
-      <h3 style={{margin: '2px 0 6px', fontSize: '15px'}}>🛠️ 花房修缮 · 阶段 {stage}/4「{stageTitles[stage - 1]}」</h3>
-      <div style={{display: 'flex', gap: '4px', marginBottom: '8px'}} aria-label="修缮进度">
-        {stageTitles.map((title, index) => <div key={title} title={title} style={{flex: 1, height: '8px', borderRadius: '4px', background: index < stage ? 'linear-gradient(90deg, #f4d689, #e2a03f)' : 'var(--line-subtle, #3d4a44)', opacity: index < stage ? 1 : 0.5}}/>)}
+      <h3 className="renovation-title">🛠️ 花房修缮 · 阶段 {stage}/4「{stageTitles[stage - 1]}」</h3>
+      <div className="renovation-track" aria-label="修缮进度">
+        {stageTitles.map((title, index) => <div key={title} title={title} className={`renovation-seg ${index < stage ? 'done' : ''}`}/>)}
       </div>
-      <p style={{margin: '0 0 8px', fontSize: '13px', lineHeight: 1.5}} className="muted">{stageHints[stage - 1]}</p>
+      <p className="renovation-hint muted">{stageHints[stage - 1]}</p>
       {nextRenovation ? <>
-        <p style={{margin: '0 0 4px', fontSize: '13px', lineHeight: 1.5}}><b>下一工程：</b>{nextRenovation.name} —— {nextRenovation.description}</p>
-        <div style={{display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px'}}>
-          <span className="muted" style={{fontSize: '13px'}}>所需：◆ 材料 ×{nextMaterial}{nextStamp > 0 ? ` ＋ ✦ 邮票 ×${nextStamp}` : ''}（现有 ◆{material} ✦{stamp}）</span>
-          {nextMaterial > 0 && <span style={{flexBasis: '100%', height: '6px', borderRadius: '3px', background: 'var(--line-subtle, #3d4a44)', overflow: 'hidden'}}><span style={{display: 'block', width: `${Math.min(100, Math.round(material / nextMaterial * 100))}%`, height: '100%', background: 'linear-gradient(90deg, #8fbf9f, #5f9d74)'}}/></span>}
+        <p className="renovation-next"><b>下一工程：</b>{nextRenovation.name} —— {nextRenovation.description}</p>
+        <div className="renovation-cost-row">
+          <span className="muted renovation-cost-label">所需：◆ 材料 ×{nextMaterial}{nextStamp > 0 ? ` ＋ ✦ 邮票 ×${nextStamp}` : ''}（现有 ◆{material} ✦{stamp}）</span>
+          {nextMaterial > 0 && <span className="renovation-progress"><span style={{width: `${Math.min(100, Math.round(material / nextMaterial * 100))}%`}}/></span>}
         </div>
         <button disabled={disabled || !affordable} data-sound="pickup" onClick={() => {playSound('pickup');onCommand({type: 'REPAIR_HOME'});}}>{affordable ? `🔨 动手修缮：${nextRenovation.name}` : `🔨 材料还不够（◆${material}/${nextMaterial}）`}</button>
       </> : kingdomFounded
-        ? <p style={{margin: 0, fontSize: '13px'}} className="muted">🎉 修缮全部完成！暖黄串灯下的流浪猫王国正热闹着，街坊们常来送水碗和猫粮。</p>
-        : <p style={{margin: 0, fontSize: '13px'}} className="muted">花房已经修缮完毕，点亮终章后，这里会成为真正的流浪猫王国。</p>}
+        ? <p className="renovation-done muted">🎉 修缮全部完成！暖黄串灯下的流浪猫王国正热闹着，街坊们常来送水碗和猫粮。</p>
+        : <p className="renovation-done muted">花房已经修缮完毕，点亮终章后，这里会成为真正的流浪猫王国。</p>}
     </div>
     <label className="select-label">选择家具<select value={furniture} onChange={e => setSelected(e.target.value)} disabled={disabled}>{state.furniture.map(id => <option key={id} value={id}>{name(id)}</option>)}</select></label>
     <div className="slot-list">{catalog.slots.map(slot => {const locked = lockedSlots.has(slot.id);return <button className="secondary" key={slot.id} disabled={disabled || !furniture || locked} onClick={() => onCommand({type: 'PLACE_FURNITURE', furnitureId: furniture, slotId: slot.id})}>{locked ? '🔒 ' : ''}{slot.name}<small>{locked ? '完成对应修缮后解锁' : state.placements[slot.id] ? name(state.placements[slot.id]) : '还空着，放一件家具'}</small></button>;})}</div>
@@ -110,14 +110,14 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     </div>;})}
     <p className="home-result unpack-flash" key={`${state.revision}:${state.lastResult.message}`} role="status">{state.lastResult.message}</p>
     {CHATTER_CALLBACKS.some(c => state.flags.includes(c.flag)) && (
-      <div className="cat-chatter-box" style={{margin: '10px 0', padding: '10px 14px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '10px', borderLeft: '3px solid #ffb300', fontSize: '13px'}}>
-        <div style={{fontWeight: 'bold', color: '#ffb300', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px'}}>
+      <div className="cat-chatter-box">
+        <div className="cat-chatter-head">
           <span>🐾 伙伴日常絮语</span>
-          <span style={{fontSize: '11px', color: 'var(--text-subtle, #a0aec0)', fontWeight: 'normal'}}>（世界记住了你的善意与选择）</span>
+          <span className="cat-chatter-sub">（世界记住了你的善意与选择）</span>
         </div>
         {CHATTER_CALLBACKS.filter(c => state.flags.includes(c.flag)).map((c, i) => (
-          <div key={i} style={{marginTop: i > 0 ? '6px' : '0', color: 'var(--text-normal, #e2e8f0)', lineHeight: '1.4'}}>
-            <strong style={{color: '#90cdf4'}}>{c.speaker}</strong>：{c.text}
+          <div key={i} className="cat-chatter-item">
+            <strong>{c.speaker}</strong>：{c.text}
           </div>
         ))}
       </div>
@@ -128,7 +128,7 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
           🌙 启程：第二章《午夜集市》 →
         </button>
       ) : (
-        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+        <div className="home-action-row">
           <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'market'})}>
             🌙 前往午夜集市 →
           </button>
@@ -140,11 +140,11 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     )}
     {(state.flags.includes('chapter_2_started') || state.flags.includes('market_unlocked')) && (
       !state.flags.includes('chapter_3_started') ? (
-        <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'greenhouse_intro_1'})}>
+        <button className="primary-action-btn home-action-gap" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'greenhouse_intro_1'})}>
           🌿 启程：第三章《废弃花房》 →
         </button>
       ) : (
-        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
+        <div className="home-action-row home-action-gap">
           <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'greenhouse_intro_1'})}>
             📖 重温第三章剧情
           </button>
@@ -153,11 +153,11 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     )}
     {state.flags.includes('greenhouse_fortified') && (
       !state.flags.includes('chapter_4_started') ? (
-        <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'rescue_intro_1'})}>
+        <button className="primary-action-btn home-action-gap" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'rescue_intro_1'})}>
           🐾 启程：第四章《消失的猫咪们》 →
         </button>
       ) : (
-        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
+        <div className="home-action-row home-action-gap">
           <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'tunnel'})}>
             🐾 前往地下暗道 →
           </button>
@@ -170,14 +170,14 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     {(state.flags.includes('chapter_4_started') || state.flags.includes('tunnel_explored')) && (
       !state.flags.includes('finale_started') ? (
         (state.inventory.clue ?? 0) < 3 ? (
-          <div style={{marginTop: '8px', padding: '10px 12px', background: 'rgba(255, 180, 0, 0.08)', borderRadius: '8px', border: '1px dashed #e2a03f'}}>
-            <div style={{fontSize: '13px', color: '#ffb300', fontWeight: 'bold', marginBottom: '4px'}}>
+          <div className="clue-card home-action-gap">
+            <div className="clue-card-title">
               🔍 废弃大仓库线索不足（当前收集：{state.inventory.clue ?? 0} / 3）
             </div>
-            <div style={{fontSize: '12px', color: 'var(--text-subtle, #a0aec0)', marginBottom: '8px', lineHeight: '1.4'}}>
+            <div className="clue-card-hint">
               前往总仓库需至少 3 条线索。线索不足无法锁定据点，大家决定先回集市多打听些情报再行动。
             </div>
-            <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+            <div className="home-action-row">
               <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_clue_insufficient'})}>
                 💬 听阿策分析线索 →
               </button>
@@ -187,12 +187,12 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
             </div>
           </div>
         ) : (
-          <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_intro_1'})}>
+          <button className="primary-action-btn home-action-gap" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_intro_1'})}>
             🌟 启程：终章《点亮流浪猫王国》（线索已齐备 {state.inventory.clue ?? 3}/3） →
           </button>
         )
       ) : (
-        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
+        <div className="home-action-row home-action-gap">
           <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_intro_1'})}>
             📖 重温终章大结局
           </button>
@@ -200,14 +200,14 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
       )
     )}
     {state.flags.includes('finale_completed') && (
-      <div className="celebration-card" style={{marginTop: '12px', padding: '12px 16px', background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.15))', border: '1px solid #e2a03f', borderRadius: '12px'}}>
-        <div style={{fontWeight: 'bold', color: '#ffb300', fontSize: '15px', marginBottom: '4px'}}>👑 全剧终 · 流浪猫王国落成！</div>
-        <div style={{fontSize: '13px', color: 'var(--text-subtle, #a0aec0)', lineHeight: '1.5'}}>
+      <div className="celebration-card home-action-gap">
+        <div className="celebration-title">👑 全剧终 · 流浪猫王国落成！</div>
+        <div className="celebration-text">
           喵喵与伙伴们用光明驱散了废弃仓库的所有黑影，救回了全部被困猫咪。花房如今挂起暖黄串灯、搭起纸箱城堡，成为了温暖坚固的流浪猫王国！喵喵回到主人身边吃到了金枪鱼，也每天都会回来和大家一起守护王国！
         </div>
       </div>
     )}
-    <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
+    <div className="home-action-row home-action-gap">
       <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE'})}>再去小巷走走 →</button>
       <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'chapter1_intro'})}>📖 重温第一章剧情</button>
     </div>
