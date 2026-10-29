@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode} from 'react';
+import {useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode} from 'react';
 import type {Catalog, GameCommand, GameState} from '../contracts';
 import type {Direction} from '../adapters/platform/input';
 import type {CatBreed} from '../adapters/canvas/pixelCat';
@@ -99,24 +99,55 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
     window.addEventListener('pointerdown', dismiss);
     return () => {window.removeEventListener('pointerdown', dismiss);};
   }, [topExpanded, state.phase, onToggleTopbar]);
-  // 折叠小钮可自由拖拽：松手后吸附最近的角/边中点（右上锚点让开小地图），位置记忆在本地。
-  const [toggleAnchor, setToggleAnchor] = useState(() => {try {return localStorage.getItem('stray-kitty.hud.topbarToggle') ?? 'top-center';} catch {return 'top-center';}});
+  // 折叠小钮可自由拖拽：松手后吸附到最近的屏幕边（上/下/左/右），沿边位置随手指保留，记忆在本地。
+  type ToggleEdge = 'top' | 'bottom' | 'left' | 'right';
+  interface ToggleAnchor {edge: ToggleEdge; pos: number}
+  const clampRange = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+  const legacyAnchor = (id: string): ToggleAnchor => {
+    const vw = window.innerWidth;
+    const map: Record<string, ToggleAnchor> = {
+      'top-left': {edge: 'top', pos: 60}, 'top-center': {edge: 'top', pos: vw / 2}, 'top-right': {edge: 'top', pos: vw - 186},
+      'bottom-left': {edge: 'bottom', pos: 60}, 'bottom-center': {edge: 'bottom', pos: vw / 2}, 'bottom-right': {edge: 'bottom', pos: vw - 60},
+    };
+    return map[id] ?? {edge: 'top', pos: vw / 2};
+  };
+  const [toggleAnchor, setToggleAnchor] = useState<ToggleAnchor>(() => {
+    try {
+      const raw = localStorage.getItem('stray-kitty.hud.topbarToggle');
+      if (!raw) return {edge: 'top', pos: window.innerWidth / 2};
+      const parsed = JSON.parse(raw) as ToggleAnchor;
+      if (parsed && ['top', 'bottom', 'left', 'right'].includes(parsed.edge) && typeof parsed.pos === 'number') return parsed;
+      return legacyAnchor(raw);
+    } catch {return {edge: 'top', pos: window.innerWidth / 2};}
+  });
   const [toggleDrag, setToggleDrag] = useState<{x: number; y: number} | null>(null);
   const toggleGrab = useRef<{x: number; y: number; moved: boolean} | null>(null);
   const snapToggle = (x: number, y: number) => {
     const vw = window.innerWidth, vh = window.innerHeight;
-    const anchors: Record<string, [number, number]> = {
-      'top-left': [46, 30], 'top-center': [vw / 2, 28], 'top-right': [vw - 186, 30],
-      'bottom-left': [46, vh - 34], 'bottom-center': [vw / 2, vh - 30], 'bottom-right': [vw - 46, vh - 34],
-    };
-    let best = 'top-center', bestDistance = Infinity;
-    for (const [id, [ax, ay]] of Object.entries(anchors)) {
-      const distance = Math.hypot(ax - x, ay - y);
-      if (distance < bestDistance) {bestDistance = distance;best = id;}
-    }
-    setToggleAnchor(best);
-    try {localStorage.setItem('stray-kitty.hud.topbarToggle', best);} catch {/* 隐私模式下跳过记忆 */}
+    // 四条边取最近者：上下边沿保留水平落点，左右边沿保留垂直落点（钳在安全范围内）。
+    const distances: Record<ToggleEdge, number> = {top: y, bottom: vh - y, left: x, right: vw - x};
+    const edge = (Object.entries(distances) as [ToggleEdge, number][]).sort((a, b) => a[1] - b[1])[0][0];
+    const next: ToggleAnchor = edge === 'top' || edge === 'bottom'
+      ? {edge, pos: clampRange(x, 64, vw - 64)}
+      : {edge, pos: clampRange(y, 44, vh - 44)};
+    setToggleAnchor(next);
+    try {localStorage.setItem('stray-kitty.hud.topbarToggle', JSON.stringify(next));} catch {/* 隐私模式下跳过记忆 */}
   };
+  // 窗口尺寸变化后重算静止落点（否则吸在右/下边缘的小钮在窗口缩小后可能跑出屏幕）。
+  const [viewportTick, setViewportTick] = useState(0);
+  useEffect(() => {
+    const onResize = () => setViewportTick(tick => tick + 1);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  // 静止态的落点：按边换算成 left/top（钮宽约 64、高约 33，用中心坐标减半居中）。
+  const toggleRestStyle = useMemo((): CSSProperties => {
+    const vw = window.innerWidth, vh = window.innerHeight, {edge, pos} = toggleAnchor;
+    if (edge === 'top') return {left: clampRange(pos - 32, 10, vw - 74), top: 8};
+    if (edge === 'bottom') return {left: clampRange(pos - 32, 10, vw - 74), top: vh - 46};
+    if (edge === 'left') return {left: 12, top: clampRange(pos - 17, 8, vh - 52)};
+    return {left: vw - 76, top: clampRange(pos - 17, 8, vh - 52)};
+  }, [toggleAnchor, viewportTick]);
   const onTogglePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
     toggleGrab.current = {x: event.clientX, y: event.clientY, moved: false};
@@ -138,8 +169,8 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
   };
   return <div className="app-shell" data-phase={state.phase}>
     <button type="button"
-      className={`topbar-toggle${topExpanded ? ' expanded' : ''} topbar-toggle-${toggleAnchor}${toggleDrag ? ' dragging' : ''}`}
-      style={toggleDrag ? {left: toggleDrag.x, top: toggleDrag.y} : undefined}
+      className={`topbar-toggle${topExpanded ? ' expanded' : ''}${toggleDrag ? ' dragging' : ''}`}
+      style={toggleDrag ? {left: toggleDrag.x - 32, top: toggleDrag.y - 17} : toggleRestStyle}
       aria-expanded={topExpanded} aria-label={topExpanded ? '收起顶部信息栏' : '展开顶部信息栏（可拖拽）'}
       onPointerDown={onTogglePointerDown} onPointerMove={onTogglePointerMove} onPointerUp={onTogglePointerUp} onPointerCancel={onTogglePointerUp}>
       <span className="topbar-toggle-paw" aria-hidden="true">ฅ</span><span className="topbar-toggle-chev" aria-hidden="true">▾</span>

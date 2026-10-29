@@ -15,6 +15,12 @@ const speed = 96;
 const cameraSize = {width: 530, height: 325};
 const squeezeSpeed = 58;
 const CLIMB_DURATION = 0.55;
+// —— 巷尾的老黄：比通用标记更宽的靠近提示半径；首次靠近的一次性氛围字幕与交互欢呼（纯表现层）。 ——
+const DOG_FRIEND_ID = 'alley_dog_friend_point';
+const DOG_FRIEND_RADIUS = 50;
+const DOG_FRIEND_STORY_KEY = 'stray-kitty.story.laoHuang';
+const DOG_FRIEND_STORY_MS = 6200;
+const DOG_FRIEND_STORY_TEXT = '老黄趴在巷尾，看了你一眼……尾巴在湿漉漉的石板上轻轻拍了两下。';
 type ZoneCheckResult = 'checking' | 'accepted' | 'failed';
 interface DebugState {phase: string; eventId?: string; pendingEventSource?: string; randomEligible?: boolean}
 
@@ -49,6 +55,11 @@ export class IntegratedRainyAlley {
   // 顶栏展开时小地图下移避让的当前/目标位移（canvas 逻辑像素，每帧向目标缓动）。
   private minimapShift = 0;
   private minimapShiftTarget = 0;
+  // —— 老黄表现层：交互欢呼（猫头顶气泡 + 音符上飘）与一次性剧情字幕的时钟。 ——
+  private cheerStart = 0;
+  private cheerUntil = 0;
+  private storyUntil = 0;
+  private storySeen = false;
 
   reset(flags: readonly string[] = [], battleReturn?: Point) {
     this.gateOpen = flags.includes('alley_rescued');
@@ -71,6 +82,15 @@ export class IntegratedRainyAlley {
   /** 滚轮/加减键调整取景缩放；只影响画面取景，不改变世界坐标、碰撞与点击寻路（click 反解共用 imageView）。 */
   adjustZoom(delta: number) {this.zoomTarget = Math.min(1.75, Math.max(0.8, this.zoomTarget + delta));}
   nearestInteraction() {return this.nearby;}
+  /** E 交互老黄后的欢呼（纯表现层）：猫头顶冒出小气泡、像素音符错峰上飘，狗摇尾巴抬头，约 3 秒。 */
+  cheer() {
+    const now = performance.now();
+    if (now < this.cheerUntil) return; // 欢呼进行中不重置，音符动画保持连贯
+    this.cheerStart = now;
+    this.cheerUntil = now + 3000;
+  }
+  /** 欢呼是否进行中（进行中让出 [E] 提示气泡，避免两层气泡叠在一起）。 */
+  private cheering() {return performance.now() < this.cheerUntil;}
   pauseForEvent() {this.path = []; this.destination = null;}
   squeezePromptActive() {return this.squeezeTargetY === null && this.squeezeDirection() !== 0;}
   tryStartSqueeze() {
@@ -192,6 +212,7 @@ export class IntegratedRainyAlley {
     context.translate(registration.tx, registration.ty);
     context.scale(registration.sx, registration.sy);
     this.drawSqueezeOverlay(context);
+    this.drawDogFriend(context, flags);
     this.drawMarkers(context, flags);
     context.save();
     context.translate(this.position.x, this.position.y);
@@ -209,13 +230,150 @@ export class IntegratedRainyAlley {
     if (this.debug) this.drawDebug(context, flags, debugState);
     context.restore();
     this.drawInteractBubble(context, width, height);
+    this.drawCheer(context, width, height);
+    this.drawStoryCaption(context, width, height);
     this.drawMinimap(context, width, height, flags);
+  }
+
+  /** 巷尾的老黄：趴卧的黄色老狗（纯像素方块拼出），慢呼吸、垂耳、口鼻有白毛；靠近或交互时尾巴摇得欢。 */
+  private drawDogFriend(context: CanvasRenderingContext2D, _flags: readonly string[]) {
+    const dog = rainyAlleySource.objects.fixed.find(object => object.id === DOG_FRIEND_ID);
+    if (!dog) return;
+    const near = Math.hypot(this.position.x - dog.x, this.position.y - dog.y) <= DOG_FRIEND_RADIUS;
+    const excited = near || this.cheering();
+    const breathe = Math.sin(this.now / (excited ? 340 : 760));
+    const wagSpeed = excited ? 900 : 2100;
+    const wag = Math.sin(this.now / wagSpeed * Math.PI * 2);
+    context.save();
+    context.translate(dog.x, dog.y);
+    // 落地投影：湿石板上的椭圆暗斑
+    context.fillStyle = 'rgba(8,16,20,.4)';
+    context.beginPath(); context.ellipse(0, 1.5, 17, 4.4, 0, 0, Math.PI * 2); context.fill();
+    const px = (x: number, y: number, w: number, h: number, color: string) => {context.fillStyle = color; context.fillRect(x, y, w, h);};
+    // 身体（趴卧，底边贴地 y=0；呼吸只起伏背部 0.6px）
+    const bodyLift = breathe * 0.6;
+    px(-13, -10 + bodyLift, 24, 9, '#d7a44a');          // 主面
+    px(-13, -10 + bodyLift, 24, 2.4, '#ecc268');          // 背部受光
+    px(-13, -2, 24, 2, '#b9893b');                        // 腹侧暗面
+    px(-11, -12.4 + bodyLift, 19, 2.4, '#c2924a'); // 背脊
+    // 前爪（朝左伸出）
+    px(-17, -3.4, 5.5, 3.4, '#d7a44a'); px(-17, -3.4, 5.5, 1.2, '#ecc268');
+    px(9, -3, 5, 3, '#b9893b');                            // 后腿
+    // 尾巴（右端两节，绕根部摆动）
+    context.save();
+    context.translate(12.5, -6 + bodyLift);
+    context.rotate(wag * (excited ? 0.5 : 0.22));
+    px(0, -1.2, 6.5, 2.6, '#c9963f'); px(6.5, -1.6, 4.5, 2.2, '#ecc268');
+    context.restore();
+    // 头（左端略抬起，交互时抬头 1.5px + 睁眼）
+    const headLift = this.cheering() ? 3.2 : 0;
+    context.save();
+    context.translate(-14, -9.5 + bodyLift * 0.7 - headLift);
+    px(-4, -4.5, 10, 8.4, '#d7a44a');                      // 颅顶
+    px(-4, -4.5, 10, 2, '#ecc268');
+    px(-6.5, -1.8, 7, 4.6, '#e5c98f');                     // 口鼻
+    px(-7.4, -0.6, 1.8, 2, '#3a2c1d');                     // 鼻头
+    px(-2.5, -1.4, 3.6, 1.4, '#f2ead6');                   // 口鼻白毛（老狗）
+    px(-9.8, -3.6, 4.2, 6.4, '#8a6a3c');                   // 垂耳
+    px(-9.8, -3.6, 1.4, 6.4, '#6f5330');
+    if (excited) {px(-1.2, -2.4, 1.6, 1.6, '#221609');}    // 睁眼：黑亮小眼
+    else {px(-1.6, -2, 2.6, 1, '#8a6a3c');}                // 平时眯眼打盹
+    px(0.4, -4.9, 1.4, 1.2, '#f2ead6');                    // 眉间白毛
+    context.restore();
+    // 欢呼时从狗头顶也冒一点小心心/音符提示“它很开心”
+    if (this.cheering()) {
+      const bob = Math.sin(this.now / 260) * 1.2;
+      context.font = '700 9px system-ui, sans-serif';
+      context.fillStyle = '#ffe9a8';
+      context.textAlign = 'center'; context.textBaseline = 'middle';
+      context.fillText('♥', -10, -22 + bob);
+    }
+    context.restore();
+  }
+
+  /** E 交互老黄后的欢呼气泡与上飘音符（屏幕坐标层，随猫移动）：气泡 1.4s 后隐去，音符错峰升起淡出。 */
+  private drawCheer(context: CanvasRenderingContext2D, width: number, height: number) {
+    if (!this.cheering()) return;
+    const elapsed = performance.now() - this.cheerStart;
+    const view = this.imageView(width, height);
+    const registration = rainyAlleyRegistration;
+    const catX = view.padX + (registration.tx + this.position.x * registration.sx - view.x) * view.scale;
+    const catY = view.padY + (registration.ty + this.position.y * registration.sy - view.y) * view.scale;
+    const bob = Math.sin(this.now / 300) * 2;
+    context.save();
+    // 猫头顶的米色小气泡（前 1.5s 显示，随后让位给纯音符）
+    if (elapsed < 1500) {
+      const bubbleAlpha = Math.min(1, (1500 - elapsed) / 320);
+      context.globalAlpha = bubbleAlpha;
+      context.font = '700 12px system-ui, sans-serif';
+      const text = '汪！♪';
+      const textWidth = context.measureText(text).width;
+      const bubbleW = textWidth + 20, bubbleH = 22;
+      const bubbleX = catX + 16, bubbleY = catY - 58 + bob;
+      context.shadowColor = 'rgba(6,14,18,.5)'; context.shadowBlur = 5; context.shadowOffsetY = 2;
+      context.fillStyle = '#f4e9cd';
+      this.roundRectPath(context, bubbleX, bubbleY, bubbleW, bubbleH, 6); context.fill();
+      context.beginPath();
+      context.moveTo(bubbleX + 3, bubbleY + bubbleH - 1);
+      context.lineTo(bubbleX + 10, bubbleY + bubbleH - 1);
+      context.lineTo(bubbleX + 1, bubbleY + bubbleH + 6);
+      context.closePath(); context.fill();
+      context.shadowBlur = 0; context.shadowOffsetY = 0;
+      context.strokeStyle = '#8a6a3c'; context.lineWidth = 1.4;
+      this.roundRectPath(context, bubbleX, bubbleY, bubbleW, bubbleH, 6); context.stroke();
+      context.fillStyle = '#7a4a22';
+      context.textAlign = 'center'; context.textBaseline = 'middle';
+      context.fillText(text, bubbleX + bubbleW / 2, bubbleY + bubbleH / 2 + 0.5);
+      context.globalAlpha = 1;
+    }
+    // 像素音符：4 个错峰上飘（♪/♫ 交替），左右轻摆、逐渐淡出
+    context.font = '800 13px system-ui, sans-serif';
+    context.textAlign = 'center'; context.textBaseline = 'middle';
+    for (let index = 0; index < 4; index++) {
+      const life = (elapsed - 240 - index * 300) / 1700;
+      if (life <= 0 || life >= 1) continue;
+      const ease = 1 - (1 - life) * (1 - life);
+      const noteX = catX + 22 + Math.sin(life * Math.PI * 2.4 + index * 1.7) * 7 + index * 5;
+      const noteY = catY - 46 - ease * 46;
+      context.globalAlpha = (1 - life) * 0.95;
+      context.fillStyle = index % 2 ? '#ffd76e' : '#ffe9a8';
+      context.fillText(index % 2 ? '♫' : '♪', noteX, noteY);
+    }
+    context.globalAlpha = 1;
+    context.restore();
+  }
+
+  /** 一次性剧情字幕：底部居中的深色圆角条 + 米白字 + 暖金细边，头尾 0.5s 淡入淡出（星露谷过场感）。 */
+  private drawStoryCaption(context: CanvasRenderingContext2D, width: number, height: number) {
+    if (!this.storyUntil) return;
+    const remain = this.storyUntil - performance.now();
+    if (remain <= 0) {this.storyUntil = 0; return;}
+    const elapsed = DOG_FRIEND_STORY_MS - remain;
+    const alpha = Math.min(1, Math.min(elapsed / 480, remain / 650));
+    const label = `🐾 ${DOG_FRIEND_STORY_TEXT}`;
+    context.save();
+    context.globalAlpha = alpha;
+    context.font = '700 13px system-ui, sans-serif';
+    const textWidth = context.measureText(label).width;
+    const chipWidth = Math.min(textWidth + 30, width - 24), chipHeight = 30;
+    const chipX = (width - chipWidth) / 2, chipY = height - chipHeight - 14;
+    context.shadowColor = 'rgba(6,14,18,.55)'; context.shadowBlur = 7; context.shadowOffsetY = 2;
+    context.fillStyle = 'rgba(13,24,28,.88)';
+    this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 7); context.fill();
+    context.shadowBlur = 0; context.shadowOffsetY = 0;
+    context.strokeStyle = 'rgba(255,222,140,.55)'; context.lineWidth = 1.4;
+    this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 7); context.stroke();
+    context.fillStyle = '#f7f2df';
+    context.textAlign = 'center'; context.textBaseline = 'middle';
+    context.fillText(label, width / 2, chipY + chipHeight / 2 + 0.5, chipWidth - 22);
+    context.restore();
   }
 
   /** 猫头顶 [E] 交互气泡：靠近可交互物时浮现，小尖角指向猫、随猫移动并轻微呼吸浮动。屏幕坐标绘制，字号不受世界缩放影响。 */
   private drawInteractBubble(context: CanvasRenderingContext2D, width: number, height: number) {
     const near = this.nearby;
     if (!near) return;
+    if (this.cheering()) return; // 欢呼气泡进行中让位，避免两层气泡叠在猫头顶
     const view = this.imageView(width, height);
     const registration = rainyAlleyRegistration;
     const catX = view.padX + (registration.tx + this.position.x * registration.sx - view.x) * view.scale;
@@ -260,12 +418,26 @@ export class IntegratedRainyAlley {
   }
 
   private updateNearby(flags: readonly string[]) {
-    const radius = rainyAlleySource.objects.interactionRadius;
+    const baseRadius = rainyAlleySource.objects.interactionRadius;
+    const dogFriend = rainyAlleySource.objects.fixed.find(object => object.id === DOG_FRIEND_ID);
     this.nearby = rainyAlleySource.objects.fixed
       .filter(object => rainyAlleyObjectEligible(object, flags))
       .map(object => ({object, distance: Math.hypot(this.position.x - object.x, this.position.y - object.y)}))
-      .filter(candidate => candidate.distance <= radius)
+      // 老黄的靠近提示半径更宽（趴在巷尾，隔着半条巷子就该注意到它）。
+      .filter(candidate => candidate.distance <= (candidate.object.id === DOG_FRIEND_ID ? DOG_FRIEND_RADIUS : baseRadius))
       .sort((a, b) => a.distance - b.distance)[0]?.object ?? null;
+    if (dogFriend && Math.hypot(this.position.x - dogFriend.x, this.position.y - dogFriend.y) <= DOG_FRIEND_RADIUS) this.tellDogStoryOnce();
+  }
+
+  /** 首次靠近老黄的一次性氛围字幕；localStorage 记录跨会话防重复（约 6 秒后自然淡出）。 */
+  private tellDogStoryOnce() {
+    if (this.storySeen) return;
+    this.storySeen = true;
+    try {
+      if (localStorage.getItem(DOG_FRIEND_STORY_KEY)) return;
+      localStorage.setItem(DOG_FRIEND_STORY_KEY, '1');
+    } catch {/* 隐私模式下跳过记忆，本次会话只讲一遍 */}
+    this.storyUntil = performance.now() + DOG_FRIEND_STORY_MS;
   }
 
   private updateZones(_flags: readonly string[], onZoneEntry: (zoneId: string) => Promise<boolean>) {
@@ -387,8 +559,9 @@ export class IntegratedRainyAlley {
         context.beginPath(); context.moveTo(3, 3); context.lineTo(7.6, 7.6); context.stroke();
         context.strokeStyle = 'rgba(255,255,255,.85)'; context.lineWidth = 1.3;
         context.beginPath(); context.arc(-3.3, -3.3, breathe * 0.46, Math.PI * 0.95, Math.PI * 1.45); context.stroke();
-      } else {
+      } else if (object.id !== DOG_FRIEND_ID) {
         // 事件/拾取/剧情 = 闪烁的像素四芒星（纯方块拼出，保持像素气质）。
+        // 老黄例外：它有像素实体狗与呼吸/摇尾动画，四芒星叠在狗身上会杂乱，只留淡光晕示意可交互。
         const arm = 5.5 + pulse * 4.5;
         context.shadowColor = 'rgba(14,30,34,.85)'; context.shadowBlur = 3;
         context.fillStyle = kind.core;

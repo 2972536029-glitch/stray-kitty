@@ -107,7 +107,11 @@ export class DemoScene {
         else if (Math.hypot(this.x - 580, this.y - 270) < 78) this.onInteract('market_pigeon_perch');
       } else if (this.state?.mapId === 'alley') {
         const interaction = this.rainyAlley.nearestInteraction();
-        if (interaction) this.onInteract(interaction.id);
+        if (interaction) {
+          // 老黄：E 交互除了走原有事件卡，再叠加一段猫头顶气泡 + 音符上飘的欢呼（纯表现层）。
+          if (interaction.id === 'alley_dog_friend_point') this.rainyAlley.cheer();
+          this.onInteract(interaction.id);
+        }
       }
     }
   };

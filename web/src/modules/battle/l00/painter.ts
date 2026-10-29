@@ -2,6 +2,7 @@ import type {CatId, CombatState} from './state';
 import {COMMANDER_POSITION, SPAWN_POINTS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, getSkillTargetCells} from './ranges';
 import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
+import {battleReducedMotion, drawDamagePop, drawHitBurst, drawShatter} from '../battleFx';
 
 export type CatKind = CatId | 'advisor';
 export type CatPose = 'idle' | 'attack' | 'hurt' | 'sleep';
@@ -151,11 +152,24 @@ export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selec
     blocks(ctx,SCENE_INK.gold,[[x-7,y-2,14,4],[x-2,y-7,4,14]]);pixel(ctx,x-2,y-2,4,4,'#fff6c6');
   }
   for(const effect of state.effects){
+    const progress=1-effect.ttl/effect.maxTtl;
     if(effect.kind==='skill-area'){
-      const progress=1-effect.ttl/effect.maxTtl,x=(effect.x+.5)*100,y=(effect.y+.5)*100;
+      const x=(effect.x+.5)*100,y=(effect.y+.5)*100;
       ctx.save();ctx.globalAlpha=1-progress;ctx.fillStyle='#f3dc974f';ctx.fillRect(effect.x*100+5,effect.y*100+5,90,90);
       ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,12+progress*30,0,Math.PI*2);ctx.stroke();
       blocks(ctx,SCENE_INK.gold,[[x-14,y-3,28,6],[x-3,y-14,6,28]]);ctx.restore();continue;
+    }
+    // 命中黑影：红色像素伤害数字弹跳上飘 + 白色像素爆裂闪光（表现层增强，读数本身仍来自引擎 effect）。
+    if(effect.kind==='damage'&&!battleReducedMotion()){
+      const x=(effect.x+.5)*100,y=(effect.y+.5)*100;
+      if(effect.text)drawDamagePop(ctx,x,y,effect.text,progress);
+      drawHitBurst(ctx,x,y,progress*.9);
+      continue;
+    }
+    // 黑影被击败：碎裂成黑色像素块消散（配合引擎的“黑影退去”事件）。
+    if(effect.kind==='defeat'&&!battleReducedMotion()){
+      drawShatter(ctx,(effect.x+.5)*100,(effect.y+.5)*100,progress);
+      continue;
     }
     if(!effect.text)continue;
     ctx.save();ctx.fillStyle=effect.kind==='heal'?'#a9e0a8':effect.kind.includes('shield')?'#a0e3ed':SCENE_INK.danger;ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.fillText(effect.text,(effect.x+.5)*100,(effect.y+.35)*100-(1-effect.ttl/effect.maxTtl)*12);ctx.restore();

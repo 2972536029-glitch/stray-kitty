@@ -888,6 +888,61 @@
 }
 @media(max-width:1150px){.battle-l00.battle-immersive .btl-unit .btl-unit-name{font-size:10px}}
 @media(max-width:440px){.battle-l00.battle-immersive .btl-unit .btl-unit-name{font-size:9.5px}}
+/* ===== 战斗表现层特效：屏幕震动 / 技能边缘泛光 / 能量蓄满金环（纯视觉，由 battleFx.ts 在 diff 到伤害/施法时挂类） ===== */
+/* 轻震：命中黑影。位移幅度很小，不影响 e2e 的 bounds 断言（动画只持续 0.34s 且不出现在断言时机）。 */
+@keyframes fx-screen-shake{
+  0%,100%{transform:translate(0,0)}
+  20%{transform:translate(-3px,2px)}
+  40%{transform:translate(3px,-2px)}
+  60%{transform:translate(-2px,-1px)}
+  80%{transform:translate(2px,1px)}
+}
+.fx-shake{animation:fx-screen-shake .34s cubic-bezier(.36,.07,.19,.97)}
+/* 强震：黑影被击败 / 首领受创。 */
+@keyframes fx-screen-shake-strong{
+  0%,100%{transform:translate(0,0)}
+  15%{transform:translate(-5px,4px)}
+  30%{transform:translate(5px,-4px)}
+  45%{transform:translate(-4px,-3px)}
+  60%{transform:translate(4px,3px)}
+  75%{transform:translate(-2px,2px)}
+  90%{transform:translate(2px,-1px)}
+}
+.fx-shake-strong{animation:fx-screen-shake-strong .5s cubic-bezier(.36,.07,.19,.97)}
+/* 技能释放：战斗容器四周金色光晕一闪而过（::after 全覆盖，不挡交互）。 */
+.fx-skill-glow{position:relative}
+.fx-skill-glow::after{
+  content:'';
+  position:absolute;
+  inset:-4px;
+  z-index:60;
+  pointer-events:none;
+  border-radius:inherit;
+  box-shadow:inset 0 0 46px 10px rgba(255,213,110,.55),inset 0 0 12px 2px rgba(255,244,200,.7);
+  animation:fx-skill-glow .8s ease-out forwards;
+}
+@keyframes fx-skill-glow{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+/* 能量蓄满：猫周围金色环形光晕呼吸（DOM 层；l00 的 btl-unit 与章节的 chapter-unit-state 共用）。 */
+.btl-energy-halo{position:relative}
+.btl-energy-halo::before{
+  content:'';
+  position:absolute;
+  inset:-7px;
+  border-radius:50%;
+  pointer-events:none;
+  border:2px solid rgba(255,215,110,.75);
+  box-shadow:0 0 14px 3px rgba(255,205,92,.5),inset 0 0 10px rgba(255,225,150,.35);
+  animation:fx-energy-halo 1.5s ease-in-out infinite;
+}
+@keyframes fx-energy-halo{
+  0%,100%{opacity:.45;transform:scale(.96)}
+  50%{opacity:1;transform:scale(1.05)}
+}
+@media(prefers-reduced-motion:reduce){
+  .fx-shake,.fx-shake-strong{animation:none!important}
+  .fx-skill-glow::after{animation:none;opacity:0}
+  .btl-energy-halo::before{animation:none;opacity:.7}
+}
 @media(prefers-reduced-motion:reduce){
   .btl-energy-ready,.btl-energy-compact.btl-energy-ready{animation:none!important}
 }

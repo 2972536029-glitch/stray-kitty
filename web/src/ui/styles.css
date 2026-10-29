@@ -112,10 +112,10 @@
 .dialogue-caret{display:inline-block;width:8px;height:1em;margin-left:2px;vertical-align:-.15em;background:#8a6a3a;animation:prologue-blink .8s steps(2) infinite}
 .dialogue-bubble-caption{padding:10px 14px;border-radius:9px}
 .dialogue-bubble-caption .dialogue-copy p{min-height:0;margin:7px 0;font-style:italic;font-weight:500;color:#6a6152}
-/* 说话人识别行：32px 像素头像 + 加粗名；浅奶底细边圆角，融入米色气泡不生硬 */
+/* 说话人识别行：32px 像素头像 + 加粗名；名字统一奶白+柔和深棕描边（主角偏暖金），与木色磨砂标签呼应 */
 .dialogue-who{display:flex;align-items:center;gap:8px;margin:1px 0 6px}
-.dialogue-who b{font-size:14px;font-weight:800;letter-spacing:1.5px;color:#6b4a33}
-.dialogue-who[data-main=true] b{color:#b05a2a}
+.dialogue-who b{font-size:14px;font-weight:800;letter-spacing:1.5px;color:#fdf4dc;text-shadow:0 1px 0 rgba(56,38,26,.85)}
+.dialogue-who[data-main=true] b{color:#ffe4a8;text-shadow:0 1px 0 rgba(56,38,26,.9),0 0 7px rgba(255,196,92,.4)}
 /* 旁白字幕标签：居中细字距的点题小签，保留队友 e2e 依赖的 .speaker 语义类 */
 .dialogue-narrator{display:block;text-align:center;font-size:12px;font-weight:800;letter-spacing:4px;color:#8a7a58;margin:2px 0 4px;text-indent:4px}
 .dialogue-avatar{display:grid;place-items:center;width:38px;height:38px;padding:2px;background:#f2e7c9;border:1.5px solid #382f2b2e;border-radius:9px;box-shadow:inset 0 1px 0 #fffdf599}
