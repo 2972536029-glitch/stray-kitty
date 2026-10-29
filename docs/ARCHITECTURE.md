@@ -153,6 +153,7 @@ stray-kitty/
 │     │  ├─ lottery/  奖池、抽取与结果
 │     │  ├─ map/  地图 · Jenny
 │     │  ├─ nightMarket/  Chapter 2 Night Market spatial map and progression
+│     │  ├─ qa/  按游戏流程组织的验收操作与服务端能力检查
 │     │  ├─ rainyAlley/
 │     │  └─ shop/  商品与购买
 │     ├─ shared/  通用工具 · 预留

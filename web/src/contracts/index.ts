@@ -22,7 +22,10 @@ export interface GameState {
   txns?: PaymentTxn[];
   alleyBattleReturn?: {x: number; y: number};
   lastResult: {message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string};
+  qaCheckpointId?: string;
 }
+export interface QACheckpoint {id: string; chapterId: string; title: string; phase: GamePhase; mapId: string; kind: 'story' | 'explore' | 'battle' | 'home' | 'event'; detail: string}
+export interface QATools {enabled: boolean; checkpoints: QACheckpoint[]}
 export type GameCommand =
   | {type: 'ADVANCE_STORY'; nodeId: string}
   | {type: 'START_STORY'; nodeId: string}
@@ -33,6 +36,9 @@ export type GameCommand =
   | {type: 'START_BATTLE'; stageId: string; returnPosition?: {x: number; y: number}; layer?:string}
   | ({type: 'COMPLETE_BATTLE'} & BattleResult)
   | {type: 'QA_SIMULATE_VICTORY'; attemptId: string}
+  | {type: 'QA_SIMULATE_DEFEAT'; attemptId: string}
+  | {type: 'QA_CHECKPOINT'; checkpointId: string}
+  | {type: 'QA_RESTORE'}
   | {type: 'CONTINUE'} | {type: 'GO_HOME'} | {type: 'GO_EXPLORE'; mapId?: string}
   | {type: 'EXIT_MARKET'; layer: string; position: {x:number;y:number}}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
