@@ -102,12 +102,14 @@ export default function DialogueBubble({speaker, breed, getAnchor, avoid = [], r
     : {left: current.left, top: current.top};
   return <div ref={host} className={`dialogue-bubble dialogue-bubble-${current.mode}${settled ? ' dialogue-bubble-settled' : ''}${closing ? ' dialogue-bubble-closing' : ''}`} data-speaker={speaker} style={style}>
     <div className="dialogue-copy">
-      {/* 说话人识别行：小头像 + 加粗名（旁白不显示，保持纯字幕感；主角名走暖橙棕强调色）。 */}
-      {breed && speaker !== '旁白' && (
+      {/* 说话人识别行：小头像 + 加粗名（主角名走暖橙棕强调色）；speaker 类是队友 e2e 依赖的语义锚点，两种形态都保留。 */}
+      {breed && speaker !== '旁白' ? (
         <div className="dialogue-who" data-main={speaker === '喵喵'}>
           <span className="dialogue-avatar" aria-hidden="true"><PixelCat breed={breed} size={32}/></span>
-          <b>{speaker}</b>
+          <b className="speaker">{speaker}</b>
         </div>
+      ) : (
+        <b className="speaker dialogue-narrator">{speaker}</b>
       )}
       {children}
     </div>

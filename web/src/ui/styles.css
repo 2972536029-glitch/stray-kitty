@@ -108,14 +108,16 @@
 .start-actions{display:flex;justify-content:center;align-items:stretch;gap:14px;flex-wrap:wrap}.game-button{display:flex;align-items:center;gap:14px;text-align:left}.game-button-icon{flex:none;width:24px;height:24px;display:grid;place-items:center}.game-button-icon svg{width:24px;height:24px;display:block}.game-button-copy{min-width:0}.start-actions .game-button{flex:1 1 0;width:auto;max-width:252px;min-height:76px;margin:0;border:2px solid #282e2c;border-radius:0;box-shadow:4px 4px 0 #24312e;clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0 calc(100% - 7px),0 7px)}.start-actions .game-button:hover{box-shadow:4px 6px 0 #24312e}.start-play{background:#925140;color:#f4ead4}.start-shop{background:#526b50;color:#f4ead4}.start-reset{background:#6d6250;color:#f4ead4}@media(max-width:700px){.start-actions{flex-direction:column;align-items:center}.start-actions .game-button{flex:0 0 auto;width:min(290px,100%);min-height:64px}.dialogue-card{width:calc(100% - 54px);margin-left:54px;margin-bottom:108px}.dialogue-portrait{left:-54px}.dialogue-card:after{left:24px}}
 /* 对话气泡：暖色磨砂 + 细像素描边；说话人识别行见 .dialogue-who（定位规则见 layout-viewport.css） */
 .dialogue-bubble{background:rgba(246,237,214,.88);backdrop-filter:blur(8px);border:2px solid #382f2b;border-radius:11px;padding:11px 13px;box-shadow:inset 0 1px 0 #fffdf5bb,2px 3px 0 rgba(28,42,38,.35);animation:story-in .22s ease-out}
-.dialogue-copy p{font-size:13px;font-weight:600;color:#33302a;line-height:1.9;margin:8px 0 10px;min-height:3.8em}
+.dialogue-copy p{font-size:15px;font-weight:600;color:#33302a;line-height:1.9;margin:8px 0 10px;min-height:3.8em}
 .dialogue-caret{display:inline-block;width:8px;height:1em;margin-left:2px;vertical-align:-.15em;background:#8a6a3a;animation:prologue-blink .8s steps(2) infinite}
 .dialogue-bubble-caption{padding:10px 14px;border-radius:9px}
 .dialogue-bubble-caption .dialogue-copy p{min-height:0;margin:7px 0;font-style:italic;font-weight:500;color:#6a6152}
 /* 说话人识别行：32px 像素头像 + 加粗名；浅奶底细边圆角，融入米色气泡不生硬 */
 .dialogue-who{display:flex;align-items:center;gap:8px;margin:1px 0 6px}
-.dialogue-who b{font-size:13px;font-weight:800;letter-spacing:1.5px;color:#6b4a33}
+.dialogue-who b{font-size:14px;font-weight:800;letter-spacing:1.5px;color:#6b4a33}
 .dialogue-who[data-main=true] b{color:#b05a2a}
+/* 旁白字幕标签：居中细字距的点题小签，保留队友 e2e 依赖的 .speaker 语义类 */
+.dialogue-narrator{display:block;text-align:center;font-size:12px;font-weight:800;letter-spacing:4px;color:#8a7a58;margin:2px 0 4px;text-indent:4px}
 .dialogue-avatar{display:grid;place-items:center;width:38px;height:38px;padding:2px;background:#f2e7c9;border:1.5px solid #382f2b2e;border-radius:9px;box-shadow:inset 0 1px 0 #fffdf599}
 .dialogue-avatar .pixel-cat{width:32px;height:32px}
 .dialogue-actions{margin-top:2px}
