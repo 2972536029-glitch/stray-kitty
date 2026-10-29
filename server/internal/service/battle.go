@@ -38,6 +38,10 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 		return err
 	}
 	battleRetry := s.Phase == "preparation" && s.ActiveBattle != nil && s.ActiveBattle.Status == "lost"
+	finaleStoryBattle := c.StageID == "finale_boss" && s.MapID == "warehouse"
+	if finaleStoryBattle && (!warehouseUnlocked(s) || s.Phase != "preparation" || domain.Contains(s.Flags, "finale_boss_victory")) {
+		return domain.Fail("STAGE_LOCKED", "请先抵达仓库首领并完成开战对白", 409)
+	}
 	mainlineMarket := c.StageID == "market_boss" && ((s.Phase == "explore" && s.MapID == "market" && domain.Contains(s.Flags, "chapter_2_started")) || (battleRetry && s.ActiveBattle.Mainline))
 	if mainlineMarket && !battleRetry && domain.Contains(s.Flags, "market_cleared") {
 		return domain.Fail("STAGE_LOCKED", "集市防线已经守住", 409)
@@ -45,11 +49,11 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 	if mainlineMarket && !battleRetry && (c.Layer != "L0" || c.ReturnPosition == nil || math.Hypot(c.ReturnPosition.X-1310, c.ReturnPosition.Y-169) > 58) {
 		return domain.Fail("STAGE_LOCKED", "请抵达集市北侧防线入口", 409)
 	}
-	tunnelStoryBattle := c.StageID == "tunnel_boss" && s.MapID == "tunnel" && s.Phase == "explore"
+	tunnelStoryBattle := c.StageID == "tunnel_boss" && s.MapID == "tunnel" && (s.Phase == "explore" || (battleRetry && s.ActiveBattle.Mainline))
 	if tunnelStoryBattle && (!domain.Contains(s.Flags, "chapter_4_started") || !domain.Contains(s.Flags, "tunnel_false_kitten_trap_found") || !domain.Contains(s.Flags, "valve_three_investigated") || domain.Contains(s.Flags, "tunnel_boss_cleared")) {
 		return domain.Fail("STAGE_LOCKED", "请先调查诱饵与第三泄洪阀，或返回已经完成的通道", 409)
 	}
-	if tunnelStoryBattle {
+	if tunnelStoryBattle && !battleRetry {
 		p := c.ReturnPosition
 		if p == nil || math.IsNaN(p.X) || math.IsNaN(p.Y) || math.IsInf(p.X, 0) || math.IsInf(p.Y, 0) || p.X < 1475 || p.X > 1602 || p.Y < 721 || p.Y > 798 {
 			return domain.Fail("INVALID_COMMAND", "地下通道战斗触发位置无效", 400)
@@ -58,7 +62,7 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 	if battleRetry && s.ActiveBattle.StageID != c.StageID {
 		return domain.Fail("INVALID_PHASE", "请重试当前关卡，或先离开准备页再选择其他关卡", 409)
 	}
-	if isStandaloneBattle(c.StageID) && !tunnelStoryBattle {
+	if isStandaloneBattle(c.StageID) && !tunnelStoryBattle && !finaleStoryBattle {
 		if !domain.Contains(s.Flags, "alley_rescued") {
 			return domain.Fail("STAGE_LOCKED", "请先完成第一章救援，再从家园进入独立试玩", 409)
 		}
@@ -96,7 +100,7 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 		return err
 	}
 	attempt := &domain.Attempt{ID: id, StageID: c.StageID, Status: "active"}
-	attempt.Mainline = mainlineMarket || tunnelStoryBattle
+	attempt.Mainline = mainlineMarket || tunnelStoryBattle || finaleStoryBattle
 	if battleRetry {
 		if s.ActiveBattle.Modifiers != nil {
 			modifiers := *s.ActiveBattle.Modifiers
@@ -224,6 +228,9 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 			}
 			result.Message = "午夜集市的防线守住了，六位伙伴击退了首领。"
 		} else if attempt.StageID == "finale_boss" {
+			if attempt.Mainline {
+				s.Flags = domain.Add(s.Flags, "finale_boss_victory")
+			}
 			result.Message = "伙伴们共同守住了光之归路，永夜之王与两名精英护卫已被击退。"
 		} else if attempt.StageID == "tunnel_boss" {
 			result.Message = "地下通道的归路守住了，六位伙伴击退了断灯监守。"

@@ -14,6 +14,12 @@ for(const command of [{type:'QA_CHECKPOINT'},{type:'QA_CHECKPOINT',checkpointId:
   if(commandSchema(command))throw Error(`Invalid command accepted: ${JSON.stringify(command)}`);
 }
 const carryIds=['lantern','mirror','bell','box','dog','dove','rats','kitten'];
+for(const command of [
+  {type:'INTERACT',interactionId:'entry_lamp',layer:'L0',position:{x:316,y:582}},
+  {type:'INTERACT',interactionId:'warehouse_lookout',layer:'L1',position:{x:316,y:287}},
+  {type:'CHECK_RANDOM_ZONE',zoneId:'R1',layer:'L0',position:{x:657,y:765}},
+  {type:'GO_EXPLORE',mapId:'warehouse'},
+])if(!commandSchema(command))throw Error(`Warehouse command rejected: ${JSON.stringify(commandSchema.errors)}`);
 for(const stageId of ['tunnel_boss','finale_boss']) {
   if(!commandSchema({type:'START_BATTLE',stageId}))throw Error(`Chapter entry rejected: ${stageId}`);
 }

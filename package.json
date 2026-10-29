@@ -11,7 +11,7 @@
     "content:sync": "node scripts/content.mjs",
     "content:check": "node scripts/content.mjs --check",
     "typecheck": "npm run typecheck --workspace web",
-    "test": "tsx --test tests/core.test.ts tests/content.test.ts tests/l00-integration.test.ts tests/rainy-alley-map.test.ts tests/home-story.test.ts tests/qa-flow.test.ts tests/battle/*.test.ts",
+    "test": "tsx --test tests/core.test.ts tests/content.test.ts tests/l00-integration.test.ts tests/rainy-alley-map.test.ts tests/home-story.test.ts tests/qa-flow.test.ts tests/session-recovery.test.ts tests/market-interaction-target.test.ts tests/battle/*.test.ts",
     "test:server": "go -C server test ./...",
     "test:e2e": "playwright test",
     "test:player-flow": "node scripts/verify-player-flow.mjs",

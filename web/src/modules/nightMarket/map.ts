@@ -63,16 +63,25 @@ export function marketPortalDisplay(portal:Spatial['portals'][number],point:Spat
   return {visible,active,alpha:active?1:climb?.72:.22,label:`${portal.key.toUpperCase()} · ${description}`};
 }
 
+export function marketInteractionTarget(floor:MarketFloor,x:number,y:number,flags:readonly string[],drawnEvents:readonly string[]) {
+  const targets:Record<string,{id:string;label:string;done:boolean}>={
+    crow:{id:'market_crow_stall',label:'老黑羽的情报摊 · E',done:flags.includes('market_crow_clue_completed')},
+    pigeon:{id:'market_pigeon_perch',label:'咕咕大盗的传言棚 · E',done:flags.includes('market_pigeon_clue_completed')},
+    momo:{id:'market_momo_trace',label:'墨墨的踪迹 · E',done:drawnEvents.includes('node:momo_trail_event')},
+  };
+  const portalNearby=marketPortals.some(portal=>(!portal.requiresFlag||flags.includes(portal.requiresFlag))&&[portal.a,portal.b].some(point=>point.layer===floor&&Math.hypot(x-point.x,y-point.y)<=44));
+  const nearest=marketItems.filter(item=>item.layer===floor&&targets[item.id]&&!targets[item.id].done&&!(item.id==='momo'&&portalNearby))
+    .map(item=>({item,distance:Math.hypot(x-item.x,y-item.y)})).filter(value=>value.distance<=MARKET_INTERACTION_RADIUS).sort((a,b)=>a.distance-b.distance)[0]?.item;
+  return nearest?{id:targets[nearest.id].id,label:targets[nearest.id].label,layer:floor}:null;
+}
+
 export function marketEAction(floor:MarketFloor,x:number,y:number,flags:readonly string[],drawnEvents:readonly string[]):MarketEAction {
   const crowDone=flags.includes('market_crow_clue_completed'),pigeonDone=flags.includes('market_pigeon_clue_completed');
   const momoDone=drawnEvents.includes('node:momo_trail_event');
-  const story=[{id:'market_crow_stall',floor:'L0' as const,x:910,y:245,done:crowDone},{id:'market_pigeon_perch',floor:'L1' as const,x:1310,y:426,done:pigeonDone}]
-    .filter(item=>item.floor===floor&&!item.done&&Math.hypot(x-item.x,y-item.y)<=MARKET_INTERACTION_RADIUS)
-    .sort((a,b)=>Math.hypot(x-a.x,y-a.y)-Math.hypot(x-b.x,y-b.y))[0];
-  if(story)return {type:'interact',id:story.id,layer:story.floor};
+  const target=marketInteractionTarget(floor,x,y,flags,drawnEvents);
+  if(target)return {type:'interact',id:target.id,layer:target.layer};
   const activePortal=marketPortals.flatMap(portal=>[{portal,point:portal.a},{portal,point:portal.b}]).filter(value=>(!value.portal.requiresFlag||flags.includes(value.portal.requiresFlag))&&value.point.layer===floor&&Math.hypot(x-value.point.x,y-value.point.y)<=44).sort((a,b)=>Math.hypot(x-a.point.x,y-a.point.y)-Math.hypot(x-b.point.x,y-b.point.y))[0];
   if(activePortal){const p=activePortal.portal,point=activePortal.point;const description=p.id==='exitClimb'?'翻越战后木箱':p.id==='southCrate'?'越过南侧货箱':p.kind==='stairs'?(point.layer==='L0'?'进入地下暗道':'返回地面'):point.layer==='L1'?'返回街面':p.label.split(' · ')[1];return {type:'hint',text:`${p.key.toUpperCase()} · ${description}`};}
-  if(floor==='L0'&&!momoDone&&Math.hypot(x-947,y-160)<=MARKET_INTERACTION_RADIUS)return {type:'interact',id:'market_momo_trace',layer:'L0'};
   if(floor==='L0'&&momoDone&&Math.hypot(x-947,y-160)<=MARKET_INTERACTION_RADIUS)return {type:'hint',text:'墨墨的踪迹已经查看过了。'};
   if(floor==='L0'&&Math.hypot(x-910,y-245)<=MARKET_INTERACTION_RADIUS&&crowDone)return {type:'hint',text:'老黑羽已经把这条情报告诉你们了。'};
   if(floor==='L1'&&Math.hypot(x-1310,y-426)<=MARKET_INTERACTION_RADIUS&&pigeonDone)return {type:'hint',text:'咕咕大盗的传闻已经听过了。'};

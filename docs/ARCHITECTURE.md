@@ -62,6 +62,7 @@ stray-kitty/
 │  ├─ L04-INTEGRATION.md  第四章夜视护盾与独立试玩边界
 │  ├─ L05-INTEGRATION.md  第五章光路援军与独立试玩边界
 │  ├─ LEVEL-EXPLORATION-ARCHITECTURE.md
+│  ├─ MAP-QA-FOLLOWUP.md
 │  ├─ openapi.json  API 规范
 │  ├─ PRD.md  需求与分工
 │  ├─ STORY-SCRIPT.md
@@ -71,6 +72,17 @@ stray-kitty/
 │  │  ├─ art/
 │  │  ├─ collision/
 │  │  └─ reference/
+│  ├─ chapter5/
+│  │  ├─ art/
+│  │  │  ├─ source/
+│  │  │  │  ├─ sprites/
+│  │  │  │  └─ stateful/
+│  │  │  └─ variants/
+│  │  ├─ reference/
+│  │  ├─ review/
+│  │  ├─ source/
+│  │  │  └─ v07/
+│  │  └─ tools/
 │  ├─ maps/
 │  │  └─ reference/
 │  ├─ night_market/
@@ -147,6 +159,7 @@ stray-kitty/
 │     │  │  └─ tunnel/  第四章37格不规则暗道、断灯脉冲与墨墨夜视
 │     │  ├─ cats/  猫咪档案、救援与成长
 │     │  ├─ chapter4/
+│     │  ├─ chapter5/
 │     │  ├─ economy/  货币、扣费与奖励
 │     │  ├─ events/  随机事件 · 余尧
 │     │  ├─ home/  家园建设、摆放与互动
@@ -303,6 +316,16 @@ The exploration interaction contract is in `web/content/maps/maps.json`; server 
 `web/src/modules/battle/qa.ts` builds the development-only `QA_SIMULATE_VICTORY` command. `scripts/dev.mjs` enables that command on the local API process; production API processes leave `GAME_QA_ENABLED` unset and reject it. The service derives a valid stage result from the active attempt and routes it through the same battle completion validator as normal callbacks. `import.meta.env.DEV` excludes the control from production builds. The QA path does not directly mutate story flags.
 
 The tunnel's raster world position is runtime-only and returns to its authored spawn after a page refresh. Battle return position and progression state are validated and persisted through the existing server attempt/state flow. This is distinct from persisting free-roam coordinates, which the current exploration API does not provide.
+
+### Chapter 5 warehouse exploration and art review
+
+The development-only `?warehouseWalk=1` entry mounts `WarehouseWalkPreview` with the existing `CanvasViewport` and `DemoScene` input/frame lifecycle. `WarehouseWalkMap` loads the locked v07 floor mask, subtracts all 38 authored solid rectangles and the three initially closed gate rectangles, and reuses swept raster movement with the authored cat radius 13. Prop alpha never determines collision. The existing cat renderer uses 0.75 sprite scale, anchored at its paws, with a closer 680 × 400 camera area. Registered prop components are depth-sorted around the cat. Art registration selects 19 mixed locations by stable seeded SHA-256 ranking and retains 19 single obstacles. Mixed groups use two to five existing sprites with different material themes and independent uniform scales. Selected taller groups declare bounded upward visual height; collision footprints and horizontal/lower art limits are unchanged. The manifest records the seed, themes, rotated natural sizes and visual envelopes. This is fixed art placement, not runtime event randomness.
+
+The same lazy-loaded map now runs for actual `mapId=warehouse` states through the existing `App`/`GameController`/`DemoScene` lifecycle. Separate L0/L1 raster masks use manifest solid rectangles and the six authored elevated regions; only C1/C2 switch layers. The user-requested local solid-edge insets in `level_design/chapter5/playtest_adjustments.json` are applied by the art builder to both artwork and manifest collision, leaving the locked source unchanged. Deck and overhead fascia exports use approved tiled sprite pixels. C/E labels appear near their targets; all four random zones remain invisible. Closed shortcuts and the boss gate use registered mesh barricade assets inside their existing collision footprints and hide when unlocked. All three controllable lamps toggle through the existing interaction command; their existing flags and authored unlock keys control runtime light pools and gate collision; unlit areas are nearly black, with wider, brighter green/orange lamp pools. Event-outcome props are decorative only. Free-roam position/floor remain runtime-only.
+
+`server/internal/service/warehouse.go` validates fixed interactions and random-zone positions against a byte-identical embedded geometry mirror maintained by `scripts/content.mjs`. All four hidden zones roll on entry; the client rearms after exiting with a 12px margin. Misses do not consume a zone, and old persisted zone-attempt records are ignored. The six authored cards retain existing persistent without-replacement records, pending state, outcomes and rewards. The finale introduction stops at exploration, the authored boss starts the existing mainline battle, defeat returns to retry, victory returns through post-battle dialogue to exploration, and the victory-only exit starts the existing ending. Optional fixed events are not prerequisites. Home finale trials retain their independent behavior.
+
+Development `?warehouseQA=1` uses the real reversible `finale.explore` checkpoint; `finale.exit` supports checking the victory exit. The current isolated local session is on 5186/API 8185 with separate QA storage. The older 5185 art comparison has no game session or commands. Focused service/schema/type/build checks and anchor-level browser interactions were run; full route traversal and visual/support approval remain manual. The art registration script and manifests remain under `scripts/register-warehouse-l0.py` and `level_design/chapter5/`; the original JSON/SVG hashes remain locked.
 
 ## 5. 启动与检查
 

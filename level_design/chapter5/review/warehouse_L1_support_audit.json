@@ -1,0 +1,89 @@
+{
+  "status": "registered deck and overhead fascia exported; physical support appearance requires manual review",
+  "regions": [
+    {
+      "region": {
+        "id": "lookout_platform",
+        "x": 274,
+        "y": 258,
+        "w": 112,
+        "h": 128
+      },
+      "solidFootprintOverlapFraction": 0.0,
+      "status": "support/bridge structure requires L1 review; overlap alone is not structural proof"
+    },
+    {
+      "region": {
+        "id": "west_catwalk",
+        "x": 333,
+        "y": 278,
+        "w": 335,
+        "h": 54
+      },
+      "solidFootprintOverlapFraction": 0.5432835820895522,
+      "status": "support/bridge structure requires L1 review; overlap alone is not structural proof"
+    },
+    {
+      "region": {
+        "id": "north_connector",
+        "x": 617,
+        "y": 278,
+        "w": 60,
+        "h": 152
+      },
+      "solidFootprintOverlapFraction": 0.3203947368421053,
+      "status": "support/bridge structure requires L1 review; overlap alone is not structural proof"
+    },
+    {
+      "region": {
+        "id": "east_catwalk",
+        "x": 617,
+        "y": 370,
+        "w": 238,
+        "h": 62
+      },
+      "solidFootprintOverlapFraction": 0.07806993765248035,
+      "status": "support/bridge structure requires L1 review; overlap alone is not structural proof"
+    },
+    {
+      "region": {
+        "id": "crate_platform",
+        "x": 524,
+        "y": 250,
+        "w": 116,
+        "h": 94
+      },
+      "solidFootprintOverlapFraction": 0.1952494497432135,
+      "status": "support/bridge structure requires L1 review; overlap alone is not structural proof"
+    },
+    {
+      "region": {
+        "id": "c2_landing",
+        "x": 773,
+        "y": 372,
+        "w": 94,
+        "h": 91
+      },
+      "solidFootprintOverlapFraction": 0.03355155482815057,
+      "status": "support/bridge structure requires L1 review; overlap alone is not structural proof"
+    }
+  ],
+  "climbs": [
+    {
+      "id": "C1",
+      "x": 320,
+      "y": 343,
+      "from": "L0",
+      "to": "L1",
+      "label": "West shelf climb"
+    },
+    {
+      "id": "C2",
+      "x": 816,
+      "y": 409,
+      "from": "L0",
+      "to": "L1",
+      "label": "Central catwalk descent"
+    }
+  ]
+}

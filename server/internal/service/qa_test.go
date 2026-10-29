@@ -44,7 +44,10 @@ func TestQACheckpointsAreGatedAndEveryPublishedNodeWorks(t *testing.T) {
 				if !found || s.Phase == "event" {
 					t.Fatal("event cannot resolve")
 				}
-				if point.MapID == "greenhouse" || point.MapID == "warehouse" {
+				if point.MapID == "warehouse" && s.MapID != "warehouse" {
+					t.Fatal("warehouse card did not preserve its implemented map")
+				}
+				if point.MapID == "greenhouse" {
 					if s.Phase == "explore" {
 						t.Fatal("card opened an unimplemented exploration map")
 					}

@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""Create decoration-only world-space layers keyed to existing event flags.
+
+No map solids, click targets, event outcomes, progress flags or rewards are generated.
+Every item is noninteractive and uses the same 1672x941 L0/L1 world coordinates.
+"""
+import json
+from pathlib import Path
+from xml.sax.saxutils import escape
+
+root = Path(__file__).resolve().parent
+geom = json.loads((root / 'warehouse_geometry_v07.json').read_text(encoding='utf8'))
+flags = geom['visualOutcomeMapping']
+
+body = ['''<svg xmlns="http://www.w3.org/2000/svg" width="1672" height="941" viewBox="0 0 1672 941">
+<g id="outcome-art" pointer-events="none" font-family="system-ui, sans-serif">
+''']
+
+def deco(flag, markup):
+    assert flag in flags, f'Unrecognized flag: {flag}'
+    body.append(f'<g data-flag="{escape(flag)}" data-floor="{flags[flag]["floor"]}" style="display:none">{markup}</g>')
+
+# Site of box-haul random event is not a guaranteed authored node. Anchor the
+# persistent supply-station DECAL within the loading bay, not as new collidable boxes.
+deco('supply_post_built', '''
+  <g transform="translate(446 751)">
+    <path d="M-45 33 L-45 -16 L-15 -34 L32 -34 L48 -15 L48 33 Z" fill="#405d53" opacity=".7" stroke="#a4dabc" stroke-width="3"/>
+    <path d="M-39 -18 H40 M-34 -9 H34 M-32 18 H34" stroke="#dfc49d" stroke-width="3" stroke-dasharray="11 6"/>
+    <rect x="-25" y="-23" width="49" height="35" fill="#6b7059" stroke="#e7d9ad" stroke-width="2"/>
+    <path d="M-17 -15 L0 -2 L18 -15" fill="none" stroke="#eacfa2" stroke-width="3"/>
+    <text x="0" y="-43" fill="#dcf9dc" font-size="17" text-anchor="middle" paint-order="stroke" stroke="#152935" stroke-width="4">SUPPLY POST</text>
+  </g>''')
+deco('supply_post_paused', '''
+  <g transform="translate(446 751)">
+    <rect x="-30" y="-12" width="59" height="34" fill="#77604d" fill-opacity=".5" stroke="#d4ba98" stroke-dasharray="7 5" stroke-width="2"/>
+    <path d="M-33 14 L29 -24" stroke="#eecb8f" stroke-width="4"/>
+    <text x="0" y="-30" text-anchor="middle" font-size="16" fill="#e9d39d">UNFINISHED</text>
+  </g>''')
+# Watch-platform upgrades do not occupy or block the narrow traversable L1 area.
+deco('watch_post_set', '''
+  <g transform="translate(316 287)">
+    <path d="M-30 -14 V-39 M30 -14 V-39 M-33 -24 H33" fill="none" stroke="#e7cb92" stroke-width="4"/>
+    <path d="M0 -35 V-66" stroke="#f4dba7" stroke-width="3"/><path d="M0 -66 L42 -54 L0 -44 Z" fill="#a2dbb9" stroke="#e2f7d4" stroke-width="2"/>
+    <text x="0" y="24" text-anchor="middle" font-size="15" fill="#c4f0d7" paint-order="stroke" stroke="#122635" stroke-width="4">WATCH POST</text>
+  </g>''')
+deco('watch_post_one_route', '''
+  <g transform="translate(316 287)">
+    <path d="M-28 -16 V-38 M-28 -28 H20" fill="none" stroke="#e4c89b" stroke-width="4"/>
+    <text x="0" y="30" text-anchor="middle" font-size="15" fill="#eddba4">LIMITED WATCH</text>
+  </g>''')
+deco('watch_post_wet', '''
+  <g transform="translate(316 287)">
+    <path d="M-23 -34 L0 -53 L26 -34 Z" fill="#637986" stroke="#aac4cb" stroke-width="2"/>
+    <path d="M-13 -30 V-17 M8 -28 V-12 M19 -30 V-19" stroke="#8bd4e1" stroke-width="3"/>
+    <text x="0" y="30" text-anchor="middle" font-size="15" fill="#acd6de">WET PLATFORM</text>
+  </g>''')
+deco('lookout_surveyed', '''
+  <g transform="translate(833 557)">
+    <path d="M-46 -44 L-46 -67 L-20 -74 L8 -64 L34 -72 L46 -64 L46 -43 L20 -47 L-12 -37 Z" fill="#2e5961" stroke="#96d4df" stroke-width="2.5"/>
+    <path d="M-19 -67 L-19 -42 M10 -63 L10 -47" stroke="#b7e6e6" stroke-width="1.6"/>
+    <circle cx="-13" cy="-55" r="3.5" fill="#f2cf8e"/>
+    <circle cx="24" cy="-58" r="3.5" fill="#f2cf8e"/>
+    <text x="0" y="-83" font-size="15" text-anchor="middle" fill="#bbebed" paint-order="stroke" stroke="#172b36" stroke-width="4">SURVEYED ROUTES</text>
+  </g>''')
+deco('lookout_partial', '''
+  <g transform="translate(316 287)"><path d="M-19 -48 L16 -48 L16 -25 L-19 -25 Z" fill="none" stroke="#a9cad5" stroke-width="3" stroke-dasharray="6 3"/>
+  <text y="26" text-anchor="middle" font-size="15" fill="#d3e7ee">PARTIAL SURVEY</text></g>''')
+deco('lookout_recce', '''
+  <g transform="translate(316 287)"><path d="M-18 -30 L0 -53 L19 -30" fill="none" stroke="#d0dba2" stroke-width="4"/>
+  <text y="26" text-anchor="middle" font-size="15" fill="#dbe6b2">ROUTE MARKED</text></g>''')
+# Hanging crate is already part of L1 interaction text; overlays indicate
+# corresponding outcomes, not an added E interaction or a lamp-switch reward.
+deco('light_crate_found', '''
+  <g transform="translate(574 292)">
+    <path d="M-32 -57 V-33 M32 -57 V-33" stroke="#cbd0d1" stroke-width="3"/>
+    <rect x="-38" y="-33" width="76" height="42" fill="#303f46" fill-opacity=".5" stroke="#8ce0be" stroke-width="3"/>
+    <path d="M-20 -20 L-4 -2 L20 -23" fill="none" stroke="#a8eccf" stroke-width="5"/>
+    <text y="31" text-anchor="middle" font-size="15" fill="#b8f1d2">LAMP RECOVERED</text>
+  </g>''')
+deco('light_crate_dinged', '''
+  <g transform="translate(574 292)">
+    <path d="M-20 -45 L4 -53 L30 -43 L25 -13 L-13 -8 Z" fill="#b99a64" fill-opacity=".7" stroke="#f2d29b" stroke-width="2"/>
+    <path d="M-4 -40 L4 -29 L-7 -19 L11 -10" fill="none" stroke="#39454b" stroke-width="3"/>
+    <text y="30" text-anchor="middle" font-size="15" fill="#f0ce97">DENTED LAMP</text>
+  </g>''')
+deco('finale_light_stashed', '''
+  <g transform="translate(574 292)">
+    <path d="M-39 -39 L-7 -56 L39 -39 L44 4 L-43 4 Z" fill="#53756c" fill-opacity=".88" stroke="#b5d2bd" stroke-width="3"/>
+    <path d="M-39 -39 L42 -39" stroke="#d3e8d6" stroke-width="3" stroke-dasharray="7 5"/>
+    <path d="M-16 -20 L-3 -28 L11 -20" fill="none" stroke="#f0d09e" stroke-width="3"/>
+    <text y="29" text-anchor="middle" font-size="15" fill="#d8efdb">LAMP CACHE</text>
+  </g>''')
+deco('light_crate_stashed', '''
+  <g transform="translate(574 292)"><path d="M-26 -42 L-26 -6 M-26 -42 L-12 -30 L2 -43" stroke="#e7c18f" stroke-width="4" fill="none"/>
+  <text y="29" text-anchor="middle" font-size="15" fill="#e9d3a8">LOCATION MARKED</text></g>''')
+deco('light_stash_rough', '''
+  <g transform="translate(574 292)"><path d="M-39 -42 L-4 -55 L16 -43 L12 -4 L-39 -4 Z" fill="#617f77" fill-opacity=".7" stroke="#c4d2c0" stroke-width="2"/>
+  <path d="M10 -43 L42 -35 L37 4" fill="none" stroke="#e0b88d" stroke-width="3" stroke-dasharray="6 6"/>
+  <text y="29" text-anchor="middle" font-size="15" fill="#f0d4a8">PARTLY COVERED</text></g>''')
+# The corridor glow is driven by existing simulated boss victory in the HTML.
+# No fictional 'finale_boss_victory' event award is written to the game state.
+body.append('''<g data-progression="boss-cleared" data-floor="L0" style="display:none">
+  <path d="M1301 265 L1301 134" stroke="#f5cf83" stroke-width="19" stroke-linecap="round" opacity=".25"/>
+  <path d="M1301 265 L1301 134" stroke="#ffe3a4" stroke-width="5" stroke-linecap="round" opacity=".8" stroke-dasharray="12 10"/>
+  <circle cx="1310" cy="126" r="39" fill="#e5c47c" fill-opacity=".18" stroke="#e6c88e" stroke-opacity=".65" stroke-width="3"/>
+  <text x="1310" y="80" text-anchor="middle" font-size="18" fill="#ffe3ab" paint-order="stroke" stroke="#1b2932" stroke-width="4">RESCUE ROUTE OPEN</text>
+</g>''')
+body.append('</g></svg>')
+path=root/'warehouse_visual_outcomes_v07.svg'
+path.write_text('\n'.join(body),encoding='utf8')
+print('Wrote',path,'with',len(flags),'existing event flags')

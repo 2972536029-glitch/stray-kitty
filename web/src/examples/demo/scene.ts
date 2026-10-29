@@ -6,13 +6,14 @@ import {CanvasPainter} from '../../adapters/canvas/painter';
 import {FollowCamera, type CameraFrame} from '../../adapters/canvas/camera';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
 import {TunnelMap} from '../../modules/chapter4/TunnelMap';
-import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, marketExitAt, MARKET_EXIT_TRIGGER, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
+import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketInteractionTarget, marketOptionalHint, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, marketExitAt, MARKET_EXIT_TRIGGER, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 import {HOME_LAYOUT_ID, HOME_RESIDENTS, HOME_ROAM_NODES, HOME_SHELTER_NODES, HOME_SLOTS, homeStage} from '../../modules/home/layout';
 import {homeAppearanceKey, paintHomestead} from '../../modules/home/painter';
 import {homeStoryBeat, storyActorPosition, type HomeStoryActor, type HomeStoryBeat} from '../../modules/home/story';
 import {explorationScene} from '../../core/chapter-navigation';
+import type {WarehouseWalkMap, WarehouseReviewOptions} from '../../modules/chapter5/WarehouseWalkMap';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 花房家园的猫咪轻量 AI:pose 非空表示绑定专属家具姿态,否则按 sit→walk→sit 循环漫步。
@@ -36,6 +37,9 @@ interface HomeCatAgent {
   scriptedHeight?: number;
 }
 export class DemoScene {
+  private warehousePreview: WarehouseWalkMap | null = null;
+  private warehouseLoading: Promise<void> | null = null;
+  private warehouseCollision = false;
   state: GameState | null = null;
   pausedByUser = false;
   storyScene: StoryNode['scene'];
@@ -100,7 +104,8 @@ export class DemoScene {
     private onWorldPosition?: (point: {x: number; y: number}) => void,
     private onMarketBattle?: (floor:MarketFloor,point:{x:number;y:number}) => void,
     private onMarketExit?: (floor: MarketFloor, point:{x:number;y:number}) => void,
-    private onMarketZone?: (zoneId:string,floor:MarketFloor,point:{x:number;y:number}) => Promise<boolean>
+    private onMarketZone?: (zoneId:string,floor:MarketFloor,point:{x:number;y:number}) => Promise<boolean>,
+    private onWarehousePosition?: (floor:'L0'|'L1',point:{x:number;y:number})=>void
   ) {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('浏览器无法创建二维画布');
@@ -118,9 +123,33 @@ export class DemoScene {
     for(const floor of Object.keys(marketArt) as MarketFloor[]) this.marketImages[floor].src=marketArt[floor];
   }
   setDirection(direction: Direction, held: boolean) {if(this.marketTransition.active)return;if (held) this.held.add(direction);else this.held.delete(direction);}
+  async enableWarehousePreview() {
+    if(this.warehouseLoading)return this.warehouseLoading;
+    this.warehouseLoading=this.loadWarehouse();return this.warehouseLoading;
+  }
+  private async loadWarehouse() {
+    const {WarehouseWalkMap} = await import('../../modules/chapter5/WarehouseWalkMap');
+    if (this.destroyed) return;
+    this.warehousePreview = new WarehouseWalkMap();
+    await this.warehousePreview.ready();
+  }
+  climbWarehouse() {if(this.warehousePreview?.climb())this.clearInput();}
+  setWarehouseReviewOptions(options: Partial<WarehouseReviewOptions>) {this.warehousePreview?.setOptions(options);}
+  resetWarehousePreview() {this.clearInput(); this.warehousePreview?.reset();}
   private keydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null;
     if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
+    if (this.warehousePreview && (!this.state || this.state.mapId==='warehouse')) {
+      if(this.pausedByUser||(this.state&&this.state.phase!=='explore'))return;
+      const key = event.key.toLowerCase();
+      if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(key)) {event.preventDefault(); this.keys.add(key);}
+      if(key==='c'&&!event.repeat){event.preventDefault();this.climbWarehouse();}
+      if(key==='e'&&!event.repeat&&this.state){event.preventDefault();const target=this.warehousePreview.nearTarget;if(target?.key==='E'){this.onWarehousePosition?.(this.warehousePreview.layer,this.warehousePreview.positionNow());this.onInteract(target.id);}}
+      if(import.meta.env.DEV&&key==='g'&&!event.repeat)this.warehousePreview.setOptions({collision:!this.warehouseCollision});
+      if(import.meta.env.DEV&&key==='g'&&!event.repeat)this.warehouseCollision=!this.warehouseCollision;
+      if (key === 'r' && !event.repeat&&!this.state) this.resetWarehousePreview();
+      return;
+    }
     if (this.state?.phase !== 'explore' || this.pausedByUser) return;
     const key = event.key.toLowerCase();
     if (this.state?.mapId === 'tunnel') {
@@ -239,6 +268,25 @@ export class DemoScene {
     this.update(delta);this.frame = requestAnimationFrame(this.tick);
   };
   private update(delta: number) {
+    if(this.state?.mapId==='warehouse'&&!this.warehouseLoading)void this.enableWarehousePreview().catch(error=>{this.onInspectHint?.(String(error));});
+    if (this.warehousePreview && (!this.state || this.state.mapId==='warehouse')) {
+      if(this.state)this.warehousePreview.syncState(this.state);
+      const active = !this.pausedByUser && document.visibilityState !== 'hidden' && (!this.state||this.state.phase==='explore');
+      if (!active) this.clearInput();
+      const dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
+      const dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
+      if(active)this.warehousePreview.update(delta,dx,dy,this.state?(id,floor,point)=>this.onMarketZone?.(id,floor,point)??Promise.resolve(false):undefined);
+      this.warehousePreview.draw(this.context, this.viewWidth, this.viewHeight, delta);
+      const point = this.warehousePreview.positionNow();
+      this.canvas.dataset.renderedScene = this.state?'chapter5-warehouse':'warehouse-walk-review';
+      this.canvas.dataset.mapId='warehouse';this.canvas.dataset.phase=this.state?.phase??'explore';
+      this.canvas.dataset.ready = String(this.warehousePreview.isReady);
+      this.canvas.dataset.playerX = point.x.toFixed(2); this.canvas.dataset.playerY = point.y.toFixed(2);
+      this.canvas.dataset.floor=this.warehousePreview.layer;
+      this.onWarehousePosition?.(this.warehousePreview.layer,point);
+      const target=this.warehousePreview.nearTarget;this.onNear(!!target,target?.id,target?.label);this.onInspectHint?.(this.warehousePreview.hint);
+      return;
+    }
     if (!this.state) return;
     if (this.state.mapId === 'market' || this.storyScene === 'market') this.marketFrame=measureMarketCameraFrame(this.canvas,this.viewWidth,this.viewHeight);
     const mode = this.state.phase;
@@ -349,22 +397,12 @@ export class DemoScene {
         }
         this.onInspectHint?.(inspect);
       } else if (this.state.mapId === 'market') {
-        const clueFlags:Record<string,string>={crow:'market_crow_clue_completed',pigeon:'market_pigeon_clue_completed'};
-        const nearestItem=marketItems.filter(item=>(item.kind==='fixed'||item.kind==='optional')&&item.layer===this.marketFloor&&(!clueFlags[item.id]||!this.state!.flags.includes(clueFlags[item.id]))&&!(item.id==='momo'&&this.state!.drawnEvents?.includes('node:momo_trail_event'))).map(item=>({item,distance:Math.hypot(this.x-item.x,this.y-item.y)})).filter(value=>value.distance<=75).sort((a,b)=>a.distance-b.distance)[0]?.item;
-        const nearCrow = nearestItem?.id==='crow';
-        const nearPigeon = nearestItem?.id==='pigeon';
-        const nearMomo = nearestItem?.id==='momo';
-        nearInteraction = !!nearestItem;
-        const traversalNearby=marketPortals.some(value=>(!value.requiresFlag||this.state!.flags.includes(value.requiresFlag))&&[value.a,value.b].some(point=>point.layer===this.marketFloor&&Math.hypot(this.x-point.x,this.y-point.y)<=44));
-        if (nearCrow) {
-          this.onNear(true, 'market_crow_stall', '老黑羽的情报摊 · E');
-        } else if (nearPigeon) {
-          this.onNear(true, 'market_pigeon_perch', '咕咕大盗的传言棚 · E');
-        } else if(nearMomo&&!traversalNearby) {
-          this.onNear(true,'market_momo_trace','墨墨的踪迹 · E');
-        } else {
-          this.onNear(false);
-        }
+        const target=marketInteractionTarget(this.marketFloor,this.x,this.y,this.state.flags,this.state.drawnEvents??[]);
+        const nearCrow=target?.id==='market_crow_stall';
+        const nearPigeon=target?.id==='market_pigeon_perch';
+        const nearMomo=target?.id==='market_momo_trace';
+        nearInteraction=!!target;
+        this.onNear(!!target,target?.id,target?.label);
 
         let inspect: string | null = null;
         if (nearCrow) {
@@ -376,18 +414,18 @@ export class DemoScene {
         } else if (Math.hypot(this.x - 130, this.y - 310) < 55) {
           inspect = '【团子】“喵喵，集市里的鸟雀们消息很灵通，我们去打听一下吧！”';
         }
-        if(nearestItem?.id==='momo')inspect='E · 查看墨墨的踪迹';
+        if(nearMomo)inspect='E · 查看墨墨的踪迹';
         this.onInspectHint?.(inspect);
         const bossReady=this.state.flags.includes('market_crow_clue_completed')&&this.state.flags.includes('market_pigeon_clue_completed');
         if(nearMomo)this.onInspectHint?.('E · 查看墨墨的踪迹');
         const portal=marketPortals.filter(value=>!value.requiresFlag||this.state!.flags.includes(value.requiresFlag)).flatMap(value=>[{portal:value,point:value.a},{portal:value,point:value.b}]).filter(value=>value.point.layer===this.marketFloor&&Math.hypot(this.x-value.point.x,this.y-value.point.y)<=value.portal.radius).sort((a,b)=>Math.hypot(this.x-a.point.x,this.y-a.point.y)-Math.hypot(this.x-b.point.x,this.y-b.point.y))[0];
         if(portal)this.onInspectHint?.(`${portal.portal.key.toUpperCase()} · ${portal.portal.label.split(' · ')[1]}`);
-        else if(!nearestItem&&this.marketFloor==='L0'&&Math.hypot(this.x-1310,this.y-169)<72&&!bossReady)this.onInspectHint?.('集市保卫战 · 需要先完成两条情报');
-        else if(!nearestItem&&this.marketFloor==='L0'&&Math.hypot(this.x-1365,this.y-78)<48&&!this.state.flags.includes('market_cleared'))this.onInspectHint?.('北街出口 · 请先完成集市保卫战');
+        else if(!target&&this.marketFloor==='L0'&&Math.hypot(this.x-1310,this.y-169)<72&&!bossReady)this.onInspectHint?.('集市保卫战 · 需要先完成两条情报');
+        else if(!target&&this.marketFloor==='L0'&&Math.hypot(this.x-1365,this.y-78)<48&&!this.state.flags.includes('market_cleared'))this.onInspectHint?.('北街出口 · 请先完成集市保卫战');
         const battleAction=marketEAction(this.marketFloor,this.x,this.y,this.state.flags,this.state.drawnEvents??[]);
         if(battleAction?.type==='battle')this.onInspectHint?.('E · 开始集市保卫战');
         else if(battleAction?.type==='hint')this.onInspectHint?.(battleAction.text);
-        const authoredFocus=!!nearestItem||!!portal||Math.hypot(this.x-1310,this.y-169)<=75||Math.hypot(this.x-1365,this.y-78)<=48;
+        const authoredFocus=!!target||!!portal||Math.hypot(this.x-1310,this.y-169)<=75||Math.hypot(this.x-1365,this.y-78)<=48;
         if(!authoredFocus){const clueHint=marketOptionalHint(this.marketFloor,this.x,this.y,!!this.state.drawnEvents?.includes('node:momo_trail_event'));if(clueHint)this.onInspectHint?.(clueHint);}
         if(!authoredFocus)for(const [id,floor,x,y] of [['market_random_r1','L0',652,632],['market_random_r2','L1',680,166],['market_random_r3','Lm1',975,429]] as const){
           const inside=this.marketFloor===floor&&Math.hypot(this.x-x,this.y-y)<42;

@@ -1,0 +1,1558 @@
+{
+  "id": "warehouse_ch5_graybox_v07",
+  "status": "concept-graybox; not production-approved",
+  "world": {
+    "width": 1672,
+    "height": 941,
+    "coordinateSystem": "common L0/L1 SVG pixel coordinates",
+    "catRadius": 13
+  },
+  "walkable": {
+    "L0": [
+      [
+        [
+          162,
+          281
+        ],
+        [
+          225,
+          281
+        ],
+        [
+          225,
+          215
+        ],
+        [
+          366,
+          215
+        ],
+        [
+          366,
+          186
+        ],
+        [
+          620,
+          186
+        ],
+        [
+          620,
+          207
+        ],
+        [
+          808,
+          207
+        ],
+        [
+          808,
+          235
+        ],
+        [
+          1040,
+          235
+        ],
+        [
+          1040,
+          282
+        ],
+        [
+          1410,
+          282
+        ],
+        [
+          1410,
+          325
+        ],
+        [
+          1500,
+          325
+        ],
+        [
+          1500,
+          375
+        ],
+        [
+          1540,
+          375
+        ],
+        [
+          1540,
+          536
+        ],
+        [
+          1496,
+          536
+        ],
+        [
+          1496,
+          601
+        ],
+        [
+          1520,
+          601
+        ],
+        [
+          1520,
+          810
+        ],
+        [
+          1360,
+          810
+        ],
+        [
+          1360,
+          852
+        ],
+        [
+          1141,
+          852
+        ],
+        [
+          1141,
+          828
+        ],
+        [
+          1045,
+          828
+        ],
+        [
+          1045,
+          856
+        ],
+        [
+          965,
+          856
+        ],
+        [
+          965,
+          924
+        ],
+        [
+          756,
+          924
+        ],
+        [
+          756,
+          853
+        ],
+        [
+          597,
+          853
+        ],
+        [
+          597,
+          875
+        ],
+        [
+          310,
+          875
+        ],
+        [
+          310,
+          838
+        ],
+        [
+          189,
+          838
+        ],
+        [
+          189,
+          778
+        ],
+        [
+          143,
+          778
+        ],
+        [
+          143,
+          607
+        ],
+        [
+          111,
+          607
+        ],
+        [
+          111,
+          360
+        ],
+        [
+          162,
+          360
+        ]
+      ],
+      [
+        [
+          1190,
+          65
+        ],
+        [
+          1455,
+          65
+        ],
+        [
+          1455,
+          210
+        ],
+        [
+          1347,
+          210
+        ],
+        [
+          1347,
+          282
+        ],
+        [
+          1258,
+          282
+        ],
+        [
+          1258,
+          210
+        ],
+        [
+          1190,
+          210
+        ]
+      ]
+    ],
+    "L1": [
+      [
+        [
+          524.0,
+          250.0
+        ],
+        [
+          524.0,
+          278.0
+        ],
+        [
+          386.0,
+          278.0
+        ],
+        [
+          386.0,
+          258.0
+        ],
+        [
+          274.0,
+          258.0
+        ],
+        [
+          274.0,
+          386.0
+        ],
+        [
+          386.0,
+          386.0
+        ],
+        [
+          386.0,
+          332.0
+        ],
+        [
+          524.0,
+          332.0
+        ],
+        [
+          524.0,
+          344.0
+        ],
+        [
+          617.0,
+          344.0
+        ],
+        [
+          617.0,
+          370.0
+        ],
+        [
+          617.0,
+          430.0
+        ],
+        [
+          617.0,
+          432.0
+        ],
+        [
+          773.0,
+          432.0
+        ],
+        [
+          773.0,
+          463.0
+        ],
+        [
+          867.0,
+          463.0
+        ],
+        [
+          867.0,
+          372.0
+        ],
+        [
+          855.0,
+          372.0
+        ],
+        [
+          855.0,
+          370.0
+        ],
+        [
+          677.0,
+          370.0
+        ],
+        [
+          677.0,
+          278.0
+        ],
+        [
+          668.0,
+          278.0
+        ],
+        [
+          640.0,
+          278.0
+        ],
+        [
+          640.0,
+          250.0
+        ]
+      ]
+    ]
+  },
+  "walkableSemantics": "L0 union of polygons MINUS solid rectangles; L1 union of rectangles. Dynamic gates have independent state.",
+  "solids": [
+    {
+      "id": "west_upper_tall_rack",
+      "x": 393,
+      "y": 244,
+      "w": 151,
+      "h": 101,
+      "style": "rack",
+      "floor": "L0"
+    },
+    {
+      "id": "west_wide_rack",
+      "x": 416,
+      "y": 412,
+      "w": 166,
+      "h": 96,
+      "style": "rack",
+      "floor": "L0"
+    },
+    {
+      "id": "west_lower_rack",
+      "x": 409,
+      "y": 595,
+      "w": 151,
+      "h": 99,
+      "style": "rack",
+      "floor": "L0"
+    },
+    {
+      "id": "west_crates",
+      "x": 255,
+      "y": 667,
+      "w": 106,
+      "h": 91,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "west_service_equipment",
+      "x": 205,
+      "y": 457,
+      "w": 91,
+      "h": 102,
+      "style": "machine",
+      "floor": "L0"
+    },
+    {
+      "id": "west_repair_pallet",
+      "x": 174,
+      "y": 355,
+      "w": 61,
+      "h": 53,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "west_broken_shelf",
+      "x": 346,
+      "y": 705,
+      "w": 49,
+      "h": 95,
+      "style": "rack",
+      "floor": "L0"
+    },
+    {
+      "id": "center_upper_rack",
+      "x": 637,
+      "y": 261,
+      "w": 134,
+      "h": 83,
+      "style": "rack",
+      "floor": "L0"
+    },
+    {
+      "id": "center_mid_container",
+      "x": 630,
+      "y": 424,
+      "w": 144,
+      "h": 112,
+      "style": "container",
+      "floor": "L0"
+    },
+    {
+      "id": "center_lower_rack",
+      "x": 637,
+      "y": 629,
+      "w": 113,
+      "h": 113,
+      "style": "rack",
+      "floor": "L0"
+    },
+    {
+      "id": "southwest_pallets",
+      "x": 548,
+      "y": 775,
+      "w": 76,
+      "h": 43,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "center_fallen_boxes",
+      "x": 759,
+      "y": 633,
+      "w": 49,
+      "h": 65,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "east_upper_container",
+      "x": 897,
+      "y": 276,
+      "w": 132,
+      "h": 113,
+      "style": "container",
+      "floor": "L0"
+    },
+    {
+      "id": "east_mid_rack",
+      "x": 932,
+      "y": 445,
+      "w": 108,
+      "h": 96,
+      "style": "rack",
+      "floor": "L0"
+    },
+    {
+      "id": "east_lower_container",
+      "x": 909,
+      "y": 641,
+      "w": 127,
+      "h": 90,
+      "style": "container",
+      "floor": "L0"
+    },
+    {
+      "id": "east_top_rack",
+      "x": 1127,
+      "y": 320,
+      "w": 121,
+      "h": 77,
+      "style": "rack",
+      "floor": "L0"
+    },
+    {
+      "id": "east_center_rack",
+      "x": 1124,
+      "y": 462,
+      "w": 108,
+      "h": 81,
+      "style": "rack",
+      "floor": "L0"
+    },
+    {
+      "id": "east_lower_crates",
+      "x": 1148,
+      "y": 639,
+      "w": 112,
+      "h": 88,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "far_east_top_machine",
+      "x": 1359,
+      "y": 394,
+      "w": 114,
+      "h": 94,
+      "style": "machine",
+      "floor": "L0"
+    },
+    {
+      "id": "far_east_bottom",
+      "x": 1367,
+      "y": 654,
+      "w": 101,
+      "h": 91,
+      "style": "container",
+      "floor": "L0"
+    },
+    {
+      "id": "southeast_pallets",
+      "x": 1090,
+      "y": 774,
+      "w": 67,
+      "h": 45,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "northeast_spare_drums",
+      "x": 1257,
+      "y": 333,
+      "w": 56,
+      "h": 72,
+      "style": "machine",
+      "floor": "L0"
+    },
+    {
+      "id": "northeast_tilted_container",
+      "x": 1265,
+      "y": 458,
+      "w": 77,
+      "h": 88,
+      "style": "container",
+      "floor": "L0"
+    },
+    {
+      "id": "east_mid_crate_stack",
+      "x": 1402,
+      "y": 536,
+      "w": 78,
+      "h": 83,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "east_loading_rejects",
+      "x": 1215,
+      "y": 743,
+      "w": 72,
+      "h": 62,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "south_loading_crate",
+      "x": 850,
+      "y": 797,
+      "w": 74,
+      "h": 52,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "upper_access_pallet",
+      "x": 1064,
+      "y": 294,
+      "w": 42,
+      "h": 64,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "west_cross_spill",
+      "x": 325,
+      "y": 521,
+      "w": 68,
+      "h": 32,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "central_misplaced_pallet",
+      "x": 805,
+      "y": 459,
+      "w": 72,
+      "h": 35,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "east_transverse_rubble",
+      "x": 1055,
+      "y": 548,
+      "w": 64,
+      "h": 39,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "east_spare_forklift",
+      "x": 1273,
+      "y": 556,
+      "w": 59,
+      "h": 54,
+      "style": "machine",
+      "floor": "L0"
+    },
+    {
+      "id": "west_overturned_pallets",
+      "x": 402,
+      "y": 260,
+      "w": 46,
+      "h": 28,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "west_collapsed_upright",
+      "x": 307,
+      "y": 449,
+      "w": 91,
+      "h": 28,
+      "style": "rack",
+      "floor": "L0"
+    },
+    {
+      "id": "west_loading_rejects",
+      "x": 155,
+      "y": 640,
+      "w": 86,
+      "h": 39,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "south_central_scrap",
+      "x": 763,
+      "y": 750,
+      "w": 47,
+      "h": 36,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "upper_east_fallen_rack",
+      "x": 1014,
+      "y": 460,
+      "w": 60,
+      "h": 48,
+      "style": "rack",
+      "floor": "L0"
+    },
+    {
+      "id": "upper_east_cross_pallet",
+      "x": 1178,
+      "y": 413,
+      "w": 57,
+      "h": 33,
+      "style": "crate",
+      "floor": "L0"
+    },
+    {
+      "id": "east_dock_displaced_stack",
+      "x": 1387,
+      "y": 383,
+      "w": 70,
+      "h": 31,
+      "style": "crate",
+      "floor": "L0"
+    }
+  ],
+  "l1WalkableRectangles": [
+    {
+      "id": "lookout_platform",
+      "x": 274,
+      "y": 258,
+      "w": 112,
+      "h": 128
+    },
+    {
+      "id": "west_catwalk",
+      "x": 333,
+      "y": 278,
+      "w": 335,
+      "h": 54
+    },
+    {
+      "id": "north_connector",
+      "x": 617,
+      "y": 278,
+      "w": 60,
+      "h": 152
+    },
+    {
+      "id": "east_catwalk",
+      "x": 617,
+      "y": 370,
+      "w": 238,
+      "h": 62
+    },
+    {
+      "id": "crate_platform",
+      "x": 524,
+      "y": 250,
+      "w": 116,
+      "h": 94
+    },
+    {
+      "id": "c2_landing",
+      "x": 773,
+      "y": 372,
+      "w": 94,
+      "h": 91
+    }
+  ],
+  "climbs": [
+    {
+      "id": "C1",
+      "x": 320,
+      "y": 343,
+      "from": "L0",
+      "to": "L1",
+      "label": "West shelf climb"
+    },
+    {
+      "id": "C2",
+      "x": 816,
+      "y": 409,
+      "from": "L0",
+      "to": "L1",
+      "label": "Central catwalk descent"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "entry_lamp",
+      "x": 316,
+      "y": 582,
+      "floor": "L0",
+      "kind": "light",
+      "label": "Entrance lamp",
+      "type": "permanent"
+    },
+    {
+      "id": "central_spotlight",
+      "x": 833,
+      "y": 557,
+      "floor": "L0",
+      "kind": "light",
+      "label": "Central spotlight",
+      "type": "toggle"
+    },
+    {
+      "id": "secondary_lamp",
+      "x": 1420,
+      "y": 775,
+      "floor": "L0",
+      "kind": "light",
+      "label": "Secondary lamp",
+      "type": "permanent"
+    },
+    {
+      "id": "warehouse_lookout",
+      "x": 316,
+      "y": 287,
+      "floor": "L1",
+      "kind": "fixed_event",
+      "label": "货架顶的瞭望位"
+    },
+    {
+      "id": "warehouse_light_crate",
+      "x": 574,
+      "y": 292,
+      "floor": "L1",
+      "kind": "fixed_event",
+      "label": "吊在半空的灯具箱"
+    },
+    {
+      "id": "finale_boss",
+      "x": 1302,
+      "y": 294,
+      "floor": "L0",
+      "kind": "battle",
+      "label": "Mandatory finale boss",
+      "storyBefore": "finale_intro_5",
+      "storyAfterWin": "finale_intro_6"
+    },
+    {
+      "id": "bunker_exit",
+      "x": 1310,
+      "y": 126,
+      "floor": "L0",
+      "kind": "exit",
+      "label": "Rescue / Exit (victory only)"
+    },
+    {
+      "id": "warehouse_entry",
+      "x": 833,
+      "y": 882,
+      "floor": "L0",
+      "kind": "start",
+      "label": "Entrance from tunnel"
+    }
+  ],
+  "randomZones": [
+    {
+      "id": "R1",
+      "x": 657,
+      "y": 765,
+      "r": 47,
+      "floor": "L0",
+      "label": "Loading storage",
+      "examples": [
+        "sack_row_event",
+        "box_haul_event"
+      ]
+    },
+    {
+      "id": "R2",
+      "x": 266,
+      "y": 404,
+      "r": 43,
+      "floor": "L0",
+      "label": "Western shelving",
+      "examples": [
+        "fake_meow_event",
+        "moving_shelves_event",
+        "warm_nest_event"
+      ]
+    },
+    {
+      "id": "R3",
+      "x": 1364,
+      "y": 566,
+      "r": 44,
+      "floor": "L0",
+      "label": "East cross-aisle",
+      "examples": [
+        "moving_shelves_event",
+        "warm_nest_event",
+        "fake_meow_event"
+      ]
+    },
+    {
+      "id": "R4",
+      "x": 1094,
+      "y": 402,
+      "r": 42,
+      "floor": "L0",
+      "label": "Upper shared road",
+      "examples": [
+        "shadow_captain_event",
+        "fake_meow_event",
+        "moving_shelves_event"
+      ]
+    }
+  ],
+  "ambientLamps": [
+    {
+      "id": "bay_window_lamp",
+      "x": 360,
+      "y": 252,
+      "r": 177,
+      "floor": "L0",
+      "label": "West bay safety light"
+    },
+    {
+      "id": "upper_cross_lamp",
+      "x": 1070,
+      "y": 262,
+      "r": 174,
+      "floor": "L0",
+      "label": "Upper service lamp"
+    },
+    {
+      "id": "east_dock_lamp",
+      "x": 1468,
+      "y": 385,
+      "r": 181,
+      "floor": "L0",
+      "label": "East bay safety light"
+    },
+    {
+      "id": "lookout_guide_lamp",
+      "x": 320,
+      "y": 310,
+      "r": 156,
+      "floor": "L1",
+      "label": "Lookout platform light"
+    }
+  ],
+  "dynamicGates": {
+    "boss": {
+      "id": "boss_gate",
+      "x": 1257,
+      "y": 251,
+      "w": 91,
+      "h": 22,
+      "floor": "L0",
+      "unlock": "finale_boss_victory"
+    },
+    "shadow": [
+      {
+        "id": "west_shortcut",
+        "x": 587,
+        "y": 356,
+        "w": 23,
+        "h": 47,
+        "floor": "L0",
+        "unlock": "entry_lamp"
+      },
+      {
+        "id": "east_shortcut",
+        "x": 1061,
+        "y": 524,
+        "w": 27,
+        "h": 44,
+        "floor": "L0",
+        "unlock": "secondary_lamp"
+      }
+    ]
+  },
+  "storyContract": {
+    "entry": "finale_intro_1..finale_intro_4",
+    "finaleClueRequirement": 3,
+    "beforeBoss": "finale_intro_5",
+    "stage": "finale_boss",
+    "afterWin": "finale_intro_6",
+    "ending": "finale_intro_7..finale_intro_9 (greenhouse)"
+  },
+  "eventPoolRandom": [
+    "fake_meow_event",
+    "moving_shelves_event",
+    "warm_nest_event",
+    "sack_row_event",
+    "shadow_captain_event",
+    "box_haul_event"
+  ],
+  "eventPoolFixed": [
+    "warehouse_light_crate",
+    "warehouse_lookout"
+  ],
+  "visualOutcomeMapping": {
+    "supply_post_built": {
+      "floor": "L0",
+      "anchor": [
+        445,
+        757
+      ],
+      "appearance": "supply_station",
+      "sourceEvent": "box_haul_event"
+    },
+    "supply_post_paused": {
+      "floor": "L0",
+      "anchor": [
+        445,
+        757
+      ],
+      "appearance": "unfinished_supply_post",
+      "sourceEvent": "box_haul_event"
+    },
+    "watch_post_set": {
+      "floor": "L1",
+      "anchor": [
+        316,
+        287
+      ],
+      "appearance": "watch_post",
+      "sourceEvent": "warehouse_lookout"
+    },
+    "watch_post_one_route": {
+      "floor": "L1",
+      "anchor": [
+        316,
+        287
+      ],
+      "appearance": "partial_watch_post",
+      "sourceEvent": "warehouse_lookout"
+    },
+    "watch_post_wet": {
+      "floor": "L1",
+      "anchor": [
+        316,
+        287
+      ],
+      "appearance": "wet_watch_post",
+      "sourceEvent": "warehouse_lookout"
+    },
+    "lookout_surveyed": {
+      "floor": "L0",
+      "anchor": [
+        833,
+        557
+      ],
+      "appearance": "surveyed_landmarks",
+      "sourceEvent": "warehouse_lookout"
+    },
+    "lookout_partial": {
+      "floor": "L1",
+      "anchor": [
+        316,
+        287
+      ],
+      "appearance": "partial_survey",
+      "sourceEvent": "warehouse_lookout"
+    },
+    "lookout_recce": {
+      "floor": "L1",
+      "anchor": [
+        316,
+        287
+      ],
+      "appearance": "safe_route_mark",
+      "sourceEvent": "warehouse_lookout"
+    },
+    "light_crate_found": {
+      "floor": "L1",
+      "anchor": [
+        574,
+        292
+      ],
+      "appearance": "lamp_recovered",
+      "sourceEvent": "warehouse_light_crate"
+    },
+    "light_crate_dinged": {
+      "floor": "L1",
+      "anchor": [
+        574,
+        292
+      ],
+      "appearance": "dented_lamp",
+      "sourceEvent": "warehouse_light_crate"
+    },
+    "light_crate_stashed": {
+      "floor": "L1",
+      "anchor": [
+        574,
+        292
+      ],
+      "appearance": "crate_location_marked",
+      "sourceEvent": "warehouse_light_crate"
+    },
+    "finale_light_stashed": {
+      "floor": "L1",
+      "anchor": [
+        574,
+        292
+      ],
+      "appearance": "covered_lamp_crate",
+      "sourceEvent": "warehouse_light_crate"
+    },
+    "light_stash_rough": {
+      "floor": "L1",
+      "anchor": [
+        574,
+        292
+      ],
+      "appearance": "partially_covered_crate",
+      "sourceEvent": "warehouse_light_crate"
+    }
+  },
+  "visualOutcomeNotes": "Appearance only; read existing server flags. Boss victory uses the existing cleared-battle state, not a newly awarded event flag. Supply post is illustrated in the loading bay because prior event zone of origin may not be persisted.",
+  "prototypePacing": {
+    "randomZoneChance": 0.5,
+    "maxRandomEncounters": 2,
+    "oneAttemptPerZone": true,
+    "note": "provisional level-design values; backend dangerLevel compatibility unverified"
+  },
+  "exampleRoutes": [
+    {
+      "id": "shared_approach",
+      "points": [
+        [
+          835,
+          880
+        ],
+        [
+          835,
+          555
+        ]
+      ]
+    },
+    {
+      "id": "recon",
+      "points": [
+        [
+          835,
+          555
+        ],
+        [
+          830,
+          560
+        ],
+        [
+          675,
+          560
+        ],
+        [
+          620,
+          615
+        ],
+        [
+          620,
+          755
+        ],
+        [
+          635,
+          755
+        ],
+        [
+          640,
+          760
+        ],
+        [
+          650,
+          760
+        ],
+        [
+          655,
+          765
+        ],
+        [
+          650,
+          760
+        ],
+        [
+          645,
+          760
+        ],
+        [
+          640,
+          755
+        ],
+        [
+          620,
+          755
+        ],
+        [
+          615,
+          750
+        ],
+        [
+          615,
+          640
+        ],
+        [
+          575,
+          600
+        ],
+        [
+          575,
+          580
+        ],
+        [
+          315,
+          580
+        ],
+        [
+          310,
+          575
+        ],
+        [
+          190,
+          575
+        ],
+        [
+          190,
+          440
+        ],
+        [
+          195,
+          435
+        ],
+        [
+          200,
+          435
+        ],
+        [
+          205,
+          430
+        ],
+        [
+          215,
+          430
+        ],
+        [
+          220,
+          425
+        ],
+        [
+          250,
+          425
+        ],
+        [
+          260,
+          415
+        ],
+        [
+          260,
+          410
+        ],
+        [
+          265,
+          405
+        ],
+        [
+          315,
+          355
+        ],
+        [
+          315,
+          350
+        ],
+        [
+          320,
+          345
+        ]
+      ]
+    },
+    {
+      "id": "lighting",
+      "points": [
+        [
+          835,
+          555
+        ],
+        [
+          995,
+          555
+        ],
+        [
+          1040,
+          600
+        ],
+        [
+          1235,
+          600
+        ],
+        [
+          1260,
+          625
+        ],
+        [
+          1345,
+          625
+        ],
+        [
+          1345,
+          605
+        ],
+        [
+          1350,
+          600
+        ],
+        [
+          1350,
+          595
+        ],
+        [
+          1355,
+          590
+        ],
+        [
+          1355,
+          585
+        ],
+        [
+          1360,
+          580
+        ],
+        [
+          1360,
+          570
+        ],
+        [
+          1365,
+          565
+        ],
+        [
+          1365,
+          595
+        ],
+        [
+          1355,
+          605
+        ],
+        [
+          1355,
+          635
+        ],
+        [
+          1350,
+          640
+        ],
+        [
+          1350,
+          760
+        ],
+        [
+          1390,
+          760
+        ],
+        [
+          1395,
+          765
+        ],
+        [
+          1400,
+          765
+        ],
+        [
+          1405,
+          770
+        ],
+        [
+          1415,
+          770
+        ],
+        [
+          1420,
+          775
+        ],
+        [
+          1415,
+          770
+        ],
+        [
+          1410,
+          770
+        ],
+        [
+          1400,
+          760
+        ],
+        [
+          1350,
+          760
+        ],
+        [
+          1330,
+          740
+        ],
+        [
+          1330,
+          690
+        ],
+        [
+          1275,
+          635
+        ],
+        [
+          1275,
+          625
+        ],
+        [
+          1260,
+          625
+        ],
+        [
+          1235,
+          600
+        ],
+        [
+          1040,
+          600
+        ],
+        [
+          995,
+          555
+        ],
+        [
+          915,
+          555
+        ],
+        [
+          915,
+          430
+        ],
+        [
+          1030,
+          430
+        ],
+        [
+          1035,
+          425
+        ],
+        [
+          1045,
+          425
+        ],
+        [
+          1050,
+          420
+        ],
+        [
+          1055,
+          420
+        ],
+        [
+          1060,
+          415
+        ],
+        [
+          1065,
+          415
+        ],
+        [
+          1070,
+          410
+        ],
+        [
+          1075,
+          410
+        ],
+        [
+          1080,
+          405
+        ],
+        [
+          1085,
+          405
+        ],
+        [
+          1090,
+          400
+        ],
+        [
+          1095,
+          400
+        ],
+        [
+          1050,
+          400
+        ],
+        [
+          1045,
+          405
+        ],
+        [
+          940,
+          405
+        ],
+        [
+          915,
+          430
+        ],
+        [
+          915,
+          555
+        ],
+        [
+          995,
+          555
+        ],
+        [
+          1040,
+          600
+        ],
+        [
+          1135,
+          600
+        ],
+        [
+          1175,
+          560
+        ],
+        [
+          1245,
+          560
+        ],
+        [
+          1245,
+          465
+        ],
+        [
+          1250,
+          460
+        ],
+        [
+          1250,
+          445
+        ],
+        [
+          1275,
+          420
+        ],
+        [
+          1330,
+          420
+        ],
+        [
+          1330,
+          320
+        ],
+        [
+          1305,
+          295
+        ],
+        [
+          1300,
+          295
+        ]
+      ]
+    },
+    {
+      "id": "crosslink",
+      "points": [
+        [
+          815,
+          410
+        ],
+        [
+          815,
+          420
+        ],
+        [
+          790,
+          445
+        ],
+        [
+          790,
+          510
+        ],
+        [
+          835,
+          555
+        ],
+        [
+          950,
+          555
+        ],
+        [
+          955,
+          560
+        ],
+        [
+          995,
+          560
+        ],
+        [
+          1030,
+          595
+        ],
+        [
+          1035,
+          595
+        ],
+        [
+          1040,
+          600
+        ],
+        [
+          1050,
+          600
+        ],
+        [
+          1055,
+          605
+        ]
+      ]
+    }
+  ]
+}
