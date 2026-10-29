@@ -1,0 +1,4 @@
+import Modal from './Modal';
+export default function SettingsPanel({musicVolume, sfxVolume, onMusicVolume, onSfxVolume, onClose}: {musicVolume: number; sfxVolume: number; onMusicVolume: (value: number) => void; onSfxVolume: (value: number) => void; onClose: () => void}) {
+  return <Modal title="声音设置" onClose={onClose} className="settings-modal"><header><span className="eyebrow">SOUND OF THE JOURNEY</span><h2>声音设置</h2></header><label className="setting-row"><span>背景音乐与环境音 <output>{musicVolume}%</output></span><input type="range" min="0" max="100" value={musicVolume} aria-label="背景音乐音量" onChange={event => onMusicVolume(Number(event.target.value))}/></label><label className="setting-row"><span>按钮与游戏音效 <output>{sfxVolume}%</output></span><input type="range" min="0" max="100" value={sfxVolume} aria-label="音效音量" onChange={event => onSfxVolume(Number(event.target.value))}/></label><p className="muted">首次点击页面后启用音频；雨声、集市人声与音乐同走背景音量，切换场景自动淡入淡出。</p></Modal>;
+}

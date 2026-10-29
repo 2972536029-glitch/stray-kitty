@@ -6,10 +6,11 @@ import lm1Url from '../../../../level_design/chapter4/art/chapter4_Lminus1_tunne
 import l0MaskUrl from '../../../../level_design/chapter4/collision/chapter4_L0_walkable.png?url';
 import lm1MaskUrl from '../../../../level_design/chapter4/collision/chapter4_Lminus1_walkable.png?url';
 import {TunnelWalkableMask} from './TunnelWalkableMask';
+import {tunnelConnections, tunnelEventCompleted, tunnelPortalDisplay} from './navigation';
+import {raisedRidgeMask, raisedSurfacePolygons, tunnelClimbSurface, tunnelGroundMask, tunnelSurfaceConnections, tunnelSurfaces, type TunnelSurface} from './surfaces';
 
 type Layer = 'L0' | 'Lm1';
 type Point = {x: number; y: number};
-type Connector = (typeof mapData.portals)[number];
 const WIDTH = mapData.world.width, HEIGHT = mapData.world.height, RADIUS = mapData.world.catRadiusFromPreview;
 const layers: Layer[] = ['L0', 'Lm1'];
 const backgrounds: Record<Layer, string> = {L0: l0Url, Lm1: lm1Url};
@@ -21,7 +22,7 @@ function loadImage(url: string) {
   const image = new Image(); image.src = url; return image;
 }
 
-function imageMask(image: HTMLImageElement) {
+function imageMask(image: HTMLImageElement, floor: Layer) {
   const canvas = document.createElement('canvas'); canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
   const context = canvas.getContext('2d', {willReadFrequently: true});
   if (!context) throw new Error('Unable to read Chapter 4 collision mask');
@@ -29,7 +30,7 @@ function imageMask(image: HTMLImageElement) {
   const rgba = context.getImageData(0, 0, canvas.width, canvas.height).data;
   const pixels = new Uint8Array(canvas.width * canvas.height);
   for (let i = 0; i < pixels.length; i++) pixels[i] = rgba[i * 4];
-  return new TunnelWalkableMask(canvas.width, canvas.height, pixels, RADIUS);
+  return tunnelGroundMask(floor, canvas.width, canvas.height, pixels, RADIUS);
 }
 
 function reachableSpawn(mask: TunnelWalkableMask, point: Point) {
@@ -46,28 +47,32 @@ export class TunnelMap {
   private readonly maskImages: Record<Layer, HTMLImageElement> = {L0: loadImage(masks.L0), Lm1: loadImage(masks.Lm1)};
   private readonly maskReady: Promise<Record<Layer, TunnelWalkableMask>>;
   private masks: Record<Layer, TunnelWalkableMask> | null = null;
+  private readonly raisedMasks = {'tank-ridge': raisedRidgeMask('tank-ridge', WIDTH, HEIGHT), 'south-ridge': raisedRidgeMask('south-ridge', WIDTH, HEIGHT), 'west-ridge': raisedRidgeMask('west-ridge', WIDTH, HEIGHT)};
+  private surface: TunnelSurface = 'ground';
   private position: Point = {x: 845, y: 135};
   private floor: Layer = 'L0';
   private cameraPosition: Point = {x: 0, y: 0};
   private labelsVisible = true;
   private collisionVisible = false;
   private nearby: {id: string; label: string} | null = null;
+  private traversalHint: string | null = null;
   private movement: {from: Point; to: Point; elapsed: number; duration: number} | null = null;
   private zonesInside = new Set<string>();
-  private debugTrace = '';
 
   constructor() {
     this.maskReady = Promise.all(layers.map(async floor => {
       const image = this.maskImages[floor];
       if (!image.complete) await new Promise<void>((resolve, reject) => {image.onload = () => resolve(); image.onerror = () => reject(new Error(`Unable to load ${floor} collision mask`));});
       if (image.naturalWidth !== WIDTH || image.naturalHeight !== HEIGHT) throw new Error(`Chapter 4 ${floor} collision dimensions mismatch`);
-      return [floor, imageMask(image)] as const;
+      return [floor, imageMask(image, floor)] as const;
     })).then(entries => {
       const result = Object.fromEntries(entries) as Record<Layer, TunnelWalkableMask>;
       this.masks = result;
       this.position = reachableSpawn(result.L0, this.position);
       for (const portal of mapData.portals) for (const endpoint of [portal.a, portal.b]) {
-        if (!result[endpoint.layer as Layer].isWalkable(endpoint)) throw new Error(`Invalid ${portal.key} landing ${portal.id} at ${endpoint.layer} (${endpoint.x},${endpoint.y})`);
+        const raised = tunnelClimbSurface(portal.id);
+        const mask = raised && endpoint === portal.b ? this.raisedMasks[raised] : result[endpoint.layer as Layer];
+        if (!mask.isWalkable(endpoint)) throw new Error(`Invalid ${portal.key} landing ${portal.id} at ${endpoint.layer} (${endpoint.x},${endpoint.y})`);
       }
       return result;
     });
@@ -76,7 +81,7 @@ export class TunnelMap {
 
   get layer() {return this.floor;}
   get isReady() {return !!this.masks;}
-  get hint() {return this.movement ? null : this.nearby?.label ?? this.debugTrace;}
+  get hint() {return this.movement ? null : this.nearby?.label ?? this.traversalHint;}
   get nearTarget() {return this.nearby;}
   positionNow() {return {...this.position};}
   setCollisionVisible(value: boolean) {this.collisionVisible = value;}
@@ -84,11 +89,11 @@ export class TunnelMap {
   toggleCollision() {this.collisionVisible = !this.collisionVisible;}
   reset() {
     if (this.masks) this.position = reachableSpawn(this.masks.L0, {x: 845, y: 135});
-    this.floor = 'L0'; this.movement = null; this.nearby = null; this.zonesInside.clear(); this.updateCamera(0);
+    this.floor = 'L0'; this.surface = 'ground'; this.movement = null; this.nearby = null; this.traversalHint = null; this.keys.clear(); this.zonesInside.clear(); this.updateCamera(0);
   }
   async ready() {await this.maskReady;}
 
-  update(deltaMs: number, dx: number, dy: number, flags: readonly string[], onRandomZone: (zone: string) => Promise<boolean>, interact: (id: string) => void) {
+  update(deltaMs: number, dx: number, dy: number, flags: readonly string[], onRandomZone: (zone: string) => Promise<boolean>, interact: (id: string) => void, drawnEvents: readonly string[] = []) {
     if (!this.masks) return;
     if (this.movement) {
       this.movement.elapsed = Math.min(this.movement.duration, this.movement.elapsed + deltaMs);
@@ -97,13 +102,13 @@ export class TunnelMap {
       if (t >= 1) {this.position = {...this.movement.to}; this.movement = null;}
     } else if (dx || dy) {
       const length = Math.hypot(dx, dy);
-      const result = this.masks[this.floor].move(this.position, {x: dx / length * speed * deltaMs / 1000, y: dy / length * speed * deltaMs / 1000});
+      const mask = this.surface !== 'ground' ? this.raisedMasks[this.surface] : this.masks[this.floor];
+      const result = mask.move(this.position, {x: dx / length * speed * deltaMs / 1000, y: dy / length * speed * deltaMs / 1000});
       this.position = result.position;
-      this.debugTrace = result.blockedX || result.blockedY ? `Blocked by ${this.floor} walkable mask: ${result.blockedX ? 'X ' : ''}${result.blockedY ? 'Y' : ''}` : '';
-    } else this.debugTrace = '';
-    this.updateNearby(flags);
+    }
+    this.updateNearby(flags, drawnEvents);
     this.updateCamera(deltaMs);
-    const zone = mapData.events.find(event => event.type === 'random_zone' && event.layer === this.floor && event.id !== 'tunnel_random_lower' && Math.hypot(this.position.x - event.x, this.position.y - event.y) <= ((event as {radius?: number}).radius ?? 28));
+    const zone = this.surface === 'ground' && mapData.events.find(event => event.type === 'random_zone' && event.layer === this.floor && event.id !== 'tunnel_random_lower' && Math.hypot(this.position.x - event.x, this.position.y - event.y) <= ((event as {radius?: number}).radius ?? 28));
     if (zone && !this.zonesInside.has(zone.id) && !this.movement) {
       this.zonesInside.add(zone.id);
       if (flags.includes('tunnel_false_kitten_trap_found') || this.floor !== 'L0') void onRandomZone(zone.id);
@@ -128,26 +133,29 @@ export class TunnelMap {
     if (!this.masks || this.movement) return false;
     if (key === 'f' && !flags.includes('tunnel_false_kitten_trap_found')) return false;
     const authoredKey = key === ' ' ? 'space' : key;
-    const portal = mapData.portals.find(p => p.key.toLowerCase() === authoredKey && p.a.layer === this.floor && Math.hypot(this.position.x - p.a.x, this.position.y - p.a.y) <= p.reach)
-      ?? mapData.portals.find(p => p.key.toLowerCase() === authoredKey && p.bidirectional && p.b.layer === this.floor && Math.hypot(this.position.x - p.b.x, this.position.y - p.b.y) <= p.reach);
-    if (!portal) return false;
-    const from = portal.a.layer === this.floor && this.positionNear(portal, portal.a) ? portal.a : portal.b;
-    const to = from === portal.a ? portal.b : portal.a;
-    if (key === 'f' && this.floor !== 'L0' && !this.positionNear(portal, from)) return false;
-    if (!this.masks[to.layer as Layer].isWalkable(to)) return false;
+    const connection = this.connections().find(value => value.portal.key.toLowerCase() === authoredKey && value.distance <= value.portal.reach);
+    if (!connection) return false;
+    const {from, to} = connection;
+    const nextSurface = to === connection.portal.b ? tunnelClimbSurface(connection.portal.id) ?? 'ground' : 'ground';
+    const landingMask = nextSurface !== 'ground' ? this.raisedMasks[nextSurface] : this.masks[to.layer as Layer];
+    if (!landingMask.isWalkable(to)) return false;
     const crossFloor = from.layer !== to.layer;
     const landing = {x: to.x, y: to.y};
     this.movement = {from: crossFloor ? landing : {...this.position}, to: landing, elapsed: 0, duration: key === ' ' ? 520 : key === 'c' ? 640 : 420};
+    this.surface = nextSurface;
     if (crossFloor) {this.floor = to.layer as Layer; this.position = {...landing}; this.zonesInside.clear();}
     this.nearby = null; this.updateCamera(0); return true;
   }
-  private positionNear(portal: Connector, point: Point) {return Math.hypot(this.position.x - point.x, this.position.y - point.y) <= portal.reach;}
-  private updateNearby(flags: readonly string[]) {
-    const candidates = mapData.events.filter(event => event.layer === this.floor && ['story_mandatory', 'fixed_optional'].includes(event.type));
+  private connections() {return tunnelSurfaceConnections(this.floor, this.surface, tunnelConnections(this.floor, this.position));}
+  private updateNearby(flags: readonly string[], drawnEvents: readonly string[]) {
+    const connection = this.connections()[0];
+    this.traversalHint = connection && connection.distance <= connection.portal.reach ? tunnelPortalDisplay(connection, flags).label : null;
+    if (this.surface !== 'ground') {this.nearby = null; return;}
+    const candidates = mapData.events.filter(event => event.layer === this.floor && ['story_mandatory', 'fixed_optional'].includes(event.type)
+      && !tunnelEventCompleted(event, flags, drawnEvents)
+      && (event.id !== 'tunnel_valve_three' || flags.includes('tunnel_false_kitten_trap_found')));
     const found = candidates.map(event => ({event, distance: Math.hypot(this.position.x - event.x, this.position.y - event.y)})).filter(x => x.distance <= 56).sort((a,b) => a.distance-b.distance)[0];
     if (!found) {this.nearby = null; return;}
-    if (found.event.id === 'tunnel_valve_three' && !flags.includes('tunnel_false_kitten_trap_found')) {this.nearby = null; return;}
-    if (found.event.id === 'tunnel_false_kitten_trap' && flags.includes('tunnel_false_kitten_trap_found')) {this.nearby = null; return;}
     if (found.event.eventId) this.nearby = {id: found.event.id, label: `${found.event.label} · E`};
     else if (found.event.id === 'tunnel_false_kitten_trap') this.nearby = {id: found.event.id, label: `${found.event.label} · E`};
     else this.nearby = null;
@@ -158,16 +166,31 @@ export class TunnelMap {
     this.cameraPosition.x += (target.x - this.cameraPosition.x) * blend; this.cameraPosition.y += (target.y - this.cameraPosition.y) * blend;
   }
 
-  draw(context: CanvasRenderingContext2D, width: number, height: number, _flags: readonly string[]) {
+  draw(context: CanvasRenderingContext2D, width: number, height: number, flags: readonly string[], drawnEvents: readonly string[] = []) {
     context.save(); context.globalAlpha = 1; context.globalCompositeOperation = 'source-over';
     context.fillStyle = '#100f14'; context.fillRect(0, 0, width, height);
     const scale = Math.min(width / camera.width, height / camera.height);
     const offsetX = (width - camera.width * scale) / 2, offsetY = (height - camera.height * scale) / 2;
     context.translate(offsetX, offsetY); context.scale(scale, scale); context.translate(-this.cameraPosition.x, -this.cameraPosition.y);
     const art = this.art[this.floor]; if (art.complete && art.naturalWidth) context.drawImage(art, 0, 0, WIDTH, HEIGHT);
-    if (this.collisionVisible) {context.save(); context.globalAlpha = .45; context.drawImage(this.maskImages[this.floor], 0, 0); context.restore();}
+    if (this.collisionVisible) {
+      context.save(); context.globalAlpha = .45;
+      const paint = (polygon: number[][], color: string) => {
+        context.fillStyle = color; context.beginPath();
+        polygon.forEach(([x, y], index) => index ? context.lineTo(x, y) : context.moveTo(x, y));
+        context.closePath(); context.fill();
+      };
+      if (this.surface !== 'ground') for (const polygon of raisedSurfacePolygons[this.surface]) paint(polygon, '#fff');
+      else {
+        context.drawImage(this.maskImages[this.floor], 0, 0);
+        for (const polygon of tunnelSurfaces[this.floor].blocked) paint(polygon, '#000');
+        if (this.floor === 'L0') for (const polygons of Object.values(raisedSurfacePolygons)) for (const polygon of polygons) paint(polygon, '#000');
+        for (const polygon of tunnelSurfaces[this.floor].walkable) paint(polygon, '#fff');
+      }
+      context.restore();
+    }
     this.drawLighting(context);
-    this.drawMarkers(context);
+    this.drawMarkers(context, flags, drawnEvents);
     this.drawCat(context);
     context.restore();
   }
@@ -183,42 +206,70 @@ export class TunnelMap {
     }
     context.restore();
   }
-  private drawMarkers(context: CanvasRenderingContext2D) {
-    const inView = (point: Point, halfWidth = 56, top = 36, bottom = 8) => point.x - halfWidth >= this.cameraPosition.x && point.x + halfWidth <= this.cameraPosition.x + camera.width && point.y - top >= this.cameraPosition.y && point.y + bottom <= this.cameraPosition.y + camera.height;
-    const portals = mapData.portals.filter(portal => [portal.a, portal.b].some(point => point.layer === this.floor && inView(point)));
-    const events = mapData.events.filter(event => event.layer === this.floor && inView(event));
-    if (this.labelsVisible) {
-      for (const event of events) {
-        if (event.type === 'random_zone') {
-          const radius = (event as {radius?: number}).radius ?? 28;
-          context.save(); context.strokeStyle = 'rgba(235,211,150,.34)'; context.setLineDash([8,8]); context.beginPath(); context.arc(event.x,event.y,radius,0,Math.PI*2); context.stroke(); context.restore();
-        }
-        if (event.type === 'story_mandatory' || event.type === 'fixed_optional' || event.type === 'entry' || event.type === 'battle_exit' || event.type === 'random_zone') {
-          context.font = 'bold 18px "Microsoft YaHei", "PingFang SC", sans-serif'; context.textAlign = 'center'; context.textBaseline = 'bottom';
-          const label = event.label;
-          const w = context.measureText(label).width + 18;
-          if (!inView({x:event.x,y:event.y}, w / 2, 38, -10)) continue;
-          context.save();
-          context.fillStyle = 'rgba(12,13,17,.82)'; context.fillRect(event.x-w/2,event.y-38,w,28);
-          context.fillStyle = '#f3e4b6'; context.fillText(label,event.x,event.y-18);
-          context.restore();
-        }
-      }
-      for (const portal of portals) {
-        const point = portal.a.layer === this.floor ? portal.a : portal.b;
-        context.save(); context.fillStyle = '#f7edcf'; context.font = 'bold 16px sans-serif'; context.textAlign='center';
-        const width = context.measureText(portal.label).width + 18;
-        if (!inView(point, width / 2, 30, -6)) {context.restore(); continue;}
-        context.fillStyle = 'rgba(19,24,27,.85)'; context.fillRect(point.x-width/2,point.y-30,width,24);
-        context.fillStyle = '#f7edcf'; context.fillText(portal.label,point.x,point.y-12); context.restore();
-      }
+  private drawMarkers(context: CanvasRenderingContext2D, flags: readonly string[], drawnEvents: readonly string[]) {
+    const inView = (point: Point) => point.x >= this.cameraPosition.x - 16 && point.x <= this.cameraPosition.x + camera.width + 16 && point.y >= this.cameraPosition.y - 16 && point.y <= this.cameraPosition.y + camera.height + 16;
+    // Random encounters are invisible area triggers, as in Chapters 1 and 2.
+    // The entry is scenery, not an E interaction.
+    for (const event of mapData.events.filter(event => this.surface === 'ground' && event.layer === this.floor && inView(event) && !['layer_connector', 'random_zone', 'entry'].includes(event.type))) {
+      const completed = tunnelEventCompleted(event, flags, drawnEvents);
+      const locked = event.id === 'tunnel_valve_three' && !flags.includes('tunnel_false_kitten_trap_found')
+        || event.type === 'battle_exit' && (!flags.includes('tunnel_false_kitten_trap_found') || !flags.includes('valve_three_investigated'));
+      context.save(); context.globalAlpha = completed ? .62 : 1;
+      context.beginPath(); context.arc(event.x, event.y, 11, 0, Math.PI * 2);
+      context.fillStyle = locked ? '#a6a497' : event.type === 'battle_exit' ? '#ef906a' : '#f0cd79'; context.fill();
+      context.lineWidth = 2; context.strokeStyle = '#172630'; context.stroke();
+      context.font = 'bold 11px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillStyle = '#172630';
+      context.fillText(completed ? '✓' : event.type === 'battle_exit' || event.type === 'story_mandatory' ? '!' : 'E', event.x, event.y + .5);
+      if (this.labelsVisible) this.drawLabel(context, `${event.label}${!completed && !locked && event.type !== 'battle_exit' ? ' · E' : ''}${locked ? ' · 未解锁' : completed ? ' · 已完成' : ''}`, event, false);
+      context.restore();
     }
-    context.save(); context.fillStyle = 'rgba(20,22,24,.8)'; context.fillRect(this.cameraPosition.x+12,this.cameraPosition.y+12,105,30);
-    context.fillStyle = '#f6e9c5'; context.font='bold 18px sans-serif'; context.textAlign='left'; context.fillText(this.floor === 'L0' ? 'L0 · 主暗渠' : 'L−1 · 下层排水道',this.cameraPosition.x+22,this.cameraPosition.y+33); context.restore();
+    for (const connection of this.connections()) {
+      const {from: point, portal} = connection, display = tunnelPortalDisplay(connection, flags);
+      if (!display.visible || !inView(point)) continue;
+      context.save();
+      if (portal.key === 'F') {
+        // The same compact timber sign as Chapter 2; the full key prompt appears nearby.
+        context.translate(point.x, point.y);
+        context.fillStyle = 'rgba(12,18,22,.35)'; context.fillRect(-12, 9, 24, 4);
+        context.fillStyle = '#533728'; context.fillRect(-3, 1, 6, 14); context.fillRect(-5, 13, 10, 3);
+        context.fillStyle = '#302b2a'; context.fillRect(-15, -15, 30, 17);
+        context.fillStyle = '#9a633e'; context.fillRect(-13, -13, 26, 13);
+        context.fillStyle = '#d8a85d'; context.fillRect(-12, -12, 24, 2); context.fillRect(-12, -2, 24, 1);
+        context.fillStyle = '#f5e3b2'; context.font = 'bold 10px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle';
+        context.fillText(connection.to.layer === 'Lm1' ? '↓' : '↑', 0, -6);
+        context.translate(-point.x, -point.y);
+      }
+      context.globalAlpha = display.alpha;
+      context.beginPath(); context.arc(point.x, point.y + (portal.key === 'F' ? 22 : 0), 9, 0, Math.PI * 2);
+      context.fillStyle = display.locked ? '#a6a497' : display.active ? '#73e1dd' : '#91bab8'; context.fill();
+      context.strokeStyle = '#102b38'; context.lineWidth = 2; context.stroke();
+      context.fillStyle = '#10232b'; context.font = 'bold 10px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle';
+      context.fillText(portal.key === 'Space' ? '↔' : portal.key, point.x, point.y + (portal.key === 'F' ? 22 : 0));
+      if (this.labelsVisible && (display.active || portal.key !== 'F')) {
+        this.drawLabel(context, `${display.active ? '' : '靠近后 '}${display.label}`, point, true);
+      }
+      context.restore();
+    }
+    context.save(); context.fillStyle = 'rgba(16,28,38,.9)'; context.fillRect(this.cameraPosition.x + 12, this.cameraPosition.y + 42, 154, 25);
+    context.fillStyle = '#fff0c4'; context.font = '13px "Microsoft YaHei",system-ui,sans-serif'; context.textAlign = 'left'; context.textBaseline = 'middle';
+    context.fillText(this.floor === 'L0' ? 'L0 · 主暗渠' : 'L−1 · 下层排水道', this.cameraPosition.x + 20, this.cameraPosition.y + 54.5); context.restore();
+  }
+  private drawLabel(context: CanvasRenderingContext2D, label: string, point: Point, movement: boolean) {
+    context.font = `${movement ? 12 : 13}px "Microsoft YaHei",system-ui,sans-serif`;
+    const width = context.measureText(label).width + 12, height = movement ? 20 : 21;
+    // Keep readable labels inside the camera, including events at the edge.
+    const x = Math.max(this.cameraPosition.x + 4, Math.min(point.x + 15, this.cameraPosition.x + camera.width - width - 4));
+    const y = Math.max(this.cameraPosition.y + 40, point.y - 23);
+    context.fillStyle = movement ? 'rgba(16,28,38,.92)' : 'rgba(16,28,38,.9)'; context.fillRect(x, y, width, height);
+    context.strokeStyle = '#f2e4c4'; context.lineWidth = 1; context.strokeRect(x + .5, y + .5, width - 1, height - 1);
+    context.fillStyle = '#fff0c4'; context.textAlign = 'left'; context.textBaseline = 'middle'; context.fillText(label, x + 6, y + height / 2);
   }
   private drawCat(context: CanvasRenderingContext2D) {
-    context.save(); context.translate(this.position.x,this.position.y);
+    context.save();
+    context.fillStyle = 'rgba(10,16,22,.38)'; context.beginPath(); context.ellipse(this.position.x, this.position.y + 3, 9, 3, 0, 0, Math.PI * 2); context.fill();
+    context.translate(this.position.x - 16, this.position.y - 30);
     if (this.movement) {const t=this.movement.elapsed/this.movement.duration; const lift=this.movement.duration>500?Math.sin(t*Math.PI)*18:0; context.translate(0,-lift);}
-    drawPixelCat(context,'miaomiao'); context.restore();
+    // Match Chapter 2: the center of the paws is the collision/interaction anchor.
+    context.scale(.5, .5); drawPixelCat(context,'miaomiao'); context.restore();
   }
 }

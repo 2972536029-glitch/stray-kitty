@@ -126,10 +126,7 @@ test('序章用真实进攻教学自由部署与拖动，并对真实黑影施�
   await expect(page.getByTestId('battle-cat-caster')).toHaveAttribute('aria-label',/，C3，/);
   await expect(page.locator('.btl-move-target')).toHaveCount(0);
   await expect(page.locator('.btl-deploy-available')).toHaveCount(0);
-  await page.getByTestId('battle-cat-caster').click();
-  await page.getByTestId('battle-move-selected').click();
-  await expect(page.locator('.btl-deploy-available')).toHaveCount(0);
-  await page.getByTestId('battle-cell-C4').press('Enter');
+  await drag(page,page.getByTestId('battle-cat-caster'),page.getByTestId('battle-cell-C4'));
   await expect(page.getByTestId('battle-cat-caster')).toHaveAttribute('aria-label',/，C4，/);
   await expect(page.locator('.btl-deploy-available')).toHaveCount(0);
 });
