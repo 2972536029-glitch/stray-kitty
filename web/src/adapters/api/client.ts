@@ -1,4 +1,4 @@
-import type {ApiErrorBody, Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentHistoryResponse, Session} from '../../contracts';
+import type {ApiErrorBody, AuthRegistration, Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentHistoryResponse, Session} from '../../contracts';
 import type {GameApiPort} from '../../core/ports';
 import {runtime} from '../../config/runtime';
 import {BrowserSessionStore} from '../storage/BrowserSessionStore';
@@ -25,11 +25,31 @@ export class HttpGameApi implements GameApiPort {
   paymentHistory(playerId: string) {
     return this.paymentRequest<PaymentHistoryResponse>(`/history?playerId=${encodeURIComponent(playerId)}`);
   }
+  // 账号端点挂在 /api/auth 下,注册沿用当前匿名令牌(Authorization 由 request 自动带)。
+  async authRequest<T>(path: string, body: unknown): Promise<T> {
+    const response=await fetch(runtime.authBase+path,{signal:AbortSignal.timeout(15000),method:'POST',headers:{'Content-Type':'application/json',...(this.session?{Authorization:'Bearer '+this.session.token}:{})},body:JSON.stringify(body)});
+    if(!response.ok){const err=await response.json() as ApiErrorBody;throw new ApiError(err.error.code,err.error.message,response.status);}
+    return response.json() as Promise<T>;
+  }
+  registerAccount(username: string, password: string) {
+    return this.authRequest<AuthRegistration>('/register',{username,password});
+  }
+  loginAccount(username: string, password: string) {
+    return this.authRequest<Session>('/login',{username,password});
+  }
+  adoptSession(session: Session) {this.session=session;this.cache.write(session);}
   async createSession() {
     this.session=await this.request<Session>('/sessions',{method:'POST'});
     this.cache.write(this.session);return this.session;
   }
   async initialize() {
+    if(this.session) {
+      // 服务端已不认识本地令牌(存档重置/换数据目录)时,自动重建匿名会话而不是卡死在"重新连接"。
+      try {await this.load();} catch(error) {
+        if(error instanceof ApiError&&error.status===401) {this.cache.clear();this.session=null;}
+        else throw error;
+      }
+    }
     if(!this.session) await this.createSession();
     const pending=this.pending();
     if(pending) await this.execute(pending.request,pending.key);
