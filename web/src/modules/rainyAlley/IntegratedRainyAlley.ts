@@ -1,4 +1,5 @@
 import {drawPixelCat} from '../../adapters/canvas/pixelCat';
+import {followCameraPoint} from '../../adapters/canvas/camera';
 import {rainyAlleyObjectEligible, rainyAlleyRegistration, rainyAlleySource, type RainyFixedObject} from './assets';
 import {findPath, sweepMove} from './collision';
 import {
@@ -222,9 +223,9 @@ export class IntegratedRainyAlley {
     const maxY = Math.max(0, rainyAlleyRegistration.worldHeight - cameraSize.height);
     const targetX = Math.min(maxX, Math.max(0, this.position.x - cameraSize.width / 2));
     const targetY = Math.min(maxY, Math.max(0, this.position.y - cameraSize.height / 2));
-    const amount = 1 - Math.exp(-deltaSeconds * 9);
-    this.camera.x += (targetX - this.camera.x) * amount;
-    this.camera.y += (targetY - this.camera.y) * amount;
+    const next=followCameraPoint(this.camera,{x:targetX,y:targetY},deltaSeconds);
+    this.camera.x=next.x;
+    this.camera.y=next.y;
   }
 
   private squeezeDirection(): -1 | 0 | 1 {

@@ -44,6 +44,45 @@ func TestMarketTrialOnlyMarksCompletionAndKeepsMainlineState(t *testing.T) {
 	}
 }
 
+func TestMarketMainlineBattleRequiresCluesAndCExit(t *testing.T) {
+	g, token, _ := prepareBoss(t, 0, nil)
+	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Phase = "explore"
+		p.State.MapID = "market"
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "market_boss"})
+	_, err = g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Flags = domain.Add(p.State.Flags, "market_crow_clue_completed")
+		p.State.Flags = domain.Add(p.State.Flags, "market_pigeon_clue_completed")
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "market_boss", Layer: "L0", ReturnPosition: &domain.WorldPoint{X: 1310, Y: 169}})
+	if s.ActiveBattle == nil || !s.ActiveBattle.Mainline {
+		t.Fatal("market field battle was not recorded as mainline")
+	}
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
+	if !domain.Contains(s.Flags, "market_cleared") {
+		t.Fatal("mainline victory did not unlock exit")
+	}
+	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	if s.Phase != "explore" || s.MapID != "market" {
+		t.Fatal("mainline victory did not return to market")
+	}
+	rejectUnchanged(t, g, token, domain.Command{Type: "GO_HOME"})
+	rejectUnchanged(t, g, token, domain.Command{Type: "EXIT_MARKET", Layer: "L0", Position: &domain.WorldPoint{X: 1300, Y: 90}})
+	s = execute(t, g, token, domain.Command{Type: "EXIT_MARKET", Layer: "L0", Position: &domain.WorldPoint{X: 1365, Y: 88}})
+	if s.Phase != "home" || !domain.Contains(s.Flags, "market_exit_crossed") {
+		t.Fatal("valid climbed exit did not leave market")
+	}
+}
+
 func TestMarketFailureRetryKeepsSavedTierAndStageAcrossRestart(t *testing.T) {
 	for _, pressure := range []int{-1, 0, 1} {
 		t.Run(fmt.Sprint(pressure), func(t *testing.T) {
@@ -128,6 +167,91 @@ func TestMarketEntryIsSeparateFromMainlineAndLockedBeforeRescue(t *testing.T) {
 	if s.ActiveBattle != nil || s.Phase == "battle" || domain.Contains(s.CompletedStages, "market_boss") {
 		t.Fatal("market story was automatically connected to the standalone trial")
 	}
+}
+
+func TestGreenhouseChapterTwoEntryAndExplorationResumeDoNotStartBattle(t *testing.T) {
+	g, token, path := setup(t)
+	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Phase = "home"
+		p.State.ChapterID = "greenhouse"
+		p.State.MapID = "greenhouse"
+		p.State.Flags = domain.Add(p.State.Flags, "alley_rescued")
+		p.State.Flags = domain.Add(p.State.Flags, "rescue_story_done")
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
+	if s.Phase != "dialogue" || s.ChapterID != "market" || s.MapID != "market" || s.StoryNodeID != "market_intro_1" || s.ActiveBattle != nil {
+		t.Fatalf("greenhouse chapter action did not enter Chapter 2 dialogue: %+v", s)
+	}
+	s = finishStory(t, g, token)
+	if s.Phase != "explore" || s.ChapterID != "market" || s.MapID != "market" || s.ActiveBattle != nil || !domain.Contains(s.Flags, "chapter_2_started") {
+		t.Fatalf("Chapter 2 introduction did not enter market exploration: %+v", s)
+	}
+	store, err := repository.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g = service.New(store, g.Catalog)
+	s, err = g.State(token)
+	if err != nil || s.Phase != "explore" || s.MapID != "market" || s.ActiveBattle != nil {
+		t.Fatalf("reloaded Chapter 2 exploration restored the wrong state: state=%+v err=%v", s, err)
+	}
+	s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market"})
+	if s.Phase != "explore" || s.ChapterID != "market" || s.MapID != "market" || s.ActiveBattle != nil {
+		t.Fatalf("direct market exploration test path started or resumed battle: %+v", s)
+	}
+}
+
+func TestMarketMomoOptionalEventUsesAuthoredLocationAndNarrativeState(t *testing.T) {
+	g, token, _ := setup(t)
+	s := exploreMarketForTest(t, g, token)
+	if _, err := g.Execute(token, "momo-wrong-location", domain.CommandRequest{Command: domain.Command{Type: "INTERACT", InteractionID: "market_momo_trace", Layer: "L0", Position: &domain.WorldPoint{X: 900, Y: 240}}}); err == nil {
+		t.Fatal("Momo interaction accepted outside its authored radius")
+	}
+	s = execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_momo_trace", Layer: "L0", Position: &domain.WorldPoint{X: 947, Y: 160}})
+	if s.Phase != "event" || s.PendingEventID != "momo_trail_event" || s.PendingEventSource != "node" {
+		t.Fatalf("optional clue did not open its narrative event: phase=%s event=%s source=%s", s.Phase, s.PendingEventID, s.PendingEventSource)
+	}
+	s = execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "momo_trail_event", OptionID: "follow_trail"})
+	if !domain.Contains(s.DrawnEvents, "node:momo_trail_event") {
+		t.Fatalf("optional event completion was not recorded authoritatively: %v", s.DrawnEvents)
+	}
+}
+
+func TestMarketStoryEntryStaysInExplorationUntilCluesAndAuthoredPoint(t *testing.T) {
+	g, token, _ := prepareBoss(t, 0, nil)
+	s := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
+	if s.ChapterID != "market" || s.MapID != "market" || s.Phase != "dialogue" || s.ActiveBattle != nil {
+		t.Fatalf("market introduction entered an invalid state: chapter=%q map=%q phase=%q battle=%v", s.ChapterID, s.MapID, s.Phase, s.ActiveBattle)
+	}
+	s = finishStory(t, g, token)
+	if s.ChapterID != "market" || s.MapID != "market" || s.Phase != "explore" || s.ActiveBattle != nil {
+		t.Fatalf("market introduction did not end in exploration: chapter=%q map=%q phase=%q battle=%v", s.ChapterID, s.MapID, s.Phase, s.ActiveBattle)
+	}
+	for _, flag := range []string{"market_crow_clue_completed", "market_pigeon_clue_completed"} {
+		rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "market_boss", Layer: "L0", ReturnPosition: &domain.WorldPoint{X: 1310, Y: 169}})
+		_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+			p.State.Flags = domain.Add(p.State.Flags, flag)
+			return domain.CommandResponse{State: p.State}, nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "market_boss", Layer: "L0", ReturnPosition: &domain.WorldPoint{X: 670, Y: 781}})
+	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "market_boss", Layer: "L0", ReturnPosition: &domain.WorldPoint{X: 1310, Y: 169}})
+	if s.ActiveBattle == nil || !s.ActiveBattle.Mainline || s.Phase != "battle" {
+		t.Fatal("market boss did not start at the authored point after both clues")
+	}
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: bossReport(0, true)})
+	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	if s.Phase != "explore" || s.MapID != "market" || !domain.Contains(s.Flags, "market_cleared") {
+		t.Fatal("market victory did not return to cleared exploration")
+	}
+	rejectUnchanged(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "market_boss", Layer: "L0", ReturnPosition: &domain.WorldPoint{X: 1310, Y: 169}})
 }
 
 func TestMarketTrialStartAndSettlementAreDurablyIdempotent(t *testing.T) {
