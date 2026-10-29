@@ -1,4 +1,4 @@
-import {useCallback, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {useGame} from './useGame';
 import {Viewport} from '../examples/demo/Viewport';
 import type {DemoScene} from '../examples/demo/scene';
@@ -15,6 +15,7 @@ import WarehousePanel, {type ConfirmedLoadout} from '../ui/WarehousePanel';
 import SettingsPanel from '../ui/SettingsPanel';
 import PrologueSequence from '../ui/PrologueSequence';
 import {useAudioManager, type BgmMode} from '../ui/useAudioManager';
+import {playSound} from '../ui/soundEffects';
 import {rainyAlleyObject} from '../modules/rainyAlley/assets';
 
 export default function App() {
@@ -38,6 +39,16 @@ export default function App() {
     : state.phase === 'home' ? 'home' : 'explore';
   const audioAmbient = entered && state?.phase === 'explore' ? (state.mapId === 'alley' ? 'rain' : state.mapId === 'market' ? 'market' : null) : null;
   useAudioManager({bgm: audioBgm, ambient: audioAmbient, musicVolume, sfxVolume});
+  // 错误横幅出现即播低沉音;首次走进花房播上行琶音(每个存档一次)。
+  useEffect(() => {if (error) playSound('error');}, [error]);
+  const homeChimed = useRef(false);
+  useEffect(() => {
+    if (state?.phase === 'home' && !homeChimed.current) {
+      try {if (localStorage.getItem('stray-kitty.audio.homeChimed') !== 'done') {playSound('chime');localStorage.setItem('stray-kitty.audio.homeChimed', 'done');}}
+      catch {/* 隐私模式下跳过记忆 */}
+      homeChimed.current = true;
+    }
+  }, [state?.phase]);
   const direction = useRef<(direction: Direction, held: boolean) => void>(() => {});
   const rainyPosition = useRef<{x: number; y: number} | undefined>(undefined);
   const interact = useCallback((targetId?: string) => {

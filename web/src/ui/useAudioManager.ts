@@ -174,6 +174,9 @@ export function useAudioManager({bgm, ambient, musicVolume, sfxVolume}: {bgm: Bg
     else if (id === 'open') {blip(500, .06);blip(680, .08, .07);}
     else if (id === 'close') {blip(560, .05);blip(400, .07, .05);}
     else if (id === 'pickup') {blip(660, .09, 0, 'triangle');blip(880, .1, .07, 'triangle');blip(1320, .14, .13, 'triangle', .8);}
+    else if (id === 'step') {blip(980, .045, 0, 'square', .75);blip(1480, .05, .04, 'square', .6);}    // 仓库加减:清脆高频双击
+    else if (id === 'error') {blip(190, .22, 0, 'sawtooth', .85);blip(140, .28, .1, 'sawtooth', .65);} // 错误:低沉闷响下坠
+    else if (id === 'chime') {blip(660, .1, 0, 'triangle');blip(880, .12, .09, 'triangle');blip(1108, .14, .18, 'triangle', .85);blip(1320, .2, .27, 'triangle', .7);}  // 入场/到账:上行琶音
     else if (id === 'meow') {
       const osc = audio.createOscillator();
       const gain = audio.createGain();

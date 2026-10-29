@@ -60,6 +60,8 @@ export function useGame() {
     // 但序章开场动画与守护教学的“已完成”标记留在 localStorage 里，重开后被直接跳过。必须一并清空。
     localStorage.removeItem('stray-kitty.prologue.intro');
     localStorage.removeItem('stray-kitty.tutorial.battle');
+    localStorage.removeItem('stray-kitty.tutorial.home');
+    localStorage.removeItem('stray-kitty.audio.homeChimed');
     window.location.reload();
   }, []);
   // 支付充值绕过命令通道直接改存档,到账后用它重拉状态刷新钱包。

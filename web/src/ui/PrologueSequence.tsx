@@ -121,6 +121,8 @@ export function TutorialHighlight({selector, kicker, text, storageKey, onDone}: 
       const target = document.querySelector(selector);
       if (!target) {setRect(null);return;}
       const bounds = target.getBoundingClientRect();
+      // 目标被折叠/藏起（如收起的家园抽屉）时视为不存在,避免全屏遮罩罩住一个 0×0 的空窗口。
+      if (bounds.width < 12 || bounds.height < 12) {setRect(null);return;}
       setRect({left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height});
     };
     measure();
@@ -146,6 +148,7 @@ export function TutorialHighlight({selector, kicker, text, storageKey, onDone}: 
     <i style={{left: 0, top: box.top, width: Math.max(0, box.left), height: box.height}}/>
     <i style={{left: box.left + box.width, top: box.top, width: `calc(100% - ${box.left + box.width}px)`, height: box.height}}/>
     <span className="tutorial-ring" style={box}/>
+    <span className="tutorial-finger" style={{left: box.left + box.width / 2, top: box.top}} aria-hidden="true">👆</span>
     <div className="tutorial-card" style={{left: Math.min(box.left, window.innerWidth - 300), top: Math.max(12, box.top - 118)}}>
       <b>✦ {kicker}</b>
       <p>{text}</p>
