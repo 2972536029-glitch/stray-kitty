@@ -7,13 +7,15 @@ export default function StartScreen({
   disabled,
   onStart,
   onShop,
-  onReset
+  onReset,
+  onAuth
 }: {
   hasProgress: boolean;
   disabled: boolean;
   onStart: () => void;
   onShop: () => void;
   onReset?: () => void;
+  onAuth?: () => void;
 }) {
   return <section className="start-screen">
     <StartMenuBackdrop/>
@@ -35,6 +37,11 @@ export default function StartScreen({
         {hasProgress && onReset && (
           <button type="button" className="start-reset" disabled={disabled} onClick={onReset} title="清空当前保存的进度，从序章重新体验">
             <span>↺ 重新开始（重置为新存档）</span>
+          </button>
+        )}
+        {onAuth && (
+          <button type="button" className="start-reset" disabled={disabled} onClick={onAuth} title="把旅程绑定到用户名密码，换设备也能取回">
+            <span>👤 小猫账号{hasProgress ? ' · 保存这段旅程' : ' · 登录取回旅程'}</span>
           </button>
         )}
       </div>

@@ -1,0 +1,119 @@
+{
+  "implementation": "single_canvas_darkness_overlay_source_over",
+  "baseOpacity": {
+    "L0": 0.78,
+    "Lm1": 0.82
+  },
+  "playerRadius": {
+    "L0": 305,
+    "Lm1": 270
+  },
+  "lamps": {
+    "L0": [
+      {
+        "x": 58,
+        "y": 520,
+        "radius": 145
+      },
+      {
+        "x": 215,
+        "y": 770,
+        "radius": 130
+      },
+      {
+        "x": 505,
+        "y": 520,
+        "radius": 138
+      },
+      {
+        "x": 726,
+        "y": 678,
+        "radius": 128
+      },
+      {
+        "x": 973,
+        "y": 677,
+        "radius": 130
+      },
+      {
+        "x": 1148,
+        "y": 700,
+        "radius": 132
+      },
+      {
+        "x": 1372,
+        "y": 678,
+        "radius": 128
+      },
+      {
+        "x": 1320,
+        "y": 528,
+        "radius": 126
+      },
+      {
+        "x": 1216,
+        "y": 178,
+        "radius": 137
+      },
+      {
+        "x": 1456,
+        "y": 184,
+        "radius": 128
+      },
+      {
+        "x": 1020,
+        "y": 236,
+        "radius": 128
+      },
+      {
+        "x": 845,
+        "y": 438,
+        "radius": 122
+      }
+    ],
+    "Lm1": [
+      {
+        "x": 88,
+        "y": 152,
+        "radius": 122
+      },
+      {
+        "x": 170,
+        "y": 322,
+        "radius": 125
+      },
+      {
+        "x": 310,
+        "y": 392,
+        "radius": 119
+      },
+      {
+        "x": 533,
+        "y": 424,
+        "radius": 135
+      },
+      {
+        "x": 823,
+        "y": 617,
+        "radius": 133
+      },
+      {
+        "x": 1030,
+        "y": 466,
+        "radius": 124
+      },
+      {
+        "x": 1315,
+        "y": 274,
+        "radius": 137
+      },
+      {
+        "x": 1490,
+        "y": 160,
+        "radius": 125
+      }
+    ]
+  },
+  "reference": "v11 canvas lighting removes repeated black-circle artifacts",
+  "note": "These are v11 values; use this technique, preserve L−1 deeper darkness. Lamp placement is an editable artistic pass, not physical wall-aware ray tracing."
+}

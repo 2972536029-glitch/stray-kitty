@@ -35,7 +35,7 @@ export const CONFIG = Object.freeze({
   SPAWN_X: 6.7, VISIBLE_MAX_X: 6, CONTACT_GAP: 0.55,
   GOAL_X: 0, GOAL_Y: 1, TURN_COLUMN_X: 0,
   WAVE_GAP: 5, TOTAL_WAVES: WAVES.length,
-  // The opening pursuer counts once; the practice dummy never counts.
+  // The opening pursuer counts once; teaching uses the ordinary six waves.
   TOTAL_ENEMIES: 1 + WAVES.reduce((total, wave) => total + wave.length, 0),
   MAX_LEAKS: 3, LEAK_DAMAGE: 10,
 });
@@ -71,4 +71,4 @@ export const ENEMY_TYPES: Readonly<Record<EnemyType, Readonly<EnemyDefinition>>>
 
 export const TUTORIAL_TARGETS = Object.freeze({ position_caster: Object.freeze({ x: 3, y: 0 }), move_guard: Object.freeze({ x: 4, y: 1 }) });
 export const RECOMMENDED_POSITIONS = Object.freeze({ caster: TUTORIAL_TARGETS.position_caster, guard: TUTORIAL_TARGETS.move_guard });
-export const TUTORIAL_STEPS: Readonly<Partial<Record<CombatPhase, TutorialStep>>> = Object.freeze({ teach_position: 'position_caster', teach_move: 'move_guard', teach_energy: 'teach_energy', skill_charge: 'skill_charge', teach_guard_skill: 'teach_guard_skill', teach_caster_skill: 'teach_caster_skill', battle: 'battle' });
+export const TUTORIAL_STEPS: Readonly<Partial<Record<CombatPhase, TutorialStep>>> = Object.freeze({ teach_position: 'position_caster', teach_move: 'move_guard', teach_live_move: 'teach_live_move', teach_energy: 'teach_energy', skill_charge: 'skill_charge', teach_guard_skill: 'teach_guard_skill', teach_caster_skill: 'teach_caster_skill', battle: 'battle' });

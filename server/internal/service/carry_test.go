@@ -312,7 +312,7 @@ func TestDoveCarryViaExistingMarketNode(t *testing.T) {
 	g.Random = func(int) (int, error) { return 5, nil }
 	execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
 	finishStory(t, g, token)
-	execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_pigeon_perch"})
+	execute(t, g, token, domain.Command{Type: "INTERACT", InteractionID: "market_pigeon_perch", Layer: "L1", Position: &domain.WorldPoint{X: 1310, Y: 426}})
 	s := execute(t, g, token, domain.Command{Type: "CHOOSE_EVENT", EventID: "pigeon_rumor_event", OptionID: "recruit_pigeon"})
 	if s.EventState.PendingModifiers.Carry != domain.CarryDove {
 		t.Fatal("existing pigeon interaction did not award dove")

@@ -121,6 +121,12 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string, usePus
 			for _, flag := range outcome.Flags {
 				s.Flags = domain.Add(s.Flags, flag)
 			}
+			if eventID == "crow_intel_event" {
+				s.Flags = domain.Add(s.Flags, "market_crow_clue_completed")
+			}
+			if eventID == "pigeon_rumor_event" {
+				s.Flags = domain.Add(s.Flags, "market_pigeon_clue_completed")
+			}
 			s.EventState = &domain.EventState{LastResolution: domain.EventResolution{EventID: eventID, OptionID: optionID, Dice: dice, Tier: tier, Outcome: outcome}, PendingModifiers: modifiers}
 			s.LastResult = domain.Result{Message: outcome.Text + tuanziFallback, Roll: dice[0] + dice[1]}
 			// 节点事件一次性:结算即记录,INTERACT 侧据此拒绝重触发。
@@ -134,7 +140,7 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string, usePus
 			if outcome.Situation != nil {
 				s.Phase = "dialogue"
 				s.StoryNodeID = outcome.Situation.StoryNodeID
-			} else if s.PendingEventSource == "random" || eventID == "moving_blanket_event" || eventID == "alley_dog_friend" {
+			} else if s.PendingEventSource == "random" || (s.MapID == "tunnel" && s.PendingEventSource == "node") || eventID == "moving_blanket_event" || eventID == "alley_dog_friend" {
 				// 随机相遇结束后回到探索继续赶路;局势除外(它接管后续走向)。
 				s.Phase = "explore"
 				s.ExploreDistance = -randomGrace

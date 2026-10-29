@@ -8,7 +8,15 @@ import type {CombatState} from '../../web/src/modules/battle/l00/state.ts';
 const context=():BattleContext=>({attempt:{id:'attempt-1',stageId:'alley_rescue',status:'active'},stage:{id:'alley_rescue',name:'序章',status:'ready',lanes:3,columns:7,waves:6},catIds:['miaomiao'],modifiers:['event_success']});
 const snapshot=(runtime:PrologueBattle)=>{const s=runtime.getSnapshot();assert.ok(s);return s;};
 function until(r:PrologueBattle,phase:CombatState['phase']){for(let i=0;i<5000&&snapshot(r).phase!==phase;i++)r.tick(.1);assert.equal(snapshot(r).phase,phase);}
-function begin(r:PrologueBattle){r.dispatch({type:'START'});until(r,'teach_position');r.dispatch({type:'MOVE_CAT',catId:'caster',x:3,y:0});r.dispatch({type:'MOVE_CAT',catId:'guard',x:4,y:1});r.dispatch({type:'BEGIN_SKILL_PRACTICE'});until(r,'teach_guard_skill');r.dispatch({type:'CAST_SKILL',catId:'guard'});r.dispatch({type:'CAST_SKILL',catId:'caster',x:5,y:1});assert.equal(snapshot(r).phase,'battle');}
+function begin(r:PrologueBattle){
+ r.dispatch({type:'START'});until(r,'teach_position');r.dispatch({type:'MOVE_CAT',catId:'caster',x:3,y:0});
+ r.dispatch({type:'BEGIN_SKILL_PRACTICE'});until(r,'teach_move');r.dispatch({type:'MOVE_CAT',catId:'guard',x:4,y:1});
+ assert.equal(snapshot(r).phase,'teach_live_move');r.tick(.2);
+ r.dispatch({type:'MOVE_CAT',catId:'caster',x:3,y:2});r.dispatch({type:'MOVE_CAT',catId:'caster',x:3,y:0});
+ until(r,'teach_guard_skill');r.dispatch({type:'CAST_SKILL',catId:'guard'});
+ const enemy=snapshot(r).enemies.find(enemy=>enemy.x<=CONFIG.VISIBLE_MAX_X)!;
+ r.dispatch({type:'CAST_SKILL',catId:'caster',x:Math.round(enemy.x),y:Math.round(enemy.y)});assert.equal(snapshot(r).phase,'battle');
+}
 test('runtime validates stage, attempt and difficulty before mutating its state',()=>{
  const r=new PrologueBattle();for(const change of [{lanes:4},{columns:5},{waves:2}]){const c=context();Object.assign(c.stage,change);assert.throws(()=>r.start(c,()=>{}),/Unsupported/);assert.equal(r.getSnapshot(),null);}
  const c=context();c.attempt.status='won';assert.throws(()=>r.start(c,()=>{}),/active attempt/);c.attempt.status='active';c.attempt.stageId='wrong';assert.throws(()=>r.start(c,()=>{}),/active attempt/);

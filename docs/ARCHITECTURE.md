@@ -13,7 +13,7 @@ flowchart TD
   HTTP --> Transport["Go transport：认证与校验"]
   Transport --> Service["Go service：判定、抽取与结算"]
   Service --> Repository["repository：状态与收据一起提交"]
-  Repository --> Save["data/game.json"]
+  Repository --> Save[".runtime/game.json via dev launcher; data/game.json API fallback"]
   Service -->|返回 GameState| Store["GameStore：界面状态快照"]
   Store --> View
   Module -->|手动提问与可见战况| Advisor["POST /api/v1/advisor：只读场次校验"]
@@ -51,6 +51,7 @@ stray-kitty/
 │  ├─ BATTLE-ADVISOR-MODEL.md  阿策模型配置、可见战况与回退边界
 │  ├─ BATTLE-EVENT-ALLIES.md
 │  ├─ BATTLE-EVENT-CARRY.md  事件携带物与协助者六枚举对接
+│  ├─ DEVELOPMENT.md
 │  ├─ GAME-FLOWCHART.html
 │  ├─ GAME-FLOWCHART.md
 │  ├─ L00-INTEGRATION.md  L00 六波新手教学与接入
@@ -66,6 +67,10 @@ stray-kitty/
 │  ├─ STORY-SCRIPT.md
 │  └─ STORY-SCRIPT.txt
 ├─ level_design/
+│  ├─ chapter4/
+│  │  ├─ art/
+│  │  ├─ collision/
+│  │  └─ reference/
 │  ├─ maps/
 │  │  └─ reference/
 │  ├─ night_market/
@@ -90,6 +95,8 @@ stray-kitty/
 │  │  ├─ service/  长期规则、判定、奖励与结算
 │  │  └─ transport/  请求、认证与参数检查
 │  └─ migrations/  MySQL 结构 · 尚未接入
+├─ specs/
+│  └─ night-market/
 ├─ tests/  自动验证
 │  ├─ battle/
 │  └─ e2e/  浏览器流程
@@ -109,6 +116,7 @@ stray-kitty/
 │  │  └─ tutorials/  操作提示
 │  ├─ public/  静态资源
 │  │  └─ assets/  图片、动画、声音与字体
+│  │     └─ night-market/
 │  └─ src/  运行代码
 │     ├─ adapters/  具体运行能力
 │     │  ├─ api/  HTTP 请求
@@ -138,12 +146,14 @@ stray-kitty/
 │     │  │  ├─ market/  第二章六猫、七入口与单格横扫首领
 │     │  │  └─ tunnel/  第四章37格不规则暗道、断灯脉冲与墨墨夜视
 │     │  ├─ cats/  猫咪档案、救援与成长
+│     │  ├─ chapter4/
 │     │  ├─ economy/  货币、扣费与奖励
 │     │  ├─ events/  随机事件 · 余尧
 │     │  ├─ home/  家园建设、摆放与互动
 │     │  ├─ inventory/  道具与家具持有
 │     │  ├─ lottery/  奖池、抽取与结果
 │     │  ├─ map/  地图 · Jenny
+│     │  ├─ nightMarket/  Chapter 2 Night Market spatial map and progression
 │     │  ├─ rainyAlley/
 │     │  └─ shop/  商品与购买
 │     ├─ shared/  通用工具 · 预留
@@ -280,6 +290,17 @@ flowchart TD
 - 本节由 `docs/LEVEL-EXPLORATION-ARCHITECTURE.md` 提供给 `scripts/architecture.mjs` 生成；**勿单独手改生成的 `ARCHITECTURE.md`**。地图制作步骤、审美/灵感材料放在 map 设计文档或个人 Notion，不进入团队架构。
 - 改目录后 `npm run architecture:build && npm run architecture:check`；改内容/事件映射跑 `npm run content:sync`、`npm run content:check`，核对双端 catalog；只运行与改动相关的移动/交互/战斗返回冒烟测试。
 - 历史章节集成文档保留现状；本节以 inspected baseline 为准，后续主分支变更需再核对。
+- 本地端口、worktree 切换、launcher 生命周期与按 worktree 隔离的开发存档见 [本地开发说明](DEVELOPMENT.md)。
+
+### 4.4 Chapter 4 tunnel exploration integration
+
+Chapter 4 exploration is implemented by `web/src/modules/chapter4/TunnelMap.ts` and the canonical package under `level_design/chapter4/`. The two approved raster layers and their grayscale walkability masks are loaded as assets; the map module decodes each mask once and applies the cat footprint during continuous movement. `TunnelWalkableMask` owns point and swept movement validation, including axis sliding at mask edges. Portals and their C/F/Space animations are rendered from the handoff map data. The lighting uses a transparent source-over darkness gradient and screen-blended warm lamp glow; `destination-out` was removed because it erased the approved art and exposed the CSS page background. Handoff opacity, radius, and lamp positions remain unchanged. The optional collision overlay is available only in development builds.
+
+The exploration interaction contract is in `web/content/maps/maps.json`; server event and story progression remains authoritative. The Chapter 4 mainline opens only after the greenhouse progression, reaches exploration through `rescue_intro_1`, requires the trap clue and valve before the boss, returns to authored post-battle story after victory, and does not complete the story on defeat. The pre-existing home `tunnel_boss` trial remains a separate standalone battle path.
+
+`web/src/modules/battle/qa.ts` builds the development-only `QA_SIMULATE_VICTORY` command. `scripts/dev.mjs` enables that command on the local API process; production API processes leave `GAME_QA_ENABLED` unset and reject it. The service derives a valid stage result from the active attempt and routes it through the same battle completion validator as normal callbacks. `import.meta.env.DEV` excludes the control from production builds. The QA path does not directly mutate story flags.
+
+The tunnel's raster world position is runtime-only and returns to its authored spawn after a page refresh. Battle return position and progression state are validated and persisted through the existing server attempt/state flow. This is distinct from persisting free-roam coordinates, which the current exploration API does not provide.
 
 ## 5. 启动与检查
 
@@ -295,7 +316,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-开发存档在 data/game.json；浏览器测试用独立端口 8117 和 .runtime/e2e-save.json。环境变量示例见 .env.example，程序读取进程环境变量，不自动加载 .env。
+npm run dev 在当前 worktree 使用忽略的 .runtime/game.json；直接运行 API 时默认使用相对 data/game.json，GAME_DATA_FILE 可显式覆盖。不同 worktree 的存档彼此独立，不要合并。浏览器测试用独立端口 8117 和 .runtime/e2e-save.json。环境变量示例见 .env.example，程序读取进程环境变量，不自动加载 .env。端口冲突诊断、启动/停止、切换 worktree 与安全清理步骤见 [本地开发说明](DEVELOPMENT.md)。
 
 当前存档只支持单进程，MySQL 只有 DDL；战斗胜负仍由客户端原型上报。Docker、K8s 与 GitLab CI 是待团队环境验证的模板。GitLab main 已采用本架构；旧 main 保存在 react-demo 分支，历史不变。
 

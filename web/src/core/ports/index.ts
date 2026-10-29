@@ -1,4 +1,4 @@
-import type {Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentConfig, PaymentHistoryResponse, PaymentSessionResponse, Session} from '../../contracts';
+import type {AuthRegistration, Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentConfig, PaymentHistoryResponse, PaymentSessionResponse, Session} from '../../contracts';
 export interface GameApiPort {
   createSession(): Promise<Session>;
   load(): Promise<GameState>;
@@ -9,5 +9,10 @@ export interface GameApiPort {
   paymentHistory(playerId: string): Promise<PaymentHistoryResponse>;
   paymentConfig(): Promise<PaymentConfig>;
   paymentSession(playerId: string, packId: string): Promise<PaymentSessionResponse>;
+  // 账号:注册绑定当前匿名进度;登录换取账号存档的新会话。
+  registerAccount(username: string, password: string): Promise<AuthRegistration>;
+  loginAccount(username: string, password: string): Promise<Session>;
+  // 登录成功后把本地会话切换为返回的会话(写 localStorage 并替换内部令牌)。
+  adoptSession(session: Session): void;
 }
 export interface TokenStore {read(): Session | null; write(session: Session): void; clear(): void}
