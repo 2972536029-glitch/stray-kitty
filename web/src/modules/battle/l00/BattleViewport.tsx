@@ -15,6 +15,7 @@ import {TutorialSpotlight} from './TutorialSpotlight';
 import {whenSceneArtReady} from '../scene-art';
 import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
 import {useBattleBoardFit} from '../useBattleBoardFit';
+import {getSkillTooltipPosition} from '../skillTooltipPosition';
 import type {AnimationBook, CatKind, CatPose} from './painter';
 import './battle.css';
 
@@ -139,21 +140,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
       frame=0;
       const field=battlefieldRef.current,scroll=scrollRef.current,menu=menuRef.current,tooltip=tooltipRef.current;
       if(!field||!scroll||!menu||!tooltip)return;
-      const box=field.getBoundingClientRect(),view=scroll.getBoundingClientRect(),anchor=menu.getBoundingClientRect();
-      const minLeft=Math.max(view.left+6,6),maxRight=Math.min(view.right-6,window.innerWidth-6);
-      const minTop=Math.max(view.top+6,6),maxBottom=Math.min(view.bottom-6,window.innerHeight-6);
-      const width=tooltip.offsetWidth,maxLeft=Math.max(minLeft,maxRight-width);
-      let left:number,top:number,maxHeight=Math.max(24,maxBottom-minTop);
-      if(anchor.right+8+width<=maxRight){left=anchor.right+8;top=anchor.top;}
-      else if(anchor.left-width-8>=minLeft){left=anchor.left-width-8;top=anchor.top;}
-      else{
-        left=Math.min(maxLeft,Math.max(minLeft,anchor.left+anchor.width/2-width/2));
-        const above=Math.max(0,anchor.top-minTop-8),below=Math.max(0,maxBottom-anchor.bottom-8);
-        const placeBelow=below>=above;maxHeight=Math.max(24,placeBelow?below:above);
-        top=placeBelow?anchor.bottom+8:anchor.top-Math.min(tooltip.scrollHeight,maxHeight)-8;
-      }
-      top=Math.max(minTop,Math.min(maxBottom-Math.min(tooltip.scrollHeight,maxHeight),top));
-      const next={left:Math.max(minLeft,Math.min(maxLeft,left))-box.left,top:top-box.top,maxHeight};
+      const next=getSkillTooltipPosition(field,scroll.getBoundingClientRect(),menu.getBoundingClientRect(),tooltip);
       setTooltipPosition(previous=>Math.abs(previous.left-next.left)<.5&&Math.abs(previous.top-next.top)<.5&&Math.abs(previous.maxHeight-next.maxHeight)<.5?previous:next);
     };
     const schedule=()=>{if(!frame)frame=requestAnimationFrame(update);};
@@ -389,16 +376,15 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
               <button className={`btl-skill-orb${canCast(inspected)?' btl-skill-orb-ready':''}${skillTeaching(inspected)&&canCast(inspected)?' btl-focus':''}`} data-testid={`battle-skill-${inspected.id}`} aria-label={`${inspectedSkill.name}，能量 ${Math.floor(inspected.energy)} / ${inspectedSkill.cost}${canCast(inspected)?'，点击释放':'，当前不可释放，可查看说明'}`} aria-disabled={!canCast(inspected)} aria-describedby={`battle-skill-description-${inspected.id}`} onMouseEnter={()=>setSkillTooltipOpen(true)} onMouseLeave={event=>{if(document.activeElement!==event.currentTarget)setSkillTooltipOpen(false);}} onFocus={()=>setSkillTooltipOpen(true)} onBlur={()=>setSkillTooltipOpen(false)} onClick={()=>chooseSkill(inspected)}>
                 <svg viewBox="0 0 24 24" aria-hidden="true" shapeRendering="crispEdges">{inspected.id==='guard'?<><path d="M5 3h14v11h-2v3h-3v3h-4v-3H7v-3H5z"/><path className="btl-skill-icon-cut" d="M8 6h8v7h-2v3h-4v-3H8z"/></>:<><path d="M10 2h4v6h3v3h5v3h-5v3h-3v5h-4v-5H7v-3H2v-3h5V8h3z"/><path className="btl-skill-icon-cut" d="M10 10h4v4h-4z"/></>}</svg>
               </button>
-              <div className="btl-cat-menu-footer"><span>{Math.floor(inspected.energy)} / {inspectedSkill.cost}</span>{freeCombatMovement&&<button className="btl-cat-move" data-testid="battle-move-selected" disabled={!canMove(inspected)} onClick={()=>{setMoveSelection(inspected.id);setSelected(inspected.id);closeInspection();}} aria-label={`移动${inspected.name}，随后选择地格`}>移动</button>}</div>
+              <div className="btl-cat-menu-footer"><span>{Math.floor(inspected.energy)} / {inspectedSkill.cost}</span></div>
             </div>
           </>}
           {game.phase==='ready'&&<div className="btl-board-intro"><CatPortrait kind="hero" size={88}/><div><h2>保护喵喵，守住小巷</h2><p>调动伙伴，挡住来袭的黑影。</p><button disabled={blocked} onClick={startOrPause}>开始序章战斗</button></div></div>}
         </div>
           </div>
-          {inspected&&inspectedSkill&&<div ref={tooltipRef} className={`btl-skill-tooltip${skillTooltipOpen?' btl-tooltip-visible':''}`} role="tooltip" id={`battle-skill-description-${inspected.id}`} data-testid="battle-skill-tooltip" style={{...tooltipPosition,overflowY:'auto'}} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}>
-            <small>{inspected.name} · {inspected.role} · {effectiveSpeed===0?'当前暂停':'查看时 ×0.5'}</small><strong>{inspectedSkill.name}</strong>
+          {inspected&&inspectedSkill&&<div ref={tooltipRef} className={`btl-skill-tooltip${skillTooltipOpen?' btl-tooltip-visible':''}`} role="tooltip" id={`battle-skill-description-${inspected.id}`} data-testid="battle-skill-tooltip" style={tooltipPosition} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}>
+            <strong>{inspectedSkill.name}</strong>
             <p>{inspectedSkill.targeting==='self'?`自身获得 ${inspectedSkill.shield} 点额外护盾，持续 ${inspectedSkill.duration} 秒。护盾先承伤，不恢复体力。`:`全地图任选中心，黄色十字最多作用 5 格，每个目标 ${inspectedSkill.damage} 伤害。鼠标移动预览，左键释放，右键取消；触摸可拖动后松手释放。`}</p>
-            <CatEnergy cat={inspected}/><span className="btl-tooltip-status">消耗 {inspectedSkill.cost} 能量 · {blocked||game.paused?'暂停期间不可释放':canCast(inspected)?'已就绪，点击圆形图标释放':inspected.energy<inspectedSkill.cost?`尚未蓄满，每秒自动 +${CONFIG.ENERGY_PER_SECOND}`:'按新手引导依次练习'}</span>
             {inspected.shield>0&&<span className="btl-shield-detail" data-testid={`battle-shield-${inspected.id}`}>额外护盾 {Math.ceil(inspected.shield)} · 剩余 {inspected.shieldRemaining.toFixed(1)} 秒</span>}
           </div>}
         </div>
