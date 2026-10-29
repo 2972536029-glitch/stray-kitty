@@ -1586,6 +1586,16 @@
         },
         "required": ["type", "zoneId"]
       },
+      "ExitMarket": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {"type": "string", "const": "EXIT_MARKET"},
+          "layer": {"type": "string", "enum": ["L0", "L1", "Lm1"]},
+          "position": {"$ref": "#/components/schemas/WorldPoint"}
+        },
+        "required": ["type", "layer", "position"]
+      },
       "ReportMove": {
         "type": "object",
         "additionalProperties": false,
@@ -1792,6 +1802,9 @@
           },
           {
             "$ref": "#/components/schemas/GoExplore"
+          },
+          {
+            "$ref": "#/components/schemas/ExitMarket"
           },
           {
             "$ref": "#/components/schemas/PlaceFurniture"
