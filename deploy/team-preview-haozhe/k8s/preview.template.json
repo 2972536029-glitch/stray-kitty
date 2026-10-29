@@ -163,6 +163,10 @@
                         "optional": true
                       }
                     }
+                  },
+                  {
+                    "name": "GAME_QA_ENABLED",
+                    "value": "true"
                   }
                 ],
                 "securityContext": {

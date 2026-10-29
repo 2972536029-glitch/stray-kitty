@@ -22,7 +22,7 @@ type Attempt struct {
 	// New battles never reserve or consume supplies.
 	Supplies map[string]int `json:"supplies,omitempty"`
 	// Mainline identifies a chapter mission begun from its gated map trigger.
-	Mainline bool           `json:"mainline,omitempty"`
+	Mainline bool `json:"mainline,omitempty"`
 }
 type BattleReport struct {
 	Leaks          *int  `json:"leaks"`

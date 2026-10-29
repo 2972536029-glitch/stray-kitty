@@ -386,7 +386,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		} else if s.LastResult.StageID == "tunnel_boss" && s.MapID == "tunnel" && s.ActiveBattle != nil && s.ActiveBattle.Mainline && domain.Contains(s.Flags, "tunnel_boss_cleared") {
 			s.Phase = "dialogue"
 			s.ChapterID = "rescue"
-			s.StoryNodeID = "rescue_intro_10" 
+			s.StoryNodeID = "rescue_intro_10"
 		} else if s.LastResult.StageID != "alley_boss" && !isStandaloneBattle(s.LastResult.StageID) && !domain.Contains(s.Flags, "rescue_story_done") {
 			s.Phase = "dialogue"
 			s.StoryNodeID = "rescue_1"
