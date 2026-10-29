@@ -335,6 +335,20 @@ func validateCommand(body []byte, kind string) error {
 		}
 	}
 	for _, key := range required[kind] {
+		if key == "position" {
+			var point map[string]json.RawMessage
+			if json.Unmarshal(raw.Command[key], &point) != nil || point == nil {
+				return domain.Fail("INVALID_REQUEST", "position 必须为坐标对象", 400)
+			}
+			for _, axis := range []string{"x", "y"} {
+				var value float64
+				coordinate, exists := point[axis]
+				if !exists || string(coordinate) == "null" || json.Unmarshal(coordinate, &value) != nil {
+					return domain.Fail("INVALID_REQUEST", "position 必须包含数值 x 和 y", 400)
+				}
+			}
+			continue
+		}
 		var value string
 		if err := json.Unmarshal(raw.Command[key], &value); err != nil || value == "" {
 			return domain.Fail("INVALID_REQUEST", "命令缺少有效的 "+key, 400)

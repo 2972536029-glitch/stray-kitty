@@ -49,7 +49,7 @@ test('L04 navigation: Chapter 1 and Chapter 4 map entries select their real scen
   await page.getByRole('button',{name:'章节地图'}).click();
   const map=page.getByRole('dialog',{name:'猫爪地图'});
   await map.getByRole('button',{name:'前往雨后小巷'}).click();
-  await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(state=>({chapterId:state.chapterId,mapId:state.mapId,phase:state.phase}))).toEqual({chapterId:'rescue',mapId:'alley',phase:'explore'});
+  await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(state=>({chapterId:state.chapterId,mapId:state.mapId,phase:state.phase}))).toEqual({chapterId:'alley',mapId:'alley',phase:'explore'});
   let canvas=page.locator('canvas');
   await expect(canvas).toHaveAttribute('data-rendered-scene','rainy-alley');
   await expect(canvas).toHaveAttribute('data-map-id','alley');

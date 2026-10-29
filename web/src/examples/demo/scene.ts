@@ -6,12 +6,13 @@ import {CanvasPainter} from '../../adapters/canvas/painter';
 import {FollowCamera, type CameraFrame} from '../../adapters/canvas/camera';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
 import {TunnelMap} from '../../modules/chapter4/TunnelMap';
-import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
+import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, marketExitAt, MARKET_EXIT_TRIGGER, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 import {HOME_LAYOUT_ID, HOME_RESIDENTS, HOME_ROAM_NODES, HOME_SHELTER_NODES, HOME_SLOTS, homeStage} from '../../modules/home/layout';
 import {homeAppearanceKey, paintHomestead} from '../../modules/home/painter';
 import {homeStoryBeat, storyActorPosition, type HomeStoryActor, type HomeStoryBeat} from '../../modules/home/story';
+import {explorationScene} from '../../core/chapter-navigation';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 花房家园的猫咪轻量 AI:pose 非空表示绑定专属家具姿态,否则按 sit→walk→sit 循环漫步。
@@ -51,6 +52,7 @@ export class DemoScene {
   private marketTransitionHeight = 0;
   private marketFrame: CameraFrame | null = null;
   private marketInitialized = false;
+  private marketExitRequested = false;
   private marketDebug = false;
   private marketLastMove:{floor:MarketFloor;position:{x:number;y:number};direction:{x:number;y:number};requestedDestination:{x:number;y:number};rejected:boolean;reason:string;nearestBoundary:string}={floor:'L0',position:{x:0,y:0},direction:{x:0,y:0},requestedDestination:{x:0,y:0},rejected:false,reason:'no movement attempt',nearestBoundary:'none'};
   private marketZonesSeen = new Set<string>();
@@ -122,6 +124,14 @@ export class DemoScene {
     if (this.state?.phase !== 'explore' || this.pausedByUser) return;
     const key = event.key.toLowerCase();
     if (this.state?.mapId === 'tunnel') {
+      // Resolve one-shot E input on keydown, as Alley and Market do. A quick
+      // keyup can otherwise clear TunnelMap's held-key set before its next frame.
+      if (key === 'e') {
+        event.preventDefault();
+        const target = this.tunnelMap.nearTarget;
+        if (!event.repeat && target) {this.onWorldPosition?.(this.tunnelMap.positionNow());this.onInteract(target.id);}
+        return;
+      }
       if (this.tunnelMap.keyDown(key, import.meta.env.DEV)) {event.preventDefault(); return;}
       if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','f','c',' '].includes(key)) event.preventDefault();
       if (!event.repeat && ['f','c',' '].includes(key)) this.tunnelMap.traverse(key as 'f'|'c'|' ', this.state.flags);
@@ -220,6 +230,7 @@ export class DemoScene {
     if(this.marketTransition.active&&(mode!=='explore'||this.state.mapId!=='market')){const interrupted=this.marketTransition.cancel();if(interrupted){this.marketFloor=interrupted.floor;this.x=interrupted.position.x;this.y=interrupted.position.y;}this.marketTransitionHeight=0;}
     if (mode !== this.lastMode || this.state.mapId !== this.lastMapId) {
       const mapChanged = this.state.mapId !== this.lastMapId;
+      if (mapChanged && this.state.mapId === 'market') {this.marketInitialized = false;this.marketExitRequested = false;}
       this.clearInput();
       if (mode === 'explore') {
         if (this.state.mapId === 'alley') {
@@ -254,7 +265,7 @@ export class DemoScene {
     if (!active) this.clearInput();
     if (mode === 'explore' && active && this.state.mapId==='market'&&this.marketTransition.active) {
       const transition=this.marketTransition.advance(delta);
-      if(transition){this.x=transition.x;this.y=transition.y;this.marketTransitionHeight=transition.height;this.marketFloor=transition.floor;this.onWorldPosition?.({x:this.x,y:this.y});if(transition.done){this.marketTransitionHeight=0;if(transition.exit)this.onMarketExit?.('L0',{x:this.x,y:this.y});}}
+      if(transition){this.x=transition.x;this.y=transition.y;this.marketTransitionHeight=transition.height;this.marketFloor=transition.floor;this.onWorldPosition?.({x:this.x,y:this.y});if(transition.done)this.marketTransitionHeight=0;}
     } else if (mode === 'explore' && active && this.state.mapId === 'alley') {
       const dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
       const dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
@@ -279,7 +290,12 @@ export class DemoScene {
     } else if (mode === 'explore' && active && this.state.mapId === 'tunnel') {
       const dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
       const dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
-      this.tunnelMap.update(delta, dx, dy, this.state.flags, zoneId => this.onRandomZone?.(zoneId) ?? Promise.resolve(false), id => this.onInteract(id));
+      this.tunnelMap.update(delta, dx, dy, this.state.flags, zoneId => this.onRandomZone?.(zoneId) ?? Promise.resolve(false), id => {
+        // The G trigger runs inside update, before the ordinary frame report.
+        // Publish its current point before App builds the server-validated command.
+        this.onWorldPosition?.(this.tunnelMap.positionNow());
+        this.onInteract(id);
+      });
       const target = this.tunnelMap.nearTarget;
       const id = target?.id ?? '';
       if (id !== this.nearbyInteractionId) {
@@ -375,6 +391,11 @@ export class DemoScene {
         }
       }
     }
+    if (mode === 'explore' && active && this.state.mapId === 'market' && !this.marketTransition.active) {
+      const insideExit=marketExitAt(this.marketFloor,this.x,this.y,this.state.flags);
+      if(!insideExit)this.marketExitRequested=false;
+      else if(!this.marketExitRequested){this.marketExitRequested=true;this.clearInput();this.onMarketExit?.(this.marketFloor,{x:this.x,y:this.y});}
+    }
     if (mode === 'battle' && active && this.simulation) {
       this.simulation.update(delta / 1000);
       if (this.simulation.outcome && !this.reported) {this.reported = true;this.onResult({attemptId: this.attemptId, outcome: this.simulation.outcome});}
@@ -392,7 +413,14 @@ export class DemoScene {
     this.context.globalAlpha = 1;
     this.context.globalCompositeOperation = 'source-over';
     this.context.imageSmoothingEnabled = false;
-    if (mode === 'battle') this.drawBattle();
+    const exploreScene = mode === 'explore' ? explorationScene(this.state.mapId) : null;
+    if (mode === 'explore') {
+      if (exploreScene === 'alley') this.rainyAlley.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, {phase: mode, randomEligible: this.randomEligible});
+      else if (exploreScene === 'market') this.drawMarket();
+      else if (exploreScene === 'tunnel') this.tunnelMap.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags);
+      else {this.context.fillStyle = '#18282a';this.context.fillRect(0, 0, this.viewWidth, this.viewHeight);this.context.fillStyle = '#fff';this.context.fillText('探索地图尚未开放', 30, 50);}
+    }
+    else if (mode === 'battle') this.drawBattle();
     else if (mode === 'dialogue' && this.storyScene === 'home') this.drawHome();
     else if (mode === 'home') this.drawHome();
     else if (mode === 'dialogue' && this.storyScene === 'tunnel' && this.state.mapId !== 'tunnel') this.drawTunnel();
@@ -412,7 +440,7 @@ export class DemoScene {
     if (state.phase === 'battle') scene = 'battle';
     else if (state.phase === 'home' || (state.phase === 'dialogue' && this.storyScene === 'home')) scene = 'home';
     else if (state.mapId === 'tunnel') {scene = 'chapter4-tunnel';floor = this.tunnelMap.layer;position = this.tunnelMap.positionNow();}
-    else if (state.mapId === 'market' || this.storyScene === 'market') scene = 'night-market';
+    else if (state.mapId === 'market' || (state.phase === 'dialogue' && this.storyScene === 'market')) scene = 'night-market';
     else if (state.mapId === 'alley') {scene = 'rainy-alley';floor = 'L0';position = this.rainyAlley.worldPosition();}
     else if (state.mapId === 'greenhouse') scene = 'home';
     else if (this.storyScene === 'tunnel') scene = 'tunnel-story-preview';
@@ -885,7 +913,7 @@ export class DemoScene {
     for(const item of marketItems.filter(value=>['crow','pigeon','momo','boss','exit'].includes(value.id)&&value.layer===this.marketFloor)){
       const completed=item.id==='crow'?flags.includes('market_crow_clue_completed'):item.id==='pigeon'?flags.includes('market_pigeon_clue_completed'):item.id==='momo'?!!this.state?.drawnEvents?.includes('node:momo_trail_event'):item.id==='boss'?flags.includes('market_cleared'):false;
       const locked=(item.id==='boss'&&(!flags.includes('market_crow_clue_completed')||!flags.includes('market_pigeon_clue_completed')))||(item.id==='exit'&&!flags.includes('market_cleared'));
-      const title=item.id==='crow'?'老黑羽情报摊':item.id==='pigeon'?'咕咕大盗传言棚':item.id==='momo'?'墨墨的踪迹':item.id==='boss'?'集市保卫战':'北街出口';
+      const title=item.id==='crow'?'老黑羽情报摊':item.id==='pigeon'?'咕咕大盗传言棚':item.id==='momo'?'墨墨的踪迹':item.id==='boss'?'集市保卫战':flags.includes('market_cleared')?'北街出口 · 第三章花房':'北街出口';
       ctx.save();ctx.globalAlpha=completed?.62:1;ctx.beginPath();ctx.arc(item.x,item.y,11,0,Math.PI*2);ctx.fillStyle=locked?'#a6a497':item.id==='boss'?'#ef906a':'#f0cd79';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#172630';ctx.stroke();
       ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#172630';ctx.fillText(item.id==='boss'?'!':item.id==='exit'?'↑':'E',item.x,item.y+.5);
       const label=`${item.id==='momo'?'OPTIONAL · ':''}${title}${locked?' · 未解锁':completed?' · 已完成':''}`;ctx.font='13px "Microsoft YaHei",system-ui,sans-serif';const width=ctx.measureText(label).width+12,bx=item.x+15,by=item.y-23;
@@ -902,6 +930,7 @@ export class DemoScene {
   }
   private drawMarketDebug() {
     const ctx=this.context;ctx.save();
+    if(this.marketFloor==='L0'){const box=MARKET_EXIT_TRIGGER;ctx.strokeStyle='#f6e775';ctx.lineWidth=2;ctx.strokeRect(box.left,box.top,box.right-box.left,box.bottom-box.top);}
     for(const [width,points] of nightMarketSpatial.R[this.marketFloor]){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.strokeStyle='rgba(67,255,142,.38)';ctx.lineWidth=Math.max(2,width-20);ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle='#d7ff66';ctx.stroke();}
     if(this.marketFloor==='L0')for(const solid of nightMarketSpatial.solids){ctx.beginPath();if(solid.type==='rect')ctx.rect(solid.x,solid.y,solid.w,solid.h);else{solid.pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();}ctx.fillStyle='rgba(255,35,68,.25)';ctx.fill();ctx.strokeStyle='#ff4058';ctx.lineWidth=2;ctx.stroke();}
     if(this.marketFloor==='L0')for(const obstacle of nightMarketSpatial.actionObstacles){ctx.beginPath();ctx.moveTo(obstacle.a[0],obstacle.a[1]);ctx.lineTo(obstacle.b[0],obstacle.b[1]);ctx.strokeStyle='#ff4058';ctx.lineWidth=obstacle.radius*2;ctx.stroke();}

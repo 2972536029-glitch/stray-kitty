@@ -169,6 +169,14 @@ func TestFinaleTrialDoesNotReplaceExistingStoryExits(t *testing.T) {
 		t.Fatal("first rescue was replaced by finale trial")
 	}
 	g, token, _ = prepareBoss(t, 0, nil)
+	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Flags = domain.Add(domain.Add(p.State.Flags, "tunnel_explored"), "cats_rescued_batch1")
+		p.State.Inventory["clue"] = 3
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "finale_intro_1"})
 	s = finishStory(t, g, token)
 	if s.ActiveBattle != nil || s.Phase == "battle" || domain.Contains(s.CompletedStages, "finale_boss") {

@@ -36,6 +36,10 @@ html,body,#root{min-height:100%;width:100%}
 .event-card{max-height:calc(100dvh - 200px);margin:90px 24px 100px}
 .home-controls{position:absolute;z-index:2;top:104px;right:22px;width:min(330px,calc(100% - 44px));max-height:calc(100dvh - 190px);overflow:auto;scrollbar-width:thin;scrollbar-color:#8b906d #e9dfc8;border:2px solid #594536;border-radius:4px;background:#e9dfc8;box-shadow:4px 4px 0 #24312e}
 .home-controls .home-panel{border:0;box-shadow:none}
+.home-mainline-step{display:grid;gap:10px;margin:0 0 16px;padding:12px;border:2px solid #657653;background:#e3e6cc}
+.home-mainline-step h3,.home-mainline-step p{margin:0}
+.home-mainline-step p{font-size:12px;line-height:1.7}
+.home-mainline-step button{width:100%}
 .journey-modal>.journal{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
 .journey-modal .journal-card{box-shadow:none}
 .journey-modal .save-note{grid-column:1/-1;color:#62695d}

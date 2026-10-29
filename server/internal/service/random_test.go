@@ -202,7 +202,15 @@ func TestDrawnEventsArePerRegion(t *testing.T) {
 		t.Fatal("shared event never drawn in market")
 	}
 	// 换到 market_copy,同一张卡必须还能抽到。
-	execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "market_copy"})
+	// This synthetic region has no production renderer: install it only in the
+	// random-pool fixture, rather than admitting it through public navigation.
+	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.MapID = "market_copy"
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	drewAgain := false
 	for i := 0; i < 160 && !drewAgain; i++ {
 		s := execute(t, g, token, domain.Command{Type: "REPORT_MOVE", Distance: 150})
@@ -563,8 +571,8 @@ func TestRepeatableEchoCard(t *testing.T) {
 	}
 }
 
-// 换章重置:进入第二章后,小巷已抽卡清空(区域换了新鲜事)。
-func TestChapterSwitchResetsDrawn(t *testing.T) {
+// 重播当前章节不重置已抽卡，防止靠剧情入口反复刷取。
+func TestChapterStoryReplayPreservesDrawn(t *testing.T) {
 	g, token, _ := setup(t)
 	markRescueStoryDoneForTest(t, g, token)
 	finishStory(t, g, token)
@@ -584,8 +592,8 @@ func TestChapterSwitchResetsDrawn(t *testing.T) {
 		t.Skip("no card drawn before chapter switch")
 	}
 	s := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "market_intro_1"})
-	if s.ChapterID != "market" || len(s.DrawnEvents) != 0 {
-		t.Fatalf("chapter switch should reset drawn events: chapter=%s drawn=%v", s.ChapterID, s.DrawnEvents)
+	if s.ChapterID != "market" || len(s.DrawnEvents) != len(before.DrawnEvents) {
+		t.Fatalf("replaying the current chapter must preserve drawn events: chapter=%s drawn=%v", s.ChapterID, s.DrawnEvents)
 	}
 }
 
@@ -755,10 +763,9 @@ func TestChapter3GreenhouseProgressionAndMomoUnlock(t *testing.T) {
 		t.Fatal("expected chapter_2_started")
 	}
 	s = execute(t, g, token, domain.Command{Type: "EXIT_MARKET", Layer: "L0", Position: &domain.WorldPoint{X: 1365, Y: 88}})
-	if s.Phase != "home" || s.MapID != "greenhouse" {
-		t.Fatalf("expected home in greenhouse, got %+v", s)
+	if s.Phase != "dialogue" || s.MapID != "greenhouse" || s.StoryNodeID != "greenhouse_intro_1" {
+		t.Fatalf("expected Chapter 3 story in greenhouse, got %+v", s)
 	}
-	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "greenhouse_intro_1"})
 	if s.Phase != "dialogue" || s.ChapterID != "greenhouse" || !domain.Contains(s.Flags, "chapter_3_started") {
 		t.Fatalf("chapter 3 did not start correctly: %+v", s)
 	}

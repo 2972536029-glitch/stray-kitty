@@ -1,6 +1,18 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {marketExitAt, MARKET_EXIT_TRIGGER} from '../web/src/modules/nightMarket/map';
 import {isMarketSolid, isMarketTraversable, marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, marketTransitionAt, nearestMarketPosition, nightMarketSpatial, onMarketRoute, sweepMarketMove, marketMovementBlockReason} from '../web/src/modules/nightMarket/map';
+
+test('north exit trigger requires victory, the ground floor and the far side of the crate',()=>{
+  const flags=['market_cleared'];
+  assert.equal(marketExitAt('L0',1365,88,flags),true);
+  assert.equal(marketExitAt('L0',1365,88,[]),false);
+  for(const floor of ['L1','Lm1'] as const)assert.equal(marketExitAt(floor,1365,88,flags),false);
+  for(const point of [{x:1310,y:169},{x:1365,y:166},{x:1316,y:88},{x:1414,y:88},{x:1365,y:39},{x:1365,y:137}])assert.equal(marketExitAt('L0',point.x,point.y,flags),false);
+  for(const x of [MARKET_EXIT_TRIGGER.left,MARKET_EXIT_TRIGGER.right])for(const y of [MARKET_EXIT_TRIGGER.top,MARKET_EXIT_TRIGGER.bottom])assert.equal(marketExitAt('L0',x,y,flags),true);
+  const climb=marketTransitionAt('L0','c',1365,166,flags,true)!;
+  assert.equal(marketExitAt(climb.toFloor,climb.to.x,climb.to.y,flags),true);
+});
 
 test('Night Market keeps the approved native coordinate frame and three exact art assets',()=>{
   assert.deepEqual(nightMarketSpatial.coordinate_space,{width:1672,height:941,origin:'top-left',axis_x:'right',axis_y:'down',units:'native artwork pixels'});

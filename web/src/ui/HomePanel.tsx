@@ -41,8 +41,30 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
   const lockedSlots = new Set<string>();
   for (const r of renovations) if (!state.flags.includes(r.grantsFlag)) for (const slotId of r.unlockSlots ?? []) lockedSlots.add(slotId);
   const hasBattleTrials = state.flags.includes('alley_rescued') || state.flags.includes('momo_joined');
+  const needsGreenhouseDefense = state.flags.includes('chapter_3_started') && state.flags.includes('momo_joined') && !state.flags.includes('greenhouse_fortified');
   return <section className="journal-card home-panel"><span className="eyebrow">MAKE IT OURS</span><h2>整理我们的家</h2>
-    {hasBattleTrials && <h3 className="chapter-loadout-kicker" style={{margin: '4px 0 0'}}>独立战斗试玩 · 不推进章节剧情</h3>}
+    {(needsGreenhouseDefense || state.flags.includes('greenhouse_fortified')) && <section className="home-mainline-step" aria-label="主线进度">
+      {needsGreenhouseDefense ? <>
+        <h3>下一步：守住花房防线</h3>
+        <p>墨墨已经加入。完成第三章花房保卫战后，就能跟随墨墨进入第四章地下通道。</p>
+        <button className="primary-action-btn" data-testid="chapter3-defense-start" disabled={disabled} onClick={() => onCommand({type:'START_BATTLE',stageId:'greenhouse_boss'})}>继续第三章：守住花房防线 →</button>
+      </> : <>
+        <h3>第四章：消失的猫咪们</h3>
+        <p>花房防线已经守住，地下通道已开放。跟随墨墨寻找失踪的伙伴。</p>
+        {!state.flags.includes('chapter_4_started') ? <button className="primary-action-btn" data-testid="chapter4-start" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('rescue'))}>🐾 启程：第四章《消失的猫咪们》 →</button> : <>
+          <button className="primary-action-btn" data-testid="chapter4-explore" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('tunnel'))}>🐾 前往地下暗道 →</button>
+          <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('rescue'))}>📖 重温第四章剧情</button>
+        </>}
+      </>}
+    </section>}
+    <div className="chapter-exploration-trials" aria-label="章节试玩">
+      <button disabled={disabled} onClick={() => onCommand(chapterExploreCommand('alley'))}>进入第一章试玩 · 雨后小巷探索</button>
+      {state.flags.includes('chapter_2_started') && <button disabled={disabled} onClick={() => onCommand(chapterExploreCommand('market'))}>进入第二章试玩 · 午夜集市探索</button>}
+      {state.flags.includes('market_exit_crossed') && <button disabled={disabled} onClick={() => onCommand(chapterStoryCommand('greenhouse'))}>进入第三章剧情 · 探索尚未开放</button>}
+      {state.flags.includes('greenhouse_fortified') && <button disabled={disabled} onClick={() => onCommand(chapterExploreCommand('tunnel'))}>进入第四章试玩 · 地下通道探索</button>}
+      {state.flags.includes('tunnel_explored') && state.flags.includes('cats_rescued_batch1') && (state.inventory.clue ?? 0) >= 3 && <button disabled={disabled} onClick={() => onCommand(chapterStoryCommand('finale'))}>进入第五章剧情 · 探索尚未开放</button>}
+    </div>
+    {hasBattleTrials && <h3 className="chapter-loadout-kicker" style={{margin: '4px 0 0'}}>战斗试玩 · 花房防线胜利可解锁第四章</h3>}
     {state.flags.includes('alley_rescued') && <ChapterLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('alley_rescued') && <MarketLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('momo_joined') && <GreenhouseLoadout disabled={disabled} onCommand={onCommand}/>}
@@ -105,10 +127,10 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
         </div>
       )
     )}
-    {(state.flags.includes('chapter_2_started') || state.flags.includes('market_unlocked')) && (
+    {state.flags.includes('market_cleared') && state.flags.includes('market_exit_crossed') && (
       !state.flags.includes('chapter_3_started') ? (
         <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand(chapterStoryCommand('greenhouse'))}>
-          🌿 启程：第三章剧情（花房战斗试玩独立于剧情） →
+          🌿 启程：第三章剧情（结识墨墨后守护花房） →
         </button>
       ) : (
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
@@ -118,23 +140,7 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
         </div>
       )
     )}
-    {state.flags.includes('greenhouse_fortified') && (
-      !state.flags.includes('chapter_4_started') ? (
-        <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand(chapterStoryCommand('rescue'))}>
-          🐾 启程：第四章《消失的猫咪们》 →
-        </button>
-      ) : (
-        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
-          <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('tunnel'))}>
-            🐾 前往地下暗道 →
-          </button>
-          <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('rescue'))}>
-            📖 重温第四章剧情
-          </button>
-        </div>
-      )
-    )}
-    {(state.flags.includes('chapter_4_started') || state.flags.includes('tunnel_explored')) && (
+    {state.flags.includes('tunnel_explored') && state.flags.includes('cats_rescued_batch1') && (
       !state.flags.includes('finale_started') ? (
         (state.inventory.clue ?? 0) < 3 ? (
           <div style={{marginTop: '8px', padding: '10px 12px', background: 'rgba(255, 180, 0, 0.08)', borderRadius: '8px', border: '1px dashed #e2a03f'}}>

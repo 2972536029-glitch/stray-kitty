@@ -78,8 +78,8 @@ func TestMarketMainlineBattleRequiresCluesAndCExit(t *testing.T) {
 	rejectUnchanged(t, g, token, domain.Command{Type: "GO_HOME"})
 	rejectUnchanged(t, g, token, domain.Command{Type: "EXIT_MARKET", Layer: "L0", Position: &domain.WorldPoint{X: 1300, Y: 90}})
 	s = execute(t, g, token, domain.Command{Type: "EXIT_MARKET", Layer: "L0", Position: &domain.WorldPoint{X: 1365, Y: 88}})
-	if s.Phase != "home" || !domain.Contains(s.Flags, "market_exit_crossed") {
-		t.Fatal("valid climbed exit did not leave market")
+	if s.Phase != "dialogue" || s.MapID != "greenhouse" || s.ChapterID != "greenhouse" || s.StoryNodeID != "greenhouse_intro_1" || !domain.Contains(s.Flags, "market_exit_crossed") || !domain.Contains(s.Flags, "chapter_3_started") {
+		t.Fatal("valid climbed exit did not start Chapter 3 in the existing greenhouse scene")
 	}
 }
 

@@ -18,8 +18,8 @@ export default function WorldMap({state, catalog, disabled, onNavigate, onClose}
       return <li key={map.id} className={`map-stop ${current ? 'current' : ''} ${available ? '' : 'locked'}`}>
         <div className="map-dot" aria-hidden="true">{['▦', '★', '❀', '☾', '⌂'][index] ?? '◇'}</div>
         <div><h3>{map.name}</h3><p>{status}</p></div>
-        {current && <PixelCat size={56}/>}<span>{current ? '当前' : available ? '可探索' : '未开放'}</span>
-        {command && <button disabled={disabled} onClick={() => onNavigate(command)}>前往{map.name}</button>}
+        {current && <PixelCat size={56}/>}<span>{current ? '当前' : available ? ['greenhouse', 'warehouse'].includes(map.id) ? '剧情' : '可探索' : '未开放'}</span>
+        {command && <button disabled={disabled} onClick={() => onNavigate(command)}>前往{map.name}{['greenhouse', 'warehouse'].includes(map.id) ? '剧情' : ''}</button>}
       </li>;
     })}</ol>
     <footer>找回自己的家 <b>→</b> 帮伙伴找到家 <b>→</b> 一起创造家</footer>

@@ -19,7 +19,7 @@ test.beforeAll(async({request})=>{
   const players:Record<string,unknown>={};
   for(const id of ids){
     const session={playerId:`nav-${id}`,token:`nav-browser-${id}`};sessions.set(id,session);
-    const state:GameState={schemaVersion:1,contentVersion:catalog.version,revision:1,phase:'home',chapterId:'market',storyNodeId:'',mapId:'market',flags:['l00_completed','alley_rescued','rescue_story_done','chapter_2_started','market_cleared','market_exit_crossed','momo_joined','greenhouse_fortified','chapter_4_started'],cats:['miaomiao','tuanzi','diandian'],inventory:{material:3,food:0,clue:3,'warm-can':4,'bouncy-treat':2},currencies:{stamp:2},furniture:['cardboard_nest'],placements:{},completedStages:['l00_tutorial','alley_rescue'],pendingEventId:'',activeBattle:null,eventState:{pendingModifiers:{}},lastResult:{message:'Navigation fixture.'}};
+    const state:GameState={schemaVersion:1,contentVersion:catalog.version,revision:1,phase:'home',chapterId:'market',storyNodeId:'',mapId:'market',flags:['l00_completed','alley_rescued','rescue_story_done','chapter_2_started','market_cleared','market_exit_crossed','tunnel_explored','cats_rescued_batch1','momo_joined','greenhouse_fortified','chapter_4_started'],cats:['miaomiao','tuanzi','diandian'],inventory:{material:3,food:0,clue:3,'warm-can':4,'bouncy-treat':2},currencies:{stamp:2},furniture:['cardboard_nest'],placements:{},completedStages:['l00_tutorial','alley_rescue'],pendingEventId:'',activeBattle:null,eventState:{pendingModifiers:{}},lastResult:{message:'Navigation fixture.'}};
     if(id==='chapter3-trial')state.flags.push('chapter_3_started');
     players[createHash('sha256').update(session.token).digest('hex')]={id:session.playerId,state,receipts:{},receiptOrder:[]};
   }
@@ -42,8 +42,8 @@ test('Chapter Route labels Chapter 3 and finale as unavailable exploration maps'
   await page.getByRole('button',{name:'章节地图'}).click();
   const route=page.getByRole('dialog',{name:'猫爪地图'});
   await expect(route).toContainText('第三章剧情与独立战斗试玩；探索地图尚未开放');
-  await expect(route.getByRole('button',{name:'前往废弃花房'})).toHaveCount(0);
-  await expect(route).toContainText('终章战斗试玩；探索地图尚未开放');
+  await expect(route.getByRole('button',{name:'前往废弃花房剧情'})).toBeVisible();
+  await expect(route).toContainText('终章剧情与战斗试玩；探索地图尚未开放');
   await expect(route.getByRole('button',{name:'前往总仓库'})).toHaveCount(0);
 });
 
