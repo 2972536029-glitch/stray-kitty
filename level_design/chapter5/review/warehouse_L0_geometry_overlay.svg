@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1672" height="941" viewBox="0 0 1672 941">
+<title>Warehouse L0 art registration — manual review draft</title>
+<image href="../art/warehouse_L0_composite.png" width="1672" height="941"/>
+<g fill="none" stroke="#80eadc" stroke-width="2">
+<polygon points="162,281 225,281 225,215 366,215 366,186 620,186 620,207 808,207 808,235 1040,235 1040,282 1410,282 1410,325 1500,325 1500,375 1540,375 1540,536 1496,536 1496,601 1520,601 1520,810 1360,810 1360,852 1141,852 1141,828 1045,828 1045,856 965,856 965,924 756,924 756,853 597,853 597,875 310,875 310,838 189,838 189,778 143,778 143,607 111,607 111,360 162,360"/>
+<polygon points="1190,65 1455,65 1455,210 1347,210 1347,282 1258,282 1258,210 1190,210"/>
+</g><g fill="none" stroke="#ffbc6e" stroke-width="2">
+<rect id="west_upper_tall_rack" x="393" y="244" width="151" height="101"><title>west_upper_tall_rack</title></rect>
+<rect id="west_wide_rack" x="416" y="412" width="166" height="96"><title>west_wide_rack</title></rect>
+<rect id="west_lower_rack" x="433" y="595" width="127" height="99"><title>west_lower_rack</title></rect>
+<rect id="west_crates" x="255" y="667" width="106" height="91"><title>west_crates</title></rect>
+<rect id="west_service_equipment" x="205" y="457" width="91" height="102"><title>west_service_equipment</title></rect>
+<rect id="west_repair_pallet" x="174" y="355" width="61" height="53"><title>west_repair_pallet</title></rect>
+<rect id="west_broken_shelf" x="346" y="705" width="49" height="95"><title>west_broken_shelf</title></rect>
+<rect id="center_upper_rack" x="637" y="261" width="134" height="83"><title>center_upper_rack</title></rect>
+<rect id="center_mid_container" x="630" y="424" width="144" height="112"><title>center_mid_container</title></rect>
+<rect id="center_lower_rack" x="637" y="629" width="113" height="113"><title>center_lower_rack</title></rect>
+<rect id="southwest_pallets" x="548" y="775" width="76" height="43"><title>southwest_pallets</title></rect>
+<rect id="center_fallen_boxes" x="759" y="633" width="49" height="65"><title>center_fallen_boxes</title></rect>
+<rect id="east_upper_container" x="897" y="276" width="132" height="113"><title>east_upper_container</title></rect>
+<rect id="east_mid_rack" x="932" y="445" width="108" height="96"><title>east_mid_rack</title></rect>
+<rect id="east_lower_container" x="909" y="641" width="127" height="90"><title>east_lower_container</title></rect>
+<rect id="east_top_rack" x="1127" y="320" width="121" height="77"><title>east_top_rack</title></rect>
+<rect id="east_center_rack" x="1124" y="462" width="108" height="81"><title>east_center_rack</title></rect>
+<rect id="east_lower_crates" x="1148" y="639" width="112" height="76"><title>east_lower_crates</title></rect>
+<rect id="far_east_top_machine" x="1359" y="394" width="98" height="94"><title>far_east_top_machine</title></rect>
+<rect id="far_east_bottom" x="1367" y="654" width="101" height="91"><title>far_east_bottom</title></rect>
+<rect id="southeast_pallets" x="1090" y="774" width="67" height="45"><title>southeast_pallets</title></rect>
+<rect id="northeast_spare_drums" x="1257" y="333" width="56" height="72"><title>northeast_spare_drums</title></rect>
+<rect id="northeast_tilted_container" x="1281" y="470" width="61" height="76"><title>northeast_tilted_container</title></rect>
+<rect id="east_mid_crate_stack" x="1402" y="536" width="78" height="83"><title>east_mid_crate_stack</title></rect>
+<rect id="east_loading_rejects" x="1215" y="755" width="72" height="50"><title>east_loading_rejects</title></rect>
+<rect id="south_loading_crate" x="850" y="797" width="74" height="52"><title>south_loading_crate</title></rect>
+<rect id="upper_access_pallet" x="1064" y="294" width="42" height="64"><title>upper_access_pallet</title></rect>
+<rect id="west_cross_spill" x="325" y="521" width="68" height="32"><title>west_cross_spill</title></rect>
+<rect id="central_misplaced_pallet" x="805" y="459" width="72" height="35"><title>central_misplaced_pallet</title></rect>
+<rect id="east_transverse_rubble" x="1055" y="548" width="64" height="39"><title>east_transverse_rubble</title></rect>
+<rect id="east_spare_forklift" x="1273" y="556" width="59" height="54"><title>east_spare_forklift</title></rect>
+<rect id="west_overturned_pallets" x="402" y="260" width="46" height="28"><title>west_overturned_pallets</title></rect>
+<rect id="west_collapsed_upright" x="307" y="449" width="91" height="28"><title>west_collapsed_upright</title></rect>
+<rect id="west_loading_rejects" x="155" y="640" width="86" height="39"><title>west_loading_rejects</title></rect>
+<rect id="south_central_scrap" x="763" y="750" width="47" height="36"><title>south_central_scrap</title></rect>
+<rect id="upper_east_fallen_rack" x="1014" y="460" width="60" height="48"><title>upper_east_fallen_rack</title></rect>
+<rect id="upper_east_cross_pallet" x="1178" y="413" width="49" height="33"><title>upper_east_cross_pallet</title></rect>
+<rect id="east_dock_displaced_stack" x="1387" y="383" width="58" height="31"><title>east_dock_displaced_stack</title></rect>
+</g></svg>

@@ -65,5 +65,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if(process.argv.includes('--check')) {if(!fs.existsSync(target)||fs.readFileSync(target,'utf8')!==data) throw Error(`${out} is stale; run npm run content:sync`);}
     else {fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,data);}
   }
+  const spatialSource=fs.readFileSync(path.join(root,'level_design/chapter5/source/v07/warehouse_geometry_v07.json'));
+  const spatialTarget=path.join(root,'server/internal/service/warehouse_geometry.json');
+  if(process.argv.includes('--check')) {if(!fs.existsSync(spatialTarget)||!fs.readFileSync(spatialTarget).equals(spatialSource))throw Error('warehouse geometry mirror is stale; run content:sync');}
+  else fs.writeFileSync(spatialTarget,spatialSource);
   console.log('Content IDs, references and generated catalogs verified.');
 }

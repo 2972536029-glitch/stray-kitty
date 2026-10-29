@@ -126,7 +126,7 @@ export default function DialoguePanel({node, disabled, onNext, onSkip, eventResu
           </button>
         )}
         <button disabled={disabled || closing} onClick={advance} title="点击或按空格/回车继续">
-          继续故事 <span aria-hidden="true">→</span>
+          {node.id === 'rescue_intro_10' ? '返回花房，准备前往仓库' : '继续故事'} <span aria-hidden="true">→</span>
         </button>
       </div>
     </DialogueBubble>

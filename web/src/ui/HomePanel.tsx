@@ -99,12 +99,46 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
   for (const r of renovations) if (!state.flags.includes(r.grantsFlag)) for (const slotId of r.unlockSlots ?? []) lockedSlots.add(slotId);
   const hasBattleTrials = state.flags.includes('alley_rescued') || state.flags.includes('momo_joined');
   const needsGreenhouseDefense = state.flags.includes('chapter_3_started') && state.flags.includes('momo_joined') && !state.flags.includes('greenhouse_fortified');
+  const tunnelComplete = state.flags.includes('tunnel_explored') && state.flags.includes('cats_rescued_batch1');
   return <section className={`journal-card home-panel ${expanded ? 'home-panel-open' : 'home-panel-closed'}${settled ? '' : ' home-panel-entering'}`}>
     {!expanded && <button className="home-drawer-tab" aria-expanded={false} aria-controls="make-it-ours-panel" onClick={() => toggle(true)}><span aria-hidden="true">◀</span><small>整理家园</small></button>}
     <div className="home-panel-content" id="make-it-ours-panel">
       <div className="home-panel-head"><div className="home-panel-title"><span className="eyebrow">MAKE IT OURS</span><h2>整理我们的家</h2></div><button className="home-panel-close" aria-expanded onClick={() => toggle(false)} aria-controls="make-it-ours-panel"><span aria-hidden="true">✕</span><small>收起</small></button></div>
       <button className="home-warehouse-entry" data-sound="open" onClick={() => {playSound('open');onWarehouse();}}>▧ 家园仓库<small>查看库存 · 选择出战补给</small></button>
-    {(needsGreenhouseDefense || state.flags.includes('greenhouse_fortified')) && <section className="home-mainline-step" aria-label="主线进度">
+    {tunnelComplete && !state.flags.includes('finale_completed') && <section className="home-mainline-step" aria-label="第五章进度"><h3>第五章：废弃大仓库</h3><p>第四章救援已完成。准备好后，前往仓库营救剩下的伙伴。</p>{(
+      !state.flags.includes('finale_started') ? (
+        (state.inventory.clue ?? 0) < 3 ? (
+          <div style={{marginTop: '8px', padding: '10px 12px', background: 'rgba(255, 180, 0, 0.08)', borderRadius: '8px', border: '1px dashed #e2a03f'}}>
+            <div style={{fontSize: '13px', color: '#ffb300', fontWeight: 'bold', marginBottom: '4px'}}>
+              🔍 废弃大仓库线索不足（当前收集：{state.inventory.clue ?? 0} / 3）
+            </div>
+            <div style={{fontSize: '12px', color: 'var(--text-subtle, #a0aec0)', marginBottom: '8px', lineHeight: '1.4'}}>
+              前往总仓库需至少 3 条线索。线索不足无法锁定据点，大家决定先回集市多打听些情报再行动。
+            </div>
+            <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+              <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_clue_insufficient'})}>
+                💬 听阿策分析线索 →
+              </button>
+              <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('market'))}>
+                🌙 回集市收集线索 →
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand(chapterStoryCommand('finale'))}>
+            🌟 启程：第五章仓库探索（线索 {state.inventory.clue ?? 0}/3） →
+          </button>
+        )
+      ) : (
+        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
+          <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('warehouse'))}>继续探索仓库 →</button>
+          <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('finale'))}>
+            📖 重温第五章开场
+          </button>
+        </div>
+      )
+    )}</section>}
+    {!tunnelComplete && (needsGreenhouseDefense || state.flags.includes('greenhouse_fortified')) && <section className="home-mainline-step" aria-label="主线进度">
       {needsGreenhouseDefense ? <>
         <h3>下一步：守住花房防线</h3>
         <p>墨墨已经加入。完成第三章花房保卫战后，就能跟随墨墨进入第四章地下通道。</p>
@@ -123,7 +157,7 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
       {state.flags.includes('chapter_2_started') && <button disabled={disabled} onClick={() => onCommand(chapterExploreCommand('market'))}>进入第二章试玩 · 午夜集市探索</button>}
       {state.flags.includes('market_exit_crossed') && <button disabled={disabled} onClick={() => onCommand(chapterStoryCommand('greenhouse'))}>进入第三章剧情 · 探索尚未开放</button>}
       {state.flags.includes('greenhouse_fortified') && <button disabled={disabled} onClick={() => onCommand(chapterExploreCommand('tunnel'))}>进入第四章试玩 · 地下通道探索</button>}
-      {state.flags.includes('tunnel_explored') && state.flags.includes('cats_rescued_batch1') && (state.inventory.clue ?? 0) >= 3 && <button disabled={disabled} onClick={() => onCommand(chapterStoryCommand('finale'))}>进入第五章剧情 · 探索尚未开放</button>}
+      {state.flags.includes('tunnel_explored') && state.flags.includes('cats_rescued_batch1') && (state.inventory.clue ?? 0) >= 3 && <button disabled={disabled} onClick={() => onCommand(chapterStoryCommand('finale'))}>进入第五章剧情 · 仓库探索</button>}
     </div>
     {hasBattleTrials && <h3 className="chapter-loadout-kicker" style={{margin: '4px 0 0'}}>战斗试玩 · 花房防线胜利可解锁第四章</h3>}
     {state.flags.includes('alley_rescued') && <ChapterLoadout disabled={disabled} onCommand={onCommand}/>}
@@ -197,38 +231,6 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
         <div className="home-action-row home-action-gap">
           <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('greenhouse'))}>
             📖 重温第三章剧情
-          </button>
-        </div>
-      )
-    )}
-    {state.flags.includes('tunnel_explored') && state.flags.includes('cats_rescued_batch1') && (
-      !state.flags.includes('finale_started') ? (
-        (state.inventory.clue ?? 0) < 3 ? (
-          <div className="clue-card home-action-gap">
-            <div className="clue-card-title">
-              🔍 废弃大仓库线索不足（当前收集：{state.inventory.clue ?? 0} / 3）
-            </div>
-            <div className="clue-card-hint">
-              前往总仓库需至少 3 条线索。线索不足无法锁定据点，大家决定先回集市多打听些情报再行动。
-            </div>
-            <div className="home-action-row">
-              <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_clue_insufficient'})}>
-                💬 听阿策分析线索 →
-              </button>
-              <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('market'))}>
-                🌙 回集市收集线索 →
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button className="primary-action-btn home-action-gap" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('finale'))}>
-            🌟 启程：终章剧情（仓库探索地图尚未开放；战斗试玩独立）（线索已齐备 {state.inventory.clue ?? 3}/3） →
-          </button>
-        )
-      ) : (
-        <div className="home-action-row home-action-gap">
-          <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('finale'))}>
-            📖 重温终章大结局
           </button>
         </div>
       )

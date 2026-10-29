@@ -1,0 +1,14 @@
+.warehouse-walk-review{height:100dvh;display:flex;flex-direction:column;background:#09141d;color:#efe5cc;font:14px system-ui}
+.warehouse-walk-review header{padding:12px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;background:#172731;border-bottom:1px solid #52666b}
+.warehouse-walk-review h1{font:700 18px system-ui;margin:0 0 6px}
+.warehouse-walk-review p{margin:0;color:#b8c8ca;font:13px system-ui}
+.warehouse-walk-review nav{display:flex;align-items:center;flex-wrap:wrap;gap:16px}
+.warehouse-walk-review label{display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap}
+.warehouse-walk-review input{accent-color:#dfbc77}
+.warehouse-walk-review button{font:13px system-ui;background:#d2c7a8;color:#172731;border:1px solid #8e856b;box-shadow:none;border-radius:3px;padding:7px 12px}
+.warehouse-walk-review .warehouse-walk-stage{position:relative;flex:1;min-height:240px;overflow:hidden}
+.warehouse-walk-review .game-viewport canvas{object-fit:contain;outline:none}
+.warehouse-walk-review footer{padding:8px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#172731;font-size:12px}
+.warehouse-walk-review .warehouse-walk-directions{display:flex;gap:6px;touch-action:none}
+.warehouse-walk-review .warehouse-walk-directions button{font-size:20px;min-width:42px;user-select:none}
+.warehouse-walk-review .warehouse-review-error{color:#ffd0bd;padding:12px;background:#512c2b}

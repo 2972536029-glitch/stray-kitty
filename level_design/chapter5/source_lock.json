@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "policy": "Immutable supplied v07 geometry and approved art; update only with deliberate source approval.",
+  "files": {
+    "source/v07/build_warehouse.py": {
+      "sha256": "68f682e4f848c2c86bfa6a80e89803e62dd0a3307252547a6ff2fbbb0592f717",
+      "bytes": 25396
+    },
+    "source/v07/make_playtest.py": {
+      "sha256": "bf1082342d65eae10ba1d7e38aaeac6f7c5baa92efaad618e403ccc75c7ddd07",
+      "bytes": 27950
+    },
+    "source/v07/make_visual_outcomes.py": {
+      "sha256": "bd0293a2bcce14c3770ae4c25af8c738036ab690426459a8f19c879e57be4dde",
+      "bytes": 7398
+    },
+    "source/v07/README.md": {
+      "sha256": "a62f181f716e1c2454593cfc3024e9469a90a4951e6f5a9bdac3a4530f0eb9d2",
+      "bytes": 4433
+    },
+    "source/v07/validation_v07.json": {
+      "sha256": "2f07d7e3e989d513e41f41055a3322e68219cfa2631b1a60bba7b02df8b01bb7",
+      "bytes": 447
+    },
+    "source/v07/warehouse_geometry_v07.json": {
+      "sha256": "6b903076fb85d1f104c46112fc46658811b1e5dec025991d2f26bbc1435a3fe2",
+      "bytes": 24574
+    },
+    "source/v07/warehouse_L0_graybox_v07.svg": {
+      "sha256": "b3b00183991268a33aa06853d4e47a2a980edef093402ba3140867a5f4d59990",
+      "bytes": 22539
+    },
+    "source/v07/warehouse_L1_graybox_v07.svg": {
+      "sha256": "3d72d840f2cd345c74d514bc6c15e22c5ade683c4ff5a66f50273a88bb073b56",
+      "bytes": 7744
+    },
+    "source/v07/warehouse_playtest_v07.html": {
+      "sha256": "3f89d0250d79d28c1f2d31069140b6bfa69bc24e93e9d843a6b1e3aac9c2fd7e",
+      "bytes": 74856
+    },
+    "source/v07/warehouse_visual_outcomes_v07.svg": {
+      "sha256": "76e431ce5b3ddb73ff329c5df55f1185e853b8ac36aa3248d7e50c3fa6c7955b",
+      "bytes": 6461
+    },
+    "art/source/approved_asset_atlas.png": {
+      "sha256": "61427b649b3a399912a845b16736ed2216fc3daceec7a0398205f23fe31e5bdc",
+      "bytes": 2947204
+    },
+    "art/source/approved_full_scene_visual_master.png": {
+      "sha256": "d3fa2042d70a78199c83d57f8352ed3b94165b9658c169b8713332d4422c38f3",
+      "bytes": 3475077
+    },
+    "art/source/approved_ground_only_1672x941.png": {
+      "sha256": "1fb2c4a27d1b9686109292e79426735a930bc1595a0f6fa2684030059b4376a8",
+      "bytes": 2079238
+    },
+    "art/source/sprites/container_tarp01.png": {
+      "sha256": "ee1ec82abedb19dce94a0a782560b83579ff4c2ccc4c5675203c86fbd46192d0",
+      "bytes": 30815
+    },
+    "art/source/sprites/container_tarp02.png": {
+      "sha256": "4412e796141c36b8723fd1cd3d83686a8fbb300b1c3ab300de4014b7172743cd",
+      "bytes": 34051
+    },
+    "art/source/sprites/container_tarp03.png": {
+      "sha256": "be0fb24bc65dab9e3117b07dd2641d617f8f20c06d9cb84018aa4038ef3e8611",
+      "bytes": 44866
+    },
+    "art/source/sprites/container_tarp04.png": {
+      "sha256": "8debfcf69260a4cb4559b5b752b2a2728d00f08f773a6137f26d31adae21f8e9",
+      "bytes": 40420
+    },
+    "art/source/sprites/crate_cage.png": {
+      "sha256": "afc8438d18364f2de21a07229ec18f48eea967b7b5748017bc4153130abca975",
+      "bytes": 19789
+    },
+    "art/source/sprites/crate_one.png": {
+      "sha256": "3ccbe7bd1625369a3229c78f69c5aaabb7568c5365d32f34b77bbcffb55dbc9d",
+      "bytes": 10560
+    },
+    "art/source/sprites/crate_pallet_mixed.png": {
+      "sha256": "bf1b93ae56264ffbd58859a4598f43c86b9a32ff83c855ecb4b36c1fbeab8f07",
+      "bytes": 20403
+    },
+    "art/source/sprites/crate_stack_two.png": {
+      "sha256": "2a84bee322d0e14ed1d3dc63e04868ff9329234a8a464681e3aa9d3a01cf66f0",
+      "bytes": 15830
+    },
+    "art/source/sprites/drums.png": {
+      "sha256": "a6890f645bb6d30631272ece5723b8b0eb06c91a931b8f9cafac74bd4ec029a7",
+      "bytes": 22320
+    },
+    "art/source/sprites/machine_cabinet_wide.png": {
+      "sha256": "2c8628f60b217c4edac4e98f6ecb8f47423e86efe434da9e8669bc339fb9c83b",
+      "bytes": 23984
+    },
+    "art/source/sprites/machine_forklift.png": {
+      "sha256": "048a1f24716b79184000508fcc8118823da30ee091beb90e58cba11cfce29076",
+      "bytes": 48037
+    },
+    "art/source/sprites/machine_power_big.png": {
+      "sha256": "9ae49f85fbbf0da34331bee7b88533450520d5ff583b1c4ec8270558a8ad8378",
+      "bytes": 13620
+    },
+    "art/source/sprites/pallet01.png": {
+      "sha256": "90b9a994a2d11d78137b806c5b6e4a410c9d1986fd58d1e93c2b52a27b964bcc",
+      "bytes": 12293
+    },
+    "art/source/sprites/pallet02.png": {
+      "sha256": "d7b9838286f07fd15013cadc71064bdecbdcf4b5c8460cdc307fd605a315dd6d",
+      "bytes": 11347
+    },
+    "art/source/sprites/pallet03.png": {
+      "sha256": "e25496d71bd3b2a83900f2deea4342fb26d3b41d0d217f00abaf0a6d75fba036",
+      "bytes": 13016
+    },
+    "art/source/sprites/rack_crates_03.png": {
+      "sha256": "2fb1457b5fbf17822f604201026112356424c4e9417ce91477b84581f1bb9cdc",
+      "bytes": 40859
+    },
+    "art/source/sprites/rack_mesh_01.png": {
+      "sha256": "60f6429159f5e00132faf6f7ee1f602dacbf2e880e9699952a529c0a1fd9bb5b",
+      "bytes": 32218
+    },
+    "art/source/sprites/rack_mid_01.png": {
+      "sha256": "17eebd5d607bdfa97effa81c8b13891a20a40397ffb44ebb6d4a0ac6b6562a04",
+      "bytes": 39992
+    },
+    "art/source/sprites/rack_pallets.png": {
+      "sha256": "2cd308d0a89281573d302bf76bc561322b1b39878bb48c989c88d98332c82724",
+      "bytes": 37996
+    },
+    "art/source/sprites/rack_wide_01.png": {
+      "sha256": "232f740fcaafc33c0796977906ac0d81f570ced48634c38c6f7227f466ab7fee",
+      "bytes": 51306
+    },
+    "art/source/sprites/rack_wide_02.png": {
+      "sha256": "39b7bb6b51d91d66f3f8c10148caaf5588377c80b593c056aef6a76b7409582e",
+      "bytes": 50820
+    },
+    "art/source/sprites/rubble02.png": {
+      "sha256": "59b4e4dadddc3ffda87c955a65b4757bc52c2e9630a83c28620e65abb083cdd6",
+      "bytes": 9053
+    },
+    "art/source/sprites/rubble03.png": {
+      "sha256": "1d21541848eb6b1d894cceb91d72e2e092b96bb679de172a5eced530f1dec4e1",
+      "bytes": 9879
+    },
+    "art/source/sprites/rubble04.png": {
+      "sha256": "eea026a90581b2f1d1b4057fc4332219c6732fd5bbeeb4b9a5851328158ef041",
+      "bytes": 22371
+    },
+    "art/source/stateful/bunker_exit_shutter_closed.png": {
+      "sha256": "1b2bb5e81f09cc718192be4be9aa1f84f8ac4cee28ed8d5c5731895f74a86043",
+      "bytes": 68779
+    },
+    "art/source/stateful/central_spotlight_unlit.png": {
+      "sha256": "d9daaea38e3ddce08c0fd2d96fa42b17f6b484fbbbd8ff154a140a2f0763b3a3",
+      "bytes": 5985
+    },
+    "art/source/stateful/entry_lamp_unlit.png": {
+      "sha256": "12ae0032cba2ec0451c4c184e65810518d04278d53435b5a1c4d09011d486fc5",
+      "bytes": 4264
+    },
+    "art/source/stateful/secondary_lamp_unlit.png": {
+      "sha256": "f5619b84c4496f9c04a4af1a97f1e6cbcc80beff9c27ef9785b1746b3fcbf6a8",
+      "bytes": 5182
+    },
+    "reference/L1_shelf_top_overlay_provisional.png": {
+      "sha256": "6d2f861f1b717a6e3ab57e488a091c323f26af9e7f19770773aa1668b78bbb70",
+      "bytes": 73438
+    },
+    "reference/placement_manifest_v02.json": {
+      "sha256": "93ec0078aed1c29a1f1fbf6f97a40841d7556e486566b23b9bab38ece078a45d",
+      "bytes": 33553
+    },
+    "reference/README_L1_reference.md": {
+      "sha256": "6f127cb1bf2834f3ad8a2bb1b5f33373bbf3a7762e74cd58c3e33ad85cd89d81",
+      "bytes": 1416
+    }
+  }
+}
