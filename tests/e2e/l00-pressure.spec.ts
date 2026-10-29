@@ -90,10 +90,17 @@ test.afterAll(async () => {
 });
 
 async function moveCat(page: Page, cat: 'guard' | 'caster', target: string) {
-  await page.getByTestId(`battle-cat-${cat}`).click();
-  await page.getByTestId('battle-move-selected').click();
-  await page.getByTestId(`battle-cell-${target}`).press('Enter');
-  await expect(page.getByTestId(`battle-cat-${cat}`)).toHaveAttribute('aria-label', new RegExp(`，${target}，`));
+  await page.keyboard.press('Escape');
+  const source = page.getByTestId(`battle-cat-${cat}`);
+  const destination = page.getByTestId(`battle-cell-${target}`);
+  await source.scrollIntoViewIfNeeded();await destination.scrollIntoViewIfNeeded();
+  const from = await source.boundingBox(), to = await destination.boundingBox();
+  expect(from).toBeTruthy();expect(to).toBeTruthy();
+  await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to!.x + to!.width / 2, to!.y + to!.height / 2, {steps: 12});
+  await page.mouse.up();
+  await expect(source).toHaveAttribute('aria-label', new RegExp(`，${target}，`));
 }
 
 for (const entry of cases) {

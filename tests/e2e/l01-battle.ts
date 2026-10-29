@@ -23,8 +23,15 @@ async function inspectOnBoard(page:Page,id:string){
   await expect(page.getByTestId('chapter-cat-menu')).toBeVisible();
 }
 async function move(page:Page,id:string,x:number,y:number){
-  await inspectOnBoard(page,id);await page.getByTestId('chapter-move').click();
-  await page.getByTestId(`chapter-cell-${String.fromCharCode(65+y)}${x+1}`).press('Enter');
+  await page.keyboard.press('Escape');
+  const source=page.getByTestId(`chapter-cat-${id}`);
+  const target=page.getByTestId(`chapter-cell-${String.fromCharCode(65+y)}${x+1}`);
+  await source.scrollIntoViewIfNeeded();await target.scrollIntoViewIfNeeded();
+  const from=await source.boundingBox(),to=await target.boundingBox();
+  expect(from).toBeTruthy();expect(to).toBeTruthy();
+  await page.mouse.move(from!.x+from!.width/2,from!.y+from!.height/2);await page.mouse.down();
+  await page.mouse.move(to!.x+to!.width/2,to!.y+to!.height/2,{steps:12});await page.mouse.up();
+  await expect(source).toHaveAttribute('data-x',String(x));await expect(source).toHaveAttribute('data-y',String(y));
 }
 export async function playVisibleControls(page:Page){
   const used=new Set<string>();let dodges=0;
