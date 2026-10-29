@@ -22,6 +22,7 @@ func prepareBoss(t *testing.T, pressure int, inventory map[string]int) (*service
 		p.State.MapID = "greenhouse"
 		p.State.Flags = domain.Add(p.State.Flags, "alley_rescued")
 		p.State.Flags = domain.Add(p.State.Flags, "rescue_story_done")
+		p.State.Flags = domain.Add(p.State.Flags, "chapter_2_started")
 		p.State.Flags = domain.Add(p.State.Flags, "chapter_3_started")
 		p.State.Flags = domain.Add(p.State.Flags, "momo_joined")
 		p.State.EventState = &domain.EventState{PendingModifiers: domain.BattleModifiers{ShadowPressure: pressure}}

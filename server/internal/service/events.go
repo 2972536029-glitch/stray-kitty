@@ -121,6 +121,12 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string, usePus
 			for _, flag := range outcome.Flags {
 				s.Flags = domain.Add(s.Flags, flag)
 			}
+			if eventID == "crow_intel_event" {
+				s.Flags = domain.Add(s.Flags, "market_crow_clue_completed")
+			}
+			if eventID == "pigeon_rumor_event" {
+				s.Flags = domain.Add(s.Flags, "market_pigeon_clue_completed")
+			}
 			s.EventState = &domain.EventState{LastResolution: domain.EventResolution{EventID: eventID, OptionID: optionID, Dice: dice, Tier: tier, Outcome: outcome}, PendingModifiers: modifiers}
 			s.LastResult = domain.Result{Message: outcome.Text + tuanziFallback, Roll: dice[0] + dice[1]}
 			// 节点事件一次性:结算即记录,INTERACT 侧据此拒绝重触发。

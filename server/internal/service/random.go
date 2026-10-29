@@ -2,6 +2,7 @@ package service
 
 import (
 	"log/slog"
+	"math"
 
 	"stray-kitty/server/internal/domain"
 )
@@ -91,11 +92,32 @@ func (g *Game) drawRandomEvent(s domain.GameState) (string, bool, bool, error) {
 
 // checkRandomZone rolls when the player enters a Rainy Alley random zone.
 // The client edge-triggers entry; the shared deck enforces card prerequisites and no-replacement.
-func (g *Game) checkRandomZone(s *domain.GameState, zoneID string) error {
+func (g *Game) checkRandomZone(s *domain.GameState, zoneID, floor string, position *domain.WorldPoint) error {
 	if err := domain.RequirePhase(*s, "explore"); err != nil {
 		return err
 	}
-	if s.MapID == "tunnel" {
+	if s.MapID == "market" {
+		zones := map[string]string{"market_random_r1": "L0", "market_random_r2": "L1", "market_random_r3": "Lm1"}
+		points := map[string][2]float64{"market_random_r1": {652, 632}, "market_random_r2": {680, 166}, "market_random_r3": {975, 429}}
+		point, ok := points[zoneID]
+		if !ok || zones[zoneID] != floor || position == nil || math.Hypot(position.X-point[0], position.Y-point[1]) > 48 {
+			return domain.Fail("INVALID_COMMAND", "集市随机区域楼层无效", 400)
+		}
+		id, triggered, repeatable, err := g.drawRandomEventWithChance(*s, g.RainyZoneChance)
+		if err != nil {
+			return err
+		}
+		if triggered {
+			s.Phase = "event"
+			s.PendingEventID = id
+			s.PendingEventSource = "random"
+			if !repeatable {
+				s.DrawnEvents = domain.Add(s.DrawnEvents, drawnKey(s.MapID, id))
+			}
+			s.LastResult = domain.Result{Message: "集市角落传来动静。"}
+		}
+		return nil
+	} else if s.MapID == "tunnel" {
 		if !domain.Contains(s.Flags, "tunnel_false_kitten_trap_found") {
 			return nil // Keep discovery of the mandatory D clue clear of random encounters.
 		}

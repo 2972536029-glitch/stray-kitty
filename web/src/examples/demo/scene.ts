@@ -3,8 +3,12 @@ import {drawPixelCat, type CatBreed} from '../../adapters/canvas/pixelCat';
 import {DemoBattle} from './battle';
 import type {Direction} from '../../adapters/platform/input';
 import {CanvasPainter} from '../../adapters/canvas/painter';
+import {FollowCamera, type CameraFrame} from '../../adapters/canvas/camera';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
 import {TunnelMap} from '../../modules/chapter4/TunnelMap';
+import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
+import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
+import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 花房家园的猫咪轻量 AI:pose 非空表示绑定专属家具姿态,否则按 sit→walk→sit 循环漫步。
@@ -34,6 +38,16 @@ export class DemoScene {
   private rainyAlley: IntegratedRainyAlley;
   private tunnelMap: TunnelMap;
   private cityBackdrop: HTMLImageElement;
+  private marketImages: Record<MarketFloor, HTMLImageElement> = {L0:new Image(),L1:new Image(),Lm1:new Image()};
+  private marketFloor: MarketFloor = 'L0';
+  private marketCamera = new FollowCamera();
+  private marketTransition = new MarketTransitionController();
+  private marketTransitionHeight = 0;
+  private marketFrame: CameraFrame | null = null;
+  private marketInitialized = false;
+  private marketDebug = false;
+  private marketLastMove:{floor:MarketFloor;position:{x:number;y:number};direction:{x:number;y:number};requestedDestination:{x:number;y:number};rejected:boolean;reason:string;nearestBoundary:string}={floor:'L0',position:{x:0,y:0},direction:{x:0,y:0},requestedDestination:{x:0,y:0},rejected:false,reason:'no movement attempt',nearestBoundary:'none'};
+  private marketZonesSeen = new Set<string>();
   private held = new Set<Direction>();
   private keys = new Set<string>();
   private x = 180;
@@ -70,7 +84,10 @@ export class DemoScene {
     private onInspectHint?: (hint: string | null) => void,
     private onMove?: (distance: number) => void,
     private onRandomZone?: (zoneId: string) => Promise<boolean>,
-    private onWorldPosition?: (point: {x: number; y: number}) => void
+    private onWorldPosition?: (point: {x: number; y: number}) => void,
+    private onMarketBattle?: (floor:MarketFloor,point:{x:number;y:number}) => void,
+    private onMarketExit?: (floor: MarketFloor, point:{x:number;y:number}) => void,
+    private onMarketZone?: (zoneId:string,floor:MarketFloor,point:{x:number;y:number}) => Promise<boolean>
   ) {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('浏览器无法创建二维画布');
@@ -85,8 +102,9 @@ export class DemoScene {
     this.tunnelMap = new TunnelMap();
     this.cityBackdrop = new Image();
     this.cityBackdrop.src = '/assets/city-backdrop.svg';
+    for(const floor of Object.keys(marketArt) as MarketFloor[]) this.marketImages[floor].src=marketArt[floor];
   }
-  setDirection(direction: Direction, held: boolean) {if (held) this.held.add(direction);else this.held.delete(direction);}
+  setDirection(direction: Direction, held: boolean) {if(this.marketTransition.active)return;if (held) this.held.add(direction);else this.held.delete(direction);}
   private keydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null;
     if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
@@ -99,8 +117,25 @@ export class DemoScene {
       this.keys.add(key);
       return;
     }
+    if (this.marketTransition.active && this.state.mapId === 'market') {
+      if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','c','f'].includes(key)) event.preventDefault();
+      return;
+    }
     if (key === 's' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartSqueeze()) {
       event.preventDefault(); this.keys.delete('s'); return;
+    }
+    if (!event.repeat && this.state?.mapId === 'market' && (key==='c'||key==='f')) {
+      const request=marketTransitionAt(this.marketFloor,key,this.x,this.y,this.state.flags,this.state.flags.includes('market_cleared'));
+      if(request&&this.marketTransition.begin(request,{x:this.x,y:this.y})){this.clearInput();this.onNear(false);this.onInspectHint?.(null);}
+      event.preventDefault();
+      return;
+    }
+    if(import.meta.env.DEV&&key==='g'&&!event.repeat&&this.state?.mapId==='market')this.marketDebug=!this.marketDebug;
+    if(import.meta.env.DEV&&key==='y'&&!event.repeat&&this.marketDebug&&this.state?.mapId==='market'){
+      event.preventDefault();const text=JSON.stringify(this.marketLastMove,null,2);
+      if(navigator.clipboard?.writeText)void navigator.clipboard.writeText(text).then(()=>this.onInspectHint?.('碰撞诊断已复制')).catch(()=>this.onInspectHint?.('复制失败，请使用开发者工具查看诊断'));
+      else window.prompt('复制 Night Market 碰撞诊断',text);
+      return;
     }
     if (key === 'c' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartCrateClimb()) {
       event.preventDefault(); this.keys.delete('c'); return;
@@ -110,8 +145,10 @@ export class DemoScene {
     if (key === 'g' && !event.repeat && this.state?.mapId === 'alley') this.rainyAlley.toggleDebug();
     if (key === 'e' && !event.repeat) {
       if (this.state?.mapId === 'market') {
-        if (Math.hypot(this.x - 260, this.y - 280) < 78) this.onInteract('market_crow_stall');
-        else if (Math.hypot(this.x - 580, this.y - 270) < 78) this.onInteract('market_pigeon_perch');
+        const action=marketEAction(this.marketFloor,this.x,this.y,this.state.flags,this.state.drawnEvents??[]);
+        if(action?.type==='interact')this.onInteract(action.id);
+        else if(action?.type==='battle')this.onMarketBattle?.('L0',{x:this.x,y:this.y});
+        else if(action?.type==='hint')this.onInspectHint?.(action.text);
       } else if (this.state?.mapId === 'alley') {
         const interaction = this.rainyAlley.nearestInteraction();
         if (interaction) this.onInteract(interaction.id);
@@ -167,7 +204,9 @@ export class DemoScene {
   };
   private update(delta: number) {
     if (!this.state) return;
+    if (this.state.mapId === 'market' || this.storyScene === 'market') this.marketFrame=measureMarketCameraFrame(this.canvas,this.viewWidth,this.viewHeight);
     const mode = this.state.phase;
+    if(this.marketTransition.active&&(mode!=='explore'||this.state.mapId!=='market')){const interrupted=this.marketTransition.cancel();if(interrupted){this.marketFloor=interrupted.floor;this.x=interrupted.position.x;this.y=interrupted.position.y;}this.marketTransitionHeight=0;}
     if (mode !== this.lastMode || this.state.mapId !== this.lastMapId) {
       const mapChanged = this.state.mapId !== this.lastMapId;
       this.held.clear();
@@ -177,8 +216,13 @@ export class DemoScene {
         } else if (this.state.mapId === 'tunnel') {
           if (mapChanged) this.tunnelMap.reset();
         } else {
-          this.x = 180;
-          this.y = 290;
+          if (!this.marketInitialized) {
+            this.marketFloor=this.state.flags.includes('market_cleared')?'L0':marketEntry.floor;
+            this.x = this.state.flags.includes('market_cleared') ? 1310 : marketEntry.x;
+            this.y = this.state.flags.includes('market_cleared') ? 169 : marketEntry.y;
+            this.marketInitialized=true;
+          }
+          this.snapMarketCamera();
         }
       }
       this.moveBuffer = 0;
@@ -197,7 +241,10 @@ export class DemoScene {
     }
     const active = !this.pausedByUser && document.visibilityState !== 'hidden';
     if (!active) this.clearInput();
-    if (mode === 'explore' && active && this.state.mapId === 'alley') {
+    if (mode === 'explore' && active && this.state.mapId==='market'&&this.marketTransition.active) {
+      const transition=this.marketTransition.advance(delta);
+      if(transition){this.x=transition.x;this.y=transition.y;this.marketTransitionHeight=transition.height;this.marketFloor=transition.floor;this.onWorldPosition?.({x:this.x,y:this.y});if(transition.done){this.marketTransitionHeight=0;if(transition.exit)this.onMarketExit?.('L0',{x:this.x,y:this.y});}}
+    } else if (mode === 'explore' && active && this.state.mapId === 'alley') {
       const dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
       const dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
       this.rainyAlley.move(delta / 1000, dx, dy, this.state.flags, zoneId => this.onRandomZone?.(zoneId) ?? Promise.resolve(false));
@@ -235,8 +282,11 @@ export class DemoScene {
       let dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
       const distance = Math.hypot(dx, dy);if (distance) {dx /= distance;dy /= distance;}
       const previousX = this.x, previousY = this.y;
-      this.x = Math.min(710, Math.max(90, this.x + dx * delta * .18));
-      this.y = Math.min(410, Math.max(205, this.y + dy * delta * .18));
+      if(this.state.mapId==='market') {
+        const requested={x:this.x+dx*delta*.18,y:this.y+dy*delta*.18},result=sweepMarketMove(this.marketFloor,{x:this.x,y:this.y},{x:dx*delta*.18,y:dy*delta*.18},this.state.flags.includes('market_cleared'));
+        this.x=result.position.x;this.y=result.position.y;
+        if(dx||dy){const blockedAt=result.blockedAt??requested;this.marketLastMove={floor:this.marketFloor,position:{x:previousX,y:previousY},direction:{x:dx,y:dy},requestedDestination:requested,rejected:result.blocked,reason:result.condition??'none',nearestBoundary:result.blocked?marketNearestBoundary(this.marketFloor,blockedAt.x,blockedAt.y):'none'};}
+      } else { this.x = Math.min(710, Math.max(90, this.x + dx * delta * .18)); this.y = Math.min(410, Math.max(205, this.y + dy * delta * .18)); }
       let nearInteraction = false;
 
       if (this.state.mapId === 'alley') {
@@ -257,13 +307,19 @@ export class DemoScene {
         }
         this.onInspectHint?.(inspect);
       } else if (this.state.mapId === 'market') {
-        const nearCrow = Math.hypot(this.x - 260, this.y - 280) < 78;
-        const nearPigeon = Math.hypot(this.x - 580, this.y - 270) < 78;
-        nearInteraction = nearCrow || nearPigeon;
+        const clueFlags:Record<string,string>={crow:'market_crow_clue_completed',pigeon:'market_pigeon_clue_completed'};
+        const nearestItem=marketItems.filter(item=>(item.kind==='fixed'||item.kind==='optional')&&item.layer===this.marketFloor&&(!clueFlags[item.id]||!this.state!.flags.includes(clueFlags[item.id]))&&!(item.id==='momo'&&this.state!.drawnEvents?.includes('node:momo_trail_event'))).map(item=>({item,distance:Math.hypot(this.x-item.x,this.y-item.y)})).filter(value=>value.distance<=75).sort((a,b)=>a.distance-b.distance)[0]?.item;
+        const nearCrow = nearestItem?.id==='crow';
+        const nearPigeon = nearestItem?.id==='pigeon';
+        const nearMomo = nearestItem?.id==='momo';
+        nearInteraction = !!nearestItem;
+        const traversalNearby=marketPortals.some(value=>(!value.requiresFlag||this.state!.flags.includes(value.requiresFlag))&&[value.a,value.b].some(point=>point.layer===this.marketFloor&&Math.hypot(this.x-point.x,this.y-point.y)<=44));
         if (nearCrow) {
           this.onNear(true, 'market_crow_stall', '老黑羽的情报摊 · E');
         } else if (nearPigeon) {
           this.onNear(true, 'market_pigeon_perch', '咕咕大盗的传言棚 · E');
+        } else if(nearMomo&&!traversalNearby) {
+          this.onNear(true,'market_momo_trace','墨墨的踪迹 · E');
         } else {
           this.onNear(false);
         }
@@ -278,10 +334,28 @@ export class DemoScene {
         } else if (Math.hypot(this.x - 130, this.y - 310) < 55) {
           inspect = '【团子】“喵喵，集市里的鸟雀们消息很灵通，我们去打听一下吧！”';
         }
+        if(nearestItem?.id==='momo')inspect='E · 查看墨墨的踪迹';
         this.onInspectHint?.(inspect);
+        const bossReady=this.state.flags.includes('market_crow_clue_completed')&&this.state.flags.includes('market_pigeon_clue_completed');
+        if(nearMomo)this.onInspectHint?.('E · 查看墨墨的踪迹');
+        const portal=marketPortals.filter(value=>!value.requiresFlag||this.state!.flags.includes(value.requiresFlag)).flatMap(value=>[{portal:value,point:value.a},{portal:value,point:value.b}]).filter(value=>value.point.layer===this.marketFloor&&Math.hypot(this.x-value.point.x,this.y-value.point.y)<=value.portal.radius).sort((a,b)=>Math.hypot(this.x-a.point.x,this.y-a.point.y)-Math.hypot(this.x-b.point.x,this.y-b.point.y))[0];
+        if(portal)this.onInspectHint?.(`${portal.portal.key.toUpperCase()} · ${portal.portal.label.split(' · ')[1]}`);
+        else if(!nearestItem&&this.marketFloor==='L0'&&Math.hypot(this.x-1310,this.y-169)<72&&!bossReady)this.onInspectHint?.('集市保卫战 · 需要先完成两条情报');
+        else if(!nearestItem&&this.marketFloor==='L0'&&Math.hypot(this.x-1365,this.y-78)<48&&!this.state.flags.includes('market_cleared'))this.onInspectHint?.('北街出口 · 请先完成集市保卫战');
+        const battleAction=marketEAction(this.marketFloor,this.x,this.y,this.state.flags,this.state.drawnEvents??[]);
+        if(battleAction?.type==='battle')this.onInspectHint?.('E · 开始集市保卫战');
+        else if(battleAction?.type==='hint')this.onInspectHint?.(battleAction.text);
+        const authoredFocus=!!nearestItem||!!portal||Math.hypot(this.x-1310,this.y-169)<=75||Math.hypot(this.x-1365,this.y-78)<=48;
+        if(!authoredFocus){const clueHint=marketOptionalHint(this.marketFloor,this.x,this.y,!!this.state.drawnEvents?.includes('node:momo_trail_event'));if(clueHint)this.onInspectHint?.(clueHint);}
+        if(!authoredFocus)for(const [id,floor,x,y] of [['market_random_r1','L0',652,632],['market_random_r2','L1',680,166],['market_random_r3','Lm1',975,429]] as const){
+          const inside=this.marketFloor===floor&&Math.hypot(this.x-x,this.y-y)<42;
+          if(!inside)this.marketZonesSeen.delete(id);else if(!this.marketZonesSeen.has(id)){this.marketZonesSeen.add(id);void this.onMarketZone?.(id,floor,{x:this.x,y:this.y});}
+        }
+        this.onWorldPosition?.({x:this.x,y:this.y});
+        this.marketCamera.update({x:this.x,y:this.y},this.marketCameraFrame(),1672,941,delta/1000);
       }
       const moved = Math.hypot(this.x - previousX, this.y - previousY);
-      if (moved > 0 && !nearInteraction) {
+      if (moved > 0 && !nearInteraction && this.state.mapId !== 'market') {
         this.moveBuffer += moved;
         if (this.moveBuffer >= DemoScene.moveSegment) {
           const report = Math.min(Math.round(this.moveBuffer), DemoScene.maxReport);
@@ -319,11 +393,11 @@ export class DemoScene {
   private publishNavigationDiagnostics() {
     if (!this.state) return;
     const state = this.state;
-    let scene = 'fallback', floor = 'L0', position = {x: this.x, y: this.y};
+    let scene = 'fallback', floor = this.marketFloor, position = {x: this.x, y: this.y};
     if (state.phase === 'battle') scene = 'battle';
     else if (state.mapId === 'tunnel') {scene = 'chapter4-tunnel';floor = this.tunnelMap.layer;position = this.tunnelMap.positionNow();}
-    else if (state.mapId === 'market' || this.storyScene === 'market') scene = 'market-placeholder';
-    else if (state.mapId === 'alley') {scene = 'rainy-alley';position = this.rainyAlley.worldPosition();}
+    else if (state.mapId === 'market' || this.storyScene === 'market') scene = 'night-market';
+    else if (state.mapId === 'alley') {scene = 'rainy-alley';floor = 'L0';position = this.rainyAlley.worldPosition();}
     else if (state.phase === 'home' || state.mapId === 'greenhouse') scene = 'home';
     else if (this.storyScene === 'tunnel') scene = 'tunnel-story-preview';
     this.canvas.dataset.renderedScene = scene;
@@ -803,108 +877,72 @@ export class DemoScene {
       return;
     }
   }
+  private marketCameraFrame() {return this.marketFrame??measureMarketCameraFrame(this.canvas,this.viewWidth,this.viewHeight);}
+  private snapMarketCamera() {this.marketCamera.snap({x:this.x,y:this.y},this.marketCameraFrame(),1672,941);}
   private drawMarket() {
-    // 夜幕背景
-    this.rect(0, 0, 800, 480, 0x181f2b);
-    if (this.cityBackdrop.complete && this.cityBackdrop.naturalWidth > 0) {
-      this.graphics.image(this.cityBackdrop, 0, -150, 800, 450);
+    const image=this.marketImages[this.marketFloor];
+    const frame=this.marketCameraFrame(),camera=this.marketCamera;
+    this.context.save();
+    this.context.fillStyle='#181f2b';this.context.fillRect(0,0,this.viewWidth,this.viewHeight);
+    this.context.beginPath();this.context.rect(frame.viewport.x,frame.viewport.y,frame.viewport.width,frame.viewport.height);this.context.clip();
+    this.context.translate(frame.viewport.x-camera.x*frame.scale,frame.viewport.y-camera.y*frame.scale);
+    this.context.scale(frame.scale,frame.scale);
+    if(image.complete&&image.naturalWidth>0)this.context.drawImage(image,0,0,1672,941);
+    this.drawMarketRoadSigns();
+    this.drawMarketMarkers();
+    this.context.fillStyle='rgba(10,16,22,.38)';this.context.beginPath();this.context.ellipse(this.x,this.y+3,9,3,0,0,Math.PI*2);this.context.fill();
+    this.context.save();this.context.translate(this.x-16,this.y-30-this.marketTransitionHeight);this.context.scale(.5,.5);drawPixelCat(this.context,'miaomiao','idle');this.context.restore();
+    if(this.marketDebug)this.drawMarketDebug();
+    this.context.restore();
+    if(this.marketDebug){this.context.fillStyle='#fff0c4';this.context.font='11px monospace';this.context.fillText('QA collision diagnostics · press Y to copy last movement',frame.safe.x+8,Math.max(frame.safe.y+18,18));}
+  }
+  private drawMarketRoadSigns() {
+    const ctx=this.context,nearby=nearestMarketRoadSign(this.marketFloor,this.x,this.y);
+    for(const sign of marketRoadSigns.filter(value=>value.floor===this.marketFloor)){
+      const close=nearby?.sign.id===sign.id&&nearby.distance<=sign.revealRadius;
+      ctx.save();ctx.translate(sign.x,sign.y);
+      // A compact timber signpost built from pixel-sized rectangles; it is visual only.
+      ctx.fillStyle='rgba(12,18,22,.35)';ctx.fillRect(-12,9,24,4);
+      ctx.fillStyle='#533728';ctx.fillRect(-3,1,6,14);ctx.fillRect(-5,13,10,3);
+      ctx.fillStyle='#302b2a';ctx.fillRect(-15,-15,30,17);ctx.fillStyle='#9a633e';ctx.fillRect(-13,-13,26,13);
+      ctx.fillStyle='#d8a85d';ctx.fillRect(-12,-12,24,2);ctx.fillRect(-12,-2,24,1);
+      ctx.fillStyle='#f5e3b2';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(sign.directions.includes('↑')||sign.directions.includes('↗')?'↑':sign.directions.includes('↓')?'↓':'→',0,-6);
+      if(close){
+        const label=`${sign.area} · ${sign.directions}`;ctx.font='14px "Microsoft YaHei",system-ui,sans-serif';const width=ctx.measureText(label).width+14,bx=18,by=-19;
+        ctx.fillStyle='rgba(16,28,38,.93)';ctx.fillRect(bx,by,width,24);ctx.strokeStyle='#d8a85d';ctx.lineWidth=1;ctx.strokeRect(bx+.5,by+.5,width-1,23);ctx.fillStyle='#fff0c4';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(label,bx+7,by+12);
+      }
+      ctx.restore();
     }
-    this.rect(0, 0, 800, 200, 0x131a24, 0.65);
-
-    // 集市石砖地面
-    this.rect(35, 200, 730, 230, 0x242d38);
-    this.rect(65, 205, 670, 225, 0x2e3844);
-    for (let y = 210; y < 430; y += 28) {
-      for (let x = 70 + (y % 56 === 28 ? 20 : 0); x < 730; x += 44) {
-        this.rect(x, y, 38, 2, 0x3e4b5a, 0.4);
+  }
+  private drawMarketMarkers() {
+    const ctx=this.context,flags=this.state?.flags??[];
+    for(const item of marketItems.filter(value=>['crow','pigeon','momo','boss','exit'].includes(value.id)&&value.layer===this.marketFloor)){
+      const completed=item.id==='crow'?flags.includes('market_crow_clue_completed'):item.id==='pigeon'?flags.includes('market_pigeon_clue_completed'):item.id==='momo'?!!this.state?.drawnEvents?.includes('node:momo_trail_event'):item.id==='boss'?flags.includes('market_cleared'):false;
+      const locked=(item.id==='boss'&&(!flags.includes('market_crow_clue_completed')||!flags.includes('market_pigeon_clue_completed')))||(item.id==='exit'&&!flags.includes('market_cleared'));
+      const title=item.id==='crow'?'老黑羽情报摊':item.id==='pigeon'?'咕咕大盗传言棚':item.id==='momo'?'墨墨的踪迹':item.id==='boss'?'集市保卫战':'北街出口';
+      ctx.save();ctx.globalAlpha=completed?.62:1;ctx.beginPath();ctx.arc(item.x,item.y,11,0,Math.PI*2);ctx.fillStyle=locked?'#a6a497':item.id==='boss'?'#ef906a':'#f0cd79';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#172630';ctx.stroke();
+      ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#172630';ctx.fillText(item.id==='boss'?'!':item.id==='exit'?'↑':'E',item.x,item.y+.5);
+      const label=`${item.id==='momo'?'OPTIONAL · ':''}${title}${locked?' · 未解锁':completed?' · 已完成':''}`;ctx.font='13px "Microsoft YaHei",system-ui,sans-serif';const width=ctx.measureText(label).width+12,bx=item.x+15,by=item.y-23;
+      ctx.fillStyle='rgba(16,28,38,.9)';ctx.fillRect(bx,by,width,21);ctx.strokeStyle='#f2e4c4';ctx.lineWidth=1;ctx.strokeRect(bx+.5,by+.5,width-1,20);ctx.fillStyle='#fff0c4';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(label,bx+6,by+10.5);ctx.restore();
+    }
+    for(const portal of marketPortals){
+      for(const point of [portal.a,portal.b]){
+        const display=marketPortalDisplay(portal,point,this.marketFloor,this.x,this.y,flags);if(!display?.visible)continue;
+        ctx.save();ctx.globalAlpha=display.alpha;ctx.beginPath();ctx.arc(point.x,point.y,9,0,Math.PI*2);ctx.fillStyle=display.active?'#73e1dd':'#91bab8';ctx.fill();ctx.strokeStyle='#102b38';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#10232b';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(portal.key.toUpperCase(),point.x,point.y);
+        if(display.active){ctx.globalAlpha=1;ctx.font='12px "Microsoft YaHei",system-ui,sans-serif';const width=ctx.measureText(display.label).width+12,bx=point.x+12,by=point.y-22;ctx.fillStyle='rgba(16,28,38,.92)';ctx.fillRect(bx,by,width,20);ctx.strokeStyle='#f2e4c4';ctx.lineWidth=1;ctx.strokeRect(bx+.5,by+.5,width-1,19);ctx.fillStyle='#fff0c4';ctx.textAlign='left';ctx.fillText(display.label,bx+6,by+10);}
+        ctx.restore();
       }
     }
-
-    // 悬挂横跨街市的彩灯彩带
-    for (let x = 80; x < 720; x += 6) {
-      const sag = Math.sin((x - 80) / 640 * Math.PI) * 28;
-      this.rect(x, 70 + sag, 6, 2, 0x4a433a);
-    }
-    const lanternColors = [0xffd166, 0xf78c6b, 0xffd166, 0x06d6a0, 0xf78c6b, 0xffd166];
-    for (let i = 0; i < 6; i++) {
-      const lx = 140 + i * 100;
-      const ly = 70 + Math.sin((lx - 80) / 640 * Math.PI) * 28;
-      this.graphics.fillStyle(lanternColors[i], 0.15);
-      this.graphics.fillCircle(lx, ly + 8, 32);
-      this.rect(lx - 6, ly + 2, 12, 16, lanternColors[i]);
-      this.rect(lx - 4, ly, 8, 3, 0x3d3024);
-      this.rect(lx - 2, ly + 18, 4, 4, 0xffe8a3);
-    }
-
-    // 左侧摊位：老黑羽的情报摊 (x: 260, y: 280)
-    this.rect(190, 160, 140, 25, 0x6b2d35);
-    for (let i = 0; i < 7; i += 2) {
-      this.rect(190 + i * 20, 160, 20, 25, 0xb8860b);
-    }
-    this.rect(190, 185, 140, 6, 0x4a1e24);
-    this.rect(195, 185, 8, 95, 0x5c4033);
-    this.rect(317, 185, 8, 95, 0x5c4033);
-    this.rect(185, 255, 150, 32, 0x7a5230);
-    this.rect(180, 250, 160, 8, 0x8f6239);
-    // 卷轴与药水瓶
-    this.rect(205, 244, 22, 6, 0xd8caa8);
-    this.rect(208, 238, 16, 6, 0xe8dcbe);
-    this.rect(300, 240, 8, 10, 0x4a7c59);
-    this.rect(310, 236, 6, 14, 0x8a5a36);
-    this.lamp(210, 205);
-    // 乌鸦老黑羽 (x: 260, y: 240)
-    this.rect(252, 234, 18, 16, 0x1e242b);
-    this.rect(258, 226, 12, 10, 0x161a20);
-    this.rect(270, 230, 8, 4, 0xd4a373);
-    this.rect(265, 228, 3, 3, 0xffd166);
-    this.rect(246, 236, 10, 8, 0x11161d);
-    this.rect(244, 242, 6, 6, 0x0c0f14);
-    // 摊位招牌
-    this.rect(240, 192, 42, 18, 0x3d2716);
-    this.rect(244, 196, 34, 10, 0x22150a);
-
-    // 右侧摊位：咕咕大盗的传言棚 (x: 580, y: 270)
-    this.rect(510, 155, 140, 30, 0x264653);
-    this.rect(540, 160, 35, 18, 0x2a9d8f);
-    this.rect(600, 165, 30, 15, 0xe76f51);
-    this.rect(515, 185, 8, 95, 0x4d382c);
-    this.rect(637, 185, 8, 95, 0x4d382c);
-    this.rect(570, 242, 34, 40, 0x8b5a2b);
-    this.rect(567, 250, 40, 4, 0x332211);
-    this.rect(567, 268, 40, 4, 0x332211);
-    this.rect(525, 252, 32, 30, 0xa07142);
-    this.rect(612, 255, 30, 28, 0x936538);
-    this.rect(530, 242, 22, 14, 0xc2b280);
-    this.lamp(625, 205);
-    // 胖鸽子咕咕大盗 (x: 580, y: 235)
-    this.rect(578, 226, 20, 18, 0x7f8c8d);
-    this.rect(582, 222, 14, 8, 0x9b59b6);
-    this.rect(586, 216, 12, 10, 0x95a5a6);
-    this.rect(596, 220, 6, 3, 0xf39c12);
-    this.rect(592, 218, 2, 2, 0xe74c3c);
-    this.rect(584, 228, 12, 4, 0xe74c3c);
-
-    // 中间晾鱼木架
-    this.rect(395, 210, 50, 4, 0x5c4033);
-    this.rect(400, 214, 4, 45, 0x5c4033);
-    this.rect(440, 214, 4, 45, 0x5c4033);
-    for (let i = 0; i < 3; i++) {
-      this.rect(408 + i * 11, 214, 8, 14, 0x8d99ae);
-      this.rect(410 + i * 11, 228, 4, 4, 0x6c757d);
-    }
-
-    // 团子跟随在侧
-    this.cat(130, 310, 'tuanzi');
-
-    // 领队喵喵
-    this.cat(this.x, this.y, 'miaomiao');
-
-    // 漂浮夜市暖光粒子
-    for (let i = 0; i < 12; i++) {
-      const px = (i * 67 + this.now * 0.02) % 800;
-      const py = 200 + ((i * 41 + this.now * 0.015) % 220);
-      this.rect(px, py, 2, 2, 0xffe8a3, 0.5);
-    }
+  }
+  private drawMarketDebug() {
+    const ctx=this.context;ctx.save();
+    for(const [width,points] of nightMarketSpatial.R[this.marketFloor]){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.strokeStyle='rgba(67,255,142,.38)';ctx.lineWidth=Math.max(2,width-20);ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle='#d7ff66';ctx.stroke();}
+    if(this.marketFloor==='L0')for(const solid of nightMarketSpatial.solids){ctx.beginPath();if(solid.type==='rect')ctx.rect(solid.x,solid.y,solid.w,solid.h);else{solid.pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();}ctx.fillStyle='rgba(255,35,68,.25)';ctx.fill();ctx.strokeStyle='#ff4058';ctx.lineWidth=2;ctx.stroke();}
+    if(this.marketFloor==='L0')for(const obstacle of nightMarketSpatial.actionObstacles){ctx.beginPath();ctx.moveTo(obstacle.a[0],obstacle.a[1]);ctx.lineTo(obstacle.b[0],obstacle.b[1]);ctx.strokeStyle='#ff4058';ctx.lineWidth=obstacle.radius*2;ctx.stroke();}
+    if(this.marketFloor===nightMarketSpatial.battleBarrier.layer){const barrier=nightMarketSpatial.battleBarrier;ctx.beginPath();ctx.moveTo(barrier.a[0],barrier.a[1]);ctx.lineTo(barrier.b[0],barrier.b[1]);ctx.strokeStyle='#ff4058';ctx.lineWidth=barrier.radius*2;ctx.stroke();}
+    for(const item of marketItems.filter(value=>['crow','pigeon','momo','boss','exit'].includes(value.id)&&value.layer===this.marketFloor)){const complete=item.id==='crow'?this.state?.flags.includes('market_crow_clue_completed'):item.id==='pigeon'?this.state?.flags.includes('market_pigeon_clue_completed'):item.id==='momo'?this.state?.drawnEvents?.includes('node:momo_trail_event'):item.id==='boss'?this.state?.flags.includes('market_cleared'):false;const locked=(item.id==='boss'&&(!this.state?.flags.includes('market_crow_clue_completed')||!this.state?.flags.includes('market_pigeon_clue_completed')))||(item.id==='exit'&&!this.state?.flags.includes('market_cleared'));const inside=Math.hypot(this.x-item.x,this.y-item.y)<=75;ctx.beginPath();ctx.arc(item.x,item.y,75,0,Math.PI*2);ctx.setLineDash([5,4]);ctx.strokeStyle='#fff';ctx.stroke();ctx.setLineDash([]);ctx.font='12px system-ui';ctx.fillStyle='#fff';ctx.fillText(`${item.id==='momo'?'optional clue':item.id} · ${item.label} · ${this.marketFloor} · ${locked?'locked':complete?'completed':'available'}${inside?' · inside':''}`,item.x+68,item.y);}
+    for(const portal of marketPortals)for(const point of [portal.a,portal.b])if(point.layer===this.marketFloor){ctx.beginPath();ctx.arc(point.x,point.y,portal.radius,0,Math.PI*2);ctx.setLineDash([4,4]);ctx.strokeStyle='#72f5ff';ctx.stroke();ctx.setLineDash([]);}
+    ctx.beginPath();ctx.arc(this.x,this.y,10,0,Math.PI*2);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.font='11px monospace';ctx.fillStyle='#fff';ctx.fillText(`${this.marketFloor} pos:${this.marketLastMove.position.x.toFixed(1)},${this.marketLastMove.position.y.toFixed(1)} dir:${this.marketLastMove.direction.x},${this.marketLastMove.direction.y} to:${this.marketLastMove.requestedDestination.x.toFixed(1)},${this.marketLastMove.requestedDestination.y.toFixed(1)}`,this.marketCamera.x+8,this.marketCamera.y+18);ctx.fillText(`rejected:${this.marketLastMove.rejected} reason:${this.marketLastMove.reason} boundary:${this.marketLastMove.nearestBoundary} · Y copy`,this.marketCamera.x+8,this.marketCamera.y+33);ctx.restore();
   }
   private drawTunnel() {
     // 阴暗地下管道拱门背景
