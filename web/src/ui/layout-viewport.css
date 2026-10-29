@@ -88,8 +88,8 @@ html,body,#root{min-height:100%;width:100%}
 .alley-objective{position:absolute;z-index:2;pointer-events:none;top:160px;left:22px;max-width:min(360px,calc(100% - 44px));padding:8px 12px;border:2px solid #66513e;border-radius:3px;background:#132d39e6;color:#f5e7c7;box-shadow:3px 3px 0 #16242c;font-size:12px}
 .alley-objective span{display:block;color:#e2b87a;font-size:10px;margin-bottom:3px}
 .alley-objective strong{display:block;font-weight:600;line-height:1.5}
-.app-shell[data-home-scene=true] .world-wrap{background:#7f9856}
-.app-shell[data-home-scene=true] .game-viewport canvas{object-fit:contain;image-rendering:pixelated}
+.app-shell[data-home-scene=true] .world-wrap{background:#13262e}
+.app-shell[data-home-scene=true] .game-viewport canvas{object-fit:cover;image-rendering:pixelated}
 .home-life-status{position:absolute;z-index:1;top:157px;left:22px;padding:9px 13px;border-left:3px solid #d2b779;background:#354a35e8;color:#f2e5c6;pointer-events:none;box-shadow:3px 3px 0 #2a392933;max-width:calc(100% - 44px)}
 .home-life-status span{display:block;font-size:10px;letter-spacing:2px;color:#d6bf86;margin-bottom:5px}
 .home-life-status strong{display:block;font-size:11px;font-weight:400}
@@ -105,6 +105,12 @@ html,body,#root{min-height:100%;width:100%}
 .home-map li{display:flex;gap:8px;align-items:flex-start;font-size:11px;color:#4a513d;min-width:0}
 .home-map li>b{display:grid;place-items:center;flex-shrink:0;width:20px;height:20px;border:1px solid #9b8558;background:#e4d1a1;color:#685039;font:700 12px monospace}
 .home-map small{display:block;font-size:9px;color:#817454;margin-top:4px;line-height:1.5}
+.home-camera-controls{position:absolute;z-index:2;left:22px;bottom:112px;display:flex;align-items:center;gap:6px;padding:7px;background:#233c36e8;border:1px solid #a59869;color:#f2dfb5}
+.home-camera-controls button{font-size:11px;padding:6px 9px;box-shadow:none;background:#e6d4ad;color:#344b3b}
+.home-camera-controls span{font-size:10px;padding:0 4px}
+.app-shell[data-home-scene] .game-viewport canvas{touch-action:none;cursor:grab}
+.app-shell[data-home-scene] .game-viewport canvas:active{cursor:grabbing}
+@media(max-width:800px){.home-camera-controls{left:14px;bottom:150px;max-width:calc(100% - 28px)}.home-camera-controls span{font-size:9px}.home-camera-controls button{font-size:10px;padding:6px 8px}}
 @media(max-width:800px){.home-life-status{top:168px;left:14px;padding:8px 10px}.home-life-status strong{font-size:10px}.home-tools-toggle{top:227px;right:16px;font-size:10px;padding:8px 11px}.app-shell .home-controls{top:271px;max-height:calc(100dvh - 364px)}.home-map ul{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px;gap:10px}}
 @media(max-height:650px) and (min-width:801px){.home-life-status{top:130px}.home-tools-toggle{top:83px}.app-shell .home-controls{top:130px;max-height:calc(100dvh - 205px)}}
 @media(max-width:800px){.alley-objective{top:165px;left:14px;font-size:11px;max-width:calc(100% - 28px)}}

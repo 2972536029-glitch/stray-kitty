@@ -44,6 +44,7 @@ const labels = {
   'web/content/lottery': '奖池', 'web/content/shop': '家具商品配置',
   'web/content/tutorials': '操作提示', 'web/content/assets': '素材索引',
   'web/public': '静态资源', 'web/public/assets': '图片、动画、声音与字体',
+  'web/public/assets/home': '无猫建筑底图、四阶家具与植物透明图集',
   server: 'Go 服务端', 'server/cmd': '服务入口', 'server/cmd/api': 'HTTP 启动',
   'server/internal': '服务实现', 'server/internal/transport': '请求、认证与参数检查',
   'server/internal/service': '长期规则、判定、奖励与结算', 'server/internal/domain': '状态、命令与错误',
@@ -130,6 +131,8 @@ ${directory}
 | 阿策最近三轮手动问答、请求取消状态 | 战斗页面内存；切换场次清空，不写存档 |
 
 home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余额与结算，inventory 统一拥有状态。抽到／买到家具后再交 home 摆放。真实付费预留在前后端 payment 目录，本次没有支付实现。
+
+花房使用 modules/home 的 assets、layout、objects、painter 共用 1672×941 室内布局：建筑底图与透明组件不含猫咪，HomeMap 和场景使用同一装配；四套阶段家具和独立植物图集的裁切坐标放在模块内的 atlas.json／stage-atlas.json，每种购买家具有独立图稿，默认陈设让位于已保存的摆放。camera 管缩放、拖动与点击坐标转换，navigation 按对象地面占位阻挡，原有像素猫按家具脚点排序，前墙藤蔓和家具前缘独立遮挡。story 在对白期间接管角色和站位，空闲 home 阶段才运行日常行为；四阶外观从既有修缮与终章标记推导，不新增服务端存档字段，图集仅在需要花房时加载。
 
 ## 4. 接入与分工
 

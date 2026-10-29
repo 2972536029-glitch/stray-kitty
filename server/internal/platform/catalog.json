@@ -667,8 +667,8 @@
       "id": "greenhouse",
       "name": "废弃花房",
       "status": "demo",
-      "width": 800,
-      "height": 480,
+      "width": 1672,
+      "height": 941,
       "interactions": [],
       "dangerLevel": 0
     },
@@ -6265,11 +6265,11 @@
     },
     {
       "id": "courtyard",
-      "name": "小庭院"
+      "name": "室内花圃"
     },
     {
       "id": "beam",
-      "name": "高空横梁"
+      "name": "横梁吊床"
     },
     {
       "id": "sun_spot",
@@ -6473,6 +6473,41 @@
       "id": "city_backdrop_v2",
       "kind": "svg",
       "path": "/assets/city-backdrop.svg"
+    },
+    {
+      "id": "greenhouse_base_v1",
+      "kind": "png",
+      "path": "/assets/home/greenhouse-base.png"
+    },
+    {
+      "id": "greenhouse_components_v1",
+      "kind": "png",
+      "path": "/assets/home/components.png"
+    },
+    {
+      "id": "greenhouse_furniture_shelter_v2",
+      "kind": "png",
+      "path": "/assets/home/furniture-shelter-v2.png"
+    },
+    {
+      "id": "greenhouse_furniture_improvised_v2",
+      "kind": "png",
+      "path": "/assets/home/furniture-improvised-v2.png"
+    },
+    {
+      "id": "greenhouse_furniture_timber_v2",
+      "kind": "png",
+      "path": "/assets/home/furniture-timber-v2.png"
+    },
+    {
+      "id": "greenhouse_furniture_celebration_v2",
+      "kind": "png",
+      "path": "/assets/home/furniture-celebration-v2.png"
+    },
+    {
+      "id": "greenhouse_furniture_botany_v2",
+      "kind": "png",
+      "path": "/assets/home/furniture-botany-v2.png"
     }
   ]
 }
