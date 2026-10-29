@@ -80,7 +80,8 @@ export default function App() {
           </GameScreen>
         </div>}
       </>}
-    {entered && state?.chapterId === 'prologue' && !introDone && <PrologueSequence onComplete={() => {setIntroDone(true);try {localStorage.setItem('stray-kitty.prologue.intro', 'done');} catch {/* 隐私模式下跳过记忆，不影响本次游玩 */}}}/>}
+    {/* 序章开场引导只在每个存档的第一次进入时播放,且仅对话相位挂载——教学战中刷新页面不能让动画盖住战斗 UI。 */}
+    {entered && state?.chapterId === 'prologue' && state.phase === 'dialogue' && !introDone && <PrologueSequence onComplete={() => {setIntroDone(true);try {localStorage.setItem('stray-kitty.prologue.intro', 'done');} catch {/* 隐私模式下跳过记忆，不影响本次游玩 */}}}/>}
     {state && catalog && overlay === 'map' && <WorldMap state={state} catalog={catalog} disabled={disabled} onClose={() => setOverlay(null)} onNavigate={command => {setOverlay(null);void send(command);}}/>}
     {state && catalog && overlay === 'shop' && <ShopPanel state={state} catalog={catalog} disabled={disabled} error={error} onRetry={() => void retry()} onClose={() => setOverlay(null)} onBuy={productId => void send({type: 'BUY_FURNITURE', productId})} onRecharge={() => setOverlay('recharge')}/>}
     {state && catalog && overlay === 'recharge' && (catalog.rechargePacks?.length ?? 0) > 0 && <RechargeDialog playerId={port.playerId()} packs={catalog.rechargePacks!} tuna={state.currencies.tuna ?? 0} api={port} onCharged={refresh} onClose={() => setOverlay(null)}/>}
