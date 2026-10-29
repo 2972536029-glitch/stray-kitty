@@ -24,6 +24,8 @@ interface Props {
   nearTarget?: {id: string; label: string} | null;
   inspectHint?: string | null;
   journalOpen: boolean;
+  topExpanded: boolean;
+  onToggleTopbar: (expanded: boolean) => void;
   speakerAnchor?: (breed: CatBreed) => SceneAnchor | null;
   onJournal: () => void;
   onSkip?: () => void;
@@ -31,7 +33,7 @@ interface Props {
   onCommand: (command: GameCommand) => void; onInteract: (interactionId?: string) => void; onDirection: (direction: Direction, held: boolean) => void;
   onPause: () => void; onMap: () => void; onShop: () => void; onRecharge: () => void; onSettings: () => void; onWarehouse: () => void; onTitle: () => void; children: ReactNode;
 }
-export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, speakerAnchor, onJournal, onSkip, onReset, onCommand, onInteract, onDirection, onPause, onMap, onShop, onRecharge, onSettings, onWarehouse, onTitle, children}: Props) {
+export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, topExpanded, onToggleTopbar, speakerAnchor, onJournal, onSkip, onReset, onCommand, onInteract, onDirection, onPause, onMap, onShop, onRecharge, onSettings, onWarehouse, onTitle, children}: Props) {
   const [devOpen, setDevOpen] = useState(false);
   // 首次进入守护准备时的教学高亮；完成后记在本地，不再打扰。
   const [battleTutorialDone, setBattleTutorialDone] = useState(() => {try {return localStorage.getItem('stray-kitty.tutorial.battle') === 'done';} catch {return true;}});
@@ -85,8 +87,25 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
     window.addEventListener('wheel', wake, {passive: true});
     return () => {window.clearTimeout(timer);window.removeEventListener('pointermove', wake);window.removeEventListener('pointerdown', wake);window.removeEventListener('keydown', wake);window.removeEventListener('wheel', wake);};
   }, [state.phase]);
+  // 沉浸式顶栏：展开时点顶栏以外的空白（画布、面板外壳）自动收起；战斗阶段顶栏是布局流的一部分，不参与折叠。
+  const topbarPinned = state.phase === 'battle';
+  const topbarOpen = topbarPinned || topExpanded;
+  useEffect(() => {
+    if (!topExpanded || topbarPinned) return;
+    const dismiss = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('.topbar, .topbar-toggle, dialog, .game-modal')) return;
+      onToggleTopbar(false);
+    };
+    window.addEventListener('pointerdown', dismiss);
+    return () => {window.removeEventListener('pointerdown', dismiss);};
+  }, [topExpanded, topbarPinned, onToggleTopbar]);
   return <div className="app-shell" data-phase={state.phase}>
-    <header className="topbar"><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
+    {!topbarPinned && <button type="button" className={`topbar-toggle${topExpanded ? ' expanded' : ''}`} aria-expanded={topExpanded} aria-label={topExpanded ? '收起顶部信息栏' : '展开顶部信息栏'} onClick={() => {onToggleTopbar(!topExpanded);playSound(topExpanded ? 'close' : 'open');}}>
+      <span className="topbar-toggle-paw" aria-hidden="true">ฅ</span><span className="topbar-toggle-chev" aria-hidden="true">▾</span>
+    </button>}
+
+    <header className={`topbar${topbarOpen ? '' : ' topbar-collapsed'}`}><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
       <span className="chapter-pill">{finaleBattle ? '第五章 · 终局试玩' : tunnelBattle ? '第四章 · 地下通道试玩' : greenhouseBattle ? '第三章 · 废弃花房试玩' : marketBattle ? '第二章 · 午夜集市试玩' : tutorialBattle ? '序章 · 金枪鱼事件' : chapterBattle ? '第一章 · 陌生小巷' : chapter?.title}</span>
       <div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>
       <nav aria-label="旅程工具">{state.phase === 'battle' && <button className="battle-host-pause" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button><button className="map-button" aria-label="章节地图" onClick={onMap}>▦ <span>章节地图</span></button><button className="shop-button" aria-label="猫国商店" onClick={onShop}>▣ <span>猫国商店</span></button><button className="settings-button" aria-label="游戏设置" onClick={onSettings}>⚙ <span>设置</span></button>{isDevelopment && <button className="dev-button" aria-label="验收工具" onClick={() => setDevOpen(!devOpen)}>🛠️ <span>验收</span></button>}</nav></header>

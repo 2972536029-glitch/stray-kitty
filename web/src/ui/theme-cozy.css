@@ -122,3 +122,16 @@ button{font-size:14px}
 .journal-card p,.event-card p{font-size:14px}
 .quiet,.map-button,.shop-button{font-size:13px}
 @media(max-width:520px){button{font-size:13px}.choice-list button{font-size:12px}.journal-card p,.event-card p{font-size:13px}}
+/* ===== 沉浸式可折叠顶栏：默认收起只留木签小钮，展开滑出深色磨砂横栏 ===== */
+/* 折叠收起：整条滑出屏外并失去命中；展开态压成深色磨砂木纹（特异性盖过 layout-viewport 的浅渐变）。 */
+.app-shell:not([data-phase=battle]) .topbar{background:linear-gradient(180deg,rgba(26,36,34,.92),rgba(26,36,34,.78));border-bottom:2px solid rgba(197,154,85,.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s cubic-bezier(.4,0,.2,1)}
+.app-shell:not([data-phase=battle]) .topbar.topbar-collapsed{transform:translateY(-112%);opacity:0;pointer-events:none}
+.app-shell:not([data-phase=battle]) .topbar.topbar-collapsed .wallet b,.app-shell:not([data-phase=battle]) .topbar.topbar-collapsed nav{visibility:hidden}
+/* 木质小签折叠钮：屏幕正上方居中悬停，猫爪 + 翻转箭头；hover 放大 + 暖金发光。 */
+.topbar-toggle{position:fixed;z-index:40;top:8px;left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:7px;padding:7px 15px 8px;font-size:13px;font-weight:800;letter-spacing:2px;color:#f6ecd2;background:linear-gradient(180deg,#8a6a48,#6f5748 78%,#5d4837);border:2px solid #382f2b;border-radius:4px;box-shadow:0 3px 0 #24312e,inset 0 1px 0 rgba(255,243,196,.4);cursor:pointer;transition:transform .2s cubic-bezier(.4,0,.2,1),box-shadow .2s cubic-bezier(.4,0,.2,1)}
+.topbar-toggle:hover{transform:translateX(-50%) scale(1.1);box-shadow:0 4px 0 #24312e,0 0 16px rgba(255,215,110,.55),inset 0 1px 0 rgba(255,243,196,.55)}
+.topbar-toggle:active{transform:translateX(-50%) scale(1.02)}
+.topbar-toggle-paw{font-size:15px;line-height:1;color:#ffd76e;text-shadow:0 1px 0 #24312e}
+.topbar-toggle-chev{font-size:11px;line-height:1;color:#f6ecd2;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.topbar-toggle.expanded .topbar-toggle-chev{transform:rotate(180deg)}
+@media(prefers-reduced-motion:reduce){.app-shell:not([data-phase=battle]) .topbar,.topbar-toggle,.topbar-toggle-chev{transition:none}.app-shell:not([data-phase=battle]) .topbar.topbar-collapsed{transform:none}}

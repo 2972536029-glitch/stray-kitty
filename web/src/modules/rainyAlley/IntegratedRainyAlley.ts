@@ -46,6 +46,9 @@ export class IntegratedRainyAlley {
   private zoomTarget = 1;
   private zoom = 1;
   private now = 0;
+  // 顶栏展开时小地图下移避让的当前/目标位移（canvas 逻辑像素，每帧向目标缓动）。
+  private minimapShift = 0;
+  private minimapShiftTarget = 0;
 
   reset(flags: readonly string[] = [], battleReturn?: Point) {
     this.gateOpen = flags.includes('alley_rescued');
@@ -140,8 +143,13 @@ export class IntegratedRainyAlley {
     this.updateNearby(flags);
     this.updateZones(flags, onZoneEntry);
     this.followCamera(deltaSeconds);
+    // 顶栏展开时小地图让位：目标位移与当前位移做指数缓动，与 CSS 滑出动画同一节奏感。
+    this.minimapShift += (this.minimapShiftTarget - this.minimapShift) * Math.min(1, deltaSeconds * 9);
     return Math.hypot(this.position.x - previous.x, this.position.y - previous.y);
   }
+
+  /** 顶栏展开态通知：小地图整体下移避让（传 0 复位）。 */
+  setMinimapShift(shift: number) {this.minimapShiftTarget = shift;}
 
   click(clientX: number, clientY: number, bounds: DOMRect, canvasWidth: number, canvasHeight: number, cover: boolean) {
     const scale = (cover ? Math.max : Math.min)(bounds.width / canvasWidth, bounds.height / canvasHeight);
@@ -441,7 +449,8 @@ export class IntegratedRainyAlley {
   private minimapRect(width: number, _height: number) {
     const mapWidth = Math.min(150, width * 0.24);
     const mapHeight = mapWidth * rainyAlleyRegistration.worldHeight / rainyAlleyRegistration.worldWidth;
-    return {x: width - mapWidth - 10, y: 10, width: mapWidth, height: mapHeight};
+    // +minimapShift：顶栏展开时整块小地图向下让位（click 的点击排除区共用此矩形，自动跟随）。
+    return {x: width - mapWidth - 10, y: 10 + this.minimapShift, width: mapWidth, height: mapHeight};
   }
 
   private drawMinimap(context: CanvasRenderingContext2D, width: number, height: number, flags: readonly string[]) {

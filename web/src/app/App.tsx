@@ -38,6 +38,20 @@ export default function App() {
   // 画布场景实例：对话气泡向它查询说话者头顶的位置。
   const sceneRef = useRef<DemoScene | null>(null);
   const getSpeakerAnchor = useCallback((breed: CatBreed) => sceneRef.current?.speakerAnchor(breed) ?? null, []);
+  // 沉浸式顶栏：默认折叠释放视野，点小木签展开；记忆玩家偏好。
+  // 自动化环境（navigator.webdriver）默认展开——e2e 需要直接点击顶栏里的旅程记录/商店/返回标题等按钮。
+  const [topExpanded, setTopExpanded] = useState(() => {try {
+    if (navigator.webdriver === true) return true;
+    return localStorage.getItem('stray-kitty.hud.topbar') === 'expanded';
+  } catch {return false;}});
+  const topExpandedRef = useRef(topExpanded);
+  topExpandedRef.current = topExpanded;
+  const toggleTopbar = useCallback((expanded: boolean) => {
+    setTopExpanded(expanded);
+    try {localStorage.setItem('stray-kitty.hud.topbar', expanded ? 'expanded' : 'collapsed');} catch {/* 隐私模式下跳过记忆 */}
+  }, []);
+  // 顶栏展开态同步给画布场景（雨巷小地图让位）；Viewport 重建时经 onSceneReady 再补一次。
+  useEffect(() => {sceneRef.current?.setTopbarExpanded(topExpanded);}, [topExpanded, entered]);
   // 沉浸式音频：主页/探索/家园/守护各一段循环 BGM；小巷落雨、集市人声作为环境音叠加。
   const audioBgm: BgmMode = !entered || !state ? 'title'
     : state.phase === 'battle' || state.phase === 'preparation' ? 'battle'
@@ -78,10 +92,10 @@ export default function App() {
         {!entered && <StartScreen hasProgress={state.revision > 0} disabled={disabled} onStart={() => setEntered(true)} onShop={() => setOverlay('shop')} onReset={resetSession}/>}
         {/* Keep an active battle mounted and paused behind the title, so returning does not restart its attempt. */}
         {(entered || state.phase === 'battle') && <div hidden={!entered}>
-          <GameScreen state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} onReset={resetSession} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onDirection={(d, held) => direction.current(d, held)} onPause={() => setPaused(!paused)} onMap={() => setOverlay('map')} onShop={() => setOverlay('shop')} onRecharge={() => setOverlay('recharge')} onSettings={() => setOverlay('settings')} onWarehouse={() => setOverlay('warehouse')} onTitle={() => {setEntered(false);setPaused(false);}} speakerAnchor={getSpeakerAnchor}>
+          <GameScreen state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} topExpanded={topExpanded} onToggleTopbar={toggleTopbar} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} onReset={resetSession} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onDirection={(d, held) => direction.current(d, held)} onPause={() => setPaused(!paused)} onMap={() => setOverlay('map')} onShop={() => setOverlay('shop')} onRecharge={() => setOverlay('recharge')} onSettings={() => setOverlay('settings')} onWarehouse={() => setOverlay('warehouse')} onTitle={() => {setEntered(false);setPaused(false);}} speakerAnchor={getSpeakerAnchor}>
             {state.phase === 'battle'
               ? <BattleHost state={state} catalog={catalog} paused={frozen} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})}/>
-              : <Viewport state={state} storyScene={currentStory(catalog, state)?.scene} paused={frozen} onSceneReady={scene => {sceneRef.current = scene;}} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onDirectionReady={fn => {direction.current = fn;}} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone} onWorldPosition={point => {rainyPosition.current = point;}} randomEligible={randomEligible}/>}
+              : <Viewport state={state} storyScene={currentStory(catalog, state)?.scene} paused={frozen} onSceneReady={scene => {sceneRef.current = scene;scene?.setTopbarExpanded(topExpandedRef.current);}} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onDirectionReady={fn => {direction.current = fn;}} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone} onWorldPosition={point => {rainyPosition.current = point;}} randomEligible={randomEligible}/>}
           </GameScreen>
         </div>}
       </>}

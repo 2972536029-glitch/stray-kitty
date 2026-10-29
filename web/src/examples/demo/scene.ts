@@ -313,6 +313,10 @@ export class DemoScene {
     }
   }
   // 对话气泡锚点：返回说话猫头顶在画布中的位置（不在场返回 null，走旁白字幕条）。
+  // 顶栏展开态通知（雨巷）：小地图下移避让，收起时归位。
+  setTopbarExpanded(expanded:boolean){
+    this.rainyAlley.setMinimapShift(expanded?62:0);
+  }
   speakerAnchor(breed:CatBreed):{x:number;y:number}|null{
     const st=this.state;if(!st||st.phase==='battle')return null;
     if(st.mapId==='market'||st.chapterId==='market'||this.storyScene==='market'){
