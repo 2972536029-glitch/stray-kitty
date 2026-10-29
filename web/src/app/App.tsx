@@ -39,16 +39,30 @@ export default function App() {
   const sceneRef = useRef<DemoScene | null>(null);
   const getSpeakerAnchor = useCallback((breed: CatBreed) => sceneRef.current?.speakerAnchor(breed) ?? null, []);
   // 沉浸式顶栏：默认折叠释放视野，点小木签展开；记忆玩家偏好。
+  // 首次进场（无偏好记录）先展开展示 2 秒再自动收起，让玩家知道顶栏存在。
   // 自动化环境（navigator.webdriver）默认展开——e2e 需要直接点击顶栏里的旅程记录/商店/返回标题等按钮。
+  const firstVisitRef = useRef(false);
   const [topExpanded, setTopExpanded] = useState(() => {try {
     if (navigator.webdriver === true) return true;
+    if (localStorage.getItem('stray-kitty.hud.topbar') === null) {firstVisitRef.current = true; return true;}
     return localStorage.getItem('stray-kitty.hud.topbar') === 'expanded';
   } catch {return false;}});
   const topExpandedRef = useRef(topExpanded);
   topExpandedRef.current = topExpanded;
   const toggleTopbar = useCallback((expanded: boolean) => {
+    firstVisitRef.current = false; // 玩家手动操作即取消首次自动演示
     setTopExpanded(expanded);
     try {localStorage.setItem('stray-kitty.hud.topbar', expanded ? 'expanded' : 'collapsed');} catch {/* 隐私模式下跳过记忆 */}
+  }, []);
+  // 首次进场：展开停留 2 秒后平滑收起，并落下偏好记录（此后按玩家偏好走）。
+  useEffect(() => {
+    if (!firstVisitRef.current) return;
+    const timer = window.setTimeout(() => {
+      firstVisitRef.current = false;
+      setTopExpanded(false);
+      try {localStorage.setItem('stray-kitty.hud.topbar', 'collapsed');} catch {/* 隐私模式下跳过记忆 */}
+    }, 2200);
+    return () => {window.clearTimeout(timer);};
   }, []);
   // 顶栏展开态同步给画布场景（雨巷小地图让位）；Viewport 重建时经 onSceneReady 再补一次。
   useEffect(() => {sceneRef.current?.setTopbarExpanded(topExpanded);}, [topExpanded, entered]);

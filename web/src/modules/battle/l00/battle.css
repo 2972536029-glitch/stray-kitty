@@ -838,3 +838,56 @@
 .battle-l00 .btl-arena.btl-arena-wide{display:block}
 .battle-l00 .btl-tactics{display:flex;align-items:center;gap:10px;margin:8px 0;color:#647b55}.battle-l00 .btl-tactics>button{display:flex;align-items:center;gap:5px;flex-shrink:0;padding:4px 9px;background:#eff3e6;border:1px solid #d4dec7;border-radius:8px;color:#647b55}.battle-l00 .btl-tactics>button .btl-portrait{width:30px!important;height:30px!important}.battle-l00 .btl-tactics strong{font-size:11px;white-space:nowrap}.battle-l00 .btl-tactics>p{margin:0;font-size:11px;line-height:1.6}.battle-l00 .btl-retirement-note{margin:5px 0;color:#967354;font-size:11px;line-height:1.6}
 @media(max-width:600px){.battle-l00 .btl-tactics{gap:7px;align-items:flex-start}.battle-l00 .btl-tactics>p{font-size:10px}.battle-l00 .btl-tactics>button{padding:3px 6px}}
+
+/* == 战斗读数强化（纯视觉层）：血条/能量条加厚+像素描边+鲜艳渐变+空槽内阴影，蓄满金光呼吸；名字放大描边分层。 == */
+.battle-l00 .btl-health{
+  height:7px;
+  background:#c8d0b8;
+  box-shadow:inset 0 1px 3px rgba(24,34,22,.42),0 0 0 1.5px #2d3927
+}
+.battle-l00 .btl-health i{
+  background:linear-gradient(180deg,#ff9d84 0%,#ef5350 45%,#c62838 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45)
+}
+.battle-l00 .btl-unit>.btl-health{height:7px;bottom:10px}
+.battle-l00 .btl-energy{
+  background:#dfe0cd;
+  color:#41576e;
+  box-shadow:inset 0 1px 3px rgba(24,34,22,.38),0 0 0 1.5px #2d3927
+}
+.battle-l00 .btl-energy>i{
+  background:linear-gradient(180deg,#a5dcff 0%,#54a3e8 45%,#2f6fd0 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4)
+}
+.battle-l00 .btl-energy-ready{color:#5b4d21;animation:kitty-energy-full 1.15s ease-in-out infinite}
+.battle-l00 .btl-energy-ready>i{background:linear-gradient(180deg,#ffefad 0%,#f4c542 55%,#d99a27 100%)}
+.battle-l00 .btl-energy-compact{height:6px}
+.battle-l00 .btl-energy-compact.btl-energy-ready{box-shadow:0 0 0 1.5px #b8912f,0 0 6px rgba(244,197,66,.8);animation:kitty-energy-full 1.15s ease-in-out infinite}
+.battle-l00 .btl-energy-compact.btl-energy-ready>i{background:linear-gradient(180deg,#ffefad,#d99a27)}
+@keyframes kitty-energy-full{
+  0%,100%{box-shadow:inset 0 1px 3px rgba(24,34,22,.38),0 0 0 1.5px #b8912f,0 0 5px rgba(244,197,66,.5);transform:scale(1)}
+  50%{box-shadow:inset 0 1px 3px rgba(24,34,22,.38),0 0 0 1.5px #b8912f,0 0 11px rgba(244,197,66,.95);transform:scale(1.03)}
+}
+.battle-l00.battle-immersive .btl-unit .btl-unit-name{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  line-height:1.2;
+  background:rgba(21,31,19,.82);
+  color:#fbf6e2;
+  padding:2px 5px;
+  font-size:11px;
+  font-weight:700;
+  text-shadow:0 1px 0 #141d12,1px 0 0 #141d12,-1px 0 0 #141d12,0 -1px 0 #141d12
+}
+.battle-l00.battle-immersive .btl-unit .btl-unit-name small{
+  font-size:7.5px;
+  font-weight:600;
+  margin-left:0;
+  color:#ffc46b
+}
+@media(max-width:1150px){.battle-l00.battle-immersive .btl-unit .btl-unit-name{font-size:10px}}
+@media(max-width:440px){.battle-l00.battle-immersive .btl-unit .btl-unit-name{font-size:9.5px}}
+@media(prefers-reduced-motion:reduce){
+  .btl-energy-ready,.btl-energy-compact.btl-energy-ready{animation:none!important}
+}

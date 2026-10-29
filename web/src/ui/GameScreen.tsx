@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState, type ReactNode} from 'react';
+import {useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode} from 'react';
 import type {Catalog, GameCommand, GameState} from '../contracts';
 import type {Direction} from '../adapters/platform/input';
 import type {CatBreed} from '../adapters/canvas/pixelCat';
@@ -75,23 +75,22 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
     else if (state.phase !== 'explore') arrivedFromEvent.current = false;
   }, [state.phase]);
   const showExploreResult = state.phase === 'explore' && arrivedFromEvent.current && !!resolution && dismissedResult !== resolutionKey;
-  // 沉浸式 HUD：探索提示 3 秒无操作自动淡出，一动鼠标/键盘/滚轮立刻浮现；只藏文案不藏方向键。
+  // 沉浸式 HUD：探索提示 5 秒无操作自动淡出，一动鼠标/键盘/滚轮立刻浮现；只藏文案不藏方向键。
   const [hintIdle, setHintIdle] = useState(false);
   useEffect(() => {
     if (state.phase !== 'explore') {setHintIdle(false);return;}
-    let timer = window.setTimeout(() => setHintIdle(true), 3000);
-    const wake = () => {setHintIdle(false);window.clearTimeout(timer);timer = window.setTimeout(() => setHintIdle(true), 3000);};
+    let timer = window.setTimeout(() => setHintIdle(true), 5000);
+    const wake = () => {setHintIdle(false);window.clearTimeout(timer);timer = window.setTimeout(() => setHintIdle(true), 5000);};
     window.addEventListener('pointermove', wake);
     window.addEventListener('pointerdown', wake);
     window.addEventListener('keydown', wake);
     window.addEventListener('wheel', wake, {passive: true});
     return () => {window.clearTimeout(timer);window.removeEventListener('pointermove', wake);window.removeEventListener('pointerdown', wake);window.removeEventListener('keydown', wake);window.removeEventListener('wheel', wake);};
   }, [state.phase]);
-  // 沉浸式顶栏：展开时点顶栏以外的空白（画布、面板外壳）自动收起；战斗阶段顶栏是布局流的一部分，不参与折叠。
-  const topbarPinned = state.phase === 'battle';
-  const topbarOpen = topbarPinned || topExpanded;
+  // 沉浸式顶栏：展开时点顶栏以外的空白（画布、面板外壳）自动收起；战斗阶段点画布频繁，只允许手动收起。
+  const topbarOpen = topExpanded;
   useEffect(() => {
-    if (!topExpanded || topbarPinned) return;
+    if (!topExpanded || state.phase === 'battle') return;
     const dismiss = (event: PointerEvent) => {
       const target = event.target as HTMLElement | null;
       if (target?.closest('.topbar, .topbar-toggle, dialog, .game-modal')) return;
@@ -99,12 +98,52 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
     };
     window.addEventListener('pointerdown', dismiss);
     return () => {window.removeEventListener('pointerdown', dismiss);};
-  }, [topExpanded, topbarPinned, onToggleTopbar]);
+  }, [topExpanded, state.phase, onToggleTopbar]);
+  // 折叠小钮可自由拖拽：松手后吸附最近的角/边中点（右上锚点让开小地图），位置记忆在本地。
+  const [toggleAnchor, setToggleAnchor] = useState(() => {try {return localStorage.getItem('stray-kitty.hud.topbarToggle') ?? 'top-center';} catch {return 'top-center';}});
+  const [toggleDrag, setToggleDrag] = useState<{x: number; y: number} | null>(null);
+  const toggleGrab = useRef<{x: number; y: number; moved: boolean} | null>(null);
+  const snapToggle = (x: number, y: number) => {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const anchors: Record<string, [number, number]> = {
+      'top-left': [46, 30], 'top-center': [vw / 2, 28], 'top-right': [vw - 186, 30],
+      'bottom-left': [46, vh - 34], 'bottom-center': [vw / 2, vh - 30], 'bottom-right': [vw - 46, vh - 34],
+    };
+    let best = 'top-center', bestDistance = Infinity;
+    for (const [id, [ax, ay]] of Object.entries(anchors)) {
+      const distance = Math.hypot(ax - x, ay - y);
+      if (distance < bestDistance) {bestDistance = distance;best = id;}
+    }
+    setToggleAnchor(best);
+    try {localStorage.setItem('stray-kitty.hud.topbarToggle', best);} catch {/* 隐私模式下跳过记忆 */}
+  };
+  const onTogglePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    toggleGrab.current = {x: event.clientX, y: event.clientY, moved: false};
+  };
+  const onTogglePointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const grab = toggleGrab.current;
+    if (!grab) return;
+    if (!grab.moved && Math.hypot(event.clientX - grab.x, event.clientY - grab.y) < 6) return;
+    grab.moved = true;
+    setToggleDrag({x: event.clientX, y: event.clientY});
+  };
+  const onTogglePointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const grab = toggleGrab.current;
+    toggleGrab.current = null;
+    if (!grab) return;
+    if (!grab.moved) {onToggleTopbar(!topExpanded);playSound(topExpanded ? 'close' : 'open');return;}
+    snapToggle(event.clientX, event.clientY);
+    setToggleDrag(null);
+  };
   return <div className="app-shell" data-phase={state.phase}>
-    {!topbarPinned && <button type="button" className={`topbar-toggle${topExpanded ? ' expanded' : ''}`} aria-expanded={topExpanded} aria-label={topExpanded ? '收起顶部信息栏' : '展开顶部信息栏'} onClick={() => {onToggleTopbar(!topExpanded);playSound(topExpanded ? 'close' : 'open');}}>
+    <button type="button"
+      className={`topbar-toggle${topExpanded ? ' expanded' : ''} topbar-toggle-${toggleAnchor}${toggleDrag ? ' dragging' : ''}`}
+      style={toggleDrag ? {left: toggleDrag.x, top: toggleDrag.y} : undefined}
+      aria-expanded={topExpanded} aria-label={topExpanded ? '收起顶部信息栏' : '展开顶部信息栏（可拖拽）'}
+      onPointerDown={onTogglePointerDown} onPointerMove={onTogglePointerMove} onPointerUp={onTogglePointerUp} onPointerCancel={onTogglePointerUp}>
       <span className="topbar-toggle-paw" aria-hidden="true">ฅ</span><span className="topbar-toggle-chev" aria-hidden="true">▾</span>
-    </button>}
-
+    </button>
     <header className={`topbar${topbarOpen ? '' : ' topbar-collapsed'}`}><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
       <span className="chapter-pill">{finaleBattle ? '第五章 · 终局试玩' : tunnelBattle ? '第四章 · 地下通道试玩' : greenhouseBattle ? '第三章 · 废弃花房试玩' : marketBattle ? '第二章 · 午夜集市试玩' : tutorialBattle ? '序章 · 金枪鱼事件' : chapterBattle ? '第一章 · 陌生小巷' : chapter?.title}</span>
       <div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>

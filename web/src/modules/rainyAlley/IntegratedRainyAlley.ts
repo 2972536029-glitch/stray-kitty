@@ -208,7 +208,55 @@ export class IntegratedRainyAlley {
     context.restore();
     if (this.debug) this.drawDebug(context, flags, debugState);
     context.restore();
+    this.drawInteractBubble(context, width, height);
     this.drawMinimap(context, width, height, flags);
+  }
+
+  /** 猫头顶 [E] 交互气泡：靠近可交互物时浮现，小尖角指向猫、随猫移动并轻微呼吸浮动。屏幕坐标绘制，字号不受世界缩放影响。 */
+  private drawInteractBubble(context: CanvasRenderingContext2D, width: number, height: number) {
+    const near = this.nearby;
+    if (!near) return;
+    const view = this.imageView(width, height);
+    const registration = rainyAlleyRegistration;
+    const catX = view.padX + (registration.tx + this.position.x * registration.sx - view.x) * view.scale;
+    const catY = view.padY + (registration.ty + this.position.y * registration.sy - view.y) * view.scale;
+    const headY = catY - 24 * registration.sy * view.scale;
+    const bob = Math.sin(this.now / 380) * 2.2;
+    context.save();
+    context.font = '700 12px system-ui, sans-serif';
+    const keyWidth = context.measureText('E').width + 11;
+    const textWidth = context.measureText(near.label).width;
+    const chipWidth = keyWidth + 7 + textWidth + 18;
+    const chipHeight = 22;
+    const chipX = Math.min(Math.max(catX - chipWidth / 2, 8), Math.max(8, width - chipWidth - 8));
+    const chipY = Math.max(headY - chipHeight - 15 + bob, 6);
+    const tailX = Math.min(Math.max(catX, chipX + 10), chipX + chipWidth - 10);
+    // 深色底板 + 指向猫的小尖角，带轻微投影浮起感
+    context.shadowColor = 'rgba(6,14,18,.55)'; context.shadowBlur = 6; context.shadowOffsetY = 2;
+    context.fillStyle = 'rgba(13,26,30,.9)';
+    this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 5);
+    context.fill();
+    context.beginPath();
+    context.moveTo(tailX - 4.5, chipY + chipHeight);
+    context.lineTo(tailX + 4.5, chipY + chipHeight);
+    context.lineTo(tailX, chipY + chipHeight + 6.5);
+    context.closePath(); context.fill();
+    context.shadowBlur = 0; context.shadowOffsetY = 0;
+    context.strokeStyle = 'rgba(255,215,110,.6)'; context.lineWidth = 1.4;
+    this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 5);
+    context.stroke();
+    // 像素键帽 [E]
+    const keyX = chipX + 8, keyY = chipY + 4.5, keyH = 13;
+    context.fillStyle = '#f6ecd2';
+    this.roundRectPath(context, keyX, keyY, keyWidth, keyH, 3); context.fill();
+    context.strokeStyle = '#1d2b28'; context.lineWidth = 1.2;
+    this.roundRectPath(context, keyX, keyY, keyWidth, keyH, 3); context.stroke();
+    context.fillStyle = '#1d2b28'; context.textAlign = 'center'; context.textBaseline = 'middle';
+    context.fillText('E', keyX + keyWidth / 2, keyY + keyH / 2 + 0.5);
+    // 交互名（暖金色，与键帽形成层次）
+    context.fillStyle = '#ffe9a8';
+    context.fillText(near.label, keyX + keyWidth + 7 + textWidth / 2, chipY + chipHeight / 2 + 0.5);
+    context.restore();
   }
 
   private updateNearby(flags: readonly string[]) {
@@ -310,11 +358,15 @@ export class IntegratedRainyAlley {
       const isObjective = (object.id === 'alley_crate' && !flags.includes('alley_rescued')) ||
         (object.id === 'alley_poster' && flags.includes('alley_rescued') && !flags.includes('lost_poster_found'));
       if (isObjective) {
-        const halo = context.createRadialGradient(0, 0, 4, 0, 0, 21 + pulse * 7);
-        halo.addColorStop(0, `rgba(248,234,192,${0.42 + pulse * 0.22})`);
+        // 目标物光晕：更亮更大的呼吸光 + 一圈金色描边，深色地面/雨幕里也一眼可辨。
+        const halo = context.createRadialGradient(0, 0, 4, 0, 0, 26 + pulse * 9);
+        halo.addColorStop(0, `rgba(255,236,178,${0.5 + pulse * 0.28})`);
         halo.addColorStop(1, 'rgba(248,234,192,0)');
         context.fillStyle = halo;
-        context.beginPath(); context.arc(0, 0, 28 + pulse * 7, 0, Math.PI * 2); context.fill();
+        context.beginPath(); context.arc(0, 0, 33 + pulse * 9, 0, Math.PI * 2); context.fill();
+        context.strokeStyle = `rgba(255,222,130,${0.45 + pulse * 0.3})`;
+        context.lineWidth = 2.2;
+        context.beginPath(); context.arc(0, 0, 25 + pulse * 4, 0, Math.PI * 2); context.stroke();
       }
 
       // 图标本体的背光，让标记在深浅地面上都醒目。
@@ -356,10 +408,10 @@ export class IntegratedRainyAlley {
       context.font = '700 12.5px system-ui, sans-serif';
       const chipWidth = context.measureText(label).width + 18, chipHeight = 19;
       const chipX = -chipWidth / 2, chipY = -14 - chipHeight - 3 + bob;
-      context.fillStyle = 'rgba(13,26,30,.8)';
+      context.fillStyle = isObjective ? 'rgba(24,38,30,.92)' : 'rgba(13,26,30,.8)';
       this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 6);
       context.fill();
-      context.strokeStyle = `rgba(${kind.glow},.5)`; // 描边与辉光同色系
+      context.strokeStyle = isObjective ? 'rgba(255,222,130,.95)' : `rgba(${kind.glow},.5)`; // 目标物标签压金边，其余与辉光同色系
       context.lineWidth = 1.4;
       this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 6);
       context.stroke();
