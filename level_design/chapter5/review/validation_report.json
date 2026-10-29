@@ -1,0 +1,77 @@
+{
+  "status": "focused checks passed; visual approval pending",
+  "world": [
+    1672,
+    941
+  ],
+  "sourceLockFiles": 44,
+  "solidRecords": 38,
+  "clusteredLocations": 19,
+  "singleLocations": 19,
+  "pieceCountHistogram": {
+    "1": 19,
+    "2": 1,
+    "3": 9,
+    "4": 8,
+    "5": 1
+  },
+  "distributionSeed": "warehouse-variety-20261029-3",
+  "uniformScaleExceptions": [],
+  "sourceGeometryUnchanged": true,
+  "playtestSolidInsets": {
+    "upper_east_cross_pallet": {
+      "right": 8
+    },
+    "northeast_tilted_container": {
+      "left": 16,
+      "top": 12
+    },
+    "far_east_top_machine": {
+      "right": 16
+    },
+    "east_dock_displaced_stack": {
+      "right": 12
+    },
+    "east_lower_crates": {
+      "bottom": 12
+    },
+    "east_loading_rejects": {
+      "top": 12
+    },
+    "west_lower_rack": {
+      "left": 24
+    }
+  },
+  "randomZoneCount": 4,
+  "floorMaskMatchesSvgPixels": true,
+  "floorEdgeMismatchPixels": 0,
+  "propPixelsOutsideSolidFootprints": 889,
+  "propPixelsOutsideDeclaredVisualEnvelopes": 0,
+  "upwardVisualOverhangs": {
+    "west_upper_tall_rack": 8,
+    "west_wide_rack": 8,
+    "west_lower_rack": 6,
+    "center_mid_container": 10,
+    "east_lower_crates": 8,
+    "far_east_top_machine": 8,
+    "far_east_bottom": 8,
+    "southeast_pallets": 12,
+    "east_loading_rejects": 8,
+    "south_loading_crate": 24,
+    "east_spare_forklift": 6
+  },
+  "l1SourceRectangles": 6,
+  "l1Status": "six registered steel deck surfaces and overhead fascia; manual art/traversal review pending",
+  "allControllableLampsInitiallyOff": true,
+  "runtimeLightingBaked": false,
+  "browserArtReview": "not claimed by this script; see README for actual review checks",
+  "gameplayTraversal": "not exercised by asset validator; see README for walking smoke and manual review scope",
+  "artOutliers": [
+    "west_broken_shelf",
+    "northeast_tilted_container",
+    "east_loading_rejects",
+    "east_spare_forklift",
+    "west_overturned_pallets",
+    "upper_east_fallen_rack"
+  ]
+}

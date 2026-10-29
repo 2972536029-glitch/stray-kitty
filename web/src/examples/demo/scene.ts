@@ -6,7 +6,7 @@ import {CanvasPainter} from '../../adapters/canvas/painter';
 import {FollowCamera, type CameraFrame} from '../../adapters/canvas/camera';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
 import {TunnelMap} from '../../modules/chapter4/TunnelMap';
-import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, marketExitAt, MARKET_EXIT_TRIGGER, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
+import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketInteractionTarget, marketOptionalHint, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, marketExitAt, MARKET_EXIT_TRIGGER, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 import {HOME_LAYOUT_ID, HOME_SIZE, HOME_RESIDENTS, HOME_ROAM_NODES, HOME_SHELTER_NODES, homeStage} from '../../modules/home/layout';
@@ -18,6 +18,7 @@ import {homeWalkable, homeWalkStep} from '../../modules/home/navigation';
 import {displayedCanvasRect} from '../../adapters/canvas/camera';
 import {homeStoryBeat, storyActorPosition, type HomeStoryActor, type HomeStoryBeat} from '../../modules/home/story';
 import {explorationScene} from '../../core/chapter-navigation';
+import type {WarehouseWalkMap, WarehouseReviewOptions} from '../../modules/chapter5/WarehouseWalkMap';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 花房家园的猫咪轻量 AI:pose 非空表示绑定专属家具姿态,否则按 sit→walk→sit 循环漫步。
@@ -42,6 +43,9 @@ interface HomeCatAgent {
   slot?: string;
 }
 export class DemoScene {
+  private warehousePreview: WarehouseWalkMap | null = null;
+  private warehouseLoading: Promise<void> | null = null;
+  private warehouseCollision = false;
   state: GameState | null = null;
   pausedByUser = false;
   storyScene: StoryNode['scene'];
@@ -111,7 +115,8 @@ export class DemoScene {
     private onWorldPosition?: (point: {x: number; y: number}) => void,
     private onMarketBattle?: (floor:MarketFloor,point:{x:number;y:number}) => void,
     private onMarketExit?: (floor: MarketFloor, point:{x:number;y:number}) => void,
-    private onMarketZone?: (zoneId:string,floor:MarketFloor,point:{x:number;y:number}) => Promise<boolean>
+    private onMarketZone?: (zoneId:string,floor:MarketFloor,point:{x:number;y:number}) => Promise<boolean>,
+    private onWarehousePosition?: (floor:'L0'|'L1',point:{x:number;y:number})=>void
   ) {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('浏览器无法创建二维画布');
@@ -129,9 +134,33 @@ export class DemoScene {
     for(const floor of Object.keys(marketArt) as MarketFloor[]) this.marketImages[floor].src=marketArt[floor];
   }
   setDirection(direction: Direction, held: boolean) {if(this.marketTransition.active)return;if (held) this.held.add(direction);else this.held.delete(direction);}
+  async enableWarehousePreview() {
+    if(this.warehouseLoading)return this.warehouseLoading;
+    this.warehouseLoading=this.loadWarehouse();return this.warehouseLoading;
+  }
+  private async loadWarehouse() {
+    const {WarehouseWalkMap} = await import('../../modules/chapter5/WarehouseWalkMap');
+    if (this.destroyed) return;
+    this.warehousePreview = new WarehouseWalkMap();
+    await this.warehousePreview.ready();
+  }
+  climbWarehouse() {if(this.warehousePreview?.climb())this.clearInput();}
+  setWarehouseReviewOptions(options: Partial<WarehouseReviewOptions>) {this.warehousePreview?.setOptions(options);}
+  resetWarehousePreview() {this.clearInput(); this.warehousePreview?.reset();}
   private keydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null;
     if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
+    if (this.warehousePreview && (!this.state || this.state.mapId==='warehouse')) {
+      if(this.pausedByUser||(this.state&&this.state.phase!=='explore'))return;
+      const key = event.key.toLowerCase();
+      if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(key)) {event.preventDefault(); this.keys.add(key);}
+      if(key==='c'&&!event.repeat){event.preventDefault();this.climbWarehouse();}
+      if(key==='e'&&!event.repeat&&this.state){event.preventDefault();const target=this.warehousePreview.nearTarget;if(target?.key==='E'){this.onWarehousePosition?.(this.warehousePreview.layer,this.warehousePreview.positionNow());this.onInteract(target.id);}}
+      if(import.meta.env.DEV&&key==='g'&&!event.repeat)this.warehousePreview.setOptions({collision:!this.warehouseCollision});
+      if(import.meta.env.DEV&&key==='g'&&!event.repeat)this.warehouseCollision=!this.warehouseCollision;
+      if (key === 'r' && !event.repeat&&!this.state) this.resetWarehousePreview();
+      return;
+    }
     if (this.state?.phase !== 'explore' || this.pausedByUser) return;
     const key = event.key.toLowerCase();
     if (this.state?.mapId === 'tunnel') {
@@ -172,6 +201,9 @@ export class DemoScene {
     if (key === 'c' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartCrateClimb()) {
       event.preventDefault(); this.keys.delete('c'); return;
     }
+    // 加减号缩放视野（雨巷）：给键盘玩家与滚轮对等的视角控制。
+    if ((key === '=' || key === '+') && this.state?.mapId === 'alley') {event.preventDefault();this.rainyAlley.adjustZoom(0.12);return;}
+    if ((key === '-' || key === '_') && this.state?.mapId === 'alley') {event.preventDefault();this.rainyAlley.adjustZoom(-0.12);return;}
     this.keys.add(key);
     if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','g','c'].includes(key)) event.preventDefault();
     if (key === 'g' && !event.repeat && this.state?.mapId === 'alley') this.rainyAlley.toggleDebug();
@@ -183,12 +215,22 @@ export class DemoScene {
         else if(action?.type==='hint')this.onInspectHint?.(action.text);
       } else if (this.state?.mapId === 'alley') {
         const interaction = this.rainyAlley.nearestInteraction();
-        if (interaction) this.onInteract(interaction.id);
+        if (interaction) {
+          // 老黄：E 交互除了走原有事件卡，再叠加一段猫头顶气泡 + 音符上飘的欢呼（纯表现层）。
+          if (interaction.id === 'alley_dog_friend_point') this.rainyAlley.cheer();
+          this.onInteract(interaction.id);
+        }
       }
     }
   };
   private keyup = (event: KeyboardEvent) => {this.keys.delete(event.key.toLowerCase());this.tunnelMap.keyUp(event.key.toLowerCase());};
   private clearInput = () => {this.keys.clear();this.held.clear();};
+  // 滚轮缩放视野（雨巷）：上滚放大、下滚缩小；仅在自由探索且未暂停时接管，不吞面板滚动。
+  private wheel = (event: WheelEvent) => {
+    if (this.state?.phase !== 'explore' || this.state.mapId !== 'alley' || this.pausedByUser) return;
+    event.preventDefault();
+    this.rainyAlley.adjustZoom(-event.deltaY * 0.0016);
+  };
   private pointerdown = (event: PointerEvent) => {
     if (this.state?.phase === 'explore' && this.state.mapId === 'alley' && !this.pausedByUser) {
       const bounds = this.canvas.getBoundingClientRect();
@@ -252,6 +294,7 @@ export class DemoScene {
     this.canvas.addEventListener('pointerup',this.homePointerUp);
     this.canvas.addEventListener('pointercancel',this.homePointerCancel);
     this.canvas.addEventListener('wheel',this.homeWheel,{passive:false});
+    this.canvas.addEventListener('wheel', this.wheel, {passive: false});
     this.previousTime = performance.now();
     this.frame = requestAnimationFrame(this.tick);
   }
@@ -265,6 +308,7 @@ export class DemoScene {
     this.canvas.removeEventListener('pointerup',this.homePointerUp);
     this.canvas.removeEventListener('pointercancel',this.homePointerCancel);
     this.canvas.removeEventListener('wheel',this.homeWheel);
+    this.canvas.removeEventListener('wheel', this.wheel);
     this.clearInput();
   }
   private tick = (timestamp: number) => {
@@ -273,6 +317,25 @@ export class DemoScene {
     this.update(delta);this.frame = requestAnimationFrame(this.tick);
   };
   private update(delta: number) {
+    if(this.state?.mapId==='warehouse'&&!this.warehouseLoading)void this.enableWarehousePreview().catch(error=>{this.onInspectHint?.(String(error));});
+    if (this.warehousePreview && (!this.state || this.state.mapId==='warehouse')) {
+      if(this.state)this.warehousePreview.syncState(this.state);
+      const active = !this.pausedByUser && document.visibilityState !== 'hidden' && (!this.state||this.state.phase==='explore');
+      if (!active) this.clearInput();
+      const dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
+      const dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
+      if(active)this.warehousePreview.update(delta,dx,dy,this.state?(id,floor,point)=>this.onMarketZone?.(id,floor,point)??Promise.resolve(false):undefined);
+      this.warehousePreview.draw(this.context, this.viewWidth, this.viewHeight, delta);
+      const point = this.warehousePreview.positionNow();
+      this.canvas.dataset.renderedScene = this.state?'chapter5-warehouse':'warehouse-walk-review';
+      this.canvas.dataset.mapId='warehouse';this.canvas.dataset.phase=this.state?.phase??'explore';
+      this.canvas.dataset.ready = String(this.warehousePreview.isReady);
+      this.canvas.dataset.playerX = point.x.toFixed(2); this.canvas.dataset.playerY = point.y.toFixed(2);
+      this.canvas.dataset.floor=this.warehousePreview.layer;
+      this.onWarehousePosition?.(this.warehousePreview.layer,point);
+      const target=this.warehousePreview.nearTarget;this.onNear(!!target,target?.id,target?.label);this.onInspectHint?.(this.warehousePreview.hint);
+      return;
+    }
     if (!this.state) return;
     if (this.state.mapId === 'market' || this.storyScene === 'market') this.marketFrame=measureMarketCameraFrame(this.canvas,this.viewWidth,this.viewHeight);
     const mode = this.state.phase;
@@ -344,7 +407,7 @@ export class DemoScene {
         // Publish its current point before App builds the server-validated command.
         this.onWorldPosition?.(this.tunnelMap.positionNow());
         this.onInteract(id);
-      });
+      }, this.state.drawnEvents);
       const target = this.tunnelMap.nearTarget;
       const id = target?.id ?? '';
       if (id !== this.nearbyInteractionId) {
@@ -383,22 +446,12 @@ export class DemoScene {
         }
         this.onInspectHint?.(inspect);
       } else if (this.state.mapId === 'market') {
-        const clueFlags:Record<string,string>={crow:'market_crow_clue_completed',pigeon:'market_pigeon_clue_completed'};
-        const nearestItem=marketItems.filter(item=>(item.kind==='fixed'||item.kind==='optional')&&item.layer===this.marketFloor&&(!clueFlags[item.id]||!this.state!.flags.includes(clueFlags[item.id]))&&!(item.id==='momo'&&this.state!.drawnEvents?.includes('node:momo_trail_event'))).map(item=>({item,distance:Math.hypot(this.x-item.x,this.y-item.y)})).filter(value=>value.distance<=75).sort((a,b)=>a.distance-b.distance)[0]?.item;
-        const nearCrow = nearestItem?.id==='crow';
-        const nearPigeon = nearestItem?.id==='pigeon';
-        const nearMomo = nearestItem?.id==='momo';
-        nearInteraction = !!nearestItem;
-        const traversalNearby=marketPortals.some(value=>(!value.requiresFlag||this.state!.flags.includes(value.requiresFlag))&&[value.a,value.b].some(point=>point.layer===this.marketFloor&&Math.hypot(this.x-point.x,this.y-point.y)<=44));
-        if (nearCrow) {
-          this.onNear(true, 'market_crow_stall', '老黑羽的情报摊 · E');
-        } else if (nearPigeon) {
-          this.onNear(true, 'market_pigeon_perch', '咕咕大盗的传言棚 · E');
-        } else if(nearMomo&&!traversalNearby) {
-          this.onNear(true,'market_momo_trace','墨墨的踪迹 · E');
-        } else {
-          this.onNear(false);
-        }
+        const target=marketInteractionTarget(this.marketFloor,this.x,this.y,this.state.flags,this.state.drawnEvents??[]);
+        const nearCrow=target?.id==='market_crow_stall';
+        const nearPigeon=target?.id==='market_pigeon_perch';
+        const nearMomo=target?.id==='market_momo_trace';
+        nearInteraction=!!target;
+        this.onNear(!!target,target?.id,target?.label);
 
         let inspect: string | null = null;
         if (nearCrow) {
@@ -410,18 +463,18 @@ export class DemoScene {
         } else if (Math.hypot(this.x - 130, this.y - 310) < 55) {
           inspect = '【团子】“喵喵，集市里的鸟雀们消息很灵通，我们去打听一下吧！”';
         }
-        if(nearestItem?.id==='momo')inspect='E · 查看墨墨的踪迹';
+        if(nearMomo)inspect='E · 查看墨墨的踪迹';
         this.onInspectHint?.(inspect);
         const bossReady=this.state.flags.includes('market_crow_clue_completed')&&this.state.flags.includes('market_pigeon_clue_completed');
         if(nearMomo)this.onInspectHint?.('E · 查看墨墨的踪迹');
         const portal=marketPortals.filter(value=>!value.requiresFlag||this.state!.flags.includes(value.requiresFlag)).flatMap(value=>[{portal:value,point:value.a},{portal:value,point:value.b}]).filter(value=>value.point.layer===this.marketFloor&&Math.hypot(this.x-value.point.x,this.y-value.point.y)<=value.portal.radius).sort((a,b)=>Math.hypot(this.x-a.point.x,this.y-a.point.y)-Math.hypot(this.x-b.point.x,this.y-b.point.y))[0];
         if(portal)this.onInspectHint?.(`${portal.portal.key.toUpperCase()} · ${portal.portal.label.split(' · ')[1]}`);
-        else if(!nearestItem&&this.marketFloor==='L0'&&Math.hypot(this.x-1310,this.y-169)<72&&!bossReady)this.onInspectHint?.('集市保卫战 · 需要先完成两条情报');
-        else if(!nearestItem&&this.marketFloor==='L0'&&Math.hypot(this.x-1365,this.y-78)<48&&!this.state.flags.includes('market_cleared'))this.onInspectHint?.('北街出口 · 请先完成集市保卫战');
+        else if(!target&&this.marketFloor==='L0'&&Math.hypot(this.x-1310,this.y-169)<72&&!bossReady)this.onInspectHint?.('集市保卫战 · 需要先完成两条情报');
+        else if(!target&&this.marketFloor==='L0'&&Math.hypot(this.x-1365,this.y-78)<48&&!this.state.flags.includes('market_cleared'))this.onInspectHint?.('北街出口 · 请先完成集市保卫战');
         const battleAction=marketEAction(this.marketFloor,this.x,this.y,this.state.flags,this.state.drawnEvents??[]);
         if(battleAction?.type==='battle')this.onInspectHint?.('E · 开始集市保卫战');
         else if(battleAction?.type==='hint')this.onInspectHint?.(battleAction.text);
-        const authoredFocus=!!nearestItem||!!portal||Math.hypot(this.x-1310,this.y-169)<=75||Math.hypot(this.x-1365,this.y-78)<=48;
+        const authoredFocus=!!target||!!portal||Math.hypot(this.x-1310,this.y-169)<=75||Math.hypot(this.x-1365,this.y-78)<=48;
         if(!authoredFocus){const clueHint=marketOptionalHint(this.marketFloor,this.x,this.y,!!this.state.drawnEvents?.includes('node:momo_trail_event'));if(clueHint)this.onInspectHint?.(clueHint);}
         if(!authoredFocus)for(const [id,floor,x,y] of [['market_random_r1','L0',652,632],['market_random_r2','L1',680,166],['market_random_r3','Lm1',975,429]] as const){
           const inside=this.marketFloor===floor&&Math.hypot(this.x-x,this.y-y)<42;
@@ -466,14 +519,14 @@ export class DemoScene {
     if (mode === 'explore') {
       if (exploreScene === 'alley') this.rainyAlley.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, {phase: mode, randomEligible: this.randomEligible});
       else if (exploreScene === 'market') this.drawMarket();
-      else if (exploreScene === 'tunnel') this.tunnelMap.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags);
+      else if (exploreScene === 'tunnel') this.tunnelMap.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, this.state.drawnEvents);
       else {this.context.fillStyle = '#18282a';this.context.fillRect(0, 0, this.viewWidth, this.viewHeight);this.context.fillStyle = '#fff';this.context.fillText('探索地图尚未开放', 30, 50);}
     }
     else if (mode === 'battle') this.drawBattle();
     else if (mode === 'dialogue' && this.storyScene === 'home') this.drawHome();
     else if (mode === 'home') this.drawHome();
     else if (mode === 'dialogue' && this.storyScene === 'tunnel' && this.state.mapId !== 'tunnel') this.drawTunnel();
-    else if (this.state.mapId === 'tunnel') this.tunnelMap.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags);
+    else if (this.state.mapId === 'tunnel') this.tunnelMap.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, this.state.drawnEvents);
     else if (this.storyScene === 'tunnel') this.drawTunnel();
     else if (this.state.mapId === 'market' || this.storyScene === 'market') this.drawMarket();
     else if (this.state.mapId === 'greenhouse' || (this.state.qaCheckpointId?.startsWith('event:warehouse:') && mode === 'event')) this.drawHome();
@@ -516,7 +569,83 @@ export class DemoScene {
   private rect(x:number,y:number,w:number,h:number,color:number,alpha=1){this.graphics.fillStyle(color,alpha);this.graphics.fillRect(Math.round(x),Math.round(y),w,h);}
   private cat(x:number,y:number,breed:CatBreed='miaomiao'){this.graphics.cat(x,y,breed);}
   private lamp(x:number,y:number){this.graphics.fillStyle(0xf9d78a,.12);this.graphics.fillCircle(x,y,45);this.rect(x-8,y-18,16,24,0x60786c);this.rect(x-5,y-15,10,16,0xffe1a0);this.rect(x-11,y+6,22,5,0x496259);}
+  // —— 以下立体像素家具绘制法移植自 feat/ui-immersion-polish（阴影腔/瓦楞/流苏/绗缝细节） ——
+  private pixelEllipse(cx:number,cy:number,rx:number,ry:number,color:number,alpha=1){
+    if(ry<=0){this.rect(cx-rx,cy,rx*2,1,color,alpha);return;}
+    for(let dy=-ry;dy<=ry;dy++){
+      const w=Math.round(rx*Math.sqrt(Math.max(0,1-(dy/ry)**2)));
+      if(w>0)this.rect(cx-w,cy+dy,w*2,1,color,alpha);
+    }
+  }
+  // 对话气泡锚点：返回说话猫头顶在画布中的位置（不在场返回 null，走旁白字幕条）。
+  // 顶栏展开态通知（雨巷）：小地图下移避让，收起时归位。
+  setTopbarExpanded(expanded:boolean){
+    this.rainyAlley.setMinimapShift(expanded?62:0);
+  }
+  speakerAnchor(breed:CatBreed):{x:number;y:number}|null{
+    const st=this.state;if(!st||st.phase==='battle')return null;
+    if(st.mapId==='market'||st.chapterId==='market'||this.storyScene==='market'){
+      if(breed==='tuanzi')return{x:130,y:258};
+      if(breed==='miaomiao')return{x:this.x,y:this.y-52};
+      return null;
+    }
+    if(st.phase==='home'||this.storyScene==='home'||(st.flags.includes('rescue_story_done')&&st.phase!=='explore')){
+      if(breed==='miaomiao')return{x:265,y:298};
+      if(breed==='tuanzi'&&st.chapterId!=='prologue')return{x:390,y:288};
+      if(breed==='diandian'&&st.cats.includes('diandian'))return{x:515,y:303};
+      return null;
+    }
+    if(breed==='miaomiao')return{x:this.x,y:this.y-52};
+    if(breed==='tuanzi'&&!st.flags.includes('alley_rescued'))return{x:120,y:248};
+    if(breed==='diandian'&&!st.flags.includes('alley_rescued'))return{x:570,y:227};
+    return null;
+  }
+  private bowl(cx:number,cy:number){
+    this.pixelEllipse(cx,cy+15,26,5,0x24312e,.28);            // 地面投影
+    this.pixelEllipse(cx,cy+11,23,6,0x085aa6);                // 碗底暗面
+    this.rect(cx-24,cy+6,48,5,0x0a6fbe);                      // 碗身中段（过渡色）
+    this.rect(cx-27,cy+3,54,4,0x0f86d6);                      // 碗身上段（受光面）
+    this.rect(cx-27,cy+3,54,1,0x47b4e6);                      // 上缘反光
+    this.rect(cx-26,cy+4,2,9,0x47b4e6,.75);                   // 左侧竖向高光
+    this.rect(cx+24,cy+5,2,8,0x06508f,.8);                    // 右侧暗面
+    this.pixelEllipse(cx,cy-1,27,7,0x47b4e6);                 // 碗口外沿（亮蓝）
+    this.pixelEllipse(cx,cy,21,5,0x084f86);                   // 内腔深色
+    this.pixelEllipse(cx,cy+1,16,3,0xd9b877);                 // 猫粮堆
+    const bits=[[-12,0],[-6,-1],[0,0],[6,-1],[12,0],[-9,2],[3,2],[9,2]];
+    for(const [dx,dy] of bits)this.rect(cx+dx-1,cy+dy,3,2,(dx+dy)%2?0xc9a86b:0xefd9a8);
+    this.rect(cx-20,cy-7,9,2,0xbfe9fb);                       // 碗口左上像素高光
+    this.rect(cx-25,cy-5,4,2,0xbfe9fb,.85);
+    this.rect(cx+13,cy-7,6,2,0x6fc6f0,.6);                    // 右上弱高光（过渡）
+  }
+  // 毛毯：完全平铺的扁毯——圆角毯身 + 暖色花纹内框 + 横向折痕 + 两端流苏，与立体猫窝拉开剪影差异。
+  private blanket(cx:number,cy:number){
+    const base=0xe8b9a0, light=0xf5d9c2, warm=0xc98a6b, deep=0x9c6e60, fringe=0xb87f63;
+    this.pixelEllipse(cx,cy+11,33,4,0x24312e,.13);            // 极浅投影（贴地扁平，无厚度）
+    const w=66,h=16;
+    for(let dy=0;dy<h;dy++){
+      const inset=dy<2?2:dy>h-3?3:0;                          // 上下行收角 → 像素圆角矩形
+      this.rect(cx-w/2+inset,cy-h/2+dy,w-inset*2,1,base);
+    }
+    this.rect(cx-w/2+4,cy-h/2+2,w-8,1,light,.7);              // 顶缘受光
+    this.rect(cx-w/2+4,cy+h/2-3,w-8,1,deep,.5);               // 底缘暗面
+    // 暖色花纹：内框描边一圈 + 中列菱形纹
+    this.rect(cx-w/2+5,cy-h/2+4,w-10,1,warm,.8);
+    this.rect(cx-w/2+5,cy+h/2-5,w-10,1,warm,.8);
+    this.rect(cx-w/2+5,cy-h/2+4,1,h-8,warm,.7);this.rect(cx+w/2-6,cy-h/2+4,1,h-8,warm,.7);
+    for(let i=-3;i<=3;i++)this.rect(cx+i*9-1,cy+((i%2)?-1:0),2,2,warm,.9);
+    this.rect(cx-2,cy-3,4,1,light,.9);                        // 花纹上高光
+    // 横向折痕：暗痕 + 各自 1px 亮脊，布料铺开的起伏
+    this.rect(cx-24,cy-2,22,1,deep,.45);this.rect(cx-24,cy-3,22,1,light,.5);
+    this.rect(cx+4,cy+3,20,1,deep,.4);this.rect(cx+4,cy+2,20,1,light,.45);
+    // 两端流苏：左右边缘交替双色短穗
+    for(let i=0;i<5;i++){
+      const fy=cy-h/2+3+i*3, c=i%2?fringe:light;
+      this.rect(cx-w/2-3,fy,3,1,c,.9);this.rect(cx-w/2-3,fy+1,2,1,c,.55);
+      this.rect(cx+w/2,fy,3,1,c,.9);this.rect(cx+w/2+1,fy+1,2,1,c,.55);
+    }
+  }
   private drawAlley(){
+
     this.rect(0,0,800,480,0x738f98);
     if(this.cityBackdrop.complete && this.cityBackdrop.naturalWidth > 0)this.graphics.image(this.cityBackdrop,0,-150,800,450);
     this.rect(35,200,730,230,0x78928c);this.rect(65,205,670,225,0xa6b7a6);
@@ -600,11 +729,9 @@ export class DemoScene {
     this.rect(270,88,260,173,0xb2c8b6);this.rect(395,88,8,173,0x7c9986);this.rect(270,164,260,8,0x7c9986);
     this.rect(135,240,55,75,0x8f9c73);for(let i=0;i<5;i++)this.rect(130+i*13,210-(i%2)*18,14,45,0x6d8d6a);
     this.cat(265,350);
-    this.rect(235, 345, 65, 24, 0xc69482);
-    this.rect(240, 348, 55, 18, 0xe0c7a0);
-    this.rect(335-27, 350+4, 54, 17, 0x0878c9);
-    this.rect(335-31, 350, 62, 8, 0x47b4e6);
-    this.rect(335-20, 350-3, 40, 8, 0xefe0b3);
+    // 晒着阳光的柔软毛毯（平铺毯身 + 花纹 + 折痕 + 流苏）与标志性天蓝色饭碗（立体透视碗口）。
+    this.blanket(267, 348);
+    this.bowl(335, 352);
     this.graphics.fillStyle(0xfff0ad, 0.15);
     this.graphics.fillCircle(280, 340, 70);
     this.lamp(610,200);for(let i=0;i<8;i++)this.rect(145+i*70,98+(i%2)*6,5,9,0xf4d68e);

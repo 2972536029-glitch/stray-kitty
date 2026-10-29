@@ -14,6 +14,17 @@ async function snapshot(page:Page){
   });
 }
 function won(page:Page){return page.locator('.app-shell[data-phase="settlement"]').getByRole('button',{name:'返回家园 →',exact:true});}
+async function dragCat(page:Page,move:{id:string;x:number;y:number}){
+  await page.keyboard.press('Escape');
+  const source=page.getByTestId('finale-cat-'+move.id);
+  const target=page.getByTestId('finale-cell-'+cellName(move));
+  await source.scrollIntoViewIfNeeded();await target.scrollIntoViewIfNeeded();
+  const from=await source.boundingBox(),to=await target.boundingBox();
+  expect(from).toBeTruthy();expect(to).toBeTruthy();
+  await page.mouse.move(from!.x+from!.width/2,from!.y+from!.height/2);await page.mouse.down();
+  await page.mouse.move(to!.x+to!.width/2,to!.y+to!.height/2,{steps:12});await page.mouse.up();
+  await expect(source).toHaveAttribute('data-x',String(move.x));await expect(source).toHaveAttribute('data-y',String(move.y));
+}
 function planMoves(s:Awaited<ReturnType<typeof snapshot>>){
   const danger=s.boss==='windup'?s.cells.filter(c=>c.danger):[];
   const moves:Array<{id:string;x:number;y:number}>=[];
@@ -41,7 +52,7 @@ export async function playFinaleVisibleControls(page:Page,info:TestInfo){
       if(planMoves(s).moves.length){
         await page.getByTestId('finale-play-toggle').click();
         s=await snapshot(page);const {moves,danger}=planMoves(s);
-        for(const move of moves){await page.getByTestId('finale-cat-'+move.id).click();await page.getByTestId('finale-move').click();await page.getByTestId('finale-cell-'+cellName(move)).click();await expect(page.getByTestId('finale-cat-'+move.id)).toHaveAttribute('data-x',String(move.x));await expect(page.getByTestId('finale-cat-'+move.id)).toHaveAttribute('data-y',String(move.y));if(danger.length)dodges++;}
+        for(const move of moves){await dragCat(page,move);if(danger.length)dodges++;}
         await page.keyboard.press('Escape');await page.getByTestId('finale-play-toggle').click();s=await snapshot(page);
       }
       for(const ally of s.allies){if(ally.status==='waiting')continue;expect(ally.arrivals).toBe(1);if(!arrivals.has(ally.id)){arrivals.add(ally.id);await page.getByTestId('finale-play-toggle').click();await page.screenshot({path:info.outputPath(`l05-arrival-${ally.id}.png`),fullPage:true});await page.getByTestId('finale-play-toggle').click();s=await snapshot(page);}}

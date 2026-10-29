@@ -1,0 +1,12 @@
+{
+  "reason": "Manual playtest clearances: northeast corner turns, right-wall aisle, southeast mesh-pile passage, and the western loaded-rack/broken-shelf gap. Original v07 reference files remain intact.",
+  "solidInsets": {
+    "upper_east_cross_pallet": {"right": 8},
+    "northeast_tilted_container": {"left": 16, "top": 12},
+    "far_east_top_machine": {"right": 16},
+    "east_dock_displaced_stack": {"right": 12},
+    "east_lower_crates": {"bottom": 12},
+    "east_loading_rejects": {"top": 12},
+    "west_lower_rack": {"left": 24}
+  }
+}

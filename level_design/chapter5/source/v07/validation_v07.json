@@ -1,0 +1,23 @@
+{
+  "L0WalkableComponents": 1,
+  "L1WalkableComponents": 1,
+  "checkpointsFit": 16,
+  "bossGateDisconnectsBunker": true,
+  "activeL0Obstacles": 38,
+  "randomZones": 4,
+  "lightStations": 3,
+  "climbs": 2,
+  "secondaryLampApproachOpenWithLightsOff": true,
+  "secondaryLampTestPathClearanceRadius": 20,
+  "relocatedRandomZones": {
+    "R1": [
+      657,
+      765
+    ],
+    "R2": [
+      266,
+      404
+    ]
+  },
+  "r2ClimbMarkerOverlap": false
+}

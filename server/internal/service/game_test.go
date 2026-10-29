@@ -371,7 +371,20 @@ func TestFinaleKingdomFounded(t *testing.T) {
 		t.Fatalf("expected finale_started flag")
 	}
 
-	// 步进终章全部剧情节点 1~9
+	// Intro stops at warehouse exploration; the ending requires the actual boss and exit.
+	for s.Phase == "dialogue" {
+		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	}
+	if s.Phase != "explore" || s.MapID != "warehouse" || domain.Contains(s.Flags, "kingdom_founded") {
+		t.Fatalf("expected warehouse before kingdom founding, got %+v", s)
+	}
+	s = execute(t, g, token, warehouseE("finale_boss", "L0", 1302, 294))
+	s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	s = execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "finale_boss"})
+	s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "won", Report: finaleReport(0, true)})
+	s = execute(t, g, token, domain.Command{Type: "CONTINUE"})
+	s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
+	s = execute(t, g, token, warehouseE("bunker_exit", "L0", 1310, 126))
 	for s.Phase == "dialogue" {
 		s = execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: s.StoryNodeID})
 	}

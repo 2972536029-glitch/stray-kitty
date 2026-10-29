@@ -20,7 +20,7 @@
   "collision": {
     "L0": "collision/chapter4_L0_walkable.png",
     "Lm1": "collision/chapter4_Lminus1_walkable.png",
-    "pixelInterpretation": "white=walkable black=blocked; validate full cat footprint; do not use outdated embedded draft SVG geometry"
+    "pixelInterpretation": "white=walkable black=blocked; production collision samples the paw contact ellipse, not the upright sprite; do not use outdated embedded draft SVG geometry"
   },
   "events": [
     {
@@ -190,15 +190,15 @@
     {
       "id": "ridge-climb",
       "key": "C",
-      "label": "C · 爬上南侧石脊顶面",
+      "label": "C · 西侧通道 ↔ 南侧石脊",
       "a": {
         "x": 920,
         "y": 690,
         "layer": "L0"
       },
       "b": {
-        "x": 975,
-        "y": 620,
+        "x": 940,
+        "y": 626,
         "layer": "L0"
       },
       "reach": 64,
@@ -207,15 +207,15 @@
     {
       "id": "niche-climb",
       "key": "C",
-      "label": "C · 右侧凹位向上攀爬",
+      "label": "C · 南侧步道 ↔ 石脊顶面",
       "a": {
-        "x": 1142,
-        "y": 700,
+        "x": 1175,
+        "y": 785,
         "layer": "L0"
       },
       "b": {
-        "x": 1142,
-        "y": 630,
+        "x": 1175,
+        "y": 735,
         "layer": "L0"
       },
       "reach": 60,
@@ -232,10 +232,28 @@
       },
       "b": {
         "x": 548,
-        "y": 458,
+        "y": 444,
         "layer": "L0"
       },
       "reach": 60,
+      "bidirectional": true
+    },
+    {
+      "id": "tank-east-descent",
+      "key": "C",
+      "label": "C · 石脊东端 ↔ 下方道路",
+      "a": {"x": 820, "y": 525, "layer": "L0"},
+      "b": {"x": 820, "y": 464, "layer": "L0"},
+      "reach": 44,
+      "bidirectional": true
+    },
+    {
+      "id": "west-ridge-climb",
+      "key": "C",
+      "label": "C · 西侧石沿 ↔ 下方道路",
+      "a": {"x": 390, "y": 765, "layer": "L0"},
+      "b": {"x": 430, "y": 700, "layer": "L0"},
+      "reach": 44,
       "bidirectional": true
     },
     {
@@ -277,17 +295,18 @@
       "key": "Space",
       "label": "Space · 下层水潭左↔右",
       "a": {
-        "x": 410,
-        "y": 420,
-        "layer": "Lm1"
-      },
-      "b": {
-        "x": 600,
+        "x": 330,
         "y": 430,
         "layer": "Lm1"
       },
+      "b": {
+        "x": 520,
+        "y": 470,
+        "layer": "Lm1"
+      },
       "reach": 64,
-      "bidirectional": true
+      "bidirectional": true,
+      "note": "QA correction: start/end on the painted banks, not at the waterfall center or behind the east-side props."
     }
   ],
   "storySequence": [

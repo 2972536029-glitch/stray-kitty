@@ -54,7 +54,7 @@ func (g *Game) reportMove(s *domain.GameState, distance int) error {
 	if distance <= 0 || distance > randomMaxReport {
 		return domain.Fail("INVALID_COMMAND", "里程上报无效", 400)
 	}
-	if s.MapID == "alley" {
+	if s.MapID == "alley" || s.MapID == "warehouse" {
 		return nil
 	}
 	s.ExploreDistance += distance
@@ -96,6 +96,9 @@ func (g *Game) checkRandomZone(s *domain.GameState, zoneID, floor string, positi
 	if err := domain.RequirePhase(*s, "explore"); err != nil {
 		return err
 	}
+	if s.MapID == "warehouse" {
+		return g.warehouseRandomZone(s, zoneID, floor, position)
+	}
 	if s.MapID == "market" {
 		zones := map[string]string{"market_random_r1": "L0", "market_random_r2": "L1", "market_random_r3": "Lm1"}
 		points := map[string][2]float64{"market_random_r1": {652, 632}, "market_random_r2": {680, 166}, "market_random_r3": {975, 429}}
@@ -118,13 +121,15 @@ func (g *Game) checkRandomZone(s *domain.GameState, zoneID, floor string, positi
 		}
 		return nil
 	} else if s.MapID == "tunnel" {
-		if !domain.Contains(s.Flags, "tunnel_false_kitten_trap_found") {
-			return nil // Keep discovery of the mandatory D clue clear of random encounters.
-		}
+		// 白名单先于 flag 门控:非法 zoneId 无论进度如何都必须 400,错误语义不随状态漂移。
 		switch zoneID {
 		case "tunnel_random_west", "tunnel_random_east", "tunnel_random_south":
 		default:
 			return domain.Fail("INVALID_COMMAND", "随机区域无效", 400)
+		}
+		if !domain.Contains(s.Flags, "tunnel_false_kitten_trap_found") {
+			// 合法区域在 D 线索发现前保持静默,为强制调查让路。
+			return nil
 		}
 	} else if s.MapID != "alley" {
 		return domain.Fail("INVALID_COMMAND", "随机区域不属于当前地图", 400)
@@ -171,6 +176,9 @@ func (g *Game) drawRandomEventWithChance(s domain.GameState, triggerChance int) 
 	echoShare := g.echoShare()
 	isEcho := map[string]bool{}
 	for _, e := range g.Catalog.Events {
+		if s.MapID == "warehouse" && !domain.Contains(warehouseSpatial.EventPoolRandom, e.ID) {
+			continue
+		}
 		if !domain.Contains(e.Triggers, "random") || !domain.Contains(e.Maps, s.MapID) {
 			continue
 		}

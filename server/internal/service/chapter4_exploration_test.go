@@ -82,3 +82,24 @@ func TestChapter4RandomZonesAndNodeEventsRespectProgression(t *testing.T) {
 		t.Fatal("unbound R4 was treated as a server random zone")
 	}
 }
+
+// 白名单校验先于 flag 门控(issue #14):无 D 线索 flag 时非法 zoneId 也必须 400,合法 zoneId 保持静默让路,
+// 非法输入的错误语义不随玩家状态漂移。
+func TestChapter4RandomZoneWhitelistPrecedesFlagGate(t *testing.T) {
+	g, token, s := chapter4Explore(t)
+	if s.Phase != "explore" || domain.Contains(s.Flags, "tunnel_false_kitten_trap_found") {
+		t.Fatalf("expected explore phase without the D-clue flag: phase=%s", s.Phase)
+	}
+	rejectUnchanged(t, g, token, domain.Command{Type: "CHECK_RANDOM_ZONE", ZoneID: "totally_bogus_zone"})
+	if s = execute(t, g, token, domain.Command{Type: "CHECK_RANDOM_ZONE", ZoneID: "tunnel_random_west"}); s.Phase != "explore" {
+		t.Fatalf("legal zone must stay silent before the flag: %s", s.Phase)
+	}
+	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Flags = append(p.State.Flags, "tunnel_false_kitten_trap_found")
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rejectUnchanged(t, g, token, domain.Command{Type: "CHECK_RANDOM_ZONE", ZoneID: "totally_bogus_zone"})
+}

@@ -545,8 +545,8 @@
       "chapterId": "finale",
       "speaker": "阿策",
       "text": "阿策轻摇折扇，运筹帷幄：“墨墨居高引导视线，点点排查障碍，团子与喵喵合力推移移动灯具逐段推进。每点亮一片区域，黑影退散三分，受困伙伴便可循着光芒与气味安全突围！”",
-      "next": "finale_intro_5",
-      "exit": "",
+      "next": "",
+      "exit": "explore",
       "scene": "tunnel"
     },
     {
@@ -554,8 +554,8 @@
       "chapterId": "finale",
       "speaker": "喵喵",
       "text": "喵喵挺起胸膛，眼神无比坚毅：“行动开始！猫咪小队，跟我冲！把所有的光都聚拢过来——无论黑暗有多深，我们彼此的光芒绝不会熄灭！”",
-      "next": "finale_intro_6",
-      "exit": "",
+      "next": "",
+      "exit": "preparation",
       "scene": "tunnel"
     },
     {
@@ -563,8 +563,8 @@
       "chapterId": "finale",
       "speaker": "旁白",
       "text": "随着一道道金黄与皎洁的光束划破幽暗的仓库，黑影在耀眼的光明中无处遁形、溃退消散。生锈的铁锁被破开，数十只惊魂未定的流浪猫在喵喵与伙伴们的呼唤声中排成整齐的长队，沿着光之通道有序撤离。",
-      "next": "finale_intro_7",
-      "exit": "",
+      "next": "",
+      "exit": "explore",
       "scene": "tunnel"
     },
     {
@@ -720,10 +720,25 @@
     {
       "id": "warehouse",
       "name": "废弃仓库",
-      "status": "planned",
-      "width": 800,
-      "height": 480,
-      "interactions": [],
+      "status": "demo",
+      "width": 1672,
+      "height": 941,
+      "interactions": [
+        {
+          "id": "warehouse_lookout",
+          "x": 316,
+          "y": 287,
+          "label": "货架顶的瞭望位",
+          "eventId": "warehouse_lookout"
+        },
+        {
+          "id": "warehouse_light_crate",
+          "x": 574,
+          "y": 292,
+          "label": "吊在半空的灯具箱",
+          "eventId": "warehouse_light_crate"
+        }
+      ],
       "dangerLevel": 3
     }
   ],

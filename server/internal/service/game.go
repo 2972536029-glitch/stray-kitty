@@ -23,7 +23,7 @@ type Game struct {
 	QAVictoryEnabled bool
 }
 
-var chapterByExplorationMap = map[string]string{"alley": "alley", "market": "market", "tunnel": "rescue"}
+var chapterByExplorationMap = map[string]string{"alley": "alley", "market": "market", "tunnel": "rescue", "warehouse": "finale"}
 
 func New(store *repository.Store, c domain.Catalog) *Game {
 	return &Game{Store: store, Catalog: c, RainyZoneChance: 550, Random: func(max int) (int, error) {
@@ -147,6 +147,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "REPAIR_HOME":
 		return g.repairHome(s)
 	case "START_STORY":
+		if domain.Contains([]string{"finale_intro_2", "finale_intro_3", "finale_intro_4", "finale_intro_5", "finale_intro_6", "finale_intro_7", "finale_intro_8", "finale_intro_9"}, c.NodeID) {
+			return domain.Fail("STORY_LOCKED", "这段仓库剧情由地图与战斗流程推进", 409)
+		}
 		switch c.NodeID {
 		case "rescue_intro_2", "rescue_intro_3", "rescue_intro_4", "rescue_intro_5", "rescue_intro_6", "rescue_intro_7", "rescue_intro_8", "rescue_intro_9":
 			return domain.Fail("STORY_LOCKED", "这段地下通道叙事已由地图交互与战斗流程接管", 409)
@@ -197,7 +200,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.Flags = domain.Add(s.Flags, "tunnel_unlocked")
 				}
 				if n.ChapterID == "finale" {
-					s.MapID = "greenhouse"
+					s.MapID = "warehouse"
 					s.Flags = domain.Add(s.Flags, "finale_started")
 				}
 				if n.ID == "finale_clue_insufficient" {
@@ -298,6 +301,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.Flags = domain.Add(s.Flags, "market_unlocked")
 					s.Flags = domain.Add(s.Flags, "chapter_2_started")
 				}
+				if n.Exit == "explore" && n.ChapterID == "finale" {
+					s.MapID = "warehouse"
+				}
 				if n.ID == "finale_clue_insufficient" {
 					s.MapID = "market"
 					s.ChapterID = "market"
@@ -309,6 +315,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "INTERACT":
 		if err := domain.RequirePhase(*s, "explore"); err != nil {
 			return err
+		}
+		if s.MapID == "warehouse" {
+			return g.warehouseInteract(s, c)
 		}
 		if s.MapID == "alley" {
 			switch c.InteractionID {
@@ -425,6 +434,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			s.MapID = "market"
 			s.ActiveBattle = nil
 			return nil
+		} else if s.LastResult.StageID == "finale_boss" && s.MapID == "warehouse" && s.ActiveBattle != nil && s.ActiveBattle.Mainline {
+			s.Phase = "dialogue"
+			s.ChapterID = "finale"
+			s.StoryNodeID = "finale_intro_6"
 		} else if s.LastResult.StageID == "tunnel_boss" && s.MapID == "tunnel" && s.ActiveBattle != nil && s.ActiveBattle.Mainline && domain.Contains(s.Flags, "tunnel_boss_cleared") {
 			s.Phase = "dialogue"
 			s.ChapterID = "rescue"
@@ -496,6 +509,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		}
 		if targetMap == "tunnel" && !domain.Contains(s.Flags, "greenhouse_fortified") {
 			return domain.Fail("MAP_LOCKED", "先完成废弃花房的防线，再进入地下通道", 409)
+		}
+		if targetMap == "warehouse" && (!warehouseUnlocked(s) || !domain.Contains(s.Flags, "finale_started")) {
+			return domain.Fail("MAP_LOCKED", "先完成地下通道救援并开启终章", 409)
 		}
 		s.Phase = "explore"
 		s.MapID = targetMap

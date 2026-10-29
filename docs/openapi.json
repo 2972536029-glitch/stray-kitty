@@ -723,6 +723,10 @@
           },
           "supplies": {
             "$ref": "#/components/schemas/LegacyBattleReservation"
+          },
+          "mainline": {
+            "type": "boolean",
+            "description": "True for a battle entered through its gated chapter map; home trials remain independent."
           }
         },
         "required": [
@@ -1551,12 +1555,46 @@
           },
           "interactionId": {
             "type": "string"
+          },
+          "layer": {
+            "type": "string",
+            "enum": ["L0", "L1", "Lm1"]
+          },
+          "position": {
+            "$ref": "#/components/schemas/WorldPoint"
           }
         },
         "required": [
           "type",
           "interactionId"
         ]
+      },
+      "WorldPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {"x": {"type": "number"}, "y": {"type": "number"}},
+        "required": ["x", "y"]
+      },
+      "CheckRandomZone": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {"type": "string", "const": "CHECK_RANDOM_ZONE"},
+          "zoneId": {"type": "string"},
+          "layer": {"type": "string", "enum": ["L0", "L1", "Lm1"]},
+          "position": {"$ref": "#/components/schemas/WorldPoint"}
+        },
+        "required": ["type", "zoneId"]
+      },
+      "ExitMarket": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {"type": "string", "const": "EXIT_MARKET"},
+          "layer": {"type": "string", "enum": ["L0", "L1", "Lm1"]},
+          "position": {"$ref": "#/components/schemas/WorldPoint"}
+        },
+        "required": ["type", "layer", "position"]
       },
       "ReportMove": {
         "type": "object",
@@ -1612,13 +1650,17 @@
           },
           "stageId": {
             "type": "string"
+          },
+          "layer": {"type": "string", "enum": ["L0", "L1", "Lm1"]},
+          "returnPosition": {
+            "$ref": "#/components/schemas/WorldPoint"
           }
         },
         "required": [
           "type",
           "stageId"
         ],
-        "description": "Starts L01 first rescue (alley_rescue), unlocked home replay (alley_boss), or a standalone home trial (market_boss / greenhouse_boss / tunnel_boss / finale_boss) after alley_rescued. Standalone trials do not require each other to be completed. Failed preparation may retry only the original stage, preserving the failed attempt pressure and carry snapshot in a new attempt ID. l00_tutorial is accepted only to retry a failed tutorial settlement and does not enable carry. No battle inventory reservation."
+        "description": "Starts L01 first rescue (alley_rescue), unlocked home replay (alley_boss), or a standalone home trial (market_boss / greenhouse_boss / tunnel_boss / finale_boss) after alley_rescued. Warehouse exploration starts finale_boss as a mainline attempt after its authored boss interaction and preparation; victory unlocks the warehouse exit. Standalone trials do not require each other to be completed. Failed preparation may retry only the original stage, preserving the failed attempt pressure and carry snapshot in a new attempt ID. l00_tutorial is accepted only to retry a failed tutorial settlement and does not enable carry. No battle inventory reservation."
       },
       "CompleteBattle": {
         "type": "object",
@@ -1741,6 +1783,9 @@
             "$ref": "#/components/schemas/ReportMove"
           },
           {
+            "$ref": "#/components/schemas/CheckRandomZone"
+          },
+          {
             "$ref": "#/components/schemas/ChooseEvent"
           },
           {
@@ -1757,6 +1802,9 @@
           },
           {
             "$ref": "#/components/schemas/GoExplore"
+          },
+          {
+            "$ref": "#/components/schemas/ExitMarket"
           },
           {
             "$ref": "#/components/schemas/PlaceFurniture"

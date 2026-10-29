@@ -118,10 +118,13 @@
   {
     "id": "warehouse",
     "name": "废弃仓库",
-    "status": "planned",
-    "width": 800,
-    "height": 480,
-    "interactions": [],
+    "status": "demo",
+    "width": 1672,
+    "height": 941,
+    "interactions": [
+      {"id": "warehouse_lookout", "x": 316, "y": 287, "label": "货架顶的瞭望位", "eventId": "warehouse_lookout"},
+      {"id": "warehouse_light_crate", "x": 574, "y": 292, "label": "吊在半空的灯具箱", "eventId": "warehouse_light_crate"}
+    ],
     "dangerLevel": 3
   }
 ]

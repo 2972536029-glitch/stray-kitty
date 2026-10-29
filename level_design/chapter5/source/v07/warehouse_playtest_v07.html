@@ -1,0 +1,393 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Chapter 5 Warehouse — Standalone Graybox Playtest v07</title><style>
+:root{color-scheme:dark;--bg:#0a131c;--panel:#14222e;--line:#395265;--white:#e3edf1;--muted:#9cb0bc;--mint:#a0e0bb;--amber:#f0c782;--blue:#8acdf3}
+*{box-sizing:border-box}body{background:var(--bg);margin:0;font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--white)}.top{display:flex;align-items:center;flex-wrap:wrap;gap:14px;padding:13px 20px;border-bottom:1px solid var(--line);background:#0e1b26}.top strong{font-size:18px;letter-spacing:.01em}.small{font-size:12px;color:var(--muted)}.badge{padding:4px 10px;border:1px solid #6b8191;border-radius:99px;font-size:12px}.app{display:grid;grid-template-columns:minmax(0,1fr) 290px;min-height:calc(100vh - 69px)}.stagecol{display:flex;flex-direction:column;min-height:0}.stage{min-height:540px;height:min(77vh,830px);position:relative;overflow:hidden;border:1px solid #4c6a7b;background:#07111a;outline:none}.stage:focus{box-shadow:inset 0 0 0 1px #8acdf3}svg{width:100%;height:100%;display:block}.overlay{position:absolute;pointer-events:none;background:#0c1b27c7;border:1px solid #527186;padding:8px 10px;border-radius:6px;max-width:75%;font-size:13px}.hint{right:12px;top:12px;min-width:210px;text-align:right;color:#e9e2cf}.tophint{top:12px;left:12px}.bar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;padding:12px 16px;background:#111f2b;border-top:1px solid #3c5669}button{color:#eaf2f4;background:#253b4a;border:1px solid #537083;padding:7px 11px;border-radius:6px;cursor:pointer;font:inherit}button:hover{border-color:#b4e9df}.smallbtn{font-size:12px}button.active{background:#30515d;border-color:#95c9a8}.side{border-left:1px solid #456070;padding:20px 18px;background:#10202b}.side h2{margin:0 0 7px;font-size:16px}.side p{margin:0 0 14px;color:#b4c7d0}.tile{background:#172c39;border:1px solid #345366;border-radius:8px;padding:12px;margin-bottom:12px}.label{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#9cb7c5}.k{font-weight:700;color:#f0d39a}.log{max-height:230px;overflow:auto;font-size:12px;color:#b2c6d2}.log div{padding:6px 0;border-bottom:1px solid #294452}kbd{background:#304452;border-radius:3px;padding:2px 5px;font:inherit}.modal{position:fixed;z-index:20;inset:0;background:#03101acd;display:none;align-items:center;justify-content:center;padding:22px}.modal.open{display:flex}.modal-content{max-width:480px;width:100%;background:#172b38;border:1px solid #83a7af;border-radius:12px;padding:22px}.modal-content h2{margin:0 0 8px}.modal-content p{color:#aec5ce}.actions{display:flex;gap:9px;flex-wrap:wrap}#lightOverlay{pointer-events:none}#floor1{display:none}#catShape{filter:drop-shadow(0px 0px 7px #a9f3df77)}.waypoint{left:12px;bottom:12px;top:auto;right:auto;min-width:230px;color:#d7efd3}.planning-markers,.planning-zones{display:none!important}.planning-routes{display:none}.targetmarker{filter:drop-shadow(0 0 5px #e0d28e88)}.targetmarker circle{stroke-width:4}.targetmarker text{paint-order:stroke;stroke:#142633;stroke-width:3;stroke-linejoin:round;font-weight:800}select{background:#253b4a;color:var(--white);border:1px solid #58748a;padding:7px;width:100%;border-radius:5px;margin:4px 0 10px;font:inherit}.debuglabel{font-size:12px;color:#c9d8da;display:block}.zone-overlay{fill:#e3687c;fill-opacity:.055;stroke:#e3687c;stroke-width:3;stroke-dasharray:11 8}@media(max-width:960px){.app{grid-template-columns:1fr}.side{border-left:0;border-top:1px solid var(--line)}.stage{height:68vh;min-height:400px}}
+</style></head><body>
+<header class="top"><strong>Chapter 5 · Abandoned Warehouse</strong><span class="badge">Concept graybox · standalone v07</span><span class="small">Geometry from warehouse_geometry_v07.json · all positions in 1672×941 world coordinates</span></header>
+<div class="app"><main class="stagecol"><div id="stage" class="stage" tabindex="0" aria-label="Playable warehouse graybox">
+<svg id="world" xmlns="http://www.w3.org/2000/svg" viewBox="470 480 800 500" preserveAspectRatio="xMidYMid meet"><defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0 H0 V40" fill="none" stroke="#536a7d" stroke-width=".6" opacity=".35"/></pattern>
+        <pattern id="rack" width="18" height="18" patternUnits="userSpaceOnUse"><path d="M0 2 H18 M2 0 V18" stroke="#718b99" stroke-width=".9" fill="none" opacity=".55"/></pattern>
+        <pattern id="gate" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="7" height="14" fill="#d9dce1"/><rect x="7" width="7" height="14" fill="#262e3a"/></pattern>
+        <filter id="lampGlow"><feGaussianBlur stdDeviation="17"/></filter>
+        <clipPath id="l0mask"><path d="M 162,281 L 225,281 L 225,215 L 366,215 L 366,186 L 620,186 L 620,207 L 808,207 L 808,235 L 1040,235 L 1040,282 L 1410,282 L 1410,325 L 1500,325 L 1500,375 L 1540,375 L 1540,536 L 1496,536 L 1496,601 L 1520,601 L 1520,810 L 1360,810 L 1360,852 L 1141,852 L 1141,828 L 1045,828 L 1045,856 L 965,856 L 965,924 L 756,924 L 756,853 L 597,853 L 597,875 L 310,875 L 310,838 L 189,838 L 189,778 L 143,778 L 143,607 L 111,607 L 111,360 L 162,360 ZM 1190,65 L 1455,65 L 1455,210 L 1347,210 L 1347,282 L 1258,282 L 1258,210 L 1190,210 Z" clip-rule="evenodd"/></clipPath>
+        </defs>
+<g id="floor0"><rect x="0" y="0" width="1672" height="941" fill="#0b1722"/>
+<g id="l0-floor" fill="#30424f" stroke="#8c9aa9" stroke-width="5"><path d="M 162,281 L 225,281 L 225,215 L 366,215 L 366,186 L 620,186 L 620,207 L 808,207 L 808,235 L 1040,235 L 1040,282 L 1410,282 L 1410,325 L 1500,325 L 1500,375 L 1540,375 L 1540,536 L 1496,536 L 1496,601 L 1520,601 L 1520,810 L 1360,810 L 1360,852 L 1141,852 L 1141,828 L 1045,828 L 1045,856 L 965,856 L 965,924 L 756,924 L 756,853 L 597,853 L 597,875 L 310,875 L 310,838 L 189,838 L 189,778 L 143,778 L 143,607 L 111,607 L 111,360 L 162,360 Z"/><path d="M 1190,65 L 1455,65 L 1455,210 L 1347,210 L 1347,282 L 1258,282 L 1258,210 L 1190,210 Z"/></g>
+<g clip-path="url(#l0mask)"><rect x="0" y="0" width="1672" height="941" fill="url(#grid)"/></g>
+<g id="west_upper_tall_rack" class="solid" data-id="west_upper_tall_rack"><rect x="393" y="244" width="151" height="101" rx="2" fill="#566470" stroke="#a1afbc" stroke-width="2.3"/><rect x="399" y="250" width="139" height="89" fill="url(#rack)" opacity=".6"/><text x="468.5" y="299.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">RACK</text></g>
+<g id="west_wide_rack" class="solid" data-id="west_wide_rack"><rect x="416" y="412" width="166" height="96" rx="2" fill="#566470" stroke="#a1afbc" stroke-width="2.3"/><rect x="422" y="418" width="154" height="84" fill="url(#rack)" opacity=".6"/><text x="499.0" y="465.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">RACK</text></g>
+<g id="west_lower_rack" class="solid" data-id="west_lower_rack"><rect x="409" y="595" width="151" height="99" rx="2" fill="#566470" stroke="#a1afbc" stroke-width="2.3"/><rect x="415" y="601" width="139" height="87" fill="url(#rack)" opacity=".6"/><text x="484.5" y="649.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">RACK</text></g>
+<g id="west_crates" class="solid" data-id="west_crates"><rect x="255" y="667" width="106" height="91" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="261" y="673" width="94" height="79" fill="url(#rack)" opacity=".6"/><text x="308.0" y="717.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="west_service_equipment" class="solid" data-id="west_service_equipment"><rect x="205" y="457" width="91" height="102" rx="2" fill="#4b6267" stroke="#a1afbc" stroke-width="2.3"/><rect x="211" y="463" width="79" height="90" fill="url(#rack)" opacity=".6"/><text x="250.5" y="513.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">MACHINE</text></g>
+<g id="west_repair_pallet" class="solid" data-id="west_repair_pallet"><rect x="174" y="355" width="61" height="53" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="180" y="361" width="49" height="41" fill="url(#rack)" opacity=".6"/><text x="204.5" y="386.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="west_broken_shelf" class="solid" data-id="west_broken_shelf"><rect x="346" y="705" width="49" height="95" rx="2" fill="#566470" stroke="#a1afbc" stroke-width="2.3"/><rect x="352" y="711" width="37" height="83" fill="url(#rack)" opacity=".6"/><text x="370.5" y="757.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">RACK</text></g>
+<g id="center_upper_rack" class="solid" data-id="center_upper_rack"><rect x="637" y="261" width="134" height="83" rx="2" fill="#566470" stroke="#a1afbc" stroke-width="2.3"/><rect x="643" y="267" width="122" height="71" fill="url(#rack)" opacity=".6"/><text x="704.0" y="307.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">RACK</text></g>
+<g id="center_mid_container" class="solid" data-id="center_mid_container"><rect x="630" y="424" width="144" height="112" rx="2" fill="#425365" stroke="#a1afbc" stroke-width="2.3"/><rect x="636" y="430" width="132" height="100" fill="url(#rack)" opacity=".6"/><text x="702.0" y="485.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CONTAINER</text></g>
+<g id="center_lower_rack" class="solid" data-id="center_lower_rack"><rect x="637" y="629" width="113" height="113" rx="2" fill="#566470" stroke="#a1afbc" stroke-width="2.3"/><rect x="643" y="635" width="101" height="101" fill="url(#rack)" opacity=".6"/><text x="693.5" y="690.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">RACK</text></g>
+<g id="southwest_pallets" class="solid" data-id="southwest_pallets"><rect x="548" y="775" width="76" height="43" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="554" y="781" width="64" height="31" fill="url(#rack)" opacity=".6"/><text x="586.0" y="801.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="center_fallen_boxes" class="solid" data-id="center_fallen_boxes"><rect x="759" y="633" width="49" height="65" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="765" y="639" width="37" height="53" fill="url(#rack)" opacity=".6"/><text x="783.5" y="670.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="east_upper_container" class="solid" data-id="east_upper_container"><rect x="897" y="276" width="132" height="113" rx="2" fill="#425365" stroke="#a1afbc" stroke-width="2.3"/><rect x="903" y="282" width="120" height="101" fill="url(#rack)" opacity=".6"/><text x="963.0" y="337.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CONTAINER</text></g>
+<g id="east_mid_rack" class="solid" data-id="east_mid_rack"><rect x="932" y="445" width="108" height="96" rx="2" fill="#566470" stroke="#a1afbc" stroke-width="2.3"/><rect x="938" y="451" width="96" height="84" fill="url(#rack)" opacity=".6"/><text x="986.0" y="498.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">RACK</text></g>
+<g id="east_lower_container" class="solid" data-id="east_lower_container"><rect x="909" y="641" width="127" height="90" rx="2" fill="#425365" stroke="#a1afbc" stroke-width="2.3"/><rect x="915" y="647" width="115" height="78" fill="url(#rack)" opacity=".6"/><text x="972.5" y="691.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CONTAINER</text></g>
+<g id="east_top_rack" class="solid" data-id="east_top_rack"><rect x="1127" y="320" width="121" height="77" rx="2" fill="#566470" stroke="#a1afbc" stroke-width="2.3"/><rect x="1133" y="326" width="109" height="65" fill="url(#rack)" opacity=".6"/><text x="1187.5" y="363.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">RACK</text></g>
+<g id="east_center_rack" class="solid" data-id="east_center_rack"><rect x="1124" y="462" width="108" height="81" rx="2" fill="#566470" stroke="#a1afbc" stroke-width="2.3"/><rect x="1130" y="468" width="96" height="69" fill="url(#rack)" opacity=".6"/><text x="1178.0" y="507.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">RACK</text></g>
+<g id="east_lower_crates" class="solid" data-id="east_lower_crates"><rect x="1148" y="639" width="112" height="88" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="1154" y="645" width="100" height="76" fill="url(#rack)" opacity=".6"/><text x="1204.0" y="688.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="far_east_top_machine" class="solid" data-id="far_east_top_machine"><rect x="1359" y="394" width="114" height="94" rx="2" fill="#4b6267" stroke="#a1afbc" stroke-width="2.3"/><rect x="1365" y="400" width="102" height="82" fill="url(#rack)" opacity=".6"/><text x="1416.0" y="446.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">MACHINE</text></g>
+<g id="far_east_bottom" class="solid" data-id="far_east_bottom"><rect x="1367" y="654" width="101" height="91" rx="2" fill="#425365" stroke="#a1afbc" stroke-width="2.3"/><rect x="1373" y="660" width="89" height="79" fill="url(#rack)" opacity=".6"/><text x="1417.5" y="704.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CONTAINER</text></g>
+<g id="southeast_pallets" class="solid" data-id="southeast_pallets"><rect x="1090" y="774" width="67" height="45" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="1096" y="780" width="55" height="33" fill="url(#rack)" opacity=".6"/><text x="1123.5" y="801.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="northeast_spare_drums" class="solid" data-id="northeast_spare_drums"><rect x="1257" y="333" width="56" height="72" rx="2" fill="#4b6267" stroke="#a1afbc" stroke-width="2.3"/><rect x="1263" y="339" width="44" height="60" fill="url(#rack)" opacity=".6"/><text x="1285.0" y="374.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">MACHINE</text></g>
+<g id="northeast_tilted_container" class="solid" data-id="northeast_tilted_container"><rect x="1265" y="458" width="77" height="88" rx="2" fill="#425365" stroke="#a1afbc" stroke-width="2.3"/><rect x="1271" y="464" width="65" height="76" fill="url(#rack)" opacity=".6"/><text x="1303.5" y="507.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CONTAINER</text></g>
+<g id="east_mid_crate_stack" class="solid" data-id="east_mid_crate_stack"><rect x="1402" y="536" width="78" height="83" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="1408" y="542" width="66" height="71" fill="url(#rack)" opacity=".6"/><text x="1441.0" y="582.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="east_loading_rejects" class="solid" data-id="east_loading_rejects"><rect x="1215" y="743" width="72" height="62" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="1221" y="749" width="60" height="50" fill="url(#rack)" opacity=".6"/><text x="1251.0" y="779.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="south_loading_crate" class="solid" data-id="south_loading_crate"><rect x="850" y="797" width="74" height="52" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="856" y="803" width="62" height="40" fill="url(#rack)" opacity=".6"/><text x="887.0" y="828.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="upper_access_pallet" class="solid" data-id="upper_access_pallet"><rect x="1064" y="294" width="42" height="64" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="1070" y="300" width="30" height="52" fill="url(#rack)" opacity=".6"/><text x="1085.0" y="331.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="west_cross_spill" class="solid" data-id="west_cross_spill"><rect x="325" y="521" width="68" height="32" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="331" y="527" width="56" height="20" fill="url(#rack)" opacity=".6"/><text x="359.0" y="542.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="central_misplaced_pallet" class="solid" data-id="central_misplaced_pallet"><rect x="805" y="459" width="72" height="35" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="811" y="465" width="60" height="23" fill="url(#rack)" opacity=".6"/><text x="841.0" y="481.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="east_transverse_rubble" class="solid" data-id="east_transverse_rubble"><rect x="1055" y="548" width="64" height="39" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="1061" y="554" width="52" height="27" fill="url(#rack)" opacity=".6"/><text x="1087.0" y="572.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="east_spare_forklift" class="solid" data-id="east_spare_forklift"><rect x="1273" y="556" width="59" height="54" rx="2" fill="#4b6267" stroke="#a1afbc" stroke-width="2.3"/><rect x="1279" y="562" width="47" height="42" fill="url(#rack)" opacity=".6"/><text x="1302.5" y="588.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">MACHINE</text></g>
+<g id="west_overturned_pallets" class="solid" data-id="west_overturned_pallets"><rect x="402" y="260" width="46" height="28" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="408" y="266" width="34" height="16" fill="url(#rack)" opacity=".6"/><text x="425.0" y="279.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="west_collapsed_upright" class="solid" data-id="west_collapsed_upright"><rect x="307" y="449" width="91" height="28" rx="2" fill="#566470" stroke="#a1afbc" stroke-width="2.3"/><rect x="313" y="455" width="79" height="16" fill="url(#rack)" opacity=".6"/><text x="352.5" y="468.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">RACK</text></g>
+<g id="west_loading_rejects" class="solid" data-id="west_loading_rejects"><rect x="155" y="640" width="86" height="39" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="161" y="646" width="74" height="27" fill="url(#rack)" opacity=".6"/><text x="198.0" y="664.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="south_central_scrap" class="solid" data-id="south_central_scrap"><rect x="763" y="750" width="47" height="36" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="769" y="756" width="35" height="24" fill="url(#rack)" opacity=".6"/><text x="786.5" y="773.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="upper_east_fallen_rack" class="solid" data-id="upper_east_fallen_rack"><rect x="1014" y="460" width="60" height="48" rx="2" fill="#566470" stroke="#a1afbc" stroke-width="2.3"/><rect x="1020" y="466" width="48" height="36" fill="url(#rack)" opacity=".6"/><text x="1044.0" y="489.0" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">RACK</text></g>
+<g id="upper_east_cross_pallet" class="solid" data-id="upper_east_cross_pallet"><rect x="1178" y="413" width="57" height="33" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="1184" y="419" width="45" height="21" fill="url(#rack)" opacity=".6"/><text x="1206.5" y="434.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g id="east_dock_displaced_stack" class="solid" data-id="east_dock_displaced_stack"><rect x="1387" y="383" width="70" height="31" rx="2" fill="#795d48" stroke="#a1afbc" stroke-width="2.3"/><rect x="1393" y="389" width="58" height="19" fill="url(#rack)" opacity=".6"/><text x="1422.0" y="403.5" font-size="15" fill="#d2dae0" text-anchor="middle" font-weight="600">CRATE</text></g>
+<g class="planning-routes" pointer-events="none">
+<path id="route-shared_approach" d="M 835,880 L 835,555" fill="none" stroke="#a6d7d7" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".72"/>
+<path id="route-recon" d="M 835,555 L 830,560 L 675,560 L 620,615 L 620,755 L 635,755 L 640,760 L 650,760 L 655,765 L 650,760 L 645,760 L 640,755 L 620,755 L 615,750 L 615,640 L 575,600 L 575,580 L 315,580 L 310,575 L 190,575 L 190,440 L 195,435 L 200,435 L 205,430 L 215,430 L 220,425 L 250,425 L 260,415 L 260,410 L 265,405 L 315,355 L 315,350 L 320,345" fill="none" stroke="#a5d9b8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 8" opacity=".72"/>
+<path id="route-lighting" d="M 835,555 L 995,555 L 1040,600 L 1235,600 L 1260,625 L 1345,625 L 1345,605 L 1350,600 L 1350,595 L 1355,590 L 1355,585 L 1360,580 L 1360,570 L 1365,565 L 1365,595 L 1355,605 L 1355,635 L 1350,640 L 1350,760 L 1390,760 L 1395,765 L 1400,765 L 1405,770 L 1415,770 L 1420,775 L 1415,770 L 1410,770 L 1400,760 L 1350,760 L 1330,740 L 1330,690 L 1275,635 L 1275,625 L 1260,625 L 1235,600 L 1040,600 L 995,555 L 915,555 L 915,430 L 1030,430 L 1035,425 L 1045,425 L 1050,420 L 1055,420 L 1060,415 L 1065,415 L 1070,410 L 1075,410 L 1080,405 L 1085,405 L 1090,400 L 1095,400 L 1050,400 L 1045,405 L 940,405 L 915,430 L 915,555 L 995,555 L 1040,600 L 1135,600 L 1175,560 L 1245,560 L 1245,465 L 1250,460 L 1250,445 L 1275,420 L 1330,420 L 1330,320 L 1305,295 L 1300,295" fill="none" stroke="#f4c97e" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 8" opacity=".72"/>
+<path id="route-crosslink" d="M 815,410 L 815,420 L 790,445 L 790,510 L 835,555 L 950,555 L 955,560 L 995,560 L 1030,595 L 1035,595 L 1040,600 L 1050,600 L 1055,605" fill="none" stroke="#91afd7" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 10" opacity=".72"/>
+</g>
+<circle cx="316" cy="582" r="77" fill="#b7914c" opacity=".11" filter="url(#lampGlow)"/>
+<circle cx="833" cy="557" r="77" fill="#b7914c" opacity=".11" filter="url(#lampGlow)"/>
+<circle cx="1420" cy="775" r="77" fill="#b7914c" opacity=".11" filter="url(#lampGlow)"/>
+<circle cx="360" cy="252" r="21" fill="#f3d294" opacity=".9"/><circle cx="360" cy="252" r="177" fill="#e3ab55" opacity=".08"/>
+<circle cx="1070" cy="262" r="21" fill="#f3d294" opacity=".9"/><circle cx="1070" cy="262" r="174" fill="#e3ab55" opacity=".08"/>
+<circle cx="1468" cy="385" r="21" fill="#f3d294" opacity=".9"/><circle cx="1468" cy="385" r="181" fill="#e3ab55" opacity=".08"/>
+<g class="planning-zones">
+<circle cx="657" cy="765" r="47" fill="#e3687c" fill-opacity=".12" stroke="#f07d92" stroke-width="3.2" stroke-dasharray="12 10"/>
+<text x="657" y="771" fill="#ff9aa7" font-size="20" font-weight="800" text-anchor="middle">R1</text>
+<circle cx="266" cy="404" r="43" fill="#e3687c" fill-opacity=".12" stroke="#f07d92" stroke-width="3.2" stroke-dasharray="12 10"/>
+<text x="266" y="410" fill="#ff9aa7" font-size="20" font-weight="800" text-anchor="middle">R2</text>
+<circle cx="1364" cy="566" r="44" fill="#e3687c" fill-opacity=".12" stroke="#f07d92" stroke-width="3.2" stroke-dasharray="12 10"/>
+<text x="1364" y="572" fill="#ff9aa7" font-size="20" font-weight="800" text-anchor="middle">R3</text>
+<circle cx="1094" cy="402" r="42" fill="#e3687c" fill-opacity=".12" stroke="#f07d92" stroke-width="3.2" stroke-dasharray="12 10"/>
+<text x="1094" y="408" fill="#ff9aa7" font-size="20" font-weight="800" text-anchor="middle">R4</text>
+</g>
+<rect x="587" y="356" width="23" height="47" id="visual_west_shortcut" fill="url(#gate)" stroke="#f0d8a8" stroke-width="2" opacity=".9"/>
+<rect x="1061" y="524" width="27" height="44" id="visual_east_shortcut" fill="url(#gate)" stroke="#f0d8a8" stroke-width="2" opacity=".9"/>
+<rect x="1257" y="251" width="91" height="22" id="visual_boss_gate" fill="url(#gate)" stroke="#ff6e80" stroke-width="3"/>
+<g class="planning-markers">
+<circle cx="316" cy="582" r="17" fill="#142634" stroke="#eec47a" stroke-width="5"/><text x="316" y="587" font-size="16" text-anchor="middle" font-weight="800" fill="#eec47a">E</text>
+<text x="316" y="553" text-anchor="middle" fill="#ffffff" font-size="17" font-weight="700">Entrance lamp</text>
+<circle cx="833" cy="557" r="17" fill="#142634" stroke="#eec47a" stroke-width="5"/><text x="833" y="562" font-size="16" text-anchor="middle" font-weight="800" fill="#eec47a">E</text>
+<text x="833" y="528" text-anchor="middle" fill="#ffffff" font-size="17" font-weight="700">Central spotlight</text>
+<circle cx="1420" cy="775" r="17" fill="#142634" stroke="#eec47a" stroke-width="5"/><text x="1420" y="780" font-size="16" text-anchor="middle" font-weight="800" fill="#eec47a">E</text>
+<text x="1420" y="746" text-anchor="middle" fill="#ffffff" font-size="17" font-weight="700">Secondary lamp</text>
+<circle cx="1302" cy="294" r="23" fill="#142634" stroke="#fc7281" stroke-width="5"/><text x="1302" y="299" font-size="16" text-anchor="middle" font-weight="800" fill="#fc7281">B</text>
+<text x="1302" y="265" text-anchor="middle" fill="#ffffff" font-size="17" font-weight="700">Mandatory finale boss</text>
+<circle cx="1310" cy="126" r="17" fill="#142634" stroke="#82dfe1" stroke-width="5"/><text x="1310" y="131" font-size="16" text-anchor="middle" font-weight="800" fill="#82dfe1">X</text>
+<text x="1310" y="97" text-anchor="middle" fill="#ffffff" font-size="17" font-weight="700">Rescue / Exit (victory only)</text>
+<circle cx="833" cy="882" r="17" fill="#142634" stroke="#9fe0bc" stroke-width="5"/><text x="833" y="887" font-size="16" text-anchor="middle" font-weight="800" fill="#9fe0bc">S</text>
+<text x="833" y="927" text-anchor="middle" fill="#ffffff" font-size="17" font-weight="700">Entrance from tunnel</text>
+<circle cx="320" cy="343" r="22" fill="#142634" stroke="#be93ee" stroke-width="5"/><text x="320" y="348" font-size="16" text-anchor="middle" font-weight="800" fill="#be93ee">C1</text>
+<circle cx="816" cy="409" r="22" fill="#142634" stroke="#be93ee" stroke-width="5"/><text x="816" y="414" font-size="16" text-anchor="middle" font-weight="800" fill="#be93ee">C2</text>
+</g>
+<text x="1303" y="185" fill="#f19aa0" font-weight="900" font-size="30" text-anchor="middle">FINAL BUNKER</text>
+<text x="1140" y="290" fill="#c8e8f1" font-weight="700" font-size="18" text-anchor="end">Boss must-pass neck →</text></g><g id="floor1"><rect x="0" y="0" width="1672" height="941" fill="#0b1722"/>
+<g id="l0-context" opacity=".24" fill="#3b4a58" stroke="#788a9d" stroke-width="3"><path d="M 162,281 L 225,281 L 225,215 L 366,215 L 366,186 L 620,186 L 620,207 L 808,207 L 808,235 L 1040,235 L 1040,282 L 1410,282 L 1410,325 L 1500,325 L 1500,375 L 1540,375 L 1540,536 L 1496,536 L 1496,601 L 1520,601 L 1520,810 L 1360,810 L 1360,852 L 1141,852 L 1141,828 L 1045,828 L 1045,856 L 965,856 L 965,924 L 756,924 L 756,853 L 597,853 L 597,875 L 310,875 L 310,838 L 189,838 L 189,778 L 143,778 L 143,607 L 111,607 L 111,360 L 162,360 Z"/><path d="M 1190,65 L 1455,65 L 1455,210 L 1347,210 L 1347,282 L 1258,282 L 1258,210 L 1190,210 Z"/></g>
+<rect x="393" y="244" width="151" height="101" fill="#657281" opacity=".35"/>
+<rect x="416" y="412" width="166" height="96" fill="#657281" opacity=".35"/>
+<rect x="409" y="595" width="151" height="99" fill="#657281" opacity=".35"/>
+<rect x="255" y="667" width="106" height="91" fill="#657281" opacity=".35"/>
+<rect x="205" y="457" width="91" height="102" fill="#657281" opacity=".35"/>
+<rect x="174" y="355" width="61" height="53" fill="#657281" opacity=".35"/>
+<rect x="346" y="705" width="49" height="95" fill="#657281" opacity=".35"/>
+<rect x="637" y="261" width="134" height="83" fill="#657281" opacity=".35"/>
+<rect x="630" y="424" width="144" height="112" fill="#657281" opacity=".35"/>
+<rect x="637" y="629" width="113" height="113" fill="#657281" opacity=".35"/>
+<rect x="548" y="775" width="76" height="43" fill="#657281" opacity=".35"/>
+<rect x="759" y="633" width="49" height="65" fill="#657281" opacity=".35"/>
+<rect x="897" y="276" width="132" height="113" fill="#657281" opacity=".35"/>
+<rect x="932" y="445" width="108" height="96" fill="#657281" opacity=".35"/>
+<rect x="909" y="641" width="127" height="90" fill="#657281" opacity=".35"/>
+<rect x="1127" y="320" width="121" height="77" fill="#657281" opacity=".35"/>
+<rect x="1124" y="462" width="108" height="81" fill="#657281" opacity=".35"/>
+<rect x="1148" y="639" width="112" height="88" fill="#657281" opacity=".35"/>
+<rect x="1359" y="394" width="114" height="94" fill="#657281" opacity=".35"/>
+<rect x="1367" y="654" width="101" height="91" fill="#657281" opacity=".35"/>
+<rect x="1090" y="774" width="67" height="45" fill="#657281" opacity=".35"/>
+<rect x="1257" y="333" width="56" height="72" fill="#657281" opacity=".35"/>
+<rect x="1265" y="458" width="77" height="88" fill="#657281" opacity=".35"/>
+<rect x="1402" y="536" width="78" height="83" fill="#657281" opacity=".35"/>
+<rect x="1215" y="743" width="72" height="62" fill="#657281" opacity=".35"/>
+<rect x="850" y="797" width="74" height="52" fill="#657281" opacity=".35"/>
+<rect x="1064" y="294" width="42" height="64" fill="#657281" opacity=".35"/>
+<rect x="325" y="521" width="68" height="32" fill="#657281" opacity=".35"/>
+<rect x="805" y="459" width="72" height="35" fill="#657281" opacity=".35"/>
+<rect x="1055" y="548" width="64" height="39" fill="#657281" opacity=".35"/>
+<rect x="1273" y="556" width="59" height="54" fill="#657281" opacity=".35"/>
+<rect x="402" y="260" width="46" height="28" fill="#657281" opacity=".35"/>
+<rect x="307" y="449" width="91" height="28" fill="#657281" opacity=".35"/>
+<rect x="155" y="640" width="86" height="39" fill="#657281" opacity=".35"/>
+<rect x="763" y="750" width="47" height="36" fill="#657281" opacity=".35"/>
+<rect x="1014" y="460" width="60" height="48" fill="#657281" opacity=".35"/>
+<rect x="1178" y="413" width="57" height="33" fill="#657281" opacity=".35"/>
+<rect x="1387" y="383" width="70" height="31" fill="#657281" opacity=".35"/>
+<g class="elevated" data-id="lookout_platform"><rect x="274" y="258" width="112" height="128" rx="3" fill="#456b77" stroke="#a1e8e1" stroke-width="3"/><rect x="280" y="264" width="100" height="116" fill="url(#rack)" opacity=".7"/></g>
+<g class="elevated" data-id="west_catwalk"><rect x="333" y="278" width="335" height="54" rx="3" fill="#456b77" stroke="#a1e8e1" stroke-width="3"/><rect x="339" y="284" width="323" height="42" fill="url(#rack)" opacity=".7"/></g>
+<g class="elevated" data-id="north_connector"><rect x="617" y="278" width="60" height="152" rx="3" fill="#456b77" stroke="#a1e8e1" stroke-width="3"/><rect x="623" y="284" width="48" height="140" fill="url(#rack)" opacity=".7"/></g>
+<g class="elevated" data-id="east_catwalk"><rect x="617" y="370" width="238" height="62" rx="3" fill="#456b77" stroke="#a1e8e1" stroke-width="3"/><rect x="623" y="376" width="226" height="50" fill="url(#rack)" opacity=".7"/></g>
+<g class="elevated" data-id="crate_platform"><rect x="524" y="250" width="116" height="94" rx="3" fill="#456b77" stroke="#a1e8e1" stroke-width="3"/><rect x="530" y="256" width="104" height="82" fill="url(#rack)" opacity=".7"/></g>
+<g class="elevated" data-id="c2_landing"><rect x="773" y="372" width="94" height="91" rx="3" fill="#456b77" stroke="#a1e8e1" stroke-width="3"/><rect x="779" y="378" width="82" height="79" fill="url(#rack)" opacity=".7"/></g>
+<path d="M 320,343 L 320,298 L 572,298 L 646,298 L 646,402 L 816,402" stroke="#9ccfeb" stroke-width="9" fill="none" stroke-dasharray="16 10" opacity=".83" stroke-linejoin="round" stroke-linecap="round"/>
+<g class="planning-markers">
+<circle cx="316" cy="287" r="17" fill="#142634" stroke="#82cef2" stroke-width="5"/><text x="316" y="292" font-size="16" text-anchor="middle" font-weight="800" fill="#82cef2">E</text>
+<text x="316" y="253" font-size="20" text-anchor="middle" font-weight="800" fill="#fff">货架顶的瞭望位</text>
+<circle cx="574" cy="292" r="17" fill="#142634" stroke="#82cef2" stroke-width="5"/><text x="574" y="297" font-size="16" text-anchor="middle" font-weight="800" fill="#82cef2">E</text>
+<text x="574" y="258" font-size="20" text-anchor="middle" font-weight="800" fill="#fff">吊在半空的灯具箱</text>
+<circle cx="320" cy="343" r="22" fill="#142634" stroke="#be93ee" stroke-width="5"/><text x="320" y="348" font-size="16" text-anchor="middle" font-weight="800" fill="#be93ee">C1</text>
+<circle cx="816" cy="409" r="22" fill="#142634" stroke="#be93ee" stroke-width="5"/><text x="816" y="414" font-size="16" text-anchor="middle" font-weight="800" fill="#be93ee">C2</text>
+</g>
+<text x="673" y="455" fill="#b9efe4" font-size="23" text-anchor="middle" font-weight="800">L1 CATWALK · C1 ↔ C2</text></g>
+<g id="outcomeProps"><g id="outcome-art" pointer-events="none" font-family="system-ui, sans-serif">
+
+<g data-flag="supply_post_built" data-floor="L0" style="display:none">
+  <g transform="translate(446 751)">
+    <path d="M-45 33 L-45 -16 L-15 -34 L32 -34 L48 -15 L48 33 Z" fill="#405d53" opacity=".7" stroke="#a4dabc" stroke-width="3"/>
+    <path d="M-39 -18 H40 M-34 -9 H34 M-32 18 H34" stroke="#dfc49d" stroke-width="3" stroke-dasharray="11 6"/>
+    <rect x="-25" y="-23" width="49" height="35" fill="#6b7059" stroke="#e7d9ad" stroke-width="2"/>
+    <path d="M-17 -15 L0 -2 L18 -15" fill="none" stroke="#eacfa2" stroke-width="3"/>
+    <text x="0" y="-43" fill="#dcf9dc" font-size="17" text-anchor="middle" paint-order="stroke" stroke="#152935" stroke-width="4">SUPPLY POST</text>
+  </g></g>
+<g data-flag="supply_post_paused" data-floor="L0" style="display:none">
+  <g transform="translate(446 751)">
+    <rect x="-30" y="-12" width="59" height="34" fill="#77604d" fill-opacity=".5" stroke="#d4ba98" stroke-dasharray="7 5" stroke-width="2"/>
+    <path d="M-33 14 L29 -24" stroke="#eecb8f" stroke-width="4"/>
+    <text x="0" y="-30" text-anchor="middle" font-size="16" fill="#e9d39d">UNFINISHED</text>
+  </g></g>
+<g data-flag="watch_post_set" data-floor="L1" style="display:none">
+  <g transform="translate(316 287)">
+    <path d="M-30 -14 V-39 M30 -14 V-39 M-33 -24 H33" fill="none" stroke="#e7cb92" stroke-width="4"/>
+    <path d="M0 -35 V-66" stroke="#f4dba7" stroke-width="3"/><path d="M0 -66 L42 -54 L0 -44 Z" fill="#a2dbb9" stroke="#e2f7d4" stroke-width="2"/>
+    <text x="0" y="24" text-anchor="middle" font-size="15" fill="#c4f0d7" paint-order="stroke" stroke="#122635" stroke-width="4">WATCH POST</text>
+  </g></g>
+<g data-flag="watch_post_one_route" data-floor="L1" style="display:none">
+  <g transform="translate(316 287)">
+    <path d="M-28 -16 V-38 M-28 -28 H20" fill="none" stroke="#e4c89b" stroke-width="4"/>
+    <text x="0" y="30" text-anchor="middle" font-size="15" fill="#eddba4">LIMITED WATCH</text>
+  </g></g>
+<g data-flag="watch_post_wet" data-floor="L1" style="display:none">
+  <g transform="translate(316 287)">
+    <path d="M-23 -34 L0 -53 L26 -34 Z" fill="#637986" stroke="#aac4cb" stroke-width="2"/>
+    <path d="M-13 -30 V-17 M8 -28 V-12 M19 -30 V-19" stroke="#8bd4e1" stroke-width="3"/>
+    <text x="0" y="30" text-anchor="middle" font-size="15" fill="#acd6de">WET PLATFORM</text>
+  </g></g>
+<g data-flag="lookout_surveyed" data-floor="L0" style="display:none">
+  <g transform="translate(833 557)">
+    <path d="M-46 -44 L-46 -67 L-20 -74 L8 -64 L34 -72 L46 -64 L46 -43 L20 -47 L-12 -37 Z" fill="#2e5961" stroke="#96d4df" stroke-width="2.5"/>
+    <path d="M-19 -67 L-19 -42 M10 -63 L10 -47" stroke="#b7e6e6" stroke-width="1.6"/>
+    <circle cx="-13" cy="-55" r="3.5" fill="#f2cf8e"/>
+    <circle cx="24" cy="-58" r="3.5" fill="#f2cf8e"/>
+    <text x="0" y="-83" font-size="15" text-anchor="middle" fill="#bbebed" paint-order="stroke" stroke="#172b36" stroke-width="4">SURVEYED ROUTES</text>
+  </g></g>
+<g data-flag="lookout_partial" data-floor="L1" style="display:none">
+  <g transform="translate(316 287)"><path d="M-19 -48 L16 -48 L16 -25 L-19 -25 Z" fill="none" stroke="#a9cad5" stroke-width="3" stroke-dasharray="6 3"/>
+  <text y="26" text-anchor="middle" font-size="15" fill="#d3e7ee">PARTIAL SURVEY</text></g></g>
+<g data-flag="lookout_recce" data-floor="L1" style="display:none">
+  <g transform="translate(316 287)"><path d="M-18 -30 L0 -53 L19 -30" fill="none" stroke="#d0dba2" stroke-width="4"/>
+  <text y="26" text-anchor="middle" font-size="15" fill="#dbe6b2">ROUTE MARKED</text></g></g>
+<g data-flag="light_crate_found" data-floor="L1" style="display:none">
+  <g transform="translate(574 292)">
+    <path d="M-32 -57 V-33 M32 -57 V-33" stroke="#cbd0d1" stroke-width="3"/>
+    <rect x="-38" y="-33" width="76" height="42" fill="#303f46" fill-opacity=".5" stroke="#8ce0be" stroke-width="3"/>
+    <path d="M-20 -20 L-4 -2 L20 -23" fill="none" stroke="#a8eccf" stroke-width="5"/>
+    <text y="31" text-anchor="middle" font-size="15" fill="#b8f1d2">LAMP RECOVERED</text>
+  </g></g>
+<g data-flag="light_crate_dinged" data-floor="L1" style="display:none">
+  <g transform="translate(574 292)">
+    <path d="M-20 -45 L4 -53 L30 -43 L25 -13 L-13 -8 Z" fill="#b99a64" fill-opacity=".7" stroke="#f2d29b" stroke-width="2"/>
+    <path d="M-4 -40 L4 -29 L-7 -19 L11 -10" fill="none" stroke="#39454b" stroke-width="3"/>
+    <text y="30" text-anchor="middle" font-size="15" fill="#f0ce97">DENTED LAMP</text>
+  </g></g>
+<g data-flag="finale_light_stashed" data-floor="L1" style="display:none">
+  <g transform="translate(574 292)">
+    <path d="M-39 -39 L-7 -56 L39 -39 L44 4 L-43 4 Z" fill="#53756c" fill-opacity=".88" stroke="#b5d2bd" stroke-width="3"/>
+    <path d="M-39 -39 L42 -39" stroke="#d3e8d6" stroke-width="3" stroke-dasharray="7 5"/>
+    <path d="M-16 -20 L-3 -28 L11 -20" fill="none" stroke="#f0d09e" stroke-width="3"/>
+    <text y="29" text-anchor="middle" font-size="15" fill="#d8efdb">LAMP CACHE</text>
+  </g></g>
+<g data-flag="light_crate_stashed" data-floor="L1" style="display:none">
+  <g transform="translate(574 292)"><path d="M-26 -42 L-26 -6 M-26 -42 L-12 -30 L2 -43" stroke="#e7c18f" stroke-width="4" fill="none"/>
+  <text y="29" text-anchor="middle" font-size="15" fill="#e9d3a8">LOCATION MARKED</text></g></g>
+<g data-flag="light_stash_rough" data-floor="L1" style="display:none">
+  <g transform="translate(574 292)"><path d="M-39 -42 L-4 -55 L16 -43 L12 -4 L-39 -4 Z" fill="#617f77" fill-opacity=".7" stroke="#c4d2c0" stroke-width="2"/>
+  <path d="M10 -43 L42 -35 L37 4" fill="none" stroke="#e0b88d" stroke-width="3" stroke-dasharray="6 6"/>
+  <text y="29" text-anchor="middle" font-size="15" fill="#f0d4a8">PARTLY COVERED</text></g></g>
+<g data-progression="boss-cleared" data-floor="L0" style="display:none">
+  <path d="M1301 265 L1301 134" stroke="#f5cf83" stroke-width="19" stroke-linecap="round" opacity=".25"/>
+  <path d="M1301 265 L1301 134" stroke="#ffe3a4" stroke-width="5" stroke-linecap="round" opacity=".8" stroke-dasharray="12 10"/>
+  <circle cx="1310" cy="126" r="39" fill="#e5c47c" fill-opacity=".18" stroke="#e6c88e" stroke-opacity=".65" stroke-width="3"/>
+  <text x="1310" y="80" text-anchor="middle" font-size="18" fill="#ffe3ab" paint-order="stroke" stroke="#1b2932" stroke-width="4">RESCUE ROUTE OPEN</text>
+</g>
+</g></g>
+<defs>
+<radialGradient id="softMask"><stop offset="0" stop-color="#000"/><stop offset=".36" stop-color="#101010"/><stop offset=".75" stop-color="#888"/><stop offset="1" stop-color="#fff"/></radialGradient>
+<mask id="darknessMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1672" height="941"><rect x="0" y="0" width="1672" height="941" fill="white"/><circle id="catVisibility" cx="833" cy="882" r="108" fill="url(#softMask)"/>
+<circle id="lampGlow1" cx="316" cy="582" r="245" fill="url(#softMask)" style="display:none"/><circle id="lampGlow2" cx="833" cy="557" r="262" fill="url(#softMask)" style="display:none"/><circle id="lampGlow3" cx="1420" cy="775" r="238" fill="url(#softMask)" style="display:none"/><circle class="ambientMask" data-floor="L0" cx="360" cy="252" r="177" fill="url(#softMask)" /><circle class="ambientMask" data-floor="L0" cx="1070" cy="262" r="174" fill="url(#softMask)" /><circle class="ambientMask" data-floor="L0" cx="1468" cy="385" r="181" fill="url(#softMask)" /><circle class="ambientMask" data-floor="L1" cx="320" cy="310" r="156" fill="url(#softMask)" /></mask>
+</defs>
+<g id="lightOverlay"><rect x="0" y="0" width="1672" height="941" fill="#020a17" opacity=".87" mask="url(#darknessMask)"/></g>
+<g id="navMarkers"></g><g id="zoneMarkers"></g>
+<g id="catShape" transform="translate(833 882)"><path d="M-11 -13 L-15 -22 L-4 -18 L4 -18 L15 -22 L11 -13 A16 15 0 1 1 -11 -13" fill="#f7eacb" stroke="#293844" stroke-width="3"/><circle cx="-5" cy="-3" r="2" fill="#233547"/><circle cx="5" cy="-3" r="2" fill="#233547"/><path d="M-2 4 L0 6 L2 4" fill="none" stroke="#243845" stroke-width="1.8"/></g>
+</svg>
+<div class="overlay tophint" id="cameraStats">L0 · (833, 882)</div><div class="overlay hint" id="interactionHint">WASD move · E interact · C climb</div><div class="overlay waypoint" id="wayfinding">Guide: West lamp</div></div>
+<div class="bar"><button id="focus">Focus game</button><button id="toggleLighting" class="active">Lighting: ON</button><button id="toggleZones" class="active">Zones: ON</button><button id="zoomIn">Zoom +</button><button id="zoomOut">Zoom −</button><button id="showMarkers" class="active">Markers: ON</button><button id="showRoutes">Routes: OFF</button><button id="reset">Reset prototype</button><span class="small">Move <kbd>WASD</kbd>/<kbd>↑↓←→</kbd> · interact <kbd>E</kbd> · climb <kbd>C</kbd> · light overlay <kbd>L</kbd> · reset <kbd>R</kbd></span></div>
+</main><aside class="side"><h2>Movement / state</h2><p>Single world coordinate system. L1 occupies a short shelf-top route; the final bunker is reachable only through the boss gate.</p>
+<div class="tile"><div class="label">Current floor</div><div id="floorValue" class="k">L0</div><div class="label" style="margin-top:9px">Objective</div><div id="objective">Activate the west lamp</div></div>
+<div class="tile"><div class="label">Lighting stations</div><div id="lights">West OFF · Hub EAST · Secondary OFF</div><div class="label" style="margin-top:9px">Fixed events</div><div id="fixed">0 / 2 examined</div><div class="label" style="margin-top:9px">C1/C2 climbs</div><div id="climbs">0 / 2 used</div><div class="label" style="margin-top:9px">Random events</div><div id="encounters">0 / 2 encounters · 0 / 4 zone attempts</div></div>
+<div class="tile"><div class="label">Prototype contract</div><p style="margin:6px 0">Clue ≥3 is an upstream requirement and is not simulated here. The two L1 fixed nodes are OPTIONAL (not boss prerequisites). The battle handoff is test-only. No event cards, rewards, or narrative text are reimplemented.</p></div>
+<div class="tile"><div class="label">Existing event outcome visuals · preview controls</div><p class="small" style="margin:8px 0">These selectors simulate saved event flags for visual QA ONLY. They do not resolve event cards, roll dice, or grant rewards. The real game will read authoritative flags instead.</p>
+<label class="debuglabel" for="supplyOutcome">Existing box-haul result · L0 loading bay</label>
+<select id="supplyOutcome"><option value="">No outcome applied</option><option value="supply_post_built">Supply station built</option><option value="supply_post_paused">Unfinished station</option></select>
+<label class="debuglabel" for="lookoutOutcome">Existing lookout result · L1</label>
+<select id="lookoutOutcome"><option value="">No outcome applied</option><option value="watch_post_set">Watch post completed</option><option value="lookout_surveyed">Surveyed routes</option><option value="watch_post_one_route">Limited watch post</option><option value="watch_post_wet">Wet watch post</option><option value="lookout_partial">Partial survey</option><option value="lookout_recce">Route marked</option></select>
+<label class="debuglabel" for="crateOutcome">Existing lamp-crate result · L1</label>
+<select id="crateOutcome"><option value="">No outcome applied</option><option value="light_crate_found">Lamp recovered</option><option value="light_crate_dinged">Dented lamp</option><option value="finale_light_stashed">Lamp cache covered</option><option value="light_crate_stashed">Location marked</option><option value="light_stash_rough">Partly covered</option></select>
+<button id="clearOutcomes" class="smallbtn">Clear visual preview flags</button>
+<p id="outcomeStatus" class="small" style="margin:9px 0 0">No visual outcome flags set.</p></div>
+<div class="tile"><div class="label">Test log</div><div class="log" id="log"><div>Ready. Entry corresponds to finale_intro_1–4.</div></div></div>
+</aside></div>
+<div id="fixedModal" class="modal"><div class="modal-content"><div class="label">Existing warehouse fixed event — preview only</div><h2 id="fixedTitle"></h2><p id="fixedDescription"></p><p class="small">The live game uses the existing event card, options, 2d6 result and rewards. This standalone only verifies the interaction point.</p><div class="actions"><button id="markFixed">Mark encountered</button><button id="closeFixed">Close</button></div></div></div>
+<div id="battleModal" class="modal"><div class="modal-content"><h2>Finale boss handoff — prototype</h2><p>Authored location: <code>finale_intro_5 → finale_boss → finale_intro_6</code>. This dialog is only for testing the gate; the real battle is handled by the game server.</p><div class="actions"><button id="win">Simulate battle victory</button><button id="lose">Simulate battle defeat</button><button id="cancelBattle">Cancel</button></div></div></div>
+<script>
+'use strict';
+const G={"id": "warehouse_ch5_graybox_v07", "status": "concept-graybox; not production-approved", "world": {"width": 1672, "height": 941, "coordinateSystem": "common L0/L1 SVG pixel coordinates", "catRadius": 13}, "walkable": {"L0": [[[162, 281], [225, 281], [225, 215], [366, 215], [366, 186], [620, 186], [620, 207], [808, 207], [808, 235], [1040, 235], [1040, 282], [1410, 282], [1410, 325], [1500, 325], [1500, 375], [1540, 375], [1540, 536], [1496, 536], [1496, 601], [1520, 601], [1520, 810], [1360, 810], [1360, 852], [1141, 852], [1141, 828], [1045, 828], [1045, 856], [965, 856], [965, 924], [756, 924], [756, 853], [597, 853], [597, 875], [310, 875], [310, 838], [189, 838], [189, 778], [143, 778], [143, 607], [111, 607], [111, 360], [162, 360]], [[1190, 65], [1455, 65], [1455, 210], [1347, 210], [1347, 282], [1258, 282], [1258, 210], [1190, 210]]], "L1": [[[524.0, 250.0], [524.0, 278.0], [386.0, 278.0], [386.0, 258.0], [274.0, 258.0], [274.0, 386.0], [386.0, 386.0], [386.0, 332.0], [524.0, 332.0], [524.0, 344.0], [617.0, 344.0], [617.0, 370.0], [617.0, 430.0], [617.0, 432.0], [773.0, 432.0], [773.0, 463.0], [867.0, 463.0], [867.0, 372.0], [855.0, 372.0], [855.0, 370.0], [677.0, 370.0], [677.0, 278.0], [668.0, 278.0], [640.0, 278.0], [640.0, 250.0]]]}, "walkableSemantics": "L0 union of polygons MINUS solid rectangles; L1 union of rectangles. Dynamic gates have independent state.", "solids": [{"id": "west_upper_tall_rack", "x": 393, "y": 244, "w": 151, "h": 101, "style": "rack", "floor": "L0"}, {"id": "west_wide_rack", "x": 416, "y": 412, "w": 166, "h": 96, "style": "rack", "floor": "L0"}, {"id": "west_lower_rack", "x": 409, "y": 595, "w": 151, "h": 99, "style": "rack", "floor": "L0"}, {"id": "west_crates", "x": 255, "y": 667, "w": 106, "h": 91, "style": "crate", "floor": "L0"}, {"id": "west_service_equipment", "x": 205, "y": 457, "w": 91, "h": 102, "style": "machine", "floor": "L0"}, {"id": "west_repair_pallet", "x": 174, "y": 355, "w": 61, "h": 53, "style": "crate", "floor": "L0"}, {"id": "west_broken_shelf", "x": 346, "y": 705, "w": 49, "h": 95, "style": "rack", "floor": "L0"}, {"id": "center_upper_rack", "x": 637, "y": 261, "w": 134, "h": 83, "style": "rack", "floor": "L0"}, {"id": "center_mid_container", "x": 630, "y": 424, "w": 144, "h": 112, "style": "container", "floor": "L0"}, {"id": "center_lower_rack", "x": 637, "y": 629, "w": 113, "h": 113, "style": "rack", "floor": "L0"}, {"id": "southwest_pallets", "x": 548, "y": 775, "w": 76, "h": 43, "style": "crate", "floor": "L0"}, {"id": "center_fallen_boxes", "x": 759, "y": 633, "w": 49, "h": 65, "style": "crate", "floor": "L0"}, {"id": "east_upper_container", "x": 897, "y": 276, "w": 132, "h": 113, "style": "container", "floor": "L0"}, {"id": "east_mid_rack", "x": 932, "y": 445, "w": 108, "h": 96, "style": "rack", "floor": "L0"}, {"id": "east_lower_container", "x": 909, "y": 641, "w": 127, "h": 90, "style": "container", "floor": "L0"}, {"id": "east_top_rack", "x": 1127, "y": 320, "w": 121, "h": 77, "style": "rack", "floor": "L0"}, {"id": "east_center_rack", "x": 1124, "y": 462, "w": 108, "h": 81, "style": "rack", "floor": "L0"}, {"id": "east_lower_crates", "x": 1148, "y": 639, "w": 112, "h": 88, "style": "crate", "floor": "L0"}, {"id": "far_east_top_machine", "x": 1359, "y": 394, "w": 114, "h": 94, "style": "machine", "floor": "L0"}, {"id": "far_east_bottom", "x": 1367, "y": 654, "w": 101, "h": 91, "style": "container", "floor": "L0"}, {"id": "southeast_pallets", "x": 1090, "y": 774, "w": 67, "h": 45, "style": "crate", "floor": "L0"}, {"id": "northeast_spare_drums", "x": 1257, "y": 333, "w": 56, "h": 72, "style": "machine", "floor": "L0"}, {"id": "northeast_tilted_container", "x": 1265, "y": 458, "w": 77, "h": 88, "style": "container", "floor": "L0"}, {"id": "east_mid_crate_stack", "x": 1402, "y": 536, "w": 78, "h": 83, "style": "crate", "floor": "L0"}, {"id": "east_loading_rejects", "x": 1215, "y": 743, "w": 72, "h": 62, "style": "crate", "floor": "L0"}, {"id": "south_loading_crate", "x": 850, "y": 797, "w": 74, "h": 52, "style": "crate", "floor": "L0"}, {"id": "upper_access_pallet", "x": 1064, "y": 294, "w": 42, "h": 64, "style": "crate", "floor": "L0"}, {"id": "west_cross_spill", "x": 325, "y": 521, "w": 68, "h": 32, "style": "crate", "floor": "L0"}, {"id": "central_misplaced_pallet", "x": 805, "y": 459, "w": 72, "h": 35, "style": "crate", "floor": "L0"}, {"id": "east_transverse_rubble", "x": 1055, "y": 548, "w": 64, "h": 39, "style": "crate", "floor": "L0"}, {"id": "east_spare_forklift", "x": 1273, "y": 556, "w": 59, "h": 54, "style": "machine", "floor": "L0"}, {"id": "west_overturned_pallets", "x": 402, "y": 260, "w": 46, "h": 28, "style": "crate", "floor": "L0"}, {"id": "west_collapsed_upright", "x": 307, "y": 449, "w": 91, "h": 28, "style": "rack", "floor": "L0"}, {"id": "west_loading_rejects", "x": 155, "y": 640, "w": 86, "h": 39, "style": "crate", "floor": "L0"}, {"id": "south_central_scrap", "x": 763, "y": 750, "w": 47, "h": 36, "style": "crate", "floor": "L0"}, {"id": "upper_east_fallen_rack", "x": 1014, "y": 460, "w": 60, "h": 48, "style": "rack", "floor": "L0"}, {"id": "upper_east_cross_pallet", "x": 1178, "y": 413, "w": 57, "h": 33, "style": "crate", "floor": "L0"}, {"id": "east_dock_displaced_stack", "x": 1387, "y": 383, "w": 70, "h": 31, "style": "crate", "floor": "L0"}], "l1WalkableRectangles": [{"id": "lookout_platform", "x": 274, "y": 258, "w": 112, "h": 128}, {"id": "west_catwalk", "x": 333, "y": 278, "w": 335, "h": 54}, {"id": "north_connector", "x": 617, "y": 278, "w": 60, "h": 152}, {"id": "east_catwalk", "x": 617, "y": 370, "w": 238, "h": 62}, {"id": "crate_platform", "x": 524, "y": 250, "w": 116, "h": 94}, {"id": "c2_landing", "x": 773, "y": 372, "w": 94, "h": 91}], "climbs": [{"id": "C1", "x": 320, "y": 343, "from": "L0", "to": "L1", "label": "West shelf climb"}, {"id": "C2", "x": 816, "y": 409, "from": "L0", "to": "L1", "label": "Central catwalk descent"}], "interactions": [{"id": "entry_lamp", "x": 316, "y": 582, "floor": "L0", "kind": "light", "label": "Entrance lamp", "type": "permanent"}, {"id": "central_spotlight", "x": 833, "y": 557, "floor": "L0", "kind": "light", "label": "Central spotlight", "type": "toggle"}, {"id": "secondary_lamp", "x": 1420, "y": 775, "floor": "L0", "kind": "light", "label": "Secondary lamp", "type": "permanent"}, {"id": "warehouse_lookout", "x": 316, "y": 287, "floor": "L1", "kind": "fixed_event", "label": "货架顶的瞭望位"}, {"id": "warehouse_light_crate", "x": 574, "y": 292, "floor": "L1", "kind": "fixed_event", "label": "吊在半空的灯具箱"}, {"id": "finale_boss", "x": 1302, "y": 294, "floor": "L0", "kind": "battle", "label": "Mandatory finale boss", "storyBefore": "finale_intro_5", "storyAfterWin": "finale_intro_6"}, {"id": "bunker_exit", "x": 1310, "y": 126, "floor": "L0", "kind": "exit", "label": "Rescue / Exit (victory only)"}, {"id": "warehouse_entry", "x": 833, "y": 882, "floor": "L0", "kind": "start", "label": "Entrance from tunnel"}], "randomZones": [{"id": "R1", "x": 657, "y": 765, "r": 47, "floor": "L0", "label": "Loading storage", "examples": ["sack_row_event", "box_haul_event"]}, {"id": "R2", "x": 266, "y": 404, "r": 43, "floor": "L0", "label": "Western shelving", "examples": ["fake_meow_event", "moving_shelves_event", "warm_nest_event"]}, {"id": "R3", "x": 1364, "y": 566, "r": 44, "floor": "L0", "label": "East cross-aisle", "examples": ["moving_shelves_event", "warm_nest_event", "fake_meow_event"]}, {"id": "R4", "x": 1094, "y": 402, "r": 42, "floor": "L0", "label": "Upper shared road", "examples": ["shadow_captain_event", "fake_meow_event", "moving_shelves_event"]}], "ambientLamps": [{"id": "bay_window_lamp", "x": 360, "y": 252, "r": 177, "floor": "L0", "label": "West bay safety light"}, {"id": "upper_cross_lamp", "x": 1070, "y": 262, "r": 174, "floor": "L0", "label": "Upper service lamp"}, {"id": "east_dock_lamp", "x": 1468, "y": 385, "r": 181, "floor": "L0", "label": "East bay safety light"}, {"id": "lookout_guide_lamp", "x": 320, "y": 310, "r": 156, "floor": "L1", "label": "Lookout platform light"}], "dynamicGates": {"boss": {"id": "boss_gate", "x": 1257, "y": 251, "w": 91, "h": 22, "floor": "L0", "unlock": "finale_boss_victory"}, "shadow": [{"id": "west_shortcut", "x": 587, "y": 356, "w": 23, "h": 47, "floor": "L0", "unlock": "entry_lamp"}, {"id": "east_shortcut", "x": 1061, "y": 524, "w": 27, "h": 44, "floor": "L0", "unlock": "secondary_lamp"}]}, "storyContract": {"entry": "finale_intro_1..finale_intro_4", "finaleClueRequirement": 3, "beforeBoss": "finale_intro_5", "stage": "finale_boss", "afterWin": "finale_intro_6", "ending": "finale_intro_7..finale_intro_9 (greenhouse)"}, "eventPoolRandom": ["fake_meow_event", "moving_shelves_event", "warm_nest_event", "sack_row_event", "shadow_captain_event", "box_haul_event"], "eventPoolFixed": ["warehouse_light_crate", "warehouse_lookout"], "visualOutcomeMapping": {"supply_post_built": {"floor": "L0", "anchor": [445, 757], "appearance": "supply_station", "sourceEvent": "box_haul_event"}, "supply_post_paused": {"floor": "L0", "anchor": [445, 757], "appearance": "unfinished_supply_post", "sourceEvent": "box_haul_event"}, "watch_post_set": {"floor": "L1", "anchor": [316, 287], "appearance": "watch_post", "sourceEvent": "warehouse_lookout"}, "watch_post_one_route": {"floor": "L1", "anchor": [316, 287], "appearance": "partial_watch_post", "sourceEvent": "warehouse_lookout"}, "watch_post_wet": {"floor": "L1", "anchor": [316, 287], "appearance": "wet_watch_post", "sourceEvent": "warehouse_lookout"}, "lookout_surveyed": {"floor": "L0", "anchor": [833, 557], "appearance": "surveyed_landmarks", "sourceEvent": "warehouse_lookout"}, "lookout_partial": {"floor": "L1", "anchor": [316, 287], "appearance": "partial_survey", "sourceEvent": "warehouse_lookout"}, "lookout_recce": {"floor": "L1", "anchor": [316, 287], "appearance": "safe_route_mark", "sourceEvent": "warehouse_lookout"}, "light_crate_found": {"floor": "L1", "anchor": [574, 292], "appearance": "lamp_recovered", "sourceEvent": "warehouse_light_crate"}, "light_crate_dinged": {"floor": "L1", "anchor": [574, 292], "appearance": "dented_lamp", "sourceEvent": "warehouse_light_crate"}, "light_crate_stashed": {"floor": "L1", "anchor": [574, 292], "appearance": "crate_location_marked", "sourceEvent": "warehouse_light_crate"}, "finale_light_stashed": {"floor": "L1", "anchor": [574, 292], "appearance": "covered_lamp_crate", "sourceEvent": "warehouse_light_crate"}, "light_stash_rough": {"floor": "L1", "anchor": [574, 292], "appearance": "partially_covered_crate", "sourceEvent": "warehouse_light_crate"}}, "visualOutcomeNotes": "Appearance only; read existing server flags. Boss victory uses the existing cleared-battle state, not a newly awarded event flag. Supply post is illustrated in the loading bay because prior event zone of origin may not be persisted.", "prototypePacing": {"randomZoneChance": 0.5, "maxRandomEncounters": 2, "oneAttemptPerZone": true, "note": "provisional level-design values; backend dangerLevel compatibility unverified"}, "exampleRoutes": [{"id": "shared_approach", "points": [[835, 880], [835, 555]]}, {"id": "recon", "points": [[835, 555], [830, 560], [675, 560], [620, 615], [620, 755], [635, 755], [640, 760], [650, 760], [655, 765], [650, 760], [645, 760], [640, 755], [620, 755], [615, 750], [615, 640], [575, 600], [575, 580], [315, 580], [310, 575], [190, 575], [190, 440], [195, 435], [200, 435], [205, 430], [215, 430], [220, 425], [250, 425], [260, 415], [260, 410], [265, 405], [315, 355], [315, 350], [320, 345]]}, {"id": "lighting", "points": [[835, 555], [995, 555], [1040, 600], [1235, 600], [1260, 625], [1345, 625], [1345, 605], [1350, 600], [1350, 595], [1355, 590], [1355, 585], [1360, 580], [1360, 570], [1365, 565], [1365, 595], [1355, 605], [1355, 635], [1350, 640], [1350, 760], [1390, 760], [1395, 765], [1400, 765], [1405, 770], [1415, 770], [1420, 775], [1415, 770], [1410, 770], [1400, 760], [1350, 760], [1330, 740], [1330, 690], [1275, 635], [1275, 625], [1260, 625], [1235, 600], [1040, 600], [995, 555], [915, 555], [915, 430], [1030, 430], [1035, 425], [1045, 425], [1050, 420], [1055, 420], [1060, 415], [1065, 415], [1070, 410], [1075, 410], [1080, 405], [1085, 405], [1090, 400], [1095, 400], [1050, 400], [1045, 405], [940, 405], [915, 430], [915, 555], [995, 555], [1040, 600], [1135, 600], [1175, 560], [1245, 560], [1245, 465], [1250, 460], [1250, 445], [1275, 420], [1330, 420], [1330, 320], [1305, 295], [1300, 295]]}, {"id": "crosslink", "points": [[815, 410], [815, 420], [790, 445], [790, 510], [835, 555], [950, 555], [955, 560], [995, 560], [1030, 595], [1035, 595], [1040, 600], [1050, 600], [1055, 605]]}]};
+const world=document.querySelector('#world');const stage=document.querySelector('#stage');
+const get=id=>document.getElementById(id);
+const FIXED_TEXT={
+ warehouse_lookout:{title:'货架顶的瞭望位',text:'最高一排货架的顶上,两脚兽留了一块没搬走的栈板——干净,平稳,还晒不到漏下来的雨。整座仓库,再没有第二个这样的位置。'},
+ warehouse_light_crate:{title:'吊在半空的灯具箱',text:'行车吊钩上挂着一箱两脚兽的探照灯,离地三猫高,箱子破了一角,能看见里面成排的灯罩还挂着出厂的膜。终章要护送灯具逐段推进——这一箱,就是天生的军火库。'}
+};
+const state={visualFlags:new Set(),x:833,y:882,floor:'L0',radius:G.world.catRadius,west:false,east:false,hub:'west',won:false,visited:new Set(),attempted:new Set(),events:0,lighting:true,zones:true,markers:true,routes:false,zoom:770,climbed:new Set(),pendingFixed:null,notice:'',noticeUntil:0,modal:false};
+const keys=new Set();const randChance=G.prototypePacing.randomZoneChance;
+const polygons=G.walkable.L0;
+function inPolygon(x,y,poly){let on=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])on=!on;}return on;}
+function inRects(x,y,arr){return arr.some(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h);}
+function insideFloor(x,y,layer){if(layer==='L1')return inRects(x,y,G.l1WalkableRectangles);return polygons.some(p=>inPolygon(x,y,p));}
+function circleRectHit(x,y,r,rect){let dx=Math.max(rect.x-x,0,x-(rect.x+rect.w));let dy=Math.max(rect.y-y,0,y-(rect.y+rect.h));return dx*dx+dy*dy<r*r;}
+function solidAt(x,y,layer){if(layer==='L1')return false;if(G.solids.some(v=>circleRectHit(x,y,state.radius,v)))return true;
+ const boss=G.dynamicGates.boss;if(!state.won&&circleRectHit(x,y,state.radius,boss))return true;
+ if(G.dynamicGates.shadow.some(g=>!((g.unlock==='entry_lamp'&&state.west)||(g.unlock==='secondary_lamp'&&state.east))&&circleRectHit(x,y,state.radius,g)))return true;return false;}
+function canOccupy(x,y,layer){if(solidAt(x,y,layer))return false;
+ for(let k=0;k<16;k++){const a=k*Math.PI/8;const sx=x+Math.cos(a)*state.radius,sy=y+Math.sin(a)*state.radius;if(!insideFloor(sx,sy,layer))return false;}return true;}
+function distance(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function near(list,rad=58){return list.filter(i=>i.floor===state.floor&&distance(state,i)<=rad).sort((a,b)=>distance(state,a)-distance(state,b))[0]||null;}
+function nearestClimb(){return G.climbs.filter(i=>Math.hypot(i.x-state.x,i.y-state.y)<=54).sort((a,b)=>distance(state,a)-distance(state,b))[0]||null;}
+function eventItems(){return G.interactions.filter(i=>i.kind!=='start');}
+function showHint(s){state.notice=s;state.noticeUntil=performance.now()+2800;}
+function log(s){const node=document.createElement('div');node.textContent=s;get('log').prepend(node);while(get('log').children.length>15)get('log').lastChild.remove();}
+function interact(){if(state.modal)return;const i=near(eventItems());if(!i){showHint('Move closer to a marked E / B / X location');return;}
+ switch(i.id){case 'entry_lamp':state.west=true;log('Entrance lamp activated (persistent).');break;
+ case 'central_spotlight':state.hub=state.hub==='west'?'east':'west';log('Central spotlight redirected '+state.hub.toUpperCase()+'.');break;
+ case 'secondary_lamp':state.east=true;log('Secondary lamp activated (persistent).');break;
+ case 'warehouse_light_crate':case 'warehouse_lookout':openFixedEvent(i);return;
+ case 'finale_boss':if(!(state.west&&state.east&&state.hub==='east')){showHint('Complete the light corridor: west + secondary ON, hub facing EAST');return;}if(state.won){showHint('Battle victory recorded. Proceed to the bunker exit.');return;}state.modal=true;get('battleModal').classList.add('open');keys.clear();return;
+ case 'bunker_exit':if(state.won)log('Rescue / exit reached → finale_intro_6; ending continues at greenhouse.');else showHint('The mandatory boss must be defeated first.');break;
+ }sync();}
+function openFixedEvent(i){state.modal=true;state.pendingFixed=i.id;keys.clear();const copy=FIXED_TEXT[i.id];get('fixedTitle').textContent=copy.title;get('fixedDescription').textContent=copy.text;get('fixedModal').classList.add('open');}
+function closeFixedEvent(mark){if(mark&&state.pendingFixed){state.visited.add(state.pendingFixed);log('Fixed node encountered: '+state.pendingFixed+' (preview only; no event rewards or dice simulated).');}state.pendingFixed=null;state.modal=false;get('fixedModal').classList.remove('open');sync();stage.focus();}
+function climb(){if(state.modal)return;const c=nearestClimb();if(!c){showHint('Move close to C1 or C2');return;}const next=state.floor==='L0'?'L1':'L0';if(!canOccupy(c.x,c.y,next)){showHint('Climb destination obstructed');return;}
+ state.floor=next;state.x=c.x;state.y=c.y;state.climbed.add(c.id);log(`${c.id}: switched to ${next}.`);showHint('Climbed '+c.id+' → '+next);sync();}
+function updateZones(){if(state.floor!=='L0'||state.modal)return;
+ for(const z of G.randomZones){if(state.attempted.has(z.id))continue;if(distance(state,z)>z.r)continue;
+ state.attempted.add(z.id);if(state.events<2&&Math.random()<randChance){state.events++;log(`${z.id}: random encounter opportunity triggered (${state.events}/2). Card selection is server-owned.`);showHint(`${z.id} event opportunity — backend card pending`);}else{log(`${z.id}: attempt consumed, no encounter.`);}break;}}
+// Production adapter contract: pass actual server-owned flags here. This function
+// only updates decorative layers. It never calls an event or modifies event rewards.
+function applyWarehouseVisualFlags(flags){
+ const allowed=G.visualOutcomeMapping;
+ state.visualFlags=new Set(Array.from(flags||[]).filter(flag=>Object.prototype.hasOwnProperty.call(allowed,flag)));
+ sync();
+}
+function syncVisualOutcomes(){
+ for(const node of document.querySelectorAll('#outcomeProps [data-flag]')){
+   node.style.display=state.visualFlags.has(node.dataset.flag)&&node.dataset.floor===state.floor?'':'none';
+ }
+ const victory=get('outcomeProps').querySelector('[data-progression="boss-cleared"]');
+ if(victory)victory.style.display=(state.floor==='L0'&&state.won)?'':'none';
+ get('outcomeStatus').textContent=state.visualFlags.size
+   ?'Active existing flags: '+[...state.visualFlags].join(', ')
+   :'No visual outcome flags set.';
+}
+function sync(){get('floor0').style.display=state.floor==='L0'?'':'none';get('floor1').style.display=state.floor==='L1'?'':'none';get('floorValue').textContent=state.floor;renderMarkers();syncVisualOutcomes();
+ for(const gate of [G.dynamicGates.boss,...G.dynamicGates.shadow]){const node=get('visual_'+gate.id);if(!node)continue;const cleared=gate.id==='boss_gate'?state.won:(gate.unlock==='entry_lamp'?state.west:state.east);node.style.display=cleared?'none':'';}
+ get('lampGlow1').style.display=(state.floor==='L0'&&state.west)?'':'none';get('lampGlow2').style.display=(state.floor==='L0'&&state.hub==='east')?'':'none';get('lampGlow3').style.display=(state.floor==='L0'&&state.east)?'':'none';document.querySelectorAll('.ambientMask').forEach(n=>{n.style.display=(n.dataset.floor===state.floor)?'':'none';});
+ get('lightOverlay').style.display=state.lighting?'':'none';get('lights').textContent=`West ${state.west?'ON':'OFF'} · Hub ${state.hub.toUpperCase()} · Secondary ${state.east?'ON':'OFF'}`;
+ get('fixed').textContent=`${state.visited.size} / 2 examined`;get('climbs').textContent=`${state.climbed.size} / 2 used`;
+ get('encounters').textContent=`${state.events} / 2 encounters · ${state.attempted.size} / 4 zone attempts`;
+ get('objective').textContent=state.won?'Proceed to bunker exit':!state.west?'Activate entrance lighting':!state.east?'Explore and activate secondary lighting':state.hub!=='east'?'Orient central spotlight east':'Reach mandatory boss gate';
+ get('toggleLighting').classList.toggle('active',state.lighting);get('toggleLighting').textContent='Lighting: '+(state.lighting?'ON':'OFF');get('toggleZones').classList.toggle('active',state.zones);get('toggleZones').textContent='Zones: '+(state.zones?'ON':'OFF');
+ document.querySelectorAll('#zoneMarkers .zone-overlay').forEach(n=>{n.style.display=state.zones&&state.floor==='L0'?'':'none';});get('showMarkers').classList.toggle('active',state.markers);get('showMarkers').textContent='Markers: '+(state.markers?'ON':'OFF');get('showRoutes').classList.toggle('active',state.routes);get('showRoutes').textContent='Routes: '+(state.routes?'ON':'OFF');document.querySelectorAll('.planning-routes').forEach(n=>n.style.display=state.routes?'inline':'none');
+}
+function guideTarget(){
+ if(!state.west)return G.interactions.find(i=>i.id==='entry_lamp');
+ if(state.floor==='L1'&&!state.visited.has('warehouse_lookout'))return G.interactions.find(i=>i.id==='warehouse_lookout');
+ if(state.floor==='L1'&&!state.visited.has('warehouse_light_crate'))return G.interactions.find(i=>i.id==='warehouse_light_crate');
+ if(state.floor==='L1')return G.climbs.find(i=>i.id==='C2');
+ // The two fixed L1 node events are OPTIONAL; never steer the main objective
+ // toward them as prerequisites to the boss. They remain visible on L1.
+ if(!state.east)return G.interactions.find(i=>i.id==='secondary_lamp');
+ if(state.hub!=='east')return G.interactions.find(i=>i.id==='central_spotlight');
+ if(!state.won)return G.interactions.find(i=>i.id==='finale_boss');
+ return G.interactions.find(i=>i.id==='bunker_exit');
+}
+function guideHint(){const tgt=guideTarget();const deltaX=tgt.x-state.x,deltaY=tgt.y-state.y;
+ const arrow=['→','↘','↓','↙','←','↖','↑','↗'][Math.round(((Math.atan2(deltaY,deltaX)+Math.PI*2)%(Math.PI*2))/(Math.PI/4))%8];
+ const name=tgt.kind==='fixed_event'?FIXED_TEXT[tgt.id].title:(tgt.id==='C1'?'C1 · Shelf climb':tgt.label||tgt.id);
+ return `Next: ${name}  ${arrow} ${Math.round(Math.hypot(deltaX,deltaY))}wu`;
+}
+const NS='http://www.w3.org/2000/svg';
+function nodeSVG(tag, attrs){const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);return e;}
+const allMarkers=[...G.interactions.filter(i=>i.kind==='fixed_event'||i.kind==='light'||i.kind==='battle'||i.kind==='exit'),...G.climbs.flatMap(c=>['L0','L1'].map(f=>({...c,id:c.id+'-'+f,floor:f,kind:'climb'})))];
+for(const item of allMarkers){const g=nodeSVG('g',{class:'targetmarker'});g.dataset.floor=item.floor;g.dataset.x=item.x;g.dataset.y=item.y;g.dataset.id=item.id;
+ const palette={fixed_event:'#8fdbf8',climb:'#c8a1ff',light:'#eccc85',battle:'#f98d94',exit:'#8ed9d3'};const hue=palette[item.kind]||'#ffffff';
+ const c=nodeSVG('circle',{cx:item.x,cy:item.y,r:item.kind==='climb'?27:23,fill:'#162934',stroke:hue});g.appendChild(c);
+ const t=nodeSVG('text',{x:item.x,y:item.y+5,'text-anchor':'middle','font-size':'17',fill:hue});t.textContent=item.kind==='climb'?'C':item.kind==='light'?'E':item.kind==='battle'?'B':item.kind==='exit'?'X':'E';g.appendChild(t);
+ const name=nodeSVG('text',{x:item.x,y:item.y-37,'text-anchor':'middle','font-size':'16',fill:'#f5f0e4'});name.textContent=item.kind==='climb'?item.id.replace(/-L[01]$/,'')+' CLIMB':item.kind==='fixed_event'?FIXED_TEXT[item.id].title:item.label;g.appendChild(name);
+ get('navMarkers').appendChild(g);}
+for(const z of G.randomZones){const n=nodeSVG('circle',{cx:z.x,cy:z.y,r:z.r,class:'zone-overlay'});get('zoneMarkers').appendChild(n);}
+function renderMarkers(){for(const g of get('navMarkers').children){const d=Math.hypot(Number(g.dataset.x)-state.x,Number(g.dataset.y)-state.y);g.style.display=state.markers&&g.dataset.floor===state.floor&&d<330?'':'none';}}
+function focusHint(){let i=near(eventItems());const c=nearestClimb();if(state.notice&&performance.now()<state.noticeUntil)return state.notice;
+ if(i&&(!c||distance(state,i)<distance(state,c)))return `E · ${i.label}`;
+ if(c)return `C · ${state.floor==='L0'?'Climb to L1':'Descend to L0'} (${c.id})`;
+ return 'WASD · Explore shared aisles | E · Interact | C · Climb';}
+function tick(t){const dt=Math.min((t-(tick.last||t))/1000,.05);tick.last=t; if(!state.modal){let dx=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0);
+ let dy=(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0);const len=Math.hypot(dx,dy)||1;dx=dx/len*172*dt;dy=dy/len*172*dt;
+ if(dx||dy){const increments=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/3));for(let k=0;k<increments;k++){if(canOccupy(state.x+dx/increments,state.y,state.floor))state.x+=dx/increments;if(canOccupy(state.x,state.y+dy/increments,state.floor))state.y+=dy/increments;}updateZones();}}
+ const ratio=Math.max(.7,stage.clientWidth/Math.max(1,stage.clientHeight));const cw=Math.min(state.zoom,G.world.width,G.world.height*ratio);const ch=cw/ratio;let camX=Math.max(0,Math.min(G.world.width-cw,state.x-cw*.5));let camY=Math.max(0,Math.min(G.world.height-ch,state.y-ch*.53));
+ world.setAttribute('viewBox',`${camX.toFixed(2)} ${camY.toFixed(2)} ${cw} ${ch.toFixed(2)}`);get('catShape').setAttribute('transform',`translate(${state.x.toFixed(2)} ${state.y.toFixed(2)})`);get('catVisibility').setAttribute('cx',state.x);get('catVisibility').setAttribute('cy',state.y);
+ get('cameraStats').textContent=`${state.floor} · (${Math.round(state.x)}, ${Math.round(state.y)}) · ${Math.round(cw)}wu view`;
+ get('interactionHint').textContent=focusHint();get('wayfinding').textContent=guideHint();renderMarkers();requestAnimationFrame(tick);}
+function reset(){Object.assign(state,{x:833,y:882,floor:'L0',west:false,east:false,hub:'west',won:false,visited:new Set(),attempted:new Set(),climbed:new Set(),events:0,notice:'',modal:false,visualFlags:new Set()});
+ for(const id of ['supplyOutcome','lookoutOutcome','crateOutcome'])get(id).value='';keys.clear();get('battleModal').classList.remove('open');get('fixedModal').classList.remove('open');log('Prototype reset.');sync();stage.focus();}
+window.addEventListener('keydown',e=>{const key=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(key))e.preventDefault();if(key==='e'&&!e.repeat)interact();else if(key==='c'&&!e.repeat)climb();else if(key==='r'&&!e.repeat)reset();else if(key==='l'&&!e.repeat){state.lighting=!state.lighting;sync();}keys.add(key);});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());
+get('focus').onclick=()=>stage.focus();get('toggleLighting').onclick=()=>{state.lighting=!state.lighting;sync();};get('toggleZones').onclick=()=>{state.zones=!state.zones;sync();};get('zoomIn').onclick=()=>{state.zoom=Math.max(440,state.zoom-110);};get('zoomOut').onclick=()=>{state.zoom=Math.min(1400,state.zoom+110);};get('showMarkers').onclick=()=>{state.markers=!state.markers;sync();};get('showRoutes').onclick=()=>{state.routes=!state.routes;sync();};get('reset').onclick=reset;
+for(const id of ['supplyOutcome','lookoutOutcome','crateOutcome'])get(id).onchange=()=>{
+ applyWarehouseVisualFlags(['supplyOutcome','lookoutOutcome','crateOutcome'].map(key=>get(key).value).filter(Boolean));
+ log('DEBUG ONLY: visual preview flags changed; no event outcomes or rewards applied.');
+};
+get('clearOutcomes').onclick=()=>{
+ for(const id of ['supplyOutcome','lookoutOutcome','crateOutcome'])get(id).value='';
+ applyWarehouseVisualFlags([]);
+};
+// Called by a future authoritative state adapter. Explicitly kept separate
+// from random/fixed event code and test-only success/defeat simulation.
+window.previewWarehouseVisualFlags=flags=>{
+ applyWarehouseVisualFlags(flags);
+ for(const id of ['supplyOutcome','lookoutOutcome','crateOutcome']){
+   const el=get(id);el.value=[...state.visualFlags].find(f=>Array.from(el.options).some(o=>o.value===f))||'';
+ }
+};
+get('markFixed').onclick=()=>closeFixedEvent(true);get('closeFixed').onclick=()=>closeFixedEvent(false);get('win').onclick=()=>{state.won=true;state.modal=false;get('battleModal').classList.remove('open');log('TEST ONLY: simulated finale_boss victory; boss gate opened.');sync();stage.focus();};get('lose').onclick=()=>{state.modal=false;get('battleModal').classList.remove('open');log('TEST ONLY: simulated battle defeat; gate stays locked.');stage.focus();};get('cancelBattle').onclick=()=>{state.modal=false;get('battleModal').classList.remove('open');stage.focus();};
+sync();stage.focus();requestAnimationFrame(tick);
+</script></body></html>

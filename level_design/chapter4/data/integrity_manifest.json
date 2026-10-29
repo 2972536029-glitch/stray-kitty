@@ -24,8 +24,12 @@
     "size": 1992
   },
   "data/chapter4.map.json": {
-    "sha256": "81525156b7d1866e6f7178245ef18ea5905f3783e780b4333a996d785e7cf364",
-    "size": 7277
+    "sha256": "62449d93cc2a95f38bb827d6cf50f72a0366519fd671f2d3d9728feb695ad967",
+    "size": 7978
+  },
+  "data/chapter4.surfaces.json": {
+    "sha256": "2cc5b1dde139647a0deceed534c31afbe951c79350e660abf4a33aaeb636a4f6",
+    "size": 1838
   },
   "handoff/ACCEPTANCE.md": {
     "sha256": "a3595c0717c20cd665b1c3dda7469926c4a23a794e042692d49dfd050fff8ae2",

@@ -6,13 +6,19 @@
 
 1. **Paintings:** `art/chapter4_L0_approved.png`, `art/chapter4_Lminus1_tunnel_v11.png` (each exactly 1672 × 941)
 2. **Gameplay walkability:** `collision/chapter4_L0_walkable.png`, `collision/chapter4_Lminus1_walkable.png` (same world frame; white walkable, black blocked)
-3. **Interaction placements and traversal:** `data/chapter4.map.json` (13 event/zone location records; 8 reversible connectors)
+3. **Interaction placements and traversal:** `data/chapter4.map.json` (13 event/zone location records; 10 reversible connectors)
 4. **Lighting:** `data/chapter4.lighting.json` (v1.1 monotonic-compositing canvas fog; no dark bubbles)
 5. **Visual/behavior reference:** `reference/Chapter4_Reference_Playtest_v12.html` (standalone self-contained QA preview; **event labels shown by default**) and `svg/chapter4_anchor_overlay.svg` (pure vector world-space annotations, **not collision**)
 
 Do not source collision from the old v0.2 SVG `draft-walkable-footprint`. It predates the painted-mask corrections. The integration should use these exact PNGs and layer names, not regenerate artwork by tracing from screenshots.
 
 ## Essential controls and spatial rules
+
+- Production QA correction (2026-10-29): ground contact uses the cat's paw ellipse (10 px half-width, 3 px depth), with bounded corner sliding. The old 10 px circular body footprint produced false walls along the narrow bridge rails and painted pavement corners. Approved PNG artwork and mask pixels are unchanged. The lower waterfall's Space link now joins the visible banks at (330,430) and (520,470), instead of placing its start in the waterfall. Random zones have no signs; entry scenery has no E marker, and completed events show a check mark without an E action. Nearby traversal markers always identify the actual key.
+- Follow-up surface registration lives in `data/chapter4.surfaces.json`: the lower east wooden bridge has a continuous bank/deck approach, while water north of it stays blocked. The tank's lower-right shortcut is blocked. C enters a separate raised stone-ledge surface at (548,444); movement there is restricted to the stone top (with a narrower paw footprint), and C at the original landing returns to the lower approach. Artwork and original raster files remain unchanged.
+- All raised ridge edges are blocked on the ground mask, including the tank's extended arm. The south ridge is a second independent surface: west C connects (920,690) to the stone top at (940,626); the east C connects the ridge at (1175,735) with the lower paved walkway at (1175,785). Both are reversible. Ordinary movement stays on the ridge until a C descent is used, and ground movement cannot bypass that climb.
+- Additional marked C exits: the tank ridge's eastern end (820,464) descends to the road at (820,525); the western ledge by Momo's old mark (430,700) descends to the lower road at (390,765). Both support climbing back up. The western ledge uses its own bounded raised surface, with the clear pavement below registered as ground. Descent prompts follow the upper/lower endpoint, rather than inferring direction from screen coordinates.
+- Water between the central bridge decks is blocked while the deck at (900,480) remains walkable. The northern gap between (955,190) and (1130,196) requires Space; ordinary movement cannot cross it. Raised surfaces use a 28 px corner lookahead so held cardinal input follows the west ledge's stepped bend without opening its boundary. Ground corner lookahead remains 12 px.
 
 - WASD / arrows: move; E: inspect fixed event; F: underground stairs E1/E2; C: climb onto a walkable ridge/platform; Space: contextual bidirectional jump.
 - M: event label display toggle (reference defaults ON); V: collision debug; G: **automatic battle trigger**, not an inspection prompt.
