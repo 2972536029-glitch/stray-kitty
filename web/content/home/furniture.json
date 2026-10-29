@@ -43,5 +43,15 @@
     "id": "box_castle",
     "name": "纸箱小城堡",
     "theme": "点点最爱"
+  },
+  {
+    "id": "star_glass",
+    "name": "星彩玻璃吊灯",
+    "theme": "星空温室"
+  },
+  {
+    "id": "cloud_nest",
+    "name": "云朵绒窝",
+    "theme": "星空温室"
   }
 ]

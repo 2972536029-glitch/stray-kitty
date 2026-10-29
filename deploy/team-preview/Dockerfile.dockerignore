@@ -1,0 +1,20 @@
+# Allow only source inputs needed for this release image.
+*
+!package.json
+!package-lock.json
+!web/
+!level_design/
+!level_design/**
+!web/**
+!server/
+!server/**
+web/node_modules
+web/dist
+server/data
+server/.runtime
+**/.env
+**/.env.*
+**/*.kubeconfig
+**/*.pem
+**/*.key
+**/*secret-values*

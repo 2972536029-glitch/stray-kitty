@@ -1,0 +1,28 @@
+/* Battle scenery only. Page layout and control hierarchy remain shared with the team UI. */
+.battle-l00 {
+  --battle-scene-void:#122c40;
+  --battle-scene-rim:#6e949c;
+  --battle-scene-backdrop:radial-gradient(ellipse at 12% 28%,#a0b7b719,transparent 42%);
+}
+.battle-l00.battle-market {--battle-scene-void:#353c32;--battle-scene-rim:#a49874;--battle-scene-backdrop:radial-gradient(ellipse at 50% 12%,#e9ad6126,transparent 60%)}
+.battle-l00.battle-greenhouse {--battle-scene-void:#455442;--battle-scene-rim:#9aa77f;--battle-scene-backdrop:linear-gradient(125deg,#c9c38e20,transparent 55%)}
+.battle-l00.battle-tunnel {--battle-scene-void:#102a31;--battle-scene-rim:#688f92;--battle-scene-backdrop:radial-gradient(ellipse at 12% 84%,#527a761c,transparent 50%)}
+.battle-l00.battle-finale {--battle-scene-void:#30312c;--battle-scene-rim:#9b9a86;--battle-scene-backdrop:radial-gradient(ellipse at 22% 50%,#d4ac6915,transparent 48%)}
+.battle-l00 .btl-board,
+.battle-l00 :is(.chapter-board-scroll,.market-board-scroll,.greenhouse-board-scroll,.tunnel-board-scroll,.finale-board-scroll) {
+  background-color:var(--battle-scene-void);
+  background-image:var(--battle-scene-backdrop);
+  box-shadow:0 0 0 1px var(--battle-scene-rim),0 0 0 4px #263d48,0 8px 22px #17344130;
+  border-radius:3px;
+  scrollbar-color:#68898c var(--battle-scene-void);
+}
+.battle-l00 .btl-board>canvas {border-radius:2px}
+.battle-l00 :is(.btl-unit-name,.chapter-unit-name,.market-unit-name,.greenhouse-unit-name,.tunnel-unit-name,.finale-unit-name) {text-shadow:none}
+.battle-l00 :is(.btl-unit-name,.chapter-unit-state .btl-unit-name,.market-unit-state .btl-unit-name,.greenhouse-unit-state .btl-unit-name,.tunnel-unit-state .btl-unit-name,.finale-unit-state .btl-unit-name) {
+  color:#f1ead1;background:#203b45ed;border-color:#829d96;
+}
+.battle-l00 .btl-unit-name small {color:#d6d7b9}
+.battle-l00 :is(.chapter-role-badge,.market-role-badge,.greenhouse-role-badge,.tunnel-role-badge,.finale-role-badge) {background:#d9d8b8;color:#354d4b;border-color:#acb69b}
+.battle-l00 :is(.chapter-cell,.market-cell,.greenhouse-cell,.tunnel-cell,.finale-cell):focus-visible {box-shadow:inset 0 0 0 3px #ffe0a1!important}
+.battle-l00 :is(.chapter-cell,.market-cell,.greenhouse-cell,.tunnel-cell,.finale-cell):enabled:hover {box-shadow:inset 0 0 0 2px #a8e1d2;background:#b5e5d819!important}
+@media(prefers-contrast:more){.battle-l00 .btl-unit-name{color:#fff;background:#102c38}.battle-l00 :is(.chapter-board-scroll,.market-board-scroll,.greenhouse-board-scroll,.tunnel-board-scroll,.finale-board-scroll){box-shadow:0 0 0 2px #d5e2cf}}

@@ -55,14 +55,21 @@ test('既有内容版本的战斗会话刷新后沿用同一场次，宽窄屏�
     await expect(page.getByRole('complementary',{name:'安全休整区'})).toHaveCount(0);
     await page.screenshot({path:testInfo.outputPath(`l00-teaching-${viewport.width}.png`),fullPage:true});
   }
-  // Exercise both narrow-screen movement lessons, with both cats alive throughout.
+  // The second movement lesson happens after the first real wave starts.
   await page.getByTestId('battle-cat-caster').click();
   await page.getByTestId('battle-cell-A4').press('Enter');
+  await expect(battle).toHaveAttribute('data-phase','teach_energy');
+  await page.getByTestId('battle-begin-skill-practice').click();
   await expect(battle).toHaveAttribute('data-phase','teach_move');
+  await expect(page.getByTestId('battle-wave-progress')).toContainText('第 1 / 6 波');
   await page.getByTestId('battle-cat-guard').click();
   await page.getByTestId('battle-cell-B5').press('Enter');
-  await expect(battle).toHaveAttribute('data-phase','teach_energy');
-  await expect(page.getByTestId('battle-cat-caster')).toHaveAttribute('aria-label',/体力 65 \/ 80，A4，/);
+  await expect(battle).toHaveAttribute('data-phase','teach_live_move');
+  await expect(battle).toHaveAttribute('data-effective-speed','0.5');
+  await page.getByTestId('battle-cat-caster').click();
+  await page.getByTestId('battle-cell-C4').press('Enter');
+  await expect(battle).toHaveAttribute('data-phase','skill_charge');
+  await expect(page.getByTestId('battle-cat-caster')).toHaveAttribute('aria-label',/体力 65 \/ 80，C4，/);
   await expect(page.getByTestId('battle-cat-guard')).toHaveAttribute('aria-label',/体力 240 \/ 240，B5，/);
   await page.reload();
   await page.getByRole('button', {name: '继续冒险'}).click();

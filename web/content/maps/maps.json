@@ -14,9 +14,16 @@
         "eventId": "moving_blanket_event"
       },
       {
+        "id": "alley_dog_friend_point",
+        "x": 333,
+        "y": 179,
+        "label": "巷尾的老黄",
+        "eventId": "alley_dog_friend"
+      },
+      {
         "id": "alley_crate",
         "x": 975,
-        "y": 415,
+        "y": 453,
         "label": "纸箱里的叫声",
         "eventId": "crate_event"
       }
@@ -27,22 +34,29 @@
     "id": "market",
     "name": "午夜集市",
     "status": "demo",
-    "width": 800,
-    "height": 480,
+    "width": 1672,
+    "height": 941,
     "interactions": [
       {
         "id": "market_crow_stall",
-        "x": 260,
-        "y": 280,
+        "x": 910,
+        "y": 245,
         "label": "乌鸦老黑羽的情报摊",
         "eventId": "crow_intel_event"
       },
       {
         "id": "market_pigeon_perch",
-        "x": 580,
-        "y": 270,
+        "x": 1310,
+        "y": 426,
         "label": "咕咕大盗的传言棚",
         "eventId": "pigeon_rumor_event"
+      },
+      {
+        "id": "market_momo_trace",
+        "x": 947,
+        "y": 160,
+        "label": "墨墨的踪迹",
+        "eventId": "momo_trail_event"
       }
     ],
     "dangerLevel": 2
@@ -60,9 +74,45 @@
     "id": "tunnel",
     "name": "地下通道",
     "status": "demo",
-    "width": 800,
-    "height": 480,
-    "interactions": [],
+    "width": 1672,
+    "height": 941,
+    "interactions": [
+      {
+        "id": "tunnel_false_kitten_trap",
+        "x": 402,
+        "y": 239,
+        "label": "假猫叫诱饵与绊线",
+        "eventId": "tunnel_false_kitten_trap"
+      },
+      {
+        "id": "tunnel_valve_three",
+        "x": 867,
+        "y": 743,
+        "label": "第三泄洪阀",
+        "eventId": "valve_three_event"
+      },
+      {
+        "id": "tunnel_momo_marks",
+        "x": 328,
+        "y": 698,
+        "label": "独行侠的旧记号",
+        "eventId": "tunnel_momo_marks"
+      },
+      {
+        "id": "tunnel_lamp_map",
+        "x": 1178,
+        "y": 176,
+        "label": "壁灯巡逻图",
+        "eventId": "tunnel_lamp_map"
+      },
+      {
+        "id": "tunnel_light_switch",
+        "x": 1434,
+        "y": 450,
+        "label": "应急灯闸",
+        "eventId": "tunnel_light_switch"
+      }
+    ],
     "dangerLevel": 3
   },
   {

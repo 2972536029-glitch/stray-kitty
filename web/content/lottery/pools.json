@@ -38,5 +38,30 @@
         "weight": 100
       }
     ]
+  },
+  {
+    "id": "starlight_greenhouse",
+    "name": "星空温室包裹",
+    "cost": 60,
+    "currency": "tuna",
+    "requiredFlag": "alley_rescued",
+    "entries": [
+      {
+        "furnitureId": "moon_hammock",
+        "weight": 30
+      },
+      {
+        "furnitureId": "sun_lamp",
+        "weight": 30
+      },
+      {
+        "furnitureId": "star_glass",
+        "weight": 25
+      },
+      {
+        "furnitureId": "cloud_nest",
+        "weight": 15
+      }
+    ]
   }
 ]

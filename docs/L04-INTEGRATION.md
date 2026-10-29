@@ -6,7 +6,7 @@
 
 新增入口 `tunnel_boss`，家园在 `alley_rescued` 后可进入“第四章·地下通道”试玩，无须先完成第二、三章试玩。它是独立战斗场次，不自动接管当前第四章剧情。catalog 的 lanes=5、columns=8、waves=8 表示包围尺寸与波数；棋盘实际只有 37 格，E1–E3 不存在。地形、编队与数值见[地下通道设计](../design/tower-defense/levels/L04-underground-tunnel/design.md)。
 
-正式剧情的候选插入点是 `rescue_intro_6` 之后、`rescue_intro_7` 之前，目前只作为团队对齐方案。已有剧情通过 `rescue_intro_7` 完成救援并返回家园；本轮不改这些节点，不在试玩写入 `tunnel_explored`、`cats_rescued_batch1` 或其他主线标记，也不让试玩胜利强行跳入该剧情。
+正式剧情的候选插入点是 `rescue_intro_9` 之后、`rescue_intro_10` 之前（墨墨夜视与全员护盾觉醒位于 `rescue_intro_7`，战前动员布阵位于 `rescue_intro_9`），目前只作为团队对齐方案。已有剧情通过 `rescue_intro_10` 完成救援并返回家园；本轮不改这些节点，不在试玩写入 `tunnel_explored`、`cats_rescued_batch1` 或其他主线标记，也不让试玩胜利强行跳入该剧情。
 
 `BattleHost` 按活动 attempt 的 stage 路由地下通道页面；战斗只读取真实场次快照，不从家园按钮、剧情文案或库存推测难度与携带物。
 
@@ -37,7 +37,7 @@ E7／E8 的三号泄洪阀与铁栅配合受困花猫姐妹、幼猫的叙事，
 
 左上暗管在 A2 出怪，A1 是可通行的破损管槽；用户补标的 B2 保留为完全阻路的封闭暗管。黑影沿 A2→A1→B1→C1→C2 绕行，不能穿过 B2 贴近喵喵。短路线每波仅一只、延至本波第 8 秒，且不安排厚衣黑影；斑斑默认 C1 守住该线。另两条较长路线从 B8、D8 进入，八波共 32 只，具体难度须结合正常操作验证。
 
-保持奶油浅绿棋盘、猫旁技能和紧凑军师入口，不增加伙伴侧栏或棋盘外大背景。37 个实际地格、9 个障碍、3 个入口、1 个保护格、4 格 Boss，共保留 20 个可部署格。缺失格既不画也不参与点击、部署、路径或技能中心。
+当前美术分支采用潮湿暗道的像素窄砖、排水痕、管线和阀门，保留猫旁技能和紧凑军师入口，不增加伙伴侧栏；外围环境表现地下空间，不作为室外夜景或新增地格。37 个实际地格、9 个障碍、3 个入口、1 个保护格、4 格 Boss，共保留 20 个可部署格。缺失格既不画也不参与点击、部署、路径或技能中心。战斗场景美术由战斗侧承接，页面 UI 与轩扬协作，详见[场景美术](../design/tower-defense/scene-art.md)。
 
 ## 验证与待对齐
 
@@ -51,3 +51,11 @@ E7／E8 的三号泄洪阀与铁栅配合受困花猫姐妹、幼猫的叙事，
 - 37 格棋盘、三处缺口、破管绕行、断灯／夜视、390 像素窄屏已截图检查；独立截图流程无浏览器脚本错误。私人试玩与截图保存在正式仓库之外。
 
 正式第四章主线入口、剧情战斗胜负后跳转与救援标记的写入职责仍待浩哲对齐；本章墨墨能力变体需告知余尧。现有 carry 开战快照可直接沿用，新的战中事件标准仍须另行约定。
+
+## Chapter 4 map and story integration
+
+The mainline exploration is now integrated separately from the standalone home trial described above. After Chapter 3 greenhouse progression, the existing Chapter 4 introduction enters the tunnel map. The rescue trap (`D`) is mandatory; investigating the valve (`F`) then unlocks the boss region. The mainline boss battle requires a validated return position inside its authored region. Victory continues into the existing post-battle scene, while defeat/retry leaves the required progression flags unchanged. Node-origin tunnel events return to exploration after resolution.
+
+The two-floor approved art, walkability masks, portal endpoints, lighting and event locations are tracked in `level_design/chapter4/` and `web/content/maps/maps.json`. The renderer uses a source-over darkness gradient and screen-blended warm lamp glow with the supplied lighting values; destructive destination-out compositing erased the map artwork and exposed the page backdrop. Exploration movement and camera coordinates are client-runtime state and reset to the authored spawn on a page refresh. Battle return coordinates and battle outcome are validated server-side. The standalone home trial remains available and does not set the mainline rescue flag.
+
+The development-only `模拟胜利（QA）` control is a shared utility for configured battle stages. It sends `QA_SIMULATE_VICTORY`; the local API enables that command through `GAME_QA_ENABLED` and routes it through normal completion validation. Production API processes reject the command, and production frontend builds omit the control.

@@ -1,0 +1,319 @@
+{
+  "schemaVersion": "chapter4-prototype-v1",
+  "mapId": "tunnel",
+  "chapter": "Chapter 4 — Underground Tunnel",
+  "world": {
+    "width": 1672,
+    "height": 941,
+    "origin": "top-left",
+    "coordinateSystem": "PNG-pixel",
+    "layers": [
+      "L0",
+      "Lm1"
+    ],
+    "catRadiusFromPreview": 10
+  },
+  "layerArtwork": {
+    "L0": "art/chapter4_L0_approved.png",
+    "Lm1": "art/chapter4_Lminus1_tunnel_v11.png"
+  },
+  "collision": {
+    "L0": "collision/chapter4_L0_walkable.png",
+    "Lm1": "collision/chapter4_Lminus1_walkable.png",
+    "pixelInterpretation": "white=walkable black=blocked; validate full cat footprint; do not use outdated embedded draft SVG geometry"
+  },
+  "events": [
+    {
+      "id": "tunnel_entry",
+      "label": "花房后院暗井",
+      "type": "entry",
+      "layer": "L0",
+      "x": 845,
+      "y": 135,
+      "state": "provisional_visual_anchor"
+    },
+    {
+      "id": "tunnel_false_kitten_trap",
+      "label": "假猫叫诱饵与绊线",
+      "type": "story_mandatory",
+      "layer": "L0",
+      "x": 402,
+      "y": 239,
+      "state": "provisional_visual_anchor",
+      "note": "D before western stair E1; story-gate F"
+    },
+    {
+      "id": "tunnel_e1_stairs",
+      "label": "E1 · 下至 L−1",
+      "type": "layer_connector",
+      "layer": "L0",
+      "x": 320,
+      "y": 422,
+      "state": "provisional_unwired"
+    },
+    {
+      "id": "tunnel_momo_marks",
+      "eventId": "tunnel_momo_marks",
+      "label": "独行侠的旧记号",
+      "type": "fixed_optional",
+      "layer": "L0",
+      "x": 328,
+      "y": 698,
+      "state": "provisional_visual_anchor"
+    },
+    {
+      "id": "tunnel_lamp_map",
+      "eventId": "tunnel_lamp_map",
+      "label": "壁灯巡逻图",
+      "type": "fixed_optional",
+      "layer": "L0",
+      "x": 1178,
+      "y": 176,
+      "state": "provisional_visual_anchor"
+    },
+    {
+      "id": "tunnel_light_switch",
+      "eventId": "tunnel_light_switch",
+      "label": "应急灯闸",
+      "type": "fixed_optional",
+      "layer": "L0",
+      "x": 1434,
+      "y": 450,
+      "state": "provisional_visual_anchor"
+    },
+    {
+      "id": "tunnel_valve_three",
+      "eventId": "valve_three_event",
+      "label": "第三泄洪阀",
+      "type": "story_mandatory",
+      "layer": "L0",
+      "x": 867,
+      "y": 743,
+      "state": "requires_graybox_registration_review",
+      "note": "Existing artwork shows red flood wheel at x≈865,y≈692, different from v1.2 graybox placement."
+    },
+    {
+      "id": "tunnel_exit_boss",
+      "eventId": "tunnel_boss",
+      "label": "关卡出口 · BOSS 战",
+      "type": "battle_exit",
+      "layer": "L0",
+      "x": 1520,
+      "y": 759,
+      "state": "provisional_visual_anchor"
+    },
+    {
+      "id": "tunnel_e2_stairs",
+      "label": "E2 · 返回 L0",
+      "type": "layer_connector",
+      "layer": "L0",
+      "x": 1278,
+      "y": 548,
+      "state": "provisional_unwired"
+    },
+    {
+      "id": "tunnel_random_west",
+      "label": "R1 · 西侧探索",
+      "type": "random_zone",
+      "layer": "L0",
+      "x": 182,
+      "y": 417,
+      "radius": 28,
+      "state": "provisional"
+    },
+    {
+      "id": "tunnel_random_east",
+      "label": "R2 · 北侧通道",
+      "type": "random_zone",
+      "layer": "L0",
+      "x": 1372,
+      "y": 182,
+      "radius": 28,
+      "state": "provisional"
+    },
+    {
+      "id": "tunnel_random_south",
+      "label": "R3 · 南侧庭院",
+      "type": "random_zone",
+      "layer": "L0",
+      "x": 1290,
+      "y": 654,
+      "radius": 28,
+      "state": "provisional"
+    },
+    {
+      "id": "tunnel_random_lower",
+      "label": "R4 · 下层排水道",
+      "type": "random_zone",
+      "layer": "Lm1",
+      "x": 697,
+      "y": 628,
+      "radius": 38,
+      "state": "visual_zone_only_pending_server_binding"
+    }
+  ],
+  "portals": [
+    {
+      "id": "e1",
+      "key": "F",
+      "label": "E1 · 下至 L−1",
+      "a": {
+        "x": 320,
+        "y": 422,
+        "layer": "L0"
+      },
+      "b": {
+        "x": 160,
+        "y": 195,
+        "layer": "Lm1"
+      },
+      "reach": 76,
+      "bidirectional": true
+    },
+    {
+      "id": "e2",
+      "key": "F",
+      "label": "E2 · 返回 L0",
+      "a": {
+        "x": 1278,
+        "y": 548,
+        "layer": "L0"
+      },
+      "b": {
+        "x": 1506,
+        "y": 270,
+        "layer": "Lm1"
+      },
+      "reach": 84,
+      "bidirectional": true
+    },
+    {
+      "id": "ridge-climb",
+      "key": "C",
+      "label": "C · 爬上南侧石脊顶面",
+      "a": {
+        "x": 920,
+        "y": 690,
+        "layer": "L0"
+      },
+      "b": {
+        "x": 975,
+        "y": 620,
+        "layer": "L0"
+      },
+      "reach": 64,
+      "bidirectional": true
+    },
+    {
+      "id": "niche-climb",
+      "key": "C",
+      "label": "C · 右侧凹位向上攀爬",
+      "a": {
+        "x": 1142,
+        "y": 700,
+        "layer": "L0"
+      },
+      "b": {
+        "x": 1142,
+        "y": 630,
+        "layer": "L0"
+      },
+      "reach": 60,
+      "bidirectional": true
+    },
+    {
+      "id": "tank-climb",
+      "key": "C",
+      "label": "C · 爬上中央圆罐上缘",
+      "a": {
+        "x": 545,
+        "y": 570,
+        "layer": "L0"
+      },
+      "b": {
+        "x": 548,
+        "y": 458,
+        "layer": "L0"
+      },
+      "reach": 60,
+      "bidirectional": true
+    },
+    {
+      "id": "upper-gap-jump",
+      "key": "Space",
+      "label": "Space · 北侧水沟左↔右",
+      "a": {
+        "x": 955,
+        "y": 190,
+        "layer": "L0"
+      },
+      "b": {
+        "x": 1130,
+        "y": 196,
+        "layer": "L0"
+      },
+      "reach": 62,
+      "bidirectional": true
+    },
+    {
+      "id": "south-spillway-jump",
+      "key": "Space",
+      "label": "Space · 南侧泄水沟左↔右",
+      "a": {
+        "x": 557,
+        "y": 788,
+        "layer": "L0"
+      },
+      "b": {
+        "x": 811,
+        "y": 791,
+        "layer": "L0"
+      },
+      "reach": 56,
+      "bidirectional": true
+    },
+    {
+      "id": "lm1-waterfall-jump",
+      "key": "Space",
+      "label": "Space · 下层水潭左↔右",
+      "a": {
+        "x": 410,
+        "y": 420,
+        "layer": "Lm1"
+      },
+      "b": {
+        "x": 600,
+        "y": 430,
+        "layer": "Lm1"
+      },
+      "reach": 64,
+      "bidirectional": true
+    }
+  ],
+  "storySequence": [
+    "D: tunnel_false_kitten_trap (E inspection)",
+    "F key: E1/E2 layer connector unlocked by D",
+    "F story event: tunnel_valve_three (E inspection)",
+    "G: tunnel_exit_boss area trigger after D+F; requires genuine battle result to clear"
+  ],
+  "battle": {
+    "stageId": "tunnel_boss",
+    "area": {
+      "layer": "L0",
+      "xMin": 1475,
+      "xMax": 1602,
+      "yMin": 721,
+      "yMax": 798
+    },
+    "requiredFlags": [
+      "D investigated",
+      "valve investigated"
+    ],
+    "activation": "automatic_on_enter",
+    "testOnlyVictoryButton": "preview-only; NEVER use in production"
+  },
+  "randomZones": {
+    "note": "Zones are marker candidates; they must use existing server CHECK_RANDOM_ZONE dedupe and eligibility where available; do not hardcode event rewards or new cards"
+  },
+  "sourceReference": "reference/Chapter4_Reference_Playtest_v12.html"
+}

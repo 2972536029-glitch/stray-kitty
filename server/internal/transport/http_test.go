@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"stray-kitty/server/internal/integrations/payment"
 	"stray-kitty/server/internal/platform"
 	"stray-kitty/server/internal/repository"
 	"stray-kitty/server/internal/service"
@@ -16,7 +17,7 @@ import (
 func TestHTTPBoundaries(t *testing.T) {
 	store, _ := repository.Open(filepath.Join(t.TempDir(), "save.json"))
 	catalog, _ := platform.LoadCatalog()
-	handler := transport.New(service.New(store, catalog), "")
+	handler := transport.New(service.New(store, catalog), payment.New(store, catalog), "")
 	request := func(method, path, body, token string) *httptest.ResponseRecorder {
 		r := httptest.NewRequest(method, path, strings.NewReader(body))
 		r.Header.Set("Content-Type", "application/json")

@@ -1,6 +1,7 @@
 import type {CatId, CombatState} from './state';
 import {COMMANDER_POSITION, SPAWN_POINTS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, getSkillTargetCells} from './ranges';
+import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
 
 export type CatKind = CatId | 'advisor';
 export type CatPose = 'idle' | 'attack' | 'hurt' | 'sleep';
@@ -67,27 +68,25 @@ export function drawCat(ctx:CanvasRenderingContext2D,kind:CatKind,x:number,y:num
 export interface CatAnimation {attacks:number;damage:number;attackAt:number;hurtAt:number}
 export type AnimationBook = Map<CatId,CatAnimation>;
 export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selected:CatId|null,animations:AnimationBook){
-  ctx.clearRect(0,0,700,300);ctx.fillStyle='#f7f5e9';ctx.fillRect(0,0,700,300);
+  ctx.clearRect(0,0,700,300);ctx.imageSmoothingEnabled=false;
+  const boardCell=(x:number,y:number)=>x>=0&&x<7&&y>=0&&y<3;
   for(let y=0;y<3;y++)for(let x=0;x<7;x++){
     const goal=x===COMMANDER_POSITION.x&&y===COMMANDER_POSITION.y;
-    ctx.fillStyle=goal?'#f1e5c6':y===1?'#e1e8d5':'#eef0e1';ctx.fillRect(x*100+3,y*100+3,94,94);
-    ctx.strokeStyle=goal?'#bca46d':'#c7d2ba';ctx.lineWidth=goal?2:1;ctx.strokeRect(x*100+3.5,y*100+3.5,93,93);
-    if(!goal){ctx.fillStyle='#89957e';ctx.font='11px "Microsoft YaHei", sans-serif';ctx.fillText(`${'ABC'[y]}${x+1}`,x*100+9,y*100+91);}
-    if(isSpawnCell(x,y)){
-      ctx.save();ctx.fillStyle=y===1?'#ddc7b52b':'#cfc8b724';ctx.fillRect(x*100+5,y*100+5,90,90);ctx.restore();
-    }
+    paintSceneTile(ctx,'prologue',x,y,100,{goal,spawn:isSpawnCell(x,y)});
+    paintSceneEdge(ctx,'prologue',x,y,100,boardCell);
+    if(!goal){ctx.fillStyle=SCENE_INK.label;ctx.font='11px "Microsoft YaHei", sans-serif';ctx.fillText(`${'ABC'[y]}${x+1}`,x*100+9,y*100+91);}
   }
   // B7 is the only reserved spawn entry in this prologue.
   for(const entry of SPAWN_POINTS){
     const x=entry.x*100,y=entry.y*100;
-    ctx.save();ctx.strokeStyle=entry.y===1?'#ad7963':'#a5a08c';ctx.lineWidth=entry.y===1?3:2;
+    ctx.save();ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=entry.y===1?3:2;
     ctx.setLineDash(entry.y===1?[]:[5,4]);ctx.strokeRect(x+5.5,y+5.5,89,89);ctx.setLineDash([]);
-    ctx.fillStyle=entry.y===1?'#ad7963':'#a5a08c';
+    ctx.fillStyle=SCENE_INK.danger;
     blocks(ctx,ctx.fillStyle as string,[[x+76,y+39,4,22],[x+72,y+43,4,14],[x+68,y+47,4,6]]);ctx.restore();
   }
   // Logical lanes only: upper/lower routes turn at A1/C1, never at column 2.
-  // The map module remains responsible for scenery and surrounding terrain.
-  ctx.save();ctx.strokeStyle='#afbf9d';ctx.lineWidth=1.4;ctx.setLineDash([5,7]);
+  // Scene art shares these logical tiles; lane turns and targeting remain unchanged.
+  ctx.save();ctx.strokeStyle=SCENE_INK.route;ctx.lineWidth=1.4;ctx.setLineDash([5,7]);
   for(const row of [0,1,2]){
     const y=(row+.5)*100;ctx.beginPath();ctx.moveTo(690,y);ctx.lineTo(50,y);
     if(row!==1)ctx.lineTo(50,150);ctx.stroke();
@@ -102,38 +101,31 @@ export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selec
   ctx.beginPath();ctx.moveTo(44,223);ctx.lineTo(50,215);ctx.lineTo(56,223);ctx.stroke();ctx.restore();
   const selectedCat=state.cats.find(c=>c.id===selected&&c.status==='active'&&c.combatant);
   if(selectedCat&&!state.skillAim){
-    ctx.save();ctx.fillStyle='#788f6c32';ctx.strokeStyle='#7b916d';ctx.lineWidth=2;
+    ctx.save();ctx.fillStyle='#8ee2cb30';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;
     for(const cell of getAttackCells(selectedCat)){ctx.fillRect(cell.x*100+5,cell.y*100+5,90,90);ctx.strokeRect(cell.x*100+5.5,cell.y*100+5.5,89,89);}
     ctx.restore();
   }
   const aimCat=state.skillAim?state.cats.find(cat=>cat.id===state.skillAim?.catId):undefined;
   if(aimCat){
     const centers=getSkillTargetCells(aimCat);
-    ctx.save();ctx.fillStyle='#8fc5c044';
+    ctx.save();ctx.fillStyle='#8ee2cb38';
     for(const cell of centers)ctx.fillRect(cell.x*100+4,cell.y*100+4,92,92);
     if(centers.length){
       const minX=Math.min(...centers.map(cell=>cell.x)),maxX=Math.max(...centers.map(cell=>cell.x));
       const minY=Math.min(...centers.map(cell=>cell.y)),maxY=Math.max(...centers.map(cell=>cell.y));
-      ctx.strokeStyle='#689f9a';ctx.lineWidth=3;ctx.setLineDash([8,5]);
+      ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=3;ctx.setLineDash([8,5]);
       ctx.strokeRect(minX*100+4,minY*100+4,(maxX-minX+1)*100-8,(maxY-minY+1)*100-8);ctx.setLineDash([]);
     }
-    ctx.fillStyle='#f0d16c80';ctx.strokeStyle='#ba8f32';ctx.lineWidth=2;
+    ctx.fillStyle='#f4ce8355';ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;
     for(const cell of getSkillCells(aimCat,state.skillAim?.target)){ctx.fillRect(cell.x*100+5,cell.y*100+5,90,90);ctx.strokeRect(cell.x*100+5.5,cell.y*100+5.5,89,89);}
     ctx.restore();
   }
   for(const enemy of state.enemies){
     const ex=(enemy.x+.5)*100,ey=(enemy.y+.5)*100;ctx.save();ctx.translate(ex-25,ey-30+Math.sin(state.time*7)*2);
-    if(enemy.training){
-      blocks(ctx,'#947552',[[22,2,6,59],[7,20,36,6],[10,57,30,6]]);
-      blocks(ctx,'#d1b581',[[10,7,31,35],[7,12,37,25]]);
-      blocks(ctx,'#f3e6ba',[[15,12,21,25],[11,17,29,15]]);
-      blocks(ctx,'#b88f56',[[21,18,9,14],[18,21,15,8]]);
-      pixel(ctx,23,22,5,5,'#f8edc7');ctx.restore();continue;
-    }
-    blocks(ctx,'#4d5659',[[10,2,30,7],[5,9,40,36],[0,21,50,19],[6,44,8,10],[20,44,9,8],[35,44,8,10]]);
-    blocks(ctx,'#7c7e79',[[10,8,30,4],[5,12,6,19]]);blocks(ctx,'#e8dbb0',[[13,21,8,4],[30,21,8,4]]);
+    blocks(ctx,SCENE_INK.enemy,[[10,2,30,7],[5,9,40,36],[0,21,50,19],[6,44,8,10],[20,44,9,8],[35,44,8,10]]);
+    blocks(ctx,SCENE_INK.enemyLight,[[10,8,30,4],[5,12,6,19]]);blocks(ctx,SCENE_INK.gold,[[13,21,8,4],[30,21,8,4]]);
     if(enemy.type==='runner')blocks(ctx,'#a98a69',[[4,35,42,4],[8,40,9,4]]);
-    ctx.fillStyle='#d6daca';ctx.fillRect(4,-8,43,4);ctx.fillStyle='#9b9c79';ctx.fillRect(4,-8,43*enemy.hp/enemy.maxHp,4);ctx.restore();
+    ctx.fillStyle='#243741';ctx.fillRect(4,-8,43,4);ctx.fillStyle='#efc58a';ctx.fillRect(4,-8,43*enemy.hp/enemy.maxHp,4);ctx.restore();
   }
   for(const cat of state.cats){
     if(cat.status!=='active'||cat.x<0)continue;
@@ -145,20 +137,20 @@ export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selec
     const x=(cat.x+.5)*100,y=(cat.y+.5)*100;
     const size=cat.id==='hero'?64:76;
     drawCat(ctx,cat.id,x-size/2,y-30,size,attacking?'attack':hurting?'hurt':'idle',attacking?(state.time-animation.attackAt)/.4:(state.time-animation.hurtAt)/.25);
-    if(cat.shield>0){ctx.save();ctx.strokeStyle='#77aeb9';ctx.fillStyle='#83bdc018';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y+8,38,36,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();}
+    if(cat.shield>0){ctx.save();ctx.strokeStyle='#8dd7e4';ctx.fillStyle='#8dd7e424';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y+8,38,36,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();}
   }
   for(const shot of state.projectiles){
     const t=1-shot.ttl/shot.maxTtl,x=(shot.x+(shot.tx-shot.x)*t+.5)*100,y=(shot.y+(shot.ty-shot.y)*t+.5)*100;
-    blocks(ctx,'#bd9a54',[[x-7,y-2,14,4],[x-2,y-7,4,14]]);pixel(ctx,x-2,y-2,4,4,'#fff6c6');
+    blocks(ctx,SCENE_INK.gold,[[x-7,y-2,14,4],[x-2,y-7,4,14]]);pixel(ctx,x-2,y-2,4,4,'#fff6c6');
   }
   for(const effect of state.effects){
     if(effect.kind==='skill-area'){
       const progress=1-effect.ttl/effect.maxTtl,x=(effect.x+.5)*100,y=(effect.y+.5)*100;
       ctx.save();ctx.globalAlpha=1-progress;ctx.fillStyle='#f3dc974f';ctx.fillRect(effect.x*100+5,effect.y*100+5,90,90);
-      ctx.strokeStyle='#bca05e';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,12+progress*30,0,Math.PI*2);ctx.stroke();
-      blocks(ctx,'#d6b46a',[[x-14,y-3,28,6],[x-3,y-14,6,28]]);ctx.restore();continue;
+      ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,12+progress*30,0,Math.PI*2);ctx.stroke();
+      blocks(ctx,SCENE_INK.gold,[[x-14,y-3,28,6],[x-3,y-14,6,28]]);ctx.restore();continue;
     }
     if(!effect.text)continue;
-    ctx.save();ctx.fillStyle=effect.kind==='heal'?'#4e785d':effect.kind.includes('shield')?'#4b8997':'#a5775e';ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.fillText(effect.text,(effect.x+.5)*100,(effect.y+.35)*100-(1-effect.ttl/effect.maxTtl)*12);ctx.restore();
+    ctx.save();ctx.fillStyle=effect.kind==='heal'?'#a9e0a8':effect.kind.includes('shield')?'#a0e3ed':SCENE_INK.danger;ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.fillText(effect.text,(effect.x+.5)*100,(effect.y+.35)*100-(1-effect.ttl/effect.maxTtl)*12);ctx.restore();
   }
 }

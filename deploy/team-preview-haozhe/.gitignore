@@ -1,0 +1,9 @@
+rendered/
+test-output/
+build-context/
+private/
+*.env
+*.kubeconfig
+*.dockerconfigjson
+*secret-values*
+backups/

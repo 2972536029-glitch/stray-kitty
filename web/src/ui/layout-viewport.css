@@ -79,3 +79,9 @@ html,body,#root{min-height:100%;width:100%}
 }
 @media(max-width:360px){.topbar .brand strong{font-size:11px}.topbar .brand small{font-size:7px}.topbar nav{gap:4px}.topbar nav button{width:27px;height:29px}}
 @media(max-height:650px) and (min-width:801px){.app-shell .topbar{top:10px;min-height:58px}.world-toolbar{top:80px}.dev-bar{top:126px}.world-footer{bottom:10px;padding:8px 12px}.dialogue-card{margin-bottom:84px;padding:12px 16px}.dialogue-copy p{font-size:12px;margin:10px 0;min-height:0}.event-card{max-height:calc(100dvh - 150px);margin:80px 24px 60px}.home-controls{top:80px;max-height:calc(100dvh - 155px)}}
+
+/* Chapter 1 in-world objective; non-interactive and always behind modal/dialogue layers. */
+.alley-objective{position:absolute;z-index:2;pointer-events:none;top:160px;left:22px;max-width:min(360px,calc(100% - 44px));padding:8px 12px;border:2px solid #66513e;border-radius:3px;background:#132d39e6;color:#f5e7c7;box-shadow:3px 3px 0 #16242c;font-size:12px}
+.alley-objective span{display:block;color:#e2b87a;font-size:10px;margin-bottom:3px}
+.alley-objective strong{display:block;font-weight:600;line-height:1.5}
+@media(max-width:800px){.alley-objective{top:165px;left:14px;font-size:11px;max-width:calc(100% - 28px)}}

@@ -3,8 +3,8 @@ import type {BattleDifficulty} from './types.ts';
 export type CatId = 'hero' | 'caster' | 'guard';
 export type EnemyType = 'scout' | 'runner';
 export type PlaybackSpeed = 0.5 | 1 | 2;
-export type CombatPhase = 'ready' | 'hero_danger' | 'caster_rescue' | 'teach_position' | 'teach_move' | 'teach_energy' | 'skill_charge' | 'teach_guard_skill' | 'teach_caster_skill' | 'battle' | 'won' | 'failed';
-export type TutorialStep = 'position_caster' | 'move_guard' | 'teach_energy' | 'skill_charge' | 'teach_guard_skill' | 'teach_caster_skill' | 'battle';
+export type CombatPhase = 'ready' | 'hero_danger' | 'caster_rescue' | 'teach_position' | 'teach_move' | 'teach_live_move' | 'teach_energy' | 'skill_charge' | 'teach_guard_skill' | 'teach_caster_skill' | 'battle' | 'won' | 'failed';
+export type TutorialStep = 'position_caster' | 'move_guard' | 'teach_live_move' | 'teach_energy' | 'skill_charge' | 'teach_guard_skill' | 'teach_caster_skill' | 'battle';
 export interface Position {x: number; y: number}
 export interface SkillDefinition {name: string; targeting: 'self' | 'area' | 'forward'; cost: number; offsets: readonly Readonly<Position>[]; damage?: number; shield?: number; duration?: number}
 export interface CatDefinition {name: string; breed: string; role: string; maxHp: number; combatant: boolean; damage: number; interval: number; block: number}
@@ -30,6 +30,7 @@ export type CombatAction =
   | {type: 'MOVE_CAT'; catId: string; x: number; y: number};
 export interface CombatState {
   version: 2; phase: CombatPhase; tutorialStep: TutorialStep | null; time: number; phaseTime: number; accumulator: number; sequence: number;
+  tutorialProgress: {moved: boolean; guardSkill: boolean; casterSkill: boolean};
   cats: CombatCatState[]; advisor: {id: 'advisor'; name: string; role: string; visible: boolean; x: number; y: number};
   enemies: CombatEnemy[]; projectiles: CombatEffect[]; effects: CombatEffect[];
   skillAim: {catId: 'caster' | 'guard'; target: Position | null} | null;

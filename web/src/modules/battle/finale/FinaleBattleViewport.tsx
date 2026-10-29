@@ -8,6 +8,11 @@ import {drawCat} from '../l00/painter';
 import {getFinaleAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
+import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
+import {useBattleBoardFit} from '../useBattleBoardFit';
+import {useModelAdvisor} from '../useModelAdvisor';
+import {AdvisorChatMessages} from '../AdvisorChatMessages';
+import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
 import '../carry.css';
 import '../l00/battle.css';
 import './finale.css';
@@ -27,8 +32,8 @@ function RoleBadge({id}:{id:FinaleCatId}){
 }
 function AdvisorPortrait(){
   const ref=useRef<HTMLCanvasElement>(null);
-  useEffect(()=>{const context=ref.current?.getContext('2d');if(context)drawCat(context,'advisor',0,0,64);},[]);
-  return <canvas ref={ref} width={64} height={64} className="btl-portrait" aria-hidden="true"/>;
+  useEffect(()=>{const context=ref.current?.getContext('2d');if(context)drawCat(context,'advisor',0,0,96);},[]);
+  return <canvas ref={ref} width={96} height={96} className="btl-portrait" aria-hidden="true"/>;
 }
 function Health({cat}:{cat:FinaleCat}){
   return <div className="finale-cat-meters">
@@ -41,6 +46,7 @@ function Health({cat}:{cat:FinaleCat}){
 export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult}:FinaleBattleViewportProps){
   const [game,setGame]=useState(()=>createFinaleBattle({difficulty,carry}));
   const gameRef=useRef(game);
+  const skillFeedback=useSkillFeedback();
   const [selected,setSelected]=useState<FinaleCatId|null>(null);
   const [moving,setMoving]=useState<FinaleCatId|null>(null);
   const [hover,setHover]=useState<Position|null>(null);
@@ -50,16 +56,19 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
   const [hidden,setHidden]=useState(document.hidden);
   const [notice,setNotice]=useState('');
   const [submitted,setSubmitted]=useState(false);
-  const [overview,setOverview]=useState(true);
-  const [overviewWidth,setOverviewWidth]=useState<number>();
+  const [overview,setOverview]=useState(()=>window.innerWidth>=700);
   const [menuPosition,setMenuPosition]=useState({left:0,top:0});
   const [tooltipPosition,setTooltipPosition]=useState({left:0,top:0});
   const [skillTooltipOpen,setSkillTooltipOpen]=useState(false);
   const [question,setQuestion]=useState('');
-  const [messages,setMessages]=useState<Array<{question:string;answer:ReturnType<typeof getFinaleAnswer>}>>([]);
+  const advisorChat=useModelAdvisor({
+    attemptId,stageId:'finale_boss',open:chatOpen,
+    blocked:paused||hidden||submitted||retreatOpen||game.phase==='won'||game.phase==='lost',
+    getSnapshot:()=>gameRef.current,localAnswer:getFinaleAnswer,
+  });
   const canvasRef=useRef<HTMLCanvasElement>(null),boardRef=useRef<HTMLDivElement>(null),scrollRef=useRef<HTMLDivElement>(null);
+  const fittedWidth=useBattleBoardFit(scrollRef,MAP.columns,MAP.rows);
   const battlefieldRef=useRef<HTMLDivElement>(null),menuRef=useRef<HTMLDivElement>(null);
-  const statusRef=useRef<HTMLDivElement>(null),mapToolbarRef=useRef<HTMLDivElement>(null);
   const tooltipRef=useRef<HTMLDivElement>(null);
   const chatLogRef=useRef<HTMLDivElement>(null);
   const previousSelectedStatus=useRef<{id:FinaleCatId;status:FinaleCat['status']}|null>(null);
@@ -73,7 +82,20 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
 
   function publish(next:FinaleState){gameRef.current=next;setGame(next);return next;}
   function act(action:FinaleAction){
-    const next=publish(dispatchFinale(gameRef.current,action));
+    const previous=gameRef.current;
+    const next=publish(dispatchFinale(previous,action));
+    // Emit only for an accepted cast, including skills released by SELECT_SKILL.
+    if(action.type==='SELECT_SKILL'||action.type==='CAST_SKILL'){
+      const cat=previous.cats.find(candidate=>candidate.id===action.catId);
+      const cast=next.cats.find(candidate=>candidate.id===action.catId);
+      if(cat&&cast&&cast.skillUses>cat.skillUses){
+        const skill=SKILLS[cat.id];
+        const target=action.type==='CAST_SKILL'?action.target??previous.aim?.target:previous.aim?.target;
+        skillFeedback.emit({catId:cat.id,name:skill.name,origin:{x:cat.x,y:cat.y},
+          cells:skill.targeting==='team'?undefined:getSkillCells(cat,target),
+          recipients:skill.targeting==='team'?[...next.cats,...next.allies].filter(friend=>friend.status==='active').map(friend=>({x:friend.x,y:friend.y})):skill.targeting==='self'?[{x:cat.x,y:cat.y}]:undefined});
+      }
+    }
     if(next.lastAction&&!next.lastAction.ok)setNotice(next.lastAction.message);
     else if(action.type!=='AIM_SKILL'&&action.type!=='SET_UI_PAUSE')setNotice('');
     return next;
@@ -114,9 +136,9 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
 
   useEffect(()=>{
     if(attemptRef.current===attemptId)return;
-    attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);
+    attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);skillFeedback.clear();
     setSelected(null);setMoving(null);setHover(null);setChatOpen(false);setDragging(null);setNotice('');
-    setQuestion('');setMessages([]);
+    setQuestion('');
     publish(createFinaleBattle({difficulty,carry}));
   },[attemptId,difficulty,carry]);
 
@@ -160,7 +182,7 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
     if(cat&&previous?.id===cat.id&&previous.status==='active'&&cat.status==='retired')setMoving(null);
     previousSelectedStatus.current=cat?{id:cat.id,status:cat.status}:null;
   },[game.cats,selected]);
-  useEffect(()=>{if(chatOpen&&chatLogRef.current)chatLogRef.current.scrollTop=chatLogRef.current.scrollHeight;},[messages,chatOpen]);
+  useEffect(()=>{if(chatOpen&&chatLogRef.current)chatLogRef.current.scrollTop=chatLogRef.current.scrollHeight;},[advisorChat.messages,advisorChat.loading,advisorChat.notice,chatOpen]);
 
   function suppressSyntheticClick(){suppressClick.current=true;}
 
@@ -218,8 +240,7 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
     }
   }
   function ask(text:string){
-    const value=text.trim().slice(0,200);if(!value||paused||hidden)return;
-    setMessages(previous=>[...previous,{question:value,answer:getFinaleAnswer(gameRef.current,value)}]);setQuestion('');
+    if(advisorChat.ask(text))setQuestion('');
   }
   function previewTouch(event:PointerEvent<HTMLDivElement>){
     if(aimPointer.current!==event.pointerId||!gameRef.current.aim)return;
@@ -260,41 +281,6 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
   const attackCells=chosen?.status==='active'&&!game.aim?getAttackCells(chosen):[];
   const skillCells=aimCat&&game.aim?.target?getSkillCells(aimCat,game.aim.target):[];
   const canCast=!!inspected&&game.phase==='battle'&&!game.paused&&inspected.energy>=100;
-
-  // Fit the whole irregular board into the host's visible battle area. Measuring from
-  // the unscrolled position keeps ordinary scrolling from repeatedly resizing it.
-  useLayoutEffect(()=>{
-    if(!overview)return;
-    const scroll=scrollRef.current;if(!scroll)return;
-    let frame=0,lastScrollWidth=scroll.clientWidth;
-    const clippedAncestors:HTMLElement[]=[];
-    for(let ancestor=scroll.parentElement;ancestor;ancestor=ancestor.parentElement){
-      if(/auto|scroll|hidden|clip/.test(getComputedStyle(ancestor).overflowY))clippedAncestors.push(ancestor);
-    }
-    const update=()=>{
-      frame=0;
-      const box=scroll.getBoundingClientRect();let bottom=window.innerHeight,top=box.top;
-      for(const ancestor of clippedAncestors){bottom=Math.min(bottom,ancestor.getBoundingClientRect().bottom);top+=ancestor.scrollTop;}
-      // Leave room for the range legend and the cat-control caption. Very short
-      // screens can still scroll the host or switch to the full-size board.
-      const height=Math.max(200,bottom-top-66);
-      const width=Math.floor(Math.min(scroll.clientWidth,height*MAP.columns/MAP.rows));
-      setOverviewWidth(previous=>previous===width?previous:width);
-    };
-    const schedule=()=>{if(!frame)frame=requestAnimationFrame(update);};
-    const observer=new ResizeObserver(entries=>{
-      // Board height is our output, not an input: ignore height-only notifications
-      // from its scroll wrapper so there is no resize feedback loop.
-      const width=scroll.clientWidth;
-      if(entries.some(entry=>entry.target!==scroll)||Math.abs(width-lastScrollWidth)>=1){lastScrollWidth=width;schedule();}
-    });
-    observer.observe(scroll);
-    if(statusRef.current)observer.observe(statusRef.current);
-    if(mapToolbarRef.current)observer.observe(mapToolbarRef.current);
-    if(clippedAncestors[0])observer.observe(clippedAncestors[0]);
-    update();window.addEventListener('resize',schedule);
-    return()=>{observer.disconnect();window.removeEventListener('resize',schedule);if(frame)cancelAnimationFrame(frame);};
-  },[overview,attemptId]);
 
   // Place the menu beside the visible cat, outside the scroll clipping boundary.
   // On a small overview it may sit above the map, but never below the roster.
@@ -337,34 +323,38 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
     return()=>{observer.disconnect();window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);};
   },[inspected?.id,inspected?.x,inspected?.y,overview,skillTooltipOpen]);
 
-  return <section className="battle-l00 battle-finale" data-testid="finale-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} data-light-stage={game.lightStage} data-boss-damage-multiplier={bossDamageMultiplier.toFixed(2)} data-night-vision-remaining={game.nightVisionRemaining.toFixed(2)} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.finale-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
-    <div ref={statusRef} className="finale-status-block">
+  return <section className="battle-l00 battle-finale battle-immersive" data-scene="finale" data-testid="finale-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} data-light-stage={game.lightStage} data-boss-damage-multiplier={bossDamageMultiplier.toFixed(2)} data-night-vision-remaining={game.nightVisionRemaining.toFixed(2)} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.finale-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
+    <BattleSceneBackdrop scene="finale" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS}/>
     <div className="btl-head"><div><span className="btl-eyebrow">CHAPTER 05 · THE FINAL STAND</span><strong>第五章 · 点亮流浪猫王国</strong></div><div className="btl-progress"><span>黑影已离场 {game.defeated+game.leaks} / {game.totalEnemies}</span><span data-testid="finale-leaks" aria-label={`已漏过 ${game.leaks} 只黑影，最多 ${game.maxLeaks} 次`}>防线 {'●'.repeat(Math.max(0,game.maxLeaks-game.leaks))}{'○'.repeat(Math.min(game.maxLeaks,game.leaks))}</span></div></div>
     <div className="btl-wave-status"><strong data-testid="finale-wave">第 {game.wave} / {game.totalWaves} 波 · 剩余 {remaining} 只黑影</strong><span>主力 {game.cats.filter(cat=>cat.status==='active').length} / {RULES.maxCats} · 零血退场</span><span>{CELLS.length} 格不规则仓库 · {MAP.spawns.map(cellName).join("、")} → {cellName(MAP.goal)}</span></div>
-    <div className="btl-difficulty-strip" data-testid="finale-difficulty"><strong>{DIFFICULTIES[difficulty].label} · 敌人体力 {Math.round(DIFFICULTIES[difficulty].hpMultiplier*100)}%</strong><span>守完十波，击败首领与两名精英；3 次突破或六位主力全部退场则失败。</span></div>
-    <div className="finale-leaders" aria-label="首领与两名精英">
+    <details className="battle-hud-details"><summary>战况说明</summary>
+      <div className="btl-difficulty-strip" data-testid="finale-difficulty"><strong>{DIFFICULTIES[difficulty].label} · 敌人体力 {Math.round(DIFFICULTIES[difficulty].hpMultiplier*100)}%</strong><span>守完十波，击败首领与两名精英；3 次突破或六位主力全部退场则失败。</span></div>
+      {game.phase==='ready'&&<p className="finale-ready" data-testid="finale-ready">六位主力已就位。观察三路敌情、处理护卫、移动躲避预警；固定援军会陆续加入，技能仍需亲自释放。</p>}
+      <div className="finale-reinforcement-strip" aria-label="固定援军到达时间">{game.allies.map(ally=><span key={ally.id} className={`finale-reinforcement-chip is-${ally.status}`} title={ally.description}>{ally.name} · {cellName(ally)} · {ally.status==='waiting'?`第${ally.arriveWave}波加入`:ally.status==='retired'?'已退场':`在场 ${Math.ceil(ally.hp)}/${ally.maxHp}`}</span>)}<small>固定支援 · 自动协助 · 主力技能仍需操作</small></div>
+      <p>团子的移动灯具会逐段推进救援光路。击败影甲卫可永久解除首领影幕；墨墨夜视可暂时照破影幕。固定援军自动协助，主力技能和换位仍需操作。</p>
+      <p className="battle-advisor-summary">{advice}</p>
+    </details>
+    <div className="finale-leaders battle-hud-boss" aria-label="首领与两名精英">
       <div className={`finale-boss-panel finale-leader-boss${bossWindup?' is-warning':''}`} data-testid="finale-boss" data-leader="boss" data-status={game.boss.phase} data-hp={Math.ceil(game.boss.hp)} data-tier-phase={game.boss.tierPhase} data-boss-skill={game.boss.skill} data-boss-phase={game.boss.phase} data-boss-attacks={game.boss.attacks} data-boss-basic-attacking={bossBasicAttacking} data-boss-slams={game.boss.slams}>
         <strong>{game.boss.phase==='defeated'?'永夜之王已击败':`${game.boss.name} · 第${game.boss.tierPhase}阶段`}</strong><div className="finale-boss-health" role="meter" aria-label="首领体力" aria-valuemin={0} aria-valuemax={game.boss.maxHp} aria-valuenow={Math.ceil(game.boss.hp)} data-testid="finale-boss-health"><i style={{width:`${100*game.boss.hp/game.boss.maxHp}%`}}/><span>{Math.ceil(game.boss.hp)} / {game.boss.maxHp}</span></div>
         <small>{bossWindup?`${game.boss.skill==='sweep'?'裂影横扫':'王冠坠击'}！${Math.max(0,RULES.bossSkillWindup-game.boss.phaseTime).toFixed(1)} 秒后落下，请移出橙色危险格。`:game.boss.phase==='defeated'?'仍需击败两名护卫并守完全部波次。':bossBasicAttacking?'普通攻击 · 影爪挥击':'3×3 巨型首领 · 半血进入第二阶段'}</small>
       </div>
       {game.elites.map(elite=><div key={elite.id} className={`finale-boss-panel finale-elite-panel${elite.status==='defeated'?' is-defeated':''}`} data-testid={`finale-elite-${elite.id}`} data-leader={elite.id} data-status={elite.status} data-hp={Math.ceil(elite.hp)} data-x={elite.x} data-y={elite.y}><strong>{elite.name} · {cellName(elite)}</strong><div className="finale-boss-health" role="meter" aria-label={`${elite.name}体力`} aria-valuemin={0} aria-valuemax={elite.maxHp} aria-valuenow={Math.ceil(elite.hp)}><i style={{width:`${100*elite.hp/elite.maxHp}%`}}/><span>{Math.ceil(elite.hp)} / {elite.maxHp}</span></div><small>{elite.status==='defeated'?'已击败 · 光环解除':elite.id==='armor-guard'?'保护首领影幕 · 可用夜视暂时照破':'鼓舞普通黑影 · 先击败可减轻守线压力'}</small></div>)}
     </div>
-    <p className={`finale-vision-status${game.nightVisionRemaining>0?' is-night-vision':''}`} data-testid="finale-vision-status"><strong>光路 {game.lightStage} / 3 · 聚光车 {cellName(MAP.lightWaypoints[game.lightStage])}</strong><span>{game.nightVisionRemaining>0?`墨墨夜视剩余 ${game.nightVisionRemaining.toFixed(1)} 秒 · 首领影幕暂时失效`:game.boss.phase==='defeated'?'首领已击败':`首领当前承受 ${Math.round(bossDamageMultiplier*100)}% 伤害 · 击败影甲卫或用墨墨夜视可破影幕`}</span></p>
-    <div className="finale-reinforcement-strip" aria-label="固定援军到达时间">{game.allies.map(ally=><span key={ally.id} className={`finale-reinforcement-chip is-${ally.status}`} title={ally.description}>{ally.name} · {cellName(ally)} · {ally.status==='waiting'?`第${ally.arriveWave}波加入`:ally.status==='retired'?'已退场':`在场 ${Math.ceil(ally.hp)}/${ally.maxHp}`}</span>)}<small>固定支援 · 自动协助 · 主力技能仍需操作</small></div>
-    <CarryPanel carry={game.carry} phase={game.phase} wave={game.wave} waves={WAVES} entrances={Object.fromEntries(Object.entries(ROUTES).map(([route,path])=>[route,path[0]]))} enemies={ENEMY_DEFINITIONS} disabled={paused||hidden||game.paused||game.uiPaused||game.externallyPaused} onUse={()=>act({type:'USE_CARRY'})}/>
-    <div className="btl-tactics"><button type="button" data-testid="finale-advisor" aria-label="与军师阿策交谈" disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(value=>!value);}}><AdvisorPortrait/><strong>问问阿策</strong></button><p>{advice}</p></div>
+    <p className={`finale-vision-status battle-hud-mechanic${game.nightVisionRemaining>0?' is-night-vision':''}`} data-testid="finale-vision-status"><strong>光路 {game.lightStage} / 3 · 聚光车 {cellName(MAP.lightWaypoints[game.lightStage])}</strong><span>{game.nightVisionRemaining>0?`墨墨夜视剩余 ${game.nightVisionRemaining.toFixed(1)} 秒 · 首领影幕暂时失效`:game.boss.phase==='defeated'?'首领已击败':`首领当前承受 ${Math.round(bossDamageMultiplier*100)}% 伤害`}</span></p>
+    <CarryPanel compact carry={game.carry} phase={game.phase} wave={game.wave} waves={WAVES} entrances={Object.fromEntries(Object.entries(ROUTES).map(([route,path])=>[route,path[0]]))} enemies={ENEMY_DEFINITIONS} disabled={paused||hidden||game.paused||game.uiPaused||game.externallyPaused} onUse={()=>act({type:'USE_CARRY'})}/>
+    <div className="btl-tactics battle-advisor"><button title={advice} type="button" data-testid="finale-advisor" aria-label="与军师阿策交谈" disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(value=>!value);}}><AdvisorPortrait/><strong>阿策</strong><span>聊聊战况</span></button></div>
     {game.cats.some(cat=>cat.status==='retired')&&<p className="btl-retirement-note" role="status" data-testid="finale-retired">{game.cats.filter(cat=>cat.status==='retired').map(cat=>cat.name).join('、')}已退场，本场无法复活。</p>}
-    </div>
     <div className="btl-arena btl-arena-wide">
       <div className="btl-board-column">
-        <div ref={mapToolbarRef} className="finale-map-toolbar">
+        <div className="finale-map-toolbar">
         <div className="btl-playback" role="group" aria-label="战斗速度与开始暂停"><button type="button" className={game.baseSpeed===.5?'btl-speed-selected':''} disabled={ended||paused||hidden} aria-pressed={game.baseSpeed===.5} data-testid="finale-speed-half" onClick={()=>act({type:'SET_SPEED',speed:.5})}>×0.5</button><button type="button" className={game.baseSpeed!==.5?'btl-speed-selected':''} disabled={ended||paused||hidden} aria-pressed={game.baseSpeed!==.5} data-testid="finale-speed-toggle" aria-label={`常速或倍速，当前基础 ×${game.baseSpeed}`} onClick={()=>act({type:'SET_SPEED',speed:game.baseSpeed===1?2:1})}>{game.baseSpeed===.5?'×1 / ×2':`×${game.baseSpeed}`}</button><button type="button" className="btl-play-toggle" data-testid="finale-play-toggle" disabled={paused||hidden||ended||chatOpen||retreatOpen} onClick={startOrToggle}>{game.phase==='ready'?'开始守护':game.paused?'继续战斗':'暂停战斗'}</button><span data-testid="finale-effective-speed">{speed===0?'当前暂停':game.aim?'技能瞄准 ×1':inspected?'查看猫咪 · 临时 ×0.5':`当前 ×${speed}`} · {game.elapsed.toFixed(0)} 秒</span></div>
-        {game.phase==='ready'&&<p className="finale-ready" data-testid="finale-ready">六位主力已就位。观察三路敌情、处理护卫、移动躲避预警；固定援军会陆续加入，技能仍需亲自释放。</p>}
         <div className="finale-map-tools"><button type="button" className="btl-quiet" data-testid="finale-overview-toggle" aria-pressed={overview} onClick={()=>setOverview(value=>!value)}>{overview?'放大战场':'查看全图'}</button><button type="button" className="btl-quiet" onClick={()=>showMapArea('goal')}>← 守护点</button><button type="button" className="btl-quiet" onClick={()=>showMapArea('branch')}>中路入口 →</button><button type="button" className="btl-quiet" onClick={()=>showMapArea('boss')}>首领 →</button></div>
         </div>
         <div className="finale-battlefield" ref={battlefieldRef}>
-          <div ref={scrollRef} className="finale-board-scroll" role="region" aria-label="终章废仓库战场，窄屏可横向滚动"><div ref={boardRef} tabIndex={-1} className={`finale-board${game.nightVisionRemaining>0?' has-night-vision':''}${overview?' is-overview':''}${moving?' is-moving':''}${game.aim?' is-aiming':''}`} data-testid="finale-board" data-overview={overview} style={overview&&overviewWidth?{width:overviewWidth}:undefined} onClick={event=>{if(event.target===event.currentTarget){if(suppressClick.current)suppressClick.current=false;else closeInspection();}}} onPointerDown={event=>{if(gameRef.current.aim&&event.pointerType!=='mouse'&&event.button===0){aimPointer.current=event.pointerId;event.currentTarget.setPointerCapture(event.pointerId);previewTouch(event);}}} onPointerMove={previewTouch} onPointerUp={event=>finishTouchAim(event)} onPointerCancel={event=>finishTouchAim(event,true)} onLostPointerCapture={()=>{aimPointer.current=null;}} onContextMenu={event=>{event.preventDefault();if(gameRef.current.aim)cancelAim();else closeInspection();}} onPointerLeave={()=>{if(!gesture.current){setHover(null);if(gameRef.current.aim)act({type:'AIM_SKILL',x:-1,y:-1});}}}>
+          <div ref={scrollRef} className="finale-board-scroll" role="region" aria-label="终章废仓库战场，窄屏可横向滚动"><div ref={boardRef} tabIndex={-1} className={`finale-board${game.nightVisionRemaining>0?' has-night-vision':''}${overview?' is-overview':''}${moving?' is-moving':''}${game.aim?' is-aiming':''}`} data-testid="finale-board" data-overview={overview} style={{width:overview?fittedWidth:Math.max(MAP.columns*80,(fittedWidth??0)*1.25)}} onClick={event=>{if(event.target===event.currentTarget){if(suppressClick.current)suppressClick.current=false;else closeInspection();}}} onPointerDown={event=>{if(gameRef.current.aim&&event.pointerType!=='mouse'&&event.button===0){aimPointer.current=event.pointerId;event.currentTarget.setPointerCapture(event.pointerId);previewTouch(event);}}} onPointerMove={previewTouch} onPointerUp={event=>finishTouchAim(event)} onPointerCancel={event=>finishTouchAim(event,true)} onLostPointerCapture={()=>{aimPointer.current=null;}} onContextMenu={event=>{event.preventDefault();if(gameRef.current.aim)cancelAim();else closeInspection();}} onPointerLeave={()=>{if(!gesture.current){setHover(null);if(gameRef.current.aim)act({type:'AIM_SKILL',x:-1,y:-1});}}}>
             <canvas ref={canvasRef} width={BOARD_WIDTH} height={BOARD_HEIGHT} aria-label="七行十二列外框内七十四格不规则废仓库；九格永夜之王与两名精英，喵喵在D2，三座固定援军台，缺口透明"/>
+            <SkillFeedback columns={MAP.columns} rows={MAP.rows} bursts={skillFeedback.bursts} shields={[...game.cats,...game.allies].filter(cat=>cat.status==='active'&&cat.shield>0)}/>
 
             <div className="finale-cells">{CELLS.map(position=>{
               const cat=game.cats.find(c=>c.status==='active'&&c.x===position.x&&c.y===position.y);
@@ -387,7 +377,7 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
       </div>
     </div>
     <div className="btl-controls"><p role="status" className={notice?'finale-notice':''}>{notice||game.logs.at(-1)?.text||'伙伴们准备好了。'}<small>{ended?submitted?'正在交回主流程结算…':'守护结束':'每模拟秒 +5 能量 · 满 100 手动施法 · 体力归零退场'}</small></p>{game.phase==='battle'&&<button type="button" className="btl-quiet finale-retreat" disabled={paused||hidden} data-testid="finale-retreat" onClick={()=>{cancelAim();closeInspection();setChatOpen(false);setRetreatOpen(true);}}>撤离本场</button>}</div>
-    {chatOpen&&<section className="btl-chat" aria-label="军师阿策聊天"><div className="btl-panel-heading"><span><strong>阿策的战术小纸条</strong><small>本地规则顾问 · 只参考眼前战况</small></span><button type="button" className="btl-quiet" onClick={()=>setChatOpen(false)}>收起聊天</button></div><div ref={chatLogRef} className="btl-chat-log" aria-live="polite"><article><strong>眼前战况</strong><p>{advice}</p></article>{messages.map((message,index)=><div key={index}><p className="btl-question">{message.question}</p><article><strong>{message.answer.title}</strong><p>{message.answer.text}</p></article></div>)}</div><div className="btl-suggestions">{['两名精英先打谁？','援军何时加入？','王冠坠击怎么躲？','光路有什么用？'].map(text=><button type="button" key={text} disabled={paused||hidden} onClick={()=>ask(text)}>{text}</button>)}</div><form onSubmit={event=>{event.preventDefault();ask(question);}}><label className="btl-sr-only" htmlFor="finale-question">询问军师</label><input id="finale-question" value={question} disabled={paused||hidden} onChange={event=>setQuestion(event.target.value)} maxLength={200} placeholder="问问精英、援军、光路或猫咪能力……"/><button type="submit" disabled={paused||hidden||!question.trim()}>询问</button></form></section>}
+    {chatOpen&&<section className="btl-chat" aria-label="军师阿策聊天"><div className="btl-panel-heading"><span><strong>阿策的战术小纸条</strong><small>当前战况 · 模型建议 / 本地兜底</small></span><button type="button" className="btl-quiet" onClick={()=>setChatOpen(false)}>收起聊天</button></div><div ref={chatLogRef} className="btl-chat-log" aria-live="polite" aria-busy={advisorChat.loading}><article><strong>眼前战况</strong><p>{advice}</p></article><AdvisorChatMessages {...advisorChat}/></div><div className="btl-suggestions">{['两名精英先打谁？','援军何时加入？','王冠坠击怎么躲？','光路有什么用？'].map(text=><button type="button" key={text} disabled={paused||hidden||advisorChat.loading} onClick={()=>ask(text)}>{text}</button>)}</div><form onSubmit={event=>{event.preventDefault();ask(question);}}><label className="btl-sr-only" htmlFor="finale-question">询问军师</label><input id="finale-question" value={question} disabled={paused||hidden||advisorChat.loading} onChange={event=>setQuestion(event.target.value)} maxLength={500} placeholder="问问精英、援军、光路或猫咪能力……"/><button type="submit" disabled={paused||hidden||advisorChat.loading||!question.trim()}>{advisorChat.loading?'思考中…':'询问'}</button></form></section>}
     {retreatOpen&&<div className="finale-modal"><section className="finale-dialog" role="dialog" aria-modal="true" aria-labelledby="finale-retreat-title"><h3 id="finale-retreat-title">让伙伴撤离本场？</h3><p>本场按失败结束；之后沿主流程回到准备阶段，重新挑战时六位主力恢复出战状态，援军按波次重新加入。</p><div><button type="button" autoFocus onClick={()=>setRetreatOpen(false)}>继续守护</button><button type="button" disabled={paused} data-testid="finale-confirm-retreat" onClick={()=>{setRetreatOpen(false);act({type:'SET_UI_PAUSE',paused:false});act({type:'RETREAT'});}}>确认撤离</button></div></section></div>}
   </section>;
 }

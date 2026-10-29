@@ -1,10 +1,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = path.join(root, 'docs/ARCHITECTURE.md');
+// Map-specific source is maintained separately; inject into the generated architecture.
+const explorationArchitecture = fs.readFileSync(path.join(root, 'docs/LEVEL-EXPLORATION-ARCHITECTURE.md'), 'utf8').trim();
 if (!process.argv.includes('--check') && !fs.existsSync(target)) fs.writeFileSync(target, '');
+// Only committed/staged source paths belong in the generated architecture tree.
+// Filesystem scans alone include local .zip/.exe/.patch files ignored by Git.
+const trackedFiles = new Set(execFileSync('git', ['ls-files', '--cached', '-z'], {cwd: root, encoding: 'utf8'})
+  .split('\0').filter(Boolean).map(name => name.replaceAll('\\', '/')));
+const trackedDirectories = new Set();
+for (const file of trackedFiles) {
+  const parts = file.split('/');
+  for (let i = 1; i < parts.length; i++) trackedDirectories.add(parts.slice(0, i).join('/'));
+}
 const excluded = new Set(['node_modules', '.git', '.runtime', 'data', 'output', 'tmp', 'test-results', 'playwright-report', 'dist', 'artifacts', 'coverage', '.idea', '.vscode']);
 const labels = {
   web: '浏览器前端', 'web/src': '运行代码', 'web/src/app': '启动、装配与 GameController',
@@ -13,6 +25,7 @@ const labels = {
   'web/src/core/state': 'GameStore 状态快照', 'web/src/core/rules': '公共条件与资源判断',
   'web/src/core/ports': 'API 与会话存储接口', 'web/src/modules': '正式模块接入口',
   'web/src/modules/map': '地图 · Jenny', 'web/src/modules/events': '随机事件 · 余尧',
+  'web/src/modules/nightMarket': 'Chapter 2 Night Market spatial map and progression',
   'web/src/modules/battle': '塔防 · 闫琦雯', 'web/src/modules/cats': '猫咪档案、救援与成长',
   'web/src/modules/home': '家园建设、摆放与互动', 'web/src/modules/inventory': '道具与家具持有',
   'web/src/modules/economy': '货币、扣费与奖励', 'web/src/modules/lottery': '奖池、抽取与结果',
@@ -43,6 +56,8 @@ const labels = {
   'web/src/modules/battle/market': '第二章六猫、七入口与单格横扫首领', 'design/tower-defense/levels/L02-midnight-market': '第二章午夜集市设计', 'docs/L02-INTEGRATION.md': '第二章独立试玩与参数边界',
   'web/src/modules/battle/chapter': '第一章紧凑棋盘、四猫与固定首领', 'web/src/modules/battle/l00': '固定 L00 局内实现', 'docs/L01-INTEGRATION.md': '第一章四猫与当前接入', 'docs/L00-INTEGRATION.md': 'L00 六波新手教学与接入',
   tests: '自动验证', 'tests/e2e': '浏览器流程', scripts: '启动、生成与检查', deploy: '部署模板',
+  'server/internal/advisor': '阿策服务端模型客户端与限流',
+  'docs/BATTLE-ADVISOR-MODEL.md': '阿策模型配置、可见战况与回退边界',
   '.dockerignore': '容器构建排除', '.env.example': '非秘密环境变量示例',
   '.gitattributes': '换行与二进制规则', '.gitignore': '本地生成文件排除',
   '.gitlab-ci.yml': '检查与构建流水线', 'package.json': '依赖与工程命令',
@@ -53,9 +68,11 @@ const labels = {
 let directoryCount = 0;
 function tree(relative = '', prefix = '') {
   const entries = fs.readdirSync(path.join(root, relative), {withFileTypes: true})
-    .filter(entry => !excluded.has(entry.name))
-    .filter(entry => entry.isDirectory() || relative === '' || relative === 'docs')
-    .filter(entry => entry.isDirectory() || entry.isFile())
+    .filter(entry => {
+      const relativePath = relative ? `${relative}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) return !excluded.has(entry.name) && trackedDirectories.has(relativePath);
+      return entry.isFile() && (relative === '' || relative === 'docs') && trackedFiles.has(relativePath);
+    })
     .sort((a, b) => Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name, 'en'));
   return entries.flatMap((entry, index) => {
     const last = index === entries.length - 1;
@@ -82,9 +99,12 @@ flowchart TD
   HTTP --> Transport["Go transport：认证与校验"]
   Transport --> Service["Go service：判定、抽取与结算"]
   Service --> Repository["repository：状态与收据一起提交"]
-  Repository --> Save["data/game.json"]
+  Repository --> Save[".runtime/game.json via dev launcher; data/game.json API fallback"]
   Service -->|返回 GameState| Store["GameStore：界面状态快照"]
   Store --> View
+  Module -->|手动提问与可见战况| Advisor["POST /api/v1/advisor：只读场次校验"]
+  Advisor --> Model["服务端模型客户端：限时、限流、密钥隔离"]
+  Model -->|建议或本地回退| View
 \`\`\`
 
 移动、碰撞和逐帧战斗在前端运行；事件判定、抽奖、长期奖励、摆放和游戏内家具购买经过 Go。真实付费尚未实现。
@@ -106,6 +126,7 @@ ${directory}
 | 当前面板、选中家具、按钮状态 | React UI |
 | 剧情、地图、事件、猫咪、关卡、家具、道具与奖池定义 | web/content |
 | 会话与结果未知的原始请求 | adapters/storage；不作为权威存档 |
+| 阿策最近三轮手动问答、请求取消状态 | 战斗页面内存；切换场次清空，不写存档 |
 
 home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余额与结算，inventory 统一拥有状态。抽到／买到家具后再交 home 摆放。真实付费预留在前后端 payment 目录，本次没有支付实现。
 
@@ -122,9 +143,10 @@ home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余
 上表代码路径相对 web/src，内容路径相对 web；战斗引擎、结果结算和联调由闫琦雯维护，家园仓库展示由 UI 协作；其余经济、运维与数据库适配继续按团队认领。app/App.tsx 装配，app/useGame.ts 处理会话、请求和恢复，ui 提供受控展示组件。战斗阶段由 modules/battle/BattleHost.tsx 按场次路由 L00、L01、L02、L03、L04 与 L05 六套实现，其他阶段保留 examples/demo 的探索、地图、家园及剧情场景；其余模块按各自接口继续接入。
 
 - 公共契约在 web/src/contracts/index.ts；长期变更通过 app/controller.ts，不直接修改快照。
+- 阿策手动问答走同源只读 API，服务端保管模型配置并在调用前后校验活动场次；只发送可见战况白名单，模型不可用时保留本地规则。自动教学不调用模型，建议不获得游戏操作权限。详见 docs/BATTLE-ADVISOR-MODEL.md。
 - 战斗使用服务端 attemptId 和保存的难度快照，七个入口对应六套地图：l00_tutorial 为 3×7／六波教学；alley_rescue 和 alley_boss 共用 5×10 包围框内 26 格／八波四猫首领战；market_boss 为 5×8／八波六猫试玩；greenhouse_boss 为 6×9 包围框内 34 个真实格／八波六猫试玩。L03 缺失格不绘制、不部署、不作为技能中心，墨墨替代点点提供护盾并清除已生成荆棘，四格 Boss 共享体力。tunnel_boss 为 5×8 包围框内 37 格／八波六猫试玩，九处障碍，墨墨以夜视和全员护盾应对断灯；L04 缺失格同样不可绘制、部署或作为技能中心。finale_boss 为 7×12 包围框内 74 格／十波终章试玩，六名可移动主力与三批固定援军，永夜之王占九格，另有两名独立精英；光路随第 3／5／7 波推进，夜视用于暂时识破护幕。
 - 新命令无 supplies／usedSupplies；L01–L05 结果包含 leaks 与 bossDefeated，L05 胜负另必报整数 elitesDefeated（0–2），胜利必须为 2，旧章可省略。L02／L03／L04／L05 仅从家园独立进入，完成第一章救援即可分别试玩，不要求按章节顺序先赢前一试玩；胜利只记录本关完成，不发物资、长期伙伴或鼓励奖励，不推进剧情，不清理主线 PendingModifiers。L05 不写终章及建国标记。失败回原关准备并保留失败场次快照，重新挑战创建新 ID、沿用难度；离开准备页清理临时失败身份。
-- 所有在场可移动主力猫正常每模拟秒自动 +5 能量（L02 横扫可短暂停止自然蓄能），0 血本场退场，无库存补给或休整。L05 固定援军按间隔自动支援、不能移动或复活，主力六猫全部退场仍判负；灯车与援军不占 carry 通道。L01–L05 另外消费活动场次 carry 的六种事件加成（lantern/mirror/bell/box/dog/dove），不改基础数值，不恢复背包；L00 忽略 carry。L01 失败准备保留旧 attempt 完整快照，重试创建新 ID 并继承压力和 carry；离开准备清临时身份。暂停与卸载沿用宿主生命周期，刷新同场次从 ready 重建。
+- 所有在场可移动主力猫正常每模拟秒自动 +5 能量（L02 横扫可短暂停止自然蓄能），0 血本场退场，无库存补给或休整。L05 固定援军按间隔自动支援、不能移动或复活，主力六猫全部退场仍判负；灯车与援军不占 carry 通道。L01–L05 另外消费活动场次 carry 的八种事件加成（lantern/mirror/bell/box/dog/dove/rats/kitten），不改基础数值，不恢复背包；L00 忽略 carry。L01 失败准备保留旧 attempt 完整快照，重试创建新 ID 并继承压力和 carry；离开准备清临时身份。暂停与卸载沿用宿主生命周期，刷新同场次从 ready 重建。
 - 新增长期规则时同步 Go service、TypeScript 契约与 [OpenAPI](openapi.json)。服务端负责奖励，UI 不直接加余额或发家具。
 - 修改内容后执行 npm run content:sync，提交 web/content/catalog.json 和 server/internal/platform/catalog.json 两份生成物。
 
@@ -142,7 +164,7 @@ npx playwright install chromium
 npm run test:e2e
 \`\`\`
 
-开发存档在 data/game.json；浏览器测试用独立端口 8117 和 .runtime/e2e-save.json。环境变量示例见 .env.example，程序读取进程环境变量，不自动加载 .env。
+npm run dev 在当前 worktree 使用忽略的 .runtime/game.json；直接运行 API 时默认使用相对 data/game.json，GAME_DATA_FILE 可显式覆盖。不同 worktree 的存档彼此独立，不要合并。浏览器测试用独立端口 8117 和 .runtime/e2e-save.json。环境变量示例见 .env.example，程序读取进程环境变量，不自动加载 .env。端口冲突诊断、启动/停止、切换 worktree 与安全清理步骤见 [本地开发说明](DEVELOPMENT.md)。
 
 当前存档只支持单进程，MySQL 只有 DDL；战斗胜负仍由客户端原型上报。Docker、K8s 与 GitLab CI 是待团队环境验证的模板。GitLab main 已采用本架构；旧 main 保存在 react-demo 分支，历史不变。
 
@@ -193,9 +215,10 @@ npm run test:e2e
 
 ## 9. 当前战斗集成\n\n当前已有 L00–L05 六套战斗地图、七个服务入口。正式序章 l00_tutorial 使用五步教学与六波实战；第一章首次救援 alley_rescue 与家园 alley_boss 共用四猫首领战。家园 market_boss、greenhouse_boss、tunnel_boss 和 finale_boss 分别提供第二至第五章独立试玩，不插入正式主线，不清理主线待用压力。L03 保留原图 34 格不规则边界，点点本章留守，墨墨以护盾与清棘补位；本关名单不改长期招募或其他模块故事。L04 的 tunnel_boss 另提供地下通道独立试玩：37 格不规则边界，六猫含点点与墨墨，A2 暗管绕 A1/B1/C1 接近 C2。四格首领断灯脉冲暂时限制远处小怪可见性，所有猫保持可见且照常作战；墨墨本章以夜视加全员护盾应对。第三章技能不变。\n\nL05 的 finale_boss 使用 74 格不规则仓库、十波 44 小怪、九格永夜之王和两名各自计血的精英护卫。团子、点点、墨墨与绒绒、斑斑、栗栗构成六名主力；铃铃、桃桃、音音于第 3／5／7 波从固定位置支援，不能移动、复活或代替主力全退场判负。灯车同期推进光路，墨墨夜视识破首领护幕并提供全队护盾，不复用第四章断灯。结算除了 Boss 本体还必须报告 elitesDefeated，胜利要求两精英均败；十波普通敌人仍须全部生成处理。终章正式接点仅列为 finale_intro_5 → 战斗 → finale_intro_6 的候选，不写 finale_started／finale_completed／kingdom_founded。\n\n所有已实现章节无库存补给、休整或同场复活，主力技能使用自然蓄能；第一章起额外接收事件来源的单个 carry，六枚举、第一版效果与生命周期见 [事件战斗对接](BATTLE-EVENT-CARRY.md)。旧 active 预留在新版结算时全额返还且只执行一次。公共规则和各章设计见 [塔防索引](../design/tower-defense/README.md)。\n\n目录变化后运行 npm run architecture:build；npm run architecture:check 会检查本文件与实际文件夹是否一致。需求见 [PRD](PRD.md)。
 `;
+const finalDocument = document.replace('## 5. 启动与检查', explorationArchitecture + '\n\n## 5. 启动与检查');
 if (process.argv.includes('--check')) {
-  if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== document) throw Error('架构目录已变化，请运行 npm run architecture:build');
+  if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== finalDocument) throw Error('架构目录已变化，请运行 npm run architecture:build');
 } else {
-  fs.writeFileSync(target, document);
+  fs.writeFileSync(target, finalDocument);
 }
 console.log(`Architecture matches ${directoryCount} source directories.`);

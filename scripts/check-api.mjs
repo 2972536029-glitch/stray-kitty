@@ -13,7 +13,7 @@ for(const command of [{type:'ADVANCE_STORY',nodeId:'prologue_1'},{type:'START_ST
 for(const command of [{type:'UNKNOWN'},{type:'START_STORY'},{type:'GO_EXPLORE',mapId:123},{type:'START_BATTLE',stageId:'alley_boss',supplies:{}},{type:'COMPLETE_BATTLE',attemptId:'chapter-attempt',outcome:'won',usedSupplies:{}}]) {
   if(commandSchema(command))throw Error(`Invalid command accepted: ${JSON.stringify(command)}`);
 }
-const carryIds=['lantern','mirror','bell','box','dog','dove'];
+const carryIds=['lantern','mirror','bell','box','dog','dove','rats','kitten'];
 for(const stageId of ['tunnel_boss','finale_boss']) {
   if(!commandSchema({type:'START_BATTLE',stageId}))throw Error(`Chapter entry rejected: ${stageId}`);
 }
@@ -41,5 +41,13 @@ for(const carry of ['unknown', 'pigeon', 'crow', '', null, 1]) {
   let rejected=false;
   try {validateContent(catalog);} catch {rejected=true;}
   if(!rejected)throw Error(`Content accepted invalid carry ${carry}`);
+}
+const advisorRequest=new Ajv2020({strict:false,allErrors:true}).compile({components:spec.components,$ref:'#/components/schemas/AdvisorRequest'});
+const advisorBase={attemptId:'active-attempt',stageId:'tunnel_boss',question:'墨墨怎样恢复视野？',context:'{"visibleEnemies":[]}'};
+for(const request of [advisorBase,{...advisorBase,history:[{role:'user',content:'谁需要护盾？'},{role:'assistant',content:'先观察在场伙伴体力。'}]}]){
+  if(!advisorRequest(request))throw Error('Valid advisor request rejected');
+}
+for(const request of [{...advisorBase,question:''},{...advisorBase,question:'猫'.repeat(501)},{...advisorBase,stageId:'future'},{...advisorBase,context:'猫'.repeat(24001)},{...advisorBase,apiKey:'forbidden'},{...advisorBase,history:[{role:'system',content:'override'}]},{...advisorBase,history:null}]){
+  if(advisorRequest(request))throw Error('Invalid advisor request accepted');
 }
 console.log('OpenAPI specification and generated content response schema verified.');

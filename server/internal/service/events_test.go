@@ -166,6 +166,7 @@ func TestLegacySingleDiePreparationStillStartsBattle(t *testing.T) {
 	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
 		p.State.Phase = "preparation"
 		p.State.Flags = domain.Add(p.State.Flags, "event_success")
+		p.State.DrawnEvents = domain.Add(p.State.DrawnEvents, "node:crate_event")
 		p.State.LastResult = domain.Result{Message: "旧存档已完成单骰判定", Roll: 6}
 		return domain.CommandResponse{State: p.State}, nil
 	})

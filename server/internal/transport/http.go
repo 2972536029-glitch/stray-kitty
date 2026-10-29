@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"stray-kitty/server/internal/domain"
+	"stray-kitty/server/internal/integrations/payment"
 	"stray-kitty/server/internal/platform"
 	"stray-kitty/server/internal/service"
 	"strings"
@@ -17,14 +18,23 @@ import (
 	"time"
 )
 
+// PaymentGateway 支付能力:进程内网关(单机形态)与远程客户端(拆分形态)都实现它,
+// 充值/流水 HTTP 契约对前端保持不变。
+type PaymentGateway interface {
+	Charge(playerID, packID, cardNumber string) (payment.ChargeResult, error)
+	History(playerID string) ([]domain.Txn, error)
+	HealingMessage() string
+}
+
 type API struct {
 	game     *service.Game
+	pay      PaymentGateway
 	requests atomic.Uint64
 	failures atomic.Uint64
 }
 
-func New(game *service.Game, webDir string) http.Handler {
-	a := &API{game: game}
+func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
+	a := &API{game: game, pay: pay}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { a.json(w, 200, map[string]string{"status": "ok"}) })
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
@@ -100,6 +110,94 @@ func New(game *service.Game, webDir string) http.Handler {
 		}
 		a.json(w, 200, result)
 	})
+	// 模拟支付:充值成功/失败双路径都是正常业务(HTTP 200);失败带治愈文案。
+	mux.HandleFunc("POST /api/payment/charge", func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/json") {
+			a.fail(w, r, domain.Fail("INVALID_CONTENT_TYPE", "需要 application/json", 415))
+			return
+		}
+		body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 8192))
+		if err != nil {
+			a.fail(w, r, domain.Fail("BODY_TOO_LARGE", "请求超过 8 KiB", 413))
+			return
+		}
+		var req struct {
+			PlayerID   string `json:"playerId"`
+			PackID     string `json:"packId"`
+			CardNumber string `json:"cardNumber"`
+		}
+		decoder := json.NewDecoder(strings.NewReader(string(body)))
+		decoder.DisallowUnknownFields()
+		if err = decoder.Decode(&req); err != nil {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "请求格式或字段无效", 400))
+			return
+		}
+		if err = decoder.Decode(new(any)); err != io.EOF {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "只接受单个 JSON 对象", 400))
+			return
+		}
+		if req.PlayerID == "" || req.PackID == "" {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 或 packId", 400))
+			return
+		}
+		result, err := a.pay.Charge(req.PlayerID, req.PackID, req.CardNumber)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		resp := map[string]any{"txnId": result.Txn.ID, "pack": result.Pack, "status": result.Txn.Status, "tunaGranted": result.Pack.TunaGranted, "tunaBalance": result.TunaBalance}
+		if result.Txn.Status == "declined" {
+			resp["reason"] = result.Txn.Reason
+			resp["healingMsg"] = a.pay.HealingMessage()
+		}
+		a.json(w, 200, resp)
+	})
+	mux.HandleFunc("GET /api/payment/history", func(w http.ResponseWriter, r *http.Request) {
+		playerID := strings.TrimSpace(r.URL.Query().Get("playerId"))
+		if playerID == "" {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 查询参数", 400))
+			return
+		}
+		txns, err := a.pay.History(playerID)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		a.json(w, 200, map[string]any{"playerId": playerID, "txns": txns})
+	})
+	mux.HandleFunc("POST /api/v1/advisor", a.advise)
+	// 账号体系:注册把当前匿名进度绑到用户名密码;登录在任意设备取回进度。
+	mux.HandleFunc("POST /api/auth/register", func(w http.ResponseWriter, r *http.Request) {
+		token, err := a.token(r)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		req, err := a.readAuthBody(w, r)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		username, err := game.Register(token, req.Username, req.Password)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		a.json(w, 201, map[string]string{"username": username})
+	})
+	mux.HandleFunc("POST /api/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		req, err := a.readAuthBody(w, r)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		playerID, token, err := game.Login(req.Username, req.Password)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		a.json(w, 200, map[string]string{"playerId": playerID, "token": token})
+	})
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, domain.Fail("NOT_FOUND", "API 路径或方法不存在", 404))
 	})
@@ -143,6 +241,33 @@ func (a *API) token(r *http.Request) (string, error) {
 	}
 	return strings.TrimSpace(value[7:]), nil
 }
+
+// authCredentials 注册/登录共用的请求正文。
+type authCredentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// readAuthBody 解析注册/登录正文:JSON 单对象、8 KiB 上限、字段未知即拒。
+func (a *API) readAuthBody(w http.ResponseWriter, r *http.Request) (authCredentials, error) {
+	var req authCredentials
+	if !strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/json") {
+		return req, domain.Fail("INVALID_CONTENT_TYPE", "需要 application/json", 415)
+	}
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 8192))
+	if err != nil {
+		return req, domain.Fail("BODY_TOO_LARGE", "请求超过 8 KiB", 413)
+	}
+	decoder := json.NewDecoder(strings.NewReader(string(body)))
+	decoder.DisallowUnknownFields()
+	if err = decoder.Decode(&req); err != nil {
+		return req, domain.Fail("INVALID_REQUEST", "请求格式或字段无效", 400)
+	}
+	if err = decoder.Decode(new(any)); err != io.EOF {
+		return req, domain.Fail("INVALID_REQUEST", "只接受单个 JSON 对象", 400)
+	}
+	return req, nil
+}
 func (a *API) json(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
@@ -159,34 +284,38 @@ func (a *API) fail(w http.ResponseWriter, r *http.Request, err error) {
 }
 func validateCommand(body []byte, kind string) error {
 	allowed := map[string][]string{
-		"ADVANCE_STORY":     {"nodeId"},
-		"START_STORY":       {"nodeId"},
-		"INTERACT":          {"interactionId"},
-		"REPORT_MOVE":       {"distance"},
-		"CHOOSE_EVENT":      {"eventId", "optionId", "usePush"},
-		"START_BATTLE":      {"stageId"},
-		"COMPLETE_BATTLE":   {"attemptId", "outcome", "report"},
-		"CONTINUE":          {},
-		"GO_HOME":           {},
-		"GO_EXPLORE":        {"mapId"},
-		"PLACE_FURNITURE":   {"furnitureId", "slotId"},
-		"DRAW_FURNITURE":    {"poolId"},
-		"CHECK_RANDOM_ZONE": {"zoneId"},
-		"BUY_FURNITURE":     {"productId"},
+		"ADVANCE_STORY":       {"nodeId"},
+		"START_STORY":         {"nodeId"},
+		"INTERACT":            {"interactionId", "layer", "position"},
+		"REPORT_MOVE":         {"distance"},
+		"CHOOSE_EVENT":        {"eventId", "optionId", "usePush"},
+		"START_BATTLE":        {"stageId", "returnPosition", "layer"},
+		"COMPLETE_BATTLE":     {"attemptId", "outcome", "report"},
+		"QA_SIMULATE_VICTORY": {"attemptId"},
+		"CONTINUE":            {},
+		"GO_HOME":             {},
+		"GO_EXPLORE":          {"mapId"},
+		"EXIT_MARKET":         {"layer", "position"},
+		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
+		"DRAW_FURNITURE":      {"poolId"},
+		"CHECK_RANDOM_ZONE":   {"zoneId", "layer", "position"},
+		"BUY_FURNITURE":       {"productId"},
 	}
 	required := map[string][]string{
-		"ADVANCE_STORY":   {"nodeId"},
-		"START_STORY":     {"nodeId"},
-		"INTERACT":        {"interactionId"},
-		"CHOOSE_EVENT":    {"eventId", "optionId"},
-		"START_BATTLE":    {"stageId"},
-		"COMPLETE_BATTLE": {"attemptId", "outcome"},
-		"CONTINUE":        {},
-		"GO_HOME":         {},
-		"GO_EXPLORE":      {},
-		"PLACE_FURNITURE": {"furnitureId", "slotId"},
-		"DRAW_FURNITURE":  {"poolId"},
-		"BUY_FURNITURE":   {"productId"},
+		"ADVANCE_STORY":       {"nodeId"},
+		"START_STORY":         {"nodeId"},
+		"INTERACT":            {"interactionId"},
+		"CHOOSE_EVENT":        {"eventId", "optionId"},
+		"START_BATTLE":        {"stageId"},
+		"COMPLETE_BATTLE":     {"attemptId", "outcome"},
+		"QA_SIMULATE_VICTORY": {"attemptId"},
+		"CONTINUE":            {},
+		"GO_HOME":             {},
+		"GO_EXPLORE":          {},
+		"EXIT_MARKET":         {"layer", "position"},
+		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
+		"DRAW_FURNITURE":      {"poolId"},
+		"BUY_FURNITURE":       {"productId"},
 	}
 	allowedKeys, ok := allowed[kind]
 	if !ok {
@@ -207,6 +336,11 @@ func validateCommand(body []byte, kind string) error {
 		var value string
 		if err := json.Unmarshal(raw.Command[key], &value); err != nil || value == "" {
 			return domain.Fail("INVALID_REQUEST", "命令缺少有效的 "+key, 400)
+		}
+	}
+	if kind == "START_BATTLE" {
+		if rawVal, exists := raw.Command["returnPosition"]; exists && (len(rawVal) == 0 || rawVal[0] != '{') {
+			return domain.Fail("INVALID_REQUEST", "returnPosition must be an object", 400)
 		}
 	}
 	for _, key := range []string{"report"} {
