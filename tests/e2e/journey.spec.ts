@@ -94,7 +94,7 @@ test('真实浏览器贯通序章救援与家园闭环、集市事件验收和�
  await page.getByRole('button',{name:'猫国商店',exact:true}).click();const shop=page.getByRole('dialog',{name:'猫国商店'});
  await page.screenshot({path:'output/preview/shop.png',fullPage:true});await shop.getByRole('button',{name:'购买蓝色饭碗，1邮票'}).click();
  await expect(shop.getByRole('button',{name:'蓝色饭碗已拥有'})).toBeDisabled();await shop.getByRole('button',{name:'关闭猫国商店'}).click();await expect(page.getByTestId('stamps')).toHaveText('1');
- await page.getByLabel('选择家具').selectOption('blue_bowl');await page.getByRole('button',{name:'窗边'}).click();
+ await page.getByRole('button',{name:'选择家具'}).click();await page.getByRole('option',{name:'蓝色饭碗'}).click();await page.getByRole('button',{name:'窗边'}).click();
  await page.reload();await enterGame(page);await expect(page.getByRole('heading',{name:'整理我们的家'})).toBeVisible();
  await expect(page.getByRole('button',{name:'避雨角落'})).toContainText('纸箱猫窝');await expect(page.getByTestId('stamps')).toHaveText('1');
  await expect(page.getByRole('button',{name:'窗边'})).toContainText('蓝色饭碗');

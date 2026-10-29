@@ -62,6 +62,12 @@ export function useGame() {
   const resetSession = useCallback(() => {
     localStorage.removeItem('stray-kitty.session.v1');
     localStorage.removeItem('stray-kitty.pending.v1');
+    // “重新开始丢序章”的根因：服务端新会话本来就从头（prologue_1）开始，
+    // 但序章开场动画与守护教学的“已完成”标记留在 localStorage 里，重开后被直接跳过。必须一并清空。
+    localStorage.removeItem('stray-kitty.prologue.intro');
+    localStorage.removeItem('stray-kitty.tutorial.battle');
+    localStorage.removeItem('stray-kitty.tutorial.home');
+    localStorage.removeItem('stray-kitty.audio.homeChimed');
     window.location.reload();
   }, []);
   const startNewJourney = useCallback(async () => {

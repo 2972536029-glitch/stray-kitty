@@ -2,6 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import type {ChargeResponse, PaymentTxn, RechargePack} from '../contracts';
 import type {GameApiPort} from '../core/ports';
 import Modal from './Modal';
+import {playSound} from './soundEffects';
 
 const money = (cents: number) => `¥${(cents / 100).toFixed(2)}`;
 const fmtTime = (iso: string) => {
@@ -31,6 +32,7 @@ export default function RechargeDialog({playerId, packs, tuna, api, onCharged, o
   const pay = async () => {
     if (!pack || busy) return;
     setBusy(true);setError('');setResult(null);
+    playSound('send');
     try {
       const data = await api.charge(playerId, pack.id, cardNo.trim());
       setResult(data);
@@ -41,6 +43,9 @@ export default function RechargeDialog({playerId, packs, tuna, api, onCharged, o
       setError(e instanceof Error ? e.message : '支付通道暂时没有回音，请稍后查看记录。');
     } finally {setBusy(false);}
   };
+  // 回执音:到账播上行琶音,被退回播低沉闷响。
+  useEffect(() => {if (!result) return;playSound(result.status === 'confirmed' ? 'chime' : 'error');}, [result]);
+  useEffect(() => {if (error) playSound('error');}, [error]);
   return <Modal title="金枪鱼补给小站" onClose={onClose} className="recharge-dialog">
     <header><div><span className="eyebrow">TUNA SUPPLY STATION</span><h2>🥫 金枪鱼补给小站</h2></div><div className="shop-wallet tuna">🥫 <b>{tuna}</b><small>金枪鱼罐头</small></div></header>
     <p className="recharge-intro">两脚兽的爱心罐头，会变成花房里的高级家具包裹。这里是<b>演示支付</b>：4242 开头的卡必成功，0000 开头的卡必失败，其他卡会被温柔地退回。</p>

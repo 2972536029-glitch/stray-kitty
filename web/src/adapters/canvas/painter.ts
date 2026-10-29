@@ -16,6 +16,23 @@ export class CanvasPainter {
     this.context.save();this.context.globalAlpha = 1;
     this.context.drawImage(source, x, y, width, height);this.context.restore();
   }
+  rgba(color: number, alpha: number) {
+    const hex = color.toString(16).padStart(6, '0');
+    return `rgba(${parseInt(hex.slice(0, 2), 16)},${parseInt(hex.slice(2, 4), 16)},${parseInt(hex.slice(4, 6), 16)},${alpha})`;
+  }
+  // 径向光晕：中心 innerAlpha 过渡到边缘 outerAlpha，用于灯泡、鬼火等发光体。
+  glow(x: number, y: number, radius: number, color: number, innerAlpha = .55, outerAlpha = 0) {
+    const gradient = this.context.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, this.rgba(color, innerAlpha));
+    gradient.addColorStop(1, this.rgba(color, outerAlpha));
+    this.context.save();
+    this.context.globalAlpha = 1;
+    this.context.fillStyle = gradient;
+    this.context.beginPath();
+    this.context.arc(x, y, radius, 0, Math.PI * 2);
+    this.context.fill();
+    this.context.restore();
+  }
   cat(x: number, y: number, breed: CatBreed, size = 64) {
     this.context.save();
     this.context.globalAlpha = 1;

@@ -161,6 +161,9 @@ export class DemoScene {
     if (key === 'c' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartCrateClimb()) {
       event.preventDefault(); this.keys.delete('c'); return;
     }
+    // 加减号缩放视野（雨巷）：给键盘玩家与滚轮对等的视角控制。
+    if ((key === '=' || key === '+') && this.state?.mapId === 'alley') {event.preventDefault();this.rainyAlley.adjustZoom(0.12);return;}
+    if ((key === '-' || key === '_') && this.state?.mapId === 'alley') {event.preventDefault();this.rainyAlley.adjustZoom(-0.12);return;}
     this.keys.add(key);
     if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','g','c'].includes(key)) event.preventDefault();
     if (key === 'g' && !event.repeat && this.state?.mapId === 'alley') this.rainyAlley.toggleDebug();
@@ -172,12 +175,22 @@ export class DemoScene {
         else if(action?.type==='hint')this.onInspectHint?.(action.text);
       } else if (this.state?.mapId === 'alley') {
         const interaction = this.rainyAlley.nearestInteraction();
-        if (interaction) this.onInteract(interaction.id);
+        if (interaction) {
+          // 老黄：E 交互除了走原有事件卡，再叠加一段猫头顶气泡 + 音符上飘的欢呼（纯表现层）。
+          if (interaction.id === 'alley_dog_friend_point') this.rainyAlley.cheer();
+          this.onInteract(interaction.id);
+        }
       }
     }
   };
   private keyup = (event: KeyboardEvent) => {this.keys.delete(event.key.toLowerCase());this.tunnelMap.keyUp(event.key.toLowerCase());};
   private clearInput = () => {this.keys.clear();this.held.clear();};
+  // 滚轮缩放视野（雨巷）：上滚放大、下滚缩小；仅在自由探索且未暂停时接管，不吞面板滚动。
+  private wheel = (event: WheelEvent) => {
+    if (this.state?.phase !== 'explore' || this.state.mapId !== 'alley' || this.pausedByUser) return;
+    event.preventDefault();
+    this.rainyAlley.adjustZoom(-event.deltaY * 0.0016);
+  };
   private pointerdown = (event: PointerEvent) => {
     if (this.state?.phase === 'explore' && this.state.mapId === 'alley' && !this.pausedByUser) {
       const bounds = this.canvas.getBoundingClientRect();
@@ -207,6 +220,7 @@ export class DemoScene {
     window.addEventListener('keyup', this.keyup);
     window.addEventListener('blur', this.clearInput);
     this.canvas.addEventListener('pointerdown', this.pointerdown);
+    this.canvas.addEventListener('wheel', this.wheel, {passive: false});
     this.previousTime = performance.now();
     this.frame = requestAnimationFrame(this.tick);
   }
@@ -216,6 +230,7 @@ export class DemoScene {
     window.removeEventListener('keyup', this.keyup);
     window.removeEventListener('blur', this.clearInput);
     this.canvas.removeEventListener('pointerdown', this.pointerdown);
+    this.canvas.removeEventListener('wheel', this.wheel);
     this.clearInput();
   }
   private tick = (timestamp: number) => {
@@ -464,7 +479,83 @@ export class DemoScene {
   private rect(x:number,y:number,w:number,h:number,color:number,alpha=1){this.graphics.fillStyle(color,alpha);this.graphics.fillRect(Math.round(x),Math.round(y),w,h);}
   private cat(x:number,y:number,breed:CatBreed='miaomiao'){this.graphics.cat(x,y,breed);}
   private lamp(x:number,y:number){this.graphics.fillStyle(0xf9d78a,.12);this.graphics.fillCircle(x,y,45);this.rect(x-8,y-18,16,24,0x60786c);this.rect(x-5,y-15,10,16,0xffe1a0);this.rect(x-11,y+6,22,5,0x496259);}
+  // —— 以下立体像素家具绘制法移植自 feat/ui-immersion-polish（阴影腔/瓦楞/流苏/绗缝细节） ——
+  private pixelEllipse(cx:number,cy:number,rx:number,ry:number,color:number,alpha=1){
+    if(ry<=0){this.rect(cx-rx,cy,rx*2,1,color,alpha);return;}
+    for(let dy=-ry;dy<=ry;dy++){
+      const w=Math.round(rx*Math.sqrt(Math.max(0,1-(dy/ry)**2)));
+      if(w>0)this.rect(cx-w,cy+dy,w*2,1,color,alpha);
+    }
+  }
+  // 对话气泡锚点：返回说话猫头顶在画布中的位置（不在场返回 null，走旁白字幕条）。
+  // 顶栏展开态通知（雨巷）：小地图下移避让，收起时归位。
+  setTopbarExpanded(expanded:boolean){
+    this.rainyAlley.setMinimapShift(expanded?62:0);
+  }
+  speakerAnchor(breed:CatBreed):{x:number;y:number}|null{
+    const st=this.state;if(!st||st.phase==='battle')return null;
+    if(st.mapId==='market'||st.chapterId==='market'||this.storyScene==='market'){
+      if(breed==='tuanzi')return{x:130,y:258};
+      if(breed==='miaomiao')return{x:this.x,y:this.y-52};
+      return null;
+    }
+    if(st.phase==='home'||this.storyScene==='home'||(st.flags.includes('rescue_story_done')&&st.phase!=='explore')){
+      if(breed==='miaomiao')return{x:265,y:298};
+      if(breed==='tuanzi'&&st.chapterId!=='prologue')return{x:390,y:288};
+      if(breed==='diandian'&&st.cats.includes('diandian'))return{x:515,y:303};
+      return null;
+    }
+    if(breed==='miaomiao')return{x:this.x,y:this.y-52};
+    if(breed==='tuanzi'&&!st.flags.includes('alley_rescued'))return{x:120,y:248};
+    if(breed==='diandian'&&!st.flags.includes('alley_rescued'))return{x:570,y:227};
+    return null;
+  }
+  private bowl(cx:number,cy:number){
+    this.pixelEllipse(cx,cy+15,26,5,0x24312e,.28);            // 地面投影
+    this.pixelEllipse(cx,cy+11,23,6,0x085aa6);                // 碗底暗面
+    this.rect(cx-24,cy+6,48,5,0x0a6fbe);                      // 碗身中段（过渡色）
+    this.rect(cx-27,cy+3,54,4,0x0f86d6);                      // 碗身上段（受光面）
+    this.rect(cx-27,cy+3,54,1,0x47b4e6);                      // 上缘反光
+    this.rect(cx-26,cy+4,2,9,0x47b4e6,.75);                   // 左侧竖向高光
+    this.rect(cx+24,cy+5,2,8,0x06508f,.8);                    // 右侧暗面
+    this.pixelEllipse(cx,cy-1,27,7,0x47b4e6);                 // 碗口外沿（亮蓝）
+    this.pixelEllipse(cx,cy,21,5,0x084f86);                   // 内腔深色
+    this.pixelEllipse(cx,cy+1,16,3,0xd9b877);                 // 猫粮堆
+    const bits=[[-12,0],[-6,-1],[0,0],[6,-1],[12,0],[-9,2],[3,2],[9,2]];
+    for(const [dx,dy] of bits)this.rect(cx+dx-1,cy+dy,3,2,(dx+dy)%2?0xc9a86b:0xefd9a8);
+    this.rect(cx-20,cy-7,9,2,0xbfe9fb);                       // 碗口左上像素高光
+    this.rect(cx-25,cy-5,4,2,0xbfe9fb,.85);
+    this.rect(cx+13,cy-7,6,2,0x6fc6f0,.6);                    // 右上弱高光（过渡）
+  }
+  // 毛毯：完全平铺的扁毯——圆角毯身 + 暖色花纹内框 + 横向折痕 + 两端流苏，与立体猫窝拉开剪影差异。
+  private blanket(cx:number,cy:number){
+    const base=0xe8b9a0, light=0xf5d9c2, warm=0xc98a6b, deep=0x9c6e60, fringe=0xb87f63;
+    this.pixelEllipse(cx,cy+11,33,4,0x24312e,.13);            // 极浅投影（贴地扁平，无厚度）
+    const w=66,h=16;
+    for(let dy=0;dy<h;dy++){
+      const inset=dy<2?2:dy>h-3?3:0;                          // 上下行收角 → 像素圆角矩形
+      this.rect(cx-w/2+inset,cy-h/2+dy,w-inset*2,1,base);
+    }
+    this.rect(cx-w/2+4,cy-h/2+2,w-8,1,light,.7);              // 顶缘受光
+    this.rect(cx-w/2+4,cy+h/2-3,w-8,1,deep,.5);               // 底缘暗面
+    // 暖色花纹：内框描边一圈 + 中列菱形纹
+    this.rect(cx-w/2+5,cy-h/2+4,w-10,1,warm,.8);
+    this.rect(cx-w/2+5,cy+h/2-5,w-10,1,warm,.8);
+    this.rect(cx-w/2+5,cy-h/2+4,1,h-8,warm,.7);this.rect(cx+w/2-6,cy-h/2+4,1,h-8,warm,.7);
+    for(let i=-3;i<=3;i++)this.rect(cx+i*9-1,cy+((i%2)?-1:0),2,2,warm,.9);
+    this.rect(cx-2,cy-3,4,1,light,.9);                        // 花纹上高光
+    // 横向折痕：暗痕 + 各自 1px 亮脊，布料铺开的起伏
+    this.rect(cx-24,cy-2,22,1,deep,.45);this.rect(cx-24,cy-3,22,1,light,.5);
+    this.rect(cx+4,cy+3,20,1,deep,.4);this.rect(cx+4,cy+2,20,1,light,.45);
+    // 两端流苏：左右边缘交替双色短穗
+    for(let i=0;i<5;i++){
+      const fy=cy-h/2+3+i*3, c=i%2?fringe:light;
+      this.rect(cx-w/2-3,fy,3,1,c,.9);this.rect(cx-w/2-3,fy+1,2,1,c,.55);
+      this.rect(cx+w/2,fy,3,1,c,.9);this.rect(cx+w/2+1,fy+1,2,1,c,.55);
+    }
+  }
   private drawAlley(){
+
     this.rect(0,0,800,480,0x738f98);
     if(this.cityBackdrop.complete && this.cityBackdrop.naturalWidth > 0)this.graphics.image(this.cityBackdrop,0,-150,800,450);
     this.rect(35,200,730,230,0x78928c);this.rect(65,205,670,225,0xa6b7a6);
@@ -538,11 +629,9 @@ export class DemoScene {
     this.rect(270,88,260,173,0xb2c8b6);this.rect(395,88,8,173,0x7c9986);this.rect(270,164,260,8,0x7c9986);
     this.rect(135,240,55,75,0x8f9c73);for(let i=0;i<5;i++)this.rect(130+i*13,210-(i%2)*18,14,45,0x6d8d6a);
     this.cat(265,350);
-    this.rect(235, 345, 65, 24, 0xc69482);
-    this.rect(240, 348, 55, 18, 0xe0c7a0);
-    this.rect(335-27, 350+4, 54, 17, 0x0878c9);
-    this.rect(335-31, 350, 62, 8, 0x47b4e6);
-    this.rect(335-20, 350-3, 40, 8, 0xefe0b3);
+    // 晒着阳光的柔软毛毯（平铺毯身 + 花纹 + 折痕 + 流苏）与标志性天蓝色饭碗（立体透视碗口）。
+    this.blanket(267, 348);
+    this.bowl(335, 352);
     this.graphics.fillStyle(0xfff0ad, 0.15);
     this.graphics.fillCircle(280, 340, 70);
     this.lamp(610,200);for(let i=0;i<8;i++)this.rect(145+i*70,98+(i%2)*6,5,9,0xf4d68e);
