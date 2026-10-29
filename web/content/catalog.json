@@ -5421,7 +5421,7 @@
       ],
       "options": [
         {
-          "id": "mark_and_inspect",
+          "id": "mark_a_safe_route",
           "label": "记下绊线位置,从上风口绕近检查",
           "outcomes": {
             "crit": {
@@ -5433,7 +5433,8 @@
                 "clue": 2
               },
               "flags": [
-                "false_kitten_trap_mapped"
+                "false_kitten_trap_mapped",
+                "tunnel_false_kitten_trap_found"
               ]
             },
             "success": {
@@ -5445,7 +5446,8 @@
                 "clue": 1
               },
               "flags": [
-                "false_kitten_trap_mapped"
+                "false_kitten_trap_mapped",
+                "tunnel_false_kitten_trap_found"
               ]
             },
             "partial": {
@@ -5454,7 +5456,8 @@
                 "shadowPressure": 1
               },
               "flags": [
-                "trap_almost_triggered"
+                "trap_almost_triggered",
+                "tunnel_false_kitten_trap_found"
               ]
             },
             "fail": {
@@ -5466,7 +5469,8 @@
                 "clue": 1
               },
               "flags": [
-                "trap_triggered"
+                "trap_triggered",
+                "tunnel_false_kitten_trap_found"
               ]
             }
           }
@@ -5484,7 +5488,8 @@
                 "material": 2
               },
               "flags": [
-                "trap_disarmed"
+                "trap_disarmed",
+                "tunnel_false_kitten_trap_found"
               ],
               "carry": "bell"
             },
@@ -5494,7 +5499,8 @@
                 "shadowPressure": 0
               },
               "flags": [
-                "trap_disarmed"
+                "trap_disarmed",
+                "tunnel_false_kitten_trap_found"
               ]
             },
             "partial": {
@@ -5506,7 +5512,8 @@
                 "material": 1
               },
               "flags": [
-                "trap_disarmed"
+                "trap_disarmed",
+                "tunnel_false_kitten_trap_found"
               ]
             },
             "fail": {
@@ -5518,7 +5525,8 @@
                 "clue": 1
               },
               "flags": [
-                "trap_chorus"
+                "trap_chorus",
+                "tunnel_false_kitten_trap_found"
               ]
             }
           }
@@ -5538,7 +5546,8 @@
                 "clue": 1
               },
               "flags": [
-                "momo_trapwalk_demo"
+                "momo_trapwalk_demo",
+                "tunnel_false_kitten_trap_found"
               ]
             },
             "success": {
@@ -5547,7 +5556,8 @@
                 "shadowPressure": 0
               },
               "flags": [
-                "momo_trapwalk_demo"
+                "momo_trapwalk_demo",
+                "tunnel_false_kitten_trap_found"
               ]
             },
             "partial": {
@@ -5559,7 +5569,8 @@
                 "clue": 1
               },
               "flags": [
-                "momo_trapwalk_demo"
+                "momo_trapwalk_demo",
+                "tunnel_false_kitten_trap_found"
               ]
             },
             "fail": {
@@ -5571,7 +5582,8 @@
                 "clue": 1
               },
               "flags": [
-                "trap_unknown_setup"
+                "trap_unknown_setup",
+                "tunnel_false_kitten_trap_found"
               ]
             }
           }
