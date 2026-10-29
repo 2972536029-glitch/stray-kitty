@@ -29,7 +29,12 @@ export default function App() {
   const [sfxVolume, setSfxVolume] = useState(() => Number(localStorage.getItem('stray-kitty.audio.sfx') ?? 65));
   const [loadout, setLoadout] = useState<ConfirmedLoadout | null>(null);
   // 序章开场引导只在每个存档的第一次进入时播放。
-  const [introDone, setIntroDone] = useState(() => {try {return localStorage.getItem('stray-kitty.prologue.intro') === 'done';} catch {return true;}});
+  // 自动化环境（Playwright 等 navigator.webdriver=true）直接跳过：
+  // 全屏点按推进的遮罩会拦住 e2e 对「继续故事」等按钮的点击，队友测试并不感知这段动画。
+  const [introDone, setIntroDone] = useState(() => {try {
+    if (new URLSearchParams(location.search).has('prologue')) return false; // 烟测专用：强制播放序章动画
+    return navigator.webdriver === true || localStorage.getItem('stray-kitty.prologue.intro') === 'done';
+  } catch {return true;}});
   // 画布场景实例：对话气泡向它查询说话者头顶的位置。
   const sceneRef = useRef<DemoScene | null>(null);
   const getSpeakerAnchor = useCallback((breed: CatBreed) => sceneRef.current?.speakerAnchor(breed) ?? null, []);
