@@ -13,8 +13,6 @@ import {MarketLoadout} from '../modules/battle/MarketLoadout';
 import {GreenhouseLoadout} from '../modules/battle/GreenhouseLoadout';
 import {TunnelLoadout} from '../modules/battle/TunnelLoadout';
 import {FinaleLoadout} from '../modules/battle/FinaleLoadout';
-import {simulateVictoryCommand} from '../modules/battle/qa';
-import {chapterExploreCommand, chapterStoryCommand} from '../core/chapter-navigation';
 import {explorationFooterText} from './explorationFooter';
 
 const phases: Record<string, string> = {dialogue: '猫咪物语', explore: '小巷探索', event: '一次相遇', preparation: '守护准备', battle: '序章守护', settlement: '救援结果', home: '我们的花房'};
@@ -25,16 +23,13 @@ interface Props {
   journalOpen: boolean;
   onJournal: () => void;
   onSkip?: () => void;
-  onReset?: () => void;
+  qaOpen: boolean; onQA: () => void;
   onCommand: (command: GameCommand) => void; onInteract: (interactionId?: string) => void; onDirection: (direction: Direction, held: boolean) => void;
   onPause: () => void; onMap: () => void; onShop: () => void; onRecharge: () => void; onTitle: () => void; children: ReactNode;
 }
-export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, onJournal, onSkip, onReset, onCommand, onInteract, onDirection, onPause, onMap, onShop, onRecharge, onTitle, children}: Props) {
-  const [devOpen, setDevOpen] = useState(false);
+export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, onJournal, onSkip, qaOpen, onQA, onCommand, onInteract, onDirection, onPause, onMap, onShop, onRecharge, onTitle, children}: Props) {
   const [homeOpen, setHomeOpen] = useState(true);
-  // Exploration shortcuts must not carry an overlay over the next battle's controls.
-  useEffect(() => {if (state.phase === 'battle') setDevOpen(false);}, [state.phase, state.activeBattle?.id]);
-  // 线上验收:构建时注入 VITE_QA_TOOLS=1 可在生产镜像里开启验收工具条(团队试玩联调用)。
+  // 线上验收:构建时注入 VITE_QA_TOOLS=1 可在生产镜像里显示流程验收入口。
   const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'e2e' || import.meta.env.VITE_QA_TOOLS === '1';
   const node = currentStory(catalog, state);
   const chapter = catalog.chapters.find(c => c.id === state.chapterId);
@@ -49,9 +44,6 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
     : null;
   const resolution = state.eventState?.lastResolution;
   const activeStage = state.activeBattle?.stageId ?? state.lastResult.stageId;
-  const battleLocked = state.activeBattle?.status === 'active';
-  const qaVictory = isDevelopment && state.phase === 'battle' && state.activeBattle
-    ? simulateVictoryCommand(state.activeBattle, catalog.stages.map(stage => stage.id)) : null;
   const tutorialBattle = activeStage === 'l00_tutorial' && ['battle', 'settlement'].includes(state.phase);
   const chapterBattle = ['alley_rescue', 'alley_boss'].includes(activeStage ?? '') && ['battle', 'preparation', 'settlement'].includes(state.phase);
   const marketBattle = state.activeBattle?.stageId === 'market_boss' && ['battle', 'preparation', 'settlement'].includes(state.phase);
@@ -74,33 +66,11 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
     <header className="topbar"><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
       <span className="chapter-pill">{finaleBattle ? '第五章 · 终局试玩' : tunnelBattle ? '第四章 · 地下通道试玩' : greenhouseBattle ? '第三章 · 废弃花房试玩' : marketBattle ? '第二章 · 集市防线战斗试玩' : tutorialBattle ? '序章 · 金枪鱼事件' : chapterBattle ? '第一章 · 陌生小巷' : chapter?.title}</span>
       <div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>
-      <nav aria-label="旅程工具">{state.phase === 'battle' && <>{qaVictory && <button data-testid="qa-simulate-victory" className="dev-button" disabled={disabled || !battleLocked} onClick={() => onCommand(qaVictory)}>模拟胜利（QA）</button>}<button className="battle-host-pause" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button></>}<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button><button className="map-button" aria-label="章节地图" onClick={onMap}>▦ <span>章节地图</span></button><button className="shop-button" aria-label="猫国商店" onClick={onShop}>▣ <span>猫国商店</span></button>{isDevelopment && <button className="dev-button" aria-label="验收工具" onClick={() => setDevOpen(!devOpen)}>🛠️ <span>验收</span></button>}</nav></header>
+      <nav aria-label="旅程工具">{state.phase === 'battle' && <><button className="battle-host-pause" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button></>}<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button><button className="map-button" aria-label="章节地图" onClick={onMap}>▦ <span>章节地图</span></button><button className="shop-button" aria-label="猫国商店" onClick={onShop}>▣ <span>猫国商店</span></button>{isDevelopment && <button className="dev-button" aria-label="验收工具" aria-haspopup="dialog" aria-expanded={qaOpen} onClick={onQA}>🛠️ <span>验收</span></button>}</nav></header>
     <main><h1 className="visually-hidden">一只猫的旅程，一群猫的家。</h1>
       <div className="game-layout"><section className="world-panel"><div className="world-toolbar"><div><span className="live-dot"/><strong>{finaleBattle && state.phase === 'battle' ? '终局试玩' : tunnelBattle && state.phase === 'battle' ? '第四章试玩' : greenhouseBattle && state.phase === 'battle' ? '第三章试玩' : marketBattle && state.phase === 'battle' ? '第二章试玩' : chapterBattle && state.phase === 'battle' ? '第一章守护' : phases[state.phase]}</strong><span className="area-label">{finaleBattle ? '总仓库决战' : tunnelBattle ? '暗道守护' : greenhouseBattle ? '花房守护' : marketBattle ? '集市守护' : chapterBattle ? '深巷守护' : isHomeScene ? '花房与小庭院' : map?.name}</span></div>{state.phase !== 'battle' && <button className="quiet" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}</div>
-        {isDevelopment && devOpen && (
-          <div className="dev-bar" role="toolbar" aria-label="开发者验收栏">
-            <b>🛠️ 验收模式:</b>
-            {!['event', 'battle'].includes(state.phase) && <button data-testid="dev-direct-alley" disabled={disabled || battleLocked} onClick={() => onCommand(chapterExploreCommand('alley'))}>🗺️ 直达雨巷</button>}
-            {state.phase === 'battle' && state.activeBattle?.stageId === 'alley_rescue' && <button data-testid="dev-simulate-rescue-win" disabled={disabled} onClick={() => onCommand({type: 'COMPLETE_BATTLE', attemptId: state.activeBattle!.id, outcome: 'won', report: {leaks: 0, bossDefeated: true}})}>⚔️ 模拟救援胜利</button>}
-            {state.phase === 'dialogue' && onSkip && <button onClick={onSkip}>⏩ 跳过本段对话</button>}
-            {state.phase === 'explore' && <button onClick={() => onCommand({type: 'REPORT_MOVE', distance: 150})}>🚶 走一段(随机判定)</button>}
-            {state.phase === 'explore' && state.mapId === 'alley' && <button onClick={() => onCommand({type: 'INTERACT', interactionId: 'alley_crate'})}>🐾 触发纸箱事件</button>}
-            {state.phase === 'explore' && state.mapId === 'market' && (
-              <>
-                <button onClick={() => onCommand({type: 'INTERACT', interactionId: 'market_crow_stall'})}>🦅 访问乌鸦情报摊</button>
-                <button onClick={() => onCommand({type: 'INTERACT', interactionId: 'market_pigeon_perch'})}>🕊️ 访问鸽子传言棚</button>
-              </>
-            )}
-            {state.phase === 'preparation' && !chapterBattle && !standaloneBattle && <button onClick={() => onCommand({type: 'START_BATTLE', stageId: 'alley_rescue'})}>⚔️ 开始塔防</button>}
-            {state.flags.includes('alley_rescued') && state.phase !== 'home' && <button onClick={() => onCommand({type: 'GO_HOME'})}>🏡 直达花房</button>}
-            <button data-testid="dev-start-market-story" disabled={disabled || battleLocked} onClick={() => onCommand(chapterStoryCommand('market'))}>🌙 开启第二章剧情</button>
-            <button data-testid="dev-enter-market-exploration" disabled={disabled || battleLocked} onClick={() => onCommand(chapterExploreCommand('market'))}>🌃 直达午夜集市</button>
-            <button disabled={disabled || battleLocked} onClick={() => onCommand(chapterStoryCommand('finale'))}>🌟 开启终章剧情</button>
-            {battleLocked && <small>请先完成或撤离当前战斗，再切换章节。</small>}
-            {onReset && <button className="dev-reset-btn" onClick={onReset}>↺ 重置为新存档</button>}
-          </div>
-        )}
         <div className="world-wrap">{children}
+          {state.qaCheckpointId && <aside className="qa-active-badge" role="status"><span>正在使用验收进度</span><button onClick={onQA}>返回原进度 / 切换节点</button></aside>}
           {alleyObjective && <div className="alley-objective" role="status"><span>雨巷线索</span><strong>{alleyObjective}</strong></div>}
           {isHomeScene && <aside className="home-life-status"><span>{state.phase === 'dialogue' ? '故事进行中' : '花房日常'}</span><strong>{state.phase === 'dialogue' ? '伙伴们正跟随故事行动' : '散步、晒太阳，和伙伴待一会儿'}</strong></aside>}
           {state.phase === 'home' && <><button className="home-tools-toggle" aria-expanded={homeOpen} aria-controls="home-management" onClick={() => setHomeOpen(!homeOpen)}>{homeOpen ? '收起家园面板' : '整理家园'} <span aria-hidden="true">{homeOpen ? '−' : '＋'}</span></button>{homeOpen && <div id="home-management" className="home-controls"><HomePanel state={state} catalog={catalog} disabled={disabled} onCommand={onCommand} onShop={onShop} onRecharge={onRecharge}/></div>}</>}

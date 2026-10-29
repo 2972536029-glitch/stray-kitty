@@ -28,6 +28,7 @@ const labels = {
   'web/src/modules/nightMarket': 'Chapter 2 Night Market spatial map and progression',
   'web/src/modules/battle': '塔防 · 闫琦雯', 'web/src/modules/cats': '猫咪档案、救援与成长',
   'web/src/modules/home': '家园建设、摆放与互动', 'web/src/modules/inventory': '道具与家具持有',
+  'web/src/modules/qa': '按游戏流程组织的验收操作与服务端能力检查',
   'web/src/modules/economy': '货币、扣费与奖励', 'web/src/modules/lottery': '奖池、抽取与结果',
   'web/src/modules/shop': '商品与购买', 'web/src/ui': '界面与样式 · 轩扬',
   'web/src/adapters': '具体运行能力', 'web/src/adapters/canvas': '原生 Canvas 2D',

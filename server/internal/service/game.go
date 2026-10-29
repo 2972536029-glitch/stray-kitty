@@ -93,9 +93,16 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 		if p.State.Revision != *req.ExpectedRevision {
 			return domain.CommandResponse{}, domain.Fail("REVISION_CONFLICT", "进度已变化，请重新加载后操作", 409)
 		}
-		if err := g.apply(&p.State, req.Command); err != nil {
-			return domain.CommandResponse{}, err
+		var applyErr error
+		if req.Command.Type == "QA_CHECKPOINT" || req.Command.Type == "QA_RESTORE" {
+			applyErr = g.applyQACheckpoint(p, req.Command)
+		} else {
+			applyErr = g.apply(&p.State, req.Command)
 		}
+		if applyErr != nil {
+			return domain.CommandResponse{}, applyErr
+		}
+		finishQAEventPreview(&p.State)
 		p.State.Revision++
 		response := domain.CommandResponse{State: p.State}
 		p.Receipts[key] = repository.Receipt{Fingerprint: fingerprint, Response: response}
@@ -110,7 +117,7 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	invalid := func() error { return domain.Fail("INVALID_COMMAND", "命令参数或目标无效", 400) }
 	// An active attempt cannot be abandoned through a story or map command.
-	if s.ActiveBattle != nil && s.ActiveBattle.Status == "active" && c.Type != "COMPLETE_BATTLE" && c.Type != "QA_SIMULATE_VICTORY" {
+	if s.ActiveBattle != nil && s.ActiveBattle.Status == "active" && c.Type != "COMPLETE_BATTLE" && c.Type != "QA_SIMULATE_VICTORY" && c.Type != "QA_SIMULATE_DEFEAT" {
 		return domain.Fail("INVALID_PHASE", "请先完成当前战斗；返回标题可暂停并保留本场。", 409)
 	}
 	// A failed battle keeps its modifiers only while the player is retrying.
@@ -346,9 +353,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		return g.startBattle(s, c)
 	case "COMPLETE_BATTLE":
 		return g.completeBattle(s, c)
-	case "QA_SIMULATE_VICTORY":
+	case "QA_SIMULATE_VICTORY", "QA_SIMULATE_DEFEAT":
 		if !g.QAVictoryEnabled {
-			return domain.Fail("QA_DISABLED", "开发胜利模拟未启用", 403)
+			return domain.Fail("QA_DISABLED", "服务端未启用战斗验收模拟", 403)
 		}
 		if err := domain.RequirePhase(*s, "battle"); err != nil {
 			return err
@@ -357,7 +364,17 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		if attempt == nil || attempt.Status != "active" || attempt.ID != c.AttemptID {
 			return domain.Fail("INVALID_COMMAND", "战斗场次无效", 400)
 		}
-		return g.completeBattle(s, qaVictoryResult(attempt))
+		result := qaVictoryResult(attempt)
+		if c.Type == "QA_SIMULATE_DEFEAT" {
+			result.Outcome = "lost"
+			leaks, boss := 3, false
+			result.Report = &domain.BattleReport{Leaks: &leaks, BossDefeated: &boss}
+			if attempt.StageID == "finale_boss" {
+				elites := 0
+				result.Report.ElitesDefeated = &elites
+			}
+		}
+		return g.completeBattle(s, result)
 	case "CONTINUE":
 		if err := domain.RequirePhase(*s, "settlement"); err != nil {
 			return err

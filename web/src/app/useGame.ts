@@ -40,9 +40,11 @@ export function useGame() {
         await controller.dispatch({type: 'ADVANCE_STORY', nodeId: cur.storyNodeId});
         cur = store.getSnapshot();
       }
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : '跳过剧情失败');
       setSessionUnavailable(e instanceof ApiError && e.code === 'UNAUTHORIZED');
+      return false;
     } finally {
       setBusy(false);
     }

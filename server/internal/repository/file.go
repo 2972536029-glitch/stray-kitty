@@ -20,6 +20,8 @@ type Player struct {
 	ReceiptOrder []string           `json:"receiptOrder"`
 	// SessionAliases 登录会话的 token 哈希别名:同一存档可被匿名主会话与多个登录会话访问。
 	SessionAliases []string `json:"sessionAliases,omitempty"`
+	// The original progress is kept server-side while a QA checkpoint is active.
+	QARestore *domain.GameState `json:"qaRestore,omitempty"`
 }
 
 // Account 账号凭证:用户名(小写)指向其绑定的玩家存档。密码以 PBKDF2 加盐哈希存储。

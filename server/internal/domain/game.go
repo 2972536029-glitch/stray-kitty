@@ -68,7 +68,8 @@ type GameState struct {
 	EventState        *EventState `json:"eventState,omitempty"`
 	AlleyBattleReturn *WorldPoint `json:"alleyBattleReturn,omitempty"`
 	// Txns:金枪鱼充值与消费流水(最新的在末尾),供 /api/payment/history 展示;超出上限丢弃最旧。
-	Txns []Txn `json:"txns,omitempty"`
+	Txns           []Txn  `json:"txns,omitempty"`
+	QACheckpointID string `json:"qaCheckpointId,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -101,6 +102,7 @@ type Command struct {
 	ProductID     string      `json:"productId,omitempty"`
 	MapID         string      `json:"mapId,omitempty"`
 	ZoneID        string      `json:"zoneId,omitempty"`
+	CheckpointID  string      `json:"checkpointId,omitempty"`
 	Layer         string      `json:"layer,omitempty"`
 	Position      *WorldPoint `json:"position,omitempty"`
 	// REPORT_MOVE 携带的本次行走里程(画布像素)。
@@ -142,6 +144,7 @@ type EventOption struct {
 }
 type Event struct {
 	ID       string        `json:"id"`
+	Title    string        `json:"title"`
 	Options  []EventOption `json:"options"`
 	Category string        `json:"category"`
 	Triggers []string      `json:"triggers"`
