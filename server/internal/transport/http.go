@@ -166,6 +166,38 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		a.json(w, 200, map[string]any{"playerId": playerID, "txns": txns})
 	})
 	mux.HandleFunc("POST /api/v1/advisor", a.advise)
+	// 账号体系:注册把当前匿名进度绑到用户名密码;登录在任意设备取回进度。
+	mux.HandleFunc("POST /api/auth/register", func(w http.ResponseWriter, r *http.Request) {
+		token, err := a.token(r)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		req, err := a.readAuthBody(w, r)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		username, err := game.Register(token, req.Username, req.Password)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		a.json(w, 201, map[string]string{"username": username})
+	})
+	mux.HandleFunc("POST /api/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		req, err := a.readAuthBody(w, r)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		playerID, token, err := game.Login(req.Username, req.Password)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		a.json(w, 200, map[string]string{"playerId": playerID, "token": token})
+	})
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, domain.Fail("NOT_FOUND", "API 路径或方法不存在", 404))
 	})
@@ -209,6 +241,33 @@ func (a *API) token(r *http.Request) (string, error) {
 	}
 	return strings.TrimSpace(value[7:]), nil
 }
+
+// authCredentials 注册/登录共用的请求正文。
+type authCredentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// readAuthBody 解析注册/登录正文:JSON 单对象、8 KiB 上限、字段未知即拒。
+func (a *API) readAuthBody(w http.ResponseWriter, r *http.Request) (authCredentials, error) {
+	var req authCredentials
+	if !strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/json") {
+		return req, domain.Fail("INVALID_CONTENT_TYPE", "需要 application/json", 415)
+	}
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 8192))
+	if err != nil {
+		return req, domain.Fail("BODY_TOO_LARGE", "请求超过 8 KiB", 413)
+	}
+	decoder := json.NewDecoder(strings.NewReader(string(body)))
+	decoder.DisallowUnknownFields()
+	if err = decoder.Decode(&req); err != nil {
+		return req, domain.Fail("INVALID_REQUEST", "请求格式或字段无效", 400)
+	}
+	if err = decoder.Decode(new(any)); err != io.EOF {
+		return req, domain.Fail("INVALID_REQUEST", "只接受单个 JSON 对象", 400)
+	}
+	return req, nil
+}
 func (a *API) json(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
@@ -225,34 +284,38 @@ func (a *API) fail(w http.ResponseWriter, r *http.Request, err error) {
 }
 func validateCommand(body []byte, kind string) error {
 	allowed := map[string][]string{
-		"ADVANCE_STORY":     {"nodeId"},
-		"START_STORY":       {"nodeId"},
-		"INTERACT":          {"interactionId"},
-		"REPORT_MOVE":       {"distance"},
-		"CHOOSE_EVENT":      {"eventId", "optionId", "usePush"},
-		"START_BATTLE":      {"stageId", "returnPosition"},
-		"COMPLETE_BATTLE":   {"attemptId", "outcome", "report"},
-		"CONTINUE":          {},
-		"GO_HOME":           {},
-		"GO_EXPLORE":        {"mapId"},
-		"PLACE_FURNITURE":   {"furnitureId", "slotId"},
-		"DRAW_FURNITURE":    {"poolId"},
-		"CHECK_RANDOM_ZONE": {"zoneId"},
-		"BUY_FURNITURE":     {"productId"},
+		"ADVANCE_STORY":       {"nodeId"},
+		"START_STORY":         {"nodeId"},
+		"INTERACT":            {"interactionId", "layer", "position"},
+		"REPORT_MOVE":         {"distance"},
+		"CHOOSE_EVENT":        {"eventId", "optionId", "usePush"},
+		"START_BATTLE":        {"stageId", "returnPosition", "layer"},
+		"COMPLETE_BATTLE":     {"attemptId", "outcome", "report"},
+		"QA_SIMULATE_VICTORY": {"attemptId"},
+		"CONTINUE":            {},
+		"GO_HOME":             {},
+		"GO_EXPLORE":          {"mapId"},
+		"EXIT_MARKET":         {"layer", "position"},
+		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
+		"DRAW_FURNITURE":      {"poolId"},
+		"CHECK_RANDOM_ZONE":   {"zoneId", "layer", "position"},
+		"BUY_FURNITURE":       {"productId"},
 	}
 	required := map[string][]string{
-		"ADVANCE_STORY":   {"nodeId"},
-		"START_STORY":     {"nodeId"},
-		"INTERACT":        {"interactionId"},
-		"CHOOSE_EVENT":    {"eventId", "optionId"},
-		"START_BATTLE":    {"stageId"},
-		"COMPLETE_BATTLE": {"attemptId", "outcome"},
-		"CONTINUE":        {},
-		"GO_HOME":         {},
-		"GO_EXPLORE":      {},
-		"PLACE_FURNITURE": {"furnitureId", "slotId"},
-		"DRAW_FURNITURE":  {"poolId"},
-		"BUY_FURNITURE":   {"productId"},
+		"ADVANCE_STORY":       {"nodeId"},
+		"START_STORY":         {"nodeId"},
+		"INTERACT":            {"interactionId"},
+		"CHOOSE_EVENT":        {"eventId", "optionId"},
+		"START_BATTLE":        {"stageId"},
+		"COMPLETE_BATTLE":     {"attemptId", "outcome"},
+		"QA_SIMULATE_VICTORY": {"attemptId"},
+		"CONTINUE":            {},
+		"GO_HOME":             {},
+		"GO_EXPLORE":          {},
+		"EXIT_MARKET":         {"layer", "position"},
+		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
+		"DRAW_FURNITURE":      {"poolId"},
+		"BUY_FURNITURE":       {"productId"},
 	}
 	allowedKeys, ok := allowed[kind]
 	if !ok {

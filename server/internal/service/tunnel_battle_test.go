@@ -140,6 +140,13 @@ func TestTunnelRetryNavigationLeavesNoStaleBattle(t *testing.T) {
 	for _, command := range []domain.Command{{Type: "GO_HOME"}, {Type: "GO_EXPLORE", MapID: "market"}, {Type: "START_STORY", NodeID: "market_intro_1"}} {
 		t.Run(command.Type, func(t *testing.T) {
 			g, token, _ := prepareBoss(t, 1, nil)
+			_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+				p.State.Flags = domain.Add(p.State.Flags, "chapter_2_started")
+				return domain.CommandResponse{State: p.State}, nil
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
 			s := execute(t, g, token, domain.Command{Type: "START_BATTLE", StageID: "tunnel_boss"})
 			s = execute(t, g, token, domain.Command{Type: "COMPLETE_BATTLE", AttemptID: s.ActiveBattle.ID, Outcome: "lost", Report: bossReport(3, false)})
 			execute(t, g, token, domain.Command{Type: "CONTINUE"})

@@ -411,8 +411,8 @@
       "chapterId": "rescue",
       "speaker": "墨墨",
       "text": "“跟紧我。从废弃花房后院的暗井下去，就是穿过老城地下的排污与蓄水暗道。普通猫咪在黑暗中寸步难行，但我能看清每块砖的缝隙。”",
-      "next": "rescue_intro_2",
-      "exit": "",
+      "next": "",
+      "exit": "explore",
       "scene": "tunnel"
     },
     {
@@ -429,9 +429,12 @@
       "chapterId": "rescue",
       "speaker": "团子",
       "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
-      "next": "rescue_intro_4",
-      "exit": "",
-      "scene": "tunnel"
+      "next": "",
+      "exit": "explore",
+      "scene": "tunnel",
+      "setFlags": [
+        "tunnel_false_kitten_trap_found"
+      ]
     },
     {
       "id": "rescue_intro_4",
@@ -633,22 +636,29 @@
       "id": "market",
       "name": "午夜集市",
       "status": "demo",
-      "width": 800,
-      "height": 480,
+      "width": 1672,
+      "height": 941,
       "interactions": [
         {
           "id": "market_crow_stall",
-          "x": 260,
-          "y": 280,
+          "x": 910,
+          "y": 245,
           "label": "乌鸦老黑羽的情报摊",
           "eventId": "crow_intel_event"
         },
         {
           "id": "market_pigeon_perch",
-          "x": 580,
-          "y": 270,
+          "x": 1310,
+          "y": 426,
           "label": "咕咕大盗的传言棚",
           "eventId": "pigeon_rumor_event"
+        },
+        {
+          "id": "market_momo_trace",
+          "x": 947,
+          "y": 160,
+          "label": "墨墨的踪迹",
+          "eventId": "momo_trail_event"
         }
       ],
       "dangerLevel": 2
@@ -666,9 +676,45 @@
       "id": "tunnel",
       "name": "地下通道",
       "status": "demo",
-      "width": 800,
-      "height": 480,
-      "interactions": [],
+      "width": 1672,
+      "height": 941,
+      "interactions": [
+        {
+          "id": "tunnel_false_kitten_trap",
+          "x": 402,
+          "y": 239,
+          "label": "假猫叫诱饵与绊线",
+          "eventId": "tunnel_false_kitten_trap"
+        },
+        {
+          "id": "tunnel_valve_three",
+          "x": 867,
+          "y": 743,
+          "label": "第三泄洪阀",
+          "eventId": "valve_three_event"
+        },
+        {
+          "id": "tunnel_momo_marks",
+          "x": 328,
+          "y": 698,
+          "label": "独行侠的旧记号",
+          "eventId": "tunnel_momo_marks"
+        },
+        {
+          "id": "tunnel_lamp_map",
+          "x": 1178,
+          "y": 176,
+          "label": "壁灯巡逻图",
+          "eventId": "tunnel_lamp_map"
+        },
+        {
+          "id": "tunnel_light_switch",
+          "x": 1434,
+          "y": 450,
+          "label": "应急灯闸",
+          "eventId": "tunnel_light_switch"
+        }
+      ],
       "dangerLevel": 3
     },
     {
@@ -3780,12 +3826,12 @@
       "id": "valve_three_event",
       "title": "第三泄洪阀",
       "text": "锈红色的管壁上钉着一块旧铭牌:3 号泄洪阀。阀门后面,隐约有极轻的、断断续续的呼噜声。",
-      "category": "opportunity",
+      "category": "story",
       "tags": [
         "pathfinding"
       ],
       "triggers": [
-        "random"
+        "node"
       ],
       "maps": [
         "tunnel"
@@ -3804,7 +3850,8 @@
                 "clue": 2
               },
               "flags": [
-                "valve_three_found"
+                "valve_three_found",
+                "valve_three_investigated"
               ]
             },
             "success": {
@@ -3816,7 +3863,8 @@
                 "clue": 1
               },
               "flags": [
-                "valve_three_found"
+                "valve_three_found",
+                "valve_three_investigated"
               ]
             },
             "partial": {
@@ -3828,7 +3876,8 @@
                 "clue": 1
               },
               "flags": [
-                "valve_three_mute"
+                "valve_three_mute",
+                "valve_three_investigated"
               ]
             },
             "fail": {
@@ -3840,7 +3889,8 @@
                 "clue": 1
               },
               "flags": [
-                "valve_three_silent"
+                "valve_three_silent",
+                "valve_three_investigated"
               ]
             }
           }
@@ -3858,7 +3908,8 @@
                 "clue": 2
               },
               "flags": [
-                "valve_three_marked"
+                "valve_three_marked",
+                "valve_three_investigated"
               ]
             },
             "success": {
@@ -3870,7 +3921,8 @@
                 "clue": 1
               },
               "flags": [
-                "valve_three_marked"
+                "valve_three_marked",
+                "valve_three_investigated"
               ]
             },
             "partial": {
@@ -3882,7 +3934,8 @@
                 "clue": 1
               },
               "flags": [
-                "valve_three_marked"
+                "valve_three_marked",
+                "valve_three_investigated"
               ]
             },
             "fail": {
@@ -3894,7 +3947,8 @@
                 "clue": 1
               },
               "flags": [
-                "valve_marks_faded"
+                "valve_marks_faded",
+                "valve_three_investigated"
               ]
             }
           }
@@ -5344,6 +5398,53 @@
               },
               "flags": [
                 "lit_path_shaky"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "tunnel_false_kitten_trap",
+      "title": "假猫叫诱饵与绊线",
+      "text": "点点停下脚步，竖起胡须：“大家等等！前面拐角水管下有一根极细的绊线，还放着一只会发出小猫哭叫的旧发条铁盒——是黑影设下的假目标诱饵！”",
+      "category": "story",
+      "tags": [
+        "pathfinding"
+      ],
+      "triggers": [
+        "node"
+      ],
+      "maps": [
+        "tunnel"
+      ],
+      "options": [
+        {
+          "id": "mark_a_safe_route",
+          "label": "标记安全路线，再靠近检查",
+          "outcomes": {
+            "crit": {
+              "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
+              "flags": [
+                "tunnel_false_kitten_trap_found"
+              ]
+            },
+            "success": {
+              "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
+              "flags": [
+                "tunnel_false_kitten_trap_found"
+              ]
+            },
+            "partial": {
+              "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
+              "flags": [
+                "tunnel_false_kitten_trap_found"
+              ]
+            },
+            "fail": {
+              "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
+              "flags": [
+                "tunnel_false_kitten_trap_found"
               ]
             }
           }

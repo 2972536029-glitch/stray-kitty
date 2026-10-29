@@ -12,12 +12,13 @@ export function useGame() {
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const [sessionUnavailable, setSessionUnavailable] = useState(false);
   const booting = useRef(false);
   const initialize = useCallback(async () => {
     if (booting.current) return;
     booting.current = true;setBusy(true);setError('');
-    try {const [data, progress] = await Promise.all([port.catalog(), port.initialize()]);setCatalog(data);store.replace(progress);}
-    catch (e) {setError(e instanceof Error ? e.message : '暂时无法连接，请重试。');}
+    try {const [data, progress] = await Promise.all([port.catalog(), port.initialize()]);setCatalog(data);store.replace(progress);setSessionUnavailable(false);}
+    catch (e) {setError(e instanceof Error ? e.message : '暂时无法连接，请重试。');setSessionUnavailable(e instanceof ApiError && e.code === 'UNAUTHORIZED');}
     finally {setBusy(false);booting.current = false;}
   }, [port, store]);
   useEffect(() => {void initialize();}, [initialize]);
@@ -26,6 +27,7 @@ export function useGame() {
     try {await controller.dispatch(command);return true;}
     catch (e) {
       setError(e instanceof Error ? e.message : '操作尚未确认，请重试。');
+      setSessionUnavailable(e instanceof ApiError && e.code === 'UNAUTHORIZED');
       if (e instanceof ApiError && e.code === 'REVISION_CONFLICT') {try {store.replace(await port.load());} catch { /* 保留错误，等待重试。 */ }}
       return false;
     } finally {setBusy(false);}
@@ -40,6 +42,7 @@ export function useGame() {
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : '跳过剧情失败');
+      setSessionUnavailable(e instanceof ApiError && e.code === 'UNAUTHORIZED');
     } finally {
       setBusy(false);
     }
@@ -49,6 +52,7 @@ export function useGame() {
     try {
       await controller.dispatch({type: 'REPORT_MOVE', distance});
     } catch (e) {
+      if (e instanceof ApiError && e.code === 'UNAUTHORIZED') {setError(e.message);setSessionUnavailable(true);return;}
       if (e instanceof ApiError && e.code === 'REVISION_CONFLICT') {try {store.replace(await port.load());} catch { /* 留给下一次操作处理。 */ }}
       else console.warn('REPORT_MOVE discarded:', e); // 静默通道不锁界面,但留痕便于排查。
     }
@@ -58,6 +62,16 @@ export function useGame() {
     localStorage.removeItem('stray-kitty.pending.v1');
     window.location.reload();
   }, []);
+  const startNewJourney = useCallback(async () => {
+    setBusy(true);setError('');
+    try {
+      const [data, progress] = await Promise.all([port.catalog(), port.startNewJourney()]);
+      setCatalog(data);store.replace(progress);setSessionUnavailable(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '无法创建新旅程，请重试。');
+      setSessionUnavailable(e instanceof ApiError && e.code === 'UNAUTHORIZED');
+    } finally {setBusy(false);}
+  }, [port, store]);
   // 支付充值绕过命令通道直接改存档,到账后用它重拉状态刷新钱包。
   const refresh = useCallback(async () => {
     try {store.replace(await port.load());} catch { /* 充值弹窗自己会提示,这里静默保留旧状态。 */ }
@@ -69,10 +83,10 @@ export function useGame() {
     try {
       await port.execute(pending.request, pending.key);
       const [latest, content] = await Promise.all([port.load(), port.catalog()]);
-      setCatalog(content);store.replace(latest);
-    } catch (e) {setError(e instanceof Error ? e.message : '仍未确认，请稍后再试。');}
+      setCatalog(content);store.replace(latest);setSessionUnavailable(false);
+    } catch (e) {setError(e instanceof Error ? e.message : '仍未确认，请稍后再试。');setSessionUnavailable(e instanceof ApiError && e.code === 'UNAUTHORIZED');}
     finally {setBusy(false);}
   }, [port, store, initialize]);
   const pending = !!port.pending();
-  return {state, catalog, busy, error, pending, send, reportMove, skipDialogue, resetSession, retry, refresh, port, disabled: busy || pending};
+  return {state, catalog, busy, error, pending, sessionUnavailable, startNewJourney, send, reportMove, skipDialogue, resetSession, retry, refresh, port, disabled: busy || pending};
 }

@@ -91,12 +91,12 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     )}
     {(state.flags.includes('alley_rescued') || state.flags.includes('rescue_story_done')) && (
       !state.flags.includes('chapter_2_started') ? (
-        <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('market'))}>
+        <button data-testid="chapter2-start" className="primary-action-btn" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('market'))}>
           🌙 启程：第二章《午夜集市》 →
         </button>
       ) : (
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-          <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('market'))}>
+          <button data-testid="chapter2-explore" className="primary-action-btn" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('market'))}>
             🌙 前往午夜集市 →
           </button>
           <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('market'))}>
