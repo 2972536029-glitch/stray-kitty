@@ -51,6 +51,7 @@ stray-kitty/
 │  ├─ BATTLE-ADVISOR-MODEL.md  阿策模型配置、可见战况与回退边界
 │  ├─ BATTLE-EVENT-ALLIES.md
 │  ├─ BATTLE-EVENT-CARRY.md  事件携带物与协助者六枚举对接
+│  ├─ CHAPTER-NAVIGATION-QA.md
 │  ├─ DEVELOPMENT.md
 │  ├─ GAME-FLOWCHART.html
 │  ├─ GAME-FLOWCHART.md
@@ -153,6 +154,7 @@ stray-kitty/
 │     │  ├─ lottery/  奖池、抽取与结果
 │     │  ├─ map/  地图 · Jenny
 │     │  ├─ nightMarket/  Chapter 2 Night Market spatial map and progression
+│     │  ├─ qa/  按游戏流程组织的验收操作与服务端能力检查
 │     │  ├─ rainyAlley/
 │     │  └─ shop/  商品与购买
 │     ├─ shared/  通用工具 · 预留
@@ -166,6 +168,7 @@ stray-kitty/
 ├─ package-lock.json  锁定依赖
 ├─ package.json  依赖与工程命令
 ├─ playwright.config.ts  浏览器测试配置
+├─ playwright.player-flow.config.ts
 └─ 启动开发.cmd  Windows 开发入口
 ```
 

@@ -24,7 +24,7 @@ test.beforeAll(async({request})=>{
     players[createHash('sha256').update(session.token).digest('hex')]={id:session.playerId,state,receipts:{},receiptOrder:[]};
   }
   const save=path.join(directory,'save.json');fs.writeFileSync(save,JSON.stringify({schemaVersion:1,players}));
-  child=spawn(process.env.KITTY_FIXTURE_BINARY ?? path.join(process.cwd(),'.runtime',process.platform==='win32'?'kitty-preview.exe':'kitty-preview'),[],{cwd:path.join(process.cwd(),'server'),windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,GAME_ADDR:`127.0.0.1:${port}`,GAME_DATA_FILE:save,GAME_WEB_DIR:path.join(process.cwd(),'web/dist')}});
+  child=spawn(process.env.KITTY_FIXTURE_BINARY ?? path.join(process.cwd(),'.runtime',process.platform==='win32'?'kitty-preview.exe':'kitty-preview'),[],{cwd:path.join(process.cwd(),'server'),windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,GAME_QA_ENABLED:'true',GAME_ADDR:`127.0.0.1:${port}`,GAME_DATA_FILE:save,GAME_WEB_DIR:path.join(process.cwd(),'web/dist')}});
   closed=new Promise(resolve=>child!.once('close',()=>resolve()));
   let output='';child.stdout?.on('data',chunk=>output+=chunk);child.stderr?.on('data',chunk=>output+=chunk);
   await expect.poll(async()=>{if(child!.exitCode!==null)throw new Error(output);try{return(await request.get(origin+'/healthz',{timeout:500})).ok();}catch{return false;}},{timeout:10000}).toBe(true);
@@ -73,11 +73,12 @@ test('L02 home action: Chapter 2 opens the interactive Night Market and movement
   await expect(page.getByRole('button',{name:'回到花房'})).toHaveCount(0);
 });
 
-test('L02 acceptance shortcut: the E2E-only toolbar opens Night Market exploration without a battle',async({page,request})=>{
+test('L02 acceptance shortcut: the flow panel opens Night Market exploration without a battle',async({page,request})=>{
   const headers={Authorization:`Bearer ${sessions.get('qa-route')!.token}`};
   await openFixture(page,'qa-route');
   await expect(page.getByRole('button',{name:'验收工具'})).toBeVisible();
   await page.getByRole('button',{name:'验收工具'}).click();
+  await page.getByTestId('qa-chapter-market').click();
   await page.getByTestId('dev-enter-market-exploration').click();
   await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(state=>({chapterId:state.chapterId,mapId:state.mapId,phase:state.phase}))).toEqual({chapterId:'market',mapId:'market',phase:'explore'});
   const canvas=page.locator('canvas');

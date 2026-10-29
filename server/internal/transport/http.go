@@ -73,6 +73,19 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		}
 		a.json(w, 200, state)
 	})
+	mux.HandleFunc("GET /api/v1/qa", func(w http.ResponseWriter, r *http.Request) {
+		token, err := a.token(r)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		tools, err := game.QATools(token)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		a.json(w, 200, tools)
+	})
 	mux.HandleFunc("POST /api/v1/commands", func(w http.ResponseWriter, r *http.Request) {
 		token, err := a.token(r)
 		if err != nil {
@@ -292,6 +305,9 @@ func validateCommand(body []byte, kind string) error {
 		"START_BATTLE":        {"stageId", "returnPosition", "layer"},
 		"COMPLETE_BATTLE":     {"attemptId", "outcome", "report"},
 		"QA_SIMULATE_VICTORY": {"attemptId"},
+		"QA_SIMULATE_DEFEAT":  {"attemptId"},
+		"QA_CHECKPOINT":       {"checkpointId"},
+		"QA_RESTORE":          {},
 		"CONTINUE":            {},
 		"GO_HOME":             {},
 		"GO_EXPLORE":          {"mapId"},
@@ -310,6 +326,9 @@ func validateCommand(body []byte, kind string) error {
 		"START_BATTLE":        {"stageId"},
 		"COMPLETE_BATTLE":     {"attemptId", "outcome"},
 		"QA_SIMULATE_VICTORY": {"attemptId"},
+		"QA_SIMULATE_DEFEAT":  {"attemptId"},
+		"QA_CHECKPOINT":       {"checkpointId"},
+		"QA_RESTORE":          {},
 		"CONTINUE":            {},
 		"GO_HOME":             {},
 		"GO_EXPLORE":          {},

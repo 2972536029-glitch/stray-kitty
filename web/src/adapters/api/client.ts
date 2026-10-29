@@ -1,4 +1,4 @@
-import type {ApiErrorBody, AuthRegistration, Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentHistoryResponse, Session} from '../../contracts';
+import type {ApiErrorBody, AuthRegistration, Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentHistoryResponse, Session, QATools} from '../../contracts';
 import type {GameApiPort} from '../../core/ports';
 import {runtime} from '../../config/runtime';
 import {BrowserSessionStore} from '../storage/BrowserSessionStore';
@@ -63,6 +63,13 @@ export class HttpGameApi implements GameApiPort {
   }
   load() {return this.request<GameState>('/state');}
   catalog() {return this.request<Catalog>('/content');}
+  async qaTools() {
+    try {return await this.request<QATools>('/qa');}
+    catch (error) {
+      if (error instanceof SyntaxError || (error instanceof ApiError && error.status === 404)) throw new Error('当前游戏服务尚未提供流程验收接口，请同步部署游戏服务与前端。');
+      throw error;
+    }
+  }
   pending() {return this.cache.pending(this.session?.playerId);}
   // 支付网关按 playerId 寻账,不认 Bearer 令牌;给充值弹窗取当前会话的玩家 ID。
   playerId() {return this.session?.playerId ?? '';}
