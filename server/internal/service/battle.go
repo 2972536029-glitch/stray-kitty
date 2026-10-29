@@ -45,11 +45,11 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 	if mainlineMarket && !battleRetry && (c.Layer != "L0" || c.ReturnPosition == nil || math.Hypot(c.ReturnPosition.X-1310, c.ReturnPosition.Y-169) > 58) {
 		return domain.Fail("STAGE_LOCKED", "请抵达集市北侧防线入口", 409)
 	}
-	tunnelStoryBattle := c.StageID == "tunnel_boss" && s.MapID == "tunnel" && s.Phase == "explore"
+	tunnelStoryBattle := c.StageID == "tunnel_boss" && s.MapID == "tunnel" && (s.Phase == "explore" || (battleRetry && s.ActiveBattle.Mainline))
 	if tunnelStoryBattle && (!domain.Contains(s.Flags, "chapter_4_started") || !domain.Contains(s.Flags, "tunnel_false_kitten_trap_found") || !domain.Contains(s.Flags, "valve_three_investigated") || domain.Contains(s.Flags, "tunnel_boss_cleared")) {
 		return domain.Fail("STAGE_LOCKED", "请先调查诱饵与第三泄洪阀，或返回已经完成的通道", 409)
 	}
-	if tunnelStoryBattle {
+	if tunnelStoryBattle && !battleRetry {
 		p := c.ReturnPosition
 		if p == nil || math.IsNaN(p.X) || math.IsNaN(p.Y) || math.IsInf(p.X, 0) || math.IsInf(p.Y, 0) || p.X < 1475 || p.X > 1602 || p.Y < 721 || p.Y > 798 {
 			return domain.Fail("INVALID_COMMAND", "地下通道战斗触发位置无效", 400)

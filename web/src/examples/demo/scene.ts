@@ -6,7 +6,7 @@ import {CanvasPainter} from '../../adapters/canvas/painter';
 import {FollowCamera, type CameraFrame} from '../../adapters/canvas/camera';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
 import {TunnelMap} from '../../modules/chapter4/TunnelMap';
-import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketOptionalHint, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, marketExitAt, MARKET_EXIT_TRIGGER, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
+import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketInteractionTarget, marketOptionalHint, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, marketExitAt, MARKET_EXIT_TRIGGER, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 import {HOME_LAYOUT_ID, HOME_RESIDENTS, HOME_ROAM_NODES, HOME_SHELTER_NODES, HOME_SLOTS, homeStage} from '../../modules/home/layout';
@@ -334,22 +334,12 @@ export class DemoScene {
         }
         this.onInspectHint?.(inspect);
       } else if (this.state.mapId === 'market') {
-        const clueFlags:Record<string,string>={crow:'market_crow_clue_completed',pigeon:'market_pigeon_clue_completed'};
-        const nearestItem=marketItems.filter(item=>(item.kind==='fixed'||item.kind==='optional')&&item.layer===this.marketFloor&&(!clueFlags[item.id]||!this.state!.flags.includes(clueFlags[item.id]))&&!(item.id==='momo'&&this.state!.drawnEvents?.includes('node:momo_trail_event'))).map(item=>({item,distance:Math.hypot(this.x-item.x,this.y-item.y)})).filter(value=>value.distance<=75).sort((a,b)=>a.distance-b.distance)[0]?.item;
-        const nearCrow = nearestItem?.id==='crow';
-        const nearPigeon = nearestItem?.id==='pigeon';
-        const nearMomo = nearestItem?.id==='momo';
-        nearInteraction = !!nearestItem;
-        const traversalNearby=marketPortals.some(value=>(!value.requiresFlag||this.state!.flags.includes(value.requiresFlag))&&[value.a,value.b].some(point=>point.layer===this.marketFloor&&Math.hypot(this.x-point.x,this.y-point.y)<=44));
-        if (nearCrow) {
-          this.onNear(true, 'market_crow_stall', '老黑羽的情报摊 · E');
-        } else if (nearPigeon) {
-          this.onNear(true, 'market_pigeon_perch', '咕咕大盗的传言棚 · E');
-        } else if(nearMomo&&!traversalNearby) {
-          this.onNear(true,'market_momo_trace','墨墨的踪迹 · E');
-        } else {
-          this.onNear(false);
-        }
+        const target=marketInteractionTarget(this.marketFloor,this.x,this.y,this.state.flags,this.state.drawnEvents??[]);
+        const nearCrow=target?.id==='market_crow_stall';
+        const nearPigeon=target?.id==='market_pigeon_perch';
+        const nearMomo=target?.id==='market_momo_trace';
+        nearInteraction=!!target;
+        this.onNear(!!target,target?.id,target?.label);
 
         let inspect: string | null = null;
         if (nearCrow) {
@@ -361,18 +351,18 @@ export class DemoScene {
         } else if (Math.hypot(this.x - 130, this.y - 310) < 55) {
           inspect = '【团子】“喵喵，集市里的鸟雀们消息很灵通，我们去打听一下吧！”';
         }
-        if(nearestItem?.id==='momo')inspect='E · 查看墨墨的踪迹';
+        if(nearMomo)inspect='E · 查看墨墨的踪迹';
         this.onInspectHint?.(inspect);
         const bossReady=this.state.flags.includes('market_crow_clue_completed')&&this.state.flags.includes('market_pigeon_clue_completed');
         if(nearMomo)this.onInspectHint?.('E · 查看墨墨的踪迹');
         const portal=marketPortals.filter(value=>!value.requiresFlag||this.state!.flags.includes(value.requiresFlag)).flatMap(value=>[{portal:value,point:value.a},{portal:value,point:value.b}]).filter(value=>value.point.layer===this.marketFloor&&Math.hypot(this.x-value.point.x,this.y-value.point.y)<=value.portal.radius).sort((a,b)=>Math.hypot(this.x-a.point.x,this.y-a.point.y)-Math.hypot(this.x-b.point.x,this.y-b.point.y))[0];
         if(portal)this.onInspectHint?.(`${portal.portal.key.toUpperCase()} · ${portal.portal.label.split(' · ')[1]}`);
-        else if(!nearestItem&&this.marketFloor==='L0'&&Math.hypot(this.x-1310,this.y-169)<72&&!bossReady)this.onInspectHint?.('集市保卫战 · 需要先完成两条情报');
-        else if(!nearestItem&&this.marketFloor==='L0'&&Math.hypot(this.x-1365,this.y-78)<48&&!this.state.flags.includes('market_cleared'))this.onInspectHint?.('北街出口 · 请先完成集市保卫战');
+        else if(!target&&this.marketFloor==='L0'&&Math.hypot(this.x-1310,this.y-169)<72&&!bossReady)this.onInspectHint?.('集市保卫战 · 需要先完成两条情报');
+        else if(!target&&this.marketFloor==='L0'&&Math.hypot(this.x-1365,this.y-78)<48&&!this.state.flags.includes('market_cleared'))this.onInspectHint?.('北街出口 · 请先完成集市保卫战');
         const battleAction=marketEAction(this.marketFloor,this.x,this.y,this.state.flags,this.state.drawnEvents??[]);
         if(battleAction?.type==='battle')this.onInspectHint?.('E · 开始集市保卫战');
         else if(battleAction?.type==='hint')this.onInspectHint?.(battleAction.text);
-        const authoredFocus=!!nearestItem||!!portal||Math.hypot(this.x-1310,this.y-169)<=75||Math.hypot(this.x-1365,this.y-78)<=48;
+        const authoredFocus=!!target||!!portal||Math.hypot(this.x-1310,this.y-169)<=75||Math.hypot(this.x-1365,this.y-78)<=48;
         if(!authoredFocus){const clueHint=marketOptionalHint(this.marketFloor,this.x,this.y,!!this.state.drawnEvents?.includes('node:momo_trail_event'));if(clueHint)this.onInspectHint?.(clueHint);}
         if(!authoredFocus)for(const [id,floor,x,y] of [['market_random_r1','L0',652,632],['market_random_r2','L1',680,166],['market_random_r3','Lm1',975,429]] as const){
           const inside=this.marketFloor===floor&&Math.hypot(this.x-x,this.y-y)<42;
