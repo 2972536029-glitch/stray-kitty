@@ -21,6 +21,7 @@ type Attempt struct {
 	// Legacy storage only: old active reservations are fully returned at settlement.
 	// New battles never reserve or consume supplies.
 	Supplies map[string]int `json:"supplies,omitempty"`
+	// Mainline identifies a chapter mission begun from its gated map trigger.
 	Mainline bool           `json:"mainline,omitempty"`
 }
 type BattleReport struct {

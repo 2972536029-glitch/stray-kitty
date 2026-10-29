@@ -45,10 +45,20 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 	if mainlineMarket && !battleRetry && (c.Layer != "L0" || c.ReturnPosition == nil || math.Hypot(c.ReturnPosition.X-1310, c.ReturnPosition.Y-169) > 58) {
 		return domain.Fail("STAGE_LOCKED", "请抵达集市北侧防线入口", 409)
 	}
+	tunnelStoryBattle := c.StageID == "tunnel_boss" && s.MapID == "tunnel" && s.Phase == "explore"
+	if tunnelStoryBattle && (!domain.Contains(s.Flags, "chapter_4_started") || !domain.Contains(s.Flags, "tunnel_false_kitten_trap_found") || !domain.Contains(s.Flags, "valve_three_investigated") || domain.Contains(s.Flags, "tunnel_boss_cleared")) {
+		return domain.Fail("STAGE_LOCKED", "请先调查诱饵与第三泄洪阀，或返回已经完成的通道", 409)
+	}
+	if tunnelStoryBattle {
+		p := c.ReturnPosition
+		if p == nil || math.IsNaN(p.X) || math.IsNaN(p.Y) || math.IsInf(p.X, 0) || math.IsInf(p.Y, 0) || p.X < 1475 || p.X > 1602 || p.Y < 721 || p.Y > 798 {
+			return domain.Fail("INVALID_COMMAND", "地下通道战斗触发位置无效", 400)
+		}
+	}
 	if battleRetry && s.ActiveBattle.StageID != c.StageID {
 		return domain.Fail("INVALID_PHASE", "请重试当前关卡，或先离开准备页再选择其他关卡", 409)
 	}
-	if isStandaloneBattle(c.StageID) {
+	if isStandaloneBattle(c.StageID) && !tunnelStoryBattle {
 		if !domain.Contains(s.Flags, "alley_rescued") {
 			return domain.Fail("STAGE_LOCKED", "请先完成第一章救援，再从家园进入独立试玩", 409)
 		}
@@ -86,7 +96,7 @@ func (g *Game) startBattle(s *domain.GameState, c domain.Command) error {
 		return err
 	}
 	attempt := &domain.Attempt{ID: id, StageID: c.StageID, Status: "active"}
-	attempt.Mainline = mainlineMarket
+	attempt.Mainline = mainlineMarket || tunnelStoryBattle
 	if battleRetry {
 		if s.ActiveBattle.Modifiers != nil {
 			modifiers := *s.ActiveBattle.Modifiers
@@ -217,6 +227,9 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 			result.Message = "伙伴们共同守住了光之归路，永夜之王与两名精英护卫已被击退。"
 		} else if attempt.StageID == "tunnel_boss" {
 			result.Message = "地下通道的归路守住了，六位伙伴击退了断灯监守。"
+			if attempt.Mainline {
+				s.Flags = domain.Add(s.Flags, "tunnel_boss_cleared")
+			}
 		} else if attempt.StageID == "greenhouse_boss" {
 			s.Flags = domain.Add(s.Flags, "greenhouse_fortified")
 			result.Message = "废弃花房的防线守住了，六位伙伴击退了首领。"
@@ -228,4 +241,14 @@ func (g *Game) completeBattle(s *domain.GameState, c domain.Command) error {
 	s.Phase = "settlement"
 	s.LastResult = result
 	return nil
+}
+
+func qaVictoryResult(attempt *domain.Attempt) domain.Command {
+	leaks, bossDefeated := 0, true
+	report := &domain.BattleReport{Leaks: &leaks, BossDefeated: &bossDefeated}
+	if attempt.StageID == "finale_boss" {
+		elites := 2
+		report.ElitesDefeated = &elites
+	}
+	return domain.Command{Type: "COMPLETE_BATTLE", AttemptID: attempt.ID, Outcome: "won", Report: report}
 }

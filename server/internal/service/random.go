@@ -117,14 +117,23 @@ func (g *Game) checkRandomZone(s *domain.GameState, zoneID, floor string, positi
 			s.LastResult = domain.Result{Message: "集市角落传来动静。"}
 		}
 		return nil
-	}
-	if s.MapID != "alley" {
+	} else if s.MapID == "tunnel" {
+		if !domain.Contains(s.Flags, "tunnel_false_kitten_trap_found") {
+			return nil // Keep discovery of the mandatory D clue clear of random encounters.
+		}
+		switch zoneID {
+		case "tunnel_random_west", "tunnel_random_east", "tunnel_random_south":
+		default:
+			return domain.Fail("INVALID_COMMAND", "随机区域无效", 400)
+		}
+	} else if s.MapID != "alley" {
 		return domain.Fail("INVALID_COMMAND", "随机区域不属于当前地图", 400)
-	}
-	switch zoneID {
-	case "rainy_random_west", "rainy_random_central", "rainy_random_east":
-	default:
-		return domain.Fail("INVALID_COMMAND", "随机区域无效", 400)
+	} else {
+		switch zoneID {
+		case "rainy_random_west", "rainy_random_central", "rainy_random_east":
+		default:
+			return domain.Fail("INVALID_COMMAND", "随机区域无效", 400)
+		}
 	}
 	id, triggered, repeatable, err := g.drawRandomEventWithChance(*s, g.RainyZoneChance)
 	if err != nil {
