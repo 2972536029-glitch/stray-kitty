@@ -109,11 +109,11 @@ button{border-color:#382f2b;box-shadow:3px 3px 0 #c59a55;border-radius:3px}butto
 .app-shell:not([data-phase=battle]) .world-footer p{max-width:640px;font-size:18px;line-height:1.62;color:#f2ead4;text-shadow:0 2px 6px rgba(8,17,20,.6);transition:opacity .6s ease,transform .6s ease}
 .app-shell:not([data-phase=battle]) .world-footer p.inspect-hint{color:#ffe9a8!important;font-weight:700}
 .app-shell:not([data-phase=battle]) .world-footer>button{font-size:13px;padding:9px 13px}
-.app-shell:not([data-phase=battle]) .world-footer .direction-pad button{background:rgba(255,226,150,.16);color:#ffe9a8;border-color:rgba(255,226,150,.3)}
 .app-shell:not([data-phase=battle]) .alley-objective{font-size:13px;border-radius:9px}
-/* 3 秒无操作：只淡出提示文案（保留 DOM 供读屏/测试），方向键与交互按钮常驻 */
-.world-footer p.hint-idle{opacity:0;transform:translateY(8px);pointer-events:none}
-@media(prefers-reduced-motion:reduce){.world-footer p,.world-footer p.hint-idle{transition:none;transform:none}}
+/* 探索 HUD 智能感知（GameScreen 距离检测控制 .hint-idle）：进场 3 秒整栏淡出下落，靠近交互物或有挤/爬提示时再滑回来，画面完全还给玩家 */
+.app-shell:not([data-phase=battle]) .world-footer{transition:opacity .35s ease,transform .35s ease}
+.app-shell:not([data-phase=battle]) .world-footer.hint-idle{opacity:0;transform:translateY(14px);pointer-events:none}
+@media(prefers-reduced-motion:reduce){.app-shell:not([data-phase=battle]) .world-footer,.app-shell:not([data-phase=battle]) .world-footer.hint-idle{transition:none;transform:none}}
 @media(max-width:800px){
  .app-shell:not([data-phase=battle]) .world-footer p{font-size:14px;line-height:1.55;flex-basis:100%}
  .app-shell:not([data-phase=battle]) .world-toolbar strong{font-size:11px}

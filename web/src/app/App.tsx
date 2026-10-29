@@ -4,7 +4,6 @@ import {Viewport} from '../examples/demo/Viewport';
 import type {DemoScene} from '../examples/demo/scene';
 import type {CatBreed} from '../adapters/canvas/pixelCat';
 import {BattleHost} from '../modules/battle/BattleHost';
-import type {Direction} from '../adapters/platform/input';
 import {currentStory} from '../core/story';
 import StartScreen from '../ui/StartScreen';
 import GameScreen from '../ui/GameScreen';
@@ -82,7 +81,6 @@ export default function App() {
       homeChimed.current = true;
     }
   }, [state?.phase]);
-  const direction = useRef<(direction: Direction, held: boolean) => void>(() => {});
   const rainyPosition = useRef<{x: number; y: number} | undefined>(undefined);
   const interact = useCallback((targetId?: string) => {
     const id = targetId || nearTarget?.id;
@@ -106,10 +104,10 @@ export default function App() {
         {!entered && <StartScreen hasProgress={state.revision > 0} disabled={disabled} onStart={() => setEntered(true)} onShop={() => setOverlay('shop')} onReset={resetSession}/>}
         {/* Keep an active battle mounted and paused behind the title, so returning does not restart its attempt. */}
         {(entered || state.phase === 'battle') && <div hidden={!entered}>
-          <GameScreen state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} topExpanded={topExpanded} onToggleTopbar={toggleTopbar} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} onReset={resetSession} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onDirection={(d, held) => direction.current(d, held)} onPause={() => setPaused(!paused)} onMap={() => setOverlay('map')} onShop={() => setOverlay('shop')} onRecharge={() => setOverlay('recharge')} onSettings={() => setOverlay('settings')} onWarehouse={() => setOverlay('warehouse')} onTitle={() => {setEntered(false);setPaused(false);}} speakerAnchor={getSpeakerAnchor}>
+          <GameScreen state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} topExpanded={topExpanded} onToggleTopbar={toggleTopbar} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} onReset={resetSession} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onPause={() => setPaused(!paused)} onMap={() => setOverlay('map')} onShop={() => setOverlay('shop')} onRecharge={() => setOverlay('recharge')} onSettings={() => setOverlay('settings')} onWarehouse={() => setOverlay('warehouse')} onTitle={() => {setEntered(false);setPaused(false);}} speakerAnchor={getSpeakerAnchor}>
             {state.phase === 'battle'
               ? <BattleHost state={state} catalog={catalog} paused={frozen} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})}/>
-              : <Viewport state={state} storyScene={currentStory(catalog, state)?.scene} paused={frozen} onSceneReady={scene => {sceneRef.current = scene;scene?.setTopbarExpanded(topExpandedRef.current);}} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onDirectionReady={fn => {direction.current = fn;}} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone} onWorldPosition={point => {rainyPosition.current = point;}} randomEligible={randomEligible}/>}
+              : <Viewport state={state} storyScene={currentStory(catalog, state)?.scene} paused={frozen} onSceneReady={scene => {sceneRef.current = scene;scene?.setTopbarExpanded(topExpandedRef.current);}} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone} onWorldPosition={point => {rainyPosition.current = point;}} randomEligible={randomEligible}/>}
           </GameScreen>
         </div>}
       </>}

@@ -235,52 +235,97 @@ export class IntegratedRainyAlley {
     this.drawMinimap(context, width, height, flags);
   }
 
-  /** 巷尾的老黄：趴卧的黄色老狗（纯像素方块拼出），慢呼吸、垂耳、口鼻有白毛；靠近或交互时尾巴摇得欢。 */
+  /** 老黄像素画调色板：k 深棕轮廓（像素画的骨架，色块全靠它收边）/ l 背部受光 / m 主面 / d 腹侧暗面 / s 垂耳与爪尖 / e 眼黑 / w 口鼻与眉间白毛。 */
+  private static readonly dogPalette: Readonly<Record<string, string>> = {
+    k: '#5b4426', l: '#ecc268', m: '#d7a44a', d: '#b9893b', s: '#8a6a3c', e: '#221609', w: '#f2ead6'
+  };
+  /** 部件字符画（'.' 透明）：侧视趴卧、面朝左。鼻尖/口鼻在头左端，垂耳盖在头颈交界，尾巴单独两节摇摆。 */
+  private static readonly dogHeadArt = [
+    '..kkkkk', // 颅顶轮廓
+    '.klllllk', // 受光
+    '.kllllllk',
+    'klwwllllk', // 眉间白毛（老狗的沧桑感）
+    'kewwllllk', // 眼：兴奋叠白高光，平时叠棕条眯眼
+    'kwwwwlllk', // 口鼻白毛
+    '.kwwwlllk',
+    '..kwwwllk',
+    '...kkkkk' // 下颚轮廓
+  ];
+  private static readonly dogEarArt = ['.kkk.', 'ksssk', 'ksssk', 'ksssk', '.kssk', '.kssk', '..kk.'];
+  private static readonly dogBodyArt = [
+    '...kkkkkkkkkkkk', // 背线轮廓
+    '..kllllllllllllk', // 背部受光带（高光→主面的明暗交界）
+    '..kllmmmmmmmmmdk',
+    '.kmmmmmmmmmmmmddk',
+    '.kmmmmmmmmmmmdddk',
+    '.kmmmmmmmmmmmdddk',
+    '.kdddddddddddddk', // 腹侧暗面
+    '..kkkkkkkkkkkkkk' // 底边轮廓
+  ];
+  private static readonly dogPawArt = ['kmmmk', 'kmmmk', 'ksssk']; // 前爪：爪尖深色朝左伸出
+  private static readonly dogHindArt = ['.kkk.', 'kdddk', 'kdddk', 'kdddk', '.kkk.']; // 后腿蜷卧
+
+  /** 巷尾的老黄：部件化像素画拼装，深棕描边 + 三段明暗（受光/主面/暗面）。
+   *  待机动画 = 呼吸起伏（头与背上段整格轻抬，腹底四爪贴地）+ 尾巴两节慢摆；靠近或交互时呼吸变快、尾巴摇欢、睁眼抬头。 */
   private drawDogFriend(context: CanvasRenderingContext2D, _flags: readonly string[]) {
     const dog = rainyAlleySource.objects.fixed.find(object => object.id === DOG_FRIEND_ID);
     if (!dog) return;
     const near = Math.hypot(this.position.x - dog.x, this.position.y - dog.y) <= DOG_FRIEND_RADIUS;
     const excited = near || this.cheering();
-    const breathe = Math.sin(this.now / (excited ? 340 : 760));
-    const wagSpeed = excited ? 900 : 2100;
-    const wag = Math.sin(this.now / wagSpeed * Math.PI * 2);
+    // 呼吸取整成 -1/0/1 的整格位移：既保住像素对齐，又有干脆的起伏节律。
+    const breatheLift = Math.round(Math.sin(this.now / (excited ? 340 : 760)) * 0.9);
+    const wag = Math.sin(this.now / (excited ? 210 : 560) * Math.PI);
     context.save();
     context.translate(dog.x, dog.y);
-    // 落地投影：湿石板上的椭圆暗斑
-    context.fillStyle = 'rgba(8,16,20,.4)';
-    context.beginPath(); context.ellipse(0, 1.5, 17, 4.4, 0, 0, Math.PI * 2); context.fill();
-    const px = (x: number, y: number, w: number, h: number, color: string) => {context.fillStyle = color; context.fillRect(x, y, w, h);};
-    // 身体（趴卧，底边贴地 y=0；呼吸只起伏背部 0.6px）
-    const bodyLift = breathe * 0.6;
-    px(-13, -10 + bodyLift, 24, 9, '#d7a44a');          // 主面
-    px(-13, -10 + bodyLift, 24, 2.4, '#ecc268');          // 背部受光
-    px(-13, -2, 24, 2, '#b9893b');                        // 腹侧暗面
-    px(-11, -12.4 + bodyLift, 19, 2.4, '#c2924a'); // 背脊
-    // 前爪（朝左伸出）
-    px(-17, -3.4, 5.5, 3.4, '#d7a44a'); px(-17, -3.4, 5.5, 1.2, '#ecc268');
-    px(9, -3, 5, 3, '#b9893b');                            // 后腿
-    // 尾巴（右端两节，绕根部摆动）
+    // 落地投影：湿石板上的椭圆暗斑，随呼吸微微涨缩（胸腔起伏的错觉）
+    context.fillStyle = 'rgba(8,16,20,.42)';
+    context.beginPath(); context.ellipse(-1, 1.2, 17 + breatheLift * 0.6, 4.2, 0, 0, Math.PI * 2); context.fill();
+
+    const palette = IntegratedRainyAlley.dogPalette;
+    const u = 1.34; // 单格像素尺寸：整狗约 34×18 世界像素
+    const stamp = (art: readonly string[], x: number, y: number, from = 0, to = art.length, lift = 0) => {
+      for (let ry = from; ry < to; ry++) {
+        const row = art[ry] ?? '';
+        for (let rx = 0; rx < row.length; rx++) {
+          const color = palette[row[rx]!];
+          if (!color) continue;
+          context.fillStyle = color;
+          context.fillRect(x + rx * u, y + ry * u + lift, u + 0.5, u + 0.5); // +0.5 填缝防裂
+        }
+      }
+    };
+    // 待机动画分层：躯干上段 + 头 + 垂耳随呼吸轻抬；腹部下段、四爪始终贴地，趴得稳。
+    const headLift = (this.cheering() ? 3 : 0) + breatheLift;
+    // 躯干（背上两行受光带 = 高光，腹侧暗面，底部轮廓贴地）
+    stamp(IntegratedRainyAlley.dogBodyArt, -11 * u, -8 * u, 0, 4, breatheLift); // 背部上段：呼吸
+    stamp(IntegratedRainyAlley.dogBodyArt, -11 * u, -8 * u, 4, 8);             // 腹部下段：贴地
+    // 后腿蜷卧（躯干右下）+ 前爪（左端伸出，爪尖深色）
+    stamp(IntegratedRainyAlley.dogHindArt, 6.4 * u, -5 * u);
+    stamp(IntegratedRainyAlley.dogPawArt, -19.5 * u, -3 * u);
+    // 头：趴在前爪上方，欢呼时抬头 3px；垂耳挂在头颈交界处
+    stamp(IntegratedRainyAlley.dogHeadArt, -19.5 * u, -12 * u - headLift);
+    stamp(IntegratedRainyAlley.dogEarArt, -11 * u, -10.5 * u - headLift);
+    // 黑鼻头（口鼻最前端）+ 一点湿鼻头反光
+    const noseX = -18.6 * u, noseY = -7 * u - headLift;
+    context.fillStyle = '#33261a'; context.fillRect(noseX, noseY + 0.2, u * 1.8, u * 1.5);
+    context.fillStyle = 'rgba(255,255,255,.4)'; context.fillRect(noseX + 0.4, noseY + 0.5, 0.8, 0.6);
+    // 眼睛：平时眯眼打盹（暖棕横条），靠近/交互时睁圆黑眼 + 白高光
+    const eyeX = -18.5 * u, eyeY = -8 * u - headLift;
+    if (excited) {context.fillStyle = '#ffffff'; context.fillRect(eyeX + u * 1.15, eyeY + 0.3, 0.9, 0.9);}
+    else {context.fillStyle = palette.s!; context.fillRect(eyeX - 0.3, eyeY + 0.55, u * 1.7, u * 0.7);}
+    // 尾巴：两节，绕尾根摆动，尾梢再带半段小角度——甩起来有“鞭梢”感
     context.save();
-    context.translate(12.5, -6 + bodyLift);
-    context.rotate(wag * (excited ? 0.5 : 0.22));
-    px(0, -1.2, 6.5, 2.6, '#c9963f'); px(6.5, -1.6, 4.5, 2.2, '#ecc268');
+    context.translate(5 * u, -6.6 * u - breatheLift);
+    context.rotate(wag * (excited ? 0.42 : 0.2));
+    context.fillStyle = palette.k!; context.fillRect(0, -2.1, 5.6, 4.2);
+    context.fillStyle = '#c9963f'; context.fillRect(0.7, -1.4, 4.2, 2.8);
+    context.fillStyle = palette.l!; context.fillRect(0.7, -1.4, 4.2, 1);
+    context.translate(5.4, 0);
+    context.rotate(wag * (excited ? 0.3 : 0.12));
+    context.fillStyle = palette.k!; context.fillRect(-0.4, -1.7, 4.4, 3.4);
+    context.fillStyle = palette.l!; context.fillRect(0.3, -1, 3.4, 2.2);
     context.restore();
-    // 头（左端略抬起，交互时抬头 1.5px + 睁眼）
-    const headLift = this.cheering() ? 3.2 : 0;
-    context.save();
-    context.translate(-14, -9.5 + bodyLift * 0.7 - headLift);
-    px(-4, -4.5, 10, 8.4, '#d7a44a');                      // 颅顶
-    px(-4, -4.5, 10, 2, '#ecc268');
-    px(-6.5, -1.8, 7, 4.6, '#e5c98f');                     // 口鼻
-    px(-7.4, -0.6, 1.8, 2, '#3a2c1d');                     // 鼻头
-    px(-2.5, -1.4, 3.6, 1.4, '#f2ead6');                   // 口鼻白毛（老狗）
-    px(-9.8, -3.6, 4.2, 6.4, '#8a6a3c');                   // 垂耳
-    px(-9.8, -3.6, 1.4, 6.4, '#6f5330');
-    if (excited) {px(-1.2, -2.4, 1.6, 1.6, '#221609');}    // 睁眼：黑亮小眼
-    else {px(-1.6, -2, 2.6, 1, '#8a6a3c');}                // 平时眯眼打盹
-    px(0.4, -4.9, 1.4, 1.2, '#f2ead6');                    // 眉间白毛
-    context.restore();
-    // 欢呼时从狗头顶也冒一点小心心/音符提示“它很开心”
+    // 欢呼时从狗头顶也冒一点小心心，提示“它很开心”
     if (this.cheering()) {
       const bob = Math.sin(this.now / 260) * 1.2;
       context.font = '700 9px system-ui, sans-serif';
@@ -382,13 +427,14 @@ export class IntegratedRainyAlley {
     const bob = Math.sin(this.now / 380) * 2.2;
     context.save();
     context.font = '700 12px system-ui, sans-serif';
+    // 只画 [E] 键帽小气泡：交互物名称已由 drawMarkers 的 emoji 标签承担（“🐕 巷尾的老黄”），
+    // 猫头顶若再写一遍纯文字会与之重叠冲突；统一收成极简键帽，指向猫即可。
     const keyWidth = context.measureText('E').width + 11;
-    const textWidth = context.measureText(near.label).width;
-    const chipWidth = keyWidth + 7 + textWidth + 18;
+    const chipWidth = keyWidth + 12;
     const chipHeight = 22;
     const chipX = Math.min(Math.max(catX - chipWidth / 2, 8), Math.max(8, width - chipWidth - 8));
     const chipY = Math.max(headY - chipHeight - 15 + bob, 6);
-    const tailX = Math.min(Math.max(catX, chipX + 10), chipX + chipWidth - 10);
+    const tailX = Math.min(Math.max(catX, chipX + 8), chipX + chipWidth - 8);
     // 深色底板 + 指向猫的小尖角，带轻微投影浮起感
     context.shadowColor = 'rgba(6,14,18,.55)'; context.shadowBlur = 6; context.shadowOffsetY = 2;
     context.fillStyle = 'rgba(13,26,30,.9)';
@@ -403,17 +449,14 @@ export class IntegratedRainyAlley {
     context.strokeStyle = 'rgba(255,215,110,.6)'; context.lineWidth = 1.4;
     this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 5);
     context.stroke();
-    // 像素键帽 [E]
-    const keyX = chipX + 8, keyY = chipY + 4.5, keyH = 13;
+    // 居中的像素键帽 [E]
+    const keyX = chipX + 6, keyY = chipY + 4.5, keyH = 13;
     context.fillStyle = '#f6ecd2';
     this.roundRectPath(context, keyX, keyY, keyWidth, keyH, 3); context.fill();
     context.strokeStyle = '#1d2b28'; context.lineWidth = 1.2;
     this.roundRectPath(context, keyX, keyY, keyWidth, keyH, 3); context.stroke();
     context.fillStyle = '#1d2b28'; context.textAlign = 'center'; context.textBaseline = 'middle';
     context.fillText('E', keyX + keyWidth / 2, keyY + keyH / 2 + 0.5);
-    // 交互名（暖金色，与键帽形成层次）
-    context.fillStyle = '#ffe9a8';
-    context.fillText(near.label, keyX + keyWidth + 7 + textWidth / 2, chipY + chipHeight / 2 + 0.5);
     context.restore();
   }
 

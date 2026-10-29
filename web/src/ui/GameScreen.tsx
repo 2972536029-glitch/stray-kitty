@@ -1,6 +1,5 @@
 import {useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode} from 'react';
 import type {Catalog, GameCommand, GameState} from '../contracts';
-import type {Direction} from '../adapters/platform/input';
 import type {CatBreed} from '../adapters/canvas/pixelCat';
 import type {SceneAnchor} from './DialogueBubble';
 import {currentStory, objective} from '../core/story';
@@ -30,10 +29,10 @@ interface Props {
   onJournal: () => void;
   onSkip?: () => void;
   onReset?: () => void;
-  onCommand: (command: GameCommand) => void; onInteract: (interactionId?: string) => void; onDirection: (direction: Direction, held: boolean) => void;
+  onCommand: (command: GameCommand) => void; onInteract: (interactionId?: string) => void;
   onPause: () => void; onMap: () => void; onShop: () => void; onRecharge: () => void; onSettings: () => void; onWarehouse: () => void; onTitle: () => void; children: ReactNode;
 }
-export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, topExpanded, onToggleTopbar, speakerAnchor, onJournal, onSkip, onReset, onCommand, onInteract, onDirection, onPause, onMap, onShop, onRecharge, onSettings, onWarehouse, onTitle, children}: Props) {
+export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, topExpanded, onToggleTopbar, speakerAnchor, onJournal, onSkip, onReset, onCommand, onInteract, onPause, onMap, onShop, onRecharge, onSettings, onWarehouse, onTitle, children}: Props) {
   const [devOpen, setDevOpen] = useState(false);
   // 首次进入守护准备时的教学高亮；完成后记在本地，不再打扰。
   const [battleTutorialDone, setBattleTutorialDone] = useState(() => {try {return localStorage.getItem('stray-kitty.tutorial.battle') === 'done';} catch {return true;}});
@@ -75,18 +74,18 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
     else if (state.phase !== 'explore') arrivedFromEvent.current = false;
   }, [state.phase]);
   const showExploreResult = state.phase === 'explore' && arrivedFromEvent.current && !!resolution && dismissedResult !== resolutionKey;
-  // 沉浸式 HUD：探索提示 5 秒无操作自动淡出，一动鼠标/键盘/滚轮立刻浮现；只藏文案不藏方向键。
-  const [hintIdle, setHintIdle] = useState(false);
+  // 沉浸式 HUD（探索阶段）的智能感知：进场教学只亮 3 秒便淡出收缩，把画面还给雨巷；
+  // 靠近可交互物（纸箱/老黄/寻猫启事……）时提示框再滑出并切换为该目标的引导文案，离开后再次淡出。
+  const [introHintDone, setIntroHintDone] = useState(false);
   useEffect(() => {
-    if (state.phase !== 'explore') {setHintIdle(false);return;}
-    let timer = window.setTimeout(() => setHintIdle(true), 5000);
-    const wake = () => {setHintIdle(false);window.clearTimeout(timer);timer = window.setTimeout(() => setHintIdle(true), 5000);};
-    window.addEventListener('pointermove', wake);
-    window.addEventListener('pointerdown', wake);
-    window.addEventListener('keydown', wake);
-    window.addEventListener('wheel', wake, {passive: true});
-    return () => {window.clearTimeout(timer);window.removeEventListener('pointermove', wake);window.removeEventListener('pointerdown', wake);window.removeEventListener('keydown', wake);window.removeEventListener('wheel', wake);};
-  }, [state.phase]);
+    if (state.phase !== 'explore') {setIntroHintDone(false); return;}
+    const timer = window.setTimeout(() => setIntroHintDone(true), 3000);
+    return () => window.clearTimeout(timer);
+  }, [state.phase, state.mapId]);
+  const nearHint = state.phase === 'explore' && near && nearTarget
+    ? `靠近「${nearTarget.label.replace(/\s*·\s*E$/, '')}」了，按 E 互动`
+    : null;
+  const hintHidden = state.phase === 'explore' && introHintDone && !nearHint && !inspectHint;
   // 沉浸式顶栏：展开时点顶栏以外的空白（画布、面板外壳）自动收起；战斗阶段点画布频繁，只允许手动收起。
   const topbarOpen = topExpanded;
   useEffect(() => {
@@ -223,8 +222,8 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
           {showExploreResult && resolution && <section className="event-card explore-result-card"><span className="eyebrow">一次相遇的结果</span><EventResult resolution={resolution}/><button disabled={disabled} onClick={() => {setDismissedResult(resolutionKey);arrivedFromEvent.current = false;}}>继续赶路 →</button></section>}
           {paused && <div className="pause-label"><span>旅程已暂停</span><button onClick={onPause}>继续旅程</button></div>}
         </div>
-        <div className="world-footer"><p className={`${inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}${hintIdle ? ' hint-idle' : ''}`}>{inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : finaleBattle && state.phase === 'battle' ? '躲开预告的横扫与坠击，选择护卫与首领的攻击顺序。十波清完、两精英与九格首领全部击败后获胜；援军固定支援，主力仍需你的指挥。' : tunnelBattle && state.phase === 'battle' ? '保护 C2 的喵喵；断灯时可用墨墨夜视恢复视野并为全队加盾。守完八波并击败首领；打开地图、商店或返回标题会暂停战斗。' : greenhouseBattle && state.phase === 'battle' ? '沿花房的不规则通路布阵，守住 B1；守完八波并击败四格首领。打开地图、商店或返回标题会暂停战斗。' : marketBattle && state.phase === 'battle' ? '点选伙伴查看与释放技能；守完八波并击败集市首领。打开地图、商店或返回标题会暂停战斗。' : chapterBattle && state.phase === 'battle' ? '点场上的猫查看和释放技能，守住 A4 与右侧两处巷口；守完八波并击败首领。打开地图、商店或返回标题会暂停战斗。' : (catalog.tutorials.find(t => t.phase === state.phase)?.text ?? '每次相遇，都可能成为回家路上的一点光。')}</p>
-          {state.phase === 'explore' && <><div className="direction-pad">{(['up', 'left', 'down', 'right'] as Direction[]).map((d, i) => <button key={d} aria-label={`向${['上', '左', '下', '右'][i]}移动`} disabled={disabled} onPointerDown={e => {e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);onDirection(d, true);}} onPointerUp={() => onDirection(d, false)} onLostPointerCapture={() => onDirection(d, false)}>{['↑', '←', '↓', '→'][i]}</button>)}</div>{near && nearTarget && <button disabled={disabled} onClick={() => onInteract(nearTarget.id)}>{nearTarget.label}</button>}{((state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued')) || state.mapId === 'market')&& <button disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>回到花房</button>}</>}
+        <div className={`world-footer${hintHidden ? ' hint-idle' : ''}`}><p className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{nearHint ? <><span className="hint-paw">🐾</span>{nearHint}</> : inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : finaleBattle && state.phase === 'battle' ? '躲开预告的横扫与坠击，选择护卫与首领的攻击顺序。十波清完、两精英与九格首领全部击败后获胜；援军固定支援，主力仍需你的指挥。' : tunnelBattle && state.phase === 'battle' ? '保护 C2 的喵喵；断灯时可用墨墨夜视恢复视野并为全队加盾。守完八波并击败首领；打开地图、商店或返回标题会暂停战斗。' : greenhouseBattle && state.phase === 'battle' ? '沿花房的不规则通路布阵，守住 B1；守完八波并击败四格首领。打开地图、商店或返回标题会暂停战斗。' : marketBattle && state.phase === 'battle' ? '点选伙伴查看与释放技能；守完八波并击败集市首领。打开地图、商店或返回标题会暂停战斗。' : chapterBattle && state.phase === 'battle' ? '点场上的猫查看和释放技能，守住 A4 与右侧两处巷口；守完八波并击败首领。打开地图、商店或返回标题会暂停战斗。' : (catalog.tutorials.find(t => t.phase === state.phase)?.text ?? '每次相遇，都可能成为回家路上的一点光。')}</p>
+          {state.phase === 'explore' && <>{near && nearTarget && <button disabled={disabled} onClick={() => onInteract(nearTarget.id)}>{nearTarget.label}</button>}{((state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued')) || state.mapId === 'market')&& <button disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>回到花房</button>}</>}
         </div>
       </section></div>
     </main>
