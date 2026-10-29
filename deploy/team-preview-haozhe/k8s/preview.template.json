@@ -153,6 +153,10 @@
                   {
                     "name": "ADVISOR_DAILY_REQUEST_LIMIT",
                     "value": "200"
+                  },
+                  {
+                    "name": "GAME_QA_ENABLED",
+                    "value": "true"
                   }
                 ],
                 "securityContext": {
