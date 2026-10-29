@@ -95,6 +95,9 @@ export class DemoScene {
     if (key === 'c' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartCrateClimb()) {
       event.preventDefault(); this.keys.delete('c'); return;
     }
+    // 加减号缩放视野（雨巷）：给键盘玩家与滚轮对等的视角控制。
+    if ((key === '=' || key === '+') && this.state?.mapId === 'alley') {event.preventDefault();this.rainyAlley.adjustZoom(0.12);return;}
+    if ((key === '-' || key === '_') && this.state?.mapId === 'alley') {event.preventDefault();this.rainyAlley.adjustZoom(-0.12);return;}
     this.keys.add(key);
     if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','g','c'].includes(key)) event.preventDefault();
     if (key === 'g' && !event.repeat && this.state?.mapId === 'alley') this.rainyAlley.toggleDebug();
@@ -110,6 +113,12 @@ export class DemoScene {
   };
   private keyup = (event: KeyboardEvent) => {this.keys.delete(event.key.toLowerCase());};
   private clearInput = () => {this.keys.clear();this.held.clear();};
+  // 滚轮缩放视野（雨巷）：上滚放大、下滚缩小；仅在自由探索且未暂停时接管，不吞面板滚动。
+  private wheel = (event: WheelEvent) => {
+    if (this.state?.phase !== 'explore' || this.state.mapId !== 'alley' || this.pausedByUser) return;
+    event.preventDefault();
+    this.rainyAlley.adjustZoom(-event.deltaY * 0.0016);
+  };
   private pointerdown = (event: PointerEvent) => {
     if (this.state?.phase === 'explore' && this.state.mapId === 'alley' && !this.pausedByUser) {
       const bounds = this.canvas.getBoundingClientRect();
@@ -139,6 +148,7 @@ export class DemoScene {
     window.addEventListener('keyup', this.keyup);
     window.addEventListener('blur', this.clearInput);
     this.canvas.addEventListener('pointerdown', this.pointerdown);
+    this.canvas.addEventListener('wheel', this.wheel, {passive: false});
     this.previousTime = performance.now();
     this.frame = requestAnimationFrame(this.tick);
   }
@@ -148,6 +158,7 @@ export class DemoScene {
     window.removeEventListener('keyup', this.keyup);
     window.removeEventListener('blur', this.clearInput);
     this.canvas.removeEventListener('pointerdown', this.pointerdown);
+    this.canvas.removeEventListener('wheel', this.wheel);
     this.clearInput();
   }
   private tick = (timestamp: number) => {
