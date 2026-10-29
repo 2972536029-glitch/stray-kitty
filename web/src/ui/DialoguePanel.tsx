@@ -18,7 +18,7 @@ export default function DialoguePanel({node, disabled, onNext, onSkip, eventResu
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
+      if (disabled || target?.closest('dialog') || target?.matches('input,select,textarea,button') || target?.isContentEditable) return;
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
         if (!disabled) onNext();

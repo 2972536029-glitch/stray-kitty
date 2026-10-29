@@ -78,6 +78,19 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		}
 		a.json(w, 200, state)
 	})
+	mux.HandleFunc("GET /api/v1/qa", func(w http.ResponseWriter, r *http.Request) {
+		token, err := a.token(r)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		tools, err := game.QATools(token)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		a.json(w, 200, tools)
+	})
 	mux.HandleFunc("POST /api/v1/commands", func(w http.ResponseWriter, r *http.Request) {
 		token, err := a.token(r)
 		if err != nil {
@@ -374,6 +387,9 @@ func validateCommand(body []byte, kind string) error {
 		"START_BATTLE":        {"stageId", "returnPosition", "layer"},
 		"COMPLETE_BATTLE":     {"attemptId", "outcome", "report"},
 		"QA_SIMULATE_VICTORY": {"attemptId"},
+		"QA_SIMULATE_DEFEAT":  {"attemptId"},
+		"QA_CHECKPOINT":       {"checkpointId"},
+		"QA_RESTORE":          {},
 		"CONTINUE":            {},
 		"GO_HOME":             {},
 		"GO_EXPLORE":          {"mapId"},
@@ -392,6 +408,9 @@ func validateCommand(body []byte, kind string) error {
 		"START_BATTLE":        {"stageId"},
 		"COMPLETE_BATTLE":     {"attemptId", "outcome"},
 		"QA_SIMULATE_VICTORY": {"attemptId"},
+		"QA_SIMULATE_DEFEAT":  {"attemptId"},
+		"QA_CHECKPOINT":       {"checkpointId"},
+		"QA_RESTORE":          {},
 		"CONTINUE":            {},
 		"GO_HOME":             {},
 		"GO_EXPLORE":          {},
@@ -417,6 +436,20 @@ func validateCommand(body []byte, kind string) error {
 		}
 	}
 	for _, key := range required[kind] {
+		if key == "position" {
+			var point map[string]json.RawMessage
+			if json.Unmarshal(raw.Command[key], &point) != nil || point == nil {
+				return domain.Fail("INVALID_REQUEST", "position 必须为坐标对象", 400)
+			}
+			for _, axis := range []string{"x", "y"} {
+				var value float64
+				coordinate, exists := point[axis]
+				if !exists || string(coordinate) == "null" || json.Unmarshal(coordinate, &value) != nil {
+					return domain.Fail("INVALID_REQUEST", "position 必须包含数值 x 和 y", 400)
+				}
+			}
+			continue
+		}
 		var value string
 		if err := json.Unmarshal(raw.Command[key], &value); err != nil || value == "" {
 			return domain.Fail("INVALID_REQUEST", "命令缺少有效的 "+key, 400)

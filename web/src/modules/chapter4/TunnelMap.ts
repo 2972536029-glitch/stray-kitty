@@ -127,10 +127,11 @@ export class TunnelMap {
   traverse(key: 'f' | 'c' | ' ', flags: readonly string[]) {
     if (!this.masks || this.movement) return false;
     if (key === 'f' && !flags.includes('tunnel_false_kitten_trap_found')) return false;
-    const portal = mapData.portals.find(p => p.key.toLowerCase() === key && p.a.layer === this.floor && Math.hypot(this.position.x - p.a.x, this.position.y - p.a.y) <= p.reach)
-      ?? mapData.portals.find(p => p.key.toLowerCase() === key && p.bidirectional && p.b.layer === this.floor && Math.hypot(this.position.x - p.b.x, this.position.y - p.b.y) <= p.reach);
+    const authoredKey = key === ' ' ? 'space' : key;
+    const portal = mapData.portals.find(p => p.key.toLowerCase() === authoredKey && p.a.layer === this.floor && Math.hypot(this.position.x - p.a.x, this.position.y - p.a.y) <= p.reach)
+      ?? mapData.portals.find(p => p.key.toLowerCase() === authoredKey && p.bidirectional && p.b.layer === this.floor && Math.hypot(this.position.x - p.b.x, this.position.y - p.b.y) <= p.reach);
     if (!portal) return false;
-    const from = portal.a.layer === this.floor ? portal.a : portal.b;
+    const from = portal.a.layer === this.floor && this.positionNear(portal, portal.a) ? portal.a : portal.b;
     const to = from === portal.a ? portal.b : portal.a;
     if (key === 'f' && this.floor !== 'L0' && !this.positionNear(portal, from)) return false;
     if (!this.masks[to.layer as Layer].isWalkable(to)) return false;

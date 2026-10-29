@@ -595,6 +595,84 @@
           }
         }
       }
+    },
+    "/api/v1/qa": {
+      "get": {
+        "operationId": "getQATools",
+        "summary": "读取流程验收开关与服务端节点白名单",
+        "responses": {
+          "200": {
+            "description": "验收开关与可用节点",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QATools"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "会话无效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "状态、版本或幂等冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "请求超过 8 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "媒体类型不支持",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "存储或服务失败，结果需确认",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -828,6 +906,11 @@
           },
           "eventState": {
             "$ref": "#/components/schemas/EventState"
+          },
+          "qaCheckpointId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "可选的当前验收节点；验收前快照仅保存在服务端，可用 QA_RESTORE 返回。"
           }
         },
         "required": [
@@ -1689,6 +1772,15 @@
           },
           {
             "$ref": "#/components/schemas/StartStory"
+          },
+          {
+            "$ref": "#/components/schemas/QALoadCheckpoint"
+          },
+          {
+            "$ref": "#/components/schemas/QARestore"
+          },
+          {
+            "$ref": "#/components/schemas/QABattleResult"
           }
         ]
       },
@@ -2324,6 +2416,144 @@
         },
         "required": [
           "username"
+        ]
+      },
+      "QACheckpoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "chapterId": {
+            "type": "string",
+            "enum": [
+              "prologue",
+              "alley",
+              "market",
+              "greenhouse",
+              "rescue",
+              "finale"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "dialogue",
+              "explore",
+              "event",
+              "preparation",
+              "battle",
+              "settlement",
+              "home"
+            ]
+          },
+          "mapId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "story",
+              "explore",
+              "event",
+              "battle",
+              "home"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "chapterId",
+          "title",
+          "phase",
+          "mapId",
+          "kind",
+          "detail"
+        ]
+      },
+      "QATools": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "checkpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QACheckpoint"
+            }
+          }
+        },
+        "required": [
+          "enabled",
+          "checkpoints"
+        ]
+      },
+      "QALoadCheckpoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "GAME_QA_ENABLED=true 时从服务端白名单准备测试进度；首次进入前持久保存原进度，后续切换不覆盖快照。",
+        "properties": {
+          "type": {
+            "const": "QA_CHECKPOINT",
+            "type": "string"
+          },
+          "checkpointId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "type",
+          "checkpointId"
+        ]
+      },
+      "QARestore": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "恢复验收前的完整进度并保持版本号递增；即使验收开关关闭也允许返回自己的原进度。",
+        "properties": {
+          "type": {
+            "const": "QA_RESTORE",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "QABattleResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "服务端验收开关控制的胜负模拟；必须匹配当前活动场次，并走正常结算逻辑。",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "QA_SIMULATE_VICTORY",
+              "QA_SIMULATE_DEFEAT"
+            ]
+          },
+          "attemptId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "type",
+          "attemptId"
         ]
       }
     }
