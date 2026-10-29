@@ -153,6 +153,16 @@
                   {
                     "name": "ADVISOR_DAILY_REQUEST_LIMIT",
                     "value": "200"
+                  },
+                  {
+                    "name": "INTERNAL_TOKEN",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-xsolla",
+                        "key": "internal-token",
+                        "optional": true
+                      }
+                    }
                   }
                 ],
                 "securityContext": {
@@ -329,6 +339,74 @@
                   {
                     "name": "PAYMENT_DATA_FILE",
                     "value": "/data/payments.json"
+                  },
+                  {
+                    "name": "XSOLLA_MERCHANT_ID",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-xsolla",
+                        "key": "merchant-id",
+                        "optional": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "XSOLLA_PROJECT_ID",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-xsolla",
+                        "key": "project-id",
+                        "optional": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "XSOLLA_API_KEY",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-xsolla",
+                        "key": "api-key",
+                        "optional": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "XSOLLA_WEBHOOK_SECRET",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-xsolla",
+                        "key": "webhook-secret",
+                        "optional": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "XSOLLA_SANDBOX",
+                    "value": "true"
+                  },
+                  {
+                    "name": "XSOLLA_RETURN_URL",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-xsolla",
+                        "key": "return-url",
+                        "optional": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "GAME_INTERNAL_URL",
+                    "value": "http://stray-kitty-game:8080"
+                  },
+                  {
+                    "name": "INTERNAL_TOKEN",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-xsolla",
+                        "key": "internal-token",
+                        "optional": true
+                      }
+                    }
                   }
                 ],
                 "securityContext": {

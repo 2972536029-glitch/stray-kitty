@@ -1,4 +1,4 @@
-import type {ApiErrorBody, Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentHistoryResponse, Session} from '../../contracts';
+import type {ApiErrorBody, Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentConfig, PaymentHistoryResponse, PaymentSessionResponse, Session} from '../../contracts';
 import type {GameApiPort} from '../../core/ports';
 import {runtime} from '../../config/runtime';
 import {BrowserSessionStore} from '../storage/BrowserSessionStore';
@@ -24,6 +24,12 @@ export class HttpGameApi implements GameApiPort {
   }
   paymentHistory(playerId: string) {
     return this.paymentRequest<PaymentHistoryResponse>(`/history?playerId=${encodeURIComponent(playerId)}`);
+  }
+  paymentConfig() {
+    return this.paymentRequest<PaymentConfig>('/config');
+  }
+  paymentSession(playerId: string, packId: string) {
+    return this.paymentRequest<PaymentSessionResponse>('/session',{method:'POST',body:JSON.stringify({playerId,packId})});
   }
   async createSession() {
     this.session=await this.request<Session>('/sessions',{method:'POST'});

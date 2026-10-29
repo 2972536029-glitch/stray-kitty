@@ -1,4 +1,4 @@
-import {useCallback, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {useGame} from './useGame';
 import {Viewport} from '../examples/demo/Viewport';
 import {BattleHost} from '../modules/battle/BattleHost';
@@ -9,6 +9,7 @@ import GameScreen from '../ui/GameScreen';
 import WorldMap from '../ui/WorldMap';
 import ShopPanel from '../ui/ShopPanel';
 import RechargeDialog from '../ui/RechargeDialog';
+import PaymentReturnNotice from '../ui/PaymentReturnNotice';
 import {rainyAlleyObject} from '../modules/rainyAlley/assets';
 
 export default function App() {
@@ -18,6 +19,15 @@ export default function App() {
   const [nearTarget, setNearTarget] = useState<{id: string; label: string} | null>(null);
   const [inspectHint, setInspectHint] = useState<string | null>(null);
   const [overlay, setOverlay] = useState<'map' | 'shop' | 'journal' | 'recharge' | null>(null);
+  // 沙盒支付返回:收银台跳回时 URL 带 ?payment=return,先清掉再展示只读轮询通知。
+  const [returnNotice, setReturnNotice] = useState(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'return') {
+      window.history.replaceState(null, '', window.location.pathname);
+      setReturnNotice(true);
+    }
+  }, []);
   const direction = useRef<(direction: Direction, held: boolean) => void>(() => {});
   const rainyPosition = useRef<{x: number; y: number} | undefined>(undefined);
   const interact = useCallback((targetId?: string) => {
@@ -52,5 +62,6 @@ export default function App() {
     {state && catalog && overlay === 'map' && <WorldMap state={state} catalog={catalog} disabled={disabled} onClose={() => setOverlay(null)} onNavigate={command => {setOverlay(null);void send(command);}}/>}
     {state && catalog && overlay === 'shop' && <ShopPanel state={state} catalog={catalog} disabled={disabled} error={error} onRetry={() => void retry()} onClose={() => setOverlay(null)} onBuy={productId => void send({type: 'BUY_FURNITURE', productId})} onRecharge={() => setOverlay('recharge')}/>}
     {state && catalog && overlay === 'recharge' && (catalog.rechargePacks?.length ?? 0) > 0 && <RechargeDialog playerId={port.playerId()} packs={catalog.rechargePacks!} tuna={state.currencies.tuna ?? 0} api={port} onCharged={refresh} onClose={() => setOverlay(null)}/>}
+    {state && catalog && returnNotice && <PaymentReturnNotice playerId={port.playerId()} packs={catalog.rechargePacks ?? []} api={port} onClose={() => {setReturnNotice(false);void refresh();}}/>}
   </>;
 }

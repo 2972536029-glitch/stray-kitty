@@ -61,6 +61,7 @@ stray-kitty/
 │  ├─ L05-INTEGRATION.md  第五章光路援军与独立试玩边界
 │  ├─ LEVEL-EXPLORATION-ARCHITECTURE.md
 │  ├─ openapi.json  API 规范
+│  ├─ PAYMENT-XSOLLA-SANDBOX.md
 │  ├─ PRD.md  需求与分工
 │  ├─ STORY-SCRIPT.md
 │  └─ STORY-SCRIPT.txt

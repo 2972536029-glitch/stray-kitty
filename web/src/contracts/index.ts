@@ -50,6 +50,10 @@ export interface PaymentTxn {id: string; playerId: string; packId: string; amoun
 // POST /api/payment/charge 的响应:declined 时附 reason 与治愈文案 healingMsg。
 export interface ChargeResponse {txnId: string; pack: RechargePack; status: 'confirmed' | 'declined'; reason?: string; healingMsg?: string; tunaGranted: number; tunaBalance: number}
 export interface PaymentHistoryResponse {playerId: string; txns: PaymentTxn[]}
+// GET /api/payment/config 的响应:支付网关形态,mock=演示卡号 UI、xsolla=跳转沙盒收银台。
+export interface PaymentConfig {provider: 'mock' | 'xsolla'; sandbox: boolean}
+// POST /api/payment/session 的响应:url 为 Xsolla PayStation 页面,整页跳转;发货走 webhook,前端不发货。
+export interface PaymentSessionResponse {provider: 'xsolla'; txnId: string; url: string; sandbox: boolean}
 export interface StoryNode {id: string; chapterId: string; speaker: string; text: string; next: string; exit: 'explore' | 'home' | 'preparation' | ''; scene?: 'alley' | 'poster' | 'home' | 'market' | 'tunnel'; setFlags?: string[]}
 export interface FurnitureProduct {id: string; furnitureId: string; price: number; currencyId: string; requiredFlag: string; status: 'available' | 'disabled'}
 // 花房四阶修缮工程:cost.material 走背包材料、cost.stamp 走猫爪邮票;

@@ -123,6 +123,14 @@ func (g *Gateway) HealingMessage() string {
 	return PickHealingMessage()
 }
 
+// Provider mock 形态:演示卡号直付,前端不跳转。
+func (g *Gateway) Provider() ProviderInfo { return ProviderInfo{Provider: "mock"} }
+
+// Session 演示卡号形态没有跳转会话;Xsolla 只在拆分部署形态(独立支付服务)提供。
+func (g *Gateway) Session(playerID, packID string) (SessionResult, error) {
+	return SessionResult{}, domain.Fail("SESSION_UNAVAILABLE", "当前是演示卡号支付，直接输入卡号就好啦。", 409)
+}
+
 // History 玩家的充值与消费流水(最新在前)。消费流水落账时不带 playerId,这里统一补齐。
 func (g *Gateway) History(playerID string) ([]domain.Txn, error) {
 	p, err := g.store.GetByPlayerID(playerID)
