@@ -12,6 +12,13 @@ export const marketEntry = {floor:'L0',x:670,y:781} as const;
 export const MARKET_CAT_RADIUS = 10;
 export const MARKET_INTERACTION_RADIUS = 75;
 export const MARKET_BOSS_RADIUS = 58;
+// A non-blocking exit volume beyond the final crate, matching EXIT_MARKET's
+// server bounds. Walking into it and landing from C use the same transition.
+export const MARKET_EXIT_TRIGGER = {left:1317,right:1413,top:40,bottom:136} as const;
+export function marketExitAt(floor:MarketFloor,x:number,y:number,flags:readonly string[]) {
+  const box=MARKET_EXIT_TRIGGER;
+  return flags.includes('market_cleared') && floor==='L0' && x>=box.left && x<=box.right && y>=box.top && y<=box.bottom;
+}
 export const marketItems = nightMarketSpatial.items;
 export const marketPortals = nightMarketSpatial.portals;
 

@@ -355,6 +355,14 @@ func TestFinaleKingdomFounded(t *testing.T) {
 	}
 
 	// 开启终章剧情
+	_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+		p.State.Flags = domain.Add(domain.Add(p.State.Flags, "tunnel_explored"), "cats_rescued_batch1")
+		p.State.Inventory["clue"] = 3
+		return domain.CommandResponse{State: p.State}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	s = execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "finale_intro_1"})
 	if s.Phase != "dialogue" || s.StoryNodeID != "finale_intro_1" || s.ChapterID != "finale" {
 		t.Fatalf("expected finale dialogue, got phase=%s, node=%s, chapter=%s", s.Phase, s.StoryNodeID, s.ChapterID)
