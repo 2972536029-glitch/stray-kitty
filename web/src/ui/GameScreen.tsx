@@ -33,7 +33,8 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
   const [devOpen, setDevOpen] = useState(false);
   // Exploration shortcuts must not carry an overlay over the next battle's controls.
   useEffect(() => {if (state.phase === 'battle') setDevOpen(false);}, [state.phase, state.activeBattle?.id]);
-  const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'e2e';
+  // 线上验收:构建时注入 VITE_QA_TOOLS=1 可在生产镜像里开启验收工具条(团队试玩联调用)。
+  const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'e2e' || import.meta.env.VITE_QA_TOOLS === '1';
   const node = currentStory(catalog, state);
   const chapter = catalog.chapters.find(c => c.id === state.chapterId);
   const event = catalog.events.find(e => e.id === state.pendingEventId);

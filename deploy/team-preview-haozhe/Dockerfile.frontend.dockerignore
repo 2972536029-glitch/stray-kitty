@@ -6,6 +6,8 @@
 !web/**
 !level_design/
 !level_design/**
+!specs/
+!specs/**
 !deploy/team-preview-haozhe/frontend/
 web/node_modules
 web/dist
