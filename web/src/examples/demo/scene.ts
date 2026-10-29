@@ -295,7 +295,7 @@ export class DemoScene {
         // Publish its current point before App builds the server-validated command.
         this.onWorldPosition?.(this.tunnelMap.positionNow());
         this.onInteract(id);
-      });
+      }, this.state.drawnEvents);
       const target = this.tunnelMap.nearTarget;
       const id = target?.id ?? '';
       if (id !== this.nearbyInteractionId) {
@@ -417,14 +417,14 @@ export class DemoScene {
     if (mode === 'explore') {
       if (exploreScene === 'alley') this.rainyAlley.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, {phase: mode, randomEligible: this.randomEligible});
       else if (exploreScene === 'market') this.drawMarket();
-      else if (exploreScene === 'tunnel') this.tunnelMap.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags);
+      else if (exploreScene === 'tunnel') this.tunnelMap.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, this.state.drawnEvents);
       else {this.context.fillStyle = '#18282a';this.context.fillRect(0, 0, this.viewWidth, this.viewHeight);this.context.fillStyle = '#fff';this.context.fillText('探索地图尚未开放', 30, 50);}
     }
     else if (mode === 'battle') this.drawBattle();
     else if (mode === 'dialogue' && this.storyScene === 'home') this.drawHome();
     else if (mode === 'home') this.drawHome();
     else if (mode === 'dialogue' && this.storyScene === 'tunnel' && this.state.mapId !== 'tunnel') this.drawTunnel();
-    else if (this.state.mapId === 'tunnel') this.tunnelMap.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags);
+    else if (this.state.mapId === 'tunnel') this.tunnelMap.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, this.state.drawnEvents);
     else if (this.storyScene === 'tunnel') this.drawTunnel();
     else if (this.state.mapId === 'market' || this.storyScene === 'market') this.drawMarket();
     else if (this.state.mapId === 'greenhouse' || (this.state.qaCheckpointId?.startsWith('event:warehouse:') && mode === 'event')) this.drawHome();
