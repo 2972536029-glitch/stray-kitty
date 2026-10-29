@@ -73,6 +73,18 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
     else if (state.phase !== 'explore') arrivedFromEvent.current = false;
   }, [state.phase]);
   const showExploreResult = state.phase === 'explore' && arrivedFromEvent.current && !!resolution && dismissedResult !== resolutionKey;
+  // 沉浸式 HUD：探索提示 3 秒无操作自动淡出，一动鼠标/键盘/滚轮立刻浮现；只藏文案不藏方向键。
+  const [hintIdle, setHintIdle] = useState(false);
+  useEffect(() => {
+    if (state.phase !== 'explore') {setHintIdle(false);return;}
+    let timer = window.setTimeout(() => setHintIdle(true), 3000);
+    const wake = () => {setHintIdle(false);window.clearTimeout(timer);timer = window.setTimeout(() => setHintIdle(true), 3000);};
+    window.addEventListener('pointermove', wake);
+    window.addEventListener('pointerdown', wake);
+    window.addEventListener('keydown', wake);
+    window.addEventListener('wheel', wake, {passive: true});
+    return () => {window.clearTimeout(timer);window.removeEventListener('pointermove', wake);window.removeEventListener('pointerdown', wake);window.removeEventListener('keydown', wake);window.removeEventListener('wheel', wake);};
+  }, [state.phase]);
   return <div className="app-shell" data-phase={state.phase}>
     <header className="topbar"><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
       <span className="chapter-pill">{finaleBattle ? '第五章 · 终局试玩' : tunnelBattle ? '第四章 · 地下通道试玩' : greenhouseBattle ? '第三章 · 废弃花房试玩' : marketBattle ? '第二章 · 午夜集市试玩' : tutorialBattle ? '序章 · 金枪鱼事件' : chapterBattle ? '第一章 · 陌生小巷' : chapter?.title}</span>
@@ -122,7 +134,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
           {showExploreResult && resolution && <section className="event-card explore-result-card"><span className="eyebrow">一次相遇的结果</span><EventResult resolution={resolution}/><button disabled={disabled} onClick={() => {setDismissedResult(resolutionKey);arrivedFromEvent.current = false;}}>继续赶路 →</button></section>}
           {paused && <div className="pause-label"><span>旅程已暂停</span><button onClick={onPause}>继续旅程</button></div>}
         </div>
-        <div className="world-footer"><p className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : finaleBattle && state.phase === 'battle' ? '躲开预告的横扫与坠击，选择护卫与首领的攻击顺序。十波清完、两精英与九格首领全部击败后获胜；援军固定支援，主力仍需你的指挥。' : tunnelBattle && state.phase === 'battle' ? '保护 C2 的喵喵；断灯时可用墨墨夜视恢复视野并为全队加盾。守完八波并击败首领；打开地图、商店或返回标题会暂停战斗。' : greenhouseBattle && state.phase === 'battle' ? '沿花房的不规则通路布阵，守住 B1；守完八波并击败四格首领。打开地图、商店或返回标题会暂停战斗。' : marketBattle && state.phase === 'battle' ? '点选伙伴查看与释放技能；守完八波并击败集市首领。打开地图、商店或返回标题会暂停战斗。' : chapterBattle && state.phase === 'battle' ? '点场上的猫查看和释放技能，守住 A4 与右侧两处巷口；守完八波并击败首领。打开地图、商店或返回标题会暂停战斗。' : (catalog.tutorials.find(t => t.phase === state.phase)?.text ?? '每次相遇，都可能成为回家路上的一点光。')}</p>
+        <div className="world-footer"><p className={`${inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}${hintIdle ? ' hint-idle' : ''}`}>{inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : finaleBattle && state.phase === 'battle' ? '躲开预告的横扫与坠击，选择护卫与首领的攻击顺序。十波清完、两精英与九格首领全部击败后获胜；援军固定支援，主力仍需你的指挥。' : tunnelBattle && state.phase === 'battle' ? '保护 C2 的喵喵；断灯时可用墨墨夜视恢复视野并为全队加盾。守完八波并击败首领；打开地图、商店或返回标题会暂停战斗。' : greenhouseBattle && state.phase === 'battle' ? '沿花房的不规则通路布阵，守住 B1；守完八波并击败四格首领。打开地图、商店或返回标题会暂停战斗。' : marketBattle && state.phase === 'battle' ? '点选伙伴查看与释放技能；守完八波并击败集市首领。打开地图、商店或返回标题会暂停战斗。' : chapterBattle && state.phase === 'battle' ? '点场上的猫查看和释放技能，守住 A4 与右侧两处巷口；守完八波并击败首领。打开地图、商店或返回标题会暂停战斗。' : (catalog.tutorials.find(t => t.phase === state.phase)?.text ?? '每次相遇，都可能成为回家路上的一点光。')}</p>
           {state.phase === 'explore' && <><div className="direction-pad">{(['up', 'left', 'down', 'right'] as Direction[]).map((d, i) => <button key={d} aria-label={`向${['上', '左', '下', '右'][i]}移动`} disabled={disabled} onPointerDown={e => {e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);onDirection(d, true);}} onPointerUp={() => onDirection(d, false)} onLostPointerCapture={() => onDirection(d, false)}>{['↑', '←', '↓', '→'][i]}</button>)}</div>{near && nearTarget && <button disabled={disabled} onClick={() => onInteract(nearTarget.id)}>{nearTarget.label}</button>}{((state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued')) || state.mapId === 'market')&& <button disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>回到花房</button>}</>}
         </div>
       </section></div>

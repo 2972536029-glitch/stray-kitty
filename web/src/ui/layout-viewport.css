@@ -28,7 +28,7 @@ html,body,#root{min-height:100%;width:100%}
 .world-footer p{flex:none;min-width:0;max-width:580px;font-size:10px}
 .world-footer>button{font-size:10px;padding:8px 11px}
 .dialogue-card{width:min(960px,calc(100% - 48px));justify-self:center;align-self:end;margin:0 24px 105px;padding:18px 22px}
-.dialogue-copy p{font-size:14px;line-height:1.9;min-height:3.8em}
+.dialogue-copy p{font-size:15px;line-height:1.9;min-height:3.8em}
 .dialogue-actions{gap:12px}
 .dialogue-actions button{margin-left:0}
 .dialogue-actions .skip-button{margin-right:auto}
@@ -65,7 +65,7 @@ html,body,#root{min-height:100%;width:100%}
  .world-footer p{flex-basis:100%;font-size:9px;line-height:1.6}
  .world-footer .direction-pad button{padding:7px 9px}
  .dialogue-card{width:calc(100% - 32px);margin:0 16px 106px;padding:12px;gap:8px}
- .dialogue-copy p{font-size:12px;min-height:3.8em;margin:12px 0}
+ .dialogue-copy p{font-size:13px;min-height:3.8em;margin:12px 0}
  .dialogue-actions{gap:8px}
  .dialogue-actions button{font-size:10px;padding:8px}
  .dialogue-copy button span{margin-left:9px}
@@ -78,7 +78,7 @@ html,body,#root{min-height:100%;width:100%}
  .journey-modal>.journal{grid-template-columns:1fr}
 }
 @media(max-width:360px){.topbar .brand strong{font-size:11px}.topbar .brand small{font-size:7px}.topbar nav{gap:4px}.topbar nav button{width:27px;height:29px}}
-@media(max-height:650px) and (min-width:801px){.app-shell .topbar{top:10px;min-height:58px}.world-toolbar{top:80px}.dev-bar{top:126px}.world-footer{bottom:10px;padding:8px 12px}.dialogue-card{margin-bottom:84px;padding:12px 16px}.dialogue-copy p{font-size:12px;margin:10px 0;min-height:0}.event-card{max-height:calc(100dvh - 150px);margin:80px 24px 60px}.home-controls{top:80px;max-height:calc(100dvh - 155px)}}
+@media(max-height:650px) and (min-width:801px){.app-shell .topbar{top:10px;min-height:58px}.world-toolbar{top:80px}.dev-bar{top:126px}.world-footer{bottom:10px;padding:8px 12px}.dialogue-card{margin-bottom:84px;padding:12px 16px}.dialogue-copy p{font-size:13px;margin:10px 0;min-height:0}.event-card{max-height:calc(100dvh - 150px);margin:80px 24px 60px}.home-controls{top:80px;max-height:calc(100dvh - 155px)}}
 
 /* Chapter 1 in-world objective; non-interactive and always behind modal/dialogue layers. */
 .alley-objective{position:absolute;z-index:2;pointer-events:none;top:160px;left:22px;max-width:min(360px,calc(100% - 44px));padding:8px 12px;border:2px solid #66513e;border-radius:3px;background:#132d39e6;color:#f5e7c7;box-shadow:3px 3px 0 #16242c;font-size:12px}
@@ -89,7 +89,7 @@ html,body,#root{min-height:100%;width:100%}
 /* ===== 移植：对话气泡/序章/家园抽屉定位层 ===== */
 .app-shell .topbar{background:linear-gradient(180deg,rgba(24,39,39,.9),rgba(24,39,39,.58) 45%,transparent);box-shadow:none;border:0;backdrop-filter:blur(5px);padding-bottom:22px}
 .dev-bar{top:100px;left:auto;right:18px;width:min(310px,calc(100% - 36px));padding:12px;background:rgba(238,225,197,.96);box-shadow:5px 5px 0 #24312e;animation:story-in .16s ease-out}
-.dialogue-card{position:relative;width:min(510px,calc(100% - 44px));justify-self:start;align-self:center;margin:0 0 118px 12%;padding:14px 17px;background:rgba(245,235,211,.94);border:0;border-radius:12px;box-shadow:5px 5px 0 rgba(28,42,38,.7);backdrop-filter:blur(7px)}.dialogue-card:after{content:"";position:absolute;left:46px;bottom:-16px;border:9px solid transparent;border-top-color:rgba(245,235,211,.94);border-left-width:3px;transform:rotate(7deg)}.dialogue-portrait{position:absolute;left:-76px;bottom:-52px;z-index:2}.dialogue-copy p{font-size:14px;line-height:1.75;margin:10px 0;min-height:0}.dialogue-actions{justify-content:flex-end}.dialogue-actions .skip-button{font-size:10px}.speaker-row{gap:8px}
+.dialogue-card{position:relative;width:min(510px,calc(100% - 44px));justify-self:start;align-self:center;margin:0 0 118px 12%;padding:14px 17px;background:rgba(245,235,211,.94);border:0;border-radius:12px;box-shadow:5px 5px 0 rgba(28,42,38,.7);backdrop-filter:blur(7px)}.dialogue-card:after{content:"";position:absolute;left:46px;bottom:-16px;border:9px solid transparent;border-top-color:rgba(245,235,211,.94);border-left-width:3px;transform:rotate(7deg)}.dialogue-portrait{position:absolute;left:-76px;bottom:-52px;z-index:2}.dialogue-copy p{font-size:15px;line-height:1.75;margin:10px 0;min-height:0}.dialogue-actions{justify-content:flex-end}.dialogue-actions .skip-button{font-size:10px}.speaker-row{gap:8px}
 .home-controls{position:absolute;z-index:2;top:104px;right:22px;width:min(330px,calc(100% - 44px));max-height:calc(100dvh - 190px);overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#8b906d #e9dfc8;border:2px solid #594536;border-radius:4px;background:#e9dfc8;box-shadow:4px 4px 0 #24312e;transition:width .55s cubic-bezier(.25,.85,.3,1),background-color .55s ease,border-color .55s ease,box-shadow .55s ease}
 .home-controls:has(.home-panel-entering){transition-duration:1s}
 /* 容器 pointer-events:none 是为了不挡画布滚动/点击，面板本体与抽屉拉手必须重新开启命中 */

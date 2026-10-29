@@ -20,7 +20,8 @@ button{border-color:#382f2b;box-shadow:3px 3px 0 #c59a55;border-radius:3px}butto
 :root{font-size:17px}.topbar{background:transparent;border:0;border-radius:0;box-shadow:none;margin-top:16px;padding:10px 4px;min-height:68px}.topbar nav{padding:0;background:transparent}.topbar nav button,.wallet>span,.chapter-pill{border:0;box-shadow:3px 3px 0 #24312e80;backdrop-filter:blur(5px)}.wallet>span{background:#f1e8d3dc}.topbar nav button:hover{box-shadow:3px 5px 0 #24312e80}.start-reset{background:#6f5748}.start-reset:hover{background:#806555;color:#fff1d5}.journal-card p,.dialogue-copy p,.event-card p{font-size:13px}.world-footer p,.quiet,.map-button,.shop-button{font-size:12px}
 /* —— 阶段3 星露谷像素化:弹层滑入 + 猫爪地图 + 补给小站 + 修缮/抽奖/絮语卡 —— */
 .game-modal{animation:cozy-modal-in .3s ease-in-out}
-@keyframes cozy-modal-in{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+/* 不用 translateY：中心缩放不改变弹窗几何中心，避免 e2e 在入场首帧量 bounds 时读到 16px 偏移。 */
+@keyframes cozy-modal-in{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 /* 猫爪地图:每站是一块木牌——顶亮面/底暗面/内缝,当前站点点亮呼吸 */
 .map-stop{border:2px solid #594536;border-radius:3px;background:linear-gradient(#f6edd8,#e5d9bd 70%,#d8c9a6);box-shadow:inset 0 2px 0 #fff9e8,inset 0 -3px 0 #b49d76,3px 3px 0 #24312e66;transition:translate .3s ease-in-out,box-shadow .3s ease-in-out}
 .map-stop:not(.locked):hover{translate:0 -2px;box-shadow:inset 0 2px 0 #fff9e8,inset 0 -3px 0 #b49d76,4px 5px 0 #24312e66}
@@ -91,3 +92,33 @@ button{border-color:#382f2b;box-shadow:3px 3px 0 #c59a55;border-radius:3px}butto
 .home-action-gap{margin-top:8px}
 .home-panel .renovation-card .eyebrow,.home-panel .renovation-card h3{color:#59431f}
 @media(prefers-reduced-motion:reduce){.game-modal,.map-stop.current,.pack-card.selected,.receipt-art{animation:none}}
+/* —— 阶段4 沉浸式 HUD：夜色磨砂玻璃悬浮条 + 大字提示卡 3 秒淡出 + 全局阅读级字号 —— */
+/* 全屏场景（探索/家园/对话/事件）：工具条与提示条化作暗夜磨砂玻璃，金色发丝描边悬浮在画面上；
+   战斗阶段是可滚动的浅色模块面，不套玻璃。前缀抬特异性以压过 layout-viewport 的后加载规则。 */
+.app-shell:not([data-phase=battle]) .world-toolbar,
+.app-shell:not([data-phase=battle]) .world-footer{background:rgba(16,28,32,.55);border:1.5px solid rgba(255,226,150,.26);border-radius:11px;box-shadow:0 8px 22px rgba(8,17,20,.5),inset 0 1px 0 rgba(255,240,200,.12);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.app-shell:not([data-phase=battle]) .world-toolbar strong{color:#f6ecd2}
+.app-shell:not([data-phase=battle]) .world-toolbar .area-label{color:#cfc39e;border-color:rgba(255,226,150,.22)}
+.app-shell:not([data-phase=battle]) .world-toolbar .quiet{color:#ead9a8}
+.app-shell:not([data-phase=battle]) .world-toolbar .quiet:hover{background:rgba(255,226,150,.14)}
+.app-shell:not([data-phase=battle]) .world-toolbar .live-dot{background:#ffd76e;box-shadow:0 0 9px #ffd76e99;animation:cozy-hud-pulse 2.4s ease-in-out infinite}
+@keyframes cozy-hud-pulse{50%{opacity:.4}}
+.app-shell:not([data-phase=battle]) .world-footer p{max-width:640px;font-size:18px;line-height:1.62;color:#f2ead4;text-shadow:0 2px 6px rgba(8,17,20,.6);transition:opacity .6s ease,transform .6s ease}
+.app-shell:not([data-phase=battle]) .world-footer p.inspect-hint{color:#ffe9a8!important;font-weight:700}
+.app-shell:not([data-phase=battle]) .world-footer>button{font-size:13px;padding:9px 13px}
+.app-shell:not([data-phase=battle]) .world-footer .direction-pad button{background:rgba(255,226,150,.16);color:#ffe9a8;border-color:rgba(255,226,150,.3)}
+.app-shell:not([data-phase=battle]) .alley-objective{font-size:13px;border-radius:9px}
+/* 3 秒无操作：只淡出提示文案（保留 DOM 供读屏/测试），方向键与交互按钮常驻 */
+.world-footer p.hint-idle{opacity:0;transform:translateY(8px);pointer-events:none}
+@media(prefers-reduced-motion:reduce){.world-footer p,.world-footer p.hint-idle{transition:none;transform:none}}
+@media(max-width:800px){
+ .app-shell:not([data-phase=battle]) .world-footer p{font-size:14px;line-height:1.55;flex-basis:100%}
+ .app-shell:not([data-phase=battle]) .world-toolbar strong{font-size:11px}
+}
+/* 全局字号 +1：按钮、选项、期刊与事件卡正文（对话正文 15px 见 styles/layout 两处） */
+button{font-size:14px}
+.choice-list button{font-size:13px}
+.dialogue-actions button,.dialogue-actions .skip-button{font-size:12px}
+.journal-card p,.event-card p{font-size:14px}
+.quiet,.map-button,.shop-button{font-size:13px}
+@media(max-width:520px){button{font-size:13px}.choice-list button{font-size:12px}.journal-card p,.event-card p{font-size:13px}}
