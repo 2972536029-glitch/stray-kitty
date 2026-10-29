@@ -71,6 +71,17 @@ stray-kitty/
 │  │  ├─ art/
 │  │  ├─ collision/
 │  │  └─ reference/
+│  ├─ chapter5/
+│  │  ├─ art/
+│  │  │  ├─ source/
+│  │  │  │  ├─ sprites/
+│  │  │  │  └─ stateful/
+│  │  │  └─ variants/
+│  │  ├─ reference/
+│  │  ├─ review/
+│  │  ├─ source/
+│  │  │  └─ v07/
+│  │  └─ tools/
 │  ├─ maps/
 │  │  └─ reference/
 │  ├─ night_market/

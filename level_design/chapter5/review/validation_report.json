@@ -1,0 +1,24 @@
+{
+  "status": "focused checks passed; visual approval pending",
+  "world": [
+    1672,
+    941
+  ],
+  "sourceLockFiles": 44,
+  "solidRecords": 38,
+  "uniformScaleExceptions": [],
+  "geometryUnchanged": true,
+  "floorMaskMatchesSvgPixels": true,
+  "floorEdgeMismatchPixels": 0,
+  "propPixelsOutsideSolidFootprints": 0,
+  "l1SourceRectangles": 6,
+  "l1Status": "provisional; final shelf tops and structural supports deferred",
+  "allControllableLampsInitiallyOff": true,
+  "runtimeLightingBaked": false,
+  "browserArtReview": "not claimed by this script; see README for actual review checks",
+  "gameplayTraversal": "not run; art-only milestone",
+  "artOutliers": [
+    "east_spare_forklift",
+    "west_overturned_pallets"
+  ]
+}

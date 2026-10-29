@@ -1,0 +1,4096 @@
+{
+  "version": "L0-registration-v03-review",
+  "approval": "manual review required",
+  "world": {
+    "width": 1672,
+    "height": 941,
+    "coordinateSystem": "common L0/L1 SVG pixel coordinates",
+    "catRadius": 13
+  },
+  "sourceGeometrySha256": "6b903076fb85d1f104c46112fc46658811b1e5dec025991d2f26bbc1435a3fe2",
+  "groundRegistration": {
+    "sourceScale": 1,
+    "sourceOffset": [
+      0,
+      0
+    ],
+    "floorAuthority": "source/v07/warehouse_L0_graybox_v07.svg#l0-floor",
+    "repairPixels": 19004,
+    "repairMethod": "Nearby approved texture translated into old boundary/void band; original wall trim tiled at native scale.",
+    "wallTextureSourceRect": [
+      392,
+      178,
+      32,
+      9
+    ],
+    "wallDrawDepth": 9,
+    "sourceTextureRepairs": [
+      {
+        "sourcePolyline": [
+          [
+            1237,
+            758
+          ],
+          [
+            1343,
+            758
+          ],
+          [
+            1343,
+            688
+          ],
+          [
+            1434,
+            688
+          ],
+          [
+            1434,
+            528
+          ],
+          [
+            1468,
+            528
+          ]
+        ],
+        "width": 34,
+        "reason": "Remove the raster's inset southeast wall remnant inside the authored v07 floor; texture translation only, no collision or floor-coordinate change."
+      },
+      {
+        "sourcePolyline": [
+          [
+            1237,
+            799
+          ],
+          [
+            1342,
+            799
+          ]
+        ],
+        "width": 34,
+        "reason": "Remove the second horizontal return of the same southeast raster wall, which lies inside the authored floor."
+      }
+    ],
+    "perimeterCoordinateError": 0,
+    "floorAlphaMismatchPixels": 0,
+    "unmodifiedInteriorPixels": 833382
+  },
+  "compoundVariants": {
+    "rack_low_wide": {
+      "source": "art/source/sprites/rack_wide_01.png",
+      "pieces": [
+        {
+          "sourceRect": [
+            0,
+            0,
+            174,
+            35
+          ],
+          "localOffset": [
+            0,
+            0
+          ],
+          "scale": 1
+        },
+        {
+          "sourceRect": [
+            0,
+            106,
+            174,
+            75
+          ],
+          "localOffset": [
+            0,
+            35
+          ],
+          "scale": 1
+        }
+      ],
+      "reason": "Retain original uprights, two shelf tiers and feet; remove a complete empty tier instead of squeezing the frame."
+    },
+    "rack_low_pallets": {
+      "source": "art/source/sprites/rack_pallets.png",
+      "pieces": [
+        {
+          "sourceRect": [
+            0,
+            0,
+            135,
+            24
+          ],
+          "localOffset": [
+            0,
+            0
+          ],
+          "scale": 1
+        },
+        {
+          "sourceRect": [
+            0,
+            68,
+            135,
+            75
+          ],
+          "localOffset": [
+            0,
+            24
+          ],
+          "scale": 1
+        }
+      ],
+      "reason": "Retain original cap and lower crate bay; omit an empty shelf tier, with no pixel stretching."
+    },
+    "fallen_rack_beams": {
+      "source": "art/source/sprites/rack_wide_01.png",
+      "pieces": [
+        {
+          "sourceRect": [
+            0,
+            18,
+            174,
+            25
+          ],
+          "localOffset": [
+            0,
+            0
+          ],
+          "scale": 1
+        },
+        {
+          "sourceRect": [
+            0,
+            153,
+            174,
+            28
+          ],
+          "localOffset": [
+            0,
+            25
+          ],
+          "scale": 1
+        }
+      ],
+      "reason": "Compound fallen crossbeam and base from native rack strips; replaces v02's severely compressed upright."
+    },
+    "pallet_low": {
+      "source": "art/source/sprites/pallet02.png",
+      "pieces": [
+        {
+          "sourceRect": [
+            0,
+            0,
+            84,
+            18
+          ],
+          "localOffset": [
+            0,
+            0
+          ],
+          "scale": 1
+        },
+        {
+          "sourceRect": [
+            0,
+            38,
+            84,
+            20
+          ],
+          "localOffset": [
+            0,
+            18
+          ],
+          "scale": 1
+        }
+      ],
+      "reason": "Retain native top planks and feet; remove one complete stacked slat tier."
+    },
+    "container_low": {
+      "source": "art/source/sprites/container_tarp03.png",
+      "pieces": [
+        {
+          "sourceRect": [
+            0,
+            0,
+            151,
+            62
+          ],
+          "localOffset": [
+            0,
+            0
+          ],
+          "scale": 1
+        },
+        {
+          "sourceRect": [
+            0,
+            90,
+            151,
+            44
+          ],
+          "localOffset": [
+            0,
+            62
+          ],
+          "scale": 1
+        }
+      ],
+      "reason": "Retain the tarp crown and crate base, omitting one repeated fold band without stretching either part."
+    },
+    "gate_crossbar": {
+      "source": "art/source/sprites/rack_wide_01.png",
+      "pieces": [
+        {
+          "sourceRect": [
+            0,
+            18,
+            174,
+            25
+          ],
+          "localOffset": [
+            0,
+            0
+          ],
+          "scale": 1
+        }
+      ],
+      "reason": "Use an existing steel crossbeam as small closed-gate hardware; not a new collision object."
+    }
+  },
+  "solids": [
+    {
+      "solidId": "west_upper_tall_rack",
+      "style": "rack",
+      "collisionRect": {
+        "x": 393,
+        "y": 244,
+        "w": 151,
+        "h": 101
+      },
+      "sourceSprite": "art/variants/rack_low_wide.png",
+      "sourceNaturalSize": [
+        174,
+        110
+      ],
+      "sourceAspect": 1.5818181818181818,
+      "rotationDegrees": 0,
+      "uniformScale": 0.8563218390804598,
+      "scaleX": 0.8563218390804598,
+      "scaleY": 0.8563218390804598,
+      "drawRect": {
+        "x": 394.0,
+        "y": 249.80459770114942,
+        "w": 149.0,
+        "h": 94.19540229885058
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          468.5,
+          344
+        ]
+      },
+      "transformAfterRotation": [
+        0.8563218390804598,
+        0,
+        0,
+        0.8563218390804598,
+        394.0,
+        249.80459770114942
+      ],
+      "rasterAlphaBounds": [
+        394,
+        250,
+        542,
+        344
+      ],
+      "rationale": "Low three-tier shelf; its native wide silhouette fits the authored horizontal footprint.",
+      "zOrder": 345,
+      "v02Audit": {
+        "source": "rack_wide_02",
+        "scaleX": 0.9198,
+        "scaleY": 0.5211,
+        "distortionFactor": 1.765112262521589
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "west_wide_rack",
+      "style": "rack",
+      "collisionRect": {
+        "x": 416,
+        "y": 412,
+        "w": 166,
+        "h": 96
+      },
+      "sourceSprite": "art/variants/rack_low_wide.png",
+      "sourceNaturalSize": [
+        174,
+        110
+      ],
+      "sourceAspect": 1.5818181818181818,
+      "rotationDegrees": 0,
+      "uniformScale": 0.8545454545454545,
+      "scaleX": 0.8545454545454545,
+      "scaleY": 0.8545454545454545,
+      "drawRect": {
+        "x": 424.6545454545454,
+        "y": 413.0,
+        "w": 148.6909090909091,
+        "h": 94.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          499.0,
+          507
+        ]
+      },
+      "transformAfterRotation": [
+        0.8545454545454545,
+        0,
+        0,
+        0.8545454545454545,
+        424.6545454545454,
+        413.0
+      ],
+      "rasterAlphaBounds": [
+        425,
+        413,
+        572,
+        507
+      ],
+      "rationale": "Remove an empty tier rather than compressing a tall rack into this wide bay.",
+      "zOrder": 508,
+      "v02Audit": {
+        "source": "rack_mid_01",
+        "scaleX": 1.0581,
+        "scaleY": 0.5629,
+        "distortionFactor": 1.879729969799254
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "west_lower_rack",
+      "style": "rack",
+      "collisionRect": {
+        "x": 409,
+        "y": 595,
+        "w": 151,
+        "h": 99
+      },
+      "sourceSprite": "art/variants/rack_low_pallets.png",
+      "sourceNaturalSize": [
+        135,
+        99
+      ],
+      "sourceAspect": 1.3636363636363635,
+      "rotationDegrees": 0,
+      "uniformScale": 0.9797979797979798,
+      "scaleX": 0.9797979797979798,
+      "scaleY": 0.9797979797979798,
+      "drawRect": {
+        "x": 418.3636363636364,
+        "y": 596.0,
+        "w": 132.27272727272728,
+        "h": 97.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          484.5,
+          693
+        ]
+      },
+      "transformAfterRotation": [
+        0.9797979797979798,
+        0,
+        0,
+        0.9797979797979798,
+        418.3636363636364,
+        596.0
+      ],
+      "rasterAlphaBounds": [
+        418,
+        596,
+        551,
+        693
+      ],
+      "rationale": "Low loaded shelf keeps the original crate-bay proportions.",
+      "zOrder": 694,
+      "v02Audit": {
+        "source": "rack_crates_03",
+        "scaleX": 0.9868,
+        "scaleY": 0.6736,
+        "distortionFactor": 1.4649643705463185
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "west_crates",
+      "style": "crate",
+      "collisionRect": {
+        "x": 255,
+        "y": 667,
+        "w": 106,
+        "h": 91
+      },
+      "sourceSprite": "art/source/sprites/crate_cage.png",
+      "sourceNaturalSize": [
+        95,
+        85
+      ],
+      "sourceAspect": 1.1176470588235294,
+      "rotationDegrees": 0,
+      "uniformScale": 1.0470588235294118,
+      "scaleX": 1.0470588235294118,
+      "scaleY": 1.0470588235294118,
+      "drawRect": {
+        "x": 258.2647058823529,
+        "y": 668.0,
+        "w": 99.47058823529412,
+        "h": 89.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          308.0,
+          757
+        ]
+      },
+      "transformAfterRotation": [
+        1.0470588235294118,
+        0,
+        0,
+        1.0470588235294118,
+        258.2647058823529,
+        668.0
+      ],
+      "rasterAlphaBounds": [
+        258,
+        668,
+        358,
+        757
+      ],
+      "rationale": "Natural near-square steel crate; no shape correction required.",
+      "zOrder": 758,
+      "v02Audit": {
+        "source": "crate_cage",
+        "scaleX": 1.0947,
+        "scaleY": 1.0471,
+        "distortionFactor": 1.0454588864482859
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "west_service_equipment",
+      "style": "machine",
+      "collisionRect": {
+        "x": 205,
+        "y": 457,
+        "w": 91,
+        "h": 102
+      },
+      "sourceSprite": "art/source/sprites/machine_power_big.png",
+      "sourceNaturalSize": [
+        70,
+        87
+      ],
+      "sourceAspect": 0.8045977011494253,
+      "rotationDegrees": 0,
+      "uniformScale": 1.1494252873563218,
+      "scaleX": 1.1494252873563218,
+      "scaleY": 1.1494252873563218,
+      "drawRect": {
+        "x": 210.27011494252872,
+        "y": 458.0,
+        "w": 80.45977011494253,
+        "h": 100.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          250.5,
+          558
+        ]
+      },
+      "transformAfterRotation": [
+        1.1494252873563218,
+        0,
+        0,
+        1.1494252873563218,
+        210.27011494252872,
+        458.0
+      ],
+      "rasterAlphaBounds": [
+        210,
+        458,
+        291,
+        558
+      ],
+      "rationale": "Upright power cabinet fits the service-equipment footprint.",
+      "zOrder": 559,
+      "v02Audit": {
+        "source": "machine_power_big",
+        "scaleX": 1.2714,
+        "scaleY": 1.1494,
+        "distortionFactor": 1.106142335131373
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "west_repair_pallet",
+      "style": "crate",
+      "collisionRect": {
+        "x": 174,
+        "y": 355,
+        "w": 61,
+        "h": 53
+      },
+      "sourceSprite": "art/source/sprites/crate_one.png",
+      "sourceNaturalSize": [
+        63,
+        68
+      ],
+      "sourceAspect": 0.9264705882352942,
+      "rotationDegrees": 0,
+      "uniformScale": 0.75,
+      "scaleX": 0.75,
+      "scaleY": 0.75,
+      "drawRect": {
+        "x": 180.875,
+        "y": 356.0,
+        "w": 47.25,
+        "h": 51.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          204.5,
+          407
+        ]
+      },
+      "transformAfterRotation": [
+        0.75,
+        0,
+        0,
+        0.75,
+        180.875,
+        356.0
+      ],
+      "rasterAlphaBounds": [
+        181,
+        356,
+        228,
+        407
+      ],
+      "rationale": "Single small repair crate, uniformly reduced.",
+      "zOrder": 408,
+      "v02Audit": {
+        "source": "crate_one",
+        "scaleX": 0.8676,
+        "scaleY": 0.8095,
+        "distortionFactor": 1.0717726991970353
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "west_broken_shelf",
+      "style": "rack",
+      "collisionRect": {
+        "x": 346,
+        "y": 705,
+        "w": 49,
+        "h": 95
+      },
+      "sourceSprite": "art/source/sprites/rack_mesh_01.png",
+      "sourceNaturalSize": [
+        82,
+        167
+      ],
+      "sourceAspect": 0.49101796407185627,
+      "rotationDegrees": 0,
+      "uniformScale": 0.5568862275449101,
+      "scaleX": 0.5568862275449101,
+      "scaleY": 0.5568862275449101,
+      "drawRect": {
+        "x": 347.66766467065867,
+        "y": 706.0,
+        "w": 45.66467065868263,
+        "h": 92.99999999999999
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          370.5,
+          799
+        ]
+      },
+      "transformAfterRotation": [
+        0.5568862275449101,
+        0,
+        0,
+        0.5568862275449101,
+        347.66766467065867,
+        706.0
+      ],
+      "rasterAlphaBounds": [
+        348,
+        706,
+        393,
+        799
+      ],
+      "rationale": "Naturally narrow mesh rack preserves the tall obstruction.",
+      "zOrder": 800,
+      "v02Audit": {
+        "source": "rack_mesh_01",
+        "scaleX": 0.5732,
+        "scaleY": 0.5569,
+        "distortionFactor": 1.0292691686119593
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "center_upper_rack",
+      "style": "rack",
+      "collisionRect": {
+        "x": 637,
+        "y": 261,
+        "w": 134,
+        "h": 83
+      },
+      "sourceSprite": "art/variants/rack_low_wide.png",
+      "sourceNaturalSize": [
+        174,
+        110
+      ],
+      "sourceAspect": 1.5818181818181818,
+      "rotationDegrees": 0,
+      "uniformScale": 0.7363636363636363,
+      "scaleX": 0.7363636363636363,
+      "scaleY": 0.7363636363636363,
+      "drawRect": {
+        "x": 639.9363636363637,
+        "y": 262.0,
+        "w": 128.12727272727273,
+        "h": 81.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          704.0,
+          343
+        ]
+      },
+      "transformAfterRotation": [
+        0.7363636363636363,
+        0,
+        0,
+        0.7363636363636363,
+        639.9363636363637,
+        262.0
+      ],
+      "rasterAlphaBounds": [
+        640,
+        262,
+        767,
+        343
+      ],
+      "rationale": "Low broad rack preserves the central shared aisle edges.",
+      "zOrder": 344,
+      "v02Audit": {
+        "source": "rack_crates_03",
+        "scaleX": 0.8742,
+        "scaleY": 0.5625,
+        "distortionFactor": 1.5541333333333334
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "center_mid_container",
+      "style": "container",
+      "collisionRect": {
+        "x": 630,
+        "y": 424,
+        "w": 144,
+        "h": 112
+      },
+      "sourceSprite": "art/source/sprites/container_tarp03.png",
+      "sourceNaturalSize": [
+        151,
+        134
+      ],
+      "sourceAspect": 1.126865671641791,
+      "rotationDegrees": 0,
+      "uniformScale": 0.8208955223880597,
+      "scaleX": 0.8208955223880597,
+      "scaleY": 0.8208955223880597,
+      "drawRect": {
+        "x": 640.0223880597015,
+        "y": 425.0,
+        "w": 123.95522388059702,
+        "h": 110.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          702.0,
+          535
+        ]
+      },
+      "transformAfterRotation": [
+        0.8208955223880597,
+        0,
+        0,
+        0.8208955223880597,
+        640.0223880597015,
+        425.0
+      ],
+      "rasterAlphaBounds": [
+        640,
+        425,
+        764,
+        535
+      ],
+      "rationale": "Choose a wider native tarp grouping; small side insets remain explicit.",
+      "zOrder": 536,
+      "v02Audit": {
+        "source": "container_tarp04",
+        "scaleX": 1.0216,
+        "scaleY": 0.719,
+        "distortionFactor": 1.42086230876217
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "center_lower_rack",
+      "style": "rack",
+      "collisionRect": {
+        "x": 637,
+        "y": 629,
+        "w": 113,
+        "h": 113
+      },
+      "sourceSprite": "art/source/sprites/rack_crates_03.png",
+      "sourceNaturalSize": [
+        151,
+        144
+      ],
+      "sourceAspect": 1.0486111111111112,
+      "rotationDegrees": 0,
+      "uniformScale": 0.7350993377483444,
+      "scaleX": 0.7350993377483444,
+      "scaleY": 0.7350993377483444,
+      "drawRect": {
+        "x": 638.0,
+        "y": 635.1456953642385,
+        "w": 111.0,
+        "h": 105.8543046357616
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          693.5,
+          741
+        ]
+      },
+      "transformAfterRotation": [
+        0.7350993377483444,
+        0,
+        0,
+        0.7350993377483444,
+        638.0,
+        635.1456953642385
+      ],
+      "rasterAlphaBounds": [
+        638,
+        635,
+        749,
+        741
+      ],
+      "rationale": "Loaded rack is already close to this square footprint.",
+      "zOrder": 742,
+      "v02Audit": {
+        "source": "rack_crates_03",
+        "scaleX": 0.7351,
+        "scaleY": 0.7708,
+        "distortionFactor": 1.0485648211127738
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "southwest_pallets",
+      "style": "crate",
+      "collisionRect": {
+        "x": 548,
+        "y": 775,
+        "w": 76,
+        "h": 43
+      },
+      "sourceSprite": "art/source/sprites/pallet02.png",
+      "sourceNaturalSize": [
+        84,
+        58
+      ],
+      "sourceAspect": 1.4482758620689655,
+      "rotationDegrees": 0,
+      "uniformScale": 0.7068965517241379,
+      "scaleX": 0.7068965517241379,
+      "scaleY": 0.7068965517241379,
+      "drawRect": {
+        "x": 556.3103448275862,
+        "y": 776.0,
+        "w": 59.37931034482759,
+        "h": 41.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          586.0,
+          817
+        ]
+      },
+      "transformAfterRotation": [
+        0.7068965517241379,
+        0,
+        0,
+        0.7068965517241379,
+        556.3103448275862,
+        776.0
+      ],
+      "rasterAlphaBounds": [
+        556,
+        776,
+        616,
+        817
+      ],
+      "rationale": "Low pallet retains natural boards and feet.",
+      "zOrder": 818,
+      "v02Audit": {
+        "source": "pallet01",
+        "scaleX": 0.881,
+        "scaleY": 0.6508,
+        "distortionFactor": 1.353718500307314
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "center_fallen_boxes",
+      "style": "crate",
+      "collisionRect": {
+        "x": 759,
+        "y": 633,
+        "w": 49,
+        "h": 65
+      },
+      "sourceSprite": "art/source/sprites/crate_stack_two.png",
+      "sourceNaturalSize": [
+        72,
+        90
+      ],
+      "sourceAspect": 0.8,
+      "rotationDegrees": 0,
+      "uniformScale": 0.6527777777777778,
+      "scaleX": 0.6527777777777778,
+      "scaleY": 0.6527777777777778,
+      "drawRect": {
+        "x": 760.0,
+        "y": 638.25,
+        "w": 47.0,
+        "h": 58.75
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          783.5,
+          697
+        ]
+      },
+      "transformAfterRotation": [
+        0.6527777777777778,
+        0,
+        0,
+        0.6527777777777778,
+        760.0,
+        638.25
+      ],
+      "rasterAlphaBounds": [
+        760,
+        638,
+        807,
+        697
+      ],
+      "rationale": "Naturally tall pair of boxes matches this narrow obstruction.",
+      "zOrder": 698,
+      "v02Audit": {
+        "source": "crate_pallet_mixed",
+        "scaleX": 0.5341,
+        "scaleY": 0.6117,
+        "distortionFactor": 1.145291143980528
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "east_upper_container",
+      "style": "container",
+      "collisionRect": {
+        "x": 897,
+        "y": 276,
+        "w": 132,
+        "h": 113
+      },
+      "sourceSprite": "art/source/sprites/container_tarp02.png",
+      "sourceNaturalSize": [
+        131,
+        122
+      ],
+      "sourceAspect": 1.0737704918032787,
+      "rotationDegrees": 0,
+      "uniformScale": 0.9098360655737705,
+      "scaleX": 0.9098360655737705,
+      "scaleY": 0.9098360655737705,
+      "drawRect": {
+        "x": 903.405737704918,
+        "y": 277.0,
+        "w": 119.18852459016394,
+        "h": 111.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          963.0,
+          388
+        ]
+      },
+      "transformAfterRotation": [
+        0.9098360655737705,
+        0,
+        0,
+        0.9098360655737705,
+        903.405737704918,
+        277.0
+      ],
+      "rasterAlphaBounds": [
+        903,
+        277,
+        1023,
+        388
+      ],
+      "rationale": "Native squat covered container matches the upper east bay.",
+      "zOrder": 389,
+      "v02Audit": {
+        "source": "container_tarp02",
+        "scaleX": 0.9924,
+        "scaleY": 0.9098,
+        "distortionFactor": 1.0907891844361397
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "east_mid_rack",
+      "style": "rack",
+      "collisionRect": {
+        "x": 932,
+        "y": 445,
+        "w": 108,
+        "h": 96
+      },
+      "sourceSprite": "art/source/sprites/rack_crates_03.png",
+      "sourceNaturalSize": [
+        151,
+        144
+      ],
+      "sourceAspect": 1.0486111111111112,
+      "rotationDegrees": 0,
+      "uniformScale": 0.6527777777777778,
+      "scaleX": 0.6527777777777778,
+      "scaleY": 0.6527777777777778,
+      "drawRect": {
+        "x": 936.7152777777778,
+        "y": 446.0,
+        "w": 98.56944444444444,
+        "h": 94.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          986.0,
+          540
+        ]
+      },
+      "transformAfterRotation": [
+        0.6527777777777778,
+        0,
+        0,
+        0.6527777777777778,
+        936.7152777777778,
+        446.0
+      ],
+      "rasterAlphaBounds": [
+        937,
+        447,
+        1035,
+        540
+      ],
+      "rationale": "Loaded rack retains its shelf/crate proportions.",
+      "zOrder": 541,
+      "v02Audit": {
+        "source": "rack_mid_01",
+        "scaleX": 0.6839,
+        "scaleY": 0.5629,
+        "distortionFactor": 1.214958251909753
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "east_lower_container",
+      "style": "container",
+      "collisionRect": {
+        "x": 909,
+        "y": 641,
+        "w": 127,
+        "h": 90
+      },
+      "sourceSprite": "art/variants/container_low.png",
+      "sourceNaturalSize": [
+        151,
+        106
+      ],
+      "sourceAspect": 1.4245283018867925,
+      "rotationDegrees": 0,
+      "uniformScale": 0.8278145695364238,
+      "scaleX": 0.8278145695364238,
+      "scaleY": 0.8278145695364238,
+      "drawRect": {
+        "x": 910.0,
+        "y": 642.2516556291391,
+        "w": 125.0,
+        "h": 87.74834437086093
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          972.5,
+          730
+        ]
+      },
+      "transformAfterRotation": [
+        0.8278145695364238,
+        0,
+        0,
+        0.8278145695364238,
+        910.0,
+        642.2516556291391
+      ],
+      "rasterAlphaBounds": [
+        910,
+        642,
+        1035,
+        730
+      ],
+      "rationale": "Use a shorter tarp-and-crate assembly instead of crushing a tall tarp.",
+      "zOrder": 731,
+      "v02Audit": {
+        "source": "container_tarp04",
+        "scaleX": 0.8993,
+        "scaleY": 0.5752,
+        "distortionFactor": 1.5634561891515992
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "east_top_rack",
+      "style": "rack",
+      "collisionRect": {
+        "x": 1127,
+        "y": 320,
+        "w": 121,
+        "h": 77
+      },
+      "sourceSprite": "art/variants/rack_low_wide.png",
+      "sourceNaturalSize": [
+        174,
+        110
+      ],
+      "sourceAspect": 1.5818181818181818,
+      "rotationDegrees": 0,
+      "uniformScale": 0.6818181818181818,
+      "scaleX": 0.6818181818181818,
+      "scaleY": 0.6818181818181818,
+      "drawRect": {
+        "x": 1128.1818181818182,
+        "y": 321.0,
+        "w": 118.63636363636363,
+        "h": 75.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1187.5,
+          396
+        ]
+      },
+      "transformAfterRotation": [
+        0.6818181818181818,
+        0,
+        0,
+        0.6818181818181818,
+        1128.1818181818182,
+        321.0
+      ],
+      "rasterAlphaBounds": [
+        1128,
+        321,
+        1246,
+        396
+      ],
+      "rationale": "A low shelf variant fits this wide shallow footprint.",
+      "zOrder": 397,
+      "v02Audit": {
+        "source": "rack_pallets",
+        "scaleX": 0.8815,
+        "scaleY": 0.5245,
+        "distortionFactor": 1.6806482364156339
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "east_center_rack",
+      "style": "rack",
+      "collisionRect": {
+        "x": 1124,
+        "y": 462,
+        "w": 108,
+        "h": 81
+      },
+      "sourceSprite": "art/variants/rack_low_pallets.png",
+      "sourceNaturalSize": [
+        135,
+        99
+      ],
+      "sourceAspect": 1.3636363636363635,
+      "rotationDegrees": 0,
+      "uniformScale": 0.7851851851851852,
+      "scaleX": 0.7851851851851852,
+      "scaleY": 0.7851851851851852,
+      "drawRect": {
+        "x": 1125.0,
+        "y": 464.26666666666665,
+        "w": 106.0,
+        "h": 77.73333333333333
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1178.0,
+          542
+        ]
+      },
+      "transformAfterRotation": [
+        0.7851851851851852,
+        0,
+        0,
+        0.7851851851851852,
+        1125.0,
+        464.26666666666665
+      ],
+      "rasterAlphaBounds": [
+        1125,
+        464,
+        1231,
+        542
+      ],
+      "rationale": "Low crate bay keeps a consistent apparent scale with adjacent shelves.",
+      "zOrder": 543,
+      "v02Audit": {
+        "source": "rack_crates_03",
+        "scaleX": 0.702,
+        "scaleY": 0.5486,
+        "distortionFactor": 1.2796208530805686
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "east_lower_crates",
+      "style": "crate",
+      "collisionRect": {
+        "x": 1148,
+        "y": 639,
+        "w": 112,
+        "h": 88
+      },
+      "sourceSprite": "art/source/sprites/crate_cage.png",
+      "sourceNaturalSize": [
+        95,
+        85
+      ],
+      "sourceAspect": 1.1176470588235294,
+      "rotationDegrees": 0,
+      "uniformScale": 1.011764705882353,
+      "scaleX": 1.011764705882353,
+      "scaleY": 1.011764705882353,
+      "drawRect": {
+        "x": 1155.9411764705883,
+        "y": 640.0,
+        "w": 96.11764705882352,
+        "h": 86.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1204.0,
+          726
+        ]
+      },
+      "transformAfterRotation": [
+        1.011764705882353,
+        0,
+        0,
+        1.011764705882353,
+        1155.9411764705883,
+        640.0
+      ],
+      "rasterAlphaBounds": [
+        1156,
+        640,
+        1252,
+        726
+      ],
+      "rationale": "Natural steel crate shape, uniformly fitted.",
+      "zOrder": 727,
+      "v02Audit": {
+        "source": "crate_cage",
+        "scaleX": 1.1579,
+        "scaleY": 1.0118,
+        "distortionFactor": 1.1443961257165447
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "far_east_top_machine",
+      "style": "machine",
+      "collisionRect": {
+        "x": 1359,
+        "y": 394,
+        "w": 114,
+        "h": 94
+      },
+      "sourceSprite": "art/source/sprites/machine_cabinet_wide.png",
+      "sourceNaturalSize": [
+        94,
+        117
+      ],
+      "sourceAspect": 0.8034188034188035,
+      "rotationDegrees": 90,
+      "uniformScale": 0.9572649572649573,
+      "scaleX": 0.9572649572649573,
+      "scaleY": 0.9572649572649573,
+      "drawRect": {
+        "x": 1360.0,
+        "y": 397.017094017094,
+        "w": 112.0,
+        "h": 89.98290598290599
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1416.0,
+          487
+        ]
+      },
+      "transformAfterRotation": [
+        0.9572649572649573,
+        0,
+        0,
+        0.9572649572649573,
+        1360.0,
+        397.017094017094
+      ],
+      "rasterAlphaBounds": [
+        1360,
+        397,
+        1472,
+        487
+      ],
+      "rationale": "Overturned electrical cabinet; documented quarter turn preserves all proportions.",
+      "zOrder": 488,
+      "v02Audit": {
+        "source": "machine_cabinet_wide",
+        "scaleX": 0.9573,
+        "scaleY": 0.9787,
+        "distortionFactor": 1.0223545388070614
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "far_east_bottom",
+      "style": "container",
+      "collisionRect": {
+        "x": 1367,
+        "y": 654,
+        "w": 101,
+        "h": 91
+      },
+      "sourceSprite": "art/source/sprites/container_tarp03.png",
+      "sourceNaturalSize": [
+        151,
+        134
+      ],
+      "sourceAspect": 1.126865671641791,
+      "rotationDegrees": 0,
+      "uniformScale": 0.6556291390728477,
+      "scaleX": 0.6556291390728477,
+      "scaleY": 0.6556291390728477,
+      "drawRect": {
+        "x": 1368.0,
+        "y": 656.1456953642385,
+        "w": 99.0,
+        "h": 87.8543046357616
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1417.5,
+          744
+        ]
+      },
+      "transformAfterRotation": [
+        0.6556291390728477,
+        0,
+        0,
+        0.6556291390728477,
+        1368.0,
+        656.1456953642385
+      ],
+      "rasterAlphaBounds": [
+        1368,
+        656,
+        1467,
+        744
+      ],
+      "rationale": "Use the native broad covered stack.",
+      "zOrder": 745,
+      "v02Audit": {
+        "source": "container_tarp03",
+        "scaleX": 0.6556,
+        "scaleY": 0.6642,
+        "distortionFactor": 1.013117754728493
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "southeast_pallets",
+      "style": "crate",
+      "collisionRect": {
+        "x": 1090,
+        "y": 774,
+        "w": 67,
+        "h": 45
+      },
+      "sourceSprite": "art/source/sprites/pallet02.png",
+      "sourceNaturalSize": [
+        84,
+        58
+      ],
+      "sourceAspect": 1.4482758620689655,
+      "rotationDegrees": 0,
+      "uniformScale": 0.7413793103448276,
+      "scaleX": 0.7413793103448276,
+      "scaleY": 0.7413793103448276,
+      "drawRect": {
+        "x": 1092.3620689655172,
+        "y": 775.0,
+        "w": 62.27586206896552,
+        "h": 43.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1123.5,
+          818
+        ]
+      },
+      "transformAfterRotation": [
+        0.7413793103448276,
+        0,
+        0,
+        0.7413793103448276,
+        1092.3620689655172,
+        775.0
+      ],
+      "rasterAlphaBounds": [
+        1092,
+        775,
+        1155,
+        818
+      ],
+      "rationale": "Native wide wooden pallet.",
+      "zOrder": 819,
+      "v02Audit": {
+        "source": "pallet02",
+        "scaleX": 0.7738,
+        "scaleY": 0.7414,
+        "distortionFactor": 1.0437011060156463
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "northeast_spare_drums",
+      "style": "machine",
+      "collisionRect": {
+        "x": 1257,
+        "y": 333,
+        "w": 56,
+        "h": 72
+      },
+      "sourceSprite": "art/source/sprites/drums.png",
+      "sourceNaturalSize": [
+        108,
+        89
+      ],
+      "sourceAspect": 1.2134831460674158,
+      "rotationDegrees": 90,
+      "uniformScale": 0.6067415730337079,
+      "scaleX": 0.6067415730337079,
+      "scaleY": 0.6067415730337079,
+      "drawRect": {
+        "x": 1258.0,
+        "y": 338.4719101123595,
+        "w": 54.0,
+        "h": 65.52808988764045
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1285.0,
+          404
+        ]
+      },
+      "transformAfterRotation": [
+        0.6067415730337079,
+        0,
+        0,
+        0.6067415730337079,
+        1258.0,
+        338.4719101123595
+      ],
+      "rasterAlphaBounds": [
+        1258,
+        338,
+        1312,
+        404
+      ],
+      "rationale": "An overturned drum grouping suits the narrow scrap-storage footprint.",
+      "zOrder": 405,
+      "v02Audit": {
+        "source": "drums",
+        "scaleX": 0.6067,
+        "scaleY": 0.6481,
+        "distortionFactor": 1.0682380089006098
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "northeast_tilted_container",
+      "style": "container",
+      "collisionRect": {
+        "x": 1265,
+        "y": 458,
+        "w": 77,
+        "h": 88
+      },
+      "sourceSprite": "art/source/sprites/container_tarp01.png",
+      "sourceNaturalSize": [
+        110,
+        131
+      ],
+      "sourceAspect": 0.8396946564885496,
+      "rotationDegrees": 0,
+      "uniformScale": 0.6564885496183206,
+      "scaleX": 0.6564885496183206,
+      "scaleY": 0.6564885496183206,
+      "drawRect": {
+        "x": 1267.3931297709923,
+        "y": 459.0,
+        "w": 72.21374045801527,
+        "h": 86.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1303.5,
+          545
+        ]
+      },
+      "transformAfterRotation": [
+        0.6564885496183206,
+        0,
+        0,
+        0.6564885496183206,
+        1267.3931297709923,
+        459.0
+      ],
+      "rasterAlphaBounds": [
+        1267,
+        459,
+        1340,
+        545
+      ],
+      "rationale": "Naturally narrow covered container; the silhouette needs no distortion.",
+      "zOrder": 546,
+      "v02Audit": {
+        "source": "container_tarp01",
+        "scaleX": 0.6818,
+        "scaleY": 0.6565,
+        "distortionFactor": 1.0385376999238385
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "east_mid_crate_stack",
+      "style": "crate",
+      "collisionRect": {
+        "x": 1402,
+        "y": 536,
+        "w": 78,
+        "h": 83
+      },
+      "sourceSprite": "art/source/sprites/crate_pallet_mixed.png",
+      "sourceNaturalSize": [
+        88,
+        103
+      ],
+      "sourceAspect": 0.8543689320388349,
+      "rotationDegrees": 0,
+      "uniformScale": 0.7864077669902912,
+      "scaleX": 0.7864077669902912,
+      "scaleY": 0.7864077669902912,
+      "drawRect": {
+        "x": 1406.3980582524273,
+        "y": 537.0,
+        "w": 69.20388349514563,
+        "h": 81.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1441.0,
+          618
+        ]
+      },
+      "transformAfterRotation": [
+        0.7864077669902912,
+        0,
+        0,
+        0.7864077669902912,
+        1406.3980582524273,
+        537.0
+      ],
+      "rasterAlphaBounds": [
+        1406,
+        537,
+        1476,
+        618
+      ],
+      "rationale": "Loaded mixed crate stack, uniformly reduced.",
+      "zOrder": 619,
+      "v02Audit": {
+        "source": "crate_pallet_mixed",
+        "scaleX": 0.8636,
+        "scaleY": 0.7864,
+        "distortionFactor": 1.0981688708036623
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "east_loading_rejects",
+      "style": "crate",
+      "collisionRect": {
+        "x": 1215,
+        "y": 743,
+        "w": 72,
+        "h": 62
+      },
+      "sourceSprite": "art/source/sprites/crate_cage.png",
+      "sourceNaturalSize": [
+        95,
+        85
+      ],
+      "sourceAspect": 1.1176470588235294,
+      "rotationDegrees": 0,
+      "uniformScale": 0.7058823529411765,
+      "scaleX": 0.7058823529411765,
+      "scaleY": 0.7058823529411765,
+      "drawRect": {
+        "x": 1217.4705882352941,
+        "y": 744.0,
+        "w": 67.05882352941177,
+        "h": 60.00000000000001
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1251.0,
+          804
+        ]
+      },
+      "transformAfterRotation": [
+        0.7058823529411765,
+        0,
+        0,
+        0.7058823529411765,
+        1217.4705882352941,
+        744.0
+      ],
+      "rasterAlphaBounds": [
+        1217,
+        744,
+        1285,
+        804
+      ],
+      "rationale": "Rejected wire crate retains its near-square appearance.",
+      "zOrder": 805,
+      "v02Audit": {
+        "source": "crate_cage",
+        "scaleX": 0.7368,
+        "scaleY": 0.7059,
+        "distortionFactor": 1.0437739056523587
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "south_loading_crate",
+      "style": "crate",
+      "collisionRect": {
+        "x": 850,
+        "y": 797,
+        "w": 74,
+        "h": 52
+      },
+      "sourceSprite": "art/source/sprites/pallet02.png",
+      "sourceNaturalSize": [
+        84,
+        58
+      ],
+      "sourceAspect": 1.4482758620689655,
+      "rotationDegrees": 0,
+      "uniformScale": 0.8571428571428571,
+      "scaleX": 0.8571428571428571,
+      "scaleY": 0.8571428571428571,
+      "drawRect": {
+        "x": 851.0,
+        "y": 798.2857142857143,
+        "w": 72.0,
+        "h": 49.71428571428571
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          887.0,
+          848
+        ]
+      },
+      "transformAfterRotation": [
+        0.8571428571428571,
+        0,
+        0,
+        0.8571428571428571,
+        851.0,
+        798.2857142857143
+      ],
+      "rasterAlphaBounds": [
+        851,
+        798,
+        923,
+        848
+      ],
+      "rationale": "Low loading pallet matches the shallow authored block.",
+      "zOrder": 849,
+      "v02Audit": {
+        "source": "crate_stack_two",
+        "scaleX": 0.8,
+        "scaleY": 0.6944,
+        "distortionFactor": 1.1520737327188941
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "upper_access_pallet",
+      "style": "crate",
+      "collisionRect": {
+        "x": 1064,
+        "y": 294,
+        "w": 42,
+        "h": 64
+      },
+      "sourceSprite": "art/source/sprites/crate_stack_two.png",
+      "sourceNaturalSize": [
+        72,
+        90
+      ],
+      "sourceAspect": 0.8,
+      "rotationDegrees": 0,
+      "uniformScale": 0.5555555555555556,
+      "scaleX": 0.5555555555555556,
+      "scaleY": 0.5555555555555556,
+      "drawRect": {
+        "x": 1065.0,
+        "y": 307.0,
+        "w": 40.0,
+        "h": 50.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1085.0,
+          357
+        ]
+      },
+      "transformAfterRotation": [
+        0.5555555555555556,
+        0,
+        0,
+        0.5555555555555556,
+        1065.0,
+        307.0
+      ],
+      "rasterAlphaBounds": [
+        1065,
+        307,
+        1105,
+        357
+      ],
+      "rationale": "Choose a naturally tall stack instead of stretching a square pallet vertically.",
+      "zOrder": 358,
+      "v02Audit": {
+        "source": "pallet03",
+        "scaleX": 0.5263,
+        "scaleY": 0.8267,
+        "distortionFactor": 1.5707771233136993
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "west_cross_spill",
+      "style": "crate",
+      "collisionRect": {
+        "x": 325,
+        "y": 521,
+        "w": 68,
+        "h": 32
+      },
+      "sourceSprite": "art/source/sprites/rubble03.png",
+      "sourceNaturalSize": [
+        89,
+        50
+      ],
+      "sourceAspect": 1.78,
+      "rotationDegrees": 0,
+      "uniformScale": 0.6,
+      "scaleX": 0.6,
+      "scaleY": 0.6,
+      "drawRect": {
+        "x": 332.3,
+        "y": 522.0,
+        "w": 53.4,
+        "h": 30.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          359.0,
+          552
+        ]
+      },
+      "transformAfterRotation": [
+        0.6,
+        0,
+        0,
+        0.6,
+        332.3,
+        522.0
+      ],
+      "rasterAlphaBounds": [
+        332,
+        523,
+        386,
+        552
+      ],
+      "rationale": "Natural low brick spill, with conservative draw bounds inside collision.",
+      "zOrder": 553,
+      "v02Audit": {
+        "source": "rubble03",
+        "scaleX": 0.7416,
+        "scaleY": 0.6,
+        "distortionFactor": 1.2360000000000002
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "central_misplaced_pallet",
+      "style": "crate",
+      "collisionRect": {
+        "x": 805,
+        "y": 459,
+        "w": 72,
+        "h": 35
+      },
+      "sourceSprite": "art/variants/pallet_low.png",
+      "sourceNaturalSize": [
+        84,
+        38
+      ],
+      "sourceAspect": 2.210526315789474,
+      "rotationDegrees": 0,
+      "uniformScale": 0.8333333333333334,
+      "scaleX": 0.8333333333333334,
+      "scaleY": 0.8333333333333334,
+      "drawRect": {
+        "x": 806.0,
+        "y": 461.3333333333333,
+        "w": 70.0,
+        "h": 31.666666666666668
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          841.0,
+          493
+        ]
+      },
+      "transformAfterRotation": [
+        0.8333333333333334,
+        0,
+        0,
+        0.8333333333333334,
+        806.0,
+        461.3333333333333
+      ],
+      "rasterAlphaBounds": [
+        806,
+        461,
+        876,
+        493
+      ],
+      "rationale": "Short native slat assembly replaces a flattened full-height pallet.",
+      "zOrder": 494,
+      "v02Audit": {
+        "source": "pallet01",
+        "scaleX": 0.8333,
+        "scaleY": 0.5238,
+        "distortionFactor": 1.5908743795341733
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "east_transverse_rubble",
+      "style": "crate",
+      "collisionRect": {
+        "x": 1055,
+        "y": 548,
+        "w": 64,
+        "h": 39
+      },
+      "sourceSprite": "art/source/sprites/rubble02.png",
+      "sourceNaturalSize": [
+        78,
+        49
+      ],
+      "sourceAspect": 1.5918367346938775,
+      "rotationDegrees": 0,
+      "uniformScale": 0.7551020408163265,
+      "scaleX": 0.7551020408163265,
+      "scaleY": 0.7551020408163265,
+      "drawRect": {
+        "x": 1057.5510204081634,
+        "y": 549.0,
+        "w": 58.897959183673464,
+        "h": 37.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1087.0,
+          586
+        ]
+      },
+      "transformAfterRotation": [
+        0.7551020408163265,
+        0,
+        0,
+        0.7551020408163265,
+        1057.5510204081634,
+        549.0
+      ],
+      "rasterAlphaBounds": [
+        1058,
+        549,
+        1116,
+        586
+      ],
+      "rationale": "Low broken-brick group fits the transverse obstruction.",
+      "zOrder": 587,
+      "v02Audit": {
+        "source": "rubble04",
+        "scaleX": 0.4921,
+        "scaleY": 0.4353,
+        "distortionFactor": 1.1304847231794164
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "east_spare_forklift",
+      "style": "machine",
+      "collisionRect": {
+        "x": 1273,
+        "y": 556,
+        "w": 59,
+        "h": 54
+      },
+      "sourceSprite": "art/source/sprites/machine_forklift.png",
+      "sourceNaturalSize": [
+        170,
+        176
+      ],
+      "sourceAspect": 0.9659090909090909,
+      "rotationDegrees": 0,
+      "uniformScale": 0.29545454545454547,
+      "scaleX": 0.29545454545454547,
+      "scaleY": 0.29545454545454547,
+      "drawRect": {
+        "x": 1277.3863636363637,
+        "y": 557.0,
+        "w": 50.22727272727273,
+        "h": 52.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1302.5,
+          609
+        ]
+      },
+      "transformAfterRotation": [
+        0.29545454545454547,
+        0,
+        0,
+        0.29545454545454547,
+        1277.3863636363637,
+        557.0
+      ],
+      "rasterAlphaBounds": [
+        1277,
+        557,
+        1328,
+        609
+      ],
+      "rationale": "Keep the complete forklift silhouette; small scale is an explicit review outlier.",
+      "zOrder": 610,
+      "v02Audit": {
+        "source": "machine_forklift",
+        "scaleX": 0.3239,
+        "scaleY": 0.3059,
+        "distortionFactor": 1.058842759071592
+      },
+      "reviewOutlier": true
+    },
+    {
+      "solidId": "west_overturned_pallets",
+      "style": "crate",
+      "collisionRect": {
+        "x": 402,
+        "y": 260,
+        "w": 46,
+        "h": 28
+      },
+      "sourceSprite": "art/source/sprites/pallet02.png",
+      "sourceNaturalSize": [
+        84,
+        58
+      ],
+      "sourceAspect": 1.4482758620689655,
+      "rotationDegrees": 0,
+      "uniformScale": 0.4482758620689655,
+      "scaleX": 0.4482758620689655,
+      "scaleY": 0.4482758620689655,
+      "drawRect": {
+        "x": 406.17241379310343,
+        "y": 261.0,
+        "w": 37.6551724137931,
+        "h": 26.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          425.0,
+          287
+        ]
+      },
+      "transformAfterRotation": [
+        0.4482758620689655,
+        0,
+        0,
+        0.4482758620689655,
+        406.17241379310343,
+        261.0
+      ],
+      "rasterAlphaBounds": [
+        406,
+        261,
+        444,
+        287
+      ],
+      "rationale": "Uniformly reduced overturned pallet.",
+      "zOrder": 288,
+      "v02Audit": {
+        "source": "pallet02",
+        "scaleX": 0.5238,
+        "scaleY": 0.4483,
+        "distortionFactor": 1.1684140084764667
+      },
+      "reviewOutlier": true
+    },
+    {
+      "solidId": "west_collapsed_upright",
+      "style": "rack",
+      "collisionRect": {
+        "x": 307,
+        "y": 449,
+        "w": 91,
+        "h": 28
+      },
+      "sourceSprite": "art/variants/fallen_rack_beams.png",
+      "sourceNaturalSize": [
+        174,
+        53
+      ],
+      "sourceAspect": 3.2830188679245285,
+      "rotationDegrees": 0,
+      "uniformScale": 0.49056603773584906,
+      "scaleX": 0.49056603773584906,
+      "scaleY": 0.49056603773584906,
+      "drawRect": {
+        "x": 309.8207547169811,
+        "y": 450.0,
+        "w": 85.35849056603773,
+        "h": 26.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          352.5,
+          476
+        ]
+      },
+      "transformAfterRotation": [
+        0.49056603773584906,
+        0,
+        0,
+        0.49056603773584906,
+        309.8207547169811,
+        450.0
+      ],
+      "rasterAlphaBounds": [
+        310,
+        450,
+        395,
+        476
+      ],
+      "rationale": "Reassemble native steel beams; do not squeeze a 181 px upright into 28 px.",
+      "zOrder": 477,
+      "v02Audit": {
+        "source": "rack_wide_01",
+        "scaleX": 0.5115,
+        "scaleY": 0.1436,
+        "distortionFactor": 3.561977715877437
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "west_loading_rejects",
+      "style": "crate",
+      "collisionRect": {
+        "x": 155,
+        "y": 640,
+        "w": 86,
+        "h": 39
+      },
+      "sourceSprite": "art/variants/pallet_low.png",
+      "sourceNaturalSize": [
+        84,
+        38
+      ],
+      "sourceAspect": 2.210526315789474,
+      "rotationDegrees": 0,
+      "uniformScale": 0.9736842105263158,
+      "scaleX": 0.9736842105263158,
+      "scaleY": 0.9736842105263158,
+      "drawRect": {
+        "x": 157.10526315789474,
+        "y": 641.0,
+        "w": 81.78947368421053,
+        "h": 37.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          198.0,
+          678
+        ]
+      },
+      "transformAfterRotation": [
+        0.9736842105263158,
+        0,
+        0,
+        0.9736842105263158,
+        157.10526315789474,
+        641.0
+      ],
+      "rasterAlphaBounds": [
+        157,
+        641,
+        239,
+        678
+      ],
+      "rationale": "Low stacked board variant communicates the full width without aspect distortion.",
+      "zOrder": 679,
+      "v02Audit": {
+        "source": "pallet02",
+        "scaleX": 1.0,
+        "scaleY": 0.6379,
+        "distortionFactor": 1.5676438313215237
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "south_central_scrap",
+      "style": "crate",
+      "collisionRect": {
+        "x": 763,
+        "y": 750,
+        "w": 47,
+        "h": 36
+      },
+      "sourceSprite": "art/source/sprites/rubble02.png",
+      "sourceNaturalSize": [
+        78,
+        49
+      ],
+      "sourceAspect": 1.5918367346938775,
+      "rotationDegrees": 0,
+      "uniformScale": 0.5769230769230769,
+      "scaleX": 0.5769230769230769,
+      "scaleY": 0.5769230769230769,
+      "drawRect": {
+        "x": 764.0,
+        "y": 756.7307692307693,
+        "w": 44.99999999999999,
+        "h": 28.269230769230766
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          786.5,
+          785
+        ]
+      },
+      "transformAfterRotation": [
+        0.5769230769230769,
+        0,
+        0,
+        0.5769230769230769,
+        764.0,
+        756.7307692307693
+      ],
+      "rasterAlphaBounds": [
+        764,
+        757,
+        809,
+        785
+      ],
+      "rationale": "Small native rubble group, not an invented obstacle.",
+      "zOrder": 786,
+      "v02Audit": {
+        "source": "rubble02",
+        "scaleX": 0.5769,
+        "scaleY": 0.6939,
+        "distortionFactor": 1.202808112324493
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "upper_east_fallen_rack",
+      "style": "rack",
+      "collisionRect": {
+        "x": 1014,
+        "y": 460,
+        "w": 60,
+        "h": 48
+      },
+      "sourceSprite": "art/source/sprites/crate_cage.png",
+      "sourceNaturalSize": [
+        95,
+        85
+      ],
+      "sourceAspect": 1.1176470588235294,
+      "rotationDegrees": 0,
+      "uniformScale": 0.5411764705882353,
+      "scaleX": 0.5411764705882353,
+      "scaleY": 0.5411764705882353,
+      "drawRect": {
+        "x": 1018.2941176470588,
+        "y": 461.0,
+        "w": 51.41176470588235,
+        "h": 46.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1044.0,
+          507
+        ]
+      },
+      "transformAfterRotation": [
+        0.5411764705882353,
+        0,
+        0,
+        0.5411764705882353,
+        1018.2941176470588,
+        461.0
+      ],
+      "rasterAlphaBounds": [
+        1018,
+        461,
+        1070,
+        507
+      ],
+      "rationale": "Wire-mesh fallen panel from the same approved steel family, without stretching.",
+      "zOrder": 508,
+      "v02Audit": {
+        "source": "rack_crates_03",
+        "scaleX": 0.3841,
+        "scaleY": 0.3194,
+        "distortionFactor": 1.2025673137132122
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "upper_east_cross_pallet",
+      "style": "crate",
+      "collisionRect": {
+        "x": 1178,
+        "y": 413,
+        "w": 57,
+        "h": 33
+      },
+      "sourceSprite": "art/source/sprites/pallet02.png",
+      "sourceNaturalSize": [
+        84,
+        58
+      ],
+      "sourceAspect": 1.4482758620689655,
+      "rotationDegrees": 0,
+      "uniformScale": 0.5344827586206896,
+      "scaleX": 0.5344827586206896,
+      "scaleY": 0.5344827586206896,
+      "drawRect": {
+        "x": 1184.051724137931,
+        "y": 414.0,
+        "w": 44.89655172413793,
+        "h": 30.999999999999996
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1206.5,
+          445
+        ]
+      },
+      "transformAfterRotation": [
+        0.5344827586206896,
+        0,
+        0,
+        0.5344827586206896,
+        1184.051724137931,
+        414.0
+      ],
+      "rasterAlphaBounds": [
+        1184,
+        414,
+        1229,
+        445
+      ],
+      "rationale": "Native pallet fits the shared-road crossing block.",
+      "zOrder": 446,
+      "v02Audit": {
+        "source": "pallet02",
+        "scaleX": 0.6548,
+        "scaleY": 0.5345,
+        "distortionFactor": 1.2250701590271282
+      },
+      "reviewOutlier": false
+    },
+    {
+      "solidId": "east_dock_displaced_stack",
+      "style": "crate",
+      "collisionRect": {
+        "x": 1387,
+        "y": 383,
+        "w": 70,
+        "h": 31
+      },
+      "sourceSprite": "art/variants/pallet_low.png",
+      "sourceNaturalSize": [
+        84,
+        38
+      ],
+      "sourceAspect": 2.210526315789474,
+      "rotationDegrees": 0,
+      "uniformScale": 0.7631578947368421,
+      "scaleX": 0.7631578947368421,
+      "scaleY": 0.7631578947368421,
+      "drawRect": {
+        "x": 1389.9473684210527,
+        "y": 384.0,
+        "w": 64.10526315789474,
+        "h": 29.0
+      },
+      "anchor": {
+        "kind": "bottom-center",
+        "world": [
+          1422.0,
+          413
+        ]
+      },
+      "transformAfterRotation": [
+        0.7631578947368421,
+        0,
+        0,
+        0.7631578947368421,
+        1389.9473684210527,
+        384.0
+      ],
+      "rasterAlphaBounds": [
+        1390,
+        384,
+        1454,
+        413
+      ],
+      "rationale": "Low board stack fits the wide dock footprint with natural pixel proportions.",
+      "zOrder": 414,
+      "v02Audit": {
+        "source": "pallet01",
+        "scaleX": 0.8095,
+        "scaleY": 0.4603,
+        "distortionFactor": 1.7586356723875733
+      },
+      "reviewOutlier": false
+    }
+  ],
+  "initialHardware": [
+    {
+      "id": "entry_lamp",
+      "sourceSprite": "art/source/stateful/entry_lamp_unlit.png",
+      "uniformScale": 0.6,
+      "anchor": [
+        316,
+        582
+      ],
+      "drawRect": [
+        303.4,
+        553.8,
+        25.2,
+        28.2
+      ],
+      "initialState": "off",
+      "runtimeGlowBaked": false
+    },
+    {
+      "id": "central_spotlight",
+      "sourceSprite": "art/source/stateful/central_spotlight_unlit.png",
+      "uniformScale": 0.7,
+      "anchor": [
+        833,
+        557
+      ],
+      "drawRect": [
+        798.0,
+        532.5,
+        70.0,
+        24.5
+      ],
+      "initialState": "off",
+      "runtimeGlowBaked": false
+    },
+    {
+      "id": "secondary_lamp",
+      "sourceSprite": "art/source/stateful/secondary_lamp_unlit.png",
+      "uniformScale": 0.6,
+      "anchor": [
+        1420,
+        775
+      ],
+      "drawRect": [
+        1406.2,
+        741.4,
+        27.599999999999998,
+        33.6
+      ],
+      "initialState": "off",
+      "runtimeGlowBaked": false
+    },
+    {
+      "id": "bunker_exit",
+      "sourceSprite": "art/source/stateful/bunker_exit_shutter_closed.png",
+      "uniformScale": 0.75,
+      "drawRect": [
+        1225.25,
+        65,
+        169.5,
+        122.25
+      ],
+      "interactionAnchor": [
+        1310,
+        126
+      ],
+      "initialState": "closed",
+      "unlock": "finale_boss_victory"
+    },
+    {
+      "id": "boss_gate",
+      "sourceSprite": "art/variants/gate_crossbar.png",
+      "uniformScale": 0.5229885057471264,
+      "rotationDegrees": 0,
+      "drawRect": [
+        1257.0,
+        255.46264367816093,
+        91.0,
+        13.07471264367816
+      ],
+      "sourceGate": {
+        "id": "boss_gate",
+        "x": 1257,
+        "y": 251,
+        "w": 91,
+        "h": 22,
+        "floor": "L0",
+        "unlock": "finale_boss_victory"
+      },
+      "initialState": "closed",
+      "changesCollision": false
+    },
+    {
+      "id": "west_shortcut",
+      "sourceSprite": "art/variants/gate_crossbar.png",
+      "uniformScale": 0.27011494252873564,
+      "rotationDegrees": 90,
+      "drawRect": [
+        595.1235632183908,
+        356.0,
+        6.752873563218391,
+        47.0
+      ],
+      "sourceGate": {
+        "id": "west_shortcut",
+        "x": 587,
+        "y": 356,
+        "w": 23,
+        "h": 47,
+        "floor": "L0",
+        "unlock": "entry_lamp"
+      },
+      "initialState": "closed",
+      "changesCollision": false
+    },
+    {
+      "id": "east_shortcut",
+      "sourceSprite": "art/variants/gate_crossbar.png",
+      "uniformScale": 0.25287356321839083,
+      "rotationDegrees": 90,
+      "drawRect": [
+        1071.33908045977,
+        524.0,
+        6.321839080459771,
+        44.00000000000001
+      ],
+      "sourceGate": {
+        "id": "east_shortcut",
+        "x": 1061,
+        "y": 524,
+        "w": 27,
+        "h": 44,
+        "floor": "L0",
+        "unlock": "secondary_lamp"
+      },
+      "initialState": "closed",
+      "changesCollision": false
+    }
+  ],
+  "geometryContract": {
+    "id": "warehouse_ch5_graybox_v07",
+    "status": "concept-graybox; not production-approved",
+    "world": {
+      "width": 1672,
+      "height": 941,
+      "coordinateSystem": "common L0/L1 SVG pixel coordinates",
+      "catRadius": 13
+    },
+    "walkable": {
+      "L0": [
+        [
+          [
+            162,
+            281
+          ],
+          [
+            225,
+            281
+          ],
+          [
+            225,
+            215
+          ],
+          [
+            366,
+            215
+          ],
+          [
+            366,
+            186
+          ],
+          [
+            620,
+            186
+          ],
+          [
+            620,
+            207
+          ],
+          [
+            808,
+            207
+          ],
+          [
+            808,
+            235
+          ],
+          [
+            1040,
+            235
+          ],
+          [
+            1040,
+            282
+          ],
+          [
+            1410,
+            282
+          ],
+          [
+            1410,
+            325
+          ],
+          [
+            1500,
+            325
+          ],
+          [
+            1500,
+            375
+          ],
+          [
+            1540,
+            375
+          ],
+          [
+            1540,
+            536
+          ],
+          [
+            1496,
+            536
+          ],
+          [
+            1496,
+            601
+          ],
+          [
+            1520,
+            601
+          ],
+          [
+            1520,
+            810
+          ],
+          [
+            1360,
+            810
+          ],
+          [
+            1360,
+            852
+          ],
+          [
+            1141,
+            852
+          ],
+          [
+            1141,
+            828
+          ],
+          [
+            1045,
+            828
+          ],
+          [
+            1045,
+            856
+          ],
+          [
+            965,
+            856
+          ],
+          [
+            965,
+            924
+          ],
+          [
+            756,
+            924
+          ],
+          [
+            756,
+            853
+          ],
+          [
+            597,
+            853
+          ],
+          [
+            597,
+            875
+          ],
+          [
+            310,
+            875
+          ],
+          [
+            310,
+            838
+          ],
+          [
+            189,
+            838
+          ],
+          [
+            189,
+            778
+          ],
+          [
+            143,
+            778
+          ],
+          [
+            143,
+            607
+          ],
+          [
+            111,
+            607
+          ],
+          [
+            111,
+            360
+          ],
+          [
+            162,
+            360
+          ]
+        ],
+        [
+          [
+            1190,
+            65
+          ],
+          [
+            1455,
+            65
+          ],
+          [
+            1455,
+            210
+          ],
+          [
+            1347,
+            210
+          ],
+          [
+            1347,
+            282
+          ],
+          [
+            1258,
+            282
+          ],
+          [
+            1258,
+            210
+          ],
+          [
+            1190,
+            210
+          ]
+        ]
+      ],
+      "L1": [
+        [
+          [
+            524.0,
+            250.0
+          ],
+          [
+            524.0,
+            278.0
+          ],
+          [
+            386.0,
+            278.0
+          ],
+          [
+            386.0,
+            258.0
+          ],
+          [
+            274.0,
+            258.0
+          ],
+          [
+            274.0,
+            386.0
+          ],
+          [
+            386.0,
+            386.0
+          ],
+          [
+            386.0,
+            332.0
+          ],
+          [
+            524.0,
+            332.0
+          ],
+          [
+            524.0,
+            344.0
+          ],
+          [
+            617.0,
+            344.0
+          ],
+          [
+            617.0,
+            370.0
+          ],
+          [
+            617.0,
+            430.0
+          ],
+          [
+            617.0,
+            432.0
+          ],
+          [
+            773.0,
+            432.0
+          ],
+          [
+            773.0,
+            463.0
+          ],
+          [
+            867.0,
+            463.0
+          ],
+          [
+            867.0,
+            372.0
+          ],
+          [
+            855.0,
+            372.0
+          ],
+          [
+            855.0,
+            370.0
+          ],
+          [
+            677.0,
+            370.0
+          ],
+          [
+            677.0,
+            278.0
+          ],
+          [
+            668.0,
+            278.0
+          ],
+          [
+            640.0,
+            278.0
+          ],
+          [
+            640.0,
+            250.0
+          ]
+        ]
+      ]
+    },
+    "walkableSemantics": "L0 union of polygons MINUS solid rectangles; L1 union of rectangles. Dynamic gates have independent state.",
+    "solids": [
+      {
+        "id": "west_upper_tall_rack",
+        "x": 393,
+        "y": 244,
+        "w": 151,
+        "h": 101,
+        "style": "rack",
+        "floor": "L0"
+      },
+      {
+        "id": "west_wide_rack",
+        "x": 416,
+        "y": 412,
+        "w": 166,
+        "h": 96,
+        "style": "rack",
+        "floor": "L0"
+      },
+      {
+        "id": "west_lower_rack",
+        "x": 409,
+        "y": 595,
+        "w": 151,
+        "h": 99,
+        "style": "rack",
+        "floor": "L0"
+      },
+      {
+        "id": "west_crates",
+        "x": 255,
+        "y": 667,
+        "w": 106,
+        "h": 91,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "west_service_equipment",
+        "x": 205,
+        "y": 457,
+        "w": 91,
+        "h": 102,
+        "style": "machine",
+        "floor": "L0"
+      },
+      {
+        "id": "west_repair_pallet",
+        "x": 174,
+        "y": 355,
+        "w": 61,
+        "h": 53,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "west_broken_shelf",
+        "x": 346,
+        "y": 705,
+        "w": 49,
+        "h": 95,
+        "style": "rack",
+        "floor": "L0"
+      },
+      {
+        "id": "center_upper_rack",
+        "x": 637,
+        "y": 261,
+        "w": 134,
+        "h": 83,
+        "style": "rack",
+        "floor": "L0"
+      },
+      {
+        "id": "center_mid_container",
+        "x": 630,
+        "y": 424,
+        "w": 144,
+        "h": 112,
+        "style": "container",
+        "floor": "L0"
+      },
+      {
+        "id": "center_lower_rack",
+        "x": 637,
+        "y": 629,
+        "w": 113,
+        "h": 113,
+        "style": "rack",
+        "floor": "L0"
+      },
+      {
+        "id": "southwest_pallets",
+        "x": 548,
+        "y": 775,
+        "w": 76,
+        "h": 43,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "center_fallen_boxes",
+        "x": 759,
+        "y": 633,
+        "w": 49,
+        "h": 65,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "east_upper_container",
+        "x": 897,
+        "y": 276,
+        "w": 132,
+        "h": 113,
+        "style": "container",
+        "floor": "L0"
+      },
+      {
+        "id": "east_mid_rack",
+        "x": 932,
+        "y": 445,
+        "w": 108,
+        "h": 96,
+        "style": "rack",
+        "floor": "L0"
+      },
+      {
+        "id": "east_lower_container",
+        "x": 909,
+        "y": 641,
+        "w": 127,
+        "h": 90,
+        "style": "container",
+        "floor": "L0"
+      },
+      {
+        "id": "east_top_rack",
+        "x": 1127,
+        "y": 320,
+        "w": 121,
+        "h": 77,
+        "style": "rack",
+        "floor": "L0"
+      },
+      {
+        "id": "east_center_rack",
+        "x": 1124,
+        "y": 462,
+        "w": 108,
+        "h": 81,
+        "style": "rack",
+        "floor": "L0"
+      },
+      {
+        "id": "east_lower_crates",
+        "x": 1148,
+        "y": 639,
+        "w": 112,
+        "h": 88,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "far_east_top_machine",
+        "x": 1359,
+        "y": 394,
+        "w": 114,
+        "h": 94,
+        "style": "machine",
+        "floor": "L0"
+      },
+      {
+        "id": "far_east_bottom",
+        "x": 1367,
+        "y": 654,
+        "w": 101,
+        "h": 91,
+        "style": "container",
+        "floor": "L0"
+      },
+      {
+        "id": "southeast_pallets",
+        "x": 1090,
+        "y": 774,
+        "w": 67,
+        "h": 45,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "northeast_spare_drums",
+        "x": 1257,
+        "y": 333,
+        "w": 56,
+        "h": 72,
+        "style": "machine",
+        "floor": "L0"
+      },
+      {
+        "id": "northeast_tilted_container",
+        "x": 1265,
+        "y": 458,
+        "w": 77,
+        "h": 88,
+        "style": "container",
+        "floor": "L0"
+      },
+      {
+        "id": "east_mid_crate_stack",
+        "x": 1402,
+        "y": 536,
+        "w": 78,
+        "h": 83,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "east_loading_rejects",
+        "x": 1215,
+        "y": 743,
+        "w": 72,
+        "h": 62,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "south_loading_crate",
+        "x": 850,
+        "y": 797,
+        "w": 74,
+        "h": 52,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "upper_access_pallet",
+        "x": 1064,
+        "y": 294,
+        "w": 42,
+        "h": 64,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "west_cross_spill",
+        "x": 325,
+        "y": 521,
+        "w": 68,
+        "h": 32,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "central_misplaced_pallet",
+        "x": 805,
+        "y": 459,
+        "w": 72,
+        "h": 35,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "east_transverse_rubble",
+        "x": 1055,
+        "y": 548,
+        "w": 64,
+        "h": 39,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "east_spare_forklift",
+        "x": 1273,
+        "y": 556,
+        "w": 59,
+        "h": 54,
+        "style": "machine",
+        "floor": "L0"
+      },
+      {
+        "id": "west_overturned_pallets",
+        "x": 402,
+        "y": 260,
+        "w": 46,
+        "h": 28,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "west_collapsed_upright",
+        "x": 307,
+        "y": 449,
+        "w": 91,
+        "h": 28,
+        "style": "rack",
+        "floor": "L0"
+      },
+      {
+        "id": "west_loading_rejects",
+        "x": 155,
+        "y": 640,
+        "w": 86,
+        "h": 39,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "south_central_scrap",
+        "x": 763,
+        "y": 750,
+        "w": 47,
+        "h": 36,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "upper_east_fallen_rack",
+        "x": 1014,
+        "y": 460,
+        "w": 60,
+        "h": 48,
+        "style": "rack",
+        "floor": "L0"
+      },
+      {
+        "id": "upper_east_cross_pallet",
+        "x": 1178,
+        "y": 413,
+        "w": 57,
+        "h": 33,
+        "style": "crate",
+        "floor": "L0"
+      },
+      {
+        "id": "east_dock_displaced_stack",
+        "x": 1387,
+        "y": 383,
+        "w": 70,
+        "h": 31,
+        "style": "crate",
+        "floor": "L0"
+      }
+    ],
+    "l1WalkableRectangles": [
+      {
+        "id": "lookout_platform",
+        "x": 274,
+        "y": 258,
+        "w": 112,
+        "h": 128
+      },
+      {
+        "id": "west_catwalk",
+        "x": 333,
+        "y": 278,
+        "w": 335,
+        "h": 54
+      },
+      {
+        "id": "north_connector",
+        "x": 617,
+        "y": 278,
+        "w": 60,
+        "h": 152
+      },
+      {
+        "id": "east_catwalk",
+        "x": 617,
+        "y": 370,
+        "w": 238,
+        "h": 62
+      },
+      {
+        "id": "crate_platform",
+        "x": 524,
+        "y": 250,
+        "w": 116,
+        "h": 94
+      },
+      {
+        "id": "c2_landing",
+        "x": 773,
+        "y": 372,
+        "w": 94,
+        "h": 91
+      }
+    ],
+    "climbs": [
+      {
+        "id": "C1",
+        "x": 320,
+        "y": 343,
+        "from": "L0",
+        "to": "L1",
+        "label": "West shelf climb"
+      },
+      {
+        "id": "C2",
+        "x": 816,
+        "y": 409,
+        "from": "L0",
+        "to": "L1",
+        "label": "Central catwalk descent"
+      }
+    ],
+    "interactions": [
+      {
+        "id": "entry_lamp",
+        "x": 316,
+        "y": 582,
+        "floor": "L0",
+        "kind": "light",
+        "label": "Entrance lamp",
+        "type": "permanent"
+      },
+      {
+        "id": "central_spotlight",
+        "x": 833,
+        "y": 557,
+        "floor": "L0",
+        "kind": "light",
+        "label": "Central spotlight",
+        "type": "toggle"
+      },
+      {
+        "id": "secondary_lamp",
+        "x": 1420,
+        "y": 775,
+        "floor": "L0",
+        "kind": "light",
+        "label": "Secondary lamp",
+        "type": "permanent"
+      },
+      {
+        "id": "warehouse_lookout",
+        "x": 316,
+        "y": 287,
+        "floor": "L1",
+        "kind": "fixed_event",
+        "label": "货架顶的瞭望位"
+      },
+      {
+        "id": "warehouse_light_crate",
+        "x": 574,
+        "y": 292,
+        "floor": "L1",
+        "kind": "fixed_event",
+        "label": "吊在半空的灯具箱"
+      },
+      {
+        "id": "finale_boss",
+        "x": 1302,
+        "y": 294,
+        "floor": "L0",
+        "kind": "battle",
+        "label": "Mandatory finale boss",
+        "storyBefore": "finale_intro_5",
+        "storyAfterWin": "finale_intro_6"
+      },
+      {
+        "id": "bunker_exit",
+        "x": 1310,
+        "y": 126,
+        "floor": "L0",
+        "kind": "exit",
+        "label": "Rescue / Exit (victory only)"
+      },
+      {
+        "id": "warehouse_entry",
+        "x": 833,
+        "y": 882,
+        "floor": "L0",
+        "kind": "start",
+        "label": "Entrance from tunnel"
+      }
+    ],
+    "randomZones": [
+      {
+        "id": "R1",
+        "x": 657,
+        "y": 765,
+        "r": 47,
+        "floor": "L0",
+        "label": "Loading storage",
+        "examples": [
+          "sack_row_event",
+          "box_haul_event"
+        ]
+      },
+      {
+        "id": "R2",
+        "x": 266,
+        "y": 404,
+        "r": 43,
+        "floor": "L0",
+        "label": "Western shelving",
+        "examples": [
+          "fake_meow_event",
+          "moving_shelves_event",
+          "warm_nest_event"
+        ]
+      },
+      {
+        "id": "R3",
+        "x": 1364,
+        "y": 566,
+        "r": 44,
+        "floor": "L0",
+        "label": "East cross-aisle",
+        "examples": [
+          "moving_shelves_event",
+          "warm_nest_event",
+          "fake_meow_event"
+        ]
+      },
+      {
+        "id": "R4",
+        "x": 1094,
+        "y": 402,
+        "r": 42,
+        "floor": "L0",
+        "label": "Upper shared road",
+        "examples": [
+          "shadow_captain_event",
+          "fake_meow_event",
+          "moving_shelves_event"
+        ]
+      }
+    ],
+    "ambientLamps": [
+      {
+        "id": "bay_window_lamp",
+        "x": 360,
+        "y": 252,
+        "r": 177,
+        "floor": "L0",
+        "label": "West bay safety light"
+      },
+      {
+        "id": "upper_cross_lamp",
+        "x": 1070,
+        "y": 262,
+        "r": 174,
+        "floor": "L0",
+        "label": "Upper service lamp"
+      },
+      {
+        "id": "east_dock_lamp",
+        "x": 1468,
+        "y": 385,
+        "r": 181,
+        "floor": "L0",
+        "label": "East bay safety light"
+      },
+      {
+        "id": "lookout_guide_lamp",
+        "x": 320,
+        "y": 310,
+        "r": 156,
+        "floor": "L1",
+        "label": "Lookout platform light"
+      }
+    ],
+    "dynamicGates": {
+      "boss": {
+        "id": "boss_gate",
+        "x": 1257,
+        "y": 251,
+        "w": 91,
+        "h": 22,
+        "floor": "L0",
+        "unlock": "finale_boss_victory"
+      },
+      "shadow": [
+        {
+          "id": "west_shortcut",
+          "x": 587,
+          "y": 356,
+          "w": 23,
+          "h": 47,
+          "floor": "L0",
+          "unlock": "entry_lamp"
+        },
+        {
+          "id": "east_shortcut",
+          "x": 1061,
+          "y": 524,
+          "w": 27,
+          "h": 44,
+          "floor": "L0",
+          "unlock": "secondary_lamp"
+        }
+      ]
+    },
+    "storyContract": {
+      "entry": "finale_intro_1..finale_intro_4",
+      "finaleClueRequirement": 3,
+      "beforeBoss": "finale_intro_5",
+      "stage": "finale_boss",
+      "afterWin": "finale_intro_6",
+      "ending": "finale_intro_7..finale_intro_9 (greenhouse)"
+    },
+    "eventPoolRandom": [
+      "fake_meow_event",
+      "moving_shelves_event",
+      "warm_nest_event",
+      "sack_row_event",
+      "shadow_captain_event",
+      "box_haul_event"
+    ],
+    "eventPoolFixed": [
+      "warehouse_light_crate",
+      "warehouse_lookout"
+    ],
+    "visualOutcomeMapping": {
+      "supply_post_built": {
+        "floor": "L0",
+        "anchor": [
+          445,
+          757
+        ],
+        "appearance": "supply_station",
+        "sourceEvent": "box_haul_event"
+      },
+      "supply_post_paused": {
+        "floor": "L0",
+        "anchor": [
+          445,
+          757
+        ],
+        "appearance": "unfinished_supply_post",
+        "sourceEvent": "box_haul_event"
+      },
+      "watch_post_set": {
+        "floor": "L1",
+        "anchor": [
+          316,
+          287
+        ],
+        "appearance": "watch_post",
+        "sourceEvent": "warehouse_lookout"
+      },
+      "watch_post_one_route": {
+        "floor": "L1",
+        "anchor": [
+          316,
+          287
+        ],
+        "appearance": "partial_watch_post",
+        "sourceEvent": "warehouse_lookout"
+      },
+      "watch_post_wet": {
+        "floor": "L1",
+        "anchor": [
+          316,
+          287
+        ],
+        "appearance": "wet_watch_post",
+        "sourceEvent": "warehouse_lookout"
+      },
+      "lookout_surveyed": {
+        "floor": "L0",
+        "anchor": [
+          833,
+          557
+        ],
+        "appearance": "surveyed_landmarks",
+        "sourceEvent": "warehouse_lookout"
+      },
+      "lookout_partial": {
+        "floor": "L1",
+        "anchor": [
+          316,
+          287
+        ],
+        "appearance": "partial_survey",
+        "sourceEvent": "warehouse_lookout"
+      },
+      "lookout_recce": {
+        "floor": "L1",
+        "anchor": [
+          316,
+          287
+        ],
+        "appearance": "safe_route_mark",
+        "sourceEvent": "warehouse_lookout"
+      },
+      "light_crate_found": {
+        "floor": "L1",
+        "anchor": [
+          574,
+          292
+        ],
+        "appearance": "lamp_recovered",
+        "sourceEvent": "warehouse_light_crate"
+      },
+      "light_crate_dinged": {
+        "floor": "L1",
+        "anchor": [
+          574,
+          292
+        ],
+        "appearance": "dented_lamp",
+        "sourceEvent": "warehouse_light_crate"
+      },
+      "light_crate_stashed": {
+        "floor": "L1",
+        "anchor": [
+          574,
+          292
+        ],
+        "appearance": "crate_location_marked",
+        "sourceEvent": "warehouse_light_crate"
+      },
+      "finale_light_stashed": {
+        "floor": "L1",
+        "anchor": [
+          574,
+          292
+        ],
+        "appearance": "covered_lamp_crate",
+        "sourceEvent": "warehouse_light_crate"
+      },
+      "light_stash_rough": {
+        "floor": "L1",
+        "anchor": [
+          574,
+          292
+        ],
+        "appearance": "partially_covered_crate",
+        "sourceEvent": "warehouse_light_crate"
+      }
+    },
+    "visualOutcomeNotes": "Appearance only; read existing server flags. Boss victory uses the existing cleared-battle state, not a newly awarded event flag. Supply post is illustrated in the loading bay because prior event zone of origin may not be persisted.",
+    "prototypePacing": {
+      "randomZoneChance": 0.5,
+      "maxRandomEncounters": 2,
+      "oneAttemptPerZone": true,
+      "note": "provisional level-design values; backend dangerLevel compatibility unverified"
+    },
+    "exampleRoutes": [
+      {
+        "id": "shared_approach",
+        "points": [
+          [
+            835,
+            880
+          ],
+          [
+            835,
+            555
+          ]
+        ]
+      },
+      {
+        "id": "recon",
+        "points": [
+          [
+            835,
+            555
+          ],
+          [
+            830,
+            560
+          ],
+          [
+            675,
+            560
+          ],
+          [
+            620,
+            615
+          ],
+          [
+            620,
+            755
+          ],
+          [
+            635,
+            755
+          ],
+          [
+            640,
+            760
+          ],
+          [
+            650,
+            760
+          ],
+          [
+            655,
+            765
+          ],
+          [
+            650,
+            760
+          ],
+          [
+            645,
+            760
+          ],
+          [
+            640,
+            755
+          ],
+          [
+            620,
+            755
+          ],
+          [
+            615,
+            750
+          ],
+          [
+            615,
+            640
+          ],
+          [
+            575,
+            600
+          ],
+          [
+            575,
+            580
+          ],
+          [
+            315,
+            580
+          ],
+          [
+            310,
+            575
+          ],
+          [
+            190,
+            575
+          ],
+          [
+            190,
+            440
+          ],
+          [
+            195,
+            435
+          ],
+          [
+            200,
+            435
+          ],
+          [
+            205,
+            430
+          ],
+          [
+            215,
+            430
+          ],
+          [
+            220,
+            425
+          ],
+          [
+            250,
+            425
+          ],
+          [
+            260,
+            415
+          ],
+          [
+            260,
+            410
+          ],
+          [
+            265,
+            405
+          ],
+          [
+            315,
+            355
+          ],
+          [
+            315,
+            350
+          ],
+          [
+            320,
+            345
+          ]
+        ]
+      },
+      {
+        "id": "lighting",
+        "points": [
+          [
+            835,
+            555
+          ],
+          [
+            995,
+            555
+          ],
+          [
+            1040,
+            600
+          ],
+          [
+            1235,
+            600
+          ],
+          [
+            1260,
+            625
+          ],
+          [
+            1345,
+            625
+          ],
+          [
+            1345,
+            605
+          ],
+          [
+            1350,
+            600
+          ],
+          [
+            1350,
+            595
+          ],
+          [
+            1355,
+            590
+          ],
+          [
+            1355,
+            585
+          ],
+          [
+            1360,
+            580
+          ],
+          [
+            1360,
+            570
+          ],
+          [
+            1365,
+            565
+          ],
+          [
+            1365,
+            595
+          ],
+          [
+            1355,
+            605
+          ],
+          [
+            1355,
+            635
+          ],
+          [
+            1350,
+            640
+          ],
+          [
+            1350,
+            760
+          ],
+          [
+            1390,
+            760
+          ],
+          [
+            1395,
+            765
+          ],
+          [
+            1400,
+            765
+          ],
+          [
+            1405,
+            770
+          ],
+          [
+            1415,
+            770
+          ],
+          [
+            1420,
+            775
+          ],
+          [
+            1415,
+            770
+          ],
+          [
+            1410,
+            770
+          ],
+          [
+            1400,
+            760
+          ],
+          [
+            1350,
+            760
+          ],
+          [
+            1330,
+            740
+          ],
+          [
+            1330,
+            690
+          ],
+          [
+            1275,
+            635
+          ],
+          [
+            1275,
+            625
+          ],
+          [
+            1260,
+            625
+          ],
+          [
+            1235,
+            600
+          ],
+          [
+            1040,
+            600
+          ],
+          [
+            995,
+            555
+          ],
+          [
+            915,
+            555
+          ],
+          [
+            915,
+            430
+          ],
+          [
+            1030,
+            430
+          ],
+          [
+            1035,
+            425
+          ],
+          [
+            1045,
+            425
+          ],
+          [
+            1050,
+            420
+          ],
+          [
+            1055,
+            420
+          ],
+          [
+            1060,
+            415
+          ],
+          [
+            1065,
+            415
+          ],
+          [
+            1070,
+            410
+          ],
+          [
+            1075,
+            410
+          ],
+          [
+            1080,
+            405
+          ],
+          [
+            1085,
+            405
+          ],
+          [
+            1090,
+            400
+          ],
+          [
+            1095,
+            400
+          ],
+          [
+            1050,
+            400
+          ],
+          [
+            1045,
+            405
+          ],
+          [
+            940,
+            405
+          ],
+          [
+            915,
+            430
+          ],
+          [
+            915,
+            555
+          ],
+          [
+            995,
+            555
+          ],
+          [
+            1040,
+            600
+          ],
+          [
+            1135,
+            600
+          ],
+          [
+            1175,
+            560
+          ],
+          [
+            1245,
+            560
+          ],
+          [
+            1245,
+            465
+          ],
+          [
+            1250,
+            460
+          ],
+          [
+            1250,
+            445
+          ],
+          [
+            1275,
+            420
+          ],
+          [
+            1330,
+            420
+          ],
+          [
+            1330,
+            320
+          ],
+          [
+            1305,
+            295
+          ],
+          [
+            1300,
+            295
+          ]
+        ]
+      },
+      {
+        "id": "crosslink",
+        "points": [
+          [
+            815,
+            410
+          ],
+          [
+            815,
+            420
+          ],
+          [
+            790,
+            445
+          ],
+          [
+            790,
+            510
+          ],
+          [
+            835,
+            555
+          ],
+          [
+            950,
+            555
+          ],
+          [
+            955,
+            560
+          ],
+          [
+            995,
+            560
+          ],
+          [
+            1030,
+            595
+          ],
+          [
+            1035,
+            595
+          ],
+          [
+            1040,
+            600
+          ],
+          [
+            1050,
+            600
+          ],
+          [
+            1055,
+            605
+          ]
+        ]
+      }
+    ]
+  },
+  "rendering": {
+    "layers": [
+      "ground",
+      "props",
+      "initialHardware"
+    ],
+    "spriteScaling": "single scalar affine + nearest-neighbor sampling",
+    "zOrder": "collision bottom, then solid ID",
+    "lighting": "not baked",
+    "characterOcclusion": "requires later Canvas integration; combined PNG is review-only"
+  }
+}
