@@ -415,7 +415,94 @@ export class DemoScene {
       this.rect(cx-5,cy+14,4,3,0xd4121a,.9);this.rect(cx+1,cy+14,4,3,0xd4121a,.9);
     }
   }
+  // 月亮吊床：两根挂绳 + 逐列下垂的弯月形吊兜——列高沿抛物线下垂,每列都是「亮顶→主面→暗底」三段,月牙内凹一眼可读。
+  private moonHammock(cx:number,cy:number,ropeTop:number){
+    const cloth=0xf2e2ac, clothLit=0xfff6d8, clothDeep=0xd9bd7e, clothDarkest=0xc4a468, rope=0xbfa06a;
+    this.pixelEllipse(cx,cy+22,24,3,0x24312e,.14);            // 落影（吊空,浅而散）
+    this.rect(cx-20,ropeTop,2,cy-ropeTop-14,rope,.9);this.rect(cx+18,ropeTop,2,cy-ropeTop-14,rope,.9);
+    this.rect(cx-21,ropeTop,4,2,0x9a7f52);this.rect(cx+17,ropeTop,4,2,0x9a7f52);   // 挂点木楔
+    // 弯月吊兜:逐列绘制,两端高、中央低垂（抛物线 sag）
+    const half=27, sag=9;
+    for(let dx=-half;dx<=half;dx++){
+      const t=dx/half, drop=Math.round(sag*(1-t*t));          // 中央下垂量
+      const top=cy-14+drop, depth=7+Math.round(3*(1-Math.abs(t)));  // 中央布面更宽
+      this.rect(cx+dx,top,1,1,clothLit);
+      this.rect(cx+dx,top+1,1,depth-3,cloth);
+      this.rect(cx+dx,top+depth-2,1,2,clothDeep);
+      if(Math.abs(t)<.7)this.rect(cx+dx,top+depth,1,1,clothDarkest,.9);   // 兜底最暗收边
+    }
+    this.rect(cx-10,cy+2,20,1,0xc9ad74,.55);                   // 兜内暗弧（凹陷感）
+    // 两端卷边：布端卷起的厚边 + 暗缝
+    this.rect(cx-31,cy-13,5,9,cloth);this.rect(cx-31,cy-13,5,2,clothLit);this.rect(cx-31,cy-5,5,2,clothDeep);
+    this.rect(cx+26,cy-13,5,9,cloth);this.rect(cx+26,cy-13,5,2,clothLit);this.rect(cx+26,cy-5,5,2,clothDeep);
+    // 星绣纹 + 顶缘月光高光（沿月牙上缘）
+    this.rect(cx-8,cy+1,2,2,0xd9a05f);this.rect(cx+4,cy+2,2,2,0xd9a05f);this.rect(cx-2,cy-2,1,1,0xfff6d8,.9);
+    this.rect(cx-18,cy-9,8,1,0xffffff,.4);this.rect(cx+10,cy-9,8,1,0xffffff,.4);
+  }
+  // 小食垫：扁圆双色餐垫——面包色顶面 + 焦棕描边暗面 + 小鱼干与面包屑,贴地但有厚度侧面。
+  private snackMat(cx:number,cy:number){
+    const face=0xf0c98d, deep=0xb47a3f, crumb=0x8d6134;
+    this.pixelEllipse(cx,cy+13,30,5,0x24312e,.2);             // 地面投影
+    this.pixelEllipse(cx,cy+10,29,7,deep);                    // 侧壁厚度暗面
+    this.pixelEllipse(cx,cy+6,29,7,face);                     // 顶面
+    this.pixelEllipse(cx-4,cy+4,19,4,0xf9debc,.6);            // 顶面左上受光
+    this.pixelEllipse(cx,cy+12,22,4,0x9c6733,.7);             // 前缘最暗收边
+    // 一条小鱼干（身体 + 尾鳍）+ 散落面包屑
+    this.rect(cx-11,cy+3,5,2,0xd08c4a);this.rect(cx-13,cy+3,2,2,crumb);this.rect(cx-10,cy+2,2,1,0xe8b06a);
+    this.rect(cx+4,cy+5,3,3,crumb);this.rect(cx-2,cy+2,2,2,crumb,.85);
+    this.rect(cx+9,cy+4,2,1,crumb,.7);this.rect(cx-17,cy+6,2,1,crumb,.6);this.rect(cx+13,cy+6,2,2,crumb,.75);
+    this.rect(cx-20,cy+1,8,2,0xf9debc,.8);this.rect(cx+12,cy+1,8,2,0xf9debc,.8);   // 边缘高光
+  }
+  // 星光许愿瓶：立杆落地 + 杆上托一只玻璃瓶——瓶身两侧竖高光、瓶底厚玻璃暗面,瓶内三粒星屑悬浮,外围冷光晕。
+  private starJar(cx:number,cy:number){
+    const glass=0xaec6e8, glassLit=0xe6f2ff, glassDeep=0x7a94bd, glow=0xcfe0ff;
+    this.graphics.fillStyle(glow,.13);this.graphics.fillCircle(cx,cy-8,30);
+    // 立杆:从地板直上杆顶,落地底座 + 杆顶弯钩,彻底消除悬空感
+    this.pixelEllipse(cx,cy+14,13,3,0x24312e,.3);            // 底座落影
+    this.pixelEllipse(cx,cy+12,11,3,0x6b6f78);               // 底座金属盘
+    this.pixelEllipse(cx,cy+11,8,2,0x8b8f9a);
+    this.rect(cx-2,cy-40,4,52,0x8b8f9a);this.rect(cx-2,cy-40,1,52,0xb9bdc7);   // 杆身 + 左缘受光
+    this.rect(cx-4,cy-42,8,3,0x9fa8b8);this.rect(cx+2,cy-44,6,2,0x9fa8b8);     // 杆顶弯钩托住瓶底
+    // 瓶身:挂在 cy-10 附近,左右收角圆矩形 + 肩部收口 + 瓶底厚玻璃
+    this.rect(cx-12,cy-22,24,8,glassDeep,.85);               // 瓶肩（收口过渡）
+    for(let dy=0;dy<20;dy++){
+      const inset=dy<2?3:dy>16?3:0;
+      this.rect(cx-15+inset,cy-14+dy,30-inset*2,1,glass,.42);
+    }
+    this.pixelEllipse(cx,cy+6,15,3,glassDeep,.7);            // 瓶底厚玻璃
+    this.pixelEllipse(cx,cy-14,15,3,glass,.5);               // 瓶口封水面
+    // 竖向高光（左亮右暗 → 圆柱体积）
+    this.rect(cx-12,cy-13,3,18,glassLit,.8);this.rect(cx-13,cy-10,1,10,0xffffff,.5);
+    this.rect(cx+10,cy-13,2,18,0x5f77a0,.5);
+    // 瓶内星屑：三粒悬浮 + 微闪
+    this.rect(cx-6,cy-6,3,3,0xfff4c2);this.rect(cx+3,cy,2,2,0xdfe9ff);this.rect(cx-1,cy+3,2,2,0xfff4c2,.9);
+    this.rect(cx-6,cy-7,1,1,0xffffff,.8);this.rect(cx+3,cy-1,1,1,0xffffff,.6);
+    this.rect(cx-4,cy-30,3,6,0xc9a06a);this.rect(cx-4,cy-30,3,1,0xe0bb85);   // 软木塞
+  }
+  // 云朵窝：蓬松云团猫窝——三团云包（两大托一小）+ 底部云雾沿,每团云都有顶亮底暗的体积,内凹腔用暖褐衬出轮廓。
+  private cloudNest(cx:number,cy:number){
+    const cloud=0xf5efe0, cloudLit=0xfffdf6, rim=0x8d8062, inner=0xc4b18e, innerDeep=0x97815e;
+    this.pixelEllipse(cx,cy+16,32,5,0x24312e,.22);            // 落影
+    // 内凹腔（先铺底,再叠云包）：暖褐窝腔与白云拉开明度差,一眼读出"凹陷"
+    this.pixelEllipse(cx,cy+3,21,6,inner);
+    this.pixelEllipse(cx,cy+2,15,4,innerDeep);                // 腔内更深的窝底
+    this.rect(cx-9,cy+2,18,2,0x8d7854,.65);                   // 窝底最暗贴身处
+    // 三团云包:左右大团 + 中上小团,每团都是「亮顶 → 主面 → 暗底」三层椭圆 + 底缘 rim 收边
+    const puff=(px:number,py:number,r:number)=>{
+      this.pixelEllipse(px,py+2,r,r*.42,rim);
+      this.pixelEllipse(px,py,r,r*.42,cloud);
+      this.pixelEllipse(px-r*.3,py-1,r*.55,r*.22,cloudLit,.9);
+    };
+    puff(cx-17,cy-2,15);puff(cx+17,cy-2,15);puff(cx,cy-8,11);
+    // 底部云雾沿:一排错落小云齿 + rim 阴影
+    for(let i=-2;i<=2;i++)this.pixelEllipse(cx+i*11,cy+9,7,3,i%2?cloud:cloudLit,.95);
+    this.rect(cx-24,cy+11,12,1,rim,.7);this.rect(cx+12,cy+11,12,1,rim,.7);
+    // 腔缘高光 + 小星星挂饰
+    this.rect(cx-8,cy-3,16,1,cloudLit,.8);
+    this.rect(cx+23,cy-14,1,4,0xc9a06a);this.rect(cx+22,cy-16,3,3,0xffe08a,.95);
+  }
   private drawAlley(){
+
     this.rect(0,0,800,480,0x738f98);
     if(this.cityBackdrop.complete && this.cityBackdrop.naturalWidth > 0)this.graphics.image(this.cityBackdrop,0,-150,800,450);
     this.rect(35,200,730,230,0x78928c);this.rect(65,205,670,225,0xa6b7a6);
@@ -575,17 +662,11 @@ export class DemoScene {
     const floorY = y < 310 ? y + 58 : y;
     if(id==='blue_bowl'){this.bowl(x,floorY);return;}
     if(id==='box_castle'){this.rect(x-30,y-18,60,46,0xd5a44b);this.rect(x-34,y-27,15,15,0xeac474);this.rect(x-7,y-27,15,15,0xeac474);this.rect(x+20,y-27,15,15,0xeac474);this.rect(x-9,y+2,18,26,0x835b36);return;}
-    if(id==='moon_hammock'){
-      const ropeTop = stage>=3 ? 150 : y-46;
-      this.rect(x-20,ropeTop,2,y-ropeTop-12,0xbfa06a,.9);this.rect(x+18,ropeTop,2,y-ropeTop-12,0xbfa06a,.9);
-      this.rect(x-24,y-12,48,6,0xf2e2ac);this.rect(x-26,y-8,52,6,0xe7cf92);this.rect(x-20,y-2,40,4,0xd9bd7e);
-      this.rect(x-28,y-13,6,9,0xe7cf92);this.rect(x+22,y-13,6,9,0xe7cf92);
-      return;
-    }
-    if(id==='snack_cushion'){this.rect(x-26,y-4,52,22,0xd9a05f);this.rect(x-20,y,40,13,0xf0c98d);this.rect(x-9,y+3,18,4,0xb47a3f);this.rect(x-3,y+1,3,3,0x8d6134);this.rect(x+4,y+4,3,3,0x8d6134);return;}
+    if(id==='moon_hammock'){this.moonHammock(x,y,stage>=3?150:y-46);return;}   // 悬挂件:不做落地偏移
+    if(id==='snack_cushion'){this.snackMat(x,floorY);return;}
     if(id==='cardboard_nest'){this.boxNest(x,floorY+5);return;}
-    if(id==='star_glass'){this.rect(x-2,y-44,4,30,0x8b8f9a);this.rect(x-10,y-16,20,8,0x9fa8b8);for(let i=0;i<3;i++)this.rect(x-7+i*6,y-8,4,8,i===1?0xfff4c2:0xdfe9ff);this.graphics.fillStyle(0xcfe0ff,.14);this.graphics.fillCircle(x,y,34);return;}
-    if(id==='cloud_nest'){this.rect(x-26,y-8,52,20,0xf3ecdd);this.rect(x-20,y-14,12,8,0xf8f3e7);this.rect(x+8,y-14,12,8,0xf8f3e7);this.rect(x-18,y-4,36,12,0xe4dcc8);return;}
+    if(id==='star_glass'){this.starJar(x,floorY);return;}
+    if(id==='cloud_nest'){this.cloudNest(x,floorY);return;}
     if(id==='red_cushion'){this.cushion(x,floorY+5,true);return;}
     if(id==='soft_blanket'){this.blanket(x,floorY+5);return;}
     this.rect(x-28,y,58,24,0xa88962);
