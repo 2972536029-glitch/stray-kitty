@@ -10,15 +10,26 @@ async function cast(page:Page,id:'guard'|'caster',target='B5'){
 }
 /** Actual tutorial controls, without injecting combat state. */
 export async function completeL00Tutorial(page:Page,battle:Locator){
+ const waves:number[]=[];
+ const recordWave=async()=>{const label=await page.getByTestId('battle-wave-progress').textContent();const wave=Number(label?.match(/第\s*(\d+)\s*\//)?.[1]);if(wave&&!waves.includes(wave))waves.push(wave);};
  await phase(battle,'ready');await expect(page.getByTestId('battle-open-bag')).toHaveCount(0);
  await page.getByTestId('battle-speed-toggle').click();await page.getByTestId('battle-play-toggle').click();
  await phase(battle,'teach_position');await page.getByTestId('battle-cat-caster').click();await page.getByTestId('battle-cell-A4').press('Enter');
- await phase(battle,'teach_move');await page.getByTestId('battle-cat-guard').click();await page.getByTestId('battle-cell-B5').press('Enter');
  await phase(battle,'teach_energy');await page.getByTestId('battle-begin-skill-practice').click();
- await phase(battle,'teach_guard_skill');expect(await cast(page,'guard')).toBe(true);
- await phase(battle,'teach_caster_skill');expect(await cast(page,'caster','C6')).toBe(true);
+ await phase(battle,'teach_move');await recordWave();await page.getByTestId('battle-cat-guard').click();await page.getByTestId('battle-cell-B5').press('Enter');
+ await phase(battle,'teach_live_move');await expect(battle).toHaveAttribute('data-effective-speed','0.5');
+ await page.getByTestId('battle-cat-caster').click();await page.getByTestId('battle-cell-C4').press('Enter');
+ await phase(battle,'skill_charge');
+ // Energy now accumulates against real wave enemies. The lessons may span waves;
+ // never assume skill practice resets combat back to the beginning of wave one.
+ await expect.poll(async()=>{await recordWave();return battle.getAttribute('data-phase');},{timeout:30000}).toBe('teach_guard_skill');
+ expect(await cast(page,'guard')).toBe(true);
+ await phase(battle,'teach_caster_skill');
+ const target=await page.locator('.btl-live-enemy[data-cell]').first().getAttribute('data-cell');expect(target).toBeTruthy();
+ expect(await cast(page,'caster',target!)).toBe(true);
  await phase(battle,'battle');await expect(page.getByTestId('battle-open-bag')).toHaveCount(0);
  await expect(page.getByRole('button',{name:/重整|重新上阵/})).toHaveCount(0);
+ await recordWave();return waves;
 }
 async function frozen(page:Page,battle:Locator){
  await expect(battle).toHaveAttribute('data-effective-speed','0');const t=await battle.getAttribute('data-battle-time'),e=await page.getByTestId('battle-energy-guard-compact').getAttribute('aria-valuenow');
@@ -32,8 +43,8 @@ async function checkPause(page:Page,battle:Locator){
 }
 /** Defend six waves using earned energy; no supplies, revival or wave resets. */
 export async function playL00ThroughHost(page:Page):Promise<L00Run>{
- const battle=page.locator(selector);await completeL00Tutorial(page,battle);await checkPause(page,battle);
- const run:L00Run={waves:[],guardSkills:0,casterSkills:0},deadline=Date.now()+240000;
+ const battle=page.locator(selector);const tutorialWaves=await completeL00Tutorial(page,battle);await checkPause(page,battle);
+ const run:L00Run={waves:tutorialWaves,guardSkills:0,casterSkills:0},deadline=Date.now()+240000;
  while(Date.now()<deadline){
   const s=await battle.evaluateAll(n=>n[0]?{phase:n[0].getAttribute('data-phase'),wave:n[0].querySelector('[data-testid="battle-wave-progress"]')?.textContent??''}:undefined);
   if(!s)break;expect(['battle','won']).toContain(s.phase);const w=Number(s.wave.match(/第\s*(\d+)\s*\//)?.[1]);if(w&&!run.waves.includes(w))run.waves.push(w);if(s.phase==='won')break;

@@ -20,6 +20,20 @@ export default function DialoguePanel({node, disabled, onNext, onSkip, eventResu
   const [attitude, setAttitude] = useState<'proud' | 'honest'>('proud');
   const [closing, setClosing] = useState(false);
 
+  // 空格/回车推进对话（main 新增）；焦点在表单控件或对话框内时不抢键。
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (disabled || target?.closest('dialog') || target?.matches('input,select,textarea,button') || target?.isContentEditable) return;
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (!disabled) onNext();
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [disabled, onNext]);
+
   let displayText = node.text;
   if (node.id === 'prologue_banter') {
     displayText = attitude === 'honest'

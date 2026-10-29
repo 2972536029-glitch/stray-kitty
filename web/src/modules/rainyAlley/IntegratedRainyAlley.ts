@@ -1,4 +1,5 @@
 import {drawPixelCat} from '../../adapters/canvas/pixelCat';
+import {followCameraPoint} from '../../adapters/canvas/camera';
 import {rainyAlleyObjectEligible, rainyAlleyRegistration, rainyAlleySource, type RainyFixedObject} from './assets';
 import {findPath, sweepMove} from './collision';
 import {
@@ -500,7 +501,7 @@ export class IntegratedRainyAlley {
   }
 
   private followCamera(deltaSeconds: number) {
-    // 缩放平滑跟随，与相机同一套指数插值，滚轮放大时画面不突跳。
+    // 缩放平滑跟随，与相机同一套指数插值，滚轮放大时画面不突跳；相机插值走公共 followCameraPoint（与集市等场景同手感）。
     this.zoom += (this.zoomTarget - this.zoom) * (1 - Math.exp(-deltaSeconds * 9));
     if (Math.abs(this.zoomTarget - this.zoom) < 0.001) this.zoom = this.zoomTarget;
     const viewWidth = cameraSize.width / this.zoom, viewHeight = cameraSize.height / this.zoom;
@@ -508,9 +509,9 @@ export class IntegratedRainyAlley {
     const maxY = Math.max(0, rainyAlleyRegistration.worldHeight - viewHeight);
     const targetX = Math.min(maxX, Math.max(0, this.position.x - viewWidth / 2));
     const targetY = Math.min(maxY, Math.max(0, this.position.y - viewHeight / 2));
-    const amount = 1 - Math.exp(-deltaSeconds * 9);
-    this.camera.x += (targetX - this.camera.x) * amount;
-    this.camera.y += (targetY - this.camera.y) * amount;
+    const next = followCameraPoint(this.camera, {x: targetX, y: targetY}, deltaSeconds);
+    this.camera.x = next.x;
+    this.camera.y = next.y;
   }
 
   private squeezeDirection(): -1 | 0 | 1 {

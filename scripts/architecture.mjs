@@ -25,8 +25,10 @@ const labels = {
   'web/src/core/state': 'GameStore 状态快照', 'web/src/core/rules': '公共条件与资源判断',
   'web/src/core/ports': 'API 与会话存储接口', 'web/src/modules': '正式模块接入口',
   'web/src/modules/map': '地图 · Jenny', 'web/src/modules/events': '随机事件 · 余尧',
+  'web/src/modules/nightMarket': 'Chapter 2 Night Market spatial map and progression',
   'web/src/modules/battle': '塔防 · 闫琦雯', 'web/src/modules/cats': '猫咪档案、救援与成长',
   'web/src/modules/home': '家园建设、摆放与互动', 'web/src/modules/inventory': '道具与家具持有',
+  'web/src/modules/qa': '按游戏流程组织的验收操作与服务端能力检查',
   'web/src/modules/economy': '货币、扣费与奖励', 'web/src/modules/lottery': '奖池、抽取与结果',
   'web/src/modules/shop': '商品与购买', 'web/src/ui': '界面与样式 · 轩扬',
   'web/src/adapters': '具体运行能力', 'web/src/adapters/canvas': '原生 Canvas 2D',
@@ -98,7 +100,7 @@ flowchart TD
   HTTP --> Transport["Go transport：认证与校验"]
   Transport --> Service["Go service：判定、抽取与结算"]
   Service --> Repository["repository：状态与收据一起提交"]
-  Repository --> Save["data/game.json"]
+  Repository --> Save[".runtime/game.json via dev launcher; data/game.json API fallback"]
   Service -->|返回 GameState| Store["GameStore：界面状态快照"]
   Store --> View
   Module -->|手动提问与可见战况| Advisor["POST /api/v1/advisor：只读场次校验"]
@@ -163,7 +165,7 @@ npx playwright install chromium
 npm run test:e2e
 \`\`\`
 
-开发存档在 data/game.json；浏览器测试用独立端口 8117 和 .runtime/e2e-save.json。环境变量示例见 .env.example，程序读取进程环境变量，不自动加载 .env。
+npm run dev 在当前 worktree 使用忽略的 .runtime/game.json；直接运行 API 时默认使用相对 data/game.json，GAME_DATA_FILE 可显式覆盖。不同 worktree 的存档彼此独立，不要合并。浏览器测试用独立端口 8117 和 .runtime/e2e-save.json。环境变量示例见 .env.example，程序读取进程环境变量，不自动加载 .env。端口冲突诊断、启动/停止、切换 worktree 与安全清理步骤见 [本地开发说明](DEVELOPMENT.md)。
 
 当前存档只支持单进程，MySQL 只有 DDL；战斗胜负仍由客户端原型上报。Docker、K8s 与 GitLab CI 是待团队环境验证的模板。GitLab main 已采用本架构；旧 main 保存在 react-demo 分支，历史不变。
 

@@ -4,9 +4,12 @@ import {getAdvice,buildAdvisorContext,getEnemyArrivalAdvice} from '../../web/src
 import {act,advanceGame,createGame} from '../../web/src/modules/battle/l00/engine.ts';
 import {ENEMY_TYPES} from '../../web/src/modules/battle/l00/config.ts';
 import {beginBattle} from './helpers.ts';
-test('advisor explains five teaching gates without taking actions or prescribing items',()=>{
- let s=act(createGame(),{type:'START'});for(let i=0;i<1000&&s.phase!=='teach_position';i++)s=advanceGame(s,.05);const tip=getAdvice(s,'帮我跳过教程');assert.match(tip.title,/第一步/);assert.equal('action' in tip,false);assert.match(tip.text,/A4/);
- s=act(s,{type:'MOVE_CAT',catId:'caster',x:3,y:0});assert.match(getAdvice(s).title,/第二步/);s=act(s,{type:'MOVE_CAT',catId:'guard',x:4,y:1});assert.match(getAdvice(s).text,/每秒|秒/);
+test('advisor explains short real-combat teaching gates without taking actions or prescribing items',()=>{
+ let s=act(createGame(),{type:'START'});for(let i=0;i<1000&&s.phase!=='teach_position';i++)s=advanceGame(s,.05);const tip=getAdvice(s,'帮我跳过教程');assert.match(tip.title,/自由移动/);assert.equal('action' in tip,false);assert.match(tip.text,/任意亮格/);
+ s=act(s,{type:'MOVE_CAT',catId:'caster',x:3,y:2});assert.match(getAdvice(s).title,/能量自然累积/);assert.match(getAdvice(s).text,/自动攻击/);
+ s=act(s,{type:'BEGIN_SKILL_PRACTICE'});for(let i=0;i<1000&&s.phase!=='teach_move';i++)s=advanceGame(s,.05);
+ assert.equal(s.phase,'teach_move');assert.match(getAdvice(s).title,/阻挡 2 只/);assert.doesNotMatch(getAdvice(s).text,/木偶|木桩/);
+ s=act(s,{type:'MOVE_CAT',catId:'guard',x:4,y:1});assert.equal(s.phase,'teach_live_move');assert.match(getAdvice(s).text,/黑影还在前进/);assert.match(getAdvice(s).text,/任意一只伙伴/);
 });
 test('old item and rest questions explain their removal without exposing a use-item action',()=>{
  const s=beginBattle();for(const q of ['背包怎么打开','蹦蹦冻干补能','暖心罐罐']){const a=getAdvice(s,q);assert.match(a.text,/没有战斗背包/);assert.equal('action' in a,false);assert.equal('itemId' in a,false);}

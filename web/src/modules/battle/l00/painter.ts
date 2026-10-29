@@ -123,13 +123,6 @@ export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selec
   }
   for(const enemy of state.enemies){
     const ex=(enemy.x+.5)*100,ey=(enemy.y+.5)*100;ctx.save();ctx.translate(ex-25,ey-30+Math.sin(state.time*7)*2);
-    if(enemy.training){
-      blocks(ctx,'#947552',[[22,2,6,59],[7,20,36,6],[10,57,30,6]]);
-      blocks(ctx,'#d1b581',[[10,7,31,35],[7,12,37,25]]);
-      blocks(ctx,'#f3e6ba',[[15,12,21,25],[11,17,29,15]]);
-      blocks(ctx,'#b88f56',[[21,18,9,14],[18,21,15,8]]);
-      pixel(ctx,23,22,5,5,'#f8edc7');ctx.restore();continue;
-    }
     blocks(ctx,SCENE_INK.enemy,[[10,2,30,7],[5,9,40,36],[0,21,50,19],[6,44,8,10],[20,44,9,8],[35,44,8,10]]);
     blocks(ctx,SCENE_INK.enemyLight,[[10,8,30,4],[5,12,6,19]]);blocks(ctx,SCENE_INK.gold,[[13,21,8,4],[30,21,8,4]]);
     if(enemy.type==='runner')blocks(ctx,'#a98a69',[[4,35,42,4],[8,40,9,4]]);

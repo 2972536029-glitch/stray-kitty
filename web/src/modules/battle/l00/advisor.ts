@@ -26,19 +26,20 @@ export function getEnemyArrivalAdvice(state: CombatState, enemyId: string): Advi
   return enemy ? enemyAdvice(enemy) : null;
 }
 const GATE_TIPS: Partial<Record<CombatPhase, Advice>> = {
-  teach_position: {title: '第一步：侧面支援', text: '把仍在场的绒绒移到高亮 A4 格。血量归零的猫会本场退场，无法再次部署；现在练习的是移动在场伙伴。', targetId: 'caster'},
-  teach_move: {title: '第二步：前排阻挡', text: '把斑斑移到高亮 B5 格，它能阻挡 2 只黑影，让绒绒在侧面输出。', targetId: 'guard'},
-  teach_energy: {title: '第三步：自动蓄能', text: `在场猫每秒战斗时间自动增长 ${CONFIG.ENERGY_PER_SECOND} 能量，20 秒达到 100 后保留。暂停时停止增长，攻击不额外加能。点击开始蓄能练习。`},
-  skill_charge: {title: '观察能量条', text: '两只猫都在自动蓄能，没有攻击目标时也会增长。练习木偶不会反击。满 100 后会暂停，等待你手动释放技能。'},
-  teach_guard_skill: {title: '第四步：罐盖护盾', text: '点斑斑，再点它旁边的护盾图标，消耗 100 能量获得 60 护盾，持续 8 秒。护盾先承伤，但不恢复血量。', targetId: 'guard'},
-  teach_caster_skill: {title: '第五步：选择技能落点', text: '点绒绒，再点星绒技能图标。全地图 21 格都可选中心，包括 B1、B7。让黄色十字覆盖 B6 木偶后释放；右键或 Esc 取消不扣能量。', targetId: 'caster'},
+  teach_position: {title: '全场自由移动', text: '按住绒绒，拖到任意亮格。也可以点猫，再点格子。', targetId: 'caster'},
+  teach_move: {title: '斑斑能阻挡 2 只', text: '把斑斑拖到黑影前方。箭头只是建议，亮格都能选。', targetId: 'guard'},
+  teach_live_move: {title: '边战斗，边换位', text: '黑影还在前进。再移动任意一只伙伴，试试实时调整！'},
+  teach_energy: {title: '能量自然累积', text: '猫咪会自动攻击、积攒能量。开始实战，边打边学。'},
+  skill_charge: {title: '能量自然累积', text: '蓝条满后可以用技能。战斗中随时能移动伙伴。'},
+  teach_guard_skill: {title: '满能了，点猫放技能', text: '点斑斑，再点护盾图标。护盾能抵挡伤害。', targetId: 'guard'},
+  teach_caster_skill: {title: '用技能打中黑影', text: '点绒绒，再点技能。把十字移到黑影身上释放。', targetId: 'caster'},
 };
 export function getAdvice(state: CombatState, question: unknown = ''): Advice {
   const context = buildAdvisorContext(state);
   const prompt = typeof question === 'string' ? question.trim().slice(0, 500) : '';
   const gate = GATE_TIPS[context.phase];
   if (gate) return {...gate};
-  if (context.phase === 'ready') return {title: '准备进入小巷', text: '先观察救援，再学习站位、自动蓄能、护盾和范围技能。喵喵负责指挥，不参与攻击和阻挡。'};
+  if (context.phase === 'ready') return {title: '准备进入小巷', text: '先观察救援，随后在真实战斗中学习自由部署、移动、自动蓄能和技能。喵喵是固定保护目标，不参与攻击和阻挡。'};
   if (context.phase === 'hero_danger') return {title: '喵喵正在寻找掩护', text: '喵喵会从 B4 撤到 B1 固定指挥格，绒绒随后赶到。'};
   if (context.phase === 'caster_rescue') return {title: '绒绒正在保护指挥位', text: '观察绒绒的自动星绒攻击，斑斑和阿策马上赶来支援。', targetId: 'caster'};
   if (context.phase === 'failed') return {title: '本次防线失守', text: '三次突破或战斗伙伴全部退场会结束本场。完成结算后回准备阶段重新挑战，新的场次会恢复初始状态。'};

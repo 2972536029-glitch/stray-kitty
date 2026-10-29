@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/big"
 	"stray-kitty/server/internal/advisor"
 	"stray-kitty/server/internal/domain"
@@ -14,12 +15,15 @@ import (
 )
 
 type Game struct {
-	Store           *repository.Store
-	Catalog         domain.Catalog
-	Random          func(int) (int, error)
-	RainyZoneChance int
-	Advisor         *advisor.Client
+	Store            *repository.Store
+	Catalog          domain.Catalog
+	Random           func(int) (int, error)
+	RainyZoneChance  int
+	Advisor          *advisor.Client
+	QAVictoryEnabled bool
 }
+
+var chapterByExplorationMap = map[string]string{"alley": "alley", "market": "market", "tunnel": "rescue"}
 
 func New(store *repository.Store, c domain.Catalog) *Game {
 	return &Game{Store: store, Catalog: c, RainyZoneChance: 550, Random: func(max int) (int, error) {
@@ -91,9 +95,16 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 		if p.State.Revision != *req.ExpectedRevision {
 			return domain.CommandResponse{}, domain.Fail("REVISION_CONFLICT", "进度已变化，请重新加载后操作", 409)
 		}
-		if err := g.apply(&p.State, req.Command); err != nil {
-			return domain.CommandResponse{}, err
+		var applyErr error
+		if req.Command.Type == "QA_CHECKPOINT" || req.Command.Type == "QA_RESTORE" {
+			applyErr = g.applyQACheckpoint(p, req.Command)
+		} else {
+			applyErr = g.apply(&p.State, req.Command)
 		}
+		if applyErr != nil {
+			return domain.CommandResponse{}, applyErr
+		}
+		finishQAEventPreview(&p.State)
 		p.State.Revision++
 		response := domain.CommandResponse{State: p.State}
 		p.Receipts[key] = repository.Receipt{Fingerprint: fingerprint, Response: response}
@@ -108,7 +119,7 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	invalid := func() error { return domain.Fail("INVALID_COMMAND", "命令参数或目标无效", 400) }
 	// An active attempt cannot be abandoned through a story or map command.
-	if s.ActiveBattle != nil && s.ActiveBattle.Status == "active" && c.Type != "COMPLETE_BATTLE" {
+	if s.ActiveBattle != nil && s.ActiveBattle.Status == "active" && c.Type != "COMPLETE_BATTLE" && c.Type != "QA_SIMULATE_VICTORY" && c.Type != "QA_SIMULATE_DEFEAT" {
 		return domain.Fail("INVALID_PHASE", "请先完成当前战斗；返回标题可暂停并保留本场。", 409)
 	}
 	// A failed battle keeps its modifiers only while the player is retrying.
@@ -136,19 +147,36 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "REPAIR_HOME":
 		return g.repairHome(s)
 	case "START_STORY":
+		switch c.NodeID {
+		case "rescue_intro_2", "rescue_intro_3", "rescue_intro_4", "rescue_intro_5", "rescue_intro_6", "rescue_intro_7", "rescue_intro_8", "rescue_intro_9":
+			return domain.Fail("STORY_LOCKED", "这段地下通道叙事已由地图交互与战斗流程接管", 409)
+		case "rescue_intro_10":
+			if !domain.Contains(s.Flags, "tunnel_boss_cleared") {
+				return domain.Fail("STORY_LOCKED", "先守住地下通道的战斗", 409)
+			}
+		}
 		if c.NodeID == "market_intro_1" && !domain.Contains(s.Flags, "rescue_story_done") {
 			return domain.Fail("STORY_LOCKED", "请先完成小巷救援与寻猫启事", 409)
 		}
-		if c.NodeID == "greenhouse_intro_1" && !domain.Contains(s.Flags, "chapter_2_started") {
+		if c.NodeID == "greenhouse_intro_1" && !domain.Contains(s.Flags, "market_cleared") {
 			return domain.Fail("STORY_LOCKED", "请先完成午夜集市的探索", 409)
+		}
+		if c.NodeID == "greenhouse_intro_1" && !domain.Contains(s.Flags, "market_exit_crossed") {
+			return domain.Fail("STORY_LOCKED", "请先从午夜集市北侧出口离开", 409)
 		}
 		if c.NodeID == "rescue_intro_1" && !domain.Contains(s.Flags, "greenhouse_fortified") {
 			return domain.Fail("STORY_LOCKED", "请先守住花房防线", 409)
+		}
+		if c.NodeID == "finale_intro_1" && (!domain.Contains(s.Flags, "tunnel_explored") || !domain.Contains(s.Flags, "cats_rescued_batch1") || s.Inventory["clue"] < 3) {
+			return domain.Fail("STORY_LOCKED", "请先完成地下通道救援并收集三条线索", 409)
 		}
 		for _, n := range g.Catalog.Story {
 			if n.ID == c.NodeID {
 				s.Phase = "dialogue"
 				s.StoryNodeID = n.ID
+				s.ActiveBattle = nil
+				s.PendingEventID = ""
+				s.PendingEventSource = ""
 				switchChapter(n.ChapterID)
 				s.ChapterID = n.ChapterID
 				if n.ChapterID == "alley" || n.ID == "chapter1_intro" {
@@ -174,6 +202,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				}
 				if n.ID == "finale_clue_insufficient" {
 					s.MapID = "market"
+					s.ChapterID = "market"
 				}
 				return nil
 			}
@@ -196,6 +225,21 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				}
 				// 注意:章节内 ADVANCE(含局势跳转节点,其 chapterId 可能属于别的章节)
 				// 不触发重置——只有 START_STORY 主动开启新章节才清空已抽卡。
+				// Shared event dialogue keeps the originating map. Only authored
+				// mission/intel events lead to preparation; random encounters resume.
+				if (n.ID == "event_forced_chase" || n.ID == "event_detour") && s.EventState != nil {
+					s.StoryNodeID = ""
+					if chapter, ok := chapterByExplorationMap[s.MapID]; ok {
+						s.ChapterID = chapter
+					}
+					s.Phase = "explore"
+					s.ExploreDistance = -randomGrace
+					switch s.EventState.LastResolution.EventID {
+					case "crate_event", "crow_intel_event", "pigeon_rumor_event", "momo_trail_event":
+						s.Phase = "preparation"
+					}
+					return nil
+				}
 				s.ChapterID = n.ChapterID
 				if n.Next != "" {
 					s.StoryNodeID = n.Next
@@ -256,6 +300,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				}
 				if n.ID == "finale_clue_insufficient" {
 					s.MapID = "market"
+					s.ChapterID = "market"
 				}
 				return nil
 			}
@@ -298,10 +343,18 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 				return invalid()
 			}
 		}
+		if s.MapID == "market" {
+			if c.Position == nil || (c.InteractionID == "market_crow_stall" && (c.Layer != "L0" || math.Hypot(c.Position.X-910, c.Position.Y-245) > 75)) || (c.InteractionID == "market_pigeon_perch" && (c.Layer != "L1" || math.Hypot(c.Position.X-1310, c.Position.Y-426) > 75)) || (c.InteractionID == "market_momo_trace" && (c.Layer != "L0" || math.Hypot(c.Position.X-947, c.Position.Y-160) > 75)) {
+				return domain.Fail("INTERACTION_WRONG_FLOOR", "请在正确楼层调查线索", 409)
+			}
+		}
 		for _, m := range g.Catalog.Maps {
 			if m.ID == s.MapID {
 				for _, p := range m.Interactions {
 					if p.ID == c.InteractionID {
+						if s.MapID == "tunnel" && p.ID == "tunnel_valve_three" && !domain.Contains(s.Flags, "tunnel_false_kitten_trap_found") {
+							return domain.Fail("INTERACTION_LOCKED", "先确认假猫叫诱饵与绊线，再调查第三泄洪阀", 409)
+						}
 						// 节点事件一次性:结算过的卡记入 drawnEvents("node:" 前缀),防无限重掷刷奖励。
 						if domain.Contains(s.DrawnEvents, "node:"+p.EventID) {
 							return domain.Fail("ALREADY_COMPLETED", "这件事今天已经办过了，先去别处转转吧。", 409)
@@ -318,13 +371,35 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "REPORT_MOVE":
 		return g.reportMove(s, c.Distance)
 	case "CHECK_RANDOM_ZONE":
-		return g.checkRandomZone(s, c.ZoneID)
+		return g.checkRandomZone(s, c.ZoneID, c.Layer, c.Position)
 	case "CHOOSE_EVENT":
 		return g.chooseEvent(s, c.EventID, c.OptionID, c.UsePush)
 	case "START_BATTLE":
 		return g.startBattle(s, c)
 	case "COMPLETE_BATTLE":
 		return g.completeBattle(s, c)
+	case "QA_SIMULATE_VICTORY", "QA_SIMULATE_DEFEAT":
+		if !g.QAVictoryEnabled {
+			return domain.Fail("QA_DISABLED", "服务端未启用战斗验收模拟", 403)
+		}
+		if err := domain.RequirePhase(*s, "battle"); err != nil {
+			return err
+		}
+		attempt := s.ActiveBattle
+		if attempt == nil || attempt.Status != "active" || attempt.ID != c.AttemptID {
+			return domain.Fail("INVALID_COMMAND", "战斗场次无效", 400)
+		}
+		result := qaVictoryResult(attempt)
+		if c.Type == "QA_SIMULATE_DEFEAT" {
+			result.Outcome = "lost"
+			leaks, boss := 3, false
+			result.Report = &domain.BattleReport{Leaks: &leaks, BossDefeated: &boss}
+			if attempt.StageID == "finale_boss" {
+				elites := 0
+				result.Report.ElitesDefeated = &elites
+			}
+		}
+		return g.completeBattle(s, result)
 	case "CONTINUE":
 		if err := domain.RequirePhase(*s, "settlement"); err != nil {
 			return err
@@ -345,6 +420,15 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			if s.ActiveBattle != nil && s.ActiveBattle.Status == "lost" {
 				return nil
 			}
+		} else if s.LastResult.StageID == "market_boss" && s.ActiveBattle != nil && s.ActiveBattle.Mainline {
+			s.Phase = "explore"
+			s.MapID = "market"
+			s.ActiveBattle = nil
+			return nil
+		} else if s.LastResult.StageID == "tunnel_boss" && s.MapID == "tunnel" && s.ActiveBattle != nil && s.ActiveBattle.Mainline && domain.Contains(s.Flags, "tunnel_boss_cleared") {
+			s.Phase = "dialogue"
+			s.ChapterID = "rescue"
+			s.StoryNodeID = "rescue_intro_10"
 		} else if s.LastResult.StageID != "alley_boss" && !isStandaloneBattle(s.LastResult.StageID) && !domain.Contains(s.Flags, "rescue_story_done") {
 			s.Phase = "dialogue"
 			s.StoryNodeID = "rescue_1"
@@ -361,11 +445,18 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		if !domain.Contains(s.Flags, "alley_rescued") {
 			return domain.Fail("HOME_LOCKED", "先帮助小巷里的伙伴", 409)
 		}
+		if s.MapID == "market" {
+			return domain.Fail("EXIT_LOCKED", "完成集市防卫并从北侧出口离开", 409)
+		}
 		if s.MapID == "alley" && !domain.Contains(s.Flags, "lost_poster_found") {
 			return domain.Fail("POSTER_NOT_FOUND", "先看看巷尾墙上的寻猫启事", 409)
 		}
 		s.Phase = "home"
 		s.MapID = "greenhouse"
+		s.ActiveBattle = nil
+		s.StoryNodeID = ""
+		s.PendingEventID = ""
+		s.PendingEventSource = ""
 		if domain.Contains(s.Flags, "finale_started") {
 			s.ChapterID = "finale"
 		} else if domain.Contains(s.Flags, "chapter_4_started") {
@@ -374,6 +465,16 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			s.ChapterID = "greenhouse"
 		}
 		return nil
+	case "EXIT_MARKET":
+		if err := domain.RequirePhase(*s, "explore"); err != nil {
+			return err
+		}
+		p := c.Position
+		if s.MapID != "market" || !domain.Contains(s.Flags, "market_cleared") || c.Layer != "L0" || p == nil || math.IsNaN(p.X) || math.IsNaN(p.Y) || math.Abs(p.X-1365) > 48 || math.Abs(p.Y-88) > 48 {
+			return domain.Fail("EXIT_LOCKED", "需守住集市防线，并从北侧木箱翻越离开", 409)
+		}
+		s.Flags = domain.Add(s.Flags, "market_exit_crossed")
+		return g.apply(s, domain.Command{Type: "START_STORY", NodeID: "greenhouse_intro_1"})
 	case "GO_EXPLORE":
 		targetMap := "alley"
 		if c.MapID != "" {
@@ -383,15 +484,33 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		} else if s.MapID == "tunnel" {
 			targetMap = "tunnel"
 		}
+		chapter, supported := chapterByExplorationMap[targetMap]
+		if !supported {
+			return domain.Fail("MAP_UNAVAILABLE", "这个地图尚未开放探索", 400)
+		}
+		if err := domain.RequirePhase(*s, "home", "explore", "preparation", "dialogue", "settlement"); err != nil {
+			return err
+		}
+		if targetMap == "market" && !domain.Contains(s.Flags, "chapter_2_started") {
+			return domain.Fail("MAP_LOCKED", "请先开启第二章剧情", 409)
+		}
+		if targetMap == "tunnel" && !domain.Contains(s.Flags, "greenhouse_fortified") {
+			return domain.Fail("MAP_LOCKED", "先完成废弃花房的防线，再进入地下通道", 409)
+		}
 		s.Phase = "explore"
 		s.MapID = targetMap
+		s.ChapterID = chapter
+		s.StoryNodeID = ""
+		s.PendingEventID = ""
+		s.PendingEventSource = ""
+		s.ActiveBattle = nil
 		s.ExploreDistance = -randomGrace
 		if targetMap == "market" {
 			s.Flags = domain.Add(s.Flags, "market_unlocked")
 			s.Flags = domain.Add(s.Flags, "chapter_2_started")
 		} else if targetMap == "tunnel" {
-			s.Flags = domain.Add(s.Flags, "chapter_4_started")
 			s.Flags = domain.Add(s.Flags, "tunnel_unlocked")
+			s.Flags = domain.Add(s.Flags, "chapter_4_started")
 		}
 		return nil
 	case "PLACE_FURNITURE":
@@ -516,4 +635,19 @@ func (g *Game) startTutorialBattle(s *domain.GameState, stageID string, includeM
 		return nil
 	}
 	return domain.Fail("INVALID_COMMAND", "命令参数或目标无效", 400)
+}
+
+// ApplyCharge 应用一笔已由支付服务判定并记账的充值:确认则入账金枪鱼,
+// 流水以展示副本落在游戏存档(权威账本在支付侧),返回到账后的最新余额。
+func (g *Game) ApplyCharge(playerID string, txn domain.Txn, pack domain.RechargePack) (int, error) {
+	balance := 0
+	err := g.Store.TransactByPlayer(playerID, func(p *repository.Player) error {
+		if txn.Status == "confirmed" {
+			p.State.Currencies["tuna"] += pack.TunaGranted
+		}
+		domain.AppendTxn(&p.State, txn)
+		balance = p.State.Currencies["tuna"]
+		return nil
+	})
+	return balance, err
 }

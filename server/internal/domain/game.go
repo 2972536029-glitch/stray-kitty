@@ -21,6 +21,8 @@ type Attempt struct {
 	// Legacy storage only: old active reservations are fully returned at settlement.
 	// New battles never reserve or consume supplies.
 	Supplies map[string]int `json:"supplies,omitempty"`
+	// Mainline identifies a chapter mission begun from its gated map trigger.
+	Mainline bool `json:"mainline,omitempty"`
 }
 type BattleReport struct {
 	Leaks          *int  `json:"leaks"`
@@ -66,7 +68,8 @@ type GameState struct {
 	EventState        *EventState `json:"eventState,omitempty"`
 	AlleyBattleReturn *WorldPoint `json:"alleyBattleReturn,omitempty"`
 	// Txns:金枪鱼充值与消费流水(最新的在末尾),供 /api/payment/history 展示;超出上限丢弃最旧。
-	Txns []Txn `json:"txns,omitempty"`
+	Txns           []Txn  `json:"txns,omitempty"`
+	QACheckpointID string `json:"qaCheckpointId,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -85,20 +88,23 @@ func AppendTxn(s *GameState, t Txn) {
 }
 
 type Command struct {
-	Type          string `json:"type"`
-	NodeID        string `json:"nodeId,omitempty"`
-	InteractionID string `json:"interactionId,omitempty"`
-	EventID       string `json:"eventId,omitempty"`
-	OptionID      string `json:"optionId,omitempty"`
-	StageID       string `json:"stageId,omitempty"`
-	AttemptID     string `json:"attemptId,omitempty"`
-	Outcome       string `json:"outcome,omitempty"`
-	FurnitureID   string `json:"furnitureId,omitempty"`
-	SlotID        string `json:"slotId,omitempty"`
-	PoolID        string `json:"poolId,omitempty"`
-	ProductID     string `json:"productId,omitempty"`
-	MapID         string `json:"mapId,omitempty"`
-	ZoneID        string `json:"zoneId,omitempty"`
+	Type          string      `json:"type"`
+	NodeID        string      `json:"nodeId,omitempty"`
+	InteractionID string      `json:"interactionId,omitempty"`
+	EventID       string      `json:"eventId,omitempty"`
+	OptionID      string      `json:"optionId,omitempty"`
+	StageID       string      `json:"stageId,omitempty"`
+	AttemptID     string      `json:"attemptId,omitempty"`
+	Outcome       string      `json:"outcome,omitempty"`
+	FurnitureID   string      `json:"furnitureId,omitempty"`
+	SlotID        string      `json:"slotId,omitempty"`
+	PoolID        string      `json:"poolId,omitempty"`
+	ProductID     string      `json:"productId,omitempty"`
+	MapID         string      `json:"mapId,omitempty"`
+	ZoneID        string      `json:"zoneId,omitempty"`
+	CheckpointID  string      `json:"checkpointId,omitempty"`
+	Layer         string      `json:"layer,omitempty"`
+	Position      *WorldPoint `json:"position,omitempty"`
 	// REPORT_MOVE 携带的本次行走里程(画布像素)。
 	Distance       int           `json:"distance,omitempty"`
 	ReturnPosition *WorldPoint   `json:"returnPosition,omitempty"`
@@ -138,6 +144,7 @@ type EventOption struct {
 }
 type Event struct {
 	ID       string        `json:"id"`
+	Title    string        `json:"title"`
 	Options  []EventOption `json:"options"`
 	Category string        `json:"category"`
 	Triggers []string      `json:"triggers"`

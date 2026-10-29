@@ -2,7 +2,7 @@ export type GamePhase = 'dialogue' | 'explore' | 'event' | 'preparation' | 'batt
 export type BattleCarryId = 'lantern' | 'mirror' | 'bell' | 'box' | 'dog' | 'dove' | 'rats' | 'kitten';
 export interface BattleModifiers {shadowPressure: -1 | 0 | 1; situation?: 'detour' | 'forced_chase'; carry?: BattleCarryId}
 export interface BattleReport {leaks: number; bossDefeated: boolean; elitesDefeated?: number}
-export interface BattleAttempt {id: string; stageId: string; status: 'active' | 'won' | 'lost'; modifiers?: BattleModifiers}
+export interface BattleAttempt {id: string; stageId: string; status: 'active' | 'won' | 'lost'; modifiers?: BattleModifiers; mainline?: boolean}
 export type EventTier = 'crit' | 'success' | 'partial' | 'fail';
 export interface EventReward {fish?: number; stamps?: number; clue?: number; material?: number}
 export interface EventOutcome {
@@ -22,17 +22,25 @@ export interface GameState {
   txns?: PaymentTxn[];
   alleyBattleReturn?: {x: number; y: number};
   lastResult: {message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string};
+  qaCheckpointId?: string;
 }
+export interface QACheckpoint {id: string; chapterId: string; title: string; phase: GamePhase; mapId: string; kind: 'story' | 'explore' | 'battle' | 'home' | 'event'; detail: string}
+export interface QATools {enabled: boolean; checkpoints: QACheckpoint[]}
 export type GameCommand =
   | {type: 'ADVANCE_STORY'; nodeId: string}
   | {type: 'START_STORY'; nodeId: string}
-  | {type: 'INTERACT'; interactionId: string}
+  | {type: 'INTERACT'; interactionId: string; layer?: string; position?: {x:number;y:number}}
   | {type: 'REPORT_MOVE'; distance: number}
-  | {type: 'CHECK_RANDOM_ZONE'; zoneId: string}
+  | {type: 'CHECK_RANDOM_ZONE'; zoneId: string; layer?: string; position?: {x:number;y:number}}
   | {type: 'CHOOSE_EVENT'; eventId: string; optionId: string; usePush?: boolean}
-  | {type: 'START_BATTLE'; stageId: string; returnPosition?: {x: number; y: number}}
+  | {type: 'START_BATTLE'; stageId: string; returnPosition?: {x: number; y: number}; layer?:string}
   | ({type: 'COMPLETE_BATTLE'} & BattleResult)
+  | {type: 'QA_SIMULATE_VICTORY'; attemptId: string}
+  | {type: 'QA_SIMULATE_DEFEAT'; attemptId: string}
+  | {type: 'QA_CHECKPOINT'; checkpointId: string}
+  | {type: 'QA_RESTORE'}
   | {type: 'CONTINUE'} | {type: 'GO_HOME'} | {type: 'GO_EXPLORE'; mapId?: string}
+  | {type: 'EXIT_MARKET'; layer: string; position: {x:number;y:number}}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
   | {type: 'DRAW_FURNITURE'; poolId: string}
   | {type: 'BUY_FURNITURE'; productId: string}
@@ -40,6 +48,8 @@ export type GameCommand =
 export interface CommandRequest {expectedRevision: number; command: GameCommand}
 export interface CommandResponse {state: GameState; replayed: boolean}
 export interface Session {playerId: string; token: string}
+// 账号体系:注册把当前匿名进度绑定到用户名密码,登录可在任意设备取回(返回新会话)。
+export interface AuthRegistration {username: string}
 export interface ApiErrorBody {error: {code: string; message: string; requestId: string}}
 // 双货币:stamp=猫爪邮票(免费),tuna=金枪鱼罐头(付费,经模拟支付网关充值)。
 export type CurrencyId = 'stamp' | 'tuna';

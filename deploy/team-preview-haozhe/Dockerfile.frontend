@@ -1,0 +1,22 @@
+# 前端镜像:Vite 构建产物 + nginx 托管,/api 反代到游戏服务(集群内 Service DNS)。
+# 构建上下文:仓库根目录(web 源码引用了 level_design 数据,必须一并进入上下文)。
+FROM node:24-alpine AS web
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY web/package.json web/package.json
+RUN npm ci --ignore-scripts
+COPY level_design level_design
+COPY specs specs
+COPY web web
+# QA_TOOLS=1 时生产构建也渲染验收工具条(团队试玩联调);本地 dev 与 CI 构建不受影响。
+ARG QA_TOOLS=1
+ENV VITE_QA_TOOLS=${QA_TOOLS}
+RUN npm run build --workspace web
+
+# unprivileged 变体:默认以 uid 101 运行,配合 8080 监听无需 root。
+FROM nginxinc/nginx-unprivileged:1.27-alpine
+ARG BUILD_REVISION=unverified
+LABEL org.opencontainers.image.revision="${BUILD_REVISION}"
+COPY --from=web /app/web/dist /usr/share/nginx/html
+COPY deploy/team-preview-haozhe/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 8080
