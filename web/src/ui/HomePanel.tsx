@@ -5,7 +5,7 @@ import {MarketLoadout} from '../modules/battle/MarketLoadout';
 import {GreenhouseLoadout} from '../modules/battle/GreenhouseLoadout';
 import {TunnelLoadout} from '../modules/battle/TunnelLoadout';
 import {FinaleLoadout} from '../modules/battle/FinaleLoadout';
-import {exploreChapter2Command, startChapter2Command} from './chapterCommands';
+import {chapterExploreCommand, chapterStoryCommand} from '../core/chapter-navigation';
 
 const CHATTER_CALLBACKS: {flag: string; speaker: string; text: string}[] = [
   {flag: 'sack_cat_freed', speaker: '团子', text: '“上回麻袋里那只小的，今天蹲在墙头冲我摆尾巴。这巷子啊，记情。”'},
@@ -40,7 +40,9 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
   // 尚未完成修缮工程解锁的槽位保持锁定(如高空横梁需先完成阶段 3)。
   const lockedSlots = new Set<string>();
   for (const r of renovations) if (!state.flags.includes(r.grantsFlag)) for (const slotId of r.unlockSlots ?? []) lockedSlots.add(slotId);
+  const hasBattleTrials = state.flags.includes('alley_rescued') || state.flags.includes('momo_joined');
   return <section className="journal-card home-panel"><span className="eyebrow">MAKE IT OURS</span><h2>整理我们的家</h2>
+    {hasBattleTrials && <h3 className="chapter-loadout-kicker" style={{margin: '4px 0 0'}}>独立战斗试玩 · 不推进章节剧情</h3>}
     {state.flags.includes('alley_rescued') && <ChapterLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('alley_rescued') && <MarketLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('momo_joined') && <GreenhouseLoadout disabled={disabled} onCommand={onCommand}/>}
@@ -89,15 +91,15 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     )}
     {(state.flags.includes('alley_rescued') || state.flags.includes('rescue_story_done')) && (
       !state.flags.includes('chapter_2_started') ? (
-        <button data-testid="chapter2-start" className="primary-action-btn" disabled={disabled} onClick={() => onCommand(startChapter2Command())}>
+        <button data-testid="chapter2-start" className="primary-action-btn" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('market'))}>
           🌙 启程：第二章《午夜集市》 →
         </button>
       ) : (
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-          <button data-testid="chapter2-explore" className="primary-action-btn" disabled={disabled} onClick={() => onCommand(exploreChapter2Command())}>
+          <button data-testid="chapter2-explore" className="primary-action-btn" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('market'))}>
             🌙 前往午夜集市 →
           </button>
-          <button className="quiet" disabled={disabled} onClick={() => onCommand(startChapter2Command())}>
+          <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('market'))}>
             📖 重温第二章剧情
           </button>
         </div>
@@ -105,12 +107,12 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     )}
     {(state.flags.includes('chapter_2_started') || state.flags.includes('market_unlocked')) && (
       !state.flags.includes('chapter_3_started') ? (
-        <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'greenhouse_intro_1'})}>
-          🌿 启程：第三章《废弃花房》 →
+        <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand(chapterStoryCommand('greenhouse'))}>
+          🌿 启程：第三章剧情（花房战斗试玩独立于剧情） →
         </button>
       ) : (
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
-          <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'greenhouse_intro_1'})}>
+          <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('greenhouse'))}>
             📖 重温第三章剧情
           </button>
         </div>
@@ -118,15 +120,15 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     )}
     {state.flags.includes('greenhouse_fortified') && (
       !state.flags.includes('chapter_4_started') ? (
-        <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'rescue_intro_1'})}>
+        <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand(chapterStoryCommand('rescue'))}>
           🐾 启程：第四章《消失的猫咪们》 →
         </button>
       ) : (
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
-          <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'tunnel'})}>
+          <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('tunnel'))}>
             🐾 前往地下暗道 →
           </button>
-          <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'rescue_intro_1'})}>
+          <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('rescue'))}>
             📖 重温第四章剧情
           </button>
         </div>
@@ -146,19 +148,19 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
               <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_clue_insufficient'})}>
                 💬 听阿策分析线索 →
               </button>
-              <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'market'})}>
+              <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('market'))}>
                 🌙 回集市收集线索 →
               </button>
             </div>
           </div>
         ) : (
-          <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_intro_1'})}>
-            🌟 启程：终章《点亮流浪猫王国》（线索已齐备 {state.inventory.clue ?? 3}/3） →
+          <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand(chapterStoryCommand('finale'))}>
+            🌟 启程：终章剧情（仓库探索地图尚未开放；战斗试玩独立）（线索已齐备 {state.inventory.clue ?? 3}/3） →
           </button>
         )
       ) : (
         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
-          <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_intro_1'})}>
+          <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('finale'))}>
             📖 重温终章大结局
           </button>
         </div>
@@ -173,8 +175,8 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
       </div>
     )}
     <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
-      <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE'})}>再去小巷走走 →</button>
-      <button className="quiet" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'chapter1_intro'})}>📖 重温第一章剧情</button>
+      <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('alley'))}>再去小巷走走 →</button>
+      <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('alley'))}>📖 重温第一章剧情</button>
     </div>
   </section>;
 }

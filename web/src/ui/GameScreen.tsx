@@ -14,7 +14,7 @@ import {GreenhouseLoadout} from '../modules/battle/GreenhouseLoadout';
 import {TunnelLoadout} from '../modules/battle/TunnelLoadout';
 import {FinaleLoadout} from '../modules/battle/FinaleLoadout';
 import {simulateVictoryCommand} from '../modules/battle/qa';
-import {exploreChapter2Command, startChapter2Command} from './chapterCommands';
+import {chapterExploreCommand, chapterStoryCommand} from '../core/chapter-navigation';
 import {explorationFooterText} from './explorationFooter';
 
 const phases: Record<string, string> = {dialogue: '猫咪物语', explore: '小巷探索', event: '一次相遇', preparation: '守护准备', battle: '序章守护', settlement: '救援结果', home: '我们的花房'};
@@ -77,7 +77,8 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
         {isDevelopment && devOpen && (
           <div className="dev-bar" role="toolbar" aria-label="开发者验收栏">
             <b>🛠️ 验收模式:</b>
-            {!['event', 'battle'].includes(state.phase) && <button data-testid="dev-direct-alley" disabled={disabled || battleLocked} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'alley'})}>🗺️ 直达雨巷</button>}
+            {!['event', 'battle'].includes(state.phase) && <button data-testid="dev-direct-alley" disabled={disabled || battleLocked} onClick={() => onCommand(chapterExploreCommand('alley'))}>🗺️ 直达雨巷</button>}
+            {state.phase === 'battle' && state.activeBattle?.stageId === 'alley_rescue' && <button data-testid="dev-simulate-rescue-win" disabled={disabled} onClick={() => onCommand({type: 'COMPLETE_BATTLE', attemptId: state.activeBattle!.id, outcome: 'won', report: {leaks: 0, bossDefeated: true}})}>⚔️ 模拟救援胜利</button>}
             {state.phase === 'dialogue' && onSkip && <button onClick={onSkip}>⏩ 跳过本段对话</button>}
             {state.phase === 'explore' && <button onClick={() => onCommand({type: 'REPORT_MOVE', distance: 150})}>🚶 走一段(随机判定)</button>}
             {state.phase === 'explore' && state.mapId === 'alley' && <button onClick={() => onCommand({type: 'INTERACT', interactionId: 'alley_crate'})}>🐾 触发纸箱事件</button>}
@@ -89,9 +90,9 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
             )}
             {state.phase === 'preparation' && !chapterBattle && !standaloneBattle && <button onClick={() => onCommand({type: 'START_BATTLE', stageId: 'alley_rescue'})}>⚔️ 开始塔防</button>}
             {state.flags.includes('alley_rescued') && state.phase !== 'home' && <button onClick={() => onCommand({type: 'GO_HOME'})}>🏡 直达花房</button>}
-            <button data-testid="dev-start-market-story" disabled={disabled || battleLocked} onClick={() => onCommand(startChapter2Command())}>测试：启动第二章剧情</button>
-            <button data-testid="dev-enter-market-exploration" disabled={disabled || battleLocked} onClick={() => onCommand(exploreChapter2Command())}>测试：直达集市探索</button>
-            <button disabled={disabled || battleLocked} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_intro_1'})}>🌟 开启终章剧情</button>
+            <button data-testid="dev-start-market-story" disabled={disabled || battleLocked} onClick={() => onCommand(chapterStoryCommand('market'))}>🌙 开启第二章剧情</button>
+            <button data-testid="dev-enter-market-exploration" disabled={disabled || battleLocked} onClick={() => onCommand(chapterExploreCommand('market'))}>🌃 直达午夜集市</button>
+            <button disabled={disabled || battleLocked} onClick={() => onCommand(chapterStoryCommand('finale'))}>🌟 开启终章剧情</button>
             {battleLocked && <small>请先完成或撤离当前战斗，再切换章节。</small>}
             {onReset && <button className="dev-reset-btn" onClick={onReset}>↺ 重置为新存档</button>}
           </div>
