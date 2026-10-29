@@ -584,6 +584,11 @@ export class DemoScene {
   }
   speakerAnchor(breed:CatBreed):{x:number;y:number}|null{
     const st=this.state;if(!st||st.phase==='battle')return null;
+    if((st.phase==='home'||this.storyScene==='home')&&st.chapterId!=='prologue'){
+      const cat=this.homeCats.find(cat=>cat.breed===breed);if(!cat)return null;
+      const view=this.homeView();
+      return{x:view.x+cat.x*view.scale,y:view.y+(cat.y-68-(cat.scriptedHeight??0))*view.scale};
+    }
     if(st.mapId==='market'||st.chapterId==='market'||this.storyScene==='market'){
       if(breed==='tuanzi')return{x:130,y:258};
       if(breed==='miaomiao')return{x:this.x,y:this.y-52};
