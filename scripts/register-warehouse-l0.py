@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Deterministic Chapter 5 art registration; never writes gameplay/source geometry."""
+"""Deterministic Chapter 5 art registration; never writes locked source geometry."""
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import math
@@ -28,6 +29,20 @@ def read_json(path):
 
 def write_json(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
+
+
+def playtest_geometry(source):
+    geometry = copy.deepcopy(source)
+    changes = read_json(BASE / 'playtest_adjustments.json')['solidInsets']
+    assert set(changes) <= {solid['id'] for solid in geometry['solids']}
+    for solid in geometry['solids']:
+        inset = changes.get(solid['id'], {})
+        assert set(inset) <= {'left', 'right', 'top', 'bottom'} and all(0 <= n <= 24 for n in inset.values())
+        solid['x'] += inset.get('left', 0)
+        solid['w'] -= inset.get('left', 0) + inset.get('right', 0)
+        solid['y'] += inset.get('top', 0)
+        solid['h'] -= inset.get('top', 0) + inset.get('bottom', 0)
+    return geometry
 
 
 def sha(path):
@@ -180,8 +195,11 @@ def asset_images(recipe):
 
 
 def rotated(image, degrees):
-    assert degrees in (0, 90, 180, 270)
-    return image if not degrees else image.transpose({90: Image.Transpose.ROTATE_270, 180: Image.Transpose.ROTATE_180, 270: Image.Transpose.ROTATE_90}[degrees])
+    assert math.isfinite(degrees) and abs(degrees) <= 360
+    turn = degrees % 360
+    if turn in (0, 90, 180, 270):
+        return image if not turn else image.transpose({90: Image.Transpose.ROTATE_270, 180: Image.Transpose.ROTATE_180, 270: Image.Transpose.ROTATE_90}[turn])
+    return image.rotate(-degrees, resample=Image.Resampling.NEAREST, expand=True)
 
 
 def transformed(image, scale, x, y):
@@ -189,18 +207,51 @@ def transformed(image, scale, x, y):
     return image.transform((W, H), Image.Transform.AFFINE, (1 / scale, 0, -x / scale, 0, 1 / scale, -y / scale), resample=Image.Resampling.NEAREST)
 
 
+def selected_cluster_ids(geometry, recipe):
+    settings = recipe['distribution']
+    eligible = [s['id'] for s in geometry['solids'] if s['w'] >= settings['minWidth'] and s['h'] >= settings['minHeight']]
+    ranked = sorted(eligible, key=lambda name: hashlib.sha256((settings['seed'] + '|' + name).encode()).hexdigest())
+    return set(ranked[:settings['mixedCount']])
+
+
 def compose_props(geometry, recipe, images, variants, old):
     canvas = Image.new('RGBA', (W, H))
     records = []
     for solid in geometry['solids']:
         name, rotation, rationale = recipe['placements'][solid['id']]
+        cluster = recipe.get('clusters', {}).get(solid['id'], {})
+        name = cluster.get('baseAsset', name)
+        rotation = cluster.get('baseRotation', rotation)
         original = images[name]
         image = rotated(original, rotation)
-        s = min((solid['w'] - 2) / image.width, (solid['h'] - 2) / image.height)
+        overhang = cluster.get('upwardOverhang', 0)
+        assert 0 <= overhang <= 24
+        envelope = {'x': solid['x'], 'y': solid['y'] - overhang, 'w': solid['w'], 'h': solid['h'] + overhang}
+        s = min((solid['w'] - 2) / image.width, (solid['h'] - 2) / image.height) * cluster.get('baseScale', 1)
         width, height = image.width * s, image.height * s
-        x = solid['x'] + (solid['w'] - width) / 2
+        x = solid['x'] + 1 + (solid['w'] - 2 - width) * cluster.get('baseAlignX', .5)
         y = solid['y'] + solid['h'] - 1 - height
         draw = transformed(image, s, x, y)
+        source_path = lambda asset: f'art/{"variants" if asset in variants else "source/sprites"}/{asset}.png'
+        components = [{'sourceSprite': source_path(name), 'sourceNaturalSize': list(original.size), 'rotatedNaturalSize': list(image.size), 'rotationDegrees': rotation, 'uniformScale': s, 'scaleX': s, 'scaleY': s, 'drawRect': {'x': x, 'y': y, 'w': width, 'h': height}}]
+        for extra in cluster.get('extras', []):
+            sprite = rotated(images[extra['asset']], extra['rotation'])
+            if 'slot' in extra:
+                sx, sy, sw, sh = extra['slot']
+                es = min(sw / sprite.width, sh / sprite.height)
+                ex = solid['x'] + sx + (sw - sprite.width * es) / 2
+                ey = solid['y'] + sy + sh - sprite.height * es
+            else:
+                ex, ey = solid['x'] + extra['offset'][0], solid['y'] + extra['offset'][1]
+                es = extra['scale']
+            bounds = {'x': ex, 'y': ey, 'w': sprite.width * es, 'h': sprite.height * es}
+            assert ex >= envelope['x'] and ey >= envelope['y'] and ex + bounds['w'] <= solid['x'] + solid['w'] and ey + bounds['h'] <= solid['y'] + solid['h'], f'Cluster exceeds declared visual envelope: {solid["id"]}'
+            part = transformed(sprite, es, ex, ey)
+            part_alpha = np.array(part.getchannel('A')) > 0
+            overlap = int((part_alpha & (np.array(draw.getchannel('A')) > 0)).sum())
+            assert overlap >= 8, f'Detached cluster piece: {solid["id"]}/{extra["asset"]}'
+            draw.alpha_composite(part)
+            components.append({'sourceSprite': source_path(extra['asset']), 'sourceNaturalSize': list(images[extra['asset']].size), 'rotatedNaturalSize': list(sprite.size), 'rotationDegrees': extra['rotation'], 'uniformScale': es, 'scaleX': es, 'scaleY': es, 'drawRect': bounds, 'overlapWithEarlierPixels': overlap})
         old_record = next(r for r in old['solids'] if r['solidId'] == solid['id'])
         old_scale = old_record['nonUniformScale']
         record = {
@@ -211,7 +262,10 @@ def compose_props(geometry, recipe, images, variants, old):
             'drawRect': {'x': x, 'y': y, 'w': width, 'h': height},
             'anchor': {'kind': 'bottom-center', 'world': [solid['x'] + solid['w'] / 2, solid['y'] + solid['h'] - 1]},
             'transformAfterRotation': [s, 0, 0, s, x, y], 'rasterAlphaBounds': draw.getbbox(),
-            'rationale': rationale, 'zOrder': solid['y'] + solid['h'],
+            'rationale': cluster['reason'] if 'baseAsset' in cluster else rationale + (' ' + cluster['reason'] if cluster else ''), 'zOrder': solid['y'] + solid['h'],
+            'components': components, 'clustered': bool(cluster),
+            'theme': cluster.get('theme', 'single-obstacle'),
+            'visualEnvelope': envelope, 'upwardVisualOverhang': overhang,
             'v02Audit': {'source': old_record['sourceAsset'], 'scaleX': old_scale['x'], 'scaleY': old_scale['y'], 'distortionFactor': max(old_scale.values()) / min(old_scale.values())},
             'reviewOutlier': s < .45 or s > 1.2,
         }
@@ -238,12 +292,15 @@ def hardware_layer(geometry, images):
     canvas.alpha_composite(transformed(shutter, s, 1310 - shutter.width * s / 2, 65))
     records.append({'id': 'bunker_exit', 'sourceSprite': 'art/source/stateful/bunker_exit_shutter_closed.png', 'uniformScale': s, 'drawRect': [1310 - shutter.width * s / 2, 65, shutter.width * s, shutter.height * s], 'interactionAnchor': [1310, 126], 'initialState': 'closed', 'unlock': 'finale_boss_victory'})
     for gate in [geometry['dynamicGates']['boss'], *geometry['dynamicGates']['shadow']]:
-        rotation = 90 if gate['h'] > gate['w'] else 0
-        image = rotated(images['gate_crossbar'], rotation)
+        # Real mesh and support posts communicate the blocked area, unlike the
+        # former hairline crossbar. Both visuals stay inside the existing gate.
+        name = 'gate_mesh_double' if gate['id'] == 'boss_gate' else 'rack_mesh_01'
+        rotation = 0 if gate['h'] > gate['w'] else 90
+        image = rotated(images[name], rotation)
         s = min(gate['w'] / image.width, gate['h'] / image.height)
         x, y = gate['x'] + (gate['w'] - image.width * s) / 2, gate['y'] + (gate['h'] - image.height * s) / 2
         canvas.alpha_composite(transformed(image, s, x, y))
-        records.append({'id': gate['id'], 'sourceSprite': 'art/variants/gate_crossbar.png', 'uniformScale': s, 'rotationDegrees': rotation, 'drawRect': [x, y, image.width * s, image.height * s], 'sourceGate': gate, 'initialState': 'closed', 'changesCollision': False})
+        records.append({'id': gate['id'], 'sourceSprite': f'art/{"variants" if name == "gate_mesh_double" else "source/sprites"}/{name}.png', 'uniformScale': s, 'rotationDegrees': rotation, 'drawRect': [x, y, image.width * s, image.height * s], 'sourceGate': gate, 'initialState': 'closed', 'changesCollision': False})
     return canvas, records
 
 
@@ -303,11 +360,17 @@ def contact_sheets(images, records):
     for i, record in enumerate(records):
         x, y = i % 4 * 360, i // 4 * 190
         rect = record['collisionRect']
-        bx, by = x + (360 - rect['w']) // 2, y + 12 + (120 - rect['h']) // 2
-        d.rectangle((bx, by, bx + rect['w'], by + rect['h']), outline='#c89660', width=1)
-        sprite = rotated(images[Path(record['sourceSprite']).stem], record['rotationDegrees'])
-        preview = sprite.resize((max(1, round(record['drawRect']['w'])), max(1, round(record['drawRect']['h']))), Image.Resampling.NEAREST)
-        sheet.paste(preview, (bx + round(record['drawRect']['x'] - rect['x']), by + round(record['drawRect']['y'] - rect['y'])), preview)
+        envelope = record['visualEnvelope']
+        bx, by = x + (360 - envelope['w']) // 2, y + 6 + (126 - envelope['h']) // 2
+        top = by + record['upwardVisualOverhang']
+        d.rectangle((bx, top, bx + rect['w'], top + rect['h']), outline='#c89660', width=1)
+        group = Image.new('RGBA', (W, H))
+        for component in record['components']:
+            sprite = rotated(images[Path(component['sourceSprite']).stem], component['rotationDegrees'])
+            bounds = component['drawRect']
+            group.alpha_composite(transformed(sprite, component['uniformScale'], bounds['x'], bounds['y']))
+        preview = group.crop((envelope['x'], envelope['y'], envelope['x'] + envelope['w'], envelope['y'] + envelope['h']))
+        sheet.paste(preview, (bx, by), preview)
         d.text((x + 8, y + 139), f'{i + 1:02d} {record["solidId"]}', font=FONT, fill='#f6e9c3')
         d.text((x + 8, y + 155), f'{rect["w"]}x{rect["h"]} / s={record["uniformScale"]:.3f} / {record["rotationDegrees"]} deg', font=FONT, fill='#a5bdca')
         d.text((x + 8, y + 171), Path(record['sourceSprite']).stem, font=FONT, fill='#a5bdca')
@@ -315,13 +378,14 @@ def contact_sheets(images, records):
 
 
 def placement_table(records):
-    lines = ['# L0 placement and v02 aspect audit', '', 'All coordinates are unchanged v07 collision rectangles. Each new sprite uses one scalar transform; integer pixel sampling does not introduce a second scale. Native compound-strip variants are recorded in the recipe and manifest.', '', '| ID | Collision x,y,w,h | Source / native pixels | Uniform scale | Draw x,y,w,h | Rotation | v02 distortion | Decision |', '| --- | --- | --- | --- | --- | --- | --- | --- |']
+    lines = ['# L0 placement and v02 aspect audit', '', 'Collision rectangles follow v07 with the explicit user-requested local edge insets in playtest_adjustments.json. Original v07 files remain locked. Each sprite uses one scalar transform; integer pixel sampling does not introduce a second scale. Native compound-strip variants are recorded in the recipe and manifest.', '', '| ID | Collision x,y,w,h | Source / native pixels | Uniform scale | Draw x,y,w,h | Rotation | v02 distortion | Decision |', '| --- | --- | --- | --- | --- | --- | --- | --- |']
     for r in records:
         rect, draw = r['collisionRect'], r['drawRect']
         values = ','.join(str(rect[k]) for k in ('x', 'y', 'w', 'h'))
         bounds = ','.join(f'{draw[k]:.2f}' for k in ('x', 'y', 'w', 'h'))
         native = 'x'.join(str(v) for v in r['sourceNaturalSize'])
-        lines.append(f'| {r["solidId"]} | {values} | {Path(r["sourceSprite"]).stem} / {native} | {r["uniformScale"]:.6f} | {bounds} | {r["rotationDegrees"]} | {r["v02Audit"]["distortionFactor"]:.3f}x | {r["rationale"]} |')
+        extras = ', '.join(f'{Path(c["sourceSprite"]).stem} s={c["uniformScale"]:.2f}' for c in r['components'][1:])
+        lines.append(f'| {r["solidId"]} | {values} | {Path(r["sourceSprite"]).stem} / {native}' + (f' + {extras}' if extras else '') + f' | {r["uniformScale"]:.6f} | {bounds} | {r["rotationDegrees"]} | {r["v02Audit"]["distortionFactor"]:.3f}x | {r["rationale"]} |')
     (REVIEW / 'warehouse_L0_placement_audit.md').write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
 
 
@@ -340,7 +404,33 @@ def l1_audit(composite, geometry):
     layer.save(REVIEW / 'warehouse_L1_support_guide.png')
     composite.alpha_composite(layer)
     composite.save(REVIEW / 'warehouse_L1_support_review.png')
-    write_json(REVIEW / 'warehouse_L1_support_audit.json', {'status': 'L1 deferred; no final L1 art generated', 'regions': records, 'climbs': geometry['climbs']})
+    write_json(REVIEW / 'warehouse_L1_support_audit.json', {'status': 'registered deck and overhead fascia exported; physical support appearance requires manual review', 'regions': records, 'climbs': geometry['climbs']})
+
+
+def l1_art(geometry, images):
+    """Native approved steel/plank pixels; geometry remains the six rectangles."""
+    top = Image.new('RGBA', (W, H))
+    supports = Image.new('RGBA', (W, H))
+    mask = Image.new('L', (W, H))
+    tile = images['pallet03'].crop((7, 4, 69, 51))
+    beam = images['gate_crossbar'].crop((3, 5, 169, 18))
+    for rect in geometry['l1WalkableRectangles']:
+        x, y, width, height = [rect[k] for k in ('x', 'y', 'w', 'h')]
+        ImageDraw.Draw(mask).rectangle((x, y, x + width - 1, y + height - 1), fill=255)
+        for py in range(y, y + height, tile.height):
+            for px in range(x, x + width, tile.width):
+                top.alpha_composite(tile.crop((0, 0, min(tile.width, x + width - px), min(tile.height, y + height - py))), (px, py))
+        # A visible steel fascia/underside ties the elevated deck to the rack
+        # family. It is overhead art, never a new ground collision rectangle.
+        for px in range(x, x + width, beam.width):
+            part = beam.crop((0, 0, min(beam.width, x + width - px), beam.height))
+            supports.alpha_composite(part, (px, y + height - 1))
+            top.alpha_composite(part.crop((0, 0, part.width, 4)), (px, y))
+    top.putalpha(mask)
+    top.save(ART / 'warehouse_L1_surfaces.png')
+    supports.save(ART / 'warehouse_L1_undersides.png')
+    mask.save(ART / 'warehouse_L1_walkable_mask.png')
+    write_json(REVIEW / 'warehouse_L1_art_manifest.json', {'status': 'manual review required; overhead fascia does not add ground collision', 'world': [W, H], 'regions': geometry['l1WalkableRectangles'], 'climbs': geometry['climbs'], 'deckSource': 'art/source/sprites/pallet03.png', 'deckSourceRect': [7, 4, 62, 47], 'fasciaSource': 'art/variants/gate_crossbar.png', 'scaling': 'native pixels tiled; no non-uniform stretch'})
 
 
 def review_html():
@@ -353,7 +443,8 @@ def review_html():
 
 def validate():
     check_sources()
-    geometry = read_json(BASE / 'source/v07/warehouse_geometry_v07.json')
+    source_geometry = read_json(BASE / 'source/v07/warehouse_geometry_v07.json')
+    geometry = playtest_geometry(source_geometry)
     manifest = read_json(REVIEW / 'warehouse_L0_asset_placement_manifest.json')
     for path in (BASE / 'source/v07').glob('*.svg'):
         ET.parse(path)
@@ -364,20 +455,35 @@ def validate():
     floor = polygon_mask(floor_polygons)
     assert geometry['world'] == {'width': W, 'height': H, 'coordinateSystem': 'common L0/L1 SVG pixel coordinates', 'catRadius': 13}
     records = manifest['solids']
+    recipe = read_json(BASE / 'registration_recipe.json')
+    assert manifest['layoutDistribution'] == recipe['distribution']
+    assert {r['solidId'] for r in records if r['clustered']} == selected_cluster_ids(geometry, recipe)
     assert len(records) == 38 == len(geometry['solids'])
     assert {r['solidId'] for r in records} == {s['id'] for s in geometry['solids']}
     solid_mask = np.zeros((H, W), dtype=bool)
+    visual_mask = np.zeros_like(solid_mask)
     for record, solid in zip(records, geometry['solids']):
         assert record['collisionRect'] == {k: solid[k] for k in ('x', 'y', 'w', 'h')}
         assert record['scaleX'] == record['scaleY'] == record['uniformScale']
-        assert record['rotationDegrees'] in (0, 90, 180, 270)
+        assert math.isfinite(record['rotationDegrees']) and abs(record['rotationDegrees']) <= 360
+        envelope = record['visualEnvelope']
+        assert 0 <= record['upwardVisualOverhang'] <= 24
+        assert envelope == {'x': solid['x'], 'y': solid['y'] - record['upwardVisualOverhang'], 'w': solid['w'], 'h': solid['h'] + record['upwardVisualOverhang']}
         draw = record['drawRect']
         assert draw['x'] >= solid['x'] and draw['y'] >= solid['y']
         assert draw['x'] + draw['w'] <= solid['x'] + solid['w'] + .001
         assert draw['y'] + draw['h'] <= solid['y'] + solid['h'] + .001
+        for component in record['components']:
+            assert component['scaleX'] == component['scaleY'] == component['uniformScale']
+            bounds = component['drawRect']
+            assert bounds['x'] >= solid['x'] and bounds['y'] >= envelope['y']
+            assert bounds['x'] + bounds['w'] <= solid['x'] + solid['w'] + .001
+            assert bounds['y'] + bounds['h'] <= solid['y'] + solid['h'] + .001
         solid_mask[solid['y']:solid['y'] + solid['h'], solid['x']:solid['x'] + solid['w']] = True
+        visual_mask[envelope['y']:envelope['y'] + envelope['h'], envelope['x']:envelope['x'] + envelope['w']] = True
     expected_layers = [ART / f'warehouse_L0_{part}.png' for part in ('ground', 'props', 'composite', 'initial_hardware', 'floor_mask')]
     expected_layers += [REVIEW / 'warehouse_L0_collision_overlay.png', REVIEW / 'warehouse_L0_collision_lines.png', REVIEW / 'warehouse_L1_support_guide.png', REVIEW / 'warehouse_L1_support_review.png', BASE / 'reference/L1_shelf_top_overlay_provisional.png']
+    expected_layers += [ART / f'warehouse_L1_{part}.png' for part in ('surfaces', 'undersides', 'walkable_mask')]
     for path in expected_layers:
         with Image.open(path) as image:
             assert image.size == (W, H), path
@@ -388,22 +494,34 @@ def validate():
     with Image.open(ART / 'warehouse_L0_props.png') as image:
         alpha = np.array(image.getchannel('A'))
         assert alpha.min() == 0 and alpha.max() > 0, 'Props must retain transparency'
-        assert not ((alpha > 0) & ~solid_mask).any(), 'A prop visually closes an authored aisle'
+        assert not ((alpha > 0) & ~visual_mask).any(), 'A prop exceeds its declared visual envelope'
+        assert not ((alpha > 0) & ~floor).any(), 'A prop extends beyond the authored floor'
+        overhang_pixels = int(((alpha > 0) & ~solid_mask).sum())
+    expected_l1 = np.zeros((H, W), dtype=bool)
+    for rect in geometry['l1WalkableRectangles']:
+        expected_l1[rect['y']:rect['y'] + rect['h'], rect['x']:rect['x'] + rect['w']] = True
+    with Image.open(ART / 'warehouse_L1_walkable_mask.png') as image:
+        assert np.array_equal(np.array(image.convert('L')) > 0, expected_l1), 'L1 mask differs from the six authored rectangles'
     l1_xml = ET.parse(BASE / 'source/v07/warehouse_L1_graybox_v07.svg')
     for rect in geometry['l1WalkableRectangles']:
         group = l1_xml.find(f'.//s:g[@data-id="{rect["id"]}"]', NS)
         node = group.find('s:rect', NS)
         assert {k: float(node.attrib[k if k not in ('w', 'h') else {'w':'width','h':'height'}[k]]) for k in ('x','y','w','h')} == {k:rect[k] for k in ('x','y','w','h')}
-    assert manifest['geometryContract'] == geometry, 'An anchor, gate, event or story contract changed'
+    assert manifest['geometryContract'] == source_geometry, 'The original spatial contract changed'
+    assert manifest['playtestAdjustments'] == read_json(BASE / 'playtest_adjustments.json')
     lamps = [r for r in manifest['initialHardware'] if r.get('initialState') == 'off']
     assert len(lamps) == 3 and all(not r['runtimeGlowBaked'] for r in lamps)
     report = {
         'status': 'focused checks passed; visual approval pending', 'world': [W,H], 'sourceLockFiles': len(read_json(BASE/'source_lock.json')['files']),
-        'solidRecords': len(records), 'uniformScaleExceptions': [], 'geometryUnchanged': True,
-        'floorMaskMatchesSvgPixels': True, 'floorEdgeMismatchPixels': 0, 'propPixelsOutsideSolidFootprints': 0,
-        'l1SourceRectangles': 6, 'l1Status': 'provisional; final shelf tops and structural supports deferred',
+        'solidRecords': len(records), 'clusteredLocations': sum(r['clustered'] for r in records), 'singleLocations': sum(not r['clustered'] for r in records),
+        'pieceCountHistogram': {str(count): sum(len(r['components']) == count for r in records) for count in sorted({len(r['components']) for r in records})},
+        'distributionSeed': recipe['distribution']['seed'], 'uniformScaleExceptions': [], 'sourceGeometryUnchanged': True,
+        'playtestSolidInsets': read_json(BASE / 'playtest_adjustments.json')['solidInsets'], 'randomZoneCount': len(geometry['randomZones']),
+        'floorMaskMatchesSvgPixels': True, 'floorEdgeMismatchPixels': 0, 'propPixelsOutsideSolidFootprints': overhang_pixels,
+        'propPixelsOutsideDeclaredVisualEnvelopes': 0, 'upwardVisualOverhangs': {r['solidId']: r['upwardVisualOverhang'] for r in records if r['upwardVisualOverhang']},
+        'l1SourceRectangles': 6, 'l1Status': 'six registered steel deck surfaces and overhead fascia; manual art/traversal review pending',
         'allControllableLampsInitiallyOff': True, 'runtimeLightingBaked': False,
-        'browserArtReview': 'not claimed by this script; see README for actual review checks', 'gameplayTraversal': 'not run; art-only milestone',
+        'browserArtReview': 'not claimed by this script; see README for actual review checks', 'gameplayTraversal': 'not exercised by asset validator; see README for walking smoke and manual review scope',
         'artOutliers': [r['solidId'] for r in records if r['reviewOutlier']],
     }
     return report
@@ -411,10 +529,12 @@ def validate():
 
 def build():
     lock = check_sources()
-    geometry = read_json(BASE / 'source/v07/warehouse_geometry_v07.json')
+    source_geometry = read_json(BASE / 'source/v07/warehouse_geometry_v07.json')
+    geometry = playtest_geometry(source_geometry)
     recipe = read_json(BASE / 'registration_recipe.json')
     old = read_json(BASE / 'reference/placement_manifest_v02.json')
     assert set(recipe['placements']) == {r['id'] for r in geometry['solids']}
+    assert set(recipe['clusters']) == selected_cluster_ids(geometry, recipe), 'Cluster recipes must match the seeded half-map selection'
     floor_xml = ET.parse(BASE / 'source/v07/warehouse_L0_graybox_v07.svg')
     polygons = svg_polygons(floor_xml.find('.//s:g[@id="l0-floor"]', NS))
     assert polygons == geometry['walkable']['L0']
@@ -428,10 +548,12 @@ def build():
     for name, image in [('ground', ground), ('props', props), ('initial_hardware', hardware), ('composite', composite), ('floor_mask', Image.fromarray(floor.astype(np.uint8) * 255))]:
         image.save(ART / f'warehouse_L0_{name}.png')
     manifest = {
-        'version': 'L0-registration-v03-review', 'approval': 'manual review required', 'world': geometry['world'],
+        'version': 'L0-registration-v08-varied-half-map', 'approval': 'manual review required', 'world': geometry['world'],
+        'layoutDistribution': recipe['distribution'],
         'sourceGeometrySha256': lock['files']['source/v07/warehouse_geometry_v07.json']['sha256'],
         'groundRegistration': ground_info, 'compoundVariants': variants, 'solids': records,
-        'initialHardware': hardware_records, 'geometryContract': geometry,
+        'initialHardware': hardware_records, 'geometryContract': source_geometry,
+        'playtestAdjustments': read_json(BASE / 'playtest_adjustments.json'),
         'rendering': {'layers': ['ground','props','initialHardware'], 'spriteScaling': 'single scalar affine + nearest-neighbor sampling', 'zOrder': 'collision bottom, then solid ID', 'lighting': 'not baked', 'characterOcclusion': 'requires later Canvas integration; combined PNG is review-only'},
     }
     write_json(REVIEW / 'warehouse_L0_asset_placement_manifest.json', manifest)
@@ -440,6 +562,7 @@ def build():
     contact_sheets(images, records)
     placement_table(records)
     l1_audit(composite.copy(), geometry)
+    l1_art(geometry, images)
     review_html()
     report = validate()
     write_json(REVIEW / 'validation_report.json', report)

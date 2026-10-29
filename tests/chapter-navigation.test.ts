@@ -26,9 +26,9 @@ test('chapter map buttons select only implemented exploration destinations', () 
   assert.deepEqual(CHAPTER_MAP_ROUTES.market, {mapId: 'market', chapterId: 'market', scene: 'market', availability: 'exploration'});
   assert.deepEqual(CHAPTER_MAP_ROUTES.tunnel, {mapId: 'tunnel', chapterId: 'rescue', scene: 'tunnel', availability: 'exploration'});
   assert.equal(CHAPTER_MAP_ROUTES.greenhouse.scene, null);
-  assert.equal(CHAPTER_MAP_ROUTES.warehouse.scene, null);
+  assert.equal(CHAPTER_MAP_ROUTES.warehouse.scene, 'warehouse');
   assert.equal(chapterMapStatus('greenhouse', false, state('home', '', ['chapter_2_started'])), '第三章剧情与独立战斗试玩；探索地图尚未开放');
-  assert.equal(chapterMapStatus('warehouse', false, state('home')), '终章剧情与战斗试玩；探索地图尚未开放');
+  assert.equal(chapterMapStatus('warehouse', false, state('home')), '完成暗道救援并收集三条线索后开放');
 });
 
 test('route buttons dispatch the intended map and phase and respect unlocks', () => {
@@ -65,10 +65,11 @@ test('chapter story entry buttons start their matching story, separate from batt
   assert.equal(chapterMapIsUnlocked('greenhouse', state('home', '', ['chapter_2_started'])), false);
 });
 
-test('existing Chapter 3 and finale stories are accessible without claiming exploration exists', () => {
+test('Chapter 3 stays a home story while the finale enters or revisits warehouse exploration', () => {
   const unlocked = {...state('home', 'greenhouse', ['market_cleared', 'market_exit_crossed', 'tunnel_explored', 'cats_rescued_batch1']), inventory: {clue:3}};
   assert.deepEqual(chapterMapCommand('greenhouse', unlocked), chapterStoryCommand('greenhouse'));
   assert.deepEqual(chapterMapCommand('warehouse', unlocked), chapterStoryCommand('finale'));
+  assert.deepEqual(chapterMapCommand('warehouse', {...unlocked,flags:[...unlocked.flags,'finale_started']}),chapterExploreCommand('warehouse'));
   assert.equal(chapterMapCommand('warehouse', {...unlocked, inventory:{clue:2}}), null);
   assert.equal(chapterMapCommand('__proto__', unlocked), null);
   assert.equal(chapterMapCommand('market', state('home', '', ['alley_rescued'])), null);

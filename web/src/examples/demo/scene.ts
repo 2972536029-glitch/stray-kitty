@@ -13,6 +13,7 @@ import {HOME_LAYOUT_ID, HOME_RESIDENTS, HOME_ROAM_NODES, HOME_SHELTER_NODES, HOM
 import {homeAppearanceKey, paintHomestead} from '../../modules/home/painter';
 import {homeStoryBeat, storyActorPosition, type HomeStoryActor, type HomeStoryBeat} from '../../modules/home/story';
 import {explorationScene} from '../../core/chapter-navigation';
+import type {WarehouseWalkMap, WarehouseReviewOptions} from '../../modules/chapter5/WarehouseWalkMap';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 花房家园的猫咪轻量 AI:pose 非空表示绑定专属家具姿态,否则按 sit→walk→sit 循环漫步。
@@ -36,6 +37,9 @@ interface HomeCatAgent {
   scriptedHeight?: number;
 }
 export class DemoScene {
+  private warehousePreview: WarehouseWalkMap | null = null;
+  private warehouseLoading: Promise<void> | null = null;
+  private warehouseCollision = false;
   state: GameState | null = null;
   pausedByUser = false;
   storyScene: StoryNode['scene'];
@@ -100,7 +104,8 @@ export class DemoScene {
     private onWorldPosition?: (point: {x: number; y: number}) => void,
     private onMarketBattle?: (floor:MarketFloor,point:{x:number;y:number}) => void,
     private onMarketExit?: (floor: MarketFloor, point:{x:number;y:number}) => void,
-    private onMarketZone?: (zoneId:string,floor:MarketFloor,point:{x:number;y:number}) => Promise<boolean>
+    private onMarketZone?: (zoneId:string,floor:MarketFloor,point:{x:number;y:number}) => Promise<boolean>,
+    private onWarehousePosition?: (floor:'L0'|'L1',point:{x:number;y:number})=>void
   ) {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('浏览器无法创建二维画布');
@@ -118,9 +123,33 @@ export class DemoScene {
     for(const floor of Object.keys(marketArt) as MarketFloor[]) this.marketImages[floor].src=marketArt[floor];
   }
   setDirection(direction: Direction, held: boolean) {if(this.marketTransition.active)return;if (held) this.held.add(direction);else this.held.delete(direction);}
+  async enableWarehousePreview() {
+    if(this.warehouseLoading)return this.warehouseLoading;
+    this.warehouseLoading=this.loadWarehouse();return this.warehouseLoading;
+  }
+  private async loadWarehouse() {
+    const {WarehouseWalkMap} = await import('../../modules/chapter5/WarehouseWalkMap');
+    if (this.destroyed) return;
+    this.warehousePreview = new WarehouseWalkMap();
+    await this.warehousePreview.ready();
+  }
+  climbWarehouse() {if(this.warehousePreview?.climb())this.clearInput();}
+  setWarehouseReviewOptions(options: Partial<WarehouseReviewOptions>) {this.warehousePreview?.setOptions(options);}
+  resetWarehousePreview() {this.clearInput(); this.warehousePreview?.reset();}
   private keydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null;
     if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
+    if (this.warehousePreview && (!this.state || this.state.mapId==='warehouse')) {
+      if(this.pausedByUser||(this.state&&this.state.phase!=='explore'))return;
+      const key = event.key.toLowerCase();
+      if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(key)) {event.preventDefault(); this.keys.add(key);}
+      if(key==='c'&&!event.repeat){event.preventDefault();this.climbWarehouse();}
+      if(key==='e'&&!event.repeat&&this.state){event.preventDefault();const target=this.warehousePreview.nearTarget;if(target?.key==='E'){this.onWarehousePosition?.(this.warehousePreview.layer,this.warehousePreview.positionNow());this.onInteract(target.id);}}
+      if(import.meta.env.DEV&&key==='g'&&!event.repeat)this.warehousePreview.setOptions({collision:!this.warehouseCollision});
+      if(import.meta.env.DEV&&key==='g'&&!event.repeat)this.warehouseCollision=!this.warehouseCollision;
+      if (key === 'r' && !event.repeat&&!this.state) this.resetWarehousePreview();
+      return;
+    }
     if (this.state?.phase !== 'explore' || this.pausedByUser) return;
     const key = event.key.toLowerCase();
     if (this.state?.mapId === 'tunnel') {
@@ -224,6 +253,25 @@ export class DemoScene {
     this.update(delta);this.frame = requestAnimationFrame(this.tick);
   };
   private update(delta: number) {
+    if(this.state?.mapId==='warehouse'&&!this.warehouseLoading)void this.enableWarehousePreview().catch(error=>{this.onInspectHint?.(String(error));});
+    if (this.warehousePreview && (!this.state || this.state.mapId==='warehouse')) {
+      if(this.state)this.warehousePreview.syncState(this.state);
+      const active = !this.pausedByUser && document.visibilityState !== 'hidden' && (!this.state||this.state.phase==='explore');
+      if (!active) this.clearInput();
+      const dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
+      const dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
+      if(active)this.warehousePreview.update(delta,dx,dy,this.state?(id,floor,point)=>this.onMarketZone?.(id,floor,point)??Promise.resolve(false):undefined);
+      this.warehousePreview.draw(this.context, this.viewWidth, this.viewHeight, delta);
+      const point = this.warehousePreview.positionNow();
+      this.canvas.dataset.renderedScene = this.state?'chapter5-warehouse':'warehouse-walk-review';
+      this.canvas.dataset.mapId='warehouse';this.canvas.dataset.phase=this.state?.phase??'explore';
+      this.canvas.dataset.ready = String(this.warehousePreview.isReady);
+      this.canvas.dataset.playerX = point.x.toFixed(2); this.canvas.dataset.playerY = point.y.toFixed(2);
+      this.canvas.dataset.floor=this.warehousePreview.layer;
+      this.onWarehousePosition?.(this.warehousePreview.layer,point);
+      const target=this.warehousePreview.nearTarget;this.onNear(!!target,target?.id,target?.label);this.onInspectHint?.(this.warehousePreview.hint);
+      return;
+    }
     if (!this.state) return;
     if (this.state.mapId === 'market' || this.storyScene === 'market') this.marketFrame=measureMarketCameraFrame(this.canvas,this.viewWidth,this.viewHeight);
     const mode = this.state.phase;

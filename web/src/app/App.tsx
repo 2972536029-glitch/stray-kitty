@@ -1,4 +1,4 @@
-import {useCallback, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {useGame} from './useGame';
 import {Viewport} from '../examples/demo/Viewport';
 import {BattleHost} from '../modules/battle/BattleHost';
@@ -15,9 +15,10 @@ import AcceptancePanel from '../ui/AcceptancePanel';
 import type {GameCommand} from '../contracts';
 
 export default function App() {
+  const warehouseReview = import.meta.env.DEV && new URLSearchParams(window.location.search).has('warehouseQA');
   const game = useGame();
   const {state, catalog, send, reportMove, busy, pending, error, disabled, retry, skipDialogue, resetSession, sessionUnavailable, startNewJourney, refresh, port} = game;
-  const [entered, setEntered] = useState(false), [paused, setPaused] = useState(false), [near, setNear] = useState(false);
+  const [entered, setEntered] = useState(warehouseReview), [paused, setPaused] = useState(false), [near, setNear] = useState(false);
   const [nearTarget, setNearTarget] = useState<{id: string; label: string} | null>(null);
   const [inspectHint, setInspectHint] = useState<string | null>(null);
   const [overlay, setOverlay] = useState<'map' | 'shop' | 'journal' | 'recharge' | 'auth' | 'qa' | null>(null);
@@ -26,9 +27,14 @@ export default function App() {
   const direction = useRef<(direction: Direction, held: boolean) => void>(() => {});
   const rainyPosition = useRef<{x: number; y: number} | undefined>(undefined);
   const tunnelPosition = useRef<{x: number; y: number} | undefined>(undefined);
+  const warehousePosition = useRef<{floor:'L0'|'L1';point:{x:number;y:number}} | undefined>(undefined);
+  const warehouseClimb = useRef<()=>void>(()=>{});
+  const warehouseQAStarted = useRef(false);
   const interact = useCallback((targetId?: string) => {
     const id = targetId || nearTarget?.id;
     if (!id) return;
+    if(id==='warehouse_climb'){warehouseClimb.current();return;}
+    if(state?.mapId==='warehouse'){void send({type:'INTERACT',interactionId:id,layer:warehousePosition.current?.floor,position:warehousePosition.current?.point});return;}
     if (id === 'tunnel_exit_boss') {
       void send({type: 'START_BATTLE', stageId: 'tunnel_boss', ...(tunnelPosition.current ? {returnPosition:tunnelPosition.current} : {})});
       return;
@@ -39,7 +45,7 @@ export default function App() {
       return;
     }
     void send({type: 'INTERACT', interactionId: id, ...(id==='market_crow_stall'||id==='market_momo_trace'?{layer:'L0',position:rainyPosition.current}:id==='market_pigeon_perch'?{layer:'L1',position:rainyPosition.current}:{})});
-  }, [send, nearTarget]);
+  }, [send, nearTarget, state?.mapId]);
   const checkRandomZone = useCallback((zoneId: string, layer?:string,position?:{x:number;y:number}) => busy || pending
     ? Promise.resolve(false)
     : send({type: 'CHECK_RANDOM_ZONE', zoneId, ...(layer?{layer}:{}), ...(position?{position}:{})}), [busy, pending, send]);
@@ -54,6 +60,12 @@ export default function App() {
     }
     return success;
   }, [send]);
+  useEffect(()=>{
+    if(!warehouseReview||!state||!catalog||busy||pending||warehouseQAStarted.current)return;
+    warehouseQAStarted.current=true;
+    if(state.qaCheckpointId?.startsWith('finale.')||state.mapId==='warehouse')return;
+    void runQACommand({type:'QA_CHECKPOINT',checkpointId:'finale.explore'});
+  },[warehouseReview,state,catalog,busy,pending,runQACommand]);
   const frozen = paused || busy || pending || !!overlay || !entered;
   const randomEligible = !!state && !!catalog?.events.some(event => event.triggers.includes('random') && event.maps?.includes('alley') && (event.requiresFlags ?? []).every(flag => state.flags.includes(flag)) && (event.repeatable || !state.drawnEvents?.includes(`alley:${event.id}`)));
   return <>
@@ -66,7 +78,7 @@ export default function App() {
           <GameScreen state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} qaOpen={overlay === 'qa'} onQA={() => setOverlay('qa')} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onDirection={(d, held) => direction.current(d, held)} onPause={() => setPaused(!paused)} onMap={() => setOverlay('map')} onShop={() => setOverlay('shop')} onRecharge={() => setOverlay('recharge')} onTitle={() => {setEntered(false);setPaused(false);}}>
             {state.phase === 'battle'
               ? <BattleHost key={qaVisit} state={state} catalog={catalog} paused={frozen} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})}/>
-              : <Viewport key={`${state.qaCheckpointId ?? 'journey'}:${qaVisit}`} state={state} storyNode={currentStory(catalog, state)} paused={frozen} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onDirectionReady={fn => {direction.current = fn;}} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone} onMarketBattle={(floor,position)=>void send({type:'START_BATTLE',stageId:'market_boss',layer:floor,returnPosition:position})} onMarketExit={(floor,position)=>void send({type:'EXIT_MARKET',layer:floor,position})} onWorldPosition={point => {rainyPosition.current = point;if(state.mapId==='tunnel')tunnelPosition.current=point;}} randomEligible={randomEligible}/>}
+              : <Viewport key={`${state.qaCheckpointId ?? 'journey'}:${qaVisit}`} state={state} storyNode={currentStory(catalog, state)} paused={frozen} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onDirectionReady={fn => {direction.current = fn;}} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone} onMarketBattle={(floor,position)=>void send({type:'START_BATTLE',stageId:'market_boss',layer:floor,returnPosition:position})} onMarketExit={(floor,position)=>void send({type:'EXIT_MARKET',layer:floor,position})} onWorldPosition={point => {rainyPosition.current = point;if(state.mapId==='tunnel')tunnelPosition.current=point;}} onWarehousePosition={(floor,point)=>{warehousePosition.current={floor,point};}} onWarehouseClimbReady={fn=>{warehouseClimb.current=fn;}} randomEligible={randomEligible}/>}
           </GameScreen>
         </div>}
       </>}

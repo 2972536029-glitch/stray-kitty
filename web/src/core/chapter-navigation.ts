@@ -4,7 +4,7 @@ export type ChapterMapId = 'alley' | 'market' | 'tunnel' | 'greenhouse' | 'wareh
 export type ChapterMapRoute = {
   mapId: ChapterMapId;
   chapterId: string;
-  scene: 'alley' | 'market' | 'tunnel' | null;
+  scene: 'alley' | 'market' | 'tunnel' | 'warehouse' | null;
   availability: 'exploration' | 'story-and-trial';
 };
 
@@ -14,14 +14,14 @@ export const CHAPTER_MAP_ROUTES: Record<ChapterMapId, ChapterMapRoute> = {
   market: {mapId: 'market', chapterId: 'market', scene: 'market', availability: 'exploration'},
   tunnel: {mapId: 'tunnel', chapterId: 'rescue', scene: 'tunnel', availability: 'exploration'},
   greenhouse: {mapId: 'greenhouse', chapterId: 'greenhouse', scene: null, availability: 'story-and-trial'},
-  warehouse: {mapId: 'warehouse', chapterId: 'finale', scene: null, availability: 'story-and-trial'},
+  warehouse: {mapId: 'warehouse', chapterId: 'finale', scene: 'warehouse', availability: 'exploration'},
 };
 
 export function explorationScene(mapId: string) {
   return Object.hasOwn(CHAPTER_MAP_ROUTES, mapId) ? CHAPTER_MAP_ROUTES[mapId as ChapterMapId].scene : null;
 }
 
-export function chapterExploreCommand(mapId: 'alley' | 'market' | 'tunnel'): GameCommand {
+export function chapterExploreCommand(mapId: 'alley' | 'market' | 'tunnel' | 'warehouse'): GameCommand {
   return {type: 'GO_EXPLORE', mapId};
 }
 
@@ -52,14 +52,14 @@ export function chapterMapCommand(mapId: string, state: Pick<GameState, 'phase' 
   if (state.phase === 'explore' && state.mapId === mapId) return null;
   if (!chapterMapIsUnlocked(mapId, state)) return null;
   if (mapId === 'greenhouse') return chapterStoryCommand('greenhouse');
-  if (mapId === 'warehouse') return chapterStoryCommand('finale');
+  if (mapId === 'warehouse') return state.flags.includes('finale_started')?chapterExploreCommand('warehouse'):chapterStoryCommand('finale');
   return chapterExploreCommand(mapId as 'alley' | 'market' | 'tunnel');
 }
 
-export function chapterMapStatus(mapId: string, current: boolean, state: Pick<GameState, 'flags'>): string {
+export function chapterMapStatus(mapId: string, current: boolean, state: Pick<GameState, 'flags'> & {inventory?:GameState['inventory']}): string {
   if (current) return '你在这里';
   if (mapId === 'greenhouse') return '第三章剧情与独立战斗试玩；探索地图尚未开放';
-  if (mapId === 'warehouse') return '终章剧情与战斗试玩；探索地图尚未开放';
+  if (mapId === 'warehouse') return chapterMapIsUnlocked(mapId,state)?'仓库双层探索、灯光与终章救援':'完成暗道救援并收集三条线索后开放';
   if (mapId === 'market') return chapterMapIsUnlocked(mapId, state) ? '已解锁，可探索' : '在花房开启第二章剧情后开放';
   if (mapId === 'tunnel') return chapterMapIsUnlocked(mapId, state) ? '已解锁，可探索' : '完成第三章后开放';
   return '可探索';

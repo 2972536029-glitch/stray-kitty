@@ -59,6 +59,8 @@ func (g *Game) qaCheckpoints() []QACheckpoint {
 		{"rescue.after", "rescue", "营救后护送回家", "dialogue", "tunnel", "story", "暗道战已完成，验收第十段对白及护送回家。"},
 		{"finale.clue", "finale", "线索不足分支", "dialogue", "market", "story", "只有零条线索，听阿策分析后继续集市探索。"},
 		{"finale.story", "finale", "终章剧情", "dialogue", "greenhouse", "story", "暗道救援结束且线索齐备，开始终章叙事。"},
+		{"finale.explore", "finale", "仓库探索与灯光", "explore", "warehouse", "explore", "从仓库入口测试 L0/L1、灯光、事件与首领；固定事件可选。"},
+		{"finale.exit", "finale", "仓库胜利后出口", "explore", "warehouse", "explore", "首领已击败，测试北侧闸门、隔间出口与花房结局。"},
 		{"finale.battle", "finale", "总仓库决战试玩", "battle", "greenhouse", "battle", "进入已接入的独立终局战斗；仓库自由探索尚未开放。"},
 		{"finale.celebration", "finale", "王国庆典与告别", "dialogue", "greenhouse", "story", "从庆典开始，检查告别站位与故事结束后的自由活动。"},
 		{"finale.home", "finale", "流浪猫王国 · 四阶", "home", "greenhouse", "home", "终章已结束，检查庆典家园、家具和伙伴日常。"},
@@ -95,7 +97,7 @@ func copyQAState(state domain.GameState) (domain.GameState, error) {
 }
 
 func finishQAEventPreview(s *domain.GameState) {
-	if strings.HasPrefix(s.QACheckpointID, "event:") && s.Phase == "explore" && !domain.Contains([]string{"alley", "market", "tunnel"}, s.MapID) {
+	if strings.HasPrefix(s.QACheckpointID, "event:") && s.Phase == "explore" && !domain.Contains([]string{"alley", "market", "tunnel", "warehouse"}, s.MapID) {
 		// Cards for planned exploration maps return to the actual home scene.
 		// Their rewards, flags and event result remain available for inspection.
 		s.Phase, s.MapID = "home", "greenhouse"
@@ -249,6 +251,10 @@ func (g *Game) qaFixture(checkpoint QACheckpoint) (domain.GameState, error) {
 	}
 	if checkpoint.ID == "finale.home" {
 		addFlags("finale_completed", "kingdom_founded")
+	}
+	if checkpoint.ID == "finale.exit" || checkpoint.ID == "finale.celebration" {
+		addFlags("finale_boss_victory")
+		s.CompletedStages = domain.Add(s.CompletedStages, "finale_boss")
 	}
 	if checkpoint.Kind == "event" {
 		parts := strings.Split(checkpoint.ID, ":")

@@ -20,6 +20,8 @@ interface Props {
   onMarketBattle?: (floor:string,point:Point) => void;
   onMarketExit?: (floor:string,point:Point) => void;
   randomEligible?: boolean;
+  onWarehousePosition?: (floor:'L0'|'L1',point:Point)=>void;
+  onWarehouseClimbReady?: (climb:()=>void)=>void;
 }
 
 export function Viewport(props: Props) {
@@ -40,10 +42,12 @@ export function Viewport(props: Props) {
       point => latest.current.onWorldPosition?.(point),
       (floor,point) => latest.current.onMarketBattle?.(floor,point),
       (floor,point) => latest.current.onMarketExit?.(floor,point),
-      (zoneId,floor,point) => latest.current.onRandomZone?.(zoneId,floor,point) ?? Promise.resolve(false)
+      (zoneId,floor,point) => latest.current.onRandomZone?.(zoneId,floor,point) ?? Promise.resolve(false),
+      (floor,point)=>latest.current.onWarehousePosition?.(floor,point)
     );
     runtime.state = latest.current.state;runtime.pausedByUser = latest.current.paused;runtime.storyScene = latest.current.storyNode?.scene;runtime.storyNode = latest.current.storyNode;runtime.randomEligible = latest.current.randomEligible ?? true;scene.current = runtime;
     latest.current.onDirectionReady((direction, held) => runtime.setDirection(direction, held));runtime.start();
+    latest.current.onWarehouseClimbReady?.(()=>runtime.climbWarehouse());
     return runtime;
   }}/>;
 }
