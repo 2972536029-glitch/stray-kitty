@@ -5,10 +5,13 @@ body{background-color:#3d514a;background-image:radial-gradient(#bdc7a315 1px,tra
 button{border-color:#382f2b;box-shadow:3px 3px 0 #c59a55;border-radius:3px}button:hover{box-shadow:3px 5px 0 #c59a55;filter:brightness(1.04)}button:disabled{box-shadow:none;filter:none}.pixel-cat{filter:drop-shadow(2px 4px 0 #24312e40)}
 /* 暮色标题画面，原图保持独立 SVG 层，短屏中部可以滚动。 */
 .start-screen{background:#344b54;color:#ede1c7;padding:94px 20px 64px}.start-screen:before{content:'';z-index:-1;background:radial-gradient(#e8d9ad 1px,transparent 2px) 0 0/87px 71px;opacity:.16;pointer-events:none}.start-menu-backdrop{position:absolute;z-index:-2;inset:0;width:100%;height:100%;pointer-events:none;image-rendering:pixelated}.start-menu-backdrop .pixel-star{transform-box:fill-box;transform-origin:center;animation:cozy-star 3.2s steps(2,end) infinite}.start-menu-backdrop .pixel-star:nth-of-type(3n){animation-delay:-1.1s}.start-menu-backdrop .pixel-star:nth-of-type(4n){animation-delay:-2.2s}
-.start-brand{top:23px;left:30px;right:auto;padding:9px 14px;background:#20302dcc;border:2px solid #202b2b;border-radius:3px;box-shadow:4px 4px 0 #51624c;color:#eee2c7}.xsolla-wordmark span{color:#d3c7ac}.start-brand>small{font-size:9px;border-left:1px solid #9c8f70;padding-left:15px;letter-spacing:1.4px}.start-title{width:min(760px,100%);max-height:calc(100svh - 158px);overflow:auto;scrollbar-width:thin;scrollbar-color:#c59a55 transparent;padding:10px 12px 17px}.start-cats{margin:0 0 12px;gap:0}.start-cats .pixel-cat{animation:cozy-cat-idle 2.8s steps(3,end) infinite;filter:drop-shadow(0 7px 0 #121b196b)}.start-cats .pixel-cat:nth-child(2){animation-delay:-1.2s}.start-cats .pixel-cat:last-child{animation-delay:-.55s}.start-title>.eyebrow{display:inline-block;padding:6px 10px;border:2px solid #252e2e;background:#556c5b;color:#eee2c9;box-shadow:3px 3px 0 #382f2b;font-size:9px;letter-spacing:1.8px}.start-title h1{color:#eadfc6;font-size:clamp(43px,5.3vw,64px);font-weight:900;line-height:1.16;letter-spacing:.09em;-webkit-text-stroke:4px #272e2c;paint-order:stroke fill;text-shadow:4px 5px 0 #382f2b;margin:14px 0 10px}.start-title h2{display:inline-block;color:#eee2c8;background:#4f6e78;border:2px solid #293230;box-shadow:4px 5px 0 #c59a55;margin:0;padding:5px 16px 7px;font-size:25px;letter-spacing:.26em;transform:rotate(-1deg)}.start-title>p{width:min(610px,100%);margin:23px auto 18px;padding:12px 15px;background:#ebe1ccf5;border:2px solid #382f2b;box-shadow:4px 4px 0 #24312e;color:#3a3935;line-height:1.7;font-size:12px}.start-title>p strong{color:#925140}.start-actions{gap:17px}.start-actions button{width:230px;min-height:69px;padding:12px 17px;gap:13px;border:3px solid #282e2c;border-radius:3px}.start-actions b{font-size:16px}.start-actions small{font-size:9px;line-height:1.6}.start-actions button>span:first-child{font-size:24px}.start-play{background:#925140;color:#f4ead4;box-shadow:5px 5px 0 #c59a55}.start-shop{background:#526b50;color:#f4ead4;box-shadow:5px 5px 0 #4f6e78}.start-shop>span:first-child{color:#f4ead4}.start-save{color:#e0d3b9;font-size:10px;margin-top:21px}.start-screen>footer{left:30px;right:30px;bottom:18px;padding-top:11px;border-top:1px solid #dcc99f88;color:#d9ccb0;font-size:9px}
+.start-brand{top:23px;left:30px;right:auto;padding:9px 14px;background:#20302dcc;border:2px solid #202b2b;border-radius:3px;box-shadow:4px 4px 0 #51624c;color:#eee2c7}.xsolla-wordmark span{color:#d3c7ac}.start-brand>small{font-size:9px;border-left:1px solid #9c8f70;padding-left:15px;letter-spacing:1.4px}.start-title{width:min(760px,100%);max-height:calc(100svh - 158px);overflow:auto;scrollbar-width:thin;scrollbar-color:#c59a55 transparent;padding:10px 12px 17px}.start-cats{margin:0 0 12px;gap:0}.start-cats .pixel-cat{animation:cozy-cat-idle 2.8s steps(3,end) infinite;filter:drop-shadow(0 7px 0 #121b196b)}.start-cats .pixel-cat:nth-child(2){animation-delay:-1.2s}.start-cats .pixel-cat:last-child{animation-delay:-.55s}.start-title>.eyebrow{display:inline-block;padding:6px 10px;border:2px solid #252e2e;background:#556c5b;color:#eee2c9;box-shadow:3px 3px 0 #382f2b;font-size:9px;letter-spacing:1.8px}.start-title h1{color:#eadfc6;font-size:clamp(43px,5.3vw,64px);font-weight:900;line-height:1.16;letter-spacing:.09em;-webkit-text-stroke:4px #272e2c;paint-order:stroke fill;text-shadow:4px 5px 0 #382f2b;margin:14px 0 10px}.start-title h2{display:inline-block;color:#eee2c8;background:#4f6e78;border:2px solid #293230;box-shadow:4px 5px 0 #c59a55;margin:0;padding:5px 16px 7px;font-size:25px;letter-spacing:.26em;transform:rotate(-1deg)}.start-title>p{width:min(610px,100%);margin:23px auto 18px;padding:12px 15px;background:#ebe1ccf5;border:2px solid #382f2b;box-shadow:4px 4px 0 #24312e;color:#3a3935;line-height:1.7;font-size:12px}.start-title>p strong{color:#925140}.start-actions{gap:17px}.start-actions button{padding:12px 17px;gap:13px}.start-actions b{font-size:16px}.start-actions small{font-size:9px;line-height:1.6}.start-actions button>span:first-child{font-size:24px}.start-play{background:#925140;color:#f4ead4;box-shadow:5px 5px 0 #c59a55}.start-shop{background:#526b50;color:#f4ead4;box-shadow:5px 5px 0 #4f6e78}.start-shop>span:first-child{color:#f4ead4}.start-save{color:#e0d3b9;font-size:10px;margin-top:21px}.start-screen>footer{left:30px;right:30px;bottom:18px;padding-top:11px;border-top:1px solid #dcc99f88;color:#d9ccb0;font-size:9px}
 /* 主界面沿用相同色板；对白和操作保留当前模块接口。 */
 .topbar{background:#ebe1ccf7;border:2px solid #382f2b;border-radius:4px;box-shadow:0 4px 0 #526b50;margin-top:24px;padding:15px 20px;min-height:80px}.brand,.brand:hover{box-shadow:none;filter:none}.brand-mark{background:#925140;border-color:#382f2b;box-shadow:3px 3px 0 #c59a55}.chapter-pill{background:#4f6e78;box-shadow:3px 3px 0 #c59a55;border-color:#382f2b;color:#f1e8d3}.map-button{background:#4f6e78}.shop-button{background:#526b50}.page-heading{color:#f1e8d3}.page-heading>.wallet{color:#303333}.page-heading .eyebrow{color:#d5b578}.page-heading p{color:#d0d5be}.wallet>span{background:#f1e8d3;border-color:#382f2b;box-shadow:3px 3px 0 #526b50}.wallet b{color:#4f6e78}.world-panel{border-color:#382f2b;background:#e9dfc8;box-shadow:6px 6px 0 #24312e}.world-toolbar{border-color:#594536;background:#f1e8d3}.world-wrap{background:#344b54}.world-footer{background:#f1e8d3;border-color:#594536}.live-dot{background:#526b50}.area-label{border-color:#aaa68c}.quiet,.quiet:hover{color:#46624e;box-shadow:none}.quiet:hover{background:#dce3d4}.direction-pad button{background:#dce3d4;color:#3d5d4c;border-color:#66513e;box-shadow:none}.direction-pad button:hover{box-shadow:none}.journal-card{background:#e9dfc8;border-color:#382f2b;box-shadow:4px 4px 0 #24312e}.quest-steps{color:#697564}.quest-steps li.done{color:#42634d}.quest-steps li.done:before{color:#925140}.cat-entry strong span{background:#d8c58e}.cat-entry.locked{opacity:.58}.save-note{color:#d0d5be}.site-footer{color:#d0d5be}.select-label select{background:#f6edda;border-color:#66513e}.secondary{background:#dce3d4;color:#3d5d4c;border-color:#66513e;box-shadow:none}.secondary:hover{box-shadow:none}.shop-home{background:#526b50}.home-result{background:#ddd0ab}.attitude-btn{background:#f1e8d3;border-color:#66513e;color:#393a35}.attitude-btn.active,.attitude-btn:hover{background:#ddc88f}.inspect-hint{color:#3d5c60!important}
-.dialogue-card{background:#e9dfc8;border-color:#382f2b;border-radius:4px;box-shadow:0 0 0 2px #c59a55,6px 6px 0 #24312e}.dialogue-copy p{color:#393a35}.speaker{background:#526b50;color:#f4ead4;border:1px solid #382f2b;border-radius:2px}.lost-poster{background:#f1e8d3;border-color:#382f2b;box-shadow:5px 5px 0 #c59a55}.lost-poster>b{color:#925140;border-color:#526b50}.event-card{background:#e9dfc8;border-color:#382f2b;border-radius:4px;box-shadow:0 0 0 2px #c59a55,7px 8px 0 #24312e;max-height:calc(100svh - 36px);overflow-y:auto}.event-card h2{color:#624536}.choice-list button{background:#f0e7d2;color:#393a35;border-color:#66513e;box-shadow:3px 3px 0 #89906b}.choice-list button[aria-pressed=true]{background:#e4d3a8;box-shadow:3px 3px 0 #925140}.choice-list small{color:#626457}.event-tiers>span{background:#dce3d4;color:#4e574b}.event-tiers b{color:#3d5c60}.dice{background:#f7efd9;border-color:#382f2b;box-shadow:3px 3px 0 #c59a55}.dice-pair>.dice:last-child{box-shadow:3px 3px 0 #4f6e78}.dice i.on{background:#925140}.dice-zone button{background:#526b50}.event-resolution{background:#dce3d4;border-color:#6e806b}.event-resolution.tier-crit{background:#dae2c3;border-color:#768b54}.event-resolution.tier-partial{background:#e4d6af;border-color:#ac8a46}.event-resolution.tier-fail{background:#e8cfc0;border-color:#a16d59}.resolution-dice strong{color:#3e5d49}.outcome-effects>span{background:#f1e8d3;border-color:#9c9c83}.reward-note{background:#d8c58e;border-color:#66513e}.pause-label{background:#24312ee8}.pause-label button{background:#c59a55;color:#282e2c}.loading-card{color:#f1e8d3}.loading-card p{color:#d0d5be}
+.dialogue-card{background:#e9dfc8;border-color:#382f2b;border-radius:4px;box-shadow:0 0 0 2px #c59a55,6px 6px 0 #24312e}.dialogue-copy p{color:#393a35}
+/* 说话人名字标签：暖木色半透明磨砂 + 细木纹 + 顶部高光，奶白字压柔和深棕描边，融入米色气泡（替换旧绿底红字标签）。 */
+.speaker{background:repeating-linear-gradient(90deg,rgba(255,236,200,.09) 0 2px,rgba(0,0,0,0) 2px 7px),linear-gradient(180deg,rgba(153,113,74,.32),rgba(112,82,55,.52));color:#fbf2da;border:1px solid rgba(94,68,46,.6);border-radius:3px;text-shadow:0 1px 0 rgba(52,36,24,.85);box-shadow:inset 0 1px 0 rgba(255,242,208,.5),0 1px 3px rgba(46,32,22,.28);backdrop-filter:blur(3px)}
+.dialogue-narrator{background:none;border:0;box-shadow:none;backdrop-filter:none;color:#8a7a58;text-shadow:0 1px 0 rgba(255,248,228,.7)}.lost-poster{background:#f1e8d3;border-color:#382f2b;box-shadow:5px 5px 0 #c59a55}.lost-poster>b{color:#925140;border-color:#526b50}.event-card{background:#e9dfc8;border-color:#382f2b;border-radius:4px;box-shadow:0 0 0 2px #c59a55,7px 8px 0 #24312e;max-height:calc(100svh - 36px);overflow-y:auto}.event-card h2{color:#624536}.choice-list button{background:#f0e7d2;color:#393a35;border-color:#66513e;box-shadow:3px 3px 0 #89906b}.choice-list button[aria-pressed=true]{background:#e4d3a8;box-shadow:3px 3px 0 #925140}.choice-list small{color:#626457}.event-tiers>span{background:#dce3d4;color:#4e574b}.event-tiers b{color:#3d5c60}.dice{background:#f7efd9;border-color:#382f2b;box-shadow:3px 3px 0 #c59a55}.dice-pair>.dice:last-child{box-shadow:3px 3px 0 #4f6e78}.dice i.on{background:#925140}.dice-zone button{background:#526b50}.event-resolution{background:#dce3d4;border-color:#6e806b}.event-resolution.tier-crit{background:#dae2c3;border-color:#768b54}.event-resolution.tier-partial{background:#e4d6af;border-color:#ac8a46}.event-resolution.tier-fail{background:#e8cfc0;border-color:#a16d59}.resolution-dice strong{color:#3e5d49}.outcome-effects>span{background:#f1e8d3;border-color:#9c9c83}.reward-note{background:#d8c58e;border-color:#66513e}.pause-label{background:#24312ee8}.pause-label button{background:#c59a55;color:#282e2c}.loading-card{color:#f1e8d3}.loading-card p{color:#d0d5be}
 /* 地图与商店保留原生 dialog 的焦点、滚动和关闭能力。 */
 .game-modal{background:#e9dfc8;border-color:#382f2b;border-radius:4px;box-shadow:0 0 0 3px #c59a55,9px 10px 0 #24312e}.game-modal::backdrop{background:#222f2bb8}.map-origin{background:#ddcb98;border-color:#66513e}.map-stop{background:#dce3d4;border-color:#8e9e84}.map-stop.current{background:#ded0a7;border-color:#66513e}.map-stop.current .map-dot{background:#d2b765}.map-dot{background:#f1e8d3;border-color:#594536;color:#925140}.map-stop.locked{background:#d4d8ce;border-color:#9aab97;color:#596559}.map-stop.locked .map-dot{background:#c7cebf;color:#697564;border-color:#8e9e84}.shop-wallet{background:#d8c58e;border-color:#594536}.shop-banner{background:#526b50;border-color:#382f2b}.shop-banner>span{background:#c59a55;border-color:#382f2b}.shop-item{background:#f0e7d2;border-color:#66513e;box-shadow:3px 3px 0 #89906b}.item-art{background:#d8dfd0;color:#4f6e78;border-color:#a5ad96}.shop-item.red .item-art{background:#ead6c5;color:#925140;border-color:#bda38d}.shop-item.yellow .item-art{background:#e8d8ad;color:#926d35;border-color:#b9a777}.shop-item.box .item-art{background:#daccac;color:#795839;border-color:#aa9878}.shop-notice{background:#dce3d4;border-color:#526b50}.shop-notice.shop-error{background:#ecd3be;border-color:#925140}.shop-error button{background:#925140}
 @keyframes cozy-star{0%,100%{opacity:.42}50%{opacity:.95}}@keyframes cozy-cat-idle{0%,100%{translate:0 0}50%{translate:0 -5px}}
@@ -16,3 +19,143 @@ button{border-color:#382f2b;box-shadow:3px 3px 0 #c59a55;border-radius:3px}butto
 @media(max-width:520px){.start-screen{padding:89px 14px 60px}.start-brand{top:20px;left:20px;padding:8px 10px}.xsolla-wordmark{font-size:21px}.start-title{max-height:calc(100svh - 149px);padding:9px 6px 15px}.start-cats .pixel-cat{width:78px!important;height:78px!important}.start-cats .pixel-cat:nth-child(2){width:122px!important;height:122px!important}.start-title>.eyebrow{font-size:7px;letter-spacing:1.3px}.start-title h1{font-size:40px;margin:14px 0 12px}.start-title h2{font-size:19px;letter-spacing:6px;padding:6px 12px}.start-title>p{font-size:11px;padding:10px 12px;margin:21px 0 18px}.start-actions{gap:12px}.start-actions button{width:min(280px,100%);min-height:63px;padding:10px 17px}.start-actions b{font-size:15px}.start-actions small{font-size:9px;margin-top:4px}.start-save{font-size:9px;margin-top:20px}.start-screen>footer{left:20px;right:20px;bottom:17px}.topbar{margin-top:15px;min-height:70px;padding:11px 10px}.brand strong{font-size:13px}.brand{gap:7px}.topbar nav{gap:7px}.brand-mark{width:32px;height:32px;font-size:23px}.map-button,.shop-button{min-width:34px;padding:8px 7px}.event-card{width:calc(100% - 28px);margin:17px 14px;max-height:calc(100svh - 34px)}.game-modal{box-shadow:0 0 0 2px #c59a55,5px 6px 0 #24312e}}
 @media(max-height:680px){.start-cats .pixel-cat{width:75px!important;height:75px!important}.start-cats .pixel-cat:nth-child(2){width:105px!important;height:105px!important}.start-title h1{font-size:38px;margin:11px 0 8px}.start-title h2{font-size:19px}.start-title>p{margin:16px auto 13px;font-size:11px}.start-actions button{min-height:58px}.start-save{margin-top:17px}.start-title>.eyebrow{font-size:7px}}
 @media(prefers-reduced-motion:reduce){.pixel-cat,.pixel-star{animation:none!important}}
+/* Immersive UI overrides: floating tools, readable type and softer pixel controls. */
+:root{font-size:17px}.topbar{background:transparent;border:0;border-radius:0;box-shadow:none;margin-top:16px;padding:10px 4px;min-height:68px}.topbar nav{padding:0;background:transparent}.topbar nav button,.wallet>span,.chapter-pill{border:0;box-shadow:3px 3px 0 #24312e80;backdrop-filter:blur(5px)}.wallet>span{background:#f1e8d3dc}.topbar nav button:hover{box-shadow:3px 5px 0 #24312e80}.start-reset{background:#6f5748}.start-reset:hover{background:#806555;color:#fff1d5}.journal-card p,.dialogue-copy p,.event-card p{font-size:13px}.world-footer p,.quiet,.map-button,.shop-button{font-size:12px}
+/* —— 阶段3 星露谷像素化:弹层滑入 + 猫爪地图 + 补给小站 + 修缮/抽奖/絮语卡 —— */
+.game-modal{animation:cozy-modal-in .3s ease-in-out}
+/* 不用 translateY：中心缩放不改变弹窗几何中心，避免 e2e 在入场首帧量 bounds 时读到 16px 偏移。 */
+@keyframes cozy-modal-in{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+/* 猫爪地图:每站是一块木牌——顶亮面/底暗面/内缝,当前站点点亮呼吸 */
+.map-stop{border:2px solid #594536;border-radius:3px;background:linear-gradient(#f6edd8,#e5d9bd 70%,#d8c9a6);box-shadow:inset 0 2px 0 #fff9e8,inset 0 -3px 0 #b49d76,3px 3px 0 #24312e66;transition:translate .3s ease-in-out,box-shadow .3s ease-in-out}
+.map-stop:not(.locked):hover{translate:0 -2px;box-shadow:inset 0 2px 0 #fff9e8,inset 0 -3px 0 #b49d76,4px 5px 0 #24312e66}
+.map-stop.current{border-color:#382f2b;background:linear-gradient(#ffeaa6,#f0cf7d 70%,#d9ad53);box-shadow:inset 0 2px 0 #fff7d6,inset 0 -3px 0 #a5813d,0 0 0 3px #c59a5599,4px 4px 0 #24312e;animation:cozy-map-glow 2.4s ease-in-out infinite}
+@keyframes cozy-map-glow{50%{box-shadow:inset 0 2px 0 #fff7d6,inset 0 -3px 0 #a5813d,0 0 0 6px #c59a5566,4px 4px 0 #24312e}}
+.map-dot{border:2px solid #382f2b;border-radius:3px;box-shadow:inset 0 2px 0 #ffffff88,inset 0 -2px 0 #00000022,2px 2px 0 #24312e55}
+.map-stop.current .map-dot{background:#e8c766}
+.map-stop.locked{filter:saturate(.55);box-shadow:inset 0 2px 0 #ffffff55,inset 0 -3px 0 #b49d7688,2px 2px 0 #24312e33}
+.map-origin{border:2px solid #66513e;border-radius:3px;box-shadow:inset 0 2px 0 #f7edd2,3px 3px 0 #24312e55}
+.map-stop button{box-shadow:2px 2px 0 #24312e66}
+.world-map>footer b{color:#925140}
+/* 补给小站:礼包=木质包裹箱,选中亮起;支付框=木托盘;结果=收据纸 */
+.pack-card{border:2px solid #594536;border-radius:3px;background:linear-gradient(#f6edd8,#e5d9bd 65%,#d8c9a6);box-shadow:inset 0 2px 0 #fff9e8,inset 0 -3px 0 #b49d76,3px 3px 0 #24312e66;transition:translate .3s ease-in-out,box-shadow .3s ease-in-out}
+.pack-card:hover{translate:0 -2px}
+.pack-card.selected{border-color:#382f2b;background:linear-gradient(#ffeaa6,#f0cf7d 65%,#d9ad53);box-shadow:inset 0 2px 0 #fff7d6,inset 0 -3px 0 #a5813d,0 0 0 3px #c59a5599,4px 4px 0 #24312e;animation:cozy-map-glow 2.4s ease-in-out infinite}
+.pack-card b{color:#7c4a22}
+.recharge-paybox{border:2px solid #594536;border-radius:3px;background:linear-gradient(#dccfa9,#cbb98d);box-shadow:inset 0 2px 0 #efe4c4,inset 0 -3px 0 #a8946d}
+.recharge-paybox input{border:2px solid #594536;border-radius:3px;background:#fbf4e0;box-shadow:inset 2px 2px 0 #d8c9a6}
+.recharge-demo-tips .secondary{border:2px solid #66513e;border-radius:3px;background:#f1e8d3;box-shadow:2px 2px 0 #24312e55;color:#3d5d4c}
+.recharge-demo-tips .secondary:hover{box-shadow:2px 3px 0 #24312e55}
+.recharge-result{border:2px solid #382f2b;border-radius:3px;position:relative}
+.recharge-result.ok{background:repeating-linear-gradient(#eaf3d9 0 22px,#e0ecd0 22px 23px)}
+.recharge-result.declined{background:repeating-linear-gradient(#f7e8d4 0 22px,#eddcc4 22px 23px)}
+.recharge-result small{color:#62695d}
+.receipt-art{filter:drop-shadow(3px 4px 0 #24312e55);animation:cozy-receipt-bounce .55s cubic-bezier(.3,1.6,.5,1)}
+@keyframes cozy-receipt-bounce{from{transform:translateY(-14px) scale(.7);opacity:0}to{transform:none;opacity:1}}
+.recharge-history{border:2px dashed #a8946d;border-radius:3px;background:#f4ecd8aa}
+.recharge-history summary{color:#594536}
+.recharge-history .is-good{border-radius:2px}
+.recharge-history .is-declined{border-radius:2px}
+.recharge-dialog>footer{border-top:2px dashed #c9b892;padding-top:10px}
+/* 家园抽卡池:包裹箱卡面 + 金枪鱼池暖金渐变 */
+.pool-card{border:2px solid #594536;border-radius:3px;background:linear-gradient(#f6edd8,#e9dbb9);box-shadow:inset 0 2px 0 #fff9e8,3px 3px 0 #24312e55;padding:13px 15px}
+.pool-card.pool-tuna{background:linear-gradient(150deg,#ffe9b8,#f2d492 60%,#e2bb72);box-shadow:inset 0 2px 0 #fff7d6,inset 0 -3px 0 #c69b4e,3px 3px 0 #24312e55}
+.pool-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px}
+.pool-head b{font-size:14px;color:#59431f}
+.pool-head span{font-size:10px;color:#62695d}
+.pool-card button{width:100%}
+.pool-card .pool-recharge{margin-top:8px}
+/* 花房修缮卡:工程木牌 + 四段像素进度槽(亮面填充) */
+.renovation-card{margin-top:4px;padding:11px 13px;border:2px solid #594536;border-radius:3px;background:linear-gradient(150deg,#dce7d2,#e6d8b4 70%,#e2cfa4);box-shadow:inset 0 2px 0 #f4f0da,3px 3px 0 #24312e55}
+.renovation-title{margin:2px 0 7px;font-size:15px;color:#59431f}
+.renovation-track{display:flex;gap:4px;margin-bottom:8px}
+.renovation-seg{flex:1;height:10px;border:2px solid #594536;border-radius:2px;background:#cbbf9f;box-shadow:inset 0 2px 0 #00000022}
+.renovation-seg.done{background:linear-gradient(90deg,#f4d689,#e2a03f);box-shadow:inset 0 2px 0 #fff3c4,inset 0 -2px 0 #a5741f}
+.renovation-hint{margin:0 0 8px;font-size:13px;line-height:1.5}
+.renovation-next{margin:0 0 4px;font-size:13px;line-height:1.5;color:#393a35}
+.renovation-cost-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.renovation-cost-label{font-size:13px}
+.renovation-progress{flex-basis:100%;display:block;height:8px;border:2px solid #594536;border-radius:2px;background:#cbbf9f;overflow:hidden}
+.renovation-progress>span{display:block;height:100%;background:linear-gradient(90deg,#8fbf9f,#5f9d74)}
+.renovation-done{margin:0;font-size:13px}
+/* 伙伴絮语:羊皮纸 + 金边 */
+.cat-chatter-box{margin:10px 0;padding:11px 14px;border:2px solid #a8946d;border-left:4px solid #c59a55;border-radius:3px;background:#f4ecd8;font-size:13px;color:#393a35;box-shadow:inset 0 2px 0 #fdf7e4,2px 2px 0 #24312e33}
+.cat-chatter-head{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-weight:700;color:#925140}
+.cat-chatter-sub{font-size:11px;color:#62695d;font-weight:400}
+.cat-chatter-item{margin-top:6px;line-height:1.5}
+.cat-chatter-item:first-of-type{margin-top:0}
+.cat-chatter-item strong{color:#4f6e78}
+/* 线索提示卡 / 庆典卡 / 按钮排 */
+.clue-card{margin-top:8px;padding:11px 13px;border:2px dashed #b08a3e;border-radius:3px;background:#f2e3bd;box-shadow:2px 2px 0 #24312e33}
+.clue-card-title{font-size:13px;color:#925140;font-weight:700;margin-bottom:5px}
+.clue-card-hint{font-size:12px;color:#62695d;margin-bottom:8px;line-height:1.45}
+.celebration-card{margin-top:10px;padding:12px 16px;border:2px solid #b08a3e;border-radius:3px;background:linear-gradient(150deg,#ffe9a8,#f4c877 60%,#e8ae4e);box-shadow:inset 0 2px 0 #fff7d6,0 0 0 3px #c59a5566,4px 4px 0 #24312e55}
+.celebration-title{font-weight:700;color:#6e4712;font-size:15px;margin-bottom:5px}
+.celebration-text{font-size:13px;color:#59431f;line-height:1.55}
+.home-action-row{display:flex;gap:8px;flex-wrap:wrap}
+.home-action-gap{margin-top:8px}
+.home-panel .renovation-card .eyebrow,.home-panel .renovation-card h3{color:#59431f}
+@media(prefers-reduced-motion:reduce){.game-modal,.map-stop.current,.pack-card.selected,.receipt-art{animation:none}}
+/* —— 阶段4 沉浸式 HUD：夜色磨砂玻璃悬浮条 + 大字提示卡 3 秒淡出 + 全局阅读级字号 —— */
+/* 全屏场景（探索/家园/对话/事件）：工具条与提示条化作暗夜磨砂玻璃，金色发丝描边悬浮在画面上；
+   战斗阶段是可滚动的浅色模块面，不套玻璃。前缀抬特异性以压过 layout-viewport 的后加载规则。 */
+.app-shell:not([data-phase=battle]) .world-toolbar,
+.app-shell:not([data-phase=battle]) .world-footer{background:rgba(16,28,32,.55);border:1.5px solid rgba(255,226,150,.26);border-radius:11px;box-shadow:0 8px 22px rgba(8,17,20,.5),inset 0 1px 0 rgba(255,240,200,.12);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.app-shell:not([data-phase=battle]) .world-toolbar strong{color:#f6ecd2}
+.app-shell:not([data-phase=battle]) .world-toolbar .area-label{color:#cfc39e;border-color:rgba(255,226,150,.22)}
+.app-shell:not([data-phase=battle]) .world-toolbar .quiet{color:#ead9a8}
+.app-shell:not([data-phase=battle]) .world-toolbar .quiet:hover{background:rgba(255,226,150,.14)}
+.app-shell:not([data-phase=battle]) .world-toolbar .live-dot{background:#ffd76e;box-shadow:0 0 9px #ffd76e99;animation:cozy-hud-pulse 2.4s ease-in-out infinite}
+@keyframes cozy-hud-pulse{50%{opacity:.4}}
+.app-shell:not([data-phase=battle]) .world-footer p{max-width:640px;font-size:18px;line-height:1.62;color:#f2ead4;text-shadow:0 2px 6px rgba(8,17,20,.6);transition:opacity .6s ease,transform .6s ease}
+.app-shell:not([data-phase=battle]) .world-footer p.inspect-hint{color:#ffe9a8!important;font-weight:700}
+.app-shell:not([data-phase=battle]) .world-footer>button{font-size:13px;padding:9px 13px}
+.app-shell:not([data-phase=battle]) .alley-objective{font-size:13px;border-radius:9px}
+/* 探索 HUD 智能感知（GameScreen 距离检测控制 .hint-idle）：进场 3 秒整栏淡出下落，靠近交互物或有挤/爬提示时再滑回来，画面完全还给玩家 */
+.app-shell:not([data-phase=battle]) .world-footer{transition:opacity .35s ease,transform .35s ease}
+.app-shell:not([data-phase=battle]) .world-footer.hint-idle{opacity:0;transform:translateY(14px);pointer-events:none}
+@media(prefers-reduced-motion:reduce){.app-shell:not([data-phase=battle]) .world-footer,.app-shell:not([data-phase=battle]) .world-footer.hint-idle{transition:none;transform:none}}
+@media(max-width:800px){
+ .app-shell:not([data-phase=battle]) .world-footer p{font-size:14px;line-height:1.55;flex-basis:100%}
+ .app-shell:not([data-phase=battle]) .world-toolbar strong{font-size:11px}
+}
+/* 全局字号 +1：按钮、选项、期刊与事件卡正文（对话正文 15px 见 styles/layout 两处） */
+button{font-size:14px}
+.choice-list button{font-size:13px}
+.dialogue-actions button,.dialogue-actions .skip-button{font-size:12px}
+.journal-card p,.event-card p{font-size:14px}
+.quiet,.map-button,.shop-button{font-size:13px}
+@media(max-width:520px){button{font-size:13px}.choice-list button{font-size:12px}.journal-card p,.event-card p{font-size:13px}}
+/* ===== 沉浸式可折叠顶栏：默认收起只留木签小钮，展开滑出深色磨砂横栏 ===== */
+/* 折叠收起：整条滑出屏外并失去命中；展开态压成深色磨砂木纹（特异性盖过 layout-viewport 的浅渐变）。 */
+.app-shell:not([data-phase=battle]) .topbar{background:linear-gradient(180deg,rgba(26,36,34,.92),rgba(26,36,34,.78));border-bottom:2px solid rgba(197,154,85,.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s cubic-bezier(.4,0,.2,1)}
+.app-shell:not([data-phase=battle]) .topbar.topbar-collapsed{transform:translateY(-112%);opacity:0;pointer-events:none}
+.app-shell:not([data-phase=battle]) .topbar.topbar-collapsed .wallet b,.app-shell:not([data-phase=battle]) .topbar.topbar-collapsed nav{visibility:hidden}
+/* 木质小签折叠钮：位置完全由内联 left/top 决定（可自由拖拽、松手吸附最近屏幕边）；此处只管外观与动效。 */
+.topbar-toggle{position:fixed;z-index:40;display:inline-flex;align-items:center;gap:7px;padding:7px 15px 8px;font-size:13px;font-weight:800;letter-spacing:2px;color:#f6ecd2;background:linear-gradient(180deg,#8a6a48,#6f5748 78%,#5d4837);border:2px solid #382f2b;border-radius:4px;box-shadow:0 3px 0 #24312e,inset 0 1px 0 rgba(255,243,196,.4);cursor:pointer;touch-action:none;transition:transform .2s cubic-bezier(.4,0,.2,1),box-shadow .2s cubic-bezier(.4,0,.2,1),left .26s cubic-bezier(.22,1,.36,1),top .26s cubic-bezier(.22,1,.36,1)}
+.topbar-toggle:hover{transform:scale(1.1);box-shadow:0 4px 0 #24312e,0 0 16px rgba(255,215,110,.55),inset 0 1px 0 rgba(255,243,196,.55)}
+.topbar-toggle:active{transform:scale(1.02)}
+.topbar-toggle-paw{font-size:15px;line-height:1;color:#ffd76e;text-shadow:0 1px 0 #24312e}
+.topbar-toggle-chev{font-size:11px;line-height:1;color:#f6ecd2;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.topbar-toggle.expanded .topbar-toggle-chev{transform:rotate(180deg)}
+/* 拖拽中禁过渡跟手；松手后 left/top 沿过渡滑入吸附落点，形成“磁吸”手感。 */
+.topbar-toggle.dragging{transition:none;cursor:grabbing;box-shadow:0 6px 14px rgba(8,17,20,.5),0 0 16px rgba(255,215,110,.4),inset 0 1px 0 rgba(255,243,196,.55);z-index:70}
+@media(prefers-reduced-motion:reduce){.app-shell:not([data-phase=battle]) .topbar,.topbar-toggle,.topbar-toggle-chev{transition:none}.app-shell:not([data-phase=battle]) .topbar.topbar-collapsed{transform:none}}
+/* ===== 家具选择器：原位展开的暖色木牌列表（替代系统原生下拉） ===== */
+.furniture-picker{position:relative;display:block;width:100%}
+.furniture-picker-button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;background:linear-gradient(#f6edd8,#e7dabd 72%,#d9c9a5);border:2px solid #594536;border-radius:4px;color:#393a35;box-shadow:inset 0 2px 0 #fff9e8,inset 0 -2px 0 #b49d76,3px 3px 0 #24312e55;cursor:pointer;transition:box-shadow .2s cubic-bezier(.4,0,.2,1),translate .2s cubic-bezier(.4,0,.2,1)}
+.furniture-picker-button:hover:not(:disabled){translate:0 -1px;box-shadow:inset 0 2px 0 #fff9e8,inset 0 -2px 0 #b49d76,4px 4px 0 #24312e66}
+.furniture-picker-caption{font-size:11px;font-weight:800;letter-spacing:2px;color:#8a7a58;white-space:nowrap}
+.furniture-picker-button>b{flex:1;text-align:left;font-size:13px;color:#4a3a28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.furniture-picker-chev{font-size:11px;color:#8a7a58;transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.furniture-picker.open .furniture-picker-chev{transform:rotate(180deg)}
+.furniture-picker.open .furniture-picker-button{border-color:#382f2b;box-shadow:inset 0 2px 0 #fff9e8,inset 0 -2px 0 #b49d76,0 0 0 3px #c59a5599,4px 4px 0 #24312e66}
+/* 列表悬浮在按钮正下方：米色木底 + 金描边 + 硬阴影像素落款，逐项错峰滑入。 */
+.furniture-picker-list{position:absolute;left:0;right:0;top:calc(100% + 7px);z-index:35;list-style:none;margin:0;padding:5px;background:#f6edd8;border:2px solid #382f2b;border-radius:4px;box-shadow:0 0 0 2px #c59a55,5px 6px 0 #24312e;max-height:232px;overflow-y:auto;animation:furniture-list-in .22s cubic-bezier(.22,1,.36,1)}
+@keyframes furniture-list-in{from{opacity:0;transform:translateY(-6px) scale(.985)}to{opacity:1;transform:none}}
+.furniture-picker-list li{animation:furniture-item-in .26s cubic-bezier(.22,1,.36,1) backwards}
+@keyframes furniture-item-in{from{opacity:0;transform:translateX(-7px)}to{opacity:1;transform:none}}
+.furniture-picker-list button{display:block;width:100%;text-align:left;padding:8px 11px;font-size:13px;color:#4a3a28;background:transparent;border:0;border-radius:3px;cursor:pointer;transition:background .15s ease-in-out,translate .15s ease-in-out,box-shadow .15s ease-in-out;box-shadow:none}
+.furniture-picker-list button:hover:not(:disabled){background:#ecd9a8;translate:2px 0;box-shadow:none}
+.furniture-picker-list button.selected{background:linear-gradient(90deg,#ffe9ae,#f2d38c);color:#5d3d1e;font-weight:800;box-shadow:inset 0 0 0 2px #c59a5588}
+.furniture-picker-list button.selected:before{content:'🐾 ';font-size:11px}
+@media(prefers-reduced-motion:reduce){.furniture-picker-list,.furniture-picker-list li{animation:none}.furniture-picker-button,.furniture-picker-list button{transition:none}}

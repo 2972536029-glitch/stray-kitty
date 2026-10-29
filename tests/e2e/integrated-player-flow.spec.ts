@@ -10,7 +10,7 @@ import {findPath, sweepMove, type CollisionField} from '../../web/src/modules/ra
 import {rainyAlleyFieldClosed, rainyAlleyFieldOpen, CRATE_CLIMBS} from '../../web/src/modules/rainyAlley/runtimeGeometry';
 import {rainyAlleyMapData} from '../../web/src/modules/rainyAlley/mapData';
 import {isMarketTraversable, nearestMarketPosition, sweepMarketMove, marketPortals, type MarketFloor} from '../../web/src/modules/nightMarket/map';
-import {TunnelWalkableMask} from '../../web/src/modules/chapter4/TunnelWalkableMask';
+import {tunnelClimbSurface, tunnelGroundMask} from '../../web/src/modules/chapter4/surfaces';
 import tunnelData from '../../level_design/chapter4/data/chapter4.map.json';
 
 const root = process.cwd(), origin = 'http://127.0.0.1:8179';
@@ -123,6 +123,59 @@ test('A: registry mounts integrated Alley, Market and Tunnel, loads artwork and 
   for(const part of ['rainy_alley_background','night_market_L0','night_market_L1','night_market_Lminus1','chapter4_L0_approved','chapter4_Lminus1','chapter4_L0_walkable','chapter4_Lminus1_walkable'])expect([...assets].some(a=>a.includes(part)),part).toBe(true);
 });
 
+test('H: Tunnel smoke — movement, event retry and reversible lower-floor stairs',async({page})=>{
+  test.setTimeout(120000);
+  await page.addInitScript(()=>{
+    const texts=new Set<string>();
+    (window as unknown as {tunnelSmokeTexts:Set<string>}).tunnelSmokeTexts=texts;
+    const fillText=CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText=function(...args:Parameters<typeof fillText>){texts.add(args[0]);return Reflect.apply(fillText,this,args);};
+  });
+  await open(page,94);await click(page,/进入第四章试玩/);await checkScene(page,'tunnel',true);
+  await page.screenshot({path:'output/player-flow/tunnel-signs-entry.png'});
+  const fields=await tunnelFields(page);
+  const walk=async(target:Endpoint)=>{
+    const flags=(await state(page)).flags;
+    const links=tunnelData.portals.filter(link=>link.key!=='F'||flags.includes('tunnel_false_kitten_trap_found'));
+    await traverse(page,plan(fields,{...await position(page),layer:(await canvas(page).getAttribute('data-floor'))!},target,links,flags),142);
+  };
+  await walk({x:402,y:239,layer:'L0'});
+  // One failed fetch must remain safely retryable, then open the real event card.
+  let interrupted=false;
+  const keys:string[]=[];
+  await page.route('**/api/v1/commands',route=>{
+    if(route.request().postDataJSON()?.command?.type==='INTERACT') {
+      keys.push(route.request().headers()['idempotency-key']);
+      if(!interrupted){interrupted=true;return route.abort('failed');}
+    }
+    return route.continue();
+  });
+  await page.keyboard.press('e');await expect(page.getByRole('alert')).toContainText('无法连接游戏服务');
+  await click(page,'重试上次操作');await expect(page.locator('.choice-list button').first()).toBeVisible();
+  expect(keys.length).toBe(2);expect(keys[0]).toBe(keys[1]);
+  await event(page);expect((await state(page)).flags).toContain('tunnel_false_kitten_trap_found');
+  await walk({x:320,y:422,layer:'L0'});
+  await page.screenshot({path:'output/player-flow/tunnel-signs-stairs.png'});
+  await page.keyboard.press('f');await expect(canvas(page)).toHaveAttribute('data-floor','Lm1');
+  await page.waitForTimeout(500);
+  await walk({x:330,y:430,layer:'Lm1'});
+  await page.screenshot({path:'output/player-flow/tunnel-signs-lower.png'});
+  await page.keyboard.press('Space');await page.waitForTimeout(600);
+  expect(Math.hypot((await position(page)).x-520,(await position(page)).y-470)).toBeLessThan(4);
+  await page.screenshot({path:'output/player-flow/tunnel-lower-bank-landing.png'});
+  await page.keyboard.press('Space');await page.waitForTimeout(600);
+  expect(Math.hypot((await position(page)).x-330,(await position(page)).y-430)).toBeLessThan(4);
+  await walk({x:160,y:195,layer:'Lm1'});
+  await page.keyboard.press('f');await expect(canvas(page)).toHaveAttribute('data-floor','L0');
+  await page.waitForTimeout(500);
+  const start=await position(page);await page.keyboard.down('ArrowUp');await page.waitForTimeout(300);await page.keyboard.up('ArrowUp');
+  expect(Math.hypot((await position(page)).x-start.x,(await position(page)).y-start.y)).toBeGreaterThan(10);
+  const texts=await page.evaluate(()=>[...(window as unknown as {tunnelSmokeTexts:Set<string>}).tunnelSmokeTexts]);
+  expect(texts.some(text=>/^R[1-4] ·|^\?$/.test(text))).toBe(false);
+  expect(texts.some(text=>text.includes('Space · 跳过水沟'))).toBe(true);
+  await flowRow(page,'Tunnel signs and stairs smoke','visible E event, same-key fetch retry, F down/up and Space between reachable banks','D flag, both floor renders, no random signs; no crash');
+});
+
 test('B: every available Home, map, trial, story, replay and development chapter control',async({page})=>{
   test.setTimeout(180000);
   let id=10;
@@ -213,6 +266,8 @@ function plan(fields:Record<string,CollisionField>,start:Endpoint,target:Endpoin
     const {point,steps}=queue.shift()!,field=fields[point.layer];
     if(point.layer===target.layer){const route=walkPath(field,point,target);if(route.length)return [...steps,{points:route,field}];}
     for(const link of links)for(const [a,b] of [[link.a,link.b],[link.b,link.a]]) {
+      // Raised ridge edges are tested separately, not as ground-floor shortcuts.
+      if(tunnelClimbSurface(link.id))continue;
       const key=`${link.id}:${a.layer}:${a.x}`;
       if(a.layer!==point.layer||seen.has(key)||(link.requiresFlag&&!flags.includes(link.requiresFlag)))continue;
       const route=walkPath(field,point,a);
@@ -257,7 +312,7 @@ async function tunnelFields(page:Page) {
       const bytes=new Uint8Array(c.width*c.height);for(let i=0;i<bytes.length;i++)bytes[i]=pixels[i*4];
       let text='';for(let i=0;i<bytes.length;i+=8192)text+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(text);
     },url);
-    const mask=new TunnelWalkableMask(1672,941,new Uint8Array(Buffer.from(raw,'base64')));
+    const mask=tunnelGroundMask(floor as 'L0'|'Lm1',1672,941,new Uint8Array(Buffer.from(raw,'base64')));
     const nearest=(p:Point)=>{if(mask.isWalkable(p))return p;for(let r=2;r<80;r+=2)for(let a=0;a<Math.PI*2;a+=Math.PI/16){const q={x:p.x+Math.cos(a)*r,y:p.y+Math.sin(a)*r};if(mask.isWalkable(q))return q;}return null;};
     result[floor]=fieldFor(p=>mask.isWalkable(p),nearest,(p,d)=>mask.move(p,d,.25).position);
   }

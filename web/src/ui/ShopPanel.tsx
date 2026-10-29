@@ -1,5 +1,6 @@
 import type {Catalog, GameState} from '../contracts';
 import Modal from './Modal';
+import {playSound} from './soundEffects';
 
 const art: Record<string, {icon: string; color: string}> = {blue_bowl: {icon: '◒', color: 'blue'}, red_cushion: {icon: '♥', color: 'red'}, sun_lamp: {icon: '☀', color: 'yellow'}, box_castle: {icon: '⌂', color: 'box'}};
 export default function ShopPanel({state, catalog, disabled, error, onBuy, onRetry, onClose, onRecharge}: {state: GameState; catalog: Catalog; disabled: boolean; error: string; onBuy: (productId: string) => void; onRetry: () => void; onClose: () => void; onRecharge: () => void}) {
@@ -28,7 +29,7 @@ export default function ShopPanel({state, catalog, disabled, error, onBuy, onRet
       const style = art[product.furnitureId] ?? {icon: '✦', color: 'blue'};
       return <article key={product.id} className={`shop-item ${style.color} ${owned ? 'owned' : ''}`}>
         <div className="item-art" aria-hidden="true">{style.icon}<small>✦</small></div><span>{furniture?.theme}</span><h3>{furniture?.name ?? product.furnitureId}</h3>
-        <button disabled={disabled || owned || locked || !atHome || !affordable || product.status !== 'available'} onClick={() => onBuy(product.id)} aria-label={owned ? `${furniture?.name}已拥有` : `购买${furniture?.name}，${product.price}邮票`}>
+        <button disabled={disabled || owned || locked || !atHome || !affordable || product.status !== 'available'} data-sound="pickup" onClick={() => {playSound('pickup');onBuy(product.id);}} aria-label={owned ? `${furniture?.name}已拥有` : `购买${furniture?.name}，${product.price}邮票`}>
           {owned ? '已送达花房' : `✦ ${product.price}　${!affordable && atHome ? '邮票不足' : '购买'}`}
         </button>
       </article>;

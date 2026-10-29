@@ -9,7 +9,14 @@ export class HttpGameApi implements GameApiPort {
   private session: Session | null;
   constructor(private cache = new BrowserSessionStore()) {this.session = cache.read();}
   async request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const response=await fetch(runtime.apiBase+path,{signal:AbortSignal.timeout(15000),...init,headers:{...(this.session?{Authorization:'Bearer '+this.session.token}:{}),...init.headers}});
+    let response: Response;
+    try {
+      response=await fetch(runtime.apiBase+path,{signal:AbortSignal.timeout(15000),...init,headers:{...(this.session?{Authorization:'Bearer '+this.session.token}:{}),...init.headers}});
+    } catch (cause) {
+      // A network failure does not confirm whether the command reached the server.
+      // Keep its pending receipt so Retry uses the same idempotency key.
+      throw new Error('无法连接游戏服务，请确认服务已启动、网络正常后，点击「重试上次操作」。', {cause});
+    }
     if(!response.ok){const body=await response.json() as ApiErrorBody;throw new ApiError(body.error.code,body.error.message,response.status);}
     return response.json() as Promise<T>;
   }
