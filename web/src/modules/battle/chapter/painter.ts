@@ -38,9 +38,6 @@ export function drawChapterCat(ctx:CanvasRenderingContext2D,id:CatId,x:number,y:
 
 function drawRubbish(ctx:CanvasRenderingContext2D,x:number,y:number,index:number){
   paintSceneProp(ctx,'alley',(['bin','crate','sacks'] as const)[index],x,y,CELL,index);
-  ctx.save();ctx.fillStyle=SCENE_INK.label;ctx.font='9px "Microsoft YaHei",sans-serif';ctx.textAlign='center';
-  ctx.fillText(['垃圾桶','破纸箱','杂物袋'][index],x+40,y+67);
-  ctx.restore();
 }
 
 function drawBoss(ctx:CanvasRenderingContext2D,state:ChapterState){
@@ -88,13 +85,11 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
     const bx=x*CELL,by=y*CELL,goal=x===MAP.goal.x&&y===MAP.goal.y,spawn=MAP.spawns.some(p=>p.x===x&&p.y===y),obstacle=obstacleCell(x,y);
     paintSceneTile(ctx,'alley',x,y,CELL,{goal,spawn,obstacle});
     paintSceneEdge(ctx,'alley',x,y,CELL,mapCell);
-    ctx.fillStyle=SCENE_INK.label;ctx.font='9px "Microsoft YaHei",sans-serif';ctx.fillText(cellName({x,y}),bx+7,by+CELL-7);
     if(obstacle)drawRubbish(ctx,bx,by,y);
     if(spawn){
       rect(ctx,bx+5,by+5,CELL-10,CELL-10,'#b77d6730');ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(bx+5,by+5,CELL-10,CELL-10);
       if(y===0){pixelBlocks(ctx,SCENE_INK.danger,[[bx+29,by+30,23,4],[bx+33,by+34,15,4],[bx+37,by+38,7,4]]);}
       else pixelBlocks(ctx,SCENE_INK.danger,[[bx+50,by+29,4,23],[bx+46,by+33,4,15],[bx+42,by+37,4,7]]);
-      ctx.fillStyle=SCENE_INK.danger;ctx.font='8px sans-serif';ctx.textAlign='center';ctx.fillText('出怪口',bx+40,by+60);ctx.textAlign='start';
     }
   }
   // One footprint spans four logical cells; one boss sprite and one HP pool occupy it.
@@ -106,11 +101,7 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
     ctx.fillText('首领已退去',(state.boss.x+state.boss.width/2)*CELL,(state.boss.y+state.boss.height/2)*CELL);ctx.textAlign='start';
   }
   ctx.restore();
-  // As in L00, these dashed lines show logical enemy routes only.
-  ctx.save();ctx.strokeStyle=SCENE_INK.route;ctx.lineWidth=1.4;ctx.setLineDash([5,7]);
-  for(const row of [3,4]){ctx.beginPath();ctx.moveTo(BOARD_WIDTH-35,(row+.5)*CELL);ctx.lineTo(40,(row+.5)*CELL);if(row===4)ctx.lineTo(40,280);ctx.stroke();}
-  ctx.beginPath();ctx.moveTo((MAP.spawns[2].x+.5)*CELL,25);ctx.lineTo((MAP.spawns[2].x+.5)*CELL,3.5*CELL);ctx.lineTo(40,3.5*CELL);ctx.stroke();ctx.restore();
-  drawCat(ctx,'hero',10,3*CELL+13,58);ctx.fillStyle=SCENE_INK.gold;ctx.font='9px sans-serif';ctx.fillText('守护点',24,3*CELL+74);
+  drawCat(ctx,'hero',10,3*CELL+13,58);
   paintCarryAnchor(ctx,state.carry,CELL,mapCell);
   const cat=state.cats.find(c=>c.id===selected&&c.status==='active');
   if(cat&&!state.aim){ctx.fillStyle='#8ee2cb30';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;for(const p of getAttackCells(cat)){if(mapCell(p.x,p.y)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4.5,p.y*CELL+4.5,CELL-9,CELL-9);}}}

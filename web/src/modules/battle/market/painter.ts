@@ -1,7 +1,7 @@
 import {paintCarryAnchor} from '../carry-painter';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
-import {CELLS, MAP, ROUTES} from './config';
+import {CELLS, MAP} from './config';
 import {getAttackCells, getSkillCells} from './engine';
 import type {MarketCatId, MarketState, Position} from './types';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
@@ -38,8 +38,6 @@ function drawMarketCat(ctx:CanvasRenderingContext2D,id:MarketCatId,x:number,y:nu
 function drawStall(ctx:CanvasRenderingContext2D,x:number,y:number,index:number){
   const kind=index%3;
   paintSceneProp(ctx,'market',(['food-stall','toy-stall','notice-stall'] as const)[kind],x,y,CELL,index);
-  ctx.save();ctx.textAlign='center';ctx.fillStyle=SCENE_INK.label;ctx.font='9px "Microsoft YaHei",sans-serif';ctx.fillText(['食物摊','玩具摊','情报摊'][kind],x+40,y+67);
-  ctx.restore();
 }
 
 /** A one-cell lantern keeper closes its lamp before sweeping sideways; no charge bar. */
@@ -80,19 +78,16 @@ export function paintMarket(ctx:CanvasRenderingContext2D,state:MarketState,selec
     const spawn=MAP.spawns.some(cell=>cell.x===x&&cell.y===y);
     paintSceneTile(ctx,'market',x,y,CELL,{goal,obstacle,spawn});
     paintSceneEdge(ctx,'market',x,y,CELL,mapCell);
-    ctx.fillStyle=SCENE_INK.label;ctx.textAlign='start';ctx.font='9px sans-serif';ctx.fillText(cellName(position),bx+7,by+CELL-7);
     if(obstacle)drawStall(ctx,bx,by,MAP.obstacles.findIndex(cell=>cell.x===x&&cell.y===y));
   }
-  ctx.save();ctx.strokeStyle=SCENE_INK.route;ctx.lineWidth=1.1;ctx.setLineDash([4,7]);
-  for(const path of Object.values(ROUTES)){ctx.beginPath();path.forEach((p,i)=>{const px=(p.x+.5)*CELL,py=(p.y+.5)*CELL;if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);});ctx.stroke();}ctx.restore();
   for(const {x,y} of MAP.spawns){
     const bx=x*CELL,by=y*CELL;ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(bx+5,by+5,CELL-10,CELL-10);
     const points=y===0?[[bx+29,by+26,23,4],[bx+33,by+30,15,4],[bx+37,by+34,7,4]]:y===4?[[bx+37,by+26,7,4],[bx+33,by+30,15,4],[bx+29,by+34,23,4]]:[[bx+45,by+24,4,23],[bx+41,by+28,4,15],[bx+37,by+32,4,7]];
-    blocks(ctx,SCENE_INK.danger,points);ctx.textAlign='center';ctx.font='8px sans-serif';ctx.fillStyle=SCENE_INK.danger;ctx.fillText('出怪口',bx+40,by+58);
+    blocks(ctx,SCENE_INK.danger,points);
   }
   rect(ctx,MAP.boss.x*CELL+3,MAP.boss.y*CELL+3,CELL-6,CELL-6,'#66546f38');
   if(state.boss.phase==='defeated'){ctx.fillStyle=SCENE_INK.label;ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('首领已退去',(MAP.boss.x+.5)*CELL,(MAP.boss.y+.5)*CELL);}
-  drawCat(ctx,'hero',8,MAP.goal.y*CELL+11,62);ctx.fillStyle=SCENE_INK.gold;ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText('守护 C1',40,MAP.goal.y*CELL+73);
+  drawCat(ctx,'hero',8,MAP.goal.y*CELL+11,62);
   paintCarryAnchor(ctx,state.carry,CELL,mapCell);
   const selectedCat=state.cats.find(cat=>cat.id===selected&&cat.status==='active');
   if(selectedCat&&!state.aim){ctx.fillStyle='#8ee2cb30';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;for(const p of getAttackCells(selectedCat)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);}}

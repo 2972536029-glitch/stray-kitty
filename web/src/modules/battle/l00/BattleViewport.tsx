@@ -9,6 +9,7 @@ import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
 import {CatHealth, CatEnergy} from '../UnitMeters';
 import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
+import {SpawnLabel} from '../SpawnLabel';
 import {COMMANDER_POSITION, CONFIG, DIFFICULTY_CONFIG, SKILLS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, isSkillTargetAllowed} from './ranges';
 import {drawCat, paintBattle} from './painter';
@@ -354,9 +355,9 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
             const effect=contains(skillCells,x,y),attack=contains(attackCells,x,y),target=aim?.target?.x===x&&aim.target.y===y;
             return <button key={name} className={`btl-cell${goal?' btl-goal':''}${spawn?' btl-spawn':''}${highlighted?' btl-focus':''}${showMoveCells?' btl-deploy-available':''}${moveTarget?' btl-move-target':''}${aim&&targetAllowed?' btl-aim-allowed':''}${effect?' btl-skill-effect':''}${target?' btl-aim-center':''}`}
               aria-label={`地格 ${name}${aim?`${targetAllowed?'，可选技能中心':'，超出可选范围'}${effect?'，技能覆盖':''}${target?'，当前落点':''}`:goal?'，保护终点，禁止部署':spawn?'，本关出怪口，禁止部署':attack?'，普通攻击可达':''}`} aria-pressed={aim?target:undefined}
-              data-testid={`battle-cell-${name}`} data-attack-range={attack||undefined} data-skill-range={effect||undefined} disabled={blocked||!allowed}
+              data-testid={`battle-cell-${name}`} data-spawn={spawn} data-attack-range={attack||undefined} data-skill-range={effect||undefined} disabled={blocked||!allowed}
               onClick={event=>cellClick(x,y,event.detail!==0)} onKeyDown={event=>cellKey(event,x,y)} onFocus={()=>{if(runtime.getSnapshot()?.skillAim)previewAt({x,y});}}>
-              <span className="btl-sr-only">{name}</span>{goal&&!aim&&<span className="btl-goal-marker">保护 B1</span>}{spawn&&!aim&&<span className="btl-spawn-marker btl-spawn-current"><b aria-hidden="true">‹</b>本关入口</span>}{highlighted&&<span className="btl-cell-marker">推荐落点</span>}{target&&<span className="btl-aim-crosshair" aria-hidden="true">＋</span>}
+              {spawn&&<SpawnLabel/>}{highlighted&&<span className="btl-cell-marker">推荐落点</span>}{target&&<span className="btl-aim-crosshair" aria-hidden="true">＋</span>}
             </button>;
           })}</div>
           {inspected&&<button className="btl-inspect-dismiss" aria-label="关闭猫咪菜单并返回战场" data-testid="battle-dismiss-cat-menu" onClick={closeInspection}/>}

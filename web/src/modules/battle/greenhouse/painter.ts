@@ -2,7 +2,7 @@ import {paintCarryAnchor} from '../carry-painter';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
-import {CELLS, MAP, ROUTES} from './config';
+import {CELLS, MAP} from './config';
 import {getAttackCells, getSkillCells} from './engine';
 import type {GreenhouseCatId, GreenhouseState, Position} from './types';
 
@@ -41,8 +41,6 @@ function drawObstacle(ctx:CanvasRenderingContext2D,p:Position,index:number){
   }else paintSceneProp(ctx,'greenhouse',index===1?'broken-pot':'trellis',x,y,CELL,index);
   // These are the same three blocked cells; the seedlings remain scenery only.
   if(index===0)paintSceneProp(ctx,'greenhouse','planter',x+9,y+20,CELL*.55,index);
-  ctx.save();rect(ctx,x+7,y+63,66,12,'#142630c9');
-  ctx.fillStyle=SCENE_INK.label;ctx.textAlign='center';ctx.font='9px sans-serif';ctx.fillText(['旧花架','破花盆','倒塌育苗架'][index],x+40,y+72);ctx.restore();
 }
 
 /** One large vine-armoured body spans exactly four tiles, with a seed-opening tell. */
@@ -85,7 +83,7 @@ function drawThorns(ctx:CanvasRenderingContext2D,p:Position,warning:boolean,time
 
 export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseState,selected:GreenhouseCatId|null,moveTarget:Position|null){
   ctx.clearRect(0,0,BOARD_WIDTH,BOARD_HEIGHT);ctx.imageSmoothingEnabled=false;ctx.save();
-  // Clip every layer, including routes, sprites and effects, to the 34 real cells.
+  // Clip every sprite and effect to the 34 real cells.
   ctx.beginPath();for(const p of CELLS)ctx.rect(p.x*CELL,p.y*CELL,CELL,CELL);ctx.clip();
   for(const p of CELLS){
     const goal=p.x===MAP.goal.x&&p.y===MAP.goal.y,obstacle=obstacleCell(p.x,p.y);
@@ -93,16 +91,14 @@ export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseSta
     paintSceneEdge(ctx,'greenhouse',p.x,p.y,CELL,mapCell);
     if(obstacle)drawObstacle(ctx,p,MAP.obstacles.findIndex(cell=>cell.x===p.x&&cell.y===p.y));
   }
-  ctx.save();ctx.strokeStyle=SCENE_INK.route;ctx.lineWidth=1.1;ctx.setLineDash([4,7]);for(const path of Object.values(ROUTES)){ctx.beginPath();path.forEach((p,i)=>{if(i===0)ctx.moveTo((p.x+.5)*CELL,(p.y+.5)*CELL);else ctx.lineTo((p.x+.5)*CELL,(p.y+.5)*CELL);});ctx.stroke();}ctx.restore();
   for(const p of MAP.spawns){
     const x=p.x*CELL,y=p.y*CELL;ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(x+5,y+5,CELL-10,CELL-10);
     blocks(ctx,SCENE_INK.danger,p.y===5?[[x+37,y+25,7,4],[x+33,y+29,15,4],[x+29,y+33,23,4]]:[[x+45,y+24,4,23],[x+41,y+28,4,15],[x+37,y+32,4,7]]);
-    ctx.textAlign='center';ctx.font='8px sans-serif';ctx.fillStyle=SCENE_INK.danger;ctx.fillText('出怪口',x+40,y+58);
   }
   for(const p of MAP.bossCells)rect(ctx,p.x*CELL+3,p.y*CELL+3,CELL-6,CELL-6,'#e0b26c17');
   ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;ctx.strokeRect(state.boss.x*CELL+4,state.boss.y*CELL+4,2*CELL-8,2*CELL-8);
   if(state.boss.phase==='defeated'){ctx.fillStyle=SCENE_INK.label;ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText('荆冠首领已退去',(MAP.boss.x+1)*CELL,(MAP.boss.y+1)*CELL);}
-  drawCat(ctx,'hero',8,MAP.goal.y*CELL+11,62);ctx.fillStyle=SCENE_INK.gold;ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText('守护 B1',40,MAP.goal.y*CELL+73);
+  drawCat(ctx,'hero',8,MAP.goal.y*CELL+11,62);
   paintCarryAnchor(ctx,state.carry,CELL,mapCell);
   const chosen=state.cats.find(cat=>cat.id===selected&&cat.status==='active');
   if(chosen&&!state.aim){ctx.fillStyle='#8ee2cb28';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;for(const p of getAttackCells(chosen)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);}}
@@ -135,6 +131,5 @@ export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseSta
     else for(const p of effect.cells??[effect.to]){const x=p.x*CELL,y=p.y*CELL;ctx.strokeStyle=effect.kind==='thorn'?'#9d784d':effect.kind==='seed'?'#87985e':SCENE_INK.gold;ctx.lineWidth=3;ctx.beginPath();ctx.arc(x+40,y+40,effect.kind==='thorn'?17:25,0,Math.PI*2);ctx.stroke();}
     ctx.restore();
   }
-  for(const p of CELLS){rect(ctx,p.x*CELL+4,p.y*CELL+3,21,11,'#18303dba');ctx.fillStyle=SCENE_INK.label;ctx.font='8px sans-serif';ctx.textAlign='start';ctx.fillText(cellName(p),p.x*CELL+6,p.y*CELL+12);}
   ctx.restore();
 }

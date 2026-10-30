@@ -74,7 +74,6 @@ export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selec
     const goal=x===COMMANDER_POSITION.x&&y===COMMANDER_POSITION.y;
     paintSceneTile(ctx,'prologue',x,y,100,{goal,spawn:isSpawnCell(x,y)});
     paintSceneEdge(ctx,'prologue',x,y,100,boardCell);
-    if(!goal){ctx.fillStyle=SCENE_INK.label;ctx.font='11px "Microsoft YaHei", sans-serif';ctx.fillText(`${'ABC'[y]}${x+1}`,x*100+9,y*100+91);}
   }
   // B7 is the only reserved spawn entry in this prologue.
   for(const entry of SPAWN_POINTS){
@@ -84,21 +83,6 @@ export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selec
     ctx.fillStyle=SCENE_INK.danger;
     blocks(ctx,ctx.fillStyle as string,[[x+76,y+39,4,22],[x+72,y+43,4,14],[x+68,y+47,4,6]]);ctx.restore();
   }
-  // Logical lanes only: upper/lower routes turn at A1/C1, never at column 2.
-  // Scene art shares these logical tiles; lane turns and targeting remain unchanged.
-  ctx.save();ctx.strokeStyle=SCENE_INK.route;ctx.lineWidth=1.4;ctx.setLineDash([5,7]);
-  for(const row of [0,1,2]){
-    const y=(row+.5)*100;ctx.beginPath();ctx.moveTo(690,y);ctx.lineTo(50,y);
-    if(row!==1)ctx.lineTo(50,150);ctx.stroke();
-  }
-  ctx.setLineDash([]);
-  for(const row of [0,1,2])for(let column=1;column<7;column++){
-    const x=column*100+25,y=(row+.5)*100;
-    ctx.beginPath();ctx.moveTo(x+8,y-6);ctx.lineTo(x,y);ctx.lineTo(x+8,y+6);ctx.stroke();
-  }
-  // Down from A1, up from C1, both into the fixed B1 protection cell.
-  ctx.beginPath();ctx.moveTo(44,77);ctx.lineTo(50,85);ctx.lineTo(56,77);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(44,223);ctx.lineTo(50,215);ctx.lineTo(56,223);ctx.stroke();ctx.restore();
   const selectedCat=state.cats.find(c=>c.id===selected&&c.status==='active'&&c.combatant);
   if(selectedCat&&!state.skillAim){
     ctx.save();ctx.fillStyle='#8ee2cb30';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;
