@@ -54,6 +54,9 @@ export function validateContent(c) {
       if(!result?.text||Object.values(result?.reward??{}).some(n=>!Number.isSafeInteger(n)||n<0)||result?.tdMod&&![-1,0,1].includes(result.tdMod.shadowPressure)) errors.push(`event outcome: ${e.id}/${o.id}/${tier}`);
       if(result?.situation&&!c.story.some(n=>n.id===result.situation.storyNodeId&&n.exit==='preparation')) errors.push(`event situation: ${e.id}/${o.id}/${tier}`);
     }
+    // 线索保底红线:fail 档必须 clue>=1——"到场即得,档位管增量"(design/events/random-events-design.md),
+    // 左尾玩家的线索门槛(clue>=3)由此获得数学保证。
+    for(const o of e.options) if((o.outcomes?.fail?.reward?.clue??0)<1) errors.push(`event fail clue floor: ${e.id}/${o.id} fail 档缺线索保底 clue:1`);
   }
   if(errors.length) throw Error(errors.join('\n'));
 }
