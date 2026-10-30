@@ -65,7 +65,9 @@ type EventState struct {
 	PendingModifiers BattleModifiers `json:"pendingModifiers"`
 }
 
-// 四档互斥，12 不重复计入成功：1/36、9/36、16/36、10/36。
+// 四档互斥，12 不重复计入成功：fail 6/36、partial 20/36、success 9/36、crit 1/36。
+// 2026-10-29 按 Jenny 试玩反馈调整：失败档 ≤5(27.78%) 体感偏高，收窄为 ≤4(16.67%)，
+// 让出的 3/36 归入 partial(6 含 5)。温暖向基调：挫败近乎减半，主档更厚。
 func EventTier(dice [2]int) (string, error) {
 	for _, die := range dice {
 		if die < 1 || die > 6 {
@@ -77,7 +79,7 @@ func EventTier(dice [2]int) (string, error) {
 		return "crit", nil
 	case total >= 9:
 		return "success", nil
-	case total >= 6:
+	case total >= 5:
 		return "partial", nil
 	default:
 		return "fail", nil
