@@ -14,6 +14,7 @@ import {getSkillTooltipPosition} from '../skillTooltipPosition';
 import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
 import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
+import {isFinalWaveDefeat, triggerBattleShake, triggerSkillGlow} from '../battleFx';
 import '../carry.css';
 import '../l00/battle.css';
 import './greenhouse.css';
@@ -107,13 +108,13 @@ export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onRe
     if(paused||hidden||chatOpen)return;
     setMoving(null);setSelected(id);
     const next=act({type:'SELECT_SKILL',catId:id});
-    if(!next.aim&&next.lastAction?.ok){setSelected(null);act({type:'CLOSE_INSPECTION'});}
+    if(!next.aim&&next.lastAction?.ok){setSelected(null);act({type:'CLOSE_INSPECTION'});triggerSkillGlow(boardRef.current);} // 即时技能施放成功：金色泛光（与序章教学战同一套 battleFx）
     else if(next.aim)requestAnimationFrame(()=>boardRef.current?.focus({preventScroll:true}));
   }
   function confirmAim(position:Position){
     const aim=gameRef.current.aim;if(!aim)return;
     const next=act({type:'CAST_SKILL',catId:aim.catId,target:position});
-    if(next.lastAction?.ok){setSelected(null);setHover(null);}
+    if(next.lastAction?.ok){setSelected(null);setHover(null);triggerSkillGlow(boardRef.current);} // 瞄准施放成功：金色泛光
   }
   function showMapArea(area:'goal'|'branch'|'boss'){
     setOverview(false);
@@ -165,6 +166,16 @@ export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onRe
     handle=requestAnimationFrame(frame);
     return()=>{stopped=true;cancelAnimationFrame(handle);document.removeEventListener('visibilitychange',visibility);};
   },[]);
+  // 震动降噪·终波收敛（防眩晕）：与序章六波教学战/第一章同一套 battleFx 策略——
+  // 命中不震、普通小怪死亡不震、中间波次清场也不震；只有最后一波清场、或首领倒下且场上已清空的高光瞬间才强震。
+  const prevFxRef=useRef<{defeated:number;bossAlive:boolean}|null>(null);
+  useEffect(()=>{
+    const previous=prevFxRef.current,bossAlive=game.boss.phase!=='defeated';
+    prevFxRef.current={defeated:game.defeated,bossAlive};
+    if(!previous)return;
+    const bossJustDied=previous.bossAlive&&!bossAlive;
+    if(isFinalWaveDefeat(game.defeated>previous.defeated,game.enemies.length,game.wave,game.totalWaves,bossJustDied))triggerBattleShake(boardRef.current,'strong');
+  },[game]);
 
   useEffect(()=>{
     if((game.phase==='won'||game.phase==='lost')&&!paused&&!game.externallyPaused&&!emitted.current){
@@ -341,7 +352,7 @@ export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onRe
               const enemyCount=game.enemies.filter(enemy=>Math.round(enemy.x)===position.x&&Math.round(enemy.y)===position.y).length;
               const bossCell=bossFootprint.some(cell=>cell.x===position.x&&cell.y===position.y),spawnCell=MAP.spawns.some(cell=>cell.x===position.x&&cell.y===position.y);
               const attack=attackCells.some(cell=>cell.x===position.x&&cell.y===position.y),effect=skillCells.some(cell=>cell.x===position.x&&cell.y===position.y);
-              return <button type="button" key={name} className={`greenhouse-cell${blocked?' is-obstacle':''}`} style={{gridColumn:position.x+1,gridRow:position.y+1}} data-cell={`${position.x},${position.y}`} data-testid={`greenhouse-cell-${name}`} data-boss-danger={telegraph} data-danger={danger} data-hazard={hazard} data-enemies={enemyCount} data-deployable={isDeployableCell(position)} data-boss-footprint={bossCell} data-spawn={spawnCell} data-attack-range={attack} data-skill-range={effect} aria-label={`${name}${blocked?'，花房障碍':cat?`，${cat.name}，${CAT_PRESENTATION[cat.id].label}，体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}，能量 ${Math.floor(cat.energy)} / 100`:position.x===MAP.goal.x&&position.y===MAP.goal.y?'，守护点':spawnCell?'，出怪口':bossCell?'，四格首领占格':'，地格'}${enemyCount?`，${enemyCount} 个普通黑影`:''}${danger?'，荆棘危险格':''}${attack?'，普通攻击可达':''}${effect?'，技能覆盖':''}`} disabled={paused||hidden||ended} onClick={()=>cellClick(position)} onPointerEnter={()=>{setHover(position);if(gameRef.current.aim)act({type:'AIM_SKILL',...position});}} onFocus={()=>{if(gameRef.current.aim){setHover(position);act({type:'AIM_SKILL',...position});}}} onPointerDown={event=>{if(cat)pointerDown(event,cat.id);}} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancel}>{cat&&<span className="greenhouse-unit-state" data-testid={`greenhouse-cat-${cat.id}`} data-status={cat.status} data-x={cat.x} data-y={cat.y} data-energy={cat.energy} data-attack-buff={cat.attackBuffRemaining.toFixed(2)} data-hp={Math.ceil(cat.hp)}><span className="btl-unit-name"><span className="greenhouse-unit-name">{cat.name}</span><RoleBadge id={cat.id}/><small className="greenhouse-unit-energy">{Math.floor(cat.energy)}</small></span></span>}</button>;
+              return <button type="button" key={name} className={`greenhouse-cell${blocked?' is-obstacle':''}`} style={{gridColumn:position.x+1,gridRow:position.y+1}} data-cell={`${position.x},${position.y}`} data-testid={`greenhouse-cell-${name}`} data-boss-danger={telegraph} data-danger={danger} data-hazard={hazard} data-enemies={enemyCount} data-deployable={isDeployableCell(position)} data-boss-footprint={bossCell} data-spawn={spawnCell} data-attack-range={attack} data-skill-range={effect} aria-label={`${name}${blocked?'，花房障碍':cat?`，${cat.name}，${CAT_PRESENTATION[cat.id].label}，体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}，能量 ${Math.floor(cat.energy)} / 100`:position.x===MAP.goal.x&&position.y===MAP.goal.y?'，守护点':spawnCell?'，出怪口':bossCell?'，四格首领占格':'，地格'}${enemyCount?`，${enemyCount} 个普通黑影`:''}${danger?'，荆棘危险格':''}${attack?'，普通攻击可达':''}${effect?'，技能覆盖':''}`} disabled={paused||hidden||ended} onClick={()=>cellClick(position)} onPointerEnter={()=>{setHover(position);if(gameRef.current.aim)act({type:'AIM_SKILL',...position});}} onFocus={()=>{if(gameRef.current.aim){setHover(position);act({type:'AIM_SKILL',...position});}}} onPointerDown={event=>{if(cat)pointerDown(event,cat.id);}} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancel}>{cat&&<span className={`greenhouse-unit-state${cat.energy>=100?' btl-energy-halo':''}`} data-testid={`greenhouse-cat-${cat.id}`} data-status={cat.status} data-x={cat.x} data-y={cat.y} data-energy={cat.energy} data-attack-buff={cat.attackBuffRemaining.toFixed(2)} data-hp={Math.ceil(cat.hp)}><span className="btl-unit-name"><span className="greenhouse-unit-name">{cat.name}</span><RoleBadge id={cat.id}/><small className="greenhouse-unit-energy">{Math.floor(cat.energy)}</small></span></span>}</button>;
             })}</div>
           </div></div>
           {inspected&&<><div ref={menuRef} className="btl-cat-menu" role="group" aria-label={`${inspected.name}，${CAT_PRESENTATION[inspected.id].label}的技能菜单`} data-testid="greenhouse-cat-menu" data-cat-id={inspected.id} style={menuPosition} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()} onContextMenu={event=>{event.preventDefault();closeInspection();}}><div className="btl-cat-menu-heading"><strong className="greenhouse-menu-cat-name">{inspected.name}<RoleBadge id={inspected.id}/></strong><button type="button" className="btl-cat-menu-close" data-testid="greenhouse-close-cat-menu" aria-label="关闭猫咪菜单" onClick={closeInspection}>×</button></div><button type="button" className={`btl-skill-orb${canCast?' btl-skill-orb-ready':''}`} data-testid={`greenhouse-skill-${inspected.id}`} aria-label={`${SKILLS[inspected.id].name}，能量 ${inspected.energy} / 100${canCast?'，点击释放':'，当前不可释放，可查看说明'}`} aria-disabled={!canCast} aria-describedby={`greenhouse-skill-description-${inspected.id}`} onMouseEnter={()=>setSkillTooltipOpen(true)} onMouseLeave={event=>{if(document.activeElement!==event.currentTarget)setSkillTooltipOpen(false);}} onFocus={()=>setSkillTooltipOpen(true)} onBlur={()=>setSkillTooltipOpen(false)} onClick={()=>{if(canCast)chooseSkill(inspected.id);else setSkillTooltipOpen(true);}}><span aria-hidden="true">{ICONS[inspected.id]}</span></button><div className="btl-cat-menu-footer"><span>{Math.floor(inspected.energy)} / 100</span></div></div><div ref={tooltipRef} className={`btl-skill-tooltip${skillTooltipOpen?' btl-tooltip-visible':''}`} role="tooltip" id={`greenhouse-skill-description-${inspected.id}`} data-testid="greenhouse-skill-tooltip" style={tooltipPosition} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}><p className="greenhouse-positioning" data-testid="greenhouse-cat-positioning">{CAT_PRESENTATION[inspected.id].positioning}</p><strong>{SKILLS[inspected.id].name}</strong><p>{SKILLS[inspected.id].description}{SKILLS[inspected.id].targeting==='area'?' 全地图选点，黄色十字为本次作用范围；左键或 Enter 释放，右键 / Esc 取消。':''}</p>{inspected.attackBuffRemaining>0&&<span className="greenhouse-attack-buff">普攻强化剩余 {inspected.attackBuffRemaining.toFixed(1)} 秒</span>}{inspected.shield>0&&<span className="btl-shield-detail">额外护盾 {Math.ceil(inspected.shield)} · 剩余 {inspected.shieldRemaining.toFixed(1)} 秒</span>}</div></>}

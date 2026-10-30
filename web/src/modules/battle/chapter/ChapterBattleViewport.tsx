@@ -5,7 +5,7 @@ import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES} from 
 import {advanceChapter, createChapterBattle, dispatchChapter, getAttackCells, getBossCells, getChapterAdvice, getChapterSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintChapter} from './painter';
 import {drawCat} from '../l00/painter';
-import {pruneFloats, triggerBattleShake, triggerSkillGlow, type BattleFloatText} from '../battleFx';
+import {isFinalWaveDefeat, pruneFloats, triggerBattleShake, triggerSkillGlow, type BattleFloatText} from '../battleFx';
 import {getChapterAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
@@ -113,13 +113,13 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
     if(paused||hidden||chatOpen)return;
     setMoving(null);setSelected(id);
     const next=act({type:'SELECT_SKILL',catId:id});
-    if(!next.aim&&next.lastAction?.ok){setSelected(null);act({type:'CLOSE_INSPECTION'});triggerSkillGlow(hostRef.current);} // 即时技能施放成功同样泛光
+    if(!next.aim&&next.lastAction?.ok){setSelected(null);act({type:'CLOSE_INSPECTION'});triggerSkillGlow(hostRef.current);} // 即时技能施放成功：泛光（震动按“仅终波”收敛，大招不再震屏）
     else if(next.aim)requestAnimationFrame(()=>boardRef.current?.focus({preventScroll:true}));
   }
   function confirmAim(position:Position){
     const aim=gameRef.current.aim;if(!aim)return;
     const next=act({type:'CAST_SKILL',catId:aim.catId,target:position});
-    if(next.lastAction?.ok){setSelected(null);setHover(null);triggerSkillGlow(hostRef.current);} // 施法成功：屏幕边缘金色泛光
+    if(next.lastAction?.ok){setSelected(null);setHover(null);triggerSkillGlow(hostRef.current);} // 施法成功：屏幕边缘金色泛光（大招不再震屏）
   }
   function showMapArea(area:'goal'|'branch'|'boss'){
     setOverview(false);
@@ -171,15 +171,18 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
       foes.set('boss',{hp:current.boss.hp,x:(current.boss.x+current.boss.width/2)*CELL_SIZE,y:(current.boss.y+current.boss.height/2)*CELL_SIZE});
       const previousFoes=prevFoesRef.current;prevFoesRef.current=foes;
       if(previousFoes&&!document.hidden){
-        let hitAny=false;
         for(const[id,next]of foes){
           const before=previousFoes.get(id);
           if(!before||next.hp>=before.hp)continue;
-          hitAny=true;
           floatsRef.current.push({x:next.x,y:next.y-14,text:`−${Math.round(before.hp-next.hp)}`,born:performance.now()});
         }
-        if(current.defeated>prevDefeatedRef.current)triggerBattleShake(boardRef.current,'strong');
-        else if(hitAny)triggerBattleShake(boardRef.current,'light');
+        // 震动降噪·终波收敛（防眩晕）：命中不震、普通小怪死亡不震、中间波次清场也不震；
+        // 只有最后一波（共 totalWaves 波）的高光瞬间强震——终波 Boss 登场 / 终波清场（含 Boss 倒下）。
+        const bossBefore=previousFoes.get('boss');
+        const bossNow=foes.get('boss');
+        const bossJustDied=!!bossBefore&&bossBefore.hp>0&&(bossNow?.hp??0)<=0;
+        const bossJustAppeared=!bossBefore&&!!bossNow;
+        if(isFinalWaveDefeat(current.defeated>prevDefeatedRef.current,current.enemies.length,current.wave,current.totalWaves,bossJustDied,bossJustAppeared))triggerBattleShake(boardRef.current,'strong');
         prevDefeatedRef.current=current.defeated;
       }
       pruneFloats(floatsRef.current,performance.now());

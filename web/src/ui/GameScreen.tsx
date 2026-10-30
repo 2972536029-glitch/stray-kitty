@@ -86,6 +86,14 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
     ? `靠近「${nearTarget.label.replace(/\s*·\s*E$/, '')}」了，按 E 互动`
     : null;
   const hintHidden = state.phase === 'explore' && introHintDone && !nearHint && !inspectHint;
+  // 沉浸化：底部提示只保留真正有用的引导（战斗说明/章节目标/操作教学），删除“每次相遇，都可能成为回家路上的一点光。”常驻兜底。
+  const footerGuideText = finaleBattle && state.phase === 'battle' ? '躲开预告的横扫与坠击，选择护卫与首领的攻击顺序。十波清完、两精英与九格首领全部击败后获胜；援军固定支援，主力仍需你的指挥。' : tunnelBattle && state.phase === 'battle' ? '保护 C2 的喵喵；断灯时可用墨墨夜视恢复视野并为全队加盾。守完八波并击败首领；打开地图、商店或返回标题会暂停战斗。' : greenhouseBattle && state.phase === 'battle' ? '沿花房的不规则通路布阵，守住 B1；守完八波并击败四格首领。打开地图、商店或返回标题会暂停战斗。' : marketBattle && state.phase === 'battle' ? '点选伙伴查看与释放技能；守完八波并击败集市首领。打开地图、商店或返回标题会暂停战斗。' : chapterBattle && state.phase === 'battle' ? '点场上的猫查看和释放技能，守住 A4 与右侧两处巷口；守完八波并击败首领。打开地图、商店或返回标题会暂停战斗。' : (explorationFooterText(state.phase, state.mapId, catalog.tutorials.find(t => t.phase === state.phase)?.text, objective(state)) ?? '');
+  // 没有任何要展示的内容时整条 world-footer 不再渲染（连同 DOM 一起消失，不留空壳长条）。
+  const homeButtonVisible = state.phase === 'explore' && state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued') && state.mapId !== 'market';
+  const footerVisible = !!nearHint || (!!inspectHint && state.phase === 'explore') || !!footerGuideText || homeButtonVisible;
+  // 教学期（进场 3 秒）结束后，探索阶段不再回落到“方向键 / WASD”类兜底教学文案：
+  // 否则离开交互物时 <p key> 变化重挂、把兜底字重新点亮 6 秒，看起来像提示“变成”了移动教学（所有地图一致修掉）。
+  const footerTextVisible = !!nearHint || (!!inspectHint && state.phase === 'explore') || (!!footerGuideText && (state.phase !== 'explore' || !introHintDone));
   // 沉浸式顶栏：展开时点顶栏以外的空白（画布、面板外壳）自动收起；战斗阶段点画布频繁，只允许手动收起。
   const topbarOpen = topExpanded;
   useEffect(() => {
@@ -183,7 +191,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
       <div className="game-layout"><section className="world-panel"><div className="world-toolbar"><div><span className="live-dot"/><strong>{finaleBattle && state.phase === 'battle' ? '终局试玩' : tunnelBattle && state.phase === 'battle' ? '第四章试玩' : greenhouseBattle && state.phase === 'battle' ? '第三章试玩' : marketBattle && state.phase === 'battle' ? '第二章试玩' : chapterBattle && state.phase === 'battle' ? '第一章守护' : phases[state.phase]}</strong><span className="area-label">{finaleBattle ? '总仓库决战' : tunnelBattle ? '暗道守护' : greenhouseBattle ? '花房守护' : marketBattle ? '集市守护' : chapterBattle ? '深巷守护' : isHomeScene ? '拱顶花房' : map?.name}</span></div>{state.phase !== 'battle' && <button className="quiet" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}</div>
         <div className="world-wrap">{children}
           {state.qaCheckpointId && <aside className="qa-active-badge" role="status"><span>正在使用验收进度</span><button onClick={onQA}>返回原进度 / 切换节点</button></aside>}
-          {alleyObjective && <div className="alley-objective" role="status"><span>雨巷线索</span><strong>{alleyObjective}</strong></div>}
+          {alleyObjective && <div className="alley-objective" key={alleyObjective} role="status"><span>雨巷线索</span><strong>{alleyObjective}</strong></div>}
           {isHomeScene && <aside className="home-life-status"><span>{state.phase === 'dialogue' ? '故事进行中' : '花房日常'}</span><strong>{state.phase === 'dialogue' ? '伙伴们正跟随故事行动' : '散步、晒太阳，和伙伴待一会儿'}</strong></aside>}
           {state.phase === 'home' && <><button className="home-tools-toggle" aria-expanded={homeOpen} aria-controls="home-management" onClick={() => setHomeOpen(!homeOpen)}>{homeOpen ? '收起家园面板' : '整理家园'} <span aria-hidden="true">{homeOpen ? '−' : '＋'}</span></button>{homeOpen && <div id="home-management" className="home-controls"><HomePanel state={state} catalog={catalog} disabled={disabled} onCommand={onCommand} onShop={onShop} onParcels={onParcels} onRecharge={onRecharge} onWarehouse={onWarehouse}/></div>}</>}
           {state.phase === 'dialogue' && node && <DialoguePanel node={node} disabled={disabled} onNext={() => onCommand({type: 'ADVANCE_STORY', nodeId: node.id})} onSkip={onSkip} getSpeakerAnchor={speakerAnchor} eventResult={resolution?.outcome.situation?.storyNodeId === node.id ? <EventResult resolution={resolution} compact/> : undefined}/>}
@@ -203,9 +211,9 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
           {showExploreResult && resolution && <section className="event-card explore-result-card"><span className="eyebrow">一次相遇的结果</span><EventResult resolution={resolution}/><button disabled={disabled} onClick={() => {setDismissedResult(resolutionKey);arrivedFromEvent.current = false;}}>继续赶路 →</button></section>}
           {paused && <div className="pause-label"><span>旅程已暂停</span><button onClick={onPause}>继续旅程</button></div>}
         </div>
-        <div className={`world-footer${hintHidden ? ' hint-idle' : ''}`}><p className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{nearHint ? <><span className="hint-paw">🐾</span>{nearHint}</> : inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : finaleBattle && state.phase === 'battle' ? '躲开预告的横扫与坠击，选择护卫与首领的攻击顺序。十波清完、两精英与九格首领全部击败后获胜；援军固定支援，主力仍需你的指挥。' : tunnelBattle && state.phase === 'battle' ? '保护 C2 的喵喵；断灯时可用墨墨夜视恢复视野并为全队加盾。守完八波并击败首领；打开地图、商店或返回标题会暂停战斗。' : greenhouseBattle && state.phase === 'battle' ? '沿花房的不规则通路布阵，守住 B1；守完八波并击败四格首领。打开地图、商店或返回标题会暂停战斗。' : marketBattle && state.phase === 'battle' ? '点选伙伴查看与释放技能；守完八波并击败集市首领。打开地图、商店或返回标题会暂停战斗。' : chapterBattle && state.phase === 'battle' ? '点场上的猫查看和释放技能，守住 A4 与右侧两处巷口；守完八波并击败首领。打开地图、商店或返回标题会暂停战斗。' : (explorationFooterText(state.phase, state.mapId, catalog.tutorials.find(t => t.phase === state.phase)?.text, objective(state)) ?? '每次相遇，都可能成为回家路上的一点光。')}</p>
+        {footerVisible && <div className={`world-footer${hintHidden ? ' hint-idle' : ''}`}>{footerTextVisible && <p key={nearHint ?? inspectHint ?? footerGuideText ?? 'hint'} className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{nearHint ? <><span className="hint-paw">🐾</span>{nearHint}</> : inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : footerGuideText}</p>}
           {state.phase === 'explore' && <>{near && nearTarget && <button disabled={disabled} onClick={() => onInteract(nearTarget.id)}>{nearTarget.label}</button>}{state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued') && state.mapId !== 'market' && <button disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>回到花房</button>}</>}
-        </div>
+        </div>}
       </section></div>
     </main>
     {journalOpen && <Modal title="旅程记录" onClose={onJournal} className="journey-modal"><header><span className="eyebrow">OUR LITTLE JOURNEY</span><h2>旅程记录</h2></header><aside className="journal">

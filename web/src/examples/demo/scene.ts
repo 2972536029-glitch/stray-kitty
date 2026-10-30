@@ -595,8 +595,8 @@ export class DemoScene {
       return{x:view.x+cat.x*view.scale,y:view.y+(cat.y-68-(cat.scriptedHeight??0))*view.scale};
     }
     if(st.mapId==='market'||st.chapterId==='market'||this.storyScene==='market'){
-      if(breed==='tuanzi')return{x:130,y:258};
-      if(breed==='miaomiao')return{x:this.x,y:this.y-52};
+      // 午夜集市是跟随相机的 1672×941 世界地图，且场景只绘制喵喵——团子等伙伴不在渲染列表里，
+      // 头顶锚点不成立。返回 null 让 DialogueBubble 降级为屏幕底部字幕条，不再出现指向空位置的气泡。
       return null;
     }
     if(st.phase==='home'||this.storyScene==='home'||(st.flags.includes('rescue_story_done')&&st.phase!=='explore')){

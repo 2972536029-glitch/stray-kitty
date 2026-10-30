@@ -13,7 +13,7 @@ import {getAttackCells, getSkillCells, isSkillTargetAllowed} from './ranges';
 import {drawCat, paintBattle} from './painter';
 import {TutorialSpotlight} from './TutorialSpotlight';
 import {whenSceneArtReady} from '../scene-art';
-import {triggerBattleShake, triggerSkillGlow} from '../battleFx';
+import {isFinalWaveDefeat, triggerBattleShake, triggerSkillGlow} from '../battleFx';
 import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
 import {useBattleBoardFit} from '../useBattleBoardFit';
 import {getSkillTooltipPosition} from '../skillTooltipPosition';
@@ -123,15 +123,14 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     const paint=()=>{if(game&&canvasRef.current){const ctx=canvasRef.current.getContext('2d');if(ctx)paintBattle(ctx,game,selected,animationRef.current);}};
     paint();return whenSceneArtReady(paint);
   },[game,selected]);
-  // 黑影掉血 → 轻震；黑影被击败 → 强震（DOM 层 CSS keyframes，reduced-motion 时自动跳过）。
+  // 震动降噪·终波收敛（防眩晕）：命中不震、普通黑影被击败不震、中间波次清场也不震；
+  // 只有最后一波（共 totalWaves 波）清场的高光瞬间才强震，见 battleFx.isFinalWaveDefeat。
   useEffect(()=>{
     if(!game)return;
-    const hpSum=game.enemies.reduce((sum,enemy)=>sum+Math.max(0,enemy.hp),0);
     const previous=prevFxRef.current;
-    prevFxRef.current={hpSum,defeated:game.defeated};
+    prevFxRef.current={hpSum:game.enemies.reduce((sum,enemy)=>sum+Math.max(0,enemy.hp),0),defeated:game.defeated};
     if(!previous)return;
-    if(game.defeated>previous.defeated){triggerBattleShake(boardRef.current,'strong');return;}
-    if(hpSum<previous.hpSum)triggerBattleShake(boardRef.current,'light');
+    if(isFinalWaveDefeat(game.defeated>previous.defeated,game.enemies.length,game.wave,game.totalWaves))triggerBattleShake(boardRef.current,'strong');
   },[game]);
   useEffect(()=>{const log=chatLogRef.current;if(log)log.scrollTop=log.scrollHeight;},[advisorChat.messages,advisorChat.loading,advisorChat.notice,chatOpen]);
   useEffect(()=>{
@@ -276,7 +275,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     if(!previewAt(position)||!position)return;
     const currentAim=runtime.getSnapshot()?.skillAim;
     if(currentAim)dispatch({type:'CAST_SKILL',catId:currentAim.catId,...position});
-    if(runtime.getSnapshot()?.lastAction?.ok)triggerSkillGlow(hostRef.current); // 施法成功：屏幕边缘金色泛光
+    if(runtime.getSnapshot()?.lastAction?.ok)triggerSkillGlow(hostRef.current); // 施法成功：金色泛光（震动按“仅终波”收敛，大招不再震屏）
   }
   function aimDown(event:ReactPointerEvent<HTMLDivElement>){
     if(!runtime.getSnapshot()?.skillAim||blocked||event.button!==0)return;
