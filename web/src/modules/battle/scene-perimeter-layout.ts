@@ -64,9 +64,13 @@ const horizontal = (side: ScenePerimeterSide) => side === 'N' || side === 'S';
 export function getScenePerimeterLayout(
   cells: readonly ScenePerimeterCell[],
   openings: readonly ScenePerimeterOpening[] = [],
+  sceneryConnections: readonly ScenePerimeterCell[] = [],
 ): ScenePerimeterLayout {
   const occupied = new Map<string, ScenePerimeterCell>();
   for (const cell of cells) if (validCell(cell)) occupied.set(key(cell), {x: cell.x, y: cell.y});
+  // Joined scenery stays occupied; only its decorative outer curb disappears.
+  // Removing it from occupied would falsely create an edge against its neighbors.
+  const joined = new Set(sceneryConnections.filter(validCell).map(key));
   const openingByEdge = new Map<string, ScenePerimeterOpeningKind>();
   for (const opening of openings) {
     if (!validCell(opening) || (opening.kind !== 'spawn' && opening.kind !== 'goal')) continue;
@@ -79,6 +83,7 @@ export function getScenePerimeterLayout(
   const edges: ScenePerimeterEdge[] = [];
   const outsideByCell = new Map<string, ScenePerimeterOutsideCell>();
   for (const cell of [...occupied.values()].sort(rowOrder)) {
+    if (joined.has(key(cell))) continue;
     for (const side of sides) {
       const normal = {...normals[side]};
       const outside = {x: cell.x + normal.x, y: cell.y + normal.y};

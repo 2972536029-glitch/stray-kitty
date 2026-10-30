@@ -9,6 +9,8 @@ import {paintIllustratedRoom} from './illustrated-room';
 import {getScenePerimeterLayout,type ScenePerimeterSide} from './scene-perimeter-layout';
 import {paintScenePerimeter} from './scene-perimeter-art';
 import {paintPerimeterProps} from './scene-perimeter-props';
+import {getJoinedObstacleCells,paintConnectedObstacleScenery} from './scene-connected-obstacles';
+import {paintForegroundScenery} from './scene-foreground-art';
 
 interface Props {scene:BattleSceneId;boardRef:RefObject<HTMLDivElement|null>;columns:number;rows:number;cells?:readonly {x:number;y:number}[];spawns?:readonly {x:number;y:number}[];goal?:{x:number;y:number};darkened?:boolean}
 const scrollSelector='.prologue-board-scroll,.chapter-board-scroll,.market-board-scroll,.greenhouse-board-scroll,.tunnel-board-scroll,.finale-board-scroll';
@@ -88,14 +90,30 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,spawns,go
         const openings=[...(spawns??[]).map(position=>({...position,kind:'spawn' as const,
           side:(scene==='finale'?'E':position.y===0?'N':position.y===rows-1&&scene!=='alley'?'S':'E') as ScenePerimeterSide})),
           ...(goal?[{...goal,kind:'goal' as const,side:'W' as const}]:[])];
-        const perimeter=getScenePerimeterLayout(fieldCells,openings);
+        const joined=getJoinedObstacleCells(scene);
+        const perimeter=getScenePerimeterLayout(fieldCells,openings,joined);
         ctx.save();ctx.translate(groundX,groundY);
         for(const bounds of paintPerimeterProps(ctx,scene,cellWidth,cellHeight))occupied.push({...bounds,x:bounds.x+groundX,y:bounds.y+groundY});
+        ctx.save();ctx.beginPath();ctx.rect(-groundX,-groundY,w,h);
+        // Only supplement the true exterior. Hidden cells in a scrolled board
+        // must not reappear on the background outside its scrollport.
+        for(const cell of fieldCells)ctx.rect(cell.x*cellWidth,cell.y*cellHeight,cellWidth,cellHeight);
+        ctx.clip('evenodd');ctx.scale(cellWidth/80,cellHeight/80);paintConnectedObstacleScenery(ctx,scene);ctx.restore();
         // A zoomed-offscreen edge cannot reappear on top of the room's back wall.
         ctx.save();ctx.beginPath();ctx.rect(viewportLeft-groundX-cellWidth*.2,viewportTop-groundY-cellHeight*.2,
           viewportRight-viewportLeft+cellWidth*.4,viewportBottom-viewportTop+cellHeight*.4);ctx.clip();
         paintScenePerimeter(ctx,scene,perimeter,cellWidth,cellHeight);
         ctx.restore();
+        // Low foreground objects sit over the outside kerb and attach to the
+        // scene's lower edge, while the combat-cell clip keeps routes clear.
+        for(const bounds of paintForegroundScenery(ctx,scene,cellWidth,cellHeight))occupied.push({...bounds,x:bounds.x+groundX,y:bounds.y+groundY});
+        // Connected roofs, wall feet and shelves may continue half a tile into
+        // the room. Reserve that apron before placing freestanding decorations.
+        const actual=new Set(fieldCells.map(cell=>`${cell.x},${cell.y}`));
+        for(const cell of joined)for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]){
+          const x=cell.x+dx,y=cell.y+dy;
+          if(!actual.has(`${x},${y}`))occupied.push({x:groundX+x*cellWidth,y:groundY+y*cellHeight,width:cellWidth,height:cellHeight});
+        }
         ctx.restore();
         // Keep an apron clear beside every entrance, not just the red tile.
         for(const edge of perimeter.edges)if(edge.opening)occupied.push({x:groundX+edge.outside.x*cellWidth,y:groundY+edge.outside.y*cellHeight,width:cellWidth,height:cellHeight});

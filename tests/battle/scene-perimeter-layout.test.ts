@@ -130,3 +130,19 @@ test('empty or invalid cells produce no fabricated boundaries', () => {
   assert.deepEqual(getScenePerimeterLayout([], [{x: 0, y: 0, kind: 'spawn'}]), empty);
   assert.deepEqual(getScenePerimeterLayout([{x: NaN, y: 0}, {x: 0, y: Infinity}, {x: .5, y: 0}, {x: Number.MAX_SAFE_INTEGER, y: 0}]), empty);
 });
+
+test('scenery connections remove only their outer curb, never expose their walkable neighbors', () => {
+  const joined=Object.freeze([{x:4,y:0},{x:4,y:1},{x:4,y:2}].map(cell=>Object.freeze(cell)));
+  const openings=[{x:3,y:0,kind:'spawn' as const,side:'N' as const}];
+  const before=getScenePerimeterLayout(ALLEY_CELLS,openings);
+  const after=getScenePerimeterLayout(ALLEY_CELLS,openings,joined);
+  const ids=new Set(joined.map(key));
+  assert.deepEqual(after.edges,before.edges.filter(edge=>!ids.has(key(edge.cell))));
+  assert.equal(after.edges.filter(edge=>edge.opening==='spawn').length,1);
+  assert.ok(!after.edges.some(edge=>edge.side==='E'&&edge.cell.x===3&&edge.cell.y<3),
+    'the building still occupies the east side of the narrow lane');
+  assertExteriorGeometry(after,ALLEY_CELLS);
+  // A connected island in the middle of a field does not alter the field perimeter.
+  const plot=rectangle(4,4);
+  assert.deepEqual(getScenePerimeterLayout(plot,[],[{x:1,y:1},{x:1,y:2}]),getScenePerimeterLayout(plot));
+});

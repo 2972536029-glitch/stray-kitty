@@ -3,7 +3,8 @@ import {drawCat} from '../l00/painter';
 import type {ChapterState, ChapterCat, ChapterCatId as CatId, Position} from './types';
 import {getAttackCells, getBossCells, getSkillCells} from './engine';
 import {CELLS, MAP} from './config';
-import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintAlleyObstacleScenery} from '../scene-garden-alley-obstacles';
 
 export const CELL = 80;
 export const BOARD_WIDTH = MAP.columns * CELL;
@@ -34,10 +35,6 @@ export function drawChapterCat(ctx:CanvasRenderingContext2D,id:CatId,x:number,y:
   if(id==='tuanzi'){pixelBlocks(ctx,light,[[24,19,6,4],[28,18,2,2],[28,22,2,2]]);}
   else {pixelBlocks(ctx,'#d49b9f',[[23,18,6,7],[24,17,4,2]]);pixelBlocks(ctx,'#fae7be',[[25,19,2,5],[28,13,1,5],[26,17,3,2]]);}
   ctx.restore();
-}
-
-function drawRubbish(ctx:CanvasRenderingContext2D,x:number,y:number,index:number){
-  paintSceneProp(ctx,'alley',(['bin','crate','sacks'] as const)[index],x,y,CELL,index);
 }
 
 function drawBoss(ctx:CanvasRenderingContext2D,state:ChapterState){
@@ -82,15 +79,16 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
   ctx.clip();
   for(let y=0;y<MAP.rows;y++)for(let x=0;x<MAP.columns;x++){
     if(!mapCell(x,y))continue;
-    const bx=x*CELL,by=y*CELL,goal=x===MAP.goal.x&&y===MAP.goal.y,spawn=MAP.spawns.some(p=>p.x===x&&p.y===y),obstacle=obstacleCell(x,y);
+    const goal=x===MAP.goal.x&&y===MAP.goal.y,spawn=MAP.spawns.some(p=>p.x===x&&p.y===y),obstacle=obstacleCell(x,y);
     paintSceneTile(ctx,'alley',x,y,CELL,{goal,spawn,obstacle});
-    paintSceneEdge(ctx,'alley',x,y,CELL,mapCell);
-    if(obstacle)drawRubbish(ctx,bx,by,y);
-    if(spawn){
-      rect(ctx,bx+5,by+5,CELL-10,CELL-10,'#b77d6730');ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(bx+5,by+5,CELL-10,CELL-10);
-      if(y===0){pixelBlocks(ctx,SCENE_INK.danger,[[bx+29,by+30,23,4],[bx+33,by+34,15,4],[bx+37,by+38,7,4]]);}
-      else pixelBlocks(ctx,SCENE_INK.danger,[[bx+50,by+29,4,23],[bx+46,by+33,4,15],[bx+42,by+37,4,7]]);
-    }
+    if(!obstacle)paintSceneEdge(ctx,'alley',x,y,CELL,mapCell);
+  }
+  paintAlleyObstacleScenery(ctx);
+  for(const p of MAP.spawns){
+    const bx=p.x*CELL,by=p.y*CELL;
+    rect(ctx,bx+5,by+5,CELL-10,CELL-10,'#b77d6730');ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(bx+5,by+5,CELL-10,CELL-10);
+    if(p.y===0){pixelBlocks(ctx,SCENE_INK.danger,[[bx+29,by+30,23,4],[bx+33,by+34,15,4],[bx+37,by+38,7,4]]);}
+    else pixelBlocks(ctx,SCENE_INK.danger,[[bx+50,by+29,4,23],[bx+46,by+33,4,15],[bx+42,by+37,4,7]]);
   }
   // One footprint spans four logical cells; one boss sprite and one HP pool occupy it.
   ctx.save();ctx.fillStyle='#b77d6730';ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;

@@ -1,5 +1,6 @@
 import {paintCarryAnchor} from '../carry-painter';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintFinaleObstacleScenery, FINALE_JOINED_OBSTACLE_CELLS} from '../scene-industrial-obstacles';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP} from './config';
@@ -12,6 +13,7 @@ export const BOARD_HEIGHT=MAP.rows*CELL;
 export const cellName=({x,y}:Position)=>`${String.fromCharCode(65+y)}${x+1}`;
 export const mapCell=(x:number,y:number)=>Number.isInteger(x)&&Number.isInteger(y)&&CELLS.some(cell=>cell.x===x&&cell.y===y);
 export const obstacleCell=(x:number,y:number)=>MAP.obstacles.some(cell=>cell.x===x&&cell.y===y);
+const joinedObstacles=new Set(FINALE_JOINED_OBSTACLE_CELLS.map(({x,y})=>`${x},${y}`));
 export const OBSTACLE_NAMES:Readonly<Record<string,string>>={A4:'废钢架',A5:'断梁',B2:'旧箱垛',B3:'绊线已排除',B11:'北侧隔间',B12:'受困伙伴',C1:'旧墙',C7:'断裂立柱',D1:'仓库侧墙',E1:'旧墙',E7:'废钢架',F2:'旧箱垛',F3:'绊线已排除',F11:'南侧隔间',F12:'受困伙伴',G4:'断梁',G5:'废钢架'};
 const rect=(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h);};
 const blocks=(ctx:CanvasRenderingContext2D,color:string,points:number[][])=>{for(const [x,y,w,h] of points)rect(ctx,x,y,w,h,color);};
@@ -31,59 +33,19 @@ function drawFinaleCat(ctx:CanvasRenderingContext2D,id:FinaleCatId,x:number,y:nu
 function drawObstacle(ctx:CanvasRenderingContext2D,p:Position,state:FinaleState){
   const key=cellName(p);ctx.save();ctx.translate(p.x*CELL,p.y*CELL);
   if(key.endsWith('12')){
-    // The recess stays behind the partners; the win state still removes every bar.
-    blocks(ctx,'#1b262a77',[[6,60,68,7],[12,67,58,2],[12,22,56,38]]);
-    blocks(ctx,'#494d48',[[12,22,56,3],[12,25,3,35],[65,25,3,35]]);
+    // The shared holding room stays behind the partners; a win still removes every bar.
     if(state.phase!=='won'){smallCat(ctx,15,25,'#be9872','#896b51',.9);smallCat(ctx,42,30,'#ccc9ba','#8e9d8b',.8);}
-    blocks(ctx,'#7e7569',[[8,18,64,4],[8,60,64,4],[8,18,4,46],[68,18,4,46]]);
-    blocks(ctx,'#b7b5a4',[[10,15,60,3],[8,20,2,38],[10,60,58,1]]);
-    blocks(ctx,'#4c514b',[[70,22,2,39],[12,63,57,2],[12,22,56,1]]);
-    blocks(ctx,'#d5d0b8',[[10,18,2,2],[68,18,2,2],[9,59,2,2],[68,59,2,2]]);
-    blocks(ctx,'#9b8061',[[17,19,5,2],[63,60,5,2],[69,43,2,7]]);
     if(state.phase!=='won')for(const x of [22,39,55]){
       rect(ctx,x+3,24,2,36,'#414b45');rect(ctx,x,22,3,38,'#c6c4b9');rect(ctx,x,26,1,26,'#e2dcc3');
       blocks(ctx,'#8c8f80',[[x-1,23,5,2],[x-1,56,5,2]]);
     }else text(ctx,'已撤离',40,48,SCENE_INK.selected,11);
-  }else if(key==='B11'||key==='F11'){
-    blocks(ctx,'#1c282b66',[[10,59,60,7],[17,66,47,2]]);
-    blocks(ctx,'#484b46',[[12,18,55,42],[61,18,7,42]]);
-    blocks(ctx,'#807c6e',[[12,20,49,38],[16,12,47,6],[14,57,49,4]]);
-    blocks(ctx,'#b7b09b',[[16,12,47,3],[13,19,48,3],[16,23,43,5]]);
-    blocks(ctx,'#dad0ae',[[18,12,38,1],[16,23,34,1]]);
-    blocks(ctx,'#5e6256',[[59,22,4,35],[16,53,44,4],[16,28,43,3]]);
-    blocks(ctx,'#ada696',[[16,31,8,25],[55,31,8,25]]);
-    blocks(ctx,'#d0c6aa',[[16,31,2,24],[55,31,2,24],[17,34,5,1],[56,45,5,1]]);
-    blocks(ctx,'#6b6b5b',[[22,31,2,25],[61,31,2,25]]);
-    rect(ctx,27,31,25,26,'#292e2b');rect(ctx,30,35,18,20,'#35312d');
-    blocks(ctx,'#786f5b',[[30,35,16,2],[30,37,2,16],[32,52,14,2]]);
-    blocks(ctx,'#a59b7e',[[33,38,1,10],[43,50,3,1],[25,57,29,2]]);
-    blocks(ctx,'#5a5549',[[22,16,6,2],[51,25,5,2],[18,48,3,4],[57,36,3,3]]);
-    blocks(ctx,'#d1c5a4',[[18,25,2,2],[57,25,2,2],[18,52,2,2],[57,52,2,2]]);
-    rect(ctx,36,39,4,5,SCENE_INK.gold);
   }else if(key==='B3'||key==='F3'){
-    paintSceneProp(ctx,'finale','cable',0,0,CELL);
-    // The clipped wire and check mark keep the already-cleared trap explicit.
-    blocks(ctx,'#a08869',[[10,24,10,34],[60,24,10,34]]);rect(ctx,36,39,8,12,'#3d3832');
+    // The posts belong to the cargo deck; cut ends, tool and check remain on top.
+    ctx.strokeStyle='#c2aa83';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();
+    ctx.moveTo(18,42);ctx.lineTo(33,47);ctx.moveTo(47,47);ctx.lineTo(62,41);ctx.stroke();ctx.setLineDash([]);
+    rect(ctx,36,39,8,12,'#3d3832');
     ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(28,32);ctx.lineTo(36,40);ctx.lineTo(52,24);ctx.stroke();
-  }else if(key==='B2'||key==='F2'){
-    paintSceneProp(ctx,'finale','warehouse-crates',0,0,CELL,p.y);
-  }else if(p.x===0){
-    blocks(ctx,'#1d2b2c66',[[8,58,66,7],[14,65,54,2]]);
-    blocks(ctx,'#4b514a',[[8,18,65,40],[10,57,62,5]]);
-    for(let row=0;row<4;row++)for(let col=0;col<3;col++){
-      const x=9+col*20+(row%2)*5,y=18+row*10;
-      rect(ctx,x,y,18,8,row%2?'#817b6d':'#aaa38f');
-      rect(ctx,x,y,16,2,row%2?'#b1a992':'#d0c7aa');
-      rect(ctx,x+16,y+2,2,6,'#65695b');rect(ctx,x+1,y+7,15,1,'#5a5f52');
-      if((row+col+p.y)%3===0){rect(ctx,x+5,y+3,6,1,'#bbb39b');rect(ctx,x+11,y+4,2,3,'#777c68');}
-    }
-    blocks(ctx,'#b8ae92',[[9,14,59,4],[12,57,56,2]]);
-    blocks(ctx,'#d6c9a8',[[11,14,53,1],[12,58,19,1]]);
-    blocks(ctx,'#686e5b',[[68,17,5,38],[31,28,2,6],[33,33,5,2],[45,48,2,7]]);
-    blocks(ctx,'#8b9474',[[12,51,4,6],[17,55,8,2],[59,57,7,3]]);
-    blocks(ctx,'#c0b596',[[7,62,5,3],[30,63,7,3],[68,63,5,2]]);
-  }
-  else paintSceneProp(ctx,'finale','storage-rack',0,0,CELL,p.x+p.y);
+  }else if(!joinedObstacles.has(`${p.x},${p.y}`))paintSceneProp(ctx,'finale','storage-rack',0,0,CELL,p.x+p.y);
   ctx.restore();
 }
 /** One nine-cell silhouette and one health pool, with a changed crown in phase two. */
@@ -114,9 +76,10 @@ export function paintFinale(ctx:CanvasRenderingContext2D,state:FinaleState,selec
   for(const p of CELLS){
     const goal=p.x===MAP.goal.x&&p.y===MAP.goal.y,obstacle=obstacleCell(p.x,p.y);
     paintSceneTile(ctx,'finale',p.x,p.y,CELL,{goal,obstacle,spawn:MAP.spawns.some(cell=>cell.x===p.x&&cell.y===p.y),boss:MAP.bossCells.some(cell=>cell.x===p.x&&cell.y===p.y)});
-    paintSceneEdge(ctx,'finale',p.x,p.y,CELL,mapCell);
-    if(obstacle)drawObstacle(ctx,p,state);
+    if(!joinedObstacles.has(`${p.x},${p.y}`))paintSceneEdge(ctx,'finale',p.x,p.y,CELL,mapCell);
   }
+  paintFinaleObstacleScenery(ctx);
+  for(const p of MAP.obstacles)drawObstacle(ctx,p,state);
   for(const p of MAP.spawns){const x=p.x*CELL,y=p.y*CELL;ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(x+6,y+6,CELL-12,CELL-12);blocks(ctx,SCENE_INK.danger,[[x+46,y+23,5,26],[x+41,y+27,5,18],[x+36,y+31,5,10]]);}
   for(const p of MAP.bossCells)rect(ctx,p.x*CELL+3,p.y*CELL+3,CELL-6,CELL-6,'#d6a05d17');drawLights(ctx,state);paintCarryAnchor(ctx,state.carry,CELL,mapCell);
   for(const ally of state.allies){const x=ally.x*CELL,y=ally.y*CELL;rect(ctx,x+8,y+18,64,46,'#264f5b88');ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.strokeRect(x+8,y+18,64,46);ctx.setLineDash([]);if(ally.status==='waiting'){text(ctx,`第${ally.arriveWave}波`,x+40,y+44,SCENE_INK.label,11);}else if(ally.status==='retired')text(ctx,'已退场',x+40,y+48,'#a8b9bc',11);}

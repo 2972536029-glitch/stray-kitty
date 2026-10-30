@@ -1,5 +1,6 @@
 import {paintCarryAnchor} from '../carry-painter';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintTunnelObstacleScenery, TUNNEL_JOINED_OBSTACLE_CELLS} from '../scene-industrial-obstacles';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP} from './config';
@@ -13,6 +14,7 @@ export const cellName=({x,y}:Position)=>`${'ABCDE'[y]}${x+1}`;
 /** The bounding rectangle is not the map: absent cells never accept pointers. */
 export const mapCell=(x:number,y:number)=>Number.isInteger(x)&&Number.isInteger(y)&&CELLS.some(cell=>cell.x===x&&cell.y===y);
 export const obstacleCell=(x:number,y:number)=>MAP.obstacles.some(cell=>cell.x===x&&cell.y===y);
+const joinedObstacles=new Set(TUNNEL_JOINED_OBSTACLE_CELLS.map(({x,y})=>`${x},${y}`));
 export const OBSTACLE_NAMES:Readonly<Record<string,string>>={
   A3:'旧管堆',A7:'塌方碎石',A8:'封闭栅栏',B2:'封闭暗管',C8:'废弃机箱',
   D1:'塌方砖墙',D2:'绊线已排除',E7:'三号泄洪阀',E8:'铁栅后待救',
@@ -55,28 +57,7 @@ function rescuedCat(ctx:CanvasRenderingContext2D,x:number,y:number,fur:string,sm
 function drawObstacle(ctx:CanvasRenderingContext2D,p:Position){
   const key=cellName(p);ctx.save();ctx.translate(p.x*CELL,p.y*CELL);
   if(key==='A3'||key==='B2'){drawPipe(ctx,true);if(key==='A3'){rect(ctx,27,17,36,6,'#807967');rect(ctx,33,12,8,11,'#b8b6a3');}}
-  else if(key==='A7'||key==='D1'){
-    // Stepped top faces and dark undersides distinguish loose pieces from the floor.
-    blocks(ctx,'#152c2d66',[[10,58,58,7],[17,65,45,3],[29,51,35,8]]);
-    blocks(ctx,'#46534d',[[15,42,19,20],[35,27,22,31],[53,43,14,18],[22,19,12,21]]);
-    blocks(ctx,'#7c8478',[[13,41,16,16],[33,27,20,25],[51,43,12,13],[20,19,10,17]]);
-    blocks(ctx,'#aeb6a5',[[15,39,12,5],[35,25,15,6],[53,41,8,5],[22,17,6,5]]);
-    blocks(ctx,'#c6ccba',[[16,39,9,2],[36,25,11,2],[23,17,4,2],[54,41,5,2]]);
-    blocks(ctx,'#5c695f',[[25,44,4,13],[48,31,5,21],[59,46,4,10],[27,23,3,13]]);
-    blocks(ctx,'#384a44',[[14,57,15,3],[34,52,19,4],[52,56,11,3],[20,36,10,3]]);
-    blocks(ctx,'#748475',[[15,46,3,5],[36,34,6,3],[43,45,3,4],[53,49,3,2]]);
-    blocks(ctx,'#a2ac98',[[11,61,6,3],[29,59,7,4],[43,62,8,3],[63,61,4,3]]);
-    blocks(ctx,'#526459',[[12,64,5,2],[31,63,5,2],[45,65,6,2]]);
-    if(key==='D1'){
-      // The collapsed wall retains mortar seams; A7 remains irregular stone.
-      blocks(ctx,'#c0ba9e',[[14,48,10,2],[34,38,14,2],[39,29,2,9],[19,41,2,7]]);
-      blocks(ctx,'#4c5147',[[41,40,2,7],[43,45,4,2],[22,51,2,5]]);
-      blocks(ctx,'#93836d',[[17,60,9,4],[36,56,7,5],[53,60,8,3]]);
-    }
-  }else if(key==='A8'){
-    paintSceneProp(ctx,'tunnel','barrier',0,0,CELL);
-    blocks(ctx,SCENE_INK.gold,[[35,37,10,11],[38,32,5,6]]);
-  }else if(key==='C8'){
+  else if(key==='C8'){
     blocks(ctx,'#152a2d77',[[13,59,55,7],[20,65,41,3]]);
     blocks(ctx,'#3e514e',[[18,23,44,36],[58,24,7,35],[15,58,50,5]]);
     blocks(ctx,'#818d80',[[18,25,40,31],[21,20,35,5]]);
@@ -92,11 +73,7 @@ function drawObstacle(ctx:CanvasRenderingContext2D,p:Position){
     blocks(ctx,'#263d3b',[[18,63,7,2],[25,64,10,2],[34,61,2,4]]);
     rect(ctx,25,44,5,2,SCENE_INK.gold);
   }else if(key==='D2'){
-    blocks(ctx,'#172d2d66',[[12,57,17,6],[51,57,17,6]]);
-    blocks(ctx,'#8c7965',[[15,29,11,29],[54,31,11,27]]);
-    blocks(ctx,'#c0b499',[[15,27,9,3],[54,29,9,3],[16,31,2,22],[55,33,2,20]]);
-    blocks(ctx,'#525c50',[[23,30,3,28],[62,32,3,26],[14,55,12,3],[53,55,12,3]]);
-    blocks(ctx,'#b8baa4',[[18,35,2,2],[57,36,2,2],[18,51,2,2],[57,51,2,2]]);
+    // The continuous footing owns the posts; retain the clipped wire, tool and cleared check.
     ctx.strokeStyle='#c4a17a';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(23,42);ctx.lineTo(36,47);ctx.moveTo(45,48);ctx.lineTo(58,41);ctx.stroke();ctx.setLineDash([]);
     blocks(ctx,'#c4c4b5',[[32,26,17,13],[37,21,8,6],[38,39,5,9]]);ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(28,54);ctx.lineTo(36,60);ctx.lineTo(53,44);ctx.stroke();
   }else if(key==='E7'){
@@ -165,10 +142,11 @@ export function paintTunnel(ctx:CanvasRenderingContext2D,state:TunnelState,selec
   for(const p of CELLS){
     const goal=p.x===MAP.goal.x&&p.y===MAP.goal.y,obstacle=obstacleCell(p.x,p.y);
     paintSceneTile(ctx,'tunnel',p.x,p.y,CELL,{goal,obstacle,spawn:MAP.spawns.some(cell=>cell.x===p.x&&cell.y===p.y),boss:MAP.bossCells.some(cell=>cell.x===p.x&&cell.y===p.y)});
-    paintSceneEdge(ctx,'tunnel',p.x,p.y,CELL,mapCell);
-    if(obstacle)drawObstacle(ctx,p);
-    if(p.x===0&&p.y===0){ctx.save();ctx.translate(0,0);drawPipe(ctx,false);ctx.restore();}
+    if(!joinedObstacles.has(`${p.x},${p.y}`))paintSceneEdge(ctx,'tunnel',p.x,p.y,CELL,mapCell);
   }
+  paintTunnelObstacleScenery(ctx);
+  for(const p of MAP.obstacles)drawObstacle(ctx,p);
+  ctx.save();drawPipe(ctx,false);ctx.restore();
   for(const p of MAP.spawns){
     const x=p.x*CELL,y=p.y*CELL;ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(x+5,y+5,CELL-10,CELL-10);
     if(p.y===0){

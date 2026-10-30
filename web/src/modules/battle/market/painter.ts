@@ -4,7 +4,8 @@ import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP} from './config';
 import {getAttackCells, getSkillCells} from './engine';
 import type {MarketCatId, MarketState, Position} from './types';
-import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintMarketObstacleScenery} from '../scene-market-obstacles';
 
 export const CELL=80;
 export const BOARD_WIDTH=MAP.columns*CELL;
@@ -32,12 +33,6 @@ function drawMarketCat(ctx:CanvasRenderingContext2D,id:MarketCatId,x:number,y:nu
     rect(ctx,26,26,2,1,'#657f83');
   }
   ctx.restore();
-}
-
-/** Fourteen fixed obstacle cells become pixel stalls, kept inside their tiles. */
-function drawStall(ctx:CanvasRenderingContext2D,x:number,y:number,index:number){
-  const kind=index%3;
-  paintSceneProp(ctx,'market',(['food-stall','toy-stall','notice-stall'] as const)[kind],x,y,CELL,index);
 }
 
 /** A one-cell lantern keeper closes its lamp before sweeping sideways; no charge bar. */
@@ -74,12 +69,12 @@ export function paintMarket(ctx:CanvasRenderingContext2D,state:MarketState,selec
   ctx.clearRect(0,0,BOARD_WIDTH,BOARD_HEIGHT);ctx.imageSmoothingEnabled=false;ctx.save();
   ctx.beginPath();ctx.rect(0,0,BOARD_WIDTH,BOARD_HEIGHT);ctx.clip();
   for(const position of CELLS){
-    const {x,y}=position,bx=x*CELL,by=y*CELL,goal=x===MAP.goal.x&&y===MAP.goal.y,obstacle=obstacleCell(x,y);
+    const {x,y}=position,goal=x===MAP.goal.x&&y===MAP.goal.y,obstacle=obstacleCell(x,y);
     const spawn=MAP.spawns.some(cell=>cell.x===x&&cell.y===y);
     paintSceneTile(ctx,'market',x,y,CELL,{goal,obstacle,spawn});
-    paintSceneEdge(ctx,'market',x,y,CELL,mapCell);
-    if(obstacle)drawStall(ctx,bx,by,MAP.obstacles.findIndex(cell=>cell.x===x&&cell.y===y));
+    if(!obstacle)paintSceneEdge(ctx,'market',x,y,CELL,mapCell);
   }
+  paintMarketObstacleScenery(ctx);
   for(const {x,y} of MAP.spawns){
     const bx=x*CELL,by=y*CELL;ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(bx+5,by+5,CELL-10,CELL-10);
     const points=y===0?[[bx+29,by+26,23,4],[bx+33,by+30,15,4],[bx+37,by+34,7,4]]:y===4?[[bx+37,by+26,7,4],[bx+33,by+30,15,4],[bx+29,by+34,23,4]]:[[bx+45,by+24,4,23],[bx+41,by+28,4,15],[bx+37,by+32,4,7]];

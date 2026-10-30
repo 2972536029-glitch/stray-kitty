@@ -1,5 +1,6 @@
 import {paintCarryAnchor} from '../carry-painter';
-import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintGreenhouseObstacleScenery} from '../scene-garden-alley-obstacles';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP} from './config';
@@ -30,17 +31,6 @@ function drawGreenhouseCat(ctx:CanvasRenderingContext2D,id:GreenhouseCatId,x:num
   else if(black){blocks(ctx,'#8caa89',[[10,20,15,2],[17,22,3,3]]);blocks(ctx,'#e1d4a2',[[24,18,5,3],[23,21,7,6],[25,27,3,2]]);rect(ctx,25,22,3,4,'#fbf0be');}
   else {blocks(ctx,'#77989c',[[10,20,15,2],[15,22,5,3]]);blocks(ctx,'#d9bb68',[[17,22,3,4],[25,20,4,6]]);rect(ctx,26,26,2,1,'#657f83');}
   ctx.restore();
-}
-
-function drawObstacle(ctx:CanvasRenderingContext2D,p:Position,index:number){
-  const x=p.x*CELL,y=p.y*CELL;
-  if(index===2){
-    ctx.save();ctx.translate(x,y+22);ctx.scale(1,.65);
-    paintSceneProp(ctx,'greenhouse','trellis',0,0,CELL,index);ctx.restore();
-    blocks(ctx,'#b5bba0',[[x+15,y+40,15,4],[x+28,y+44,15,4],[x+41,y+48,15,4],[x+54,y+52,10,4]]);
-  }else paintSceneProp(ctx,'greenhouse',index===1?'broken-pot':'trellis',x,y,CELL,index);
-  // These are the same three blocked cells; the seedlings remain scenery only.
-  if(index===0)paintSceneProp(ctx,'greenhouse','planter',x+9,y+20,CELL*.55,index);
 }
 
 /** One large vine-armoured body spans exactly four tiles, with a seed-opening tell. */
@@ -88,9 +78,9 @@ export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseSta
   for(const p of CELLS){
     const goal=p.x===MAP.goal.x&&p.y===MAP.goal.y,obstacle=obstacleCell(p.x,p.y);
     paintSceneTile(ctx,'greenhouse',p.x,p.y,CELL,{goal,obstacle,spawn:MAP.spawns.some(cell=>cell.x===p.x&&cell.y===p.y),boss:MAP.bossCells.some(cell=>cell.x===p.x&&cell.y===p.y)});
-    paintSceneEdge(ctx,'greenhouse',p.x,p.y,CELL,mapCell);
-    if(obstacle)drawObstacle(ctx,p,MAP.obstacles.findIndex(cell=>cell.x===p.x&&cell.y===p.y));
+    if(!obstacle)paintSceneEdge(ctx,'greenhouse',p.x,p.y,CELL,mapCell);
   }
+  paintGreenhouseObstacleScenery(ctx);
   for(const p of MAP.spawns){
     const x=p.x*CELL,y=p.y*CELL;ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(x+5,y+5,CELL-10,CELL-10);
     blocks(ctx,SCENE_INK.danger,p.y===5?[[x+37,y+25,7,4],[x+33,y+29,15,4],[x+29,y+33,23,4]]:[[x+45,y+24,4,23],[x+41,y+28,4,15],[x+37,y+32,4,7]]);

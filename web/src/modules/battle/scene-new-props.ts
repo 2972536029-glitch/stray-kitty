@@ -14,7 +14,7 @@ const plans:Record<BattleSceneId,readonly PropPlan[]>={
   alley:[{kind:'bicycle',across:.19,depth:.26,width:190},{kind:'hydrant',across:.68,depth:.28,width:112},{kind:'tea-cart',across:.12,depth:.68,width:165}],
   market:[{kind:'tea-cart',across:.85,depth:.38,width:186},{kind:'bundles',across:.8,depth:.76,width:144}],
   greenhouse:[{kind:'wheelbarrow',across:.2,depth:.73,width:175},{kind:'water-barrel',across:.83,depth:.25,width:140}],
-  tunnel:[{kind:'maintenance',across:.16,depth:.34,width:161},{kind:'water-barrel',across:.24,depth:.78,width:107},{kind:'hydrant',across:.89,depth:.19,width:92}],
+  tunnel:[{kind:'maintenance',across:.16,depth:.34,width:161}],
   finale:[{kind:'pallet-jack',across:.84,depth:.66,width:192},{kind:'maintenance',across:.19,depth:.8,width:121}],
 };
 let atlas:HTMLImageElement|undefined;
