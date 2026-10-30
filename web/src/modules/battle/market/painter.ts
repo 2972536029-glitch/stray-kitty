@@ -125,8 +125,8 @@ export function paintMarket(ctx:CanvasRenderingContext2D,state:MarketState,selec
     drawMarketCat(ctx,cat.id,x+9,y+7,62,cat.cooldown>.5);
     if(cat.shield>0){ctx.strokeStyle='#8dd7e4';ctx.fillStyle='#8dd7e424';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x+40,y+42,31,29,0,0,Math.PI*2);ctx.fill();ctx.stroke();}
     if(cat.attackBuffRemaining>0){ctx.strokeStyle='#f4ce83';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+64,y+25);ctx.lineTo(x+68,y+17);ctx.lineTo(x+72,y+25);ctx.stroke();}
-    rect(ctx,x+10,y+65,60,5,'#243741');rect(ctx,x+10,y+65,60*cat.hp/cat.maxHp,5,'#9ccc94');
-    rect(ctx,x+10,y+72,60,3,'#243741');rect(ctx,x+10,y+72,60*cat.energy/100,3,cat.energyBlockedRemaining>0?'#bda3d1':cat.energy>=100?SCENE_INK.gold:'#a2d3d5');
+
+
     if(cat.energyBlockedRemaining>0){ctx.fillStyle='#e3bddd';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.fillText('封能',x+40,y+61);}
   }
   for(const effect of state.effects){

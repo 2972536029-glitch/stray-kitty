@@ -1,0 +1,14 @@
+/* Match the prologue's compact meters while the parent unit keeps its original hit area. */
+.battle-l00 .btl-unit-meters{position:absolute;inset:0;display:block;pointer-events:none}
+.battle-l00 .btl-unit-meters>.btl-health{position:absolute;left:14%;width:72%;bottom:10px;height:7px;margin:0;pointer-events:none}
+.battle-l00 .btl-unit-meters>.btl-energy-compact{bottom:2px;height:6px}
+/* The market pulse pauses charging; a full skill still keeps its ready halo and can be cast. */
+.battle-l00 .btl-unit-meters>.btl-energy.btl-energy-blocked>i{background:linear-gradient(180deg,#e3c8f2 0%,#bda3d1 45%,#9471af 100%)}
+/* Compact overview cells keep the name and both readings in separate rows. */
+@container battle-unit-cell (max-width:56px){
+ .battle-l00 .btl-unit-meters>.btl-health{height:4px;bottom:8px}
+ .battle-l00 .btl-unit-meters>.btl-energy-compact{height:3px;bottom:2px}
+}
+@container battle-unit-cell (max-width:40px){
+ .battle-l00 .btl-unit-meters>.btl-health{height:3px;bottom:7px}
+}

@@ -7,6 +7,7 @@ import {getBattleSpeed, getDeployedCatCount} from './engine';
 import {getAdvice} from './advisor';
 import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
+import {CatHealth, CatEnergy} from '../UnitMeters';
 import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
 import {COMMANDER_POSITION, CONFIG, DIFFICULTY_CONFIG, SKILLS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, isSkillTargetAllowed} from './ranges';
@@ -44,15 +45,6 @@ function CatPortrait({kind,pose='idle',size=64}:{kind:CatKind;pose?:CatPose;size
   useEffect(()=>{const ctx=ref.current?.getContext('2d');if(ctx){ctx.clearRect(0,0,96,96);drawCat(ctx,kind,0,0,96,pose);}},[kind,pose]);
   return <canvas className="btl-portrait" width={96} height={96} ref={ref} style={{width:size,height:size}} role="img" aria-label={`${kind==='hero'?'金吉拉':kind==='caster'?'布偶':kind==='guard'?'奶牛盾猫':'三花军师'}${pose==='sleep'?'，蜷缩':''}`}/>;
 }
-function CatHealth({cat}:{cat:CombatCatState}){
-  const capacity=cat.maxHp+Math.max(0,cat.shield),healthWidth=Math.max(0,cat.hp/capacity)*100;
-  return <span className="btl-health" aria-label={`体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}${cat.shield>0?`，额外护盾 ${Math.ceil(cat.shield)}，剩余 ${Math.ceil(cat.shieldRemaining)} 秒`:''}`}><i style={{width:`${healthWidth}%`}}/>{cat.shield>0&&<b style={{left:`${cat.maxHp/capacity*100}%`,width:`${cat.shield/capacity*100}%`}}/>}</span>;
-}
-function CatEnergy({cat,compact=false}:{cat:CombatCatState;compact?:boolean}){
-  const ready=cat.energy>=CONFIG.MAX_ENERGY;
-  return <span className={`btl-energy${compact?' btl-energy-compact':''}${ready?' btl-energy-ready':''}`} role="meter" aria-label={`${cat.name}能量`} aria-valuemin={0} aria-valuemax={CONFIG.MAX_ENERGY} aria-valuenow={cat.energy} data-testid={`battle-energy-${cat.id}${compact?'-compact':''}`}><i style={{width:`${Math.min(100,cat.energy/CONFIG.MAX_ENERGY*100)}%`}}/>{!compact&&<span>{ready?'能量已满':`能量 ${Math.floor(cat.energy)} / ${CONFIG.MAX_ENERGY}`}</span>}</span>;
-}
-
 export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,autoComplete=false}:Props){
   const [runtime]=useState(()=>new PrologueBattle({mode:'tutorial'}));
   const [game,setGame]=useState<CombatState|null>(null);

@@ -107,6 +107,13 @@ test.describe('窄屏技能反馈',()=>{
     // The QA checkpoint badge overlaps this setup control at mobile width.
     // Set overview by keyboard; the skill and cat interactions below use real taps/clicks.
     const fit=page.getByRole('button',{name:'查看全图',exact:true});if(await fit.isVisible())await fit.press('Enter');
+    const guardName=page.getByTestId('market-cat-guard').locator('.market-unit-name');
+    await expect(guardName).toBeVisible();await expect(guardName).toHaveText('斑斑');
+    const nameBounds=await guardName.evaluate(node=>{
+      const label=node.closest('.btl-unit-name')!.getBoundingClientRect(),cell=node.closest('[data-cell]')!.getBoundingClientRect();
+      return {left:label.left-cell.left,right:cell.right-label.right};
+    });
+    expect(nameBounds.left).toBeGreaterThanOrEqual(-1);expect(nameBounds.right).toBeGreaterThanOrEqual(-1);
     await page.getByTestId('market-speed-toggle').click();await page.getByTestId('market-play-toggle').click();
     await expect.poll(async()=>Number(await page.getByTestId('market-cat-guard').getAttribute('data-energy')),{timeout:30000}).toBe(100);
     await page.getByTestId('market-cat-guard').click();await page.getByTestId('market-skill-guard').click();
@@ -124,6 +131,20 @@ const coverage={chapter:['guard','diandian','tuanzi','caster'],market:['controll
 for(const chapter of chapters)test(`${chapter}: 成功技能有对应效果，取消和能量不足不产生假释放`,async({page},info)=>{
   test.setTimeout(90000);await openChapter(page,chapter);
   const battle=page.getByTestId(`${chapter}-battle`);
+  const guard=page.getByTestId(`${chapter}-cat-guard`);
+  // Board meters must exist on the real units, not only in unused roster styles.
+  await expect(guard.locator('.btl-health')).toBeVisible();
+  await expect(guard.locator('.btl-energy')).toBeVisible();
+  await expect(guard.locator('.btl-energy')).toHaveAttribute('aria-valuenow','0');
+  for(const label of await battle.locator('.btl-unit-name').all()){
+    expect(await label.innerText()).not.toMatch(/\d/);
+    const bounds=await label.evaluate(node=>{
+      const labelBox=node.getBoundingClientRect(),cellBox=node.closest('[data-cell]')!.getBoundingClientRect();
+      return {left:labelBox.left-cellBox.left,right:cellBox.right-labelBox.right,fontSize:parseFloat(getComputedStyle(node).fontSize)};
+    });
+    expect(bounds.left).toBeGreaterThanOrEqual(-1);expect(bounds.right).toBeGreaterThanOrEqual(-1);
+    expect(bounds.fontSize).toBeGreaterThanOrEqual(10);
+  }
   const playback=page.getByTestId(chapter==='chapter'?'chapter-start':`${chapter}-play-toggle`);
   await page.getByTestId(`${chapter}-cat-guard`).click();
   await expect(page.getByTestId(`${chapter}-skill-guard`)).toHaveAttribute('aria-disabled','true');
@@ -133,6 +154,11 @@ for(const chapter of chapters)test(`${chapter}: 成功技能有对应效果，�
   await expect(page.getByTestId('skill-release-guard')).toHaveCount(0);await page.keyboard.press('Escape');
   await page.getByTestId(`${chapter}-speed-toggle`).click();await playback.click();
   await expect.poll(async()=>Number(await page.getByTestId(`${chapter}-cat-${coverage[chapter][0]}`).getAttribute('data-energy')),{timeout:35000}).toBe(100);
+  const charged=page.getByTestId(`${chapter}-cat-${coverage[chapter][0]}`);
+  await expect(charged).toHaveClass(/btl-energy-halo/);
+  await expect(charged.locator('.btl-energy')).toHaveClass(/btl-energy-ready/);
+  await expect(charged.locator('.btl-energy')).toHaveAttribute('aria-valuenow','100');
+  await page.screenshot({path:info.outputPath(`${chapter}-charged-meters.png`),fullPage:true});
   for(const id of coverage[chapter]){
     await page.getByTestId(`${chapter}-cat-${id}`).click();
     await expect(page.getByTestId(`${chapter}-skill-${id}`)).toHaveAttribute('aria-disabled','false');
@@ -146,6 +172,7 @@ for(const chapter of chapters)test(`${chapter}: 成功技能有对应效果，�
     const release=page.getByTestId(`skill-release-${id}`),label=page.getByTestId(`skill-label-${id}`);
     const expectedVariant=id==='momo'?(chapter==='greenhouse'?'cleanse':'night'):{guard:'shield',diandian:'heal',tuanzi:'claw',caster:'star',bruiser:'fury',controller:'slow'}[id];
     await expect(release).toHaveAttribute('data-skill-variant',expectedVariant!);
+    await expect(page.getByTestId(`${chapter}-cat-${id}`)).not.toHaveClass(/btl-energy-halo/);
     await expect(label).toBeVisible();
     expect(await release.evaluate(node=>getComputedStyle(node).pointerEvents)).toBe('none');
     if(id==='momo'||id==='guard'||id==='bruiser')await expect(page.getByTestId(`skill-shield-${id}`)).toBeVisible();

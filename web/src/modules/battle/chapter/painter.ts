@@ -142,8 +142,8 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
     if(c.id===selected){ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;ctx.strokeRect(x+4,y+4,CELL-8,CELL-8);}
     drawChapterCat(ctx,c.id,x+9,y+9,62,false,c.cooldown>.5);
     if(c.shield>0){ctx.strokeStyle='#8dd7e4';ctx.fillStyle='#8dd7e424';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x+40,y+43,31,29,0,0,Math.PI*2);ctx.fill();ctx.stroke();}
-    rect(ctx,x+10,y+65,60,5,'#243741');rect(ctx,x+10,y+65,60*c.hp/c.maxHp,5,'#9ccc94');
-    rect(ctx,x+10,y+72,60,3,'#243741');rect(ctx,x+10,y+72,60*c.energy/100,3,c.energy>=100?SCENE_INK.gold:'#a2d3d5');
+
+
   }
   for(const fx of state.effects){
     ctx.save();ctx.globalAlpha=Math.min(1,fx.remaining*3);
