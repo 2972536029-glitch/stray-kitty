@@ -887,16 +887,16 @@
 @media(max-width:1150px){.battle-l00.battle-immersive .btl-unit .btl-unit-name{font-size:10px}}
 @media(max-width:440px){.battle-l00.battle-immersive .btl-unit .btl-unit-name{font-size:9.5px}}
 /* ===== 战斗表现层特效：屏幕震动 / 技能边缘泛光 / 能量蓄满金环（纯视觉，由 battleFx.ts 在 diff 到伤害/施法时挂类） ===== */
-/* 轻震：命中黑影。位移幅度很小，不影响 e2e 的 bounds 断言（动画只持续 0.34s 且不出现在断言时机）。 */
+/* 轻震档位：防眩晕终波收敛后默认不再触发（保留档位以兼容既有类名）。 */
 @keyframes fx-screen-shake{
   0%,100%{transform:translate(0,0)}
-  20%{transform:translate(-3px,2px)}
-  40%{transform:translate(3px,-2px)}
-  60%{transform:translate(-2px,-1px)}
-  80%{transform:translate(2px,1px)}
+  20%{transform:translate(-1px,1px)}
+  40%{transform:translate(1px,-1px)}
+  60%{transform:translate(-1px,0)}
+  80%{transform:translate(1px,0)}
 }
 .fx-shake{animation:fx-screen-shake .34s cubic-bezier(.36,.07,.19,.97)}
-/* 强震：黑影被击败 / 首领受创。 */
+/* 强震：全场唯一保留的震动档——只在最后一波的高光时刻（终波 Boss 登场 / 终波清场、Boss 倒下）。 */
 @keyframes fx-screen-shake-strong{
   0%,100%{transform:translate(0,0)}
   15%{transform:translate(-5px,4px)}
