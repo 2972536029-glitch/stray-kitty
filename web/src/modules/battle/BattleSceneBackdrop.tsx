@@ -1,9 +1,13 @@
 import {useEffect,useRef,type RefObject} from 'react';
 import {paintSceneProp,type BattleSceneId,type ScenePropKind} from './scene-art';
 import {BACKDROP_THEMES,paintBackdropArchitecture} from './battle-scene-backdrop-art';
+import {paintSceneVignette,type SceneVignetteKind} from './scene-vignettes';
+import {planSceneryGroups,type SceneryRect} from './scene-composition';
 
 interface Props {scene:BattleSceneId;boardRef:RefObject<HTMLDivElement|null>;columns:number;rows:number;cells?:readonly {x:number;y:number}[];darkened?:boolean}
 const scrollSelector='.prologue-board-scroll,.chapter-board-scroll,.market-board-scroll,.greenhouse-board-scroll,.tunnel-board-scroll,.finale-board-scroll';
+const hudSelector='.btl-head,.btl-wave-status,.battle-hud-mechanic,.btl-playback,.btl-playback>span,.battle-hud-details,.battle-carry-panel,.battle-advisor,.battle-hud-boss,[class$="map-tools"],.btl-board-caption,.btl-retirement-note,.btl-controls';
+const sceneryKinds:Record<BattleSceneId,readonly SceneVignetteKind[]>={prologue:['alley-supplies'],alley:['alley-supplies'],market:['market-goods'],greenhouse:['garden-bench','potting-corner'],tunnel:['pump-station'],finale:['warehouse-workbench']};
 const rect=(ctx:CanvasRenderingContext2D,c:string,x:number,y:number,w:number,h:number)=>{ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
 
 /** Decorative scene on a separate, noninteractive canvas. The tactical canvas keeps its alpha mask. */
@@ -12,6 +16,13 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
   useEffect(()=>{
     const canvas=ref.current,stage=canvas?.parentElement;if(!canvas||!stage)return;
     let frame=0,observer:ResizeObserver|undefined;
+    const observedHud=new Set<Element>();
+    const currentHud=()=>{
+      const elements=[...stage.querySelectorAll(hudSelector)];
+      for(const old of observedHud)if(!stage.contains(old)){observer?.unobserve(old);observedHud.delete(old);}
+      for(const element of elements)if(!observedHud.has(element)){observer?.observe(element);observedHud.add(element);}
+      return elements;
+    };
     const draw=()=>{
       frame=0;
       const full=stage.getBoundingClientRect(),board=boardRef.current?.getBoundingClientRect();
@@ -40,7 +51,10 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
       }
       ctx.clip('evenodd');
       paintBackdropArchitecture(ctx,scene,w,h);
-      const prop=(kind:ScenePropKind,x:number,y:number,size:number,index=0)=>paintSceneProp(ctx,scene,kind,x,y,size,index);
+      const occupied:SceneryRect[]=[];
+      const prop=(kind:ScenePropKind,x:number,y:number,size:number,index=0)=>{
+        paintSceneProp(ctx,scene,kind,x,y,size,index);occupied.push({x,y,width:size,height:size});
+      };
       for(let i=0;i<Math.ceil(w/280);i++){
         const size=108+(i%2)*14;prop(p.props[i%p.props.length],54+i*280,88,size,i);
         if(i>0)prop(p.props[(i+1)%p.props.length],96+i*280,h-180,126,i);
@@ -56,6 +70,20 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
       }
       // The adviser's own foreground seat is scenery, never a cat slot or an attack target.
       prop('crate',24,h-111,124);
+      if(board){
+        for(const element of currentHud()){
+          const bounds=element.getBoundingClientRect();
+          if(bounds.width&&bounds.height)occupied.push({x:bounds.left-full.left,y:bounds.top-full.top,width:bounds.width,height:bounds.height});
+        }
+        // Whole groups stay clear of the visible board bounds. The existing cell
+        // mask remains a second safeguard while zooming or scrolling the map.
+        const left=Math.max(viewportLeft,board.left-full.left),right=Math.min(viewportRight,board.right-full.left);
+        const boardBounds={x:left,y:board.top-full.top,width:Math.max(0,right-left),height:board.height};
+        for(const group of planSceneryGroups(w,h,boardBounds,occupied,scene==='greenhouse'?2:1)){
+          const kinds=sceneryKinds[scene],index=group.side+group.row;
+          paintSceneVignette(ctx,scene,kinds[index%kinds.length],group.x,group.y,group.width,index);
+        }
+      }
       ctx.restore();
       if(darkened)rect(ctx,'#06171bc4',0,0,w,h);
     };
@@ -67,12 +95,19 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
         const scroll=boardRef.current.closest<HTMLElement>(scrollSelector);
         if(scroll)observer?.observe(scroll);
       }
+      currentHud();
       schedule();
     };
     connectBoard();window.addEventListener('resize',connectBoard);stage.addEventListener('scroll',schedule,true);
+    // Only HUD element insertion/removal matters here, not per-frame health,
+    // timers or other text/attribute updates in the running battle.
+    const hudChanges=new MutationObserver(changes=>{
+      if(changes.some(change=>[...change.addedNodes,...change.removedNodes].some(node=>node instanceof Element&&(node.matches(hudSelector)||node.querySelector(hudSelector)))))schedule();
+    });
+    hudChanges.observe(stage,{childList:true,subtree:true});
     // This frame also catches the board ref after the parent finishes mounting.
     const mounted=requestAnimationFrame(connectBoard);
-    return()=>{observer?.disconnect();cancelAnimationFrame(frame);cancelAnimationFrame(mounted);window.removeEventListener('resize',connectBoard);stage.removeEventListener('scroll',schedule,true);};
+    return()=>{observer?.disconnect();hudChanges.disconnect();cancelAnimationFrame(frame);cancelAnimationFrame(mounted);window.removeEventListener('resize',connectBoard);stage.removeEventListener('scroll',schedule,true);};
   },[scene,boardRef,columns,rows,cells,darkened]);
   return <canvas ref={ref} className="battle-scene-backdrop" aria-hidden="true"/>;
 }

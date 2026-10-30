@@ -15,7 +15,7 @@ export const mapCell=(x:number,y:number)=>Number.isInteger(x)&&Number.isInteger(
 export const obstacleCell=(x:number,y:number)=>MAP.obstacles.some(cell=>cell.x===x&&cell.y===y);
 export const OBSTACLE_NAMES:Readonly<Record<string,string>>={
   A3:'旧管堆',A7:'塌方碎石',A8:'封闭栅栏',B2:'封闭暗管',C8:'废弃机箱',
-  D1:'塌方砖墙',D2:'绊线已识破',E7:'三号泄洪阀',E8:'铁栅后待救',
+  D1:'塌方砖墙',D2:'绊线已排除',E7:'三号泄洪阀',E8:'铁栅后待救',
 };
 const rect=(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h);};
 const blocks=(ctx:CanvasRenderingContext2D,color:string,points:number[][])=>{for(const [x,y,w,h] of points)rect(ctx,x,y,w,h,color);};
