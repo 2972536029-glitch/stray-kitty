@@ -1,0 +1,158 @@
+{
+  "moss": {
+    "width": 2048,
+    "height": 1536,
+    "frames": {
+      "parcel.moss_cottage": {
+        "x": 84,
+        "y": 90,
+        "width": 343,
+        "height": 332
+      },
+      "parcel.fern_lantern": {
+        "x": 653,
+        "y": 84,
+        "width": 230,
+        "height": 344
+      },
+      "parcel.acorn_library": {
+        "x": 1139,
+        "y": 85,
+        "width": 282,
+        "height": 342
+      },
+      "parcel.leaf_swing": {
+        "x": 1623,
+        "y": 104,
+        "width": 337,
+        "height": 303
+      },
+      "parcel.clover_rug": {
+        "x": 80,
+        "y": 667,
+        "width": 352,
+        "height": 201
+      },
+      "parcel.willow_sofa": {
+        "x": 589,
+        "y": 642,
+        "width": 358,
+        "height": 252
+      },
+      "parcel.herb_desk": {
+        "x": 1112,
+        "y": 605,
+        "width": 335,
+        "height": 325
+      },
+      "parcel.letter_cabinet": {
+        "x": 1656,
+        "y": 594,
+        "width": 272,
+        "height": 347
+      },
+      "parcel.sprout_planter": {
+        "x": 35,
+        "y": 1135,
+        "width": 442,
+        "height": 289
+      },
+      "parcel.postmark_clock": {
+        "x": 662,
+        "y": 1105,
+        "width": 212,
+        "height": 349
+      },
+      "parcel.wicker_basket": {
+        "x": 1128,
+        "y": 1146,
+        "width": 303,
+        "height": 268
+      },
+      "parcel.seedling_stool": {
+        "x": 1654,
+        "y": 1135,
+        "width": 276,
+        "height": 290
+      }
+    }
+  },
+  "moon": {
+    "width": 2048,
+    "height": 1536,
+    "frames": {
+      "parcel.luna_boat": {
+        "x": 72,
+        "y": 73,
+        "width": 367,
+        "height": 366
+      },
+      "parcel.orrery_lamp": {
+        "x": 639,
+        "y": 73,
+        "width": 257,
+        "height": 365
+      },
+      "parcel.tide_observatory": {
+        "x": 1134,
+        "y": 64,
+        "width": 291,
+        "height": 383
+      },
+      "parcel.orbit_hammock": {
+        "x": 1618,
+        "y": 93,
+        "width": 348,
+        "height": 326
+      },
+      "parcel.starmap_carpet": {
+        "x": 67,
+        "y": 655,
+        "width": 377,
+        "height": 225
+      },
+      "parcel.crescent_sofa": {
+        "x": 581,
+        "y": 623,
+        "width": 373,
+        "height": 290
+      },
+      "parcel.astral_desk": {
+        "x": 1104,
+        "y": 601,
+        "width": 352,
+        "height": 333
+      },
+      "parcel.pearl_cabinet": {
+        "x": 1653,
+        "y": 588,
+        "width": 277,
+        "height": 360
+      },
+      "parcel.nebula_planter": {
+        "x": 44,
+        "y": 1115,
+        "width": 423,
+        "height": 329
+      },
+      "parcel.lunar_clock": {
+        "x": 634,
+        "y": 1094,
+        "width": 268,
+        "height": 372
+      },
+      "parcel.comet_mobile": {
+        "x": 1164,
+        "y": 1104,
+        "width": 232,
+        "height": 352
+      },
+      "parcel.star_stool": {
+        "x": 1643,
+        "y": 1144,
+        "width": 298,
+        "height": 272
+      }
+    }
+  }
+}

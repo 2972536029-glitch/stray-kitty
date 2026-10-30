@@ -5,8 +5,9 @@ export const HOME_SIZE = {width: 1672, height: 941} as const;
 export const HOME_LAYOUT_ID = 'arched-greenhouse-modular-v1';
 export type HomePoint = {x: number; y: number};
 export const HOME_SLOTS: Readonly<Record<string, HomePoint>> = {
+  lounge:{x:600,y:538},desk:{x:820,y:375},cabinet:{x:555,y:373},planter:{x:1315,y:392},wall_clock:{x:1170,y:305},toy_corner:{x:980,y:672},reading_stool:{x:690,y:678},
   corner: {x: 254, y: 382}, window: {x: 1400, y: 618},
-  courtyard: {x: 1430, y: 700}, beam: {x: 280, y: 640}, sun_spot: {x: 1050, y: 585},
+  courtyard: {x: 1255, y: 700}, beam: {x: 280, y: 640}, sun_spot: {x: 1050, y: 585},
 };
 export const HOME_RESIDENTS: Record<CatBreed, HomePoint> = {
   miaomiao: {x: 730, y: 510}, tuanzi: {x: 850, y: 540},

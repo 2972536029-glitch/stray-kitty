@@ -86,7 +86,7 @@ export default function RechargeDialog({playerId, packs, tuna, api, onCharged, o
         : history.length === 0 ? <p className="muted">这里会记下罐头的来来往往，第一笔从你开始。</p>
         : <ul>{history.map(t => <li key={t.id}>
             <span className={t.status === 'confirmed' ? 'is-good' : 'is-declined'}>{t.status === 'confirmed' ? '✓ 成功' : '未成功'}</span>
-            <div><b>{t.amount > 0 ? `充值 ${money(t.amount)}` : '🥫 消耗'}</b><small>{fmtTime(t.createdAt)}{t.cardSuffix ? ` · 卡尾号 ${t.cardSuffix}` : ''}{t.reason ? ` · ${t.reason}` : ''}</small></div>
+            <div><b>{t.amount > 0 ? `充值 ${money(t.amount)}` : `${t.currency === 'stamp' ? '✦ 邮票' : '🥫 罐头'} 消耗${t.spent ? ` ${t.spent}` : ''}`}</b><small>{fmtTime(t.createdAt)}{t.cardSuffix ? ` · 卡尾号 ${t.cardSuffix}` : ''}{t.reason ? ` · ${t.reason}` : ''}</small></div>
           </li>)}</ul>}
     </details>
     <footer>演示支付：不产生真实扣款。金枪鱼只用于家园装饰，不影响主线。</footer>

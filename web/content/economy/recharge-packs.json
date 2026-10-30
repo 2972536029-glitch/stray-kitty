@@ -2,7 +2,7 @@
   {
     "id": "pack_small",
     "name": "一小罐金枪鱼",
-    "desc": "60 罐金枪鱼罐头，够换一次星空温室包裹。",
+    "desc": "60 罐金枪鱼罐头，可以签收一次月海观星包裹。",
     "priceCents": 600,
     "tunaGranted": 60,
     "icon": "tuna_s"

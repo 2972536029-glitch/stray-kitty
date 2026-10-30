@@ -11,6 +11,10 @@ import (
 
 func TestFurniturePurchasePersistsAndCannotDoubleCharge(t *testing.T) {
 	g, token, path := setup(t)
+	// Exercise the generic single-item purchase service with a non-story product.
+	for i := range g.Catalog.Furniture {
+		g.Catalog.Furniture[i].Source = ""
+	}
 	s, _ := g.State(token)
 	request := domain.CommandRequest{ExpectedRevision: &s.Revision, Command: domain.Command{Type: "BUY_FURNITURE", ProductID: "blue_bowl"}}
 	if _, err := g.Execute(token, "early-purchase", request); err == nil {
@@ -52,5 +56,20 @@ func TestFurniturePurchasePersistsAndCannotDoubleCharge(t *testing.T) {
 	s = execute(t, restarted, token, domain.Command{Type: "PLACE_FURNITURE", FurnitureID: "blue_bowl", SlotID: "window"})
 	if s.Placements["window"] != "blue_bowl" {
 		t.Fatal("purchased furniture cannot be placed")
+	}
+}
+
+func TestStoryGiftsCannotBeSold(t *testing.T) {
+	g, _, _, token, _ := setupWithPlayer(t)
+	s := toHomeAfterRescue(t, g, token)
+	for _, id := range []string{"cardboard_nest", "soft_blanket", "tin_lamp"} {
+		if !domain.Contains(s.Furniture, id) {
+			t.Fatalf("missing story gift %s", id)
+		}
+	}
+	expectCode(t, g, token, domain.Command{Type: "BUY_FURNITURE", ProductID: "blue_bowl"}, "STORY_GIFT")
+	after, _ := g.State(token)
+	if !reflect.DeepEqual(s, after) {
+		t.Fatal("story gift attempted purchase changed state")
 	}
 }

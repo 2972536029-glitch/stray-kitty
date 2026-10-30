@@ -2,56 +2,331 @@
   {
     "id": "cardboard_nest",
     "name": "纸箱猫窝",
-    "theme": "基础"
+    "theme": "基础",
+    "source": "story"
   },
   {
     "id": "soft_blanket",
     "name": "柔软毛毯",
-    "theme": "雨夜纸箱"
+    "theme": "雨夜纸箱",
+    "source": "story"
   },
   {
     "id": "tin_lamp",
     "name": "罐头小灯",
-    "theme": "雨夜纸箱"
+    "theme": "雨夜纸箱",
+    "source": "story"
   },
   {
     "id": "snack_cushion",
     "name": "零食抱枕",
-    "theme": "午夜集市"
+    "theme": "午夜集市",
+    "source": "story"
   },
   {
     "id": "moon_hammock",
     "name": "月亮吊床",
-    "theme": "地下月光"
+    "theme": "地下月光",
+    "source": "story"
   },
   {
     "id": "blue_bowl",
     "name": "蓝色饭碗",
-    "theme": "家的回忆"
+    "theme": "家的回忆",
+    "source": "story"
   },
   {
     "id": "red_cushion",
     "name": "蝴蝶结软垫",
-    "theme": "花房开张"
+    "theme": "花房开张",
+    "source": "story"
   },
   {
     "id": "sun_lamp",
     "name": "小太阳灯",
-    "theme": "花房开张"
+    "theme": "花房开张",
+    "source": "story"
   },
   {
     "id": "box_castle",
     "name": "纸箱小城堡",
-    "theme": "点点最爱"
+    "theme": "点点最爱",
+    "source": "story"
   },
   {
     "id": "star_glass",
     "name": "星彩玻璃吊灯",
-    "theme": "星空温室"
+    "theme": "星空温室",
+    "source": "story"
   },
   {
     "id": "cloud_nest",
     "name": "云朵绒窝",
-    "theme": "星空温室"
+    "theme": "星空温室",
+    "source": "story"
+  },
+  {
+    "id": "moss_cottage",
+    "name": "苔顶树洞窝",
+    "theme": "苔叶来信",
+    "source": "free_pool",
+    "description": "苔绿屋顶下铺着燕麦色软垫，点点可以安心探出脑袋。",
+    "preferredSlot": "corner",
+    "interactionCat": "diandian",
+    "interaction": "castle_peek",
+    "widthCm": 85
+  },
+  {
+    "id": "fern_lantern",
+    "name": "蕨叶邮灯",
+    "theme": "苔叶来信",
+    "source": "free_pool",
+    "description": "一封没寄出的信，陪着琥珀色小灯等你回家。",
+    "preferredSlot": "window",
+    "interactionCat": "miaomiao",
+    "interaction": "belly",
+    "widthCm": 34
+  },
+  {
+    "id": "acorn_library",
+    "name": "橡果书架",
+    "theme": "苔叶来信",
+    "source": "free_pool",
+    "description": "橡果形的原木小书架，底层留了猫咪的阅读洞。",
+    "preferredSlot": "courtyard",
+    "interactionCat": "diandian",
+    "interaction": "castle_peek",
+    "widthCm": 110
+  },
+  {
+    "id": "leaf_swing",
+    "name": "叶舟吊篮",
+    "theme": "苔叶来信",
+    "source": "free_pool",
+    "description": "麻绳吊起一片卷边大叶子，墨墨在这里慢慢打盹。",
+    "preferredSlot": "beam",
+    "interactionCat": "momo",
+    "interaction": "hammock_sleep",
+    "widthCm": 100
+  },
+  {
+    "id": "clover_rug",
+    "name": "四叶草编毯",
+    "theme": "苔叶来信",
+    "source": "free_pool",
+    "description": "米白编边围住苔绿草叶，团子最爱踩这块软地方。",
+    "preferredSlot": "sun_spot",
+    "interactionCat": "tuanzi",
+    "interaction": "knead",
+    "widthCm": 185
+  },
+  {
+    "id": "luna_boat",
+    "name": "月汐小舟窝",
+    "theme": "月海观星",
+    "source": "paid_pool",
+    "description": "奶油白的小舟停在金色月弯里，柔软的星枕已经就位。",
+    "preferredSlot": "corner",
+    "interactionCat": "miaomiao",
+    "interaction": "belly",
+    "widthCm": 90
+  },
+  {
+    "id": "orrery_lamp",
+    "name": "星轨仪暖灯",
+    "theme": "月海观星",
+    "source": "paid_pool",
+    "description": "黄铜星轨围住一颗暖光小月亮，守着花房的夜晚。",
+    "preferredSlot": "window",
+    "interactionCat": "miaomiao",
+    "interaction": "belly",
+    "widthCm": 38
+  },
+  {
+    "id": "tide_observatory",
+    "name": "潮汐观星台",
+    "theme": "月海观星",
+    "source": "paid_pool",
+    "description": "蓝白小穹顶、黄铜望远镜和一间只属于猫咪的底层小屋。",
+    "preferredSlot": "courtyard",
+    "interactionCat": "diandian",
+    "interaction": "castle_peek",
+    "widthCm": 122
+  },
+  {
+    "id": "orbit_hammock",
+    "name": "环月纱幔床",
+    "theme": "月海观星",
+    "source": "paid_pool",
+    "description": "弧形月架搭起轻软纱幔，墨墨睡着时像漂在云里。",
+    "preferredSlot": "beam",
+    "interactionCat": "momo",
+    "interaction": "hammock_sleep",
+    "widthCm": 118
+  },
+  {
+    "id": "starmap_carpet",
+    "name": "星图绒毯",
+    "theme": "月海观星",
+    "source": "paid_pool",
+    "description": "暖金星座缝进深蓝绒面，团子把整片星海踩得蓬松。",
+    "preferredSlot": "sun_spot",
+    "interactionCat": "tuanzi",
+    "interaction": "knead",
+    "widthCm": 190
+  },
+  {
+    "id": "willow_sofa",
+    "name": "柳枝双人榻",
+    "theme": "苔叶来信",
+    "source": "free_pool",
+    "description": "柳枝编成弯弯的扶手，苔绿绒垫上搭着手绣草叶靠枕和旧线毯。",
+    "preferredSlot": "lounge",
+    "interactionCat": "tuanzi",
+    "interaction": "belly",
+    "widthCm": 175
+  },
+  {
+    "id": "herb_desk",
+    "name": "草药手作桌",
+    "theme": "苔叶来信",
+    "source": "free_pool",
+    "description": "抽屉、种子罐和待寄出的信都各有位置，小爪子能轻拍桌沿。",
+    "preferredSlot": "desk",
+    "interactionCat": "miaomiao",
+    "interaction": "sniff",
+    "widthCm": 150
+  },
+  {
+    "id": "letter_cabinet",
+    "name": "来信收纳柜",
+    "theme": "苔叶来信",
+    "source": "free_pool",
+    "description": "木格里装满街坊来信，低处的小抽屉留给点点藏宝贝。",
+    "preferredSlot": "cabinet",
+    "interactionCat": "diandian",
+    "interaction": "sniff",
+    "widthCm": 125
+  },
+  {
+    "id": "sprout_planter",
+    "name": "春芽长花箱",
+    "theme": "苔叶来信",
+    "source": "free_pool",
+    "description": "蕨叶、白色小花和卷卷的新芽，猫咪凑近时会轻轻嗅一嗅。",
+    "preferredSlot": "planter",
+    "interactionCat": "miaomiao",
+    "interaction": "sniff",
+    "widthCm": 120
+  },
+  {
+    "id": "postmark_clock",
+    "name": "叶印摆钟",
+    "theme": "苔叶来信",
+    "source": "free_pool",
+    "description": "叶片雕花围住暖白钟盘，橡果摆锤慢慢晃，墨墨抬头看得出神。",
+    "preferredSlot": "wall_clock",
+    "interactionCat": "momo",
+    "interaction": "watch",
+    "widthCm": 28
+  },
+  {
+    "id": "wicker_basket",
+    "name": "藤编玩具篮",
+    "theme": "苔叶来信",
+    "source": "free_pool",
+    "description": "毛线球和布鱼玩具塞满藤篮，团子伸爪把球拨来拨去。",
+    "preferredSlot": "toy_corner",
+    "interactionCat": "tuanzi",
+    "interaction": "bat_ball",
+    "widthCm": 40
+  },
+  {
+    "id": "seedling_stool",
+    "name": "苗苗软垫凳",
+    "theme": "苔叶来信",
+    "source": "free_pool",
+    "description": "三根圆木腿托着草叶绣垫，点点会轻轻跳上去坐好。",
+    "preferredSlot": "reading_stool",
+    "interactionCat": "diandian",
+    "interaction": "perch",
+    "widthCm": 38
+  },
+  {
+    "id": "crescent_sofa",
+    "name": "月湾绒沙发",
+    "theme": "月海观星",
+    "source": "paid_pool",
+    "description": "月弯扶手镶着暖金雕花，蓝绒垫和珍珠软枕接住团子的小肚皮。",
+    "preferredSlot": "lounge",
+    "interactionCat": "tuanzi",
+    "interaction": "belly",
+    "widthCm": 185
+  },
+  {
+    "id": "astral_desk",
+    "name": "星历书桌",
+    "theme": "月海观星",
+    "source": "paid_pool",
+    "description": "望远镜、星图和墨水瓶摆得整齐，喵喵喜欢踮爪研究桌上的星星。",
+    "preferredSlot": "desk",
+    "interactionCat": "miaomiao",
+    "interaction": "sniff",
+    "widthCm": 155
+  },
+  {
+    "id": "pearl_cabinet",
+    "name": "珍珠收藏柜",
+    "theme": "月海观星",
+    "source": "paid_pool",
+    "description": "拱形玻璃后藏着小小的月亮和星球，点点总想从下面找入口。",
+    "preferredSlot": "cabinet",
+    "interactionCat": "diandian",
+    "interaction": "sniff",
+    "widthCm": 128
+  },
+  {
+    "id": "nebula_planter",
+    "name": "星云玻璃花箱",
+    "theme": "月海观星",
+    "source": "paid_pool",
+    "description": "黄铜玻璃罩里长出蓝绿色蕨叶和小白花，猫咪会温柔地嗅叶尖。",
+    "preferredSlot": "planter",
+    "interactionCat": "miaomiao",
+    "interaction": "sniff",
+    "widthCm": 120
+  },
+  {
+    "id": "lunar_clock",
+    "name": "月相摆钟",
+    "theme": "月海观星",
+    "source": "paid_pool",
+    "description": "奶油白珐琅钟盘围着一圈小月亮，墨墨抬头追着摆锤看。",
+    "preferredSlot": "wall_clock",
+    "interactionCat": "momo",
+    "interaction": "watch",
+    "widthCm": 30
+  },
+  {
+    "id": "comet_mobile",
+    "name": "彗星风铃",
+    "theme": "月海观星",
+    "source": "paid_pool",
+    "description": "蓝玻璃星球和珍珠小星垂在金链上，团子抬爪拨动时轻轻摇晃。",
+    "preferredSlot": "toy_corner",
+    "interactionCat": "tuanzi",
+    "interaction": "bat_chime",
+    "widthCm": 33
+  },
+  {
+    "id": "star_stool",
+    "name": "星砂绒垫凳",
+    "theme": "月海观星",
+    "source": "paid_pool",
+    "description": "星座绣进深蓝绒垫，奶油白小脚托住一只端端正正的点点。",
+    "preferredSlot": "reading_stool",
+    "interactionCat": "diandian",
+    "interaction": "perch",
+    "widthCm": 40
   }
 ]
