@@ -1,4 +1,5 @@
 import {paintSceneProp,type BattleSceneId} from './scene-art';
+import {paintDetailedWorkstation} from './scene-detailed-exteriors';
 
 export type SceneVignetteKind='garden-bench'|'potting-corner'|'alley-supplies'|'market-goods'|'pump-station'|'warehouse-workbench';
 export const SCENE_VIGNETTE_ASPECT=1.7;
@@ -19,9 +20,12 @@ const WOOD_SHADE='#514737';
 const r=(ctx:Context,color:string,x:number,y:number,w:number,h:number)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h);};
 const blocks=(ctx:Context,color:string,shapes:readonly Shape[])=>{for(const [x,y,w,h] of shapes)r(ctx,color,x,y,w,h);};
 function contact(ctx:Context,x:number,y:number,w:number){
-  r(ctx,'#233a3b45',x+4,y-2,w-8,2);r(ctx,'#233a3b68',x,y,w,3);r(ctx,'#233a3b30',x+7,y+3,w-14,2);
+  ctx.save();ctx.translate(x+w/2,y+1.5);ctx.scale(w/2,3.5);
+  const shade=ctx.createRadialGradient(0,0,.1,0,0,1);
+  shade.addColorStop(0,'#233a3b66');shade.addColorStop(.5,'#233a3b38');shade.addColorStop(1,'#233a3b00');
+  ctx.fillStyle=shade;ctx.fillRect(-1,-1,2,2);ctx.restore();
 }
-function rivet(ctx:Context,x:number,y:number){r(ctx,EDGE,x,y,2,2);r(ctx,'#b3b6a0',x,y,1,1);}
+function rivet(ctx:Context,x:number,y:number){r(ctx,EDGE,x,y,2,2);r(ctx,'#b3b6a0',x,y,1,.75);r(ctx,'#e1dcc14d',x+.5,y+.5,.5,.5);}
 function bench(ctx:Context,p:Materials,x:number,y:number,w:number,h=32,metal=false){
   const body=metal?p.metal:p.wood,light=metal?p.metalLight:p.woodLight;
   contact(ctx,x-2,y+h,w+4);
@@ -31,7 +35,17 @@ function bench(ctx:Context,p:Materials,x:number,y:number,w:number,h=32,metal=fal
   blocks(ctx,light,[[x+6,y+8,1,h-9],[x+w-10,y+8,1,h-9],[x+10,y+h-10,w-20,1]]);
   r(ctx,EDGE,x,y,w,8);r(ctx,body,x+1,y+1,w-2,5);r(ctx,light,x+2,y+1,w-4,2);
   r(ctx,WOOD_SHADE,x+2,y+6,w-4,2);
-  if(!metal){for(let k=0;k<3&&10+k*23+13<w-2;k++)r(ctx,'#69594380',x+10+k*23,y+4,13,1);}
+  if(!metal){
+    for(let k=0;k<3&&10+k*23+13<w-2;k++){
+      r(ctx,'#69594370',x+10+k*23,y+4,13,.75);r(ctx,p.woodLight+'66',x+12+k*23,y+3,9,.5);
+    }
+    r(ctx,'#d6c49a4d',x+4,y+1.5,w*.35,.5);r(ctx,WOOD_SHADE+'66',x+w*.55,y+4,w*.3,.5);
+    r(ctx,'#4f463566',x+w*.4,y+3,3,.5);r(ctx,p.woodLight+'70',x+w*.4-1,y+4,5,.5);
+    r(ctx,'#8b77504d',x+7,y+12,.5,Math.max(2,h-19));
+  }else{
+    blocks(ctx,p.metalLight+'7a',[[x+3,y+1.5,w*.7,.5],[x+6.5,y+10,.5,h-15]]);
+    blocks(ctx,'#ad956352',[[x+w*.67,y+4,3,.5],[x+w*.67+3,y+5,1,.5]]);
+  }
   for(const xx of [x+6,x+w-10])rivet(ctx,xx,y+4);
 }
 function pallet(ctx:Context,p:Materials,x:number,y:number,w:number){
@@ -40,30 +54,56 @@ function pallet(ctx:Context,p:Materials,x:number,y:number,w:number){
   for(let sy=0;sy<6;sy+=3){r(ctx,p.wood,x+1,y+sy,w-2,2);r(ctx,p.woodLight,x+2,y+sy,w-4,1);}
   for(const xx of [x+4,x+w-6])rivet(ctx,xx,y+1);
 }
+function herbLeaf(ctx:Context,p:Materials,x:number,y:number,w:number,h:number,reverse=false){
+  ctx.save();ctx.beginPath();
+  ctx.moveTo(x,y+h*.62);ctx.lineTo(x+w*.25,y+.25);ctx.lineTo(x+w*.7,y);
+  ctx.lineTo(x+w,y+h*.4);ctx.lineTo(x+w*.75,y+h*.86);ctx.lineTo(x+w*.24,y+h);ctx.closePath();
+  ctx.fillStyle=p.leaf;ctx.fill();ctx.clip();
+  r(ctx,p.leafLight+'8c',x+w*.2,y+.25,w*.5,.5);
+  const slope=reverse?-.2:.2;
+  for(let step=0;step<3;step++){
+    const xx=x+w*.13+step*w*.24,yy=y+h*.55+(step-1)*slope;
+    r(ctx,'#c5d09b70',xx,yy,w*.26,.5);
+    if(step===1)r(ctx,'#294b3659',xx+.5,yy+.5,.5,Math.max(.5,h*.2));
+  }
+  ctx.restore();
+}
 function herb(ctx:Context,p:Materials,x:number,y:number,tall=false){
   const rise=tall?15:10;
-  r(ctx,'#87946a',x,y-rise,2,rise);
-  blocks(ctx,p.leaf,[[x-6,y-rise+2,5,3],[x-4,y-rise,4,2],[x+2,y-rise+5,6,3],[x+4,y-rise+3,3,2],[x-5,y-4,5,3]]);
-  blocks(ctx,p.leafLight,[[x-4,y-rise,3,1],[x+4,y-rise+3,2,1],[x-4,y-4,3,1]]);
+  r(ctx,'#87946a',x,y-rise,1.5,rise);r(ctx,'#c6cca168',x,y-rise+1,.5,rise-2);
+  herbLeaf(ctx,p,x-6,y-rise+2,5,3,true);
+  herbLeaf(ctx,p,x-4,y-rise,4,2);
+  herbLeaf(ctx,p,x+2,y-rise+5,6,3);
+  herbLeaf(ctx,p,x+4,y-rise+3,3,2);
+  herbLeaf(ctx,p,x-5,y-4,5,3,true);
 }
+
 function trough(ctx:Context,p:Materials,x:number,y:number,w:number,variant=0){
   r(ctx,EDGE,x,y,w,13);r(ctx,p.wood,x+2,y+3,w-4,9);r(ctx,p.woodLight,x+1,y+1,w-2,2);
   r(ctx,'#514a38',x+4,y+3,w-8,3);r(ctx,'#b4a078',x+2,y+6,2,5);r(ctx,WOOD_SHADE,x+w-5,y+6,3,6);
   const positions=variant%2?[8,Math.floor(w*.52),w-9]:[10,Math.floor(w*.56),w-8];
   positions.forEach((dx,i)=>herb(ctx,p,x+dx,y+4,(i+variant)%2===0));
   for(const dx of [3,w-5])rivet(ctx,x+dx,y+8);
+  r(ctx,p.woodLight+'70',x+5,y+7,w*.4,.5);r(ctx,WOOD_SHADE+'70',x+w*.45,y+9,w*.35,.5);
+  blocks(ctx,'#b99d6a59',[[x+8,y+3,2,.5],[x+w*.58,y+4,1,.5],[x+w-11,y+3.5,1.5,.5]]);
 }
 function wateringCan(ctx:Context,p:Materials,x:number,y:number){
   // Stepped handle and raised spout remain recognisable without a bright accent.
   blocks(ctx,EDGE,[[x+3,y+5,15,13],[x+2,y+2,10,3],[x,y+4,3,9],[x+15,y+8,5,4],[x+19,y+5,4,4],[x+21,y+3,5,3]]);
   blocks(ctx,p.metal,[[x+5,y+6,11,10],[x+3,y+3,7,1],[x+1,y+5,1,6],[x+17,y+9,3,2],[x+20,y+6,3,2]]);
   blocks(ctx,p.metalLight,[[x+5,y+6,8,2],[x+5,y+8,2,6],[x+22,y+3,3,1]]);r(ctx,'#465f59',x+13,y+9,3,7);
+  blocks(ctx,'#d0d6b47a',[[x+5,y+6,7,.5],[x+5.5,y+9,.5,4],[x+22,y+3,2,.5]]);
+  blocks(ctx,'#9f96624d',[[x+9,y+14,2,.5],[x+12,y+15,1,.5]]);r(ctx,'#294a4259',x+8,y+12,3,.5);
 }
 function smallPot(ctx:Context,x:number,y:number,w=13,withSoil=true){
   blocks(ctx,'#5e4a3b',[[x,y,w,4],[x+1,y+4,w-2,7],[x+3,y+11,w-6,2]]);
   blocks(ctx,'#a67e58',[[x+1,y+1,w-2,3],[x+2,y+4,w-4,6]]);r(ctx,'#c8a479',x+2,y+1,w-4,1);
   r(ctx,'#c2996e',x+2,y+5,2,4);r(ctx,'#806048',x+w-4,y+5,2,5);
-  if(withSoil)r(ctx,'#504b38',x+3,y+2,w-6,2);
+  if(withSoil){r(ctx,'#504b38',x+3,y+2,w-6,2);r(ctx,'#baa07759',x+4,y+2,1,.5);r(ctx,'#91806466',x+w-5,y+3,1,.5);}
+  const glaze=ctx.createLinearGradient(x+2,y,x+w-2,y);
+  glaze.addColorStop(0,'#edc89b1a');glaze.addColorStop(.3,'#f5d4a42b');glaze.addColorStop(1,'#41332e21');
+  ctx.fillStyle=glaze;ctx.fillRect(x+2,y+4,w-4,6);
+  r(ctx,'#f0c99a80',x+2,y+1,w-4,.5);r(ctx,'#dec29a59',x+3,y+5,.5,3);r(ctx,'#6d51413b',x+w-5,y+7,.5,2);
 }
 function toolRack(ctx:Context,p:Materials,x:number,y:number,w:number,h:number){
   blocks(ctx,EDGE,[[x,y,5,h],[x+w-5,y,5,h],[x,y+3,w,5],[x,y+h-7,w,5]]);
@@ -78,6 +118,9 @@ function toolRack(ctx:Context,p:Materials,x:number,y:number,w:number,h:number){
   blocks(ctx,p.metalLight,[[x+10,y+23,2,6],[x+Math.floor(w*.5)-2,y+24,6,1]]);
   r(ctx,'#9c9270',x+w-17,y+27,10,7);r(ctx,'#c0af80',x+w-16,y+27,8,2);r(ctx,'#6c6a50',x+w-13,y+29,1,5);
   for(const dx of [1,w-4])rivet(ctx,x+dx,y+5);
+  blocks(ctx,p.woodLight+'59',[[x+1.5,y+9,.5,h-14],[x+w-3.5,y+10,.5,h-16],[x+6,y+4.5,w*.4,.5]]);
+  blocks(ctx,'#3d4d3d5c',[[x+12.5,y+13,.5,8],[x+Math.floor(w*.5)+.5,y+13,.5,10]]);
+  blocks(ctx,'#d4d2b66b',[[x+10.5,y+24,.5,4],[x+Math.floor(w*.5)-1,y+24,4,.5],[x+w-15,y+28,5,.5]]);
 }
 function toolBucket(ctx:Context,p:Materials,x:number,y:number){
   blocks(ctx,EDGE,[[x+1,y+5,16,12],[x+3,y+17,12,2]]);r(ctx,p.metal,x+3,y+7,12,10);
@@ -87,11 +130,16 @@ function toolBucket(ctx:Context,p:Materials,x:number,y:number){
 function foldedCloth(ctx:Context,x:number,y:number,w:number,color:string){
   r(ctx,EDGE,x,y+2,w,7);r(ctx,color,x+1,y+1,w-3,6);r(ctx,'#afb9a080',x+2,y+1,w-5,1);
   r(ctx,'#314b4f65',x+5,y+3,2,4);r(ctx,'#314b4f65',x+w-7,y+2,1,5);
+  for(let xx=x+3;xx<x+w-4;xx+=4)r(ctx,'#d1d1b26b',xx,y+2,1,.5);
+  r(ctx,'#c0c8b04d',x+8,y+3,w-17,.5);r(ctx,'#213e453d',x+8,y+5,w-15,.5);
 }
 function produceTray(ctx:Context,p:Materials,x:number,y:number,w:number,green=false){
   r(ctx,EDGE,x,y+3,w,9);r(ctx,p.wood,x+1,y+5,w-2,6);r(ctx,p.woodLight,x+1,y+4,w-2,2);
   const color=green?'#879665':'#b58b5c',light=green?'#b0b78a':'#d1ae79';
-  for(const dx of [4,12,w-8]){r(ctx,color,x+dx,y,6,5);r(ctx,light,x+dx+1,y,3,1);r(ctx,'#66744f',x+dx+2,y-2,1,2);}
+  for(const dx of [4,12,w-8]){
+    r(ctx,color,x+dx,y,6,5);r(ctx,light,x+dx+1,y,3,.5);r(ctx,'#66744f',x+dx+2,y-2,1,2);
+    r(ctx,'#e3d0a15c',x+dx+1,y+1,.5,1);r(ctx,'#4354383d',x+dx+4,y+2,1,2);
+  }
   r(ctx,WOOD_SHADE,x+4,y+9,w-8,1);
 }
 
@@ -209,6 +257,7 @@ export function paintSceneVignette(ctx:Context,scene:BattleSceneId,kind:SceneVig
   if(!Number.isFinite(width)||width<=0)return;
   const p=materials[scene];
   ctx.save();ctx.translate(x,y);ctx.scale(width/170,width/170);ctx.imageSmoothingEnabled=false;
+  if(paintDetailedWorkstation(ctx,kind,170,100)){ctx.restore();return;}
   // Reused props share the map's materials, with a quieter contrast for background scenery.
   ctx.globalAlpha*=.87;
   groundTraces(ctx,kind);

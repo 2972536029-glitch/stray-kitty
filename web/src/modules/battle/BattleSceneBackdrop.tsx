@@ -11,6 +11,7 @@ import {paintScenePerimeter} from './scene-perimeter-art';
 import {paintPerimeterProps} from './scene-perimeter-props';
 import {getJoinedObstacleCells,paintConnectedObstacleScenery} from './scene-connected-obstacles';
 import {paintForegroundScenery} from './scene-foreground-art';
+import {whenDetailedExteriorsReady} from './scene-detailed-exteriors';
 
 interface Props {scene:BattleSceneId;boardRef:RefObject<HTMLDivElement|null>;columns:number;rows:number;cells?:readonly {x:number;y:number}[];spawns?:readonly {x:number;y:number}[];goal?:{x:number;y:number};darkened?:boolean}
 const scrollSelector='.prologue-board-scroll,.chapter-board-scroll,.market-board-scroll,.greenhouse-board-scroll,.tunnel-board-scroll,.finale-board-scroll';
@@ -151,6 +152,7 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,spawns,go
     const schedule=()=>{if(!frame)frame=requestAnimationFrame(draw);};
     const unsubscribeArt=whenSceneArtReady(schedule);
     const unsubscribeNewProps=whenNewScenePropsReady(schedule);
+    const unsubscribeExteriors=whenDetailedExteriorsReady(schedule);
     observer=new ResizeObserver(schedule);observer.observe(stage);
     const connectBoard=()=>{
       if(boardRef.current){
@@ -174,7 +176,7 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,spawns,go
     hudChanges.observe(stage,{childList:true,subtree:true});
     // This frame also catches the board ref after the parent finishes mounting.
     const mounted=requestAnimationFrame(connectBoard);
-    return()=>{observer?.disconnect();hudChanges.disconnect();unsubscribeArt();unsubscribeNewProps();cancelAnimationFrame(frame);cancelAnimationFrame(mounted);window.removeEventListener('resize',connectBoard);stage.removeEventListener('scroll',schedule,true);stage.removeEventListener('animationend',settleBoard);stage.removeEventListener('animationcancel',settleBoard);};
+    return()=>{observer?.disconnect();hudChanges.disconnect();unsubscribeArt();unsubscribeNewProps();unsubscribeExteriors();cancelAnimationFrame(frame);cancelAnimationFrame(mounted);window.removeEventListener('resize',connectBoard);stage.removeEventListener('scroll',schedule,true);stage.removeEventListener('animationend',settleBoard);stage.removeEventListener('animationcancel',settleBoard);};
   },[scene,boardRef,columns,rows,cells,spawns,goal,darkened]);
   return <canvas ref={ref} className="battle-scene-backdrop" aria-hidden="true"/>;
 }

@@ -25,24 +25,26 @@ function cutPanel(ctx:Context,color:string,x:number,y:number,w:number,h:number,c
   r(ctx,color,x,y+cut,w,h-cut*2);
 }
 function bolt(ctx:Context,x:number,y:number,light='#c7cebb'){
-  r(ctx,DEEP,x,y,3,3);r(ctx,light,x,y,2,1);r(ctx,'#7e8d87',x+1,y+1,1,1);
+  r(ctx,DEEP,x,y,3,3);r(ctx,light,x,y,2,.75);r(ctx,'#7e8d87',x+1,y+1,1,1);r(ctx,'#dce0c66b',x+.5,y+.5,.5,.5);r(ctx,'#26383c80',x+1,y+1.5,1,.5);
 }
 function shadow(ctx:Context,x=10,y=63,w=60){
-  r(ctx,'#14283468',x+5,y-3,w-10,3);
-  r(ctx,'#14283488',x,y,w,4);
-  r(ctx,'#14283445',x+6,y+4,w-12,2);
+  ctx.save();ctx.translate(x+w/2,y+1.5);ctx.scale(w/2,4.5);
+  const shade=ctx.createRadialGradient(0,0,.1,0,0,1);
+  shade.addColorStop(0,'#14283480');shade.addColorStop(.45,'#14283452');shade.addColorStop(.8,'#1428341f');shade.addColorStop(1,'#14283400');
+  ctx.fillStyle=shade;ctx.fillRect(-1,-1,2,2);ctx.restore();
 }
 function woodGrain(ctx:Context,x:number,y:number,w:number,h:number,tint:string,variant=0){
   for(let row=0;row<3;row++){
     const gy=y+3+row*Math.max(3,Math.floor((h-5)/3));
     const offset=(variant+row*3)%5;
     r(ctx,WOOD_DARK+'75',x+2+offset,gy,Math.max(3,w-8-offset),1);
-    r(ctx,tint+'85',x+3+offset,gy+1,Math.max(2,Math.floor(w/3)),1);
+    r(ctx,tint+'70',x+3+offset,gy+1,Math.max(2,Math.floor(w/3)),.5);
+    r(ctx,WOOD_DARK+'3d',x+4+offset,gy-.75,Math.max(2,w*.27),.5);
   }
   if(w>19&&h>14){
     const kx=x+Math.floor(w*.6),ky=y+Math.floor(h*.56);
     blocks(ctx,WOOD_DARK+'aa',[[kx,ky,4,1],[kx-1,ky+1,2,2],[kx+3,ky+1,2,2],[kx,ky+3,4,1]]);
-    r(ctx,tint+'99',kx+1,ky+1,2,1);
+    r(ctx,tint+'99',kx+1,ky+1,2,.5);r(ctx,tint+'45',kx-1,ky+4,6,.5);
   }
 }
 function crate(ctx:Context,p:ScenePropPalette,x:number,y:number,w:number,h:number,variant=0){
@@ -73,13 +75,42 @@ function lantern(ctx:Context,x:number,y:number,red=false){
   blocks(ctx,'#d8b373',[[x+2,y+4,8,1],[x+3,y+21,7,1]]);
   r(ctx,'#9d7653',x+6,y+24,2,3);
 }
+/** Tapered blades stay in the old leaf boxes; veins follow their growth direction. */
+function leafBlade(ctx:Context,x:number,y:number,w:number,h:number,mid:string,light:string,upright=false){
+  const points=upright?[[.48,0],[.85,.25],[1,.65],[.56,1],[.12,.78],[0,.3]]:[[0,.55],[.24,.12],[.67,0],[1,.38],[.8,.76],[.35,1]];
+  ctx.save();ctx.beginPath();ctx.moveTo(x+points[0][0]*w,y+points[0][1]*h);
+  for(const [px,py]of points.slice(1))ctx.lineTo(x+px*w,y+py*h);
+  ctx.closePath();ctx.fillStyle='#294a3e';ctx.fill();ctx.clip();
+  r(ctx,mid,x+.5,y+.5,w-1,h-1);
+  if(upright){
+    r(ctx,light+'70',x+w*.3,y+h*.18,w*.24,h*.58);
+    for(let step=0;step<5;step++){
+      const yy=y+h*.16+step*h*.15,xx=x+w*.48-step*.15;
+      r(ctx,'#b8c99466',xx,yy,.5,Math.max(.75,h*.14));
+      if(step%2===0){r(ctx,'#243f344d',xx-1.5,yy+1,1.5,.5);r(ctx,light+'70',xx+.5,yy,1.5,.5);}
+    }
+  }else{
+    r(ctx,light+'66',x+w*.17,y+h*.23,w*.52,h*.21);
+    for(let step=0;step<5;step++){
+      const xx=x+w*.1+step*w*.15,yy=y+h*.6-step*h*.065;
+      r(ctx,'#bfd5a673',xx,yy,Math.max(.75,w*.16),.5);
+      if(step===1||step===3){r(ctx,'#243f3452',xx+1,yy+1,.5,h*.17);r(ctx,light+'66',xx+.5,yy-h*.2,.5,h*.2);}
+    }
+  }
+  ctx.restore();
+}
 function leafCluster(ctx:Context,x:number,y:number,variant=0){
   const mid=variant%2?'#5d815d':'#548464',light=variant%2?'#91ab70':'#8bb481';
-  blocks(ctx,'#294a3e',[[x-11,y,3,2],[x-9,y-2,6,6],[x-3,y-1,2,4],[x+4,y-9,6,2],[x+2,y-7,11,4],[x+4,y-3,6,2],[x-2,y-14,2,2],[x-4,y-12,6,7],[x-2,y-5,4,3],[x-9,y+7,5,2],[x-11,y+9,10,3],[x-7,y+12,5,1],[x+4,y+3,7,2],[x+2,y+5,12,3],[x+4,y+8,7,2]]);
-  blocks(ctx,mid,[[x-9,y-1,6,3],[x+4,y-8,6,2],[x+3,y-6,9,2],[x-3,y-11,4,6],[x-8,y+8,5,2],[x-9,y+10,7,1],[x+4,y+4,6,2],[x+3,y+6,9,2]]);
-  blocks(ctx,light,[[x-8,y-1,4,1],[x+5,y-8,4,1],[x-3,y-10,1,4],[x-7,y+8,3,1],[x+5,y+4,4,1]]);
-  blocks(ctx,'#9eae73',[[x,y-3,2,16],[x-3,y+1,4,2],[x+2,y-3,4,2],[x+2,y+7,5,1]]);
+  // The five authored leaves keep exactly the former cluster's envelope.
+  leafBlade(ctx,x-11,y-2,10,6,mid,light);
+  leafBlade(ctx,x+2,y-9,11,8,mid,light);
+  leafBlade(ctx,x-4,y-14,6,12,mid,light,true);
+  leafBlade(ctx,x-11,y+7,10,6,mid,light);
+  leafBlade(ctx,x+2,y+3,12,7,mid,light);
+  blocks(ctx,'#829961',[[x,y-3,1.5,16],[x-3,y+1,4,1],[x+1,y-3,4,1],[x+1,y+7,5,.75]]);
+  blocks(ctx,'#c1cc985c',[[x,y-2,.5,13],[x-2,y+1,2,.5],[x+2,y-3,2,.5]]);
 }
+
 function pot(ctx:Context,x:number,y:number,w=22,h=19){
   cutPanel(ctx,'#4b3936',x,y,w,7,2);
   blocks(ctx,'#4b3936',[[x+1,y+6,w-2,4],[x+2,y+10,w-4,h-13],[x+4,y+h-3,w-8,3]]);
@@ -92,6 +123,12 @@ function pot(ctx:Context,x:number,y:number,w=22,h=19){
   r(ctx,'#71543c',x+6,y+3,w-12,1);
   r(ctx,'#694939',x+4,y+h-3,w-8,2);
   blocks(ctx,'#e1af7970',[[x+4,y+8,2,2],[x+6,y+h-6,4,1]]);
+  const glaze=ctx.createLinearGradient(x+2,y,x+w-2,y);
+  glaze.addColorStop(0,'#e7b68a08');glaze.addColorStop(.22,'#f6d4a12b');glaze.addColorStop(.62,'#c1865900');glaze.addColorStop(1,'#352f392d');
+  ctx.fillStyle=glaze;ctx.fillRect(x+2,y+6,w-4,4);ctx.fillRect(x+3,y+10,w-6,h-13);
+  blocks(ctx,'#f1cba666',[[x+4,y+1,w-9,.5],[x+4,y+7,.5,2],[x+5,y+11,.5,Math.max(1,h-16)]]);
+  blocks(ctx,'#5c443757',[[x+w-8,y+8,1,.5],[x+w-9,y+9,.5,2],[x+7,y+h-5,4,.5]]);
+  blocks(ctx,'#b2946573',[[x+7,y+3,2,.5],[x+w-10,y+3.5,1,.5]]);r(ctx,'#e6d5af5c',x+w-8,y+1,2,.5);
 }
 function sack(ctx:Context,x:number,y:number,w:number,h:number,variant=0){
   blocks(ctx,WOOD_DARK,[[x+5,y,w-10,4],[x+7,y+4,w-14,5],[x+3,y+9,w-6,5],[x,y+14,w,h-18],[x+3,y+h-4,w-6,4]]);
@@ -99,7 +136,7 @@ function sack(ctx:Context,x:number,y:number,w:number,h:number,variant=0){
   blocks(ctx,'#d4bf8b',[[x+7,y+10,3,8],[x+4,y+18,3,h-24],[x+7,y+h-6,w-14,2],[x+8,y+2,3,3]]);
   blocks(ctx,'#706849',[[x+w-7,y+14,3,h-20],[x+7,y+7,w-14,2],[x+9,y+5,2,5]]);
   r(ctx,'#c9a777',x+7,y+7,w-14,1);
-  for(let sy=y+17;sy<y+h-7;sy+=4)r(ctx,'#e2ce9c80',x+Math.floor(w*.6),sy,2,1);
+  for(let sy=y+17;sy<y+h-7;sy+=4){r(ctx,'#e2ce9c70',x+Math.floor(w*.6),sy,1.5,.5);r(ctx,'#6c5d3b52',x+w-7,sy,.5,1.5);}
   blocks(ctx,'#796d4d80',[[x+8,y+19,4,1],[x+10,y+22,3,1],[x+7,y+h-10,5,1]]);
 }
 function canopy(ctx:Context,p:ScenePropPalette,kind:string,index:number){
@@ -157,6 +194,8 @@ function bin(ctx:Context,p:ScenePropPalette){
   blocks(ctx,'#9a7a54',[[43,54,4,2],[44,56,3,2],[23,58,7,1]]);
   blocks(ctx,'#657468',[[56,49,12,12],[58,46,8,4],[60,43,4,4]]);r(ctx,'#a8b195',58,50,3,8);r(ctx,'#334b44',64,51,3,9);
   blocks(ctx,'#d0c6a0',[[53,61,5,2],[58,64,7,1]]);bolt(ctx,19,59);bolt(ctx,48,59);
+  blocks(ctx,p.metalLight+'6b',[[17,18,35,.5],[21,27,.5,23],[25,25,17,.5]]);
+  blocks(ctx,'#b3a17359',[[43,54,2,.5],[24,58,4,.5],[48,48,.5,3]]);
 }
 function trellis(ctx:Context,p:ScenePropPalette){
   cutPanel(ctx,DEEP,10,7,60,59,2);r(ctx,'#2c4647',15,12,50,48);
@@ -169,6 +208,9 @@ function trellis(ctx:Context,p:ScenePropPalette){
   blocks(ctx,'#cfdfcba0',[[51,17,4,1],[55,21,4,1],[59,25,3,1]]);
   for(const [x,y] of [[13,10],[65,10],[13,57],[65,57]])bolt(ctx,x,y);
   blocks(ctx,'#476f50',[[24,19,2,30],[24,32,13,2],[36,32,2,15],[49,43,2,17]]);
+  blocks(ctx,'#cedcc773',[[19.5,16,8,.5],[35.5,16,8,.5],[51.5,35,8,.5],[59,24.5,3,.5]]);
+  blocks(ctx,'#a4855259',[[32,42,1,3],[33,45,.5,2],[65,25,.5,3],[55,58,4,.5]]);
+  blocks(ctx,p.metalLight+'59',[[14,14,.5,39],[32,13,.5,13],[49,35,.5,18]]);
   leafCluster(ctx,25,25,1);leafCluster(ctx,52,45,0);pot(ctx,18,50,20,17);
 }
 function planter(ctx:Context){
@@ -177,6 +219,8 @@ function planter(ctx:Context){
   blocks(ctx,'#b88b68',[[19,20,3,4],[23,17,4,3],[27,20,3,4],[23,24,4,3]]);
   blocks(ctx,'#edc799',[[20,20,2,3],[23,18,3,2],[27,20,2,3],[23,24,3,2]]);r(ctx,'#f9df9d',23,21,4,3);
   blocks(ctx,'#cfbb88',[[55,23,3,3],[59,26,3,3]]);r(ctx,'#f3d5a3',56,23,2,1);
+  blocks(ctx,'#ffe8bd80',[[20,20,1,.5],[24,18,1,.5],[27,21,.5,1],[24,24,1,.5],[24,21,1,1]]);
+  blocks(ctx,'#93664b75',[[22,22,.5,1],[26,21,.5,2],[59,27,1,.5]]);
 }
 function brokenPot(ctx:Context){
   pot(ctx,12,42,23,20);leafCluster(ctx,24,34,1);
@@ -187,6 +231,9 @@ function brokenPot(ctx:Context){
   blocks(ctx,'#9a6749',[[50,38,8,5],[63,60,8,4],[36,63,6,3]]);blocks(ctx,'#d6a571',[[51,38,6,2],[64,60,5,1],[37,63,3,1]]);
   blocks(ctx,'#7c9761',[[57,43,2,8],[55,40,4,3],[59,42,4,2]]);
   blocks(ctx,'#b7d1be75',[[40,30,10,1],[49,27,2,4]]);
+  blocks(ctx,'#efd0a182',[[42,46,16,.5],[40.5,52,.5,4],[47,58,9,.5],[51,38,5,.5],[64,60,4,.5]]);
+  blocks(ctx,'#5d3e335c',[[42,51,.5,4],[61,52,.5,5],[52,40,3,.5],[66,62,2,.5]]);
+  blocks(ctx,'#ac95675c',[[48,51,2,.5],[53,55,1,.5],[46,56,2,.5]]);
 }
 function drain(ctx:Context,p:ScenePropPalette){
   cutPanel(ctx,DEEP,10,20,60,43,3);cutPanel(ctx,p.metal,13,22,54,37,2);
@@ -200,6 +247,8 @@ function drain(ctx:Context,p:ScenePropPalette){
   blocks(ctx,p.water,[[16,63,47,3],[22,66,35,3],[29,69,21,2]]);
   blocks(ctx,'#a4c9c275',[[22,64,18,1],[43,67,9,1],[31,70,10,1]]);
   blocks(ctx,p.moss,[[12,57,6,3],[13,60,10,2],[60,59,6,3]]);
+  blocks(ctx,'#cfdbc06b',[[18,23,43,.5],[22,29,.5,19],[43,29,.5,19],[57,29,.5,19]]);
+  blocks(ctx,'#b69b675c',[[16,48,.5,3],[19,51,3,.5],[59,25,2,.5]]);
 }
 function pipe(ctx:Context,p:ScenePropPalette,valve:boolean){
   cutPanel(ctx,DEEP,5,29,70,29,3);r(ctx,p.metal,7,32,66,22);
@@ -209,6 +258,9 @@ function pipe(ctx:Context,p:ScenePropPalette,valve:boolean){
     r(ctx,'#b4c3ae',x+2,25,4,2);bolt(ctx,x+3,29,'#d8c28a');bolt(ctx,x+3,52,'#d8c28a');
   }
   blocks(ctx,'#9c7b50',[[26,48,6,2],[28,50,3,2],[52,39,4,2]]);
+  blocks(ctx,p.metalLight+'66',[[10,33,59,.5],[24,37,18,.5],[48,37,8,.5]]);
+  blocks(ctx,'#c0a77559',[[26,48,3,.5],[29,50,1,.5],[52,39,2,.5]]);
+  blocks(ctx,'#27465359',[[26,44,11,.5],[45,46,7,.5]]);
   if(valve){
     r(ctx,DEEP,36,19,9,20);r(ctx,p.metalLight,37,20,6,17);r(ctx,p.metal,41,21,3,15);
     blocks(ctx,'#533b32',[[27,7,26,4],[22,11,5,5],[18,16,5,15],[22,31,5,5],[27,36,26,4],[53,31,5,5],[58,16,5,15],[53,11,5,5]]);

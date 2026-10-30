@@ -1,4 +1,5 @@
 import type {BattleSceneId} from './scene-art';
+import {paintDetailedExterior,paintDetailedGardenWall,paintRefinedMaterial} from './scene-detailed-exteriors';
 
 export interface PerimeterPropBounds {x:number;y:number;width:number;height:number}
 type StructureKind='house'|'soil-bed'|'garden-wall'|'flower-frame'|'counter'|'vent'|'loading-dock';
@@ -20,18 +21,18 @@ const structures:Record<BattleSceneId,readonly Structure[]>={
     {kind:'loading-dock',x:3.8,y:3.3,width:2.7,height:.65},
   ],
   alley:[
-    {kind:'house',x:-.2,y:-.15,width:2.95,height:2.85},
-    {kind:'house',x:5.25,y:.3,width:3.95,height:2.4,variant:1},
+    {kind:'house',x:.55,y:-.35,width:2.15,height:3.05},
+    {kind:'house',x:5.6,y:.15,width:3.9,height:2.55,variant:1},
   ],
   market:[
     {kind:'counter',x:-2.25,y:.1,width:1.95,height:1.45},
     {kind:'counter',x:8.3,y:4.0,width:1.5,height:1.1,variant:1},
   ],
   greenhouse:[
-    {kind:'soil-bed',x:5.25,y:-.15,width:3.35,height:.85},
+    {kind:'soil-bed',x:5.25,y:-.4,width:3.35,height:1.1},
     {kind:'flower-frame',x:7.3,y:.9,width:1.45,height:.8},
     {kind:'garden-wall',x:.05,y:2.3,width:.75,height:2.55},
-    {kind:'soil-bed',x:.2,y:5.25,width:5.2,height:1.0,variant:1},
+    {kind:'soil-bed',x:.2,y:5.05,width:4.6,height:1.5,variant:1},
   ],
   tunnel:[
     {kind:'vent',x:.2,y:4.25,width:2.45,height:.8},
@@ -48,6 +49,12 @@ function shadow(ctx:Context,w:number,h:number){
 }
 function brickFace(ctx:Context,p:Material,x:number,y:number,w:number,h:number){
   r(ctx,p.face,x,y,w,h);
+  // Small material clusters live on the face itself; no grain over the floor.
+  for(let yy=1;yy<h-1;yy+=2.5)for(let xx=2;xx<w-2;xx+=3.5){
+    const n=(Math.imul(Math.floor(xx*2)+17,73856093)^Math.imul(Math.floor(yy*2)+23,19349663))>>>0;
+    if(n%5===0)r(ctx,p.light+'21',x+xx,y+yy,1+(n%3)*.5,.5);
+    else if(n%7===0)r(ctx,p.edge+'2c',x+xx,y+yy,.5,1);
+  }
   for(let row=0;row*11<h;row++){
     const yy=y+row*11;r(ctx,p.edge+'75',x,yy,w,1);
     for(let col=(row%2?13:0);col<w;col+=29){r(ctx,p.edge+'85',x+col,yy,1,Math.min(10,h-row*11));if(col+17<w)r(ctx,p.light+'26',x+col+3,yy+2,14,1);}
@@ -58,6 +65,7 @@ function ledge(ctx:Context,p:Material,x:number,y:number,w:number,h:number){
   r(ctx,p.light+'a0',x+3,y+1,w-6,1);r(ctx,p.face,x+2,y+h*.5,w-4,h*.5-2);
 }
 function house(ctx:Context,p:Material,w:number,h:number,variant:number){
+  if(paintDetailedExterior(ctx,variant?'wide-home':'narrow-home',w,h))return;
   shadow(ctx,w,h);
   const left=6,right=w-9,roofY=9,roofBottom=h*(variant?.56:.46),floor=h-14;
   // Deep roof and short upright facade read as a low building beside the lane.
@@ -84,11 +92,7 @@ function house(ctx:Context,p:Material,w:number,h:number,variant:number){
   if(variant){r(ctx,'#666a58',w*.51,roofY+11,33,19);r(ctx,'#9b9a782d',w*.51+2,roofY+12,28,2);}
 }
 function leaf(ctx:Context,x:number,y:number,p:Material,size=1){
-  ctx.save();ctx.translate(x,y);ctx.scale(size,size);
-  r(ctx,'#3e5a3b',-1,-7,2,9);
-  r(ctx,p.leaf,-9,-5,7,4);r(ctx,p.leaf,2,-10,8,4);r(ctx,p.leaf,-4,-16,6,9);
-  r(ctx,'#859667',-8,-5,4,1);r(ctx,'#859667',3,-10,5,1);r(ctx,'#9ba77b',-3,-15,1,5);
-  ctx.restore();
+  plantClump(ctx,p,x,y,'broadleaf',size*.55);
 }
 type PlantKind='broadleaf'|'shrub'|'dry';
 function plantClump(ctx:Context,p:Material,x:number,y:number,kind:PlantKind,size=1){
@@ -97,17 +101,19 @@ function plantClump(ctx:Context,p:Material,x:number,y:number,kind:PlantKind,size
     r(ctx,'#5b5840',-1,-26,3,27);r(ctx,'#9b9165',-1,-25,1,24);
     for(const [xx,yy,ww,hh] of [[-8,-21,7,2],[-10,-25,3,5],[2,-16,8,2],[8,-22,2,7],[-6,-9,5,2],[-8,-13,2,5]])r(ctx,'#8b8057',xx,yy,ww,hh);
     r(ctx,'#b1a279',-10,-25,2,1);r(ctx,'#b1a279',8,-22,2,1);
-  }else if(kind==='broadleaf'){
-    r(ctx,'#4b603d',-2,-23,4,24);
-    for(const [xx,yy,ww,hh] of [[-20,-17,10,6],[-15,-24,10,10],[-4,-32,9,16],[5,-25,12,8],[13,-18,10,7],[-12,-10,10,6],[3,-11,14,6]])r(ctx,'#324e35',xx,yy,ww,hh);
-    for(const [xx,yy,ww,hh] of [[-18,-17,8,3],[-13,-23,6,8],[-3,-30,6,12],[6,-24,8,5],[14,-17,7,4],[-10,-9,7,3],[5,-10,10,3]])r(ctx,p.leaf,xx,yy,ww,hh);
-    for(const [xx,yy,ww,hh] of [[-12,-22,1,5],[-2,-28,2,8],[8,-24,6,1],[15,-17,4,1],[-9,-9,4,1]])r(ctx,'#8b9e6a',xx,yy,ww,hh);
-    r(ctx,'#869364',0,-17,2,18);
   }else{
-    for(const [xx,yy,ww,hh] of [[-19,-10,38,8],[-16,-18,32,11],[-10,-25,23,10]])r(ctx,'#344d35',xx,yy,ww,hh);
-    for(const [xx,yy,ww,hh] of [[-16,-11,14,7],[-13,-19,13,10],[-7,-24,12,9],[3,-19,12,10],[5,-10,12,6]])r(ctx,p.leaf,xx,yy,ww,hh);
-    for(const [xx,yy,ww,hh] of [[-11,-19,6,2],[-5,-24,7,2],[5,-19,5,2],[-14,-10,5,2],[9,-9,6,1]])r(ctx,'#839363',xx,yy,ww,hh);
-    r(ctx,'#596a44',-3,-3,5,4);
+    const ends=kind==='broadleaf'?[[-19,-14],[-13,-25],[-2,-31],[12,-25],[22,-16],[-13,-7],[14,-7]]:[[-19,-8],[-13,-18],[-5,-25],[8,-22],[18,-12],[8,-5],[-9,-5]];
+    for(const [i,[tx,ty]] of ends.entries()){
+      const baseY=-3-i%3,dx=tx,dy=ty-baseY,len=Math.hypot(dx,dy),nx=-dy/len,ny=dx/len;
+      const broad=kind==='broadleaf'?3.5:2.8,mx=tx*.65,my=baseY+dy*.65;
+      ctx.beginPath();ctx.moveTo(0,baseY);ctx.lineTo(mx+nx*broad,my+ny*broad);ctx.lineTo(tx,ty);ctx.lineTo(mx-nx*broad*.8,my-ny*broad*.8);ctx.closePath();ctx.fillStyle=i%2?p.leaf:'#456642';ctx.fill();
+      ctx.beginPath();ctx.moveTo(0,baseY);ctx.lineTo(tx*.91,baseY+dy*.91);ctx.lineWidth=.65;ctx.strokeStyle=i%2?'#879867':'#6e885a';ctx.stroke();
+      for(let j=3;j<7;j++){
+        const t=j/8,px=tx*t,py=baseY+dy*t;
+        ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+nx*broad*.6-dx*.05,py+ny*broad*.6-dy*.05);ctx.lineWidth=.4;ctx.strokeStyle='#a6b17b44';ctx.stroke();
+      }
+    }
+    r(ctx,'#849061',0,-8,.75,9);
   }
   ctx.restore();
 }
@@ -116,6 +122,7 @@ function earthDetail(ctx:Context,x:number,y:number){
   r(ctx,'#655b40',x+10,y+4,5,2);r(ctx,'#9c8b62',x+10,y+4,3,1);
 }
 function soilBed(ctx:Context,p:Material,w:number,h:number,variant:number){
+  if(paintDetailedExterior(ctx,'planted-bed',w,h))return;
   shadow(ctx,w,h);
   const y=10,front=h-25;
   r(ctx,p.edge,6,y,w-14,h-y-12);r(ctx,'#4c4934',12,y+5,w-26,front-y-4);
@@ -131,6 +138,7 @@ function soilBed(ctx:Context,p:Material,w:number,h:number,variant:number){
   r(ctx,'#9aa47760',w*.48,front+8,11,2);r(ctx,'#34483370',w*.48+6,front+10,8,2);
 }
 function gardenWall(ctx:Context,p:Material,w:number,h:number){
+  if(paintDetailedGardenWall(ctx,w,h))return;
   shadow(ctx,w,h);r(ctx,p.edge,7,10,w-16,h-23);r(ctx,'#494b35',13,16,w-30,h-43);
   brickFace(ctx,p,w-17,17,9,h-34);r(ctx,p.top,w-18,10,8,h-25);r(ctx,p.light+'85',w-18,11,2,h-28);
   r(ctx,p.top,7,10,6,h-25);r(ctx,p.light+'60',8,11,1,h-30);
@@ -140,6 +148,7 @@ function gardenWall(ctx:Context,p:Material,w:number,h:number){
   plantClump(ctx,p,25,139,'dry',.95);plantClump(ctx,p,28,172,'broadleaf',.65);
 }
 function flowerFrame(ctx:Context,p:Material,w:number,h:number){
+  if(paintDetailedExterior(ctx,'glass-frame',w,h))return;
   shadow(ctx,w,h);r(ctx,p.edge,9,5,w-20,h-18);r(ctx,'#344b3d',13,9,w-28,h-27);
   for(let xx=13;xx<w-16;xx+=22){r(ctx,p.wood,xx,8,3,h-24);r(ctx,p.light+'70',xx,8,1,h-24);}
   for(const yy of [12,h*.45,h-25]){r(ctx,p.wood,12,yy,w-26,3);r(ctx,p.light+'60',13,yy,w-28,1);}
@@ -160,6 +169,7 @@ function counter(ctx:Context,p:Material,w:number,h:number,variant:number){
     r(ctx,'#604b35',xx+4,yy+4,1,8);r(ctx,'#604b35',xx+10,yy+4,1,8);
   }
   r(ctx,p.edge,5,9,w-12,front+1);r(ctx,p.wood,7,11,w-16,front-4);
+  paintRefinedMaterial(ctx,'wood',7,11,w-16,front-4,.4);
   for(let yy=13;yy<front;yy+=8){r(ctx,'#c2a77955',9,yy,w-20,1);r(ctx,'#423d3280',9,yy+6,w-20,1);}
   ledge(ctx,p,5,front-2,w-12,7);
   for(let i=0;i<3;i++){
@@ -172,6 +182,7 @@ function counter(ctx:Context,p:Material,w:number,h:number,variant:number){
 }
 function vent(ctx:Context,p:Material,w:number,h:number){
   shadow(ctx,w,h);brickFace(ctx,p,8,22,w-18,h-36);ledge(ctx,p,5,12,w-12,14);
+  paintRefinedMaterial(ctx,'metal',8,22,w-18,h-36,.3);
   r(ctx,p.edge,15,16,w-33,8);
   for(let xx=19;xx<w-23;xx+=9){r(ctx,p.light+'80',xx,16,3,6);r(ctx,p.face,xx+3,17,2,6);}
   const faceY=29,faceH=Math.max(7,h-46);r(ctx,p.edge,22,faceY,w-48,faceH);
@@ -183,6 +194,7 @@ function loadingDock(ctx:Context,p:Material,w:number,h:number,variant:number){
   for(let xx=14;xx<w-20;xx+=18){r(ctx,p.edge+'75',xx,15,1,5);r(ctx,p.light+'35',xx+2,14,11,1);}
   const pileX=variant?w*.55:18,pileW=Math.min(57,w*.32);
   r(ctx,p.edge,pileX,4,pileW,17);r(ctx,p.wood,pileX+2,5,pileW-4,14);
+  paintRefinedMaterial(ctx,'wood',pileX+2,5,pileW-4,14,.35);
   for(let yy=7;yy<18;yy+=5){r(ctx,'#baa4775a',pileX+3,yy,pileW-7,1);r(ctx,'#383e35',pileX+6,yy+1,pileW-13,2);}
   r(ctx,p.face,w-27,27,10,h-43);r(ctx,p.light+'55',w-27,27,2,h-45);
 }
