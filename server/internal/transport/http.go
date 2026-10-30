@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,22 +20,26 @@ import (
 )
 
 // PaymentGateway 支付能力:进程内网关(单机形态)与远程客户端(拆分形态)都实现它,
-// 充值/流水 HTTP 契约对前端保持不变。
+// 充值/流水 HTTP 契约对前端保持不变。Session/Provider 是 Xsolla 跳转形态的能力:
+// mock 形态下 Session 返回 409,Provider 恒报 mock,前端据此保持卡号 UI。
 type PaymentGateway interface {
 	Charge(playerID, packID, cardNumber string) (payment.ChargeResult, error)
 	History(playerID string) ([]domain.Txn, error)
 	HealingMessage() string
+	Session(playerID, packID string) (payment.SessionResult, error)
+	Provider() payment.ProviderInfo
 }
 
 type API struct {
-	game     *service.Game
-	pay      PaymentGateway
-	requests atomic.Uint64
-	failures atomic.Uint64
+	game          *service.Game
+	pay           PaymentGateway
+	internalToken string
+	requests      atomic.Uint64
+	failures      atomic.Uint64
 }
 
 func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
-	a := &API{game: game, pay: pay}
+	a := &API{game: game, pay: pay, internalToken: os.Getenv("INTERNAL_TOKEN")}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { a.json(w, 200, map[string]string{"status": "ok"}) })
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
@@ -177,6 +182,83 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			return
 		}
 		a.json(w, 200, map[string]any{"playerId": playerID, "txns": txns})
+	})
+	// Xsolla 沙盒:前端先问形态(mock=卡号 UI / xsolla=跳转 UI),再换跳转链接;
+	// 发货只发生在 webhook → 支付服务 → /internal/credit 链路上,前端返回页不发货。
+	mux.HandleFunc("GET /api/payment/config", func(w http.ResponseWriter, r *http.Request) {
+		a.json(w, 200, a.pay.Provider())
+	})
+	mux.HandleFunc("POST /api/payment/session", func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/json") {
+			a.fail(w, r, domain.Fail("INVALID_CONTENT_TYPE", "需要 application/json", 415))
+			return
+		}
+		body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 8192))
+		if err != nil {
+			a.fail(w, r, domain.Fail("BODY_TOO_LARGE", "请求超过 8 KiB", 413))
+			return
+		}
+		var req struct {
+			PlayerID string `json:"playerId"`
+			PackID   string `json:"packId"`
+		}
+		decoder := json.NewDecoder(strings.NewReader(string(body)))
+		decoder.DisallowUnknownFields()
+		if err = decoder.Decode(&req); err != nil {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "请求格式或字段无效", 400))
+			return
+		}
+		if err = decoder.Decode(new(any)); err != io.EOF {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "只接受单个 JSON 对象", 400))
+			return
+		}
+		if req.PlayerID == "" || req.PackID == "" {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 或 packId", 400))
+			return
+		}
+		result, err := a.pay.Session(req.PlayerID, req.PackID)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		a.json(w, 200, result)
+	})
+	// 支付服务 webhook 收款后的内部入账口:仅集群内调用,INTERNAL_TOKEN 未配置时整个端点关闭。
+	mux.HandleFunc("POST /internal/credit", func(w http.ResponseWriter, r *http.Request) {
+		if a.internalToken == "" {
+			a.fail(w, r, domain.Fail("NOT_FOUND", "API 路径或方法不存在", 404))
+			return
+		}
+		if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Internal-Token")), []byte(a.internalToken)) != 1 {
+			a.fail(w, r, domain.Fail("UNAUTHORIZED", "内部令牌校验未通过", 401))
+			return
+		}
+		body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 8192))
+		if err != nil {
+			a.fail(w, r, domain.Fail("BODY_TOO_LARGE", "请求超过 8 KiB", 413))
+			return
+		}
+		var req struct {
+			PlayerID string              `json:"playerId"`
+			Txn      domain.Txn          `json:"txn"`
+			Pack     domain.RechargePack `json:"pack"`
+		}
+		decoder := json.NewDecoder(strings.NewReader(string(body)))
+		decoder.DisallowUnknownFields()
+		if err = decoder.Decode(&req); err != nil {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "请求格式或字段无效", 400))
+			return
+		}
+		if req.PlayerID == "" || req.Txn.ID == "" || req.Pack.ID == "" {
+			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId、txn 或 pack", 400))
+			return
+		}
+		balance, err := a.game.ApplyCharge(req.PlayerID, req.Txn, req.Pack)
+		if err != nil {
+			a.fail(w, r, err)
+			return
+		}
+		a.json(w, 200, map[string]any{"tunaBalance": balance})
 	})
 	mux.HandleFunc("POST /api/v1/advisor", a.advise)
 	// 账号体系:注册把当前匿名进度绑到用户名密码;登录在任意设备取回进度。

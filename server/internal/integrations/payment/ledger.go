@@ -15,6 +15,8 @@ import (
 type Ledger interface {
 	// Record 追加一笔流水(权威账本,不裁剪)。
 	Record(txn domain.Txn) error
+	// RecordIfNew 幂等落账:同 ID 流水只落一次(Xsolla webhook 会重试),返回本次是否新落。
+	RecordIfNew(txn domain.Txn) (bool, error)
 	// History 玩家充值流水,最新在前。
 	History(playerID string) ([]domain.Txn, error)
 }
@@ -56,6 +58,18 @@ func (l *fileLedger) Record(txn domain.Txn) error {
 	defer l.mu.Unlock()
 	l.data.Players[txn.PlayerID] = append(l.data.Players[txn.PlayerID], txn)
 	return l.save()
+}
+
+func (l *fileLedger) RecordIfNew(txn domain.Txn) (bool, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	for _, existing := range l.data.Players[txn.PlayerID] {
+		if existing.ID == txn.ID {
+			return false, nil
+		}
+	}
+	l.data.Players[txn.PlayerID] = append(l.data.Players[txn.PlayerID], txn)
+	return true, l.save()
 }
 
 func (l *fileLedger) History(playerID string) ([]domain.Txn, error) {

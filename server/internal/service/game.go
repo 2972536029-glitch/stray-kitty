@@ -592,9 +592,16 @@ func (g *Game) startTutorialBattle(s *domain.GameState, stageID string, includeM
 
 // ApplyCharge 应用一笔已由支付服务判定并记账的充值:确认则入账金枪鱼,
 // 流水以展示副本落在游戏存档(权威账本在支付侧),返回到账后的最新余额。
+// 同 ID 流水幂等:Xsolla webhook 重试可能重复触达入账口,已入账的不再加罐头。
 func (g *Game) ApplyCharge(playerID string, txn domain.Txn, pack domain.RechargePack) (int, error) {
 	balance := 0
 	err := g.Store.TransactByPlayer(playerID, func(p *repository.Player) error {
+		for _, existing := range p.State.Txns {
+			if existing.ID == txn.ID {
+				balance = p.State.Currencies["tuna"]
+				return nil
+			}
+		}
 		if txn.Status == "confirmed" {
 			p.State.Currencies["tuna"] += pack.TunaGranted
 		}

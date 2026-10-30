@@ -1,12 +1,14 @@
-import type {AuthRegistration, Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentHistoryResponse, Session} from '../../contracts';
+import type {AuthRegistration, Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentConfig, PaymentHistoryResponse, PaymentSessionResponse, Session} from '../../contracts';
 export interface GameApiPort {
   createSession(): Promise<Session>;
   load(): Promise<GameState>;
   execute(request: CommandRequest, idempotencyKey: string): Promise<CommandResponse>;
   catalog(): Promise<Catalog>;
-  // 模拟支付网关:充值(4242 必成功/0000 必失败)与流水查询。
+  // 支付网关:mock=演示卡号直付;xsolla=跳转沙盒收银台(配置/会话/流水)。
   charge(playerId: string, packId: string, cardNumber: string): Promise<ChargeResponse>;
   paymentHistory(playerId: string): Promise<PaymentHistoryResponse>;
+  paymentConfig(): Promise<PaymentConfig>;
+  paymentSession(playerId: string, packId: string): Promise<PaymentSessionResponse>;
   // 账号:注册绑定当前匿名进度;登录换取账号存档的新会话。
   registerAccount(username: string, password: string): Promise<AuthRegistration>;
   loginAccount(username: string, password: string): Promise<Session>;

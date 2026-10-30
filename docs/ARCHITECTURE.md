@@ -64,6 +64,7 @@ stray-kitty/
 │  ├─ LEVEL-EXPLORATION-ARCHITECTURE.md
 │  ├─ MAP-QA-FOLLOWUP.md
 │  ├─ openapi.json  API 规范
+│  ├─ PAYMENT-XSOLLA-SANDBOX.md
 │  ├─ PRD.md  需求与分工
 │  ├─ STORY-SCRIPT.md
 │  └─ STORY-SCRIPT.txt

@@ -1,4 +1,4 @@
-import type {ApiErrorBody, AuthRegistration, Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentHistoryResponse, Session, QATools} from '../../contracts';
+import type {ApiErrorBody, AuthRegistration, Catalog, ChargeResponse, CommandRequest, CommandResponse, GameState, PaymentConfig, PaymentHistoryResponse, PaymentSessionResponse, QATools, Session} from '../../contracts';
 import type {GameApiPort} from '../../core/ports';
 import {runtime} from '../../config/runtime';
 import {BrowserSessionStore} from '../storage/BrowserSessionStore';
@@ -31,6 +31,12 @@ export class HttpGameApi implements GameApiPort {
   }
   paymentHistory(playerId: string) {
     return this.paymentRequest<PaymentHistoryResponse>(`/history?playerId=${encodeURIComponent(playerId)}`);
+  }
+  paymentConfig() {
+    return this.paymentRequest<PaymentConfig>('/config');
+  }
+  paymentSession(playerId: string, packId: string) {
+    return this.paymentRequest<PaymentSessionResponse>('/session',{method:'POST',body:JSON.stringify({playerId,packId})});
   }
   // 账号端点挂在 /api/auth 下,注册沿用当前匿名令牌(Authorization 由 request 自动带)。
   async authRequest<T>(path: string, body: unknown): Promise<T> {

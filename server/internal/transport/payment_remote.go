@@ -95,6 +95,61 @@ func (p *RemotePayment) History(playerID string) ([]domain.Txn, error) {
 
 func (p *RemotePayment) HealingMessage() string { return payment.PickHealingMessage() }
 
+// Session 向支付服务申请 Xsolla 跳转会话;金额档位都在支付侧定,这里只带 playerId/packId。
+func (p *RemotePayment) Session(playerID, packID string) (payment.SessionResult, error) {
+	body, err := json.Marshal(map[string]string{"playerId": playerID, "packId": packID})
+	if err != nil {
+		return payment.SessionResult{}, err
+	}
+	req, err := http.NewRequest(http.MethodPost, p.base+"/internal/session", bytes.NewReader(body))
+	if err != nil {
+		return payment.SessionResult{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return payment.SessionResult{}, domain.Fail("PAYMENT_UNAVAILABLE", "支付服务暂时联系不上，请稍后再试", 503)
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if resp.StatusCode != http.StatusOK {
+		var errBody struct {
+			Error struct {
+				Code    string `json:"code"`
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if json.Unmarshal(raw, &errBody) == nil && errBody.Error.Code != "" {
+			return payment.SessionResult{}, domain.Fail(errBody.Error.Code, errBody.Error.Message, resp.StatusCode)
+		}
+		return payment.SessionResult{}, domain.Fail("PAYMENT_UNAVAILABLE", fmt.Sprintf("支付服务返回 %d", resp.StatusCode), 502)
+	}
+	var out payment.SessionResult
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return payment.SessionResult{}, domain.Fail("PAYMENT_UNAVAILABLE", "支付服务响应格式异常", 502)
+	}
+	return out, nil
+}
+
+// Provider 查询支付服务当前网关形态;查询失败时降级成 mock(卡号 UI 不被卡死)。
+func (p *RemotePayment) Provider() payment.ProviderInfo {
+	req, err := http.NewRequest(http.MethodGet, p.base+"/internal/provider", nil)
+	if err != nil {
+		return payment.ProviderInfo{Provider: "mock"}
+	}
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return payment.ProviderInfo{Provider: "mock"}
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	var out payment.ProviderInfo
+	if err := json.Unmarshal(raw, &out); err != nil || out.Provider == "" {
+		return payment.ProviderInfo{Provider: "mock"}
+	}
+	return out
+}
+
 // 编译期确认两种形态都满足网关接口。
 var _ PaymentGateway = (*RemotePayment)(nil)
 var _ PaymentGateway = (*payment.Gateway)(nil)
