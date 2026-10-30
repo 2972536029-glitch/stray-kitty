@@ -101,12 +101,28 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:TunnelState){
   blocks(ctx,'#263b3533',[[6,77,70,6],[14,82,54,3]]);
   blocks(ctx,'#2e475b',[[20,15,42,16],[15,30,52,36],[10,66,23,13],[49,66,23,13],[10,33,8,30],[65,33,8,30]]);
   blocks(ctx,'#739bac',[[19,29,8,36],[56,30,8,35],[24,17,34,5]]);
+  // Visor, inset plates and stepped boots add form inside the existing blue armour.
+  blocks(ctx,'#213b50',[[23,24,36,6],[28,35,28,5],[29,49,25,11],[12,74,17,3],[52,74,17,3]]);
+  blocks(ctx,'#4f7488',[[22,17,4,7],[54,18,5,6],[20,36,3,22],[59,36,3,20],[13,67,16,4],[53,67,15,4]]);
+  blocks(ctx,'#9ebcc4',[[24,18,2,3],[55,19,2,3],[21,37,1,8],[60,37,1,8],[15,68,9,1],[55,68,9,1]]);
   blocks(ctx,'#c5d9dc',[[15,9,52,7],[11,20,6,52],[67,20,6,52],[15,70,52,5]]);
+  blocks(ctx,'#8caab8',[[18,14,46,1],[15,23,1,43],[71,23,1,43],[18,74,46,1]]);
+  blocks(ctx,'#e0e9df',[[19,10,10,1],[49,10,12,1],[12,23,1,8],[68,23,1,8]]);
+  for(const [x,y] of [[13,26],[69,26],[13,64],[69,64]]){
+    rect(ctx,x,y,2,2,'#3a5c70');rect(ctx,x,y,1,1,'#d8e3d8');
+  }
   blocks(ctx,'#f3d68a',[[27,31,9,4],[47,31,9,4]]);
+  blocks(ctx,'#2e475b',[[32,32,2,2],[48,32,2,2],[38,37,7,2]]);
+  blocks(ctx,'#f5e3a4',[[28,31,2,1],[53,31,2,1]]);
   blocks(ctx,SCENE_INK.gold,[[27,43,29,4],[27,62,29,3]]);
   ctx.strokeStyle='#dfbf7f';ctx.lineWidth=3;ctx.beginPath();ctx.arc(42,55,12,0,Math.PI*2);ctx.moveTo(30,55);ctx.lineTo(54,55);ctx.moveTo(42,43);ctx.lineTo(42,67);ctx.stroke();
+  blocks(ctx,'#927f5b',[[40,53,4,4],[28,45,7,1],[47,64,7,1]]);
+  blocks(ctx,'#eddaa0',[[40,53,3,1],[41,54,1,1],[29,43,8,1],[48,62,6,1]]);
   blocks(ctx,'#678492',[[3,32,10,10],[70,32,10,10],[0,43,7,22],[76,43,7,22]]);
+  blocks(ctx,'#94adb6',[[4,34,7,2],[71,34,7,2],[1,46,3,2],[77,46,3,2]]);
+  blocks(ctx,'#3d5a6d',[[5,39,6,2],[72,39,6,2],[1,54,4,1],[1,61,4,2],[77,54,4,1],[77,61,4,2]]);
   rect(ctx,32,0,20,10,'#6f7d65');rect(ctx,35,2,14,6,windup&&Math.sin(state.elapsed*9)>0?'#dba86e':windup?'#f0d8a0':'#b5c99c');
+  blocks(ctx,'#445c59',[[33,8,18,1],[50,2,1,5]]);rect(ctx,33,1,1,3,'#a1b39a');
   if(windup){
     ctx.strokeStyle='#caa56e';ctx.lineWidth=2;
     for(const [x,y,dx,dy] of [[20,0,-5,-4],[62,0,5,-4],[14,10,-8,0],[68,10,8,0]]){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+dx,y+dy);ctx.stroke();}

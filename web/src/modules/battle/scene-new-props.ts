@@ -1,6 +1,7 @@
 import atlasUrl from './assets/scene-new-props-atlas.png';
 import type {BattleSceneId} from './scene-art';
 import type {SceneryRect} from './scene-composition';
+import {sceneryRaster} from './scene-raster';
 
 type NewProp='bicycle'|'hydrant'|'tea-cart'|'bundles'|'wheelbarrow'|'water-barrel'|'maintenance'|'pallet-jack';
 const crops:Record<NewProp,readonly [number,number,number,number]>={
@@ -8,7 +9,7 @@ const crops:Record<NewProp,readonly [number,number,number,number]>={
   wheelbarrow:[95,584,314,208],'water-barrel':[541,527,312,264],maintenance:[978,519,284,281],'pallet-jack':[1395,535,310,257],
 };
 interface PropPlan {kind:NewProp;across:number;depth:number;width:number}
-interface NewPropPlacement extends SceneryRect {kind:NewProp}
+interface NewPropPlacement extends SceneryRect {kind:NewProp;worldWidth:number}
 const plans:Record<BattleSceneId,readonly PropPlan[]>={
   prologue:[{kind:'bicycle',across:.12,depth:.72,width:165},{kind:'hydrant',across:.86,depth:.83,width:96}],
   alley:[{kind:'bicycle',across:.19,depth:.26,width:190},{kind:'hydrant',across:.68,depth:.28,width:112},{kind:'tea-cart',across:.12,depth:.68,width:165}],
@@ -18,7 +19,7 @@ const plans:Record<BattleSceneId,readonly PropPlan[]>={
   finale:[{kind:'pallet-jack',across:.84,depth:.66,width:192},{kind:'maintenance',across:.19,depth:.8,width:121}],
 };
 let atlas:HTMLImageElement|undefined;
-const listeners=new Set<()=>void>(),sprites=new Map<NewProp,HTMLCanvasElement>();
+const listeners=new Set<()=>void>();
 function image(){
   if(!atlas&&typeof Image!=='undefined'){
     atlas=new Image();atlas.onload=()=>{for(const ready of listeners)ready();listeners.clear();};
@@ -42,7 +43,7 @@ export function planNewSceneProps(scene:BattleSceneId,width:number,height:number
       const w=Math.round(plan.width*Math.max(.3,Math.min(1.2,cellSize/100))*scale);
       const crop=crops[plan.kind],h=Math.round(w*crop[3]/crop[2]);
       for(const [dx,dy] of [[0,0],[30,-24],[-36,26],[52,38],[-55,-35]]){
-        const candidate={kind:plan.kind,x:Math.round(width*plan.across-w/2+dx),y:Math.round(top+(bottom-top)*plan.depth-h/2+dy),width:w,height:h};
+        const candidate={kind:plan.kind,worldWidth:plan.width*.8*scale,x:Math.round(width*plan.across-w/2+dx),y:Math.round(top+(bottom-top)*plan.depth-h/2+dy),width:w,height:h};
         if(candidate.x<24||candidate.x+w>width-24||candidate.y<110||candidate.y+h>height-110)continue;
         if([...occupied,...result].some(r=>candidate.x<r.x+r.width+12&&candidate.x+w+12>r.x&&candidate.y<r.y+r.height+12&&candidate.y+h+12>r.y))continue;
         result.push(candidate);placed=true;break;
@@ -54,14 +55,10 @@ export function planNewSceneProps(scene:BattleSceneId,width:number,height:number
 
 export function paintNewSceneProp(ctx:CanvasRenderingContext2D,prop:NewPropPlacement){
   const source=image();if(!source)return;
-  let sprite=sprites.get(prop.kind);
-  if(!sprite){
-    const [sx,sy,sw,sh]=crops[prop.kind];
-    sprite=document.createElement('canvas');sprite.width=144;sprite.height=Math.round(144*sh/sw);
-    const spriteCtx=sprite.getContext('2d');if(!spriteCtx)return;
-    spriteCtx.imageSmoothingEnabled=false;spriteCtx.drawImage(source,sx,sy,sw,sh,0,0,sprite.width,sprite.height);
-    sprites.set(prop.kind,sprite);
-  }
+  const crop=crops[prop.kind];
+  // Plans were authored at a 100px cell. Keep this native size stable on zoom.
+  const sprite=sceneryRaster(source,crop,prop.worldWidth,prop.worldWidth*crop[3]/crop[2]);
+  if(!sprite)return;
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha*=.92;
   ctx.drawImage(sprite,prop.x,prop.y,prop.width,prop.height);ctx.restore();
 }
