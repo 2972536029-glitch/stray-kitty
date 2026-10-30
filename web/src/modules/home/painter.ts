@@ -3,7 +3,7 @@ import {HOME_FRAMES, type HomeArtwork, type HomeSprite} from './assets';
 import {homeObjects, type HomeAppearance, type HomeObject} from './objects';
 export {homeObjects} from './objects';
 export function homeAppearanceKey(state:HomeAppearance):string {
-  return homeStage(state)+'|'+Object.entries(state.placements).sort(([a],[b])=>a.localeCompare(b)).map(([slot,id])=>slot+':'+id).join('|');
+  return JSON.stringify(state.homeLayout??{})+'|'+homeStage(state)+'|'+Object.entries(state.placements).sort(([a],[b])=>a.localeCompare(b)).map(([slot,id])=>slot+':'+id).join('|');
 }
 function filterFor(stage:number){return stage===1?'saturate(.3) brightness(.58)':stage===2?'saturate(.7) brightness(.83)':stage===4?'saturate(1.04) brightness(1.03)':'none';}
 export function drawHomeSprite(ctx:CanvasRenderingContext2D,art:HomeArtwork,sprite:HomeSprite,x:number,y:number,width:number){
@@ -46,7 +46,6 @@ export function paintHomeStructure(ctx:CanvasRenderingContext2D,state:HomeAppear
     }
   }
   if(stage===4){
-    for(const [x,y,width] of [[365,175,390],[824,192,438],[1280,177,374]])drawHomeSprite(ctx,art,'s4.flags',x,y,width);
     const glow=ctx.createLinearGradient(0,0,0,350);glow.addColorStop(0,'#f59c4836');glow.addColorStop(1,'#f59c4800');ctx.fillStyle=glow;ctx.fillRect(100,0,1472,350);
   }
   ctx.restore();
@@ -67,15 +66,10 @@ export function paintHomeObject(ctx:CanvasRenderingContext2D,object:HomeObject,a
 }
 export function paintHomeFurnitureFront(ctx:CanvasRenderingContext2D,object:HomeObject,art?:HomeArtwork){
   if(!art||!['castle','hammock','blanket','cushion'].includes(object.kind))return;
-  const frame=HOME_FRAMES[object.sprite],w=object.width,h=w*frame.height/frame.width,x=object.x-w/2,y=object.y-h;
-  ctx.save();ctx.beginPath();
-  if(object.kind==='castle'){
-    ctx.rect(x,y+h*.55,w,h*.45);
-    // Do not paint over the existing cat's head in the cubby opening.
-    if(object.sprite.startsWith('parcel.'))ctx.rect(x+w*.29,y+h*.56,w*.43,h*.33);
-    else ctx.rect(x+w*.2,y+h*.55,w*.32,h*.4);
-    ctx.clip('evenodd');
-  }else{ctx.rect(x,y+h*(object.kind==='hammock'?.81:.96),w,h);ctx.clip();}
+  // Only the low front lip can cover paws. Tall opaque crops hid the face
+  // when front-facing furniture replaced the old angled drawings.
+  const w=object.width;
+  ctx.save();ctx.beginPath();ctx.rect(object.x-w/2,object.y-5,w,6);ctx.clip();
   drawHomeSprite(ctx,art,object.sprite,object.x,object.y,w);ctx.restore();
 }
 export function paintHomeFrontWall(ctx:CanvasRenderingContext2D,state:HomeAppearance,art?:HomeArtwork){

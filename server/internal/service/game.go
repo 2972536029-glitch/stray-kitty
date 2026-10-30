@@ -532,6 +532,8 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			s.Flags = domain.Add(s.Flags, "chapter_4_started")
 		}
 		return nil
+	case "SAVE_HOME_LAYOUT":
+		return g.saveHomeLayout(s, c.Changes)
 	case "PLACE_FURNITURE":
 		if err := domain.RequirePhase(*s, "home"); err != nil {
 			return err
@@ -556,6 +558,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			if id == c.FurnitureID {
 				delete(s.Placements, slot)
 			}
+		}
+		delete(s.HomeLayout, "furniture:"+c.FurnitureID)
+		if previous := s.Placements[c.SlotID]; previous != "" {
+			delete(s.HomeLayout, "furniture:"+previous)
 		}
 		s.Placements[c.SlotID] = c.FurnitureID
 		return nil

@@ -22,10 +22,14 @@ export interface GameState {
   eventState?: EventState;
   txns?: PaymentTxn[];
   lottery?: LotteryState;
+  homeLayout?: Record<string, HomePlacement>;
   alleyBattleReturn?: {x: number; y: number};
   lastResult: {draw?: ParcelDraw; message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string};
   qaCheckpointId?: string;
 }
+export interface HomePlacement {x:number;y:number;stored:boolean}
+export interface HomeLayoutChange extends HomePlacement {key:string}
+export interface HomeDecor {id:string;objectId:string;stage:number;name:string;sprite:string;x:number;y:number;width:number;kind:string;front?:boolean;wall?:boolean;replacementSlot?:string}
 export interface QACheckpoint {id: string; chapterId: string; title: string; phase: GamePhase; mapId: string; kind: 'story' | 'explore' | 'battle' | 'home' | 'event'; detail: string}
 export interface QATools {enabled: boolean; checkpoints: QACheckpoint[]}
 export type GameCommand =
@@ -44,6 +48,7 @@ export type GameCommand =
   | {type: 'CONTINUE'} | {type: 'GO_HOME'} | {type: 'GO_EXPLORE'; mapId?: string}
   | {type: 'EXIT_MARKET'; layer: string; position: {x:number;y:number}}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
+  | {type: 'SAVE_HOME_LAYOUT'; changes: HomeLayoutChange[]}
   | {type: 'DRAW_FURNITURE'; poolId: string}
   | {type: 'CLAIM_PARCEL_REWARD'; rewardId: string}
   | {type: 'BUY_FURNITURE'; productId: string}
@@ -92,6 +97,7 @@ export interface Catalog {
   cats: {id: string; name: string; color: string; description: string; skill: string}[];
   furniture: {id: string; name: string; theme: string; source?: 'story' | 'free_pool' | 'paid_pool'; description?: string; widthCm?: number; preferredSlot?: string; interactionCat?: string; interaction?: string}[];
   slots: {id: string; name: string}[];
+  homeDecor: HomeDecor[];
   renovations?: RenovationDefinition[];
   items: {id: string; name: string; description: string}[];
   pools: ParcelPool[];

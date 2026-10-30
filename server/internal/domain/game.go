@@ -69,9 +69,10 @@ type GameState struct {
 	EventState        *EventState `json:"eventState,omitempty"`
 	AlleyBattleReturn *WorldPoint `json:"alleyBattleReturn,omitempty"`
 	// Txns:金枪鱼充值与消费流水(最新的在末尾),供 /api/payment/history 展示;超出上限丢弃最旧。
-	Txns           []Txn         `json:"txns,omitempty"`
-	QACheckpointID string        `json:"qaCheckpointId,omitempty"`
-	Lottery        *LotteryState `json:"lottery,omitempty"`
+	Txns           []Txn                    `json:"txns,omitempty"`
+	QACheckpointID string                   `json:"qaCheckpointId,omitempty"`
+	Lottery        *LotteryState            `json:"lottery,omitempty"`
+	HomeLayout     map[string]HomePlacement `json:"homeLayout,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -90,24 +91,25 @@ func AppendTxn(s *GameState, t Txn) {
 }
 
 type Command struct {
-	Type          string      `json:"type"`
-	NodeID        string      `json:"nodeId,omitempty"`
-	InteractionID string      `json:"interactionId,omitempty"`
-	EventID       string      `json:"eventId,omitempty"`
-	OptionID      string      `json:"optionId,omitempty"`
-	StageID       string      `json:"stageId,omitempty"`
-	AttemptID     string      `json:"attemptId,omitempty"`
-	Outcome       string      `json:"outcome,omitempty"`
-	FurnitureID   string      `json:"furnitureId,omitempty"`
-	SlotID        string      `json:"slotId,omitempty"`
-	PoolID        string      `json:"poolId,omitempty"`
-	ProductID     string      `json:"productId,omitempty"`
-	MapID         string      `json:"mapId,omitempty"`
-	ZoneID        string      `json:"zoneId,omitempty"`
-	CheckpointID  string      `json:"checkpointId,omitempty"`
-	RewardID      string      `json:"rewardId,omitempty"`
-	Layer         string      `json:"layer,omitempty"`
-	Position      *WorldPoint `json:"position,omitempty"`
+	Changes       []HomeLayoutChange `json:"changes,omitempty"`
+	Type          string             `json:"type"`
+	NodeID        string             `json:"nodeId,omitempty"`
+	InteractionID string             `json:"interactionId,omitempty"`
+	EventID       string             `json:"eventId,omitempty"`
+	OptionID      string             `json:"optionId,omitempty"`
+	StageID       string             `json:"stageId,omitempty"`
+	AttemptID     string             `json:"attemptId,omitempty"`
+	Outcome       string             `json:"outcome,omitempty"`
+	FurnitureID   string             `json:"furnitureId,omitempty"`
+	SlotID        string             `json:"slotId,omitempty"`
+	PoolID        string             `json:"poolId,omitempty"`
+	ProductID     string             `json:"productId,omitempty"`
+	MapID         string             `json:"mapId,omitempty"`
+	ZoneID        string             `json:"zoneId,omitempty"`
+	CheckpointID  string             `json:"checkpointId,omitempty"`
+	RewardID      string             `json:"rewardId,omitempty"`
+	Layer         string             `json:"layer,omitempty"`
+	Position      *WorldPoint        `json:"position,omitempty"`
 	// REPORT_MOVE 携带的本次行走里程(画布像素)。
 	Distance       int           `json:"distance,omitempty"`
 	ReturnPosition *WorldPoint   `json:"returnPosition,omitempty"`
@@ -185,9 +187,10 @@ type Slot struct {
 	Name string `json:"name,omitempty"`
 }
 type Furniture struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Source string `json:"source,omitempty"`
+	ID      string  `json:"id"`
+	Name    string  `json:"name"`
+	Source  string  `json:"source,omitempty"`
+	WidthCm float64 `json:"widthCm,omitempty"`
 }
 
 // Renovation:花房四阶修缮工程。按 stage 升序推进;cost 键 material 走背包、stamp 走邮票;
@@ -212,6 +215,7 @@ type Product struct {
 	Status       string `json:"status"`
 }
 type Catalog struct {
+	HomeDecor     []HomeDecor    `json:"homeDecor"`
 	Version       string         `json:"version"`
 	Chapters      []Chapter      `json:"chapters"`
 	Story         []StoryNode    `json:"story"`

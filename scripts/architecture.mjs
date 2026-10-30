@@ -45,6 +45,7 @@ const labels = {
   'web/content/tutorials': '操作提示', 'web/content/assets': '素材索引',
   'web/public': '静态资源', 'web/public/assets': '图片、动画、声音与字体',
   'web/public/assets/home': '无猫建筑、四阶修缮与主题家具透明图集',
+  'web/public/assets/home/stages': '四阶段四十八件正向透明家具组件',
   'web/public/assets/home/parcels': '两套主题的二十四件独立透明家具组件',
   server: 'Go 服务端', 'server/cmd': '服务入口', 'server/cmd/api': 'HTTP 启动',
   'server/internal': '服务实现', 'server/internal/transport': '请求、认证与参数检查',

@@ -19,7 +19,7 @@ export default function ParcelDialog({state,catalog,disabled,retryDisabled,error
   const pool=catalog.pools.find(p=>p.id===selected)??catalog.pools[0];
   const [opening,setOpening]=useState(false),[result,setResult]=useState<ParcelDraw|null>(null);
   const [inspected,setInspected]=useState<string|null>(null);
-  const [shown,setShown]=useState(false),[slot,setSlot]=useState('corner');
+  const [shown,setShown]=useState(false);
   const pending=useRef(false),lastDraw=useRef(state.lastResult.draw?.id),lockedRef=useRef(false);
   const revealRef=useRef<HTMLElement>(null);
   const [placeNotice,setPlaceNotice]=useState('');
@@ -30,7 +30,6 @@ export default function ParcelDialog({state,catalog,disabled,retryDisabled,error
   const item=catalog.furniture.find(f=>f.id===result?.furnitureId);
   const detailItem=catalog.furniture.find(f=>f.id===inspected);
   const lockedSlots=new Set((catalog.renovations??[]).filter(r=>!state.flags.includes(r.grantsFlag)).flatMap(r=>r.unlockSlots??[]));
-  const availableSlots=catalog.slots.filter(s=>!lockedSlots.has(s.id));
   useEffect(()=>{
     if(!draw||draw.id===lastDraw.current)return;
     lastDraw.current=draw.id;
@@ -43,7 +42,6 @@ export default function ParcelDialog({state,catalog,disabled,retryDisabled,error
     const timer=window.setTimeout(()=>{setShown(true);setOpening(false);playSound(result.duplicate?'pickup':'chime');},window.matchMedia('(prefers-reduced-motion: reduce)').matches?0:950);
     return()=>clearTimeout(timer);
   },[result]);
-  useEffect(()=>{if(!item)return;setSlot(availableSlots.some(s=>s.id===item.preferredSlot)?item.preferredSlot!:availableSlots[0]?.id??'corner');},[item?.id]);
   useEffect(()=>{if(shown)revealRef.current?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});},[shown]);
   useEffect(()=>{
     if(disabled)return;
@@ -74,7 +72,7 @@ export default function ParcelDialog({state,catalog,disabled,retryDisabled,error
     </section>
     {error&&<div className="parcel-error" role="alert">{error}<button disabled={retryDisabled} onClick={onRetry}>重试上次操作</button></div>}
     {(opening||result)&&<section ref={revealRef} className={`parcel-reveal ${shown?'revealed':'sealed'}`} aria-label="包裹开箱" aria-live="polite">
-      {!shown?<div className="parcel-box-stage" role="status"><div className="parcel-paper-box"><span className="parcel-twine"/><span className="parcel-seal">{premium?'☽':'✦'}</span><span className="parcel-lid"/></div><p>刺啦——一份心意正在打开。</p></div>:result&&<><div className="parcel-sparkles" aria-hidden="true">{Array.from({length:12},(_,i)=><i key={i} style={{'--particle':i} as React.CSSProperties}/>)}</div><div className="parcel-result-art"><FurnitureArt id={result.furnitureId} name={item?.name??result.furnitureId} detail/></div><div className="parcel-result-copy"><span className="parcel-edition">{result.duplicate?'熟悉的心意':result.guaranteed?'暖心保底 · 新家具':'新家具送达'}</span><h3>{item?.name}</h3><p>{result.duplicate?`已收藏的家具化作了 ${result.material} 份修缮材料。`:state.cats.includes(item?.interactionCat??'')?`${catNames[item?.interactionCat??'']}已经在等它的新角落啦。`:'先给它留个位置，等伙伴加入后一起玩。'}</p><div className="parcel-place"><label>摆放位置<select value={slot} disabled={disabled} onChange={e=>setSlot(e.target.value)}>{availableSlots.map(s=><option key={s.id} value={s.id}>{s.name}{state.placements[s.id]?'（替换，原家具收回）':''}</option>)}</select></label><button disabled={disabled||!atHome||!state.furniture.includes(result.furnitureId)} onClick={async()=>{if(await onPlace(result.furnitureId,slot)){setPlaceNotice('已经摆好了！回花房看看猫咪的新角落。');playSound('pickup');}}}>摆进花房</button></div>{item?.preferredSlot&&lockedSlots.has(item.preferredSlot)&&<small>推荐位置尚未修缮完成，可先摆在其他角落。</small>}{placeNotice&&<p role="status">{placeNotice}</p>}<button className="parcel-return" onClick={onClose}>回花房看看 →</button></div></>}
+      {!shown?<div className="parcel-box-stage" role="status"><div className="parcel-paper-box"><span className="parcel-twine"/><span className="parcel-seal">{premium?'☽':'✦'}</span><span className="parcel-lid"/></div><p>刺啦——一份心意正在打开。</p></div>:result&&<><div className="parcel-sparkles" aria-hidden="true">{Array.from({length:12},(_,i)=><i key={i} style={{'--particle':i} as React.CSSProperties}/>)}</div><div className="parcel-result-art"><FurnitureArt id={result.furnitureId} name={item?.name??result.furnitureId} detail/></div><div className="parcel-result-copy"><span className="parcel-edition">{result.duplicate?'熟悉的心意':result.guaranteed?'暖心保底 · 新家具':'新家具送达'}</span><h3>{item?.name}</h3><p>{result.duplicate?`已收藏的家具化作了 ${result.material} 份修缮材料。`:state.cats.includes(item?.interactionCat??'')?`${catNames[item?.interactionCat??'']}已经在等它的新角落啦。`:'先给它留个位置，等伙伴加入后一起玩。'}</p><div className="parcel-place"><button disabled={disabled||!atHome||!state.furniture.includes(result.furnitureId)} onClick={async()=>{if(await onPlace(result.furnitureId,'')){setPlaceNotice('已放入家具背包。');playSound('pickup');}}}>打开背包布置</button></div>{item?.preferredSlot&&lockedSlots.has(item.preferredSlot)&&<small>推荐位置尚未修缮完成，可先摆在其他角落。</small>}{placeNotice&&<p role="status">{placeNotice}</p>}<button className="parcel-return" onClick={onClose}>回花房看看 →</button></div></>}
     </section>}
     <section className="parcel-rewards" aria-label="来信与猫咪心愿"><div className="parcel-section-head"><h3>来信与猫咪心愿</h3><small>每日 00:00（北京时间）换新</small></div><div className="parcel-reward-list">{(catalog.parcelRewards??[]).map(reward=>{
       const r=rewardStatus(state,reward);return <article key={reward.id}><div><span>{reward.kind==='daily'?'今日小事':'旅程纪念'}</span><h4>{reward.name}</h4><p>{reward.description}</p></div><div><b>{reward.stamp>0?`✦ ${reward.stamp}`:''}{reward.tuna>0?`　🥫 ${reward.tuna}`:''}</b><button data-testid={`claim-${reward.id}`} disabled={busy||!atHome||status.locked||r.claimed||r.locked||r.wish} onClick={()=>void onCommand({type:'CLAIM_PARCEL_REWARD',rewardId:reward.id})}>{r.claimed?'已签收':r.locked?'旅程尚未到达':r.wish?'先布置一件家具':'签收心意'}</button></div></article>;

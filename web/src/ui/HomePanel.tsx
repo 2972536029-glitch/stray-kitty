@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useState} from 'react';
 import type {Catalog, GameCommand, GameState} from '../contracts';
 import {ChapterLoadout} from '../modules/battle/ChapterLoadout';
 import {MarketLoadout} from '../modules/battle/MarketLoadout';
@@ -31,33 +31,7 @@ const CHATTER_CALLBACKS: {flag: string; speaker: string; text: string}[] = [
   {flag: 'wall_kitten_friend', speaker: '旁白', text: '回花房的路上，墙头方向传来一声短促的招呼，像在替你们看着巷口。'},
 ];
 
-// 家具选择器：原位展开的暖色像素木牌列表（替代系统原生下拉），保留 listbox/option 语义与键盘可用性。
-function FurniturePicker({value, options, disabled, onChange}: {value: string; options: {id: string; label: string}[]; disabled: boolean; onChange: (id: string) => void}) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!open) return;
-    const dismiss = (event: PointerEvent) => {if (!rootRef.current?.contains(event.target as Node)) {setOpen(false);playSound('close');}};
-    document.addEventListener('pointerdown', dismiss);
-    return () => document.removeEventListener('pointerdown', dismiss);
-  }, [open]);
-  const current = options.find(option => option.id === value)?.label ?? '还没有家具';
-  return <div className={`furniture-picker${open ? ' open' : ''}`} ref={rootRef}>
-    <button type="button" className="furniture-picker-button" disabled={disabled} aria-label="选择家具" aria-haspopup="listbox" aria-expanded={open} onClick={() => {setOpen(!open);playSound(open ? 'close' : 'open');}}>
-      <span className="furniture-picker-caption" aria-hidden="true">选择家具</span>
-      <b>{current}</b>
-      <span className="furniture-picker-chev" aria-hidden="true">▾</span>
-    </button>
-    {open && <ul className="furniture-picker-list" role="listbox" aria-label="家具列表">
-      {options.map((option, index) => <li key={option.id}>
-        <button type="button" role="option" aria-selected={option.id === value} className={option.id === value ? 'selected' : ''} style={{animationDelay: `${Math.min(index * 26, 208)}ms`}} disabled={disabled} onClick={() => {onChange(option.id);setOpen(false);playSound('pickup');}}>{option.label}</button>
-      </li>)}
-    </ul>}
-  </div>;
-}
-
-export default function HomePanel({state, catalog, disabled, onCommand, onShop, onParcels, onWarehouse}: {state: GameState; catalog: Catalog; disabled: boolean; onCommand: (command: GameCommand) => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onWarehouse: () => void}) {
-  const [selected, setSelected] = useState('cardboard_nest');
+export default function HomePanel({state, catalog, disabled, onCommand, onShop, onParcels, onWarehouse, onDecorate}: {state: GameState; catalog: Catalog; disabled: boolean; onCommand: (command: GameCommand) => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onWarehouse: () => void; onDecorate: () => void}) {
   // 伸缩抽屉：先按收缩态挂载，延迟一拍再展开，让玩家看清“这里有一个可以伸缩的面板”。
   const [open, setOpen] = useState(rememberedOpen);
   const [revealed, setRevealed] = useState(false);
@@ -78,8 +52,6 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     playSound(next ? 'open' : 'close');
     try {localStorage.setItem(PANEL_OPEN_KEY, next ? 'open' : 'closed');} catch {/* 隐私模式下记忆失败，不影响本次游玩 */}
   };
-  const furniture = state.furniture.includes(selected) ? selected : state.furniture[0] ?? '';
-  const name = (id: string) => catalog.furniture.find(f => f.id === id)?.name ?? id;
   // 花房四阶修缮:阶段 1 是初始漏雨状态,阶段 2/3 由 REPAIR_HOME 逐段推进,阶段 4 随终章 flag 自动点亮。
   const renovations = catalog.renovations ?? [];
   const kingdomFounded = state.flags.includes('finale_completed') || state.flags.includes('kingdom_founded');
@@ -92,9 +64,6 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
   const nextMaterial = nextRenovation?.cost?.material ?? 0;
   const nextStamp = nextRenovation?.cost?.stamp ?? 0;
   const affordable = material >= nextMaterial && stamp >= nextStamp;
-  // 尚未完成修缮工程解锁的槽位保持锁定(如高空横梁需先完成阶段 3)。
-  const lockedSlots = new Set<string>();
-  for (const r of renovations) if (!state.flags.includes(r.grantsFlag)) for (const slotId of r.unlockSlots ?? []) lockedSlots.add(slotId);
   const hasBattleTrials = state.flags.includes('alley_rescued') || state.flags.includes('momo_joined');
   const needsGreenhouseDefense = state.flags.includes('chapter_3_started') && state.flags.includes('momo_joined') && !state.flags.includes('greenhouse_fortified');
   const tunnelComplete = state.flags.includes('tunnel_explored') && state.flags.includes('cats_rescued_batch1');
@@ -181,8 +150,7 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
         ? <p className="renovation-done muted">🎉 修缮全部完成！暖黄串灯下的流浪猫王国正热闹着，街坊们常来送水碗和猫粮。</p>
         : <p className="renovation-done muted">花房已经修缮完毕，点亮终章后，这里会成为真正的流浪猫王国。</p>}
     </div>
-    <FurniturePicker value={furniture} options={state.furniture.map(id => ({id, label: name(id)}))} disabled={disabled} onChange={setSelected}/>
-    <div className="slot-list">{catalog.slots.map(slot => {const locked = lockedSlots.has(slot.id);return <button className="secondary" key={slot.id} disabled={disabled || !furniture || locked} onClick={() => onCommand({type: 'PLACE_FURNITURE', furnitureId: furniture, slotId: slot.id})}>{locked ? '🔒 ' : ''}{slot.name}<small>{locked ? '完成对应修缮后解锁' : state.placements[slot.id] ? name(state.placements[slot.id]) : '还空着，放一件家具'}</small></button>;})}</div>
+    <button className="home-warehouse-entry" disabled={disabled} onClick={onDecorate}>▧ 打开家具背包<small>直接拖进花房 · 所有家具都能移动和收回</small></button>
     <button className="shop-home" disabled={disabled} onClick={onShop}>去猫国商店挑一件家具 ↗</button>
     <button className="home-parcel-entry" onClick={onParcels} disabled={disabled}><span>✉ 猫爪邮局<small>苔叶来信 · 月海观星 / 两套独立主题家具</small></span><span aria-hidden="true">→</span></button>
     <p className="home-result" role="status">{state.lastResult.message}</p>

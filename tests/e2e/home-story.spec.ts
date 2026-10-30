@@ -135,7 +135,12 @@ test('repairs update both views and placed furniture survives refresh', async ({
   await expect(scene(page)).toHaveAttribute('data-home-stage', '3');
   await page.reload();await page.getByRole('button', {name: '继续冒险'}).click();
   await expect(scene(page)).toHaveAttribute('data-home-stage', '3');
-  await expect(page.getByRole('button', {name: '窗边'})).toContainText('蓝色饭碗');
+  await page.getByRole('button', {name: /^▧ 家具背包/}).click();
+  const backpack=page.getByRole('dialog',{name:'家具背包 · 布置模式'});
+  await backpack.getByRole('tab',{name:/场景/}).click();
+  await expect(backpack.getByRole('button',{name:'选择蓝色饭碗',exact:true})).toBeVisible();
+  await backpack.getByRole('button',{name:'取消布置',exact:true}).click();
+  if(await page.getByRole('button',{name:'展开顶部信息栏（可拖拽）'}).isVisible())await page.getByRole('button',{name:'展开顶部信息栏（可拖拽）'}).click();
   await page.getByRole('button', {name: '章节地图'}).click();
   await expect(page.locator('.home-map')).toContainText('修缮 3 / 4');
   await expect(page.locator('.home-map')).toContainText('蓝色饭碗');
