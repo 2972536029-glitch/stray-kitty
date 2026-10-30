@@ -95,6 +95,43 @@ function produceTray(ctx:Context,p:Materials,x:number,y:number,w:number,green=fa
   r(ctx,WOOD_SHADE,x+4,y+9,w-8,1);
 }
 
+/** A few fixed traces collect around each work area's feet, inside its 170 × 100 box. */
+function groundTraces(ctx:Context,kind:SceneVignetteKind){
+  switch(kind){
+    case 'garden-bench':
+      blocks(ctx,'#294b3c36',[[8,88,15,2],[14,90,17,2],[27,89,7,2]]);
+      blocks(ctx,'#77875b32',[[12,88,6,1],[25,91,4,1]]);
+      blocks(ctx,'#594c3b42',[[52,91,10,2],[58,93,7,1],[69,90,3,2]]);
+      blocks(ctx,'#87936538',[[112,92,3,2],[115,91,2,1],[128,88,3,1]]);
+      break;
+    case 'potting-corner':
+      blocks(ctx,'#57483742',[[100,91,14,2],[108,93,9,2],[119,92,4,1],[98,94,3,1]]);
+      blocks(ctx,'#9c876032',[[104,91,3,1],[115,94,2,1],[124,91,2,1]]);
+      blocks(ctx,'#627c4b38',[[22,92,4,2],[26,91,2,1],[34,94,3,1]]);
+      break;
+    case 'alley-supplies':
+      blocks(ctx,'#315b6530',[[26,88,15,2],[31,90,21,2],[45,89,12,1]]);
+      blocks(ctx,'#92aba326',[[34,90,9,1],[48,89,4,1]]);
+      blocks(ctx,'#95886a2b',[[75,93,4,1],[81,95,2,1],[146,89,3,2]]);
+      break;
+    case 'market-goods':
+      blocks(ctx,'#72624632',[[76,92,15,1],[82,94,6,1]]);
+      blocks(ctx,'#b29a6930',[[100,93,3,1],[106,95,2,1],[115,91,2,2]]);
+      blocks(ctx,'#6c805437',[[151,93,3,1],[154,92,2,1]]);
+      break;
+    case 'pump-station':
+      blocks(ctx,'#254c5d38',[[26,88,27,3],[35,91,40,2],[46,93,19,2]]);
+      blocks(ctx,'#83aaa42b',[[39,91,15,1],[64,92,7,1]]);
+      blocks(ctx,'#71867629',[[78,89,3,1],[84,93,2,1]]);
+      break;
+    case 'warehouse-workbench':
+      blocks(ctx,'#252f3030',[[77,90,22,1],[87,92,16,1],[130,89,18,1]]);
+      blocks(ctx,'#afa38723',[[79,91,12,1],[132,90,7,1]]);
+      blocks(ctx,'#a48b6235',[[20,95,8,1],[29,93,3,2],[37,96,5,1]]);
+      break;
+  }
+}
+
 function gardenBench(ctx:Context,scene:BattleSceneId,p:Materials,index:number){
   paintSceneProp(ctx,scene,'trellis',4,4,68,index);
   bench(ctx,p,51,52,104,33);
@@ -174,6 +211,7 @@ export function paintSceneVignette(ctx:Context,scene:BattleSceneId,kind:SceneVig
   ctx.save();ctx.translate(x,y);ctx.scale(width/170,width/170);ctx.imageSmoothingEnabled=false;
   // Reused props share the map's materials, with a quieter contrast for background scenery.
   ctx.globalAlpha*=.87;
+  groundTraces(ctx,kind);
   switch(kind){
     case 'garden-bench':gardenBench(ctx,scene,p,index);break;
     case 'potting-corner':pottingCorner(ctx,scene,p,index);break;
