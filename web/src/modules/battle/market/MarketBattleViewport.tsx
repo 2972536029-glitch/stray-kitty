@@ -316,7 +316,7 @@ export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult
   },[inspected?.id,inspected?.x,inspected?.y,overview,skillTooltipOpen]);
 
   return <section className="battle-l00 battle-market battle-immersive" data-scene="market" data-testid="market-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.market-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
-    <BattleSceneBackdrop scene="market" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS}/>
+    <BattleSceneBackdrop scene="market" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS} spawns={MAP.spawns} goal={MAP.goal}/>
     <div className="btl-head"><div><span className="btl-eyebrow">CHAPTER 02 · CAT DEFENSE</span><strong>第二章 · 午夜集市</strong></div><div className="btl-progress"><span>黑影已离场 {game.defeated+game.leaks} / {game.totalEnemies}</span><span data-testid="market-leaks" aria-label={`已漏过 ${game.leaks} 只黑影，最多 ${game.maxLeaks} 次`}>防线 {'●'.repeat(Math.max(0,game.maxLeaks-game.leaks))}{'○'.repeat(Math.min(game.maxLeaks,game.leaks))}</span></div></div>
     <div className="btl-wave-status"><strong data-testid="market-wave">第 {game.wave} / {game.totalWaves} 波 · 剩余 {remaining} 只黑影</strong><span>七处入口汇向 C1 · 首领必须击退</span></div>
     <details className="battle-hud-details"><summary>战况说明</summary>

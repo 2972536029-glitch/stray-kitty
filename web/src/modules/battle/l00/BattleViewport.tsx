@@ -11,7 +11,7 @@ import {CatHealth, CatEnergy} from '../UnitMeters';
 import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
 import {SpawnLabel} from '../SpawnLabel';
 import {GoalLabel} from '../GoalLabel';
-import {COMMANDER_POSITION, CONFIG, DIFFICULTY_CONFIG, SKILLS, isSpawnCell} from './config';
+import {COMMANDER_POSITION, CONFIG, DIFFICULTY_CONFIG, SKILLS, SPAWN_POINTS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, isSkillTargetAllowed} from './ranges';
 import {drawCat, paintBattle} from './painter';
 import {TutorialSpotlight} from './TutorialSpotlight';
@@ -320,7 +320,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const guideTarget=recommendedCell?`[data-testid="battle-cell-${cellName(recommendedCell)}"]`:undefined;
   const guideFocus=movementLesson?[guideSource,...(guideTarget?[guideTarget]:[]),'.btl-live-enemy',...(game.phase==='teach_live_move'?['.btl-unit:not(.btl-hero-unit)']:[])]:game.phase==='teach_energy'?['[data-testid="battle-cat-hero"]']:game.phase==='skill_charge'?['[data-testid="battle-energy-caster-compact"]','[data-testid="battle-energy-guard-compact"]']:['.btl-cat-menu',guideSource,...(aim?['.btl-cells']:[])];
   return <section className={`battle-l00 battle-immersive${guide?' btl-teaching':''}`} data-scene="prologue" aria-label="序章塔防战斗" data-phase={game.phase} data-inspecting={inspectedCat??undefined} data-effective-speed={effectiveSpeed} data-playback-speed={game.playbackSpeed} data-battle-time={game.time.toFixed(3)} onPointerDown={event=>{if(inspectedRef.current&&!(event.target as HTMLElement).closest('.btl-unit,.btl-cat-menu,.btl-playback'))closeInspection();}}>
-    <BattleSceneBackdrop scene="prologue" boardRef={boardRef} columns={7} rows={3}/>
+    <BattleSceneBackdrop scene="prologue" boardRef={boardRef} columns={7} rows={3} spawns={SPAWN_POINTS} goal={COMMANDER_POSITION}/>
     {startError&&<p role="alert">{startError}</p>}
     <div className="btl-head"><div><span className="btl-eyebrow">PROLOGUE · CAT DEFENSE</span><strong>{phaseNames[game.phase]}</strong></div><div className="btl-progress"><span data-testid="battle-enemy-progress" aria-label={`全程共 ${game.totalEnemies} 只黑影，已有 ${game.defeated+game.escaped} 只离场，包含开场救援`}>黑影已离场 {game.defeated+game.escaped} / {game.totalEnemies}<small>含开场救援</small></span><span aria-label={`已漏过 ${game.leaks} 只黑影，最多 ${game.maxLeaks} 次`}>防线 {'●'.repeat(Math.max(0,game.maxLeaks-game.leaks))}{'○'.repeat(Math.min(game.maxLeaks,game.leaks))}</span></div></div>
     <div className="btl-wave-status"><strong data-testid="battle-wave-progress">{game.wave>0?`第 ${game.wave} / ${game.totalWaves} 波`:`救援与教学 · 实战共 ${game.totalWaves} 波`}</strong><span data-testid="battle-wave-status">{isBattle&&game.nextWaveIn!==null?`下一波 ${Math.max(0,Math.ceil(game.nextWaveIn))} 秒后${effectiveSpeed===0?'（已暂停）':''}`:game.phase==='won'?'所有波次已完成':game.phase==='failed'?'本次守线结束':game.wave===0?'救援后进入实战引导':'黑影从 B7 进入'}</span></div>

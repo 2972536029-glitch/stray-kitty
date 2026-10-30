@@ -201,13 +201,15 @@ export function paintSceneTile(ctx:CanvasRenderingContext2D,scene:BattleSceneId,
   ctx.save();ctx.translate(x*size,y*size);ctx.scale(size/80,size/80);
   const illustrated=scene==='finale'&&hasIllustratedRoom();
   if(!illustrated)paintGround(ctx,scene,x,y,!flags.goal&&!flags.obstacle&&!flags.spawn);
-  // A fine ground-level joint marks tactical cells; the decorative floor has no grid.
+  // The usable paving is a little quieter and lighter than the service floor.
+  // Its material remains shared; broad bevels and real masonry outside mark its extent.
+  block(ctx,illustrated?'#b1b7a720':p.stone[(x+y)%4]+'22',0,0,80,80);
   if(illustrated){
-    block(ctx,'#15232e80',0,79,80,1);block(ctx,'#15232e70',79,0,1,79);
-    block(ctx,'#c2d1d052',0,0,79,1);block(ctx,'#c2d1d042',0,1,1,78);
+    block(ctx,'#15232ec0',0,78,80,2);block(ctx,'#15232ea0',78,0,2,78);
+    block(ctx,'#c2d1d08c',0,0,78,1.5);block(ctx,'#c2d1d070',0,1.5,1.5,76.5);
   }else{
-    block(ctx,p.edge+'8a',0,78.5,80,1.5);block(ctx,p.edge+'70',78.5,0,1.5,78.5);
-    block(ctx,p.rim+'b0',0,0,78.5,1.25);block(ctx,p.rim+'85',0,1.25,1.25,77.25);
+    block(ctx,p.edge+'c0',0,78,80,2);block(ctx,p.edge+'a8',78,0,2,78);
+    block(ctx,p.rim+'c0',0,0,78,1.5);block(ctx,p.rim+'98',0,1.5,1.5,76.5);
   }
   if(flags.obstacle){
     // Ambient contact stays under the prop's feet; the rest is ordinary floor.

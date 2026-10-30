@@ -6,14 +6,17 @@ import {planSceneryGroups,planSceneryAccents,type SceneryRect} from './scene-com
 import {paintNewSceneProp,planNewSceneProps,whenNewScenePropsReady} from './scene-new-props';
 import {getSceneRoomLayout} from './scene-room-layout';
 import {paintIllustratedRoom} from './illustrated-room';
+import {getScenePerimeterLayout,type ScenePerimeterSide} from './scene-perimeter-layout';
+import {paintScenePerimeter} from './scene-perimeter-art';
+import {paintPerimeterProps} from './scene-perimeter-props';
 
-interface Props {scene:BattleSceneId;boardRef:RefObject<HTMLDivElement|null>;columns:number;rows:number;cells?:readonly {x:number;y:number}[];darkened?:boolean}
+interface Props {scene:BattleSceneId;boardRef:RefObject<HTMLDivElement|null>;columns:number;rows:number;cells?:readonly {x:number;y:number}[];spawns?:readonly {x:number;y:number}[];goal?:{x:number;y:number};darkened?:boolean}
 const scrollSelector='.prologue-board-scroll,.chapter-board-scroll,.market-board-scroll,.greenhouse-board-scroll,.tunnel-board-scroll,.finale-board-scroll';
 const hudSelector='.btl-head,.btl-wave-status,.battle-hud-mechanic,.btl-playback,.btl-playback>span,.battle-hud-details,.battle-carry-panel,.battle-advisor,.battle-hud-boss,[class$="map-tools"],.btl-board-caption,.btl-retirement-note,.btl-controls';
 const rect=(ctx:CanvasRenderingContext2D,c:string,x:number,y:number,w:number,h:number)=>{ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
 
 /** Decorative scene on a separate, noninteractive canvas. The tactical canvas keeps its alpha mask. */
-export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=false}:Props){
+export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,spawns,goal,darkened=false}:Props){
   const ref=useRef<HTMLCanvasElement>(null);
   useEffect(()=>{
     const canvas=ref.current,stage=canvas?.parentElement;if(!canvas||!stage)return;
@@ -40,10 +43,7 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
       // One backing pixel per CSS pixel keeps fine material clusters sharp at normal zoom.
       const p=BACKDROP_THEMES[scene];rect(ctx,p.base,0,0,w,h);
       const groundX=board?board.left-full.left:0,groundY=board?board.top-full.top:0;
-      if(scene==='finale'&&board&&paintIllustratedRoom(ctx,w,h,{x:groundX,y:groundY,width:board.width,height:board.height})){
-        if(darkened)rect(ctx,'#06171bc4',0,0,w,h);
-        return;
-      }
+      const illustrated=scene==='finale'&&!!board&&paintIllustratedRoom(ctx,w,h,{x:groundX,y:groundY,width:board!.width,height:board!.height});
       const cellWidth=board?board.width/columns:80,cellHeight=board?board.height/rows:80;
       const room=getSceneRoomLayout(w,h,{x:groundX,y:groundY,width:board?.width??w,height:board?.height??h},
         {x:viewportLeft,y:viewportTop,width:viewportRight-viewportLeft,height:viewportBottom-viewportTop},Math.min(cellWidth,cellHeight));
@@ -51,14 +51,14 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
       room.front=Math.max(room.front,h-Math.min(52,cellHeight*.6));
       // Establish the whole room before the board: floor, then its enclosing
       // walls. Only freestanding furniture uses the tactical-cell cutout.
-      paintSceneGround(ctx,scene,groundX,groundY,cellWidth,cellHeight,w,h);
-      paintBackdropArchitecture(ctx,scene,w,h,room);
+      if(!illustrated)paintSceneGround(ctx,scene,groundX,groundY,cellWidth,cellHeight,w,h);
       const cellBounds:SceneryRect[]=[];
+      const fieldCells=cells??Array.from({length:columns*rows},(_,i)=>({x:i%columns,y:Math.floor(i/columns)}));
       // Keep all freestanding decoration outside actual deployment cells, including irregular holes.
       ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);
       if(board){
         const bx=board.left-full.left,by=board.top-full.top,cw=board.width/columns,ch=board.height/rows;
-        for(const cell of cells??Array.from({length:columns*rows},(_,i)=>({x:i%columns,y:Math.floor(i/columns)}))){
+        for(const cell of fieldCells){
           // A zoomed board extends past its scrollport. Only its visible cells
           // cut into the backdrop; hidden cells must not erase walls or decking.
           const left=Math.max(viewportLeft,bx+cell.x*cw),top=Math.max(viewportTop,by+cell.y*ch);
@@ -67,7 +67,39 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
         }
       }
       ctx.clip('evenodd');
+      // A shaded service floor surrounds the lighter, usable paving. This is
+      // deliberately a material boundary, anchored to the real irregular map.
+      rect(ctx,scene==='greenhouse'?'#182c247d':'#10242e70',0,0,w,h);
+      if(board){
+        // Wide windows reveal more room, not an equally bright expanse of floor.
+        // The light stays on the actual battlefield while distant margins recede.
+        ctx.save();ctx.translate(groundX+board.width/2,groundY+board.height/2);ctx.scale(board.width,board.height);
+        const falloff=ctx.createRadialGradient(0,0,.4,0,0,1.05);
+        falloff.addColorStop(0,'#091b2000');falloff.addColorStop(.55,'#091b2028');falloff.addColorStop(1,'#091b2099');
+        ctx.fillStyle=falloff;ctx.fillRect(-w/board.width-1,-h/board.height-1,w*2/board.width+2,h*2/board.height+2);ctx.restore();
+      }
+      ctx.restore();
+      if(!illustrated)paintBackdropArchitecture(ctx,scene,w,h,room);
+      ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);
+      for(const bounds of cellBounds)ctx.rect(bounds.x,bounds.y,bounds.width,bounds.height);
+      ctx.clip('evenodd');
       const occupied:SceneryRect[]=[...cellBounds];
+      if(board){
+        const openings=[...(spawns??[]).map(position=>({...position,kind:'spawn' as const,
+          side:(scene==='finale'?'E':position.y===0?'N':position.y===rows-1&&scene!=='alley'?'S':'E') as ScenePerimeterSide})),
+          ...(goal?[{...goal,kind:'goal' as const,side:'W' as const}]:[])];
+        const perimeter=getScenePerimeterLayout(fieldCells,openings);
+        ctx.save();ctx.translate(groundX,groundY);
+        for(const bounds of paintPerimeterProps(ctx,scene,cellWidth,cellHeight))occupied.push({...bounds,x:bounds.x+groundX,y:bounds.y+groundY});
+        // A zoomed-offscreen edge cannot reappear on top of the room's back wall.
+        ctx.save();ctx.beginPath();ctx.rect(viewportLeft-groundX-cellWidth*.2,viewportTop-groundY-cellHeight*.2,
+          viewportRight-viewportLeft+cellWidth*.4,viewportBottom-viewportTop+cellHeight*.4);ctx.clip();
+        paintScenePerimeter(ctx,scene,perimeter,cellWidth,cellHeight);
+        ctx.restore();
+        ctx.restore();
+        // Keep an apron clear beside every entrance, not just the red tile.
+        for(const edge of perimeter.edges)if(edge.opening)occupied.push({x:groundX+edge.outside.x*cellWidth,y:groundY+edge.outside.y*cellHeight,width:cellWidth,height:cellHeight});
+      }
       // Props stand on the floor; they cannot be placed into the wall band.
       if(room.back+12>0)occupied.push({x:0,y:0,width:w,height:room.back+12});
       if(room.front<h)occupied.push({x:0,y:Math.max(0,room.front),width:w,height:h-Math.max(0,room.front)});
@@ -77,8 +109,8 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
         paintSceneProp(ctx,scene,kind,x,y,size,index);occupied.push({x,y,width:size,height:size});
       };
       // The adviser's own foreground seat is scenery, never a cat slot or an attack target.
-      prop('crate',24,h-111,124);
-      if(board){
+      if(!illustrated)prop('crate',24,h-111,124);
+      if(board&&!illustrated){
         for(const element of currentHud()){
           const bounds=element.getBoundingClientRect();
           if(bounds.width&&bounds.height)occupied.push({x:bounds.left-full.left,y:bounds.top-full.top,width:bounds.width,height:bounds.height});
@@ -94,7 +126,7 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
           paintSceneVignette(ctx,scene,group.kind,group.x,group.y,group.width,group.index);occupied.push(group);
         }
       }
-      for(const accent of planSceneryAccents(scene,w,h,occupied))prop(accent.kind,accent.x,accent.y,accent.width,accent.index);
+      if(!illustrated)for(const accent of planSceneryAccents(scene,w,h,occupied))prop(accent.kind,accent.x,accent.y,accent.width,accent.index);
       ctx.restore();
       if(darkened)rect(ctx,'#06171bc4',0,0,w,h);
     };
@@ -125,6 +157,6 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
     // This frame also catches the board ref after the parent finishes mounting.
     const mounted=requestAnimationFrame(connectBoard);
     return()=>{observer?.disconnect();hudChanges.disconnect();unsubscribeArt();unsubscribeNewProps();cancelAnimationFrame(frame);cancelAnimationFrame(mounted);window.removeEventListener('resize',connectBoard);stage.removeEventListener('scroll',schedule,true);stage.removeEventListener('animationend',settleBoard);stage.removeEventListener('animationcancel',settleBoard);};
-  },[scene,boardRef,columns,rows,cells,darkened]);
+  },[scene,boardRef,columns,rows,cells,spawns,goal,darkened]);
   return <canvas ref={ref} className="battle-scene-backdrop" aria-hidden="true"/>;
 }

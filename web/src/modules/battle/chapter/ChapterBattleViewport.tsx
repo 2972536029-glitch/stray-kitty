@@ -316,7 +316,7 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
   },[inspected?.id,inspected?.x,inspected?.y,overview,skillTooltipOpen]);
 
   return <section className="battle-l00 battle-chapter battle-immersive" data-scene="alley" data-testid="chapter-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.chapter-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
-    <BattleSceneBackdrop scene="alley" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS}/>
+    <BattleSceneBackdrop scene="alley" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS} spawns={MAP.spawns} goal={MAP.goal}/>
     <div className="btl-head"><div><span className="btl-eyebrow">CHAPTER 01 · CAT DEFENSE</span><strong>第一章 · 长巷尽头的黑影</strong></div><div className="btl-progress"><span>黑影已离场 {game.defeated+game.leaks} / {game.totalEnemies}</span><span data-testid="chapter-leaks" aria-label={`已漏过 ${game.leaks} 只黑影，最多 ${game.maxLeaks} 次`}>防线 {'●'.repeat(Math.max(0,game.maxLeaks-game.leaks))}{'○'.repeat(Math.min(game.maxLeaks,game.leaks))}</span></div></div>
     <div className="btl-wave-status"><strong data-testid="chapter-wave">第 {game.wave} / {game.totalWaves} 波 · 剩余 {remaining} 只黑影</strong><span>A4、D10、E10 三处来敌 · 首领必须击退</span></div>
     <details className="battle-hud-details"><summary>战况说明</summary>
