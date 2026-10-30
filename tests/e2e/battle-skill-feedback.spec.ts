@@ -128,6 +128,28 @@ test.describe('窄屏技能反馈',()=>{
 });
 
 const coverage={chapter:['guard','diandian','tuanzi','caster'],market:['controller','bruiser','caster'],greenhouse:['momo'],tunnel:['momo','diandian'],finale:['momo','diandian','tuanzi','guard']} as const;
+
+test('finale: 首领预警出现时棋盘保持原位，预警中仍可点击技能',async({page})=>{
+  test.setTimeout(45000);await openChapter(page,'finale');
+  const board=page.locator('.finale-board');
+  const before=await board.boundingBox();expect(before).toBeTruthy();
+  const assertStable=async()=>{
+    const current=await board.boundingBox();expect(current).toBeTruthy();
+    for(const dimension of ['x','y','width','height'] as const)
+      expect(Math.abs(current![dimension]-before![dimension])).toBeLessThanOrEqual(1);
+  };
+  await page.getByTestId('finale-speed-toggle').click();
+  await page.getByTestId('finale-play-toggle').click();
+  const boss=page.locator('.finale-leader-boss');
+  await expect(boss).toHaveClass(/is-warning/,{timeout:30000});
+  await assertStable();
+  await page.getByTestId('finale-cat-guard').click();
+  const skill=page.getByTestId('finale-skill-guard');
+  await expect(skill).toHaveAttribute('aria-disabled','false');
+  await skill.click();
+  await expect(page.getByTestId('skill-release-guard')).toHaveAttribute('data-skill-variant','shield');
+});
+
 for(const chapter of chapters)test(`${chapter}: 成功技能有对应效果，取消和能量不足不产生假释放`,async({page},info)=>{
   test.setTimeout(90000);await openChapter(page,chapter);
   const battle=page.getByTestId(`${chapter}-battle`);
