@@ -29,6 +29,7 @@ export default function App() {
   const [entered, setEntered] = useState(warehouseReview), [paused, setPaused] = useState(false), [near, setNear] = useState(false);
   const [nearTarget, setNearTarget] = useState<{id: string; label: string} | null>(null);
   const [inspectHint, setInspectHint] = useState<string | null>(null);
+  const [checkingRandomZone, setCheckingRandomZone] = useState(false);
   const [inspection, setInspection] = useState<{label: string; text: string} | null>(null);
   const [overlay, setOverlay] = useState<'map' | 'parcels' | 'shop' | 'journal' | 'recharge' | 'warehouse' | 'settings' | 'auth' | 'qa' | null>(null);
   const [parcelPool, setParcelPool] = useState<string>();
@@ -100,6 +101,7 @@ export default function App() {
   const warehouseClimb = useRef<()=>void>(()=>{});
   const warehouseQAStarted = useRef(false);
   const interact = useCallback((targetId?: string) => {
+    if (checkingRandomZone) return;
     const id = targetId || nearTarget?.id;
     if (!id) return;
     if(id==='warehouse_climb'){warehouseClimb.current();return;}
@@ -114,10 +116,13 @@ export default function App() {
       return;
     }
     void send({type: 'INTERACT', interactionId: id, ...(id==='market_crow_stall'||id==='market_momo_trace'?{layer:'L0',position:rainyPosition.current}:id==='market_pigeon_perch'?{layer:'L1',position:rainyPosition.current}:{})});
-  }, [send, nearTarget, state?.mapId]);
-  const checkRandomZone = useCallback((zoneId: string, layer?:string,position?:{x:number;y:number}) => busy || pending
-    ? Promise.resolve(false)
-    : send({type: 'CHECK_RANDOM_ZONE', zoneId, ...(layer?{layer}:{}), ...(position?{position}:{})}), [busy, pending, send]);
+  }, [send, nearTarget, state?.mapId, checkingRandomZone]);
+  const checkRandomZone = useCallback(async (zoneId: string, layer?:string,position?:{x:number;y:number}) => {
+    if (busy || pending || checkingRandomZone) return false;
+    setCheckingRandomZone(true);
+    try {return await send({type: 'CHECK_RANDOM_ZONE', zoneId, ...(layer?{layer}:{}), ...(position?{position}:{})});}
+    finally {setCheckingRandomZone(false);}
+  }, [busy, pending, checkingRandomZone, send]);
   const runQACommand = useCallback(async (command: GameCommand) => {
     const success = await send(command);
     if (success) {
@@ -135,7 +140,10 @@ export default function App() {
     if(state.qaCheckpointId?.startsWith('finale.')||state.mapId==='warehouse')return;
     void runQACommand({type:'QA_CHECKPOINT',checkpointId:'finale.explore'});
   },[warehouseReview,state,catalog,busy,pending,runQACommand]);
-  const frozen = paused || busy || pending || !!overlay || !!inspection || !entered;
+  // A zone check can return no encounter: keep exploration moving without a pause flash.
+  // A real event, explicit pause, modal or failed request still uses the normal freeze.
+  const backgroundZoneCheck = checkingRandomZone && state?.phase === 'explore' && !error;
+  const frozen = paused || ((busy || pending) && !backgroundZoneCheck) || !!overlay || !!inspection || !entered;
   const randomEligible = !!state && !!catalog?.events.some(event => event.triggers.includes('random') && event.maps?.includes('alley') && (event.requiresFlags ?? []).every(flag => state.flags.includes(flag)) && (event.repeatable || !state.drawnEvents?.includes(`alley:${event.id}`)));
   return <>
     {error && overlay !== 'shop' && overlay !== 'parcels' && overlay !== 'qa' && <div className="error-banner" role="alert">{error}<button disabled={busy} onClick={() => void retry()}>重试上次操作</button>{sessionUnavailable && state && <button disabled={busy} onClick={() => void startNewJourney()}>开始新旅程（保留旧会话记录）</button>}</div>}
