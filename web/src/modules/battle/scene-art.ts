@@ -25,11 +25,12 @@ const blocks=(ctx:CanvasRenderingContext2D,color:string,shapes:readonly (readonl
 const noise=(x:number,y:number,seed:number)=>((Math.imul(x+17,73856093)^Math.imul(y+23,19349663)^Math.imul(seed,83492791))>>>0);
 const atlasPanels:Record<BattleSceneId,number>={prologue:0,alley:1,market:2,greenhouse:3,tunnel:4,finale:5};
 let floorAtlas:HTMLImageElement|undefined;
+const groundTileCache=new Map<string,HTMLCanvasElement>();
 const atlasListeners=new Set<()=>void>();
 function sceneAtlas(){
   if(!floorAtlas&&typeof Image!=='undefined'){
     floorAtlas=new Image();
-    floorAtlas.onload=()=>{for(const listener of atlasListeners)listener();atlasListeners.clear();};
+    floorAtlas.onload=()=>{groundTileCache.clear();for(const listener of atlasListeners)listener();atlasListeners.clear();};
     floorAtlas.onerror=()=>atlasListeners.clear();
     floorAtlas.src=new URL('./assets/floor-material-atlas.png',import.meta.url).href;
   }
@@ -118,38 +119,69 @@ function paintMaterialAccents(ctx:CanvasRenderingContext2D,scene:BattleSceneId,p
   }
 }
 
-export function paintSceneTile(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number,size:number,flags:SceneTileFlags={}){
+/** One continuous material surface shared by tactical cells and the environment. */
+function paintGround(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number,accents=true){
   const p=palettes[scene],n=noise(x,y,p.seed),atlas=sceneAtlas();
-  ctx.save();ctx.translate(x*size,y*size);ctx.scale(size/80,size/80);
   block(ctx,p.mortar,0,0,80,80);
-  // Staggered masonry is clipped locally so it cannot invent an extra tile.
-  if(!atlas){
-  ctx.save();ctx.beginPath();ctx.rect(2,2,76,76);ctx.clip();
-  const rowHeight=scene==='finale'?38:scene==='greenhouse'?25:scene==='tunnel'?18:18;
-  const brickWidth=scene==='finale'?76:scene==='greenhouse'?38:scene==='market'?38:27;
-  for(let row=0;row<5;row++)for(let col=-1;col<4;col++){
-    const bx=col*brickWidth+(row%2?brickWidth/2:0),by=row*rowHeight;
-    const index=noise(x*5+col,y*5+row,p.seed)%4;
-    block(ctx,p.stone[index],bx+2,by+2,brickWidth-2,rowHeight-2);
-    block(ctx,p.rim+'45',bx+3,by+2,brickWidth-4,1);
-    block(ctx,p.edge+'4d',bx+3,by+rowHeight-2,brickWidth-3,1);
-    if(index===0)block(ctx,p.rim+'2b',bx+8,by+7,5,2);
-  }
-  ctx.restore();
-  }
   if(atlas){
     const panel=atlasPanels[scene],pw=atlas.naturalWidth/3,ph=atlas.naturalHeight/2;
-    const sx=(panel%3)*pw+(x%4)*pw/4,sy=Math.floor(panel/3)*ph+(y%4)*ph/4;
+    const wrap=(value:number)=>((value%4)+4)%4;
+    const sx=(panel%3)*pw+wrap(x)*pw/4,sy=Math.floor(panel/3)*ph+wrap(y)*ph/4;
     ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(atlas,sx,sy,pw/4,ph/4,2,2,76,76);
-    // Quiet the ground under units and keep the same tactical contrast in every chapter.
-    block(ctx,p.stone[n%4]+'40',2,2,76,76);
+    ctx.drawImage(atlas,sx,sy,pw/4,ph/4,0,0,80,80);
+    block(ctx,p.stone[n%4]+'40',0,0,80,80);
+  }else{
+    ctx.save();ctx.beginPath();ctx.rect(0,0,80,80);ctx.clip();
+    const rowHeight=scene==='finale'?38:scene==='greenhouse'?25:18;
+    const brickWidth=scene==='finale'?76:scene==='greenhouse'||scene==='market'?38:27;
+    for(let row=0;row<5;row++)for(let col=-1;col<4;col++){
+      const bx=col*brickWidth+(row%2?brickWidth/2:0),by=row*rowHeight;
+      const index=noise(x*5+col,y*5+row,p.seed)%4;
+      block(ctx,p.stone[index],bx+1,by+1,brickWidth-1,rowHeight-1);
+      block(ctx,p.rim+'45',bx+2,by+1,brickWidth-3,1);
+      block(ctx,p.edge+'4d',bx+2,by+rowHeight-1,brickWidth-2,1);
+    }
+    ctx.restore();
   }
-  // Keep the image atlas quiet; material accents belong to the surrounding joints,
-  // not to the centre where cats and tactical effects need a clean silhouette.
-  if(!flags.goal&&!flags.obstacle&&!flags.spawn)paintMaterialAccents(ctx,scene,p,x,y,n);
-  block(ctx,p.edge+'b0',0,77,80,3);block(ctx,p.edge+'80',77,0,3,77);
-  block(ctx,p.rim+'80',2,2,75,1);block(ctx,p.rim+'42',2,3,1,74);
+  if(accents)paintMaterialAccents(ctx,scene,p,x,y,n);
+}
+
+/** The terrain grid follows the board origin and its actual CSS cell scale, even when scrolled. */
+export function paintSceneGround(ctx:CanvasRenderingContext2D,scene:BattleSceneId,originX:number,originY:number,cellWidth:number,cellHeight:number,width:number,height:number){
+  if(cellWidth<=0||cellHeight<=0)return;
+  const x0=Math.floor(-originX/cellWidth),x1=Math.ceil((width-originX)/cellWidth);
+  const y0=Math.floor(-originY/cellHeight),y1=Math.ceil((height-originY)/cellHeight);
+  const cacheLimit=Math.max(384,(x1-x0)*(y1-y0));
+  for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+    // Match the tactical canvas's two-stage nearest-neighbour sampling: first
+    // rasterize to its native 80/100px cell, then scale to the CSS cell bounds.
+    const key=scene+':'+x+':'+y;
+    let tile=groundTileCache.get(key);
+    if(!tile&&typeof document!=='undefined'){
+      tile=document.createElement('canvas');tile.width=tile.height=scene==='prologue'?100:80;
+      const groundCtx=tile.getContext('2d');
+      if(groundCtx){groundCtx.scale(tile.width/80,tile.height/80);paintGround(groundCtx,scene,x,y);groundTileCache.set(key,tile);}
+    }
+    if(tile){
+      // Keep this frame's working set even when small cells exceed 384 samples.
+      groundTileCache.delete(key);groundTileCache.set(key,tile);
+      ctx.imageSmoothingEnabled=false;ctx.drawImage(tile,originX+x*cellWidth,originY+y*cellHeight,cellWidth,cellHeight);
+    }
+    else {ctx.save();ctx.translate(originX+x*cellWidth,originY+y*cellHeight);ctx.scale(cellWidth/80,cellHeight/80);paintGround(ctx,scene,x,y);ctx.restore();}
+  }
+  while(groundTileCache.size>cacheLimit)groundTileCache.delete(groundTileCache.keys().next().value!);
+  // Surroundings share the same stones, with a quiet shadow that keeps the
+  // playable, finely gridded area legible without a raised board-shaped frame.
+  block(ctx,palettes[scene].mortar+'80',0,0,width,height);
+}
+
+export function paintSceneTile(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number,size:number,flags:SceneTileFlags={}){
+  const p=palettes[scene];
+  ctx.save();ctx.translate(x*size,y*size);ctx.scale(size/80,size/80);
+  paintGround(ctx,scene,x,y,!flags.goal&&!flags.obstacle&&!flags.spawn);
+  // A fine ground-level joint marks tactical cells; the decorative floor has no grid.
+  block(ctx,p.edge+'8a',0,78.5,80,1.5);block(ctx,p.edge+'70',78.5,0,1.5,78.5);
+  block(ctx,p.rim+'b0',0,0,78.5,1.25);block(ctx,p.rim+'85',0,1.25,1.25,77.25);
   if(flags.obstacle){
     block(ctx,p.edge+'80',4,5,72,70);
     blocks(ctx,'#d8ad6766',[[6,7,9,2],[6,7,2,9],[65,7,9,2],[72,7,2,9]]);
@@ -174,27 +206,15 @@ export function paintSceneTile(ctx:CanvasRenderingContext2D,scene:BattleSceneId,
   ctx.restore();
 }
 
-/** Raised perimeter sits inside existing cells; holes retain alpha=0 in the main canvas. */
+/** Worn ground-level boundary, with no metal rim or raised platform thickness. */
 export function paintSceneEdge(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number,size:number,exists:(x:number,y:number)=>boolean){
-  const p=palettes[scene],n=noise(x,y,p.seed);ctx.save();ctx.translate(x*size,y*size);ctx.scale(size/80,size/80);
-  if(!exists(x,y-1)){
-    block(ctx,p.edge,0,0,80,5);block(ctx,p.rim,2,5,76,2);
-    for(let k=0;k<4;k++){block(ctx,p.mortar,k*20+1,1,18,3);block(ctx,p.rim+'85',k*20+3,1,13,1);block(ctx,p.edge,k*20+19,1,1,4);}
-    blocks(ctx,p.edge+'8c',[[12+n%38,5,3,1],[16+n%38,6,2,1]]);
-  }
-  if(!exists(x-1,y)){
-    block(ctx,p.edge,0,0,5,80);block(ctx,p.rim+'a0',5,5,2,70);
-    for(let k=0;k<4;k++){block(ctx,p.mortar,1,k*20+3,3,16);block(ctx,p.rim+'80',1,k*20+3,1,12);}
-  }
-  if(!exists(x+1,y)){
-    block(ctx,p.edge,75,0,5,80);block(ctx,p.mortar,72,5,3,72);
-    for(let k=0;k<4;k++){block(ctx,p.rim+'66',76,k*20+4,2,12);block(ctx,p.edge+'70',72,k*20+18,4,2);}
-  }
-  if(!exists(x,y+1)){
-    block(ctx,p.mortar,0,72,80,3);block(ctx,p.edge,0,75,80,5);
-    for(let k=0;k<4;k++){block(ctx,p.rim+'80',k*20+3,76,13,1);block(ctx,p.mortar,k*20+2,77,16,2);}
-    block(ctx,p.edge+'85',18+n%30,73,5,2);
-  }
+  const p=palettes[scene],n=noise(x,y,p.seed);
+  ctx.save();ctx.translate(x*size,y*size);ctx.scale(size/80,size/80);
+  const joint=p.edge+'85',worn=p.rim+'60';
+  if(!exists(x,y-1)){block(ctx,joint,0,0,80,1);block(ctx,worn,12+n%28,1,23,1);}
+  if(!exists(x-1,y)){block(ctx,joint,0,0,1,80);block(ctx,worn,1,16+n%24,1,19);}
+  if(!exists(x+1,y)){block(ctx,joint,79,0,1,80);block(ctx,p.mortar+'50',78,28+n%17,1,15);}
+  if(!exists(x,y+1)){block(ctx,joint,0,79,80,1);block(ctx,p.mortar+'60',23+n%19,78,21,1);}
   ctx.restore();
 }
 

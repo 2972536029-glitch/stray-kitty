@@ -95,40 +95,10 @@ function vine(ctx:CanvasRenderingContext2D,x:number,y:number,height:number,seed=
   }
 }
 
-function paving(ctx:CanvasRenderingContext2D,p:BackdropTheme,w:number,h:number,scene:BattleSceneId){
-  rect(ctx,p.floor,0,0,w,h);
-  if(scene==='finale'){
-    // Broad, quiet warehouse slabs leave the tactical board as the brightest material.
-    for(let y=106;y<h;y+=82)for(let x=-62;x<w;x+=126){
-      const xx=x+(Math.floor(y/82)%2?63:0),n=grain(xx,y);
-      rect(ctx,n%2?'#46463f32':'#26333625',xx+2,y+2,123,79);
-      rect(ctx,'#192b2f33',xx,y,125,1);rect(ctx,'#192b2f26',xx,y,1,81);
-      if(n%3===0){rect(ctx,'#ada88a17',xx+20,y+17,17,1);rect(ctx,'#17292d26',xx+72,y+52,9,1);}
-      if(n%5===0){rect(ctx,'#1e2c2e30',xx+45,y+28,2,10);rect(ctx,'#1e2c2e30',xx+47,y+37,7,1);}
-    }
-    // Narrow service decking stays at the perimeter instead of striping the entire room.
-    const wood={...p,wood:'#514d41'};
-    for(const x of [25,w-65]){timber(ctx,wood,x,106,40,Math.max(0,h-178));rect(ctx,'#16272b26',x,106,40,Math.max(0,h-178));}
-    return;
-  }
-  const step=scene==='greenhouse'?28:24;
-  for(let yy=104;yy<h;yy+=step)for(let xx=-step;xx<w;xx+=step*2){
-    const x=xx+(Math.floor(yy/step)%2?step:0),n=grain(xx,yy);
-    rect(ctx,p.base+'70',x,yy,step*2-1,1);rect(ctx,p.base+'45',x,yy,1,step-1);
-    if(n%4===0)rect(ctx,p.rim+'19',x+7,yy+6,8,1);
-    if(n%7===0)rect(ctx,'#131f2a25',x+step,yy+14,7,2);
-    if((scene==='alley'||scene==='prologue'||scene==='tunnel')&&n%6===0){
-      rect(ctx,'#254e6338',x+5,yy+14,25,4);rect(ctx,'#8eafb42d',x+9,yy+15,12,1);
-    }
-    if(scene==='greenhouse'&&n%5===0){rect(ctx,'#4e674b80',x,yy,8,3);rect(ctx,'#74835950',x+4,yy+2,5,2);}
-  }
-}
-
 /** All coordinates are CSS pixels. The caller clips this entire environment to
  * the space outside actual deployment cells, including the board's holes. */
 export function paintBackdropArchitecture(ctx:CanvasRenderingContext2D,scene:BattleSceneId,w:number,h:number){
   const p=BACKDROP_THEMES[scene],wallHeight=Math.min(136,Math.max(100,h*.19));
-  paving(ctx,p,w,h,scene);
   if(scene==='prologue'||scene==='alley'){
     masonry(ctx,p,0,0,w,wallHeight,scene==='prologue'?38:46,18);
     metalBeam(ctx,p,0,wallHeight-4,w,7);

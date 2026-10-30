@@ -1,8 +1,9 @@
 import {useEffect,useRef,type RefObject} from 'react';
-import {paintSceneProp,type BattleSceneId,type ScenePropKind} from './scene-art';
+import {paintSceneGround,paintSceneProp,whenSceneArtReady,type BattleSceneId,type ScenePropKind} from './scene-art';
 import {BACKDROP_THEMES,paintBackdropArchitecture} from './battle-scene-backdrop-art';
 import {paintSceneVignette} from './scene-vignettes';
 import {planSceneryGroups,planSceneryAccents,type SceneryRect} from './scene-composition';
+import {paintNewSceneProp,planNewSceneProps,whenNewScenePropsReady} from './scene-new-props';
 
 interface Props {scene:BattleSceneId;boardRef:RefObject<HTMLDivElement|null>;columns:number;rows:number;cells?:readonly {x:number;y:number}[];darkened?:boolean}
 const scrollSelector='.prologue-board-scroll,.chapter-board-scroll,.market-board-scroll,.greenhouse-board-scroll,.tunnel-board-scroll,.finale-board-scroll';
@@ -50,6 +51,8 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
         }
       }
       ctx.clip('evenodd');
+      const groundX=board?board.left-full.left:0,groundY=board?board.top-full.top:0;
+      paintSceneGround(ctx,scene,groundX,groundY,board?board.width/columns:80,board?board.height/rows:80,w,h);
       paintBackdropArchitecture(ctx,scene,w,h);
       const occupied:SceneryRect[]=[...cellBounds];
       const prop=(kind:ScenePropKind,x:number,y:number,size:number,index=0)=>{
@@ -66,6 +69,9 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
         // mask remains a second safeguard while zooming or scrolling the map.
         const left=Math.max(viewportLeft,board.left-full.left),right=Math.min(viewportRight,board.right-full.left);
         const boardBounds={x:left,y:board.top-full.top,width:Math.max(0,right-left),height:board.height};
+        for(const prop of planNewSceneProps(scene,w,h,board.width/columns,occupied)){
+          paintNewSceneProp(ctx,prop);occupied.push(prop);
+        }
         for(const group of planSceneryGroups(scene,w,h,boardBounds,occupied)){
           paintSceneVignette(ctx,scene,group.kind,group.x,group.y,group.width,group.index);occupied.push(group);
         }
@@ -75,6 +81,8 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
       if(darkened)rect(ctx,'#06171bc4',0,0,w,h);
     };
     const schedule=()=>{if(!frame)frame=requestAnimationFrame(draw);};
+    const unsubscribeArt=whenSceneArtReady(schedule);
+    const unsubscribeNewProps=whenNewScenePropsReady(schedule);
     observer=new ResizeObserver(schedule);observer.observe(stage);
     const connectBoard=()=>{
       if(boardRef.current){
@@ -86,6 +94,10 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
       schedule();
     };
     connectBoard();window.addEventListener('resize',connectBoard);stage.addEventListener('scroll',schedule,true);
+    // A resize during the boss shake can sample a transient board translation.
+    // Re-anchor once it settles; unit/energy animations do not repaint scenery.
+    const settleBoard=(event:AnimationEvent)=>{if(event.target===boardRef.current)schedule();};
+    stage.addEventListener('animationend',settleBoard);stage.addEventListener('animationcancel',settleBoard);
     // Only HUD element insertion/removal matters here, not per-frame health,
     // timers or other text/attribute updates in the running battle.
     const hudChanges=new MutationObserver(changes=>{
@@ -94,7 +106,7 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
     hudChanges.observe(stage,{childList:true,subtree:true});
     // This frame also catches the board ref after the parent finishes mounting.
     const mounted=requestAnimationFrame(connectBoard);
-    return()=>{observer?.disconnect();hudChanges.disconnect();cancelAnimationFrame(frame);cancelAnimationFrame(mounted);window.removeEventListener('resize',connectBoard);stage.removeEventListener('scroll',schedule,true);};
+    return()=>{observer?.disconnect();hudChanges.disconnect();unsubscribeArt();unsubscribeNewProps();cancelAnimationFrame(frame);cancelAnimationFrame(mounted);window.removeEventListener('resize',connectBoard);stage.removeEventListener('scroll',schedule,true);stage.removeEventListener('animationend',settleBoard);stage.removeEventListener('animationcancel',settleBoard);};
   },[scene,boardRef,columns,rows,cells,darkened]);
   return <canvas ref={ref} className="battle-scene-backdrop" aria-hidden="true"/>;
 }
