@@ -56,24 +56,61 @@ function drawObstacle(ctx:CanvasRenderingContext2D,p:Position){
   const key=cellName(p);ctx.save();ctx.translate(p.x*CELL,p.y*CELL);
   if(key==='A3'||key==='B2'){drawPipe(ctx,true);if(key==='A3'){rect(ctx,27,17,36,6,'#807967');rect(ctx,33,12,8,11,'#b8b6a3');}}
   else if(key==='A7'||key==='D1'){
-    blocks(ctx,'#777969',[[13,42,19,18],[33,28,22,28],[53,44,13,15],[20,20,12,18]]);
-    blocks(ctx,'#bcbcac',[[15,42,15,5],[35,29,17,6],[22,20,8,5],[52,45,12,5]]);
-    blocks(ctx,'#414b3e',[[27,55,8,5],[44,51,8,7],[16,60,47,3]]);
+    // Stepped top faces and dark undersides distinguish loose pieces from the floor.
+    blocks(ctx,'#152c2d66',[[10,58,58,7],[17,65,45,3],[29,51,35,8]]);
+    blocks(ctx,'#46534d',[[15,42,19,20],[35,27,22,31],[53,43,14,18],[22,19,12,21]]);
+    blocks(ctx,'#7c8478',[[13,41,16,16],[33,27,20,25],[51,43,12,13],[20,19,10,17]]);
+    blocks(ctx,'#aeb6a5',[[15,39,12,5],[35,25,15,6],[53,41,8,5],[22,17,6,5]]);
+    blocks(ctx,'#c6ccba',[[16,39,9,2],[36,25,11,2],[23,17,4,2],[54,41,5,2]]);
+    blocks(ctx,'#5c695f',[[25,44,4,13],[48,31,5,21],[59,46,4,10],[27,23,3,13]]);
+    blocks(ctx,'#384a44',[[14,57,15,3],[34,52,19,4],[52,56,11,3],[20,36,10,3]]);
+    blocks(ctx,'#748475',[[15,46,3,5],[36,34,6,3],[43,45,3,4],[53,49,3,2]]);
+    blocks(ctx,'#a2ac98',[[11,61,6,3],[29,59,7,4],[43,62,8,3],[63,61,4,3]]);
+    blocks(ctx,'#526459',[[12,64,5,2],[31,63,5,2],[45,65,6,2]]);
+    if(key==='D1'){
+      // The collapsed wall retains mortar seams; A7 remains irregular stone.
+      blocks(ctx,'#c0ba9e',[[14,48,10,2],[34,38,14,2],[39,29,2,9],[19,41,2,7]]);
+      blocks(ctx,'#4c5147',[[41,40,2,7],[43,45,4,2],[22,51,2,5]]);
+      blocks(ctx,'#93836d',[[17,60,9,4],[36,56,7,5],[53,60,8,3]]);
+    }
   }else if(key==='A8'){
     paintSceneProp(ctx,'tunnel','barrier',0,0,CELL);
     blocks(ctx,SCENE_INK.gold,[[35,37,10,11],[38,32,5,6]]);
   }else if(key==='C8'){
-    blocks(ctx,'#73786b',[[18,23,44,34],[15,57,50,5]]);blocks(ctx,'#b4b9a8',[[21,26,38,7],[22,38,16,14]]);
-    blocks(ctx,'#303b31',[[42,38,14,3],[42,44,14,3],[42,50,14,3],[26,42,6,6]]);rect(ctx,25,44,5,2,SCENE_INK.gold);
+    blocks(ctx,'#152a2d77',[[13,59,55,7],[20,65,41,3]]);
+    blocks(ctx,'#3e514e',[[18,23,44,36],[58,24,7,35],[15,58,50,5]]);
+    blocks(ctx,'#818d80',[[18,25,40,31],[21,20,35,5]]);
+    blocks(ctx,'#b6c0ac',[[21,18,35,4],[19,25,37,2],[20,28,2,26]]);
+    blocks(ctx,'#5d6f63',[[56,22,6,33],[23,55,34,3],[17,59,46,2]]);
+    blocks(ctx,'#d3d5bc',[[23,19,25,1],[20,25,4,1],[20,56,6,1]]);
+    blocks(ctx,'#384d49',[[23,36,15,17],[41,35,14,19],[24,28,29,4]]);
+    blocks(ctx,'#9da994',[[24,37,13,2],[24,39,2,12],[43,36,10,1]]);
+    blocks(ctx,'#202f31',[[42,38,12,3],[42,44,12,3],[42,50,12,3],[27,42,6,6]]);
+    blocks(ctx,'#708274',[[43,41,10,1],[43,47,10,1],[43,53,10,1],[60,30,2,17]]);
+    blocks(ctx,'#c4c6ae',[[21,29,2,2],[54,29,2,2],[21,52,2,2],[54,52,2,2]]);
+    blocks(ctx,'#8a7359',[[31,24,6,2],[55,46,3,5],[18,52,3,4],[40,57,5,2]]);
+    blocks(ctx,'#263d3b',[[18,63,7,2],[25,64,10,2],[34,61,2,4]]);
+    rect(ctx,25,44,5,2,SCENE_INK.gold);
   }else if(key==='D2'){
-    blocks(ctx,'#8c7965',[[15,29,11,29],[54,31,11,27]]);ctx.strokeStyle='#c4a17a';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(23,42);ctx.lineTo(36,47);ctx.moveTo(45,48);ctx.lineTo(58,41);ctx.stroke();ctx.setLineDash([]);
+    blocks(ctx,'#172d2d66',[[12,57,17,6],[51,57,17,6]]);
+    blocks(ctx,'#8c7965',[[15,29,11,29],[54,31,11,27]]);
+    blocks(ctx,'#c0b499',[[15,27,9,3],[54,29,9,3],[16,31,2,22],[55,33,2,20]]);
+    blocks(ctx,'#525c50',[[23,30,3,28],[62,32,3,26],[14,55,12,3],[53,55,12,3]]);
+    blocks(ctx,'#b8baa4',[[18,35,2,2],[57,36,2,2],[18,51,2,2],[57,51,2,2]]);
+    ctx.strokeStyle='#c4a17a';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(23,42);ctx.lineTo(36,47);ctx.moveTo(45,48);ctx.lineTo(58,41);ctx.stroke();ctx.setLineDash([]);
     blocks(ctx,'#c4c4b5',[[32,26,17,13],[37,21,8,6],[38,39,5,9]]);ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(28,54);ctx.lineTo(36,60);ctx.lineTo(53,44);ctx.stroke();
   }else if(key==='E7'){
     paintSceneProp(ctx,'tunnel','valve',0,0,CELL);
   }else if(key==='E8'){
+    blocks(ctx,'#15292c88',[[8,60,65,7],[14,67,54,2],[12,21,55,39]]);
+    blocks(ctx,'#3b4e48',[[12,22,54,3],[12,25,3,33],[63,25,3,33]]);
     rescuedCat(ctx,15,25,'#be9872');rescuedCat(ctx,42,25,'#b4ada0');rescuedCat(ctx,28,49,'#c4a88b',true);rescuedCat(ctx,45,50,'#a5ada0',true);
     blocks(ctx,'#7c7869',[[9,17,62,4],[9,60,62,3],[9,17,3,46],[68,17,3,46]]);
-    for(const x of [22,38,54])rect(ctx,x,18,2,43,'#c4c6b7');
+    blocks(ctx,'#b1b7a3',[[10,15,59,2],[9,19,1,40],[10,60,58,1]]);
+    blocks(ctx,'#455b51',[[69,21,2,39],[12,62,57,2],[12,21,55,1]]);
+    for(const x of [22,38,54]){rect(ctx,x+2,21,2,40,'#344940');rect(ctx,x,18,2,43,'#c4c6b7');rect(ctx,x,24,1,24,'#e1dfc7');}
+    blocks(ctx,'#d0ccb0',[[10,18,2,2],[68,18,2,2],[10,60,2,2],[68,60,2,2]]);
+    blocks(ctx,'#978266',[[29,18,5,2],[59,61,6,2],[69,45,2,5]]);
   }
   ctx.restore();
 }
