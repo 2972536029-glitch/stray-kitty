@@ -85,13 +85,13 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:TunnelState){
   const lunge=basic?Math.sin(Math.PI*(1-Math.min(1,basic.remaining/.4)))*3:0;
   ctx.save();ctx.translate(boss.x*CELL+10-lunge,boss.y*CELL+6);ctx.scale(1.7,1.7);
   blocks(ctx,'#263b3533',[[6,77,70,6],[14,82,54,3]]);
-  blocks(ctx,'#3c5464',[[20,15,42,16],[15,30,52,36],[10,66,23,13],[49,66,23,13],[10,33,8,30],[65,33,8,30]]);
-  blocks(ctx,'#7894a0',[[19,29,8,36],[56,30,8,35],[24,17,34,5]]);
-  blocks(ctx,'#a3b4b7',[[15,9,52,7],[11,20,6,52],[67,20,6,52],[15,70,52,5]]);
-  blocks(ctx,'#e8d8a5',[[27,31,9,4],[47,31,9,4]]);
+  blocks(ctx,'#2e475b',[[20,15,42,16],[15,30,52,36],[10,66,23,13],[49,66,23,13],[10,33,8,30],[65,33,8,30]]);
+  blocks(ctx,'#739bac',[[19,29,8,36],[56,30,8,35],[24,17,34,5]]);
+  blocks(ctx,'#c5d9dc',[[15,9,52,7],[11,20,6,52],[67,20,6,52],[15,70,52,5]]);
+  blocks(ctx,'#f3d68a',[[27,31,9,4],[47,31,9,4]]);
   blocks(ctx,SCENE_INK.gold,[[27,43,29,4],[27,62,29,3]]);
-  ctx.strokeStyle='#abc4c4';ctx.lineWidth=3;ctx.beginPath();ctx.arc(42,55,12,0,Math.PI*2);ctx.moveTo(30,55);ctx.lineTo(54,55);ctx.moveTo(42,43);ctx.lineTo(42,67);ctx.stroke();
-  blocks(ctx,'#657460',[[3,32,10,10],[70,32,10,10],[0,43,7,22],[76,43,7,22]]);
+  ctx.strokeStyle='#dfbf7f';ctx.lineWidth=3;ctx.beginPath();ctx.arc(42,55,12,0,Math.PI*2);ctx.moveTo(30,55);ctx.lineTo(54,55);ctx.moveTo(42,43);ctx.lineTo(42,67);ctx.stroke();
+  blocks(ctx,'#678492',[[3,32,10,10],[70,32,10,10],[0,43,7,22],[76,43,7,22]]);
   rect(ctx,32,0,20,10,'#6f7d65');rect(ctx,35,2,14,6,windup&&Math.sin(state.elapsed*9)>0?'#dba86e':windup?'#f0d8a0':'#b5c99c');
   if(windup){
     ctx.strokeStyle='#caa56e';ctx.lineWidth=2;
@@ -163,7 +163,7 @@ export function paintTunnel(ctx:CanvasRenderingContext2D,state:TunnelState,selec
   // Cats, HP and energy are drawn last, never under the blackout or full-board pulse.
   const gx=MAP.goal.x*CELL,gy=MAP.goal.y*CELL;
   if(dark){ctx.fillStyle='#e5e8cb24';ctx.beginPath();ctx.ellipse(gx+40,gy+40,33,33,0,0,Math.PI*2);ctx.fill();}
-  drawCat(ctx,'hero',gx+9,gy+5,62);ctx.fillStyle=SCENE_INK.gold;ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText('喵喵',gx+40,gy+73);
+  drawCat(ctx,'hero',gx+9,gy+5,62);
   for(const cat of state.cats){
     if(cat.status!=='active')continue;const x=cat.x*CELL,y=cat.y*CELL;
     if(dark){ctx.fillStyle='#dfe7c926';ctx.beginPath();ctx.ellipse(x+40,y+42,33,30,0,0,Math.PI*2);ctx.fill();}

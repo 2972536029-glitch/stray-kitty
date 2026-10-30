@@ -50,19 +50,19 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:GreenhouseState){
   const lunge=basic?Math.sin(Math.PI*(1-Math.min(1,basic.remaining/.4)))*4:0;
   ctx.save();ctx.translate(boss.x*CELL+12-lunge,boss.y*CELL+10);ctx.scale(1.7,1.7);
   blocks(ctx,'#263b3533',[[8,73,64,8],[17,80,45,3]]);
-  blocks(ctx,'#586457',[[20,14,40,15],[15,29,50,39],[10,64,20,13],[49,64,20,13]]);
-  blocks(ctx,'#78856b',[[19,27,10,35],[56,30,9,33],[25,16,30,6]]);
-  blocks(ctx,'#dbcda1',[[26,31,9,4],[46,31,9,4]]);
+  blocks(ctx,'#344e43',[[20,14,40,15],[15,29,50,39],[10,64,20,13],[49,64,20,13]]);
+  blocks(ctx,'#789b78',[[19,27,10,35],[56,30,9,33],[25,16,30,6]]);
+  blocks(ctx,'#f1dc9d',[[26,31,9,4],[46,31,9,4]]);
   // Plant armour and a crown of leaves make this a different creature from prior bosses.
-  blocks(ctx,'#70865d',[[17,9,7,10],[29,3,7,15],[43,4,7,14],[57,9,7,11],[21,44,41,7],[27,55,31,6]]);
-  blocks(ctx,'#a5aa74',[[19,7,3,7],[31,1,3,10],[45,2,3,10],[59,7,3,7],[26,45,6,3],[47,56,7,3]]);
-  ctx.strokeStyle='#4b7051';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(18,30);ctx.bezierCurveTo(42,37,26,53,57,65);ctx.moveTo(62,31);ctx.bezierCurveTo(40,42,54,53,22,66);ctx.stroke();
+  blocks(ctx,'#789650',[[17,9,7,10],[29,3,7,15],[43,4,7,14],[57,9,7,11],[21,44,41,7],[27,55,31,6]]);
+  blocks(ctx,'#c3cf86',[[19,7,3,7],[31,1,3,10],[45,2,3,10],[59,7,3,7],[26,45,6,3],[47,56,7,3]]);
+  ctx.strokeStyle='#96b77a';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(18,30);ctx.bezierCurveTo(42,37,26,53,57,65);ctx.moveTo(62,31);ctx.bezierCurveTo(40,42,54,53,22,66);ctx.stroke();
   if(windup){
-    blocks(ctx,'#607558',[[3,20,13,10],[64,20,13,10],[1,10,6,13],[72,10,6,13]]);
+    blocks(ctx,'#789b6c',[[3,20,13,10],[64,20,13,10],[1,10,6,13],[72,10,6,13]]);
     for(const x of [7,73]){ctx.fillStyle='#ad956a';ctx.beginPath();ctx.ellipse(x,8,7,10,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#e0c28b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,16);ctx.stroke();}
     ctx.fillStyle='#ddd49b';for(let i=0;i<4;i++)ctx.fillRect(20+i*12,4-Math.sin(state.elapsed*5+i)*6,3,3);
   }else{
-    ctx.strokeStyle='#5a7653';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(17,42);ctx.quadraticCurveTo(-4-lunge*3,42,5-lunge*2,69);ctx.moveTo(63,42);ctx.quadraticCurveTo(83,49,71,71);ctx.stroke();
+    ctx.strokeStyle='#789b6c';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(17,42);ctx.quadraticCurveTo(-4-lunge*3,42,5-lunge*2,69);ctx.moveTo(63,42);ctx.quadraticCurveTo(83,49,71,71);ctx.stroke();
     blocks(ctx,'#b0a277',[[0,54,7,3],[8,64,7,3],[72,55,7,3]]);
   }
   ctx.restore();

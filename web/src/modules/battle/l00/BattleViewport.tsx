@@ -10,6 +10,7 @@ import {AdvisorChatMessages} from '../AdvisorChatMessages';
 import {CatHealth, CatEnergy} from '../UnitMeters';
 import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
 import {SpawnLabel} from '../SpawnLabel';
+import {GoalLabel} from '../GoalLabel';
 import {COMMANDER_POSITION, CONFIG, DIFFICULTY_CONFIG, SKILLS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, isSkillTargetAllowed} from './ranges';
 import {drawCat, paintBattle} from './painter';
@@ -357,7 +358,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
               aria-label={`地格 ${name}${aim?`${targetAllowed?'，可选技能中心':'，超出可选范围'}${effect?'，技能覆盖':''}${target?'，当前落点':''}`:goal?'，保护终点，禁止部署':spawn?'，本关出怪口，禁止部署':attack?'，普通攻击可达':''}`} aria-pressed={aim?target:undefined}
               data-testid={`battle-cell-${name}`} data-spawn={spawn} data-attack-range={attack||undefined} data-skill-range={effect||undefined} disabled={blocked||!allowed}
               onClick={event=>cellClick(x,y,event.detail!==0)} onKeyDown={event=>cellKey(event,x,y)} onFocus={()=>{if(runtime.getSnapshot()?.skillAim)previewAt({x,y});}}>
-              {spawn&&<SpawnLabel/>}{highlighted&&<span className="btl-cell-marker">推荐落点</span>}{target&&<span className="btl-aim-crosshair" aria-hidden="true">＋</span>}
+              {goal&&<GoalLabel showName={false}/>}{spawn&&<SpawnLabel/>}{highlighted&&<span className="btl-cell-marker">推荐落点</span>}{target&&<span className="btl-aim-crosshair" aria-hidden="true">＋</span>}
             </button>;
           })}</div>
           {inspected&&<button className="btl-inspect-dismiss" aria-label="关闭猫咪菜单并返回战场" data-testid="battle-dismiss-cat-menu" onClick={closeInspection}/>}
