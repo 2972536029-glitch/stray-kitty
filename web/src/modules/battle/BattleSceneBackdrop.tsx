@@ -4,6 +4,8 @@ import {BACKDROP_THEMES,paintBackdropArchitecture} from './battle-scene-backdrop
 import {paintSceneVignette} from './scene-vignettes';
 import {planSceneryGroups,planSceneryAccents,type SceneryRect} from './scene-composition';
 import {paintNewSceneProp,planNewSceneProps,whenNewScenePropsReady} from './scene-new-props';
+import {getSceneRoomLayout} from './scene-room-layout';
+import {paintIllustratedRoom} from './illustrated-room';
 
 interface Props {scene:BattleSceneId;boardRef:RefObject<HTMLDivElement|null>;columns:number;rows:number;cells?:readonly {x:number;y:number}[];darkened?:boolean}
 const scrollSelector='.prologue-board-scroll,.chapter-board-scroll,.market-board-scroll,.greenhouse-board-scroll,.tunnel-board-scroll,.finale-board-scroll';
@@ -37,6 +39,20 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
       const ctx=canvas.getContext('2d');if(!ctx)return;ctx.imageSmoothingEnabled=false;
       // One backing pixel per CSS pixel keeps fine material clusters sharp at normal zoom.
       const p=BACKDROP_THEMES[scene];rect(ctx,p.base,0,0,w,h);
+      const groundX=board?board.left-full.left:0,groundY=board?board.top-full.top:0;
+      if(scene==='finale'&&board&&paintIllustratedRoom(ctx,w,h,{x:groundX,y:groundY,width:board.width,height:board.height})){
+        if(darkened)rect(ctx,'#06171bc4',0,0,w,h);
+        return;
+      }
+      const cellWidth=board?board.width/columns:80,cellHeight=board?board.height/rows:80;
+      const room=getSceneRoomLayout(w,h,{x:groundX,y:groundY,width:board?.width??w,height:board?.height??h},
+        {x:viewportLeft,y:viewportTop,width:viewportRight-viewportLeft,height:viewportBottom-viewportTop},Math.min(cellWidth,cellHeight));
+      // HUD reservation is still open floor, not a deep raised foreground deck.
+      room.front=Math.max(room.front,h-Math.min(52,cellHeight*.6));
+      // Establish the whole room before the board: floor, then its enclosing
+      // walls. Only freestanding furniture uses the tactical-cell cutout.
+      paintSceneGround(ctx,scene,groundX,groundY,cellWidth,cellHeight,w,h);
+      paintBackdropArchitecture(ctx,scene,w,h,room);
       const cellBounds:SceneryRect[]=[];
       // Keep all freestanding decoration outside actual deployment cells, including irregular holes.
       ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);
@@ -51,10 +67,12 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,darkened=
         }
       }
       ctx.clip('evenodd');
-      const groundX=board?board.left-full.left:0,groundY=board?board.top-full.top:0;
-      paintSceneGround(ctx,scene,groundX,groundY,board?board.width/columns:80,board?board.height/rows:80,w,h);
-      paintBackdropArchitecture(ctx,scene,w,h);
       const occupied:SceneryRect[]=[...cellBounds];
+      // Props stand on the floor; they cannot be placed into the wall band.
+      if(room.back+12>0)occupied.push({x:0,y:0,width:w,height:room.back+12});
+      if(room.front<h)occupied.push({x:0,y:Math.max(0,room.front),width:w,height:h-Math.max(0,room.front)});
+      if(room.left>0)occupied.push({x:0,y:0,width:room.left,height:h});
+      if(room.right<w)occupied.push({x:Math.max(0,room.right),y:0,width:w-Math.max(0,room.right),height:h});
       const prop=(kind:ScenePropKind,x:number,y:number,size:number,index=0)=>{
         paintSceneProp(ctx,scene,kind,x,y,size,index);occupied.push({x,y,width:size,height:size});
       };

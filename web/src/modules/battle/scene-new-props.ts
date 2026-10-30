@@ -39,7 +39,7 @@ export function planNewSceneProps(scene:BattleSceneId,width:number,height:number
     let placed=false;
     for(const scale of [1,.86]){
       if(placed)break;
-      const w=Math.round(plan.width*Math.max(.72,Math.min(1.12,cellSize/100))*scale);
+      const w=Math.round(plan.width*Math.max(.3,Math.min(1.2,cellSize/100))*scale);
       const crop=crops[plan.kind],h=Math.round(w*crop[3]/crop[2]);
       for(const [dx,dy] of [[0,0],[30,-24],[-36,26],[52,38],[-55,-35]]){
         const candidate={kind:plan.kind,x:Math.round(width*plan.across-w/2+dx),y:Math.round(top+(bottom-top)*plan.depth-h/2+dy),width:w,height:h};

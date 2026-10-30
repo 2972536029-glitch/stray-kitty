@@ -1,4 +1,5 @@
 import {paintDetailedSceneProp} from './scene-props';
+import {hasIllustratedRoom,whenIllustratedRoomReady} from './illustrated-room';
 
 /** Battle-owned, deterministic pixel scenery. Geometry and simulation remain in chapter configs. */
 export type BattleSceneId = 'prologue' | 'alley' | 'market' | 'greenhouse' | 'tunnel' | 'finale';
@@ -20,6 +21,10 @@ const palettes: Record<BattleSceneId, ScenePalette> = {
   tunnel: {stone:['#506a77','#5d7480','#4b6472','#667a82'],mortar:'#293e50',edge:'#142a3b',rim:'#8da8a9',water:'#295771',moss:'#3f685d',metal:'#426576',metalLight:'#8eb3b8',timber:'#77674e',timberLight:'#b59b69',seed:83},
   finale: {stone:['#77736b','#807a6f','#6e6b63','#858074'],mortar:'#484740',edge:'#303635',rim:'#b6b09a',water:'#3e5c70',moss:'#5c7059',metal:'#626b65',metalLight:'#b1b5a3',timber:'#806448',timberLight:'#c6a26c',seed:101},
 };
+/** Art-only extents anchor the light to the map, including the floor beyond its cells. */
+const groundLightExtents:Record<BattleSceneId,readonly [number,number]>={
+  prologue:[7,3],alley:[10,5],market:[8,5],greenhouse:[9,6],tunnel:[8,5],finale:[12,7],
+};
 const block=(ctx:CanvasRenderingContext2D,color:string,x:number,y:number,w:number,h:number)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h);};
 const blocks=(ctx:CanvasRenderingContext2D,color:string,shapes:readonly (readonly number[])[])=>{for(const [x,y,w,h] of shapes)block(ctx,color,x,y,w,h);};
 const noise=(x:number,y:number,seed:number)=>((Math.imul(x+17,73856093)^Math.imul(y+23,19349663)^Math.imul(seed,83492791))>>>0);
@@ -38,8 +43,9 @@ function sceneAtlas(){
 }
 /** L00 can wait on a teaching step: repaint on asset load without advancing its simulation. */
 export function whenSceneArtReady(paint:()=>void){
-  if(sceneAtlas())return()=>{};
-  atlasListeners.add(paint);return()=>{atlasListeners.delete(paint);};
+  const stopRoom=whenIllustratedRoomReady(paint);
+  if(sceneAtlas())return stopRoom;
+  atlasListeners.add(paint);return()=>{atlasListeners.delete(paint);stopRoom();};
 }
 
 /** Pixel light pools use nested flat shapes rather than blurring the tactical board. */
@@ -119,6 +125,23 @@ function paintMaterialAccents(ctx:CanvasRenderingContext2D,scene:BattleSceneId,p
   }
 }
 
+/** Sample the same broad ellipse in world coordinates on both canvas layers.
+ * The ellipse has no knowledge of CELLS, so no lighting edge follows the map mask. */
+function paintGroundLight(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number){
+  const p=palettes[scene],[columns,rows]=groundLightExtents[scene];
+  const radiusX=columns*80*.8,radiusY=rows*80*.95,stretchY=radiusY/radiusX;
+  const centerX=(columns/2-x)*80,centerY=(rows/2-y)*80/stretchY;
+  ctx.save();ctx.scale(1,stretchY);
+  const light=ctx.createRadialGradient(centerX,centerY,0,centerX,centerY,radiusX);
+  light.addColorStop(0,p.rim+'12');
+  light.addColorStop(.3,p.rim+'09');
+  light.addColorStop(.58,p.edge+'00');
+  light.addColorStop(.82,p.edge+'25');
+  light.addColorStop(1,p.edge+'64');
+  ctx.fillStyle=light;ctx.fillRect(0,0,80,80/stretchY);
+  ctx.restore();
+}
+
 /** One continuous material surface shared by tactical cells and the environment. */
 function paintGround(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number,accents=true){
   const p=palettes[scene],n=noise(x,y,p.seed),atlas=sceneAtlas();
@@ -144,6 +167,7 @@ function paintGround(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y
     ctx.restore();
   }
   if(accents)paintMaterialAccents(ctx,scene,p,x,y,n);
+  paintGroundLight(ctx,scene,x,y);
 }
 
 /** The terrain grid follows the board origin and its actual CSS cell scale, even when scrolled. */
@@ -170,21 +194,26 @@ export function paintSceneGround(ctx:CanvasRenderingContext2D,scene:BattleSceneI
     else {ctx.save();ctx.translate(originX+x*cellWidth,originY+y*cellHeight);ctx.scale(cellWidth/80,cellHeight/80);paintGround(ctx,scene,x,y);ctx.restore();}
   }
   while(groundTileCache.size>cacheLimit)groundTileCache.delete(groundTileCache.keys().next().value!);
-  // Surroundings share the same stones, with a quiet shadow that keeps the
-  // playable, finely gridded area legible without a raised board-shaped frame.
-  block(ctx,palettes[scene].mortar+'80',0,0,width,height);
 }
 
 export function paintSceneTile(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number,size:number,flags:SceneTileFlags={}){
   const p=palettes[scene];
   ctx.save();ctx.translate(x*size,y*size);ctx.scale(size/80,size/80);
-  paintGround(ctx,scene,x,y,!flags.goal&&!flags.obstacle&&!flags.spawn);
+  const illustrated=scene==='finale'&&hasIllustratedRoom();
+  if(!illustrated)paintGround(ctx,scene,x,y,!flags.goal&&!flags.obstacle&&!flags.spawn);
   // A fine ground-level joint marks tactical cells; the decorative floor has no grid.
-  block(ctx,p.edge+'8a',0,78.5,80,1.5);block(ctx,p.edge+'70',78.5,0,1.5,78.5);
-  block(ctx,p.rim+'b0',0,0,78.5,1.25);block(ctx,p.rim+'85',0,1.25,1.25,77.25);
+  if(illustrated){
+    block(ctx,'#15232e80',0,79,80,1);block(ctx,'#15232e70',79,0,1,79);
+    block(ctx,'#c2d1d052',0,0,79,1);block(ctx,'#c2d1d042',0,1,1,78);
+  }else{
+    block(ctx,p.edge+'8a',0,78.5,80,1.5);block(ctx,p.edge+'70',78.5,0,1.5,78.5);
+    block(ctx,p.rim+'b0',0,0,78.5,1.25);block(ctx,p.rim+'85',0,1.25,1.25,77.25);
+  }
   if(flags.obstacle){
-    block(ctx,p.edge+'80',4,5,72,70);
-    blocks(ctx,'#d8ad6766',[[6,7,9,2],[6,7,2,9],[65,7,9,2],[72,7,2,9]]);
+    // Ambient contact stays under the prop's feet; the rest is ordinary floor.
+    blocks(ctx,p.edge+'0c',[[8,58,64,10],[14,68,52,5]]);
+    blocks(ctx,p.edge+'12',[[14,60,52,8],[21,68,38,3]]);
+    block(ctx,p.edge+'18',21,62,38,5);
   }
   if(flags.goal){
     lightPool(ctx,40,40,2);
@@ -208,6 +237,7 @@ export function paintSceneTile(ctx:CanvasRenderingContext2D,scene:BattleSceneId,
 
 /** Worn ground-level boundary, with no metal rim or raised platform thickness. */
 export function paintSceneEdge(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number,size:number,exists:(x:number,y:number)=>boolean){
+  if(scene==='finale'&&hasIllustratedRoom())return;
   const p=palettes[scene],n=noise(x,y,p.seed);
   ctx.save();ctx.translate(x*size,y*size);ctx.scale(size/80,size/80);
   const joint=p.edge+'85',worn=p.rim+'60';

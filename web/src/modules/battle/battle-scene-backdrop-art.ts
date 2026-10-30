@@ -1,4 +1,5 @@
 import type {BattleSceneId} from './scene-art';
+import type {SceneRoomLayout} from './scene-room-layout';
 
 interface BackdropTheme {base:string;wall:string;rim:string;floor:string;wood:string;light:string}
 export const BACKDROP_THEMES:Record<BattleSceneId,BackdropTheme>={
@@ -95,10 +96,13 @@ function vine(ctx:CanvasRenderingContext2D,x:number,y:number,height:number,seed=
   }
 }
 
-/** All coordinates are CSS pixels. The caller clips this entire environment to
- * the space outside actual deployment cells, including the board's holes. */
-export function paintBackdropArchitecture(ctx:CanvasRenderingContext2D,scene:BattleSceneId,w:number,h:number){
-  const p=BACKDROP_THEMES[scene],wallHeight=Math.min(136,Math.max(100,h*.19));
+/** Architecture surrounds one shared floor plane; it is never cut into the tactical cell mask. */
+export function paintBackdropArchitecture(ctx:CanvasRenderingContext2D,scene:BattleSceneId,w:number,h:number,room:SceneRoomLayout){
+  const p=BACKDROP_THEMES[scene],wallHeight=room.wallHeight;
+  // Crop the upper wall naturally when the camera is close. Its foot always
+  // remains behind the battlefield, including during zooming and scrolling.
+  ctx.save();ctx.beginPath();ctx.rect(0,0,w,Math.max(0,room.back+10));ctx.clip();
+  ctx.translate(0,room.back-wallHeight);
   if(scene==='prologue'||scene==='alley'){
     masonry(ctx,p,0,0,w,wallHeight,scene==='prologue'?38:46,18);
     metalBeam(ctx,p,0,wallHeight-4,w,7);
@@ -117,20 +121,14 @@ export function paintBackdropArchitecture(ctx:CanvasRenderingContext2D,scene:Bat
         if(n%4!==2){rect(ctx,'#152b34',x+5,94,46,20);for(let k=0;k<5;k++)rect(ctx,p.rim+'80',x+9+k*8,97,2,14);}
       }
     }
-    pipe(ctx,12,34,Math.max(40,h-161),true);pipe(ctx,w-25,86,Math.max(36,h-190),true);
-    if(scene==='prologue'){
-      // The rain belongs to the open alley beyond the room's windows, not a sky backdrop.
-      for(let i=0;i<Math.ceil(w*h/8500);i++){
-        const x=(i*137+27)%Math.max(1,w-2),y=112+(i*71)%Math.max(1,h-219);
-        rect(ctx,'#93bdc322',x,y,1,5+i%4);if(i%4===0)rect(ctx,'#d1d8b723',x-3,y+12,8,1);
-      }
-    }
+
+
   }else if(scene==='market'){
     masonry(ctx,p,0,0,w,wallHeight,48,20);pipe(ctx,0,16,w);
     for(let x=24,index=0;x<w;x+=156,index++){
       const n=grain(index,43),striped=n%5!==2;
       const fabric=n%3===0?'#4e7773':n%3===1?'#9c5e49':'#727657';
-      metalBeam(ctx,p,x,4,10,wallHeight+24);
+      metalBeam(ctx,p,x,4,10,wallHeight+2);
       rect(ctx,'#252c2b',x+12,36,132,44);rect(ctx,'#80644a',x+15,35,126,8);
       for(let k=0;k<9;k++){
         const cream=striped&&k%2===1,drop=23+grain(index,k)%4;
@@ -142,7 +140,7 @@ export function paintBackdropArchitecture(ctx:CanvasRenderingContext2D,scene:Bat
       // Only a few booths keep hanging supplies; clear bays break up the repeated awnings.
       if(n%4===1){rect(ctx,'#182b2c',x+15,93,125,2);for(let k=0;k<3;k++)rect(ctx,k%2?'#aaa27b':'#705e43',x+31+k*31,94,7,5+(k+index)%3*3);}
     }
-    timber(ctx,p,0,h-91,w,91);metalBeam(ctx,p,0,h-94,w,7);
+
   }else if(scene==='greenhouse'){
     masonry(ctx,p,0,wallHeight-35,w,43,32,14);
     for(let x=25,index=0;x<w-20;x+=96,index++){
@@ -179,9 +177,9 @@ export function paintBackdropArchitecture(ctx:CanvasRenderingContext2D,scene:Bat
       if(broken&&n%2===0){rect(ctx,'#a7c9bb55',x+12+n%21,wallHeight-5,5,2);rect(ctx,'#a7c9bb42',x+27+n%13,wallHeight+2,3,2);}
     }
     metalBeam(ctx,p,0,6,w,7);metalBeam(ctx,p,0,wallHeight-38,w,6);
-    for(const x of [16,w-20])metalBeam(ctx,p,x,0,9,h-66);
-    vine(ctx,19,wallHeight+22,Math.min(104,Math.max(20,h-wallHeight-108)),3);
-    masonry(ctx,p,0,h-58,w,58,34,15);metalBeam(ctx,p,0,h-62,w,7);
+
+
+
   }else if(scene==='tunnel'){
     masonry(ctx,p,0,0,w,wallHeight+8,35,16);
     for(let x=32,index=0;x<w;x+=188,index++){
@@ -197,9 +195,9 @@ export function paintBackdropArchitecture(ctx:CanvasRenderingContext2D,scene:Bat
       if(n%3===1){rect(ctx,'#183747',x+23+n%37,wallHeight-7,26+n%17,5);rect(ctx,'#7fa7ad55',x+29+n%37,wallHeight-6,15,1);}
       if(n%5===3)vine(ctx,x+(n%2?128:17),45+n%12,23+n%21,index+2);
     }
-    pipe(ctx,6,103,Math.max(40,h-180),true);pipe(ctx,w-21,78,Math.max(40,h-153),true);
-    masonry(ctx,p,0,h-56,w,56,40,17);pipe(ctx,0,h-47,w);
-    for(let x=49;x<w;x+=173){rect(ctx,'#132c39',x,h-73,51,8);rect(ctx,'#4f829056',x+7,h-72,35,1);rect(ctx,'#80acb244',x+15,h-68,21,1);}
+
+
+
   }else{
     rect(ctx,'#252f32',0,0,w,wallHeight);
     for(let x=0;x<w;x+=17){
@@ -209,13 +207,13 @@ export function paintBackdropArchitecture(ctx:CanvasRenderingContext2D,scene:Bat
     }
     for(let x=26,index=0;x<w;x+=184,index++){
       const n=grain(index,101);
-      metalBeam(ctx,p,x,0,11,wallHeight+19);windowFrame(ctx,p,x+31,26,93,45,false,n%5===1,n%23);
+      metalBeam(ctx,p,x,0,11,wallHeight+4);windowFrame(ctx,p,x+31,26,93,45,false,n%5===1,n%23);
       rect(ctx,'#273c3a',x+28,75,100,8);rect(ctx,'#929780',x+29,75,99,2);
       if(index===1||n%5===2)lamp(ctx,x+151,81+n%3*3,true);
     }
     metalBeam(ctx,p,0,13,w,10);metalBeam(ctx,p,0,wallHeight-4,w,11);
-    metalBeam(ctx,p,12,wallHeight,12,Math.max(0,h-wallHeight-63));metalBeam(ctx,p,w-24,wallHeight,12,Math.max(0,h-wallHeight-63));
-    timber(ctx,{...p,wood:'#514d41'},0,h-72,w,72);rect(ctx,'#16272b26',0,h-72,w,72);metalBeam(ctx,p,0,h-76,w,8);
+
+
   }
   // Fine contact shadow keeps the structure dimensional without dimming the tactical canvas.
   rect(ctx,'#0c1f2826',0,wallHeight+8,w,5);
@@ -231,5 +229,28 @@ export function paintBackdropArchitecture(ctx:CanvasRenderingContext2D,scene:Bat
     ctx.fillStyle=titleShade;
     for(let y=0;y<95;y+=5){ctx.globalAlpha=y<50?.78:.78*(95-y)/45;ctx.fillRect(0,y,290,5);}
     ctx.restore();
+  }
+
+  ctx.restore();
+
+  // The continuous plinth establishes a wall / floor junction independently
+  // of which cells are playable. Its shadow fades across the shared ground.
+  const baseY=room.back+7;
+  rect(ctx,p.base,0,baseY,w,3);rect(ctx,p.rim+'90',0,baseY,w,1);
+  const contact=ctx.createLinearGradient(0,baseY+3,0,baseY+23);
+  contact.addColorStop(0,'#0b182a5c');contact.addColorStop(1,'#0b182a00');
+  ctx.fillStyle=contact;ctx.fillRect(0,baseY+3,w,20);
+
+  // Structure may naturally leave the camera frame; never pull it in over
+  // the board merely to fit the screen.
+  const floorTop=room.back+10,floorBottom=room.front;
+  const left=Math.min(w,Math.max(0,room.left)),right=Math.min(w,Math.max(0,room.right));
+  if(room.left>0){rect(ctx,p.base,0,floorTop,left,Math.max(0,h-floorTop));metalBeam(ctx,p,left-9,floorTop,7,Math.max(0,floorBottom-floorTop));}
+  if(room.right<w){rect(ctx,p.base,right,floorTop,w-right,Math.max(0,h-floorTop));metalBeam(ctx,p,right+2,floorTop,7,Math.max(0,floorBottom-floorTop));}
+  if(room.front<h){
+    const front=Math.max(0,room.front);
+    if(scene==='market'){timber(ctx,p,left,front,right-left,h-front);rect(ctx,p.base+'70',left,front,right-left,h-front);}
+    else masonry(ctx,p,left,front,right-left,h-front,scene==='greenhouse'?34:42,16);
+    metalBeam(ctx,p,left,front,right-left,6);
   }
 }
