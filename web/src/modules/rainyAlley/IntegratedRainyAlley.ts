@@ -2,6 +2,7 @@ import {drawPixelCat} from '../../adapters/canvas/pixelCat';
 import {followCameraPoint} from '../../adapters/canvas/camera';
 import {rainyAlleyObjectEligible, rainyAlleyRegistration, rainyAlleySource, type RainyFixedObject} from './assets';
 import {findPath, sweepMove} from './collision';
+import {paintSqueezePassage} from './squeezePainter';
 import {
   rainyAlleyFieldClosed, rainyAlleyFieldOpen, rainyAlleyGeometryClosed, rainyAlleyGeometryOpen,
   rainyAlleySqueezeFieldClosed, rainyAlleySqueezeFieldOpen, SQUEEZE_BOUNDS, SQUEEZE_CENTER_X,
@@ -650,68 +651,9 @@ export class IntegratedRainyAlley {
     context.closePath();
   }
 
-  /** 窄缝两侧的“隐形墙”：用堆叠纸箱（左）与灌木丛（右）做出真实阻挡感。覆盖区域与碰撞多边形严格一致。 */
+  /** Use the surrounding PNG's facade textures; collision and squeeze endpoints stay authored. */
   private drawSqueezeOverlay(context: CanvasRenderingContext2D) {
-    const sideWidth = (SQUEEZE_BOUNDS.right - SQUEEZE_BOUNDS.left - SQUEEZE_OPENING_WIDTH) / 2;
-    const top = SQUEEZE_BOUNDS.top, bottom = SQUEEZE_BOUNDS.bottom;
-    this.drawCrateWall(context, SQUEEZE_BOUNDS.left, top, sideWidth, bottom - top);
-    this.drawBushWall(context, SQUEEZE_BOUNDS.right - sideWidth, top, sideWidth, bottom - top);
-  }
-
-  /** 左侧阻挡：向上堆叠的废弃纸箱，箱身有胶带与明暗面。 */
-  private drawCrateWall(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
-    context.save();
-    // 视觉比碰撞条略宽（向外扩 2px），更敦实；朝窄缝一侧严格对齐，不侵占通过间隙。
-    context.beginPath(); context.rect(x - 2, y - 1, width + 2, height + 2); context.clip();
-    const boxHeight = 17.5;
-    const count = Math.ceil(height / boxHeight);
-    for (let index = 0; index < count; index++) {
-      const boxY = y + index * boxHeight;
-      const inset = (index % 2) * 1.2; // 交错半格，像随手码起来的
-      const boxX = x - 1.5 + inset, boxW = width + 1.5 - inset * 2;
-      // 箱体三段明暗：受光面 / 主面 / 背光面
-      context.fillStyle = '#c2a179'; context.fillRect(boxX, boxY, 2.6, boxHeight - 1);
-      context.fillStyle = '#a5825a'; context.fillRect(boxX + 2.6, boxY, boxW - 5.2, boxHeight - 1);
-      context.fillStyle = '#7f694e'; context.fillRect(boxX + boxW - 2.6, boxY, 2.6, boxHeight - 1);
-      // 顶部翻盖棱线 + 中央胶带
-      context.fillStyle = '#d4b48c'; context.fillRect(boxX, boxY, boxW, 1.6);
-      context.fillStyle = '#8a6a48'; context.fillRect(boxX + boxW / 2 - 1, boxY, 2, boxHeight - 1);
-      // 箱间接缝阴影
-      if (index > 0) {context.fillStyle = 'rgba(20,16,10,.4)'; context.fillRect(boxX, boxY, boxW, 1.4);}
-    }
-    // 落地投影
-    context.fillStyle = 'rgba(10,18,20,.35)';
-    context.fillRect(x - 3, y + height - 2, width + 4, 4);
-    context.restore();
-  }
-
-  /** 右侧阻挡：一丛茂密灌木，叶片分层 + 点缀小红果。 */
-  private drawBushWall(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
-    context.save();
-    context.beginPath(); context.rect(x, y - 1, width + 2, height + 2); context.clip();
-    const centerX = x + width / 2;
-    const blobs = Math.ceil(height / 13);
-    for (let index = 0; index < blobs; index++) {
-      const blobY = y + 7 + index * 13;
-      const sway = Math.sin(index * 2.1) * 1.6;
-      const radius = 6.4 + (index % 2) * 1.3;
-      context.fillStyle = '#2f5a3c';
-      context.beginPath(); context.arc(centerX + sway, blobY + 1.4, radius, 0, Math.PI * 2); context.fill();
-      context.fillStyle = '#3f7048';
-      context.beginPath(); context.arc(centerX + sway, blobY, radius - 0.8, 0, Math.PI * 2); context.fill();
-      context.fillStyle = '#5b9a5f';
-      context.beginPath(); context.arc(centerX + sway - radius * 0.28, blobY - radius * 0.34, radius * 0.5, 0, Math.PI * 2); context.fill();
-      if (index % 3 === 1) {
-        context.fillStyle = '#d9534f';
-        context.beginPath(); context.arc(centerX + sway + radius * 0.4, blobY + 1, 1.1, 0, Math.PI * 2); context.fill();
-      }
-    }
-    // 顶部受光与底部投影
-    context.fillStyle = 'rgba(120,190,125,.5)';
-    context.fillRect(x, y - 1, width, 1.6);
-    context.fillStyle = 'rgba(10,18,20,.35)';
-    context.fillRect(x - 1, y + height - 2, width + 3, 4);
-    context.restore();
+    paintSqueezePassage(context, this.background, SQUEEZE_BOUNDS, SQUEEZE_OPENING_WIDTH);
   }
 
   /** 右上角像素风小地图：整图概览 + 交互点 + 当前取景框 + 闪烁的玩家位置。画在屏幕坐标，不随世界镜头移动。 */
