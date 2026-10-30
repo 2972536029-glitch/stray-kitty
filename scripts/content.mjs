@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const files = {chapters:'story/chapters', story:'story/nodes', maps:'maps/maps', events:'events/events', eventsBalance:'events/balance', cats:'cats/cats', stages:'battles/stages', furniture:'home/furniture', slots:'home/slots', renovations:'home/renovations', items:'items/items', pools:'lottery/pools', products:'shop/products', rechargePacks:'economy/recharge-packs', tutorials:'tutorials/steps', assets:'assets/manifest'};
+const files = {chapters:'story/chapters', story:'story/nodes', maps:'maps/maps', events:'events/events', eventsBalance:'events/balance', cats:'cats/cats', stages:'battles/stages', furniture:'home/furniture', slots:'home/slots', renovations:'home/renovations', items:'items/items', pools:'lottery/pools', parcelRewards:'lottery/rewards', products:'shop/products', rechargePacks:'economy/recharge-packs', tutorials:'tutorials/steps', assets:'assets/manifest'};
 export function readCatalog() {
   return {version:'2026.10.22.1', ...Object.fromEntries(Object.entries(files).map(([key, file]) => [key, JSON.parse(fs.readFileSync(path.join(root, 'web/content', file+'.json'), 'utf8'))]))};
 }
@@ -24,15 +24,25 @@ export function validateContent(c) {
   for(const e of c.events) if(e.category!=='story') for(const o of e.options) for(const tier of ['crit','success','partial','fail'])
     for(const f of o.outcomes?.[tier]?.flags??[]) if(mainlineFlags.includes(f)) errors.push(`mainline flag leak: ${e.id}/${o.id}/${tier} 写入 ${f}`);
   // flag DAG:requiresFlags 的门槛必须有生产者(事件 outcomes / 剧情节点 setFlags / 服务端写入名单)。
-  const serverWrittenFlags=['alley_rescued','rescue_story_done','market_unlocked','chapter_2_started','tuanzi_provided'];
+  const serverWrittenFlags=['alley_rescued','rescue_story_done','market_unlocked','chapter_2_started','tuanzi_provided','market_cleared'];
   const produced=new Set(serverWrittenFlags);
+  for(const renovation of c.renovations) produced.add(renovation.grantsFlag);
   for(const n of c.story) for(const f of n.setFlags??[]) produced.add(f);
   for(const e of c.events) for(const o of e.options) for(const tier of ['crit','success','partial','fail'])
     for(const f of o.outcomes?.[tier]?.flags??[]) produced.add(f);
   for(const e of c.events) for(const f of e.requiresFlags??[]) if(!produced.has(f)) errors.push(`chain flag without producer: ${e.id} 需要 ${f}`);
+  if(c.pools.length!==2||c.pools.filter(p=>p.currency==='stamp').length!==1||c.pools.filter(p=>p.currency==='tuna').length!==1) errors.push('pools: exactly one stamp and one tuna theme');
+  const pooled=new Set();
   for(const p of c.pools) {
+    if(!produced.has(p.requiredFlag)||!['stamp','tuna'].includes(p.currency)||p.pityEvery!==3||p.duplicateMaterial!==2||p.entries.length!==12) errors.push(`pool rules invalid: ${p.id}`);
+    for(const entry of p.entries){
+      const item=c.furniture.find(f=>f.id===entry.furnitureId);
+      if(pooled.has(entry.furnitureId)||!item||item.theme!==p.theme||item.source!==(p.currency==='stamp'?'free_pool':'paid_pool')||!has('slots',item.preferredSlot)||!Number.isSafeInteger(item.widthCm)||item.widthCm<10||item.widthCm>300) errors.push(`pool theme/source/size invalid: ${p.id}/${entry.furnitureId}`);
+      pooled.add(entry.furnitureId);
+    }
     if(!Number.isInteger(p.cost)||p.cost<1||p.entries.length===0||p.entries.some(e=>!has('furniture',e.furnitureId)||!Number.isInteger(e.weight)||e.weight<=0)) errors.push(`pool invalid: ${p.id}`);
   }
+  for(const r of c.parcelRewards) if(!['daily','milestone'].includes(r.kind)||!['home','furnished','flag'].includes(r.condition)||r.requiredFlag&&!produced.has(r.requiredFlag)||![r.stamp,r.tuna].every(n=>Number.isSafeInteger(n)&&n>=0)||r.stamp+r.tuna<1) errors.push(`parcel reward invalid: ${r.id}`);
   for(const stage of c.stages) if(![stage.lanes,stage.columns,stage.waves].every(n=>Number.isSafeInteger(n)&&n>0)||stage.chapterId!==undefined&&!has('chapters',stage.chapterId)) errors.push(`stage invalid: ${stage.id}`);
   const sold = new Set();
   for(const p of c.products) {

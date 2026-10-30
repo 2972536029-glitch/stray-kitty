@@ -56,7 +56,7 @@ function FurniturePicker({value, options, disabled, onChange}: {value: string; o
   </div>;
 }
 
-export default function HomePanel({state, catalog, disabled, onCommand, onShop, onRecharge, onWarehouse}: {state: GameState; catalog: Catalog; disabled: boolean; onCommand: (command: GameCommand) => void; onShop: () => void; onRecharge: () => void; onWarehouse: () => void}) {
+export default function HomePanel({state, catalog, disabled, onCommand, onShop, onParcels, onWarehouse}: {state: GameState; catalog: Catalog; disabled: boolean; onCommand: (command: GameCommand) => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onWarehouse: () => void}) {
   const [selected, setSelected] = useState('cardboard_nest');
   // 伸缩抽屉：先按收缩态挂载，延迟一拍再展开，让玩家看清“这里有一个可以伸缩的面板”。
   const [open, setOpen] = useState(rememberedOpen);
@@ -80,8 +80,6 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
   };
   const furniture = state.furniture.includes(selected) ? selected : state.furniture[0] ?? '';
   const name = (id: string) => catalog.furniture.find(f => f.id === id)?.name ?? id;
-  // 双货币包裹:免费邮票包裹与付费金枪鱼豪华包裹在家园并列,一键抽取并播开箱反馈。
-  const drawPools = catalog.pools.filter(p => ['rainy_box', 'starlight_greenhouse'].includes(p.id));
   // 花房四阶修缮:阶段 1 是初始漏雨状态,阶段 2/3 由 REPAIR_HOME 逐段推进,阶段 4 随终章 flag 自动点亮。
   const renovations = catalog.renovations ?? [];
   const kingdomFounded = state.flags.includes('finale_completed') || state.flags.includes('kingdom_founded');
@@ -186,13 +184,8 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     <FurniturePicker value={furniture} options={state.furniture.map(id => ({id, label: name(id)}))} disabled={disabled} onChange={setSelected}/>
     <div className="slot-list">{catalog.slots.map(slot => {const locked = lockedSlots.has(slot.id);return <button className="secondary" key={slot.id} disabled={disabled || !furniture || locked} onClick={() => onCommand({type: 'PLACE_FURNITURE', furnitureId: furniture, slotId: slot.id})}>{locked ? '🔒 ' : ''}{slot.name}<small>{locked ? '完成对应修缮后解锁' : state.placements[slot.id] ? name(state.placements[slot.id]) : '还空着，放一件家具'}</small></button>;})}</div>
     <button className="shop-home" disabled={disabled} onClick={onShop}>去猫国商店挑一件家具 ↗</button>
-    {drawPools.map(pool => {const tunaPool = (pool.currency ?? 'stamp') === 'tuna';const total = pool.entries.reduce((sum, e) => sum + e.weight, 0) || 1;const balance = tunaPool ? state.currencies.tuna ?? 0 : state.currencies.stamp ?? 0;const short = balance < pool.cost;return <div className={`pool-card ${tunaPool ? 'pool-tuna' : 'pool-stamp'}`} key={pool.id}>
-      <div className="pool-head"><b>{tunaPool ? '🥫 金枪鱼豪华包裹' : '✦ 邮票包裹'}</b><span>{pool.name}</span></div>
-      <button disabled={disabled || short} data-sound="pickup" onClick={() => {playSound('pickup');onCommand({type: 'DRAW_FURNITURE', poolId: pool.id});}} aria-label={tunaPool ? `打开星空温室包裹，消耗 ${pool.cost} 罐金枪鱼` : `打开雨夜包裹，消耗 ${pool.cost} 邮票`}>{tunaPool ? `✨ 打开星空温室包裹 · 🥫 ${pool.cost} 罐` : `打开雨夜包裹 · ✦ ${pool.cost} 邮票`}{short ? (tunaPool ? '（罐头不足）' : '（邮票不足）') : ''}</button>
-      {tunaPool && short && <button className="secondary pool-recharge" disabled={disabled} onClick={onRecharge}>🥫 罐头不足，去补给小站看看 ↗</button>}
-      <p className="muted">{pool.entries.map(e => `${name(e.furnitureId)} ${Math.round(e.weight / total * 100)}%`).join('，')}；重复家具转化为 2 份材料。</p>
-    </div>;})}
-    <p className="home-result unpack-flash" key={`${state.revision}:${state.lastResult.message}`} role="status">{state.lastResult.message}</p>
+    <button className="home-parcel-entry" onClick={onParcels} disabled={disabled}><span>✉ 猫爪邮局<small>苔叶来信 · 月海观星 / 两套独立主题家具</small></span><span aria-hidden="true">→</span></button>
+    <p className="home-result" role="status">{state.lastResult.message}</p>
     {CHATTER_CALLBACKS.some(c => state.flags.includes(c.flag)) && (
       <div className="cat-chatter-box">
         <div className="cat-chatter-head">

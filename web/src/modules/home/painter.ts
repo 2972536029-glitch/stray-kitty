@@ -51,10 +51,18 @@ export function paintHomeStructure(ctx:CanvasRenderingContext2D,state:HomeAppear
   }
   ctx.restore();
 }
-export function paintHomeObject(ctx:CanvasRenderingContext2D,object:HomeObject,art?:HomeArtwork){
+export function paintHomeObject(ctx:CanvasRenderingContext2D,object:HomeObject,art?:HomeArtwork,time=0){
   if(!art)return;ctx.save();ctx.globalAlpha=1;ctx.imageSmoothingEnabled=false;
   if(object.kind!=='decor'){ctx.fillStyle='#1b2e2538';ctx.beginPath();ctx.ellipse(object.x,object.y-3,object.width*.34,6,0,0,Math.PI*2);ctx.fill();}
-  drawHomeSprite(ctx,art,object.sprite,object.x,object.y,object.width);
+  const clock=object.furnitureId==='postmark_clock'||object.furnitureId==='lunar_clock';
+  if(clock){
+    const frame=HOME_FRAMES[object.sprite],w=object.width,h=w*frame.height/frame.width,x=object.x-w/2,y=object.y-h;
+    ctx.save();ctx.beginPath();ctx.rect(x,y,w,h*.76);ctx.clip();drawHomeSprite(ctx,art,object.sprite,object.x,object.y,w);ctx.restore();
+    ctx.save();ctx.translate(object.x,y+h*.76);ctx.rotate(Math.sin(time*.0022)*.055);ctx.translate(-object.x,-y-h*.76);ctx.beginPath();ctx.rect(x,y+h*.76,w,h*.25);ctx.clip();drawHomeSprite(ctx,art,object.sprite,object.x,object.y,w);ctx.restore();
+  }else if(object.furnitureId==='comet_mobile'){
+    const frame=HOME_FRAMES[object.sprite],top=object.y-object.width*frame.height/frame.width;
+    ctx.translate(object.x,top);ctx.rotate(Math.sin(time*.0025)*.045);ctx.translate(-object.x,-top);drawHomeSprite(ctx,art,object.sprite,object.x,object.y,object.width);
+  }else drawHomeSprite(ctx,art,object.sprite,object.x,object.y,object.width);
   ctx.restore();
 }
 export function paintHomeFurnitureFront(ctx:CanvasRenderingContext2D,object:HomeObject,art?:HomeArtwork){
@@ -64,7 +72,8 @@ export function paintHomeFurnitureFront(ctx:CanvasRenderingContext2D,object:Home
   if(object.kind==='castle'){
     ctx.rect(x,y+h*.55,w,h*.45);
     // Do not paint over the existing cat's head in the cubby opening.
-    ctx.rect(x+w*.2,y+h*.55,w*.32,h*.4);
+    if(object.sprite.startsWith('parcel.'))ctx.rect(x+w*.29,y+h*.56,w*.43,h*.33);
+    else ctx.rect(x+w*.2,y+h*.55,w*.32,h*.4);
     ctx.clip('evenodd');
   }else{ctx.rect(x,y+h*(object.kind==='hammock'?.81:.96),w,h);ctx.clip();}
   drawHomeSprite(ctx,art,object.sprite,object.x,object.y,w);ctx.restore();

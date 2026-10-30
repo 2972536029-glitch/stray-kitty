@@ -1,3 +1,4 @@
+import {PARCEL_ART, PARCEL_IDS, isParcelFurniture} from '../../modules/lottery/furnitureArt';
 import type {BattleResult, GameState, StoryNode} from '../../contracts';
 import {drawPixelCat, type CatBreed} from '../../adapters/canvas/pixelCat';
 import {DemoBattle} from './battle';
@@ -11,7 +12,7 @@ import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 import {HOME_LAYOUT_ID, HOME_SIZE, HOME_RESIDENTS, HOME_ROAM_NODES, HOME_SHELTER_NODES, homeStage} from '../../modules/home/layout';
 import {homeAppearanceKey, paintHomeStructure, paintHomeObject, paintHomeFurnitureFront, paintHomeFrontWall, paintHomeWeather, homeObjects} from '../../modules/home/painter';
-import {loadHomeArtwork, type HomeArtwork} from '../../modules/home/assets';
+import {loadHomeArtwork, HOME_FRAMES, type HomeArtwork} from '../../modules/home/assets';
 import {HomeCamera} from '../../modules/home/camera';
 import {homePosePoint} from '../../modules/home/objects';
 import {homeWalkable, homeWalkStep} from '../../modules/home/navigation';
@@ -41,6 +42,7 @@ interface HomeCatAgent {
   scripted?: {actor: HomeStoryActor; from: {x: number; y: number}};
   scriptedHeight?: number;
   slot?: string;
+  furnitureArrival?: {from:{x:number;y:number};to:{x:number;y:number};pose:string;started:number};
 }
 export class DemoScene {
   private warehousePreview: WarehouseWalkMap | null = null;
@@ -278,7 +280,9 @@ export class DemoScene {
     const drag=this.homeDrag;this.homeDrag=null;
     if(!drag||drag.id!==event.pointerId||drag.moved||this.pausedByUser||this.state?.phase!=='home')return;
     const point=this.homeScreenPoint(event),view=this.homeView();
-    this.pokeHomeCat((point.x-view.x)/view.scale,(point.y-view.y)/view.scale);
+    const x=(point.x-view.x)/view.scale,y=(point.y-view.y)/view.scale;
+    this.canvas.dataset.homeInteraction=JSON.stringify({kind:'point',x,y});
+    if(!this.pokeHomeCat(x,y))this.inviteFurnitureCat(x,y);
   };
   private homePointerCancel=()=>{this.homeDrag=null;};
   private homeWheel=(event:WheelEvent)=>{
@@ -558,12 +562,13 @@ export class DemoScene {
       this.canvas.dataset.homeBeat = this.homeBeat?.id ?? '';
       this.canvas.dataset.homeStage = String(this.homeStage());
       this.canvas.dataset.homeTime = this.homeTime.toFixed(0);
-      this.canvas.dataset.homeCats = JSON.stringify(this.homeCats.map(cat => ({breed: cat.breed, x: Math.round(cat.x), y: Math.round(cat.y), pose: cat.pose, action: cat.action, height: Math.round(cat.scriptedHeight ?? 0), bubble:cat.bubbleUntil>this.homeTime?cat.bubble:null})));
+      this.canvas.dataset.homeFurniture=JSON.stringify(homeObjects(this.state!).filter(o=>o.furnitureId).map(o=>{const frame=HOME_FRAMES[o.sprite];return{id:o.furnitureId,slot:o.slot,x:o.x,y:o.y,width:o.width,height:o.width*frame.height/frame.width};}));
+      this.canvas.dataset.homeCats = JSON.stringify(this.homeCats.map(cat => ({breed: cat.breed, x: Math.round(cat.x), y: Math.round(cat.y), pose: cat.pose, slot:cat.slot, action: cat.action, height: Math.round(cat.scriptedHeight ?? 0), bubble:cat.bubbleUntil>this.homeTime?cat.bubble:null})));
       this.canvas.dataset.homeCamera=JSON.stringify({...this.homeView(),zoom:this.homeCamera.zoom,worldWidth:HOME_SIZE.width,worldHeight:HOME_SIZE.height});
       this.canvas.dataset.homeArtwork=this.homeArtwork?'ready':this.homeAssetError?'error':'loading';
       this.canvas.dataset.homeObjects=JSON.stringify(homeObjects(state));
     } else {
-      for (const name of ['homeLayout', 'homeControl', 'homeBeat', 'homeStage', 'homeTime', 'homeCats','homeCamera','homeArtwork','homeObjects']) delete this.canvas.dataset[name];
+      for (const name of ['homeLayout', 'homeControl', 'homeBeat', 'homeStage', 'homeTime', 'homeCats','homeCamera','homeArtwork','homeObjects','homeFurniture','homeInteraction']) delete this.canvas.dataset[name];
     }
   }
   private rect(x:number,y:number,w:number,h:number,color:number,alpha=1){this.graphics.fillStyle(color,alpha);this.graphics.fillRect(Math.round(x),Math.round(y),w,h);}
@@ -687,10 +692,10 @@ export class DemoScene {
   private static readonly homeCatDefaults = Object.fromEntries(Object.entries(HOME_RESIDENTS).map(([id, p]) => [id, [p.x, p.y]]));
   // 家具专属偏好:场上摆了对应家具,这只猫就固定待在家具旁摆出专属姿态。
   private static readonly homeAffinities: readonly {breed: CatBreed; poses: Readonly<Record<string, string>>}[] = [
-    {breed: 'momo', poses: {moon_hammock: 'hammock_sleep'}},
-    {breed: 'tuanzi', poses: {snack_cushion: 'knead', blue_bowl: 'bowl_eat'}},
-    {breed: 'diandian', poses: {box_castle: 'castle_peek'}},
-    {breed: 'miaomiao', poses: {soft_blanket: 'belly', sun_lamp: 'belly'}}
+    {breed: 'momo', poses: {...Object.fromEntries(PARCEL_IDS.filter(id=>PARCEL_ART[id].cat==='momo').map(id=>[id,PARCEL_ART[id].pose])),moon_hammock: 'hammock_sleep'}},
+    {breed: 'tuanzi', poses: {...Object.fromEntries(PARCEL_IDS.filter(id=>PARCEL_ART[id].cat==='tuanzi').map(id=>[id,PARCEL_ART[id].pose])),snack_cushion: 'knead', blue_bowl: 'bowl_eat'}},
+    {breed: 'diandian', poses: {...Object.fromEntries(PARCEL_IDS.filter(id=>PARCEL_ART[id].cat==='diandian').map(id=>[id,PARCEL_ART[id].pose])),box_castle: 'castle_peek'}},
+    {breed: 'miaomiao', poses: {...Object.fromEntries(PARCEL_IDS.filter(id=>PARCEL_ART[id].cat==='miaomiao').map(id=>[id,PARCEL_ART[id].pose])),soft_blanket: 'belly', sun_lamp: 'belly'}}
   ];
   private static readonly pokeLines: Record<CatBreed, string> = {
     miaomiao: '（傲娇扭头）哼，本咪只是允许你碰一下下……就一下！',
@@ -773,7 +778,12 @@ export class DemoScene {
       if(!entry)continue;
       claimed.add(entry[1]);
       const point=homePosePoint(entry[0],entry[1]);
-      const cat=this.createHomeCat(affinity.breed,stage,affinity.poses[entry[1]],point.x,point.y);cat.slot=entry[0];this.homeCats.push(cat);
+      const cat=this.createHomeCat(affinity.breed,stage,affinity.poses[entry[1]],point.x,point.y);cat.slot=entry[0];
+      if(entry[1] in PARCEL_ART){
+        const from=previous.get(affinity.breed)??HOME_RESIDENTS[affinity.breed];
+        cat.furnitureArrival={from:{x:from.x,y:from.y},to:point,pose:cat.pose!,started:this.homeTime};cat.pose=null;cat.x=from.x;cat.y=from.y;
+      }
+      this.homeCats.push(cat);
     }
     for(const breed of state.cats as CatBreed[]){
       if(!(breed in HOME_RESIDENTS) || this.homeCats.some(cat=>cat.breed===breed))continue;
@@ -814,6 +824,13 @@ export class DemoScene {
     const seconds = deltaMs/1000;
     const objects=homeObjects(this.state);
     for(const cat of cats){
+      if(cat.furnitureArrival){
+        const arrival=cat.furnitureArrival,p=Math.min(1,(this.homeTime-arrival.started)/1100),ease=p*p*(3-2*p);
+        cat.x=arrival.from.x+(arrival.to.x-arrival.from.x)*ease;cat.y=arrival.from.y+(arrival.to.y-arrival.from.y)*ease;
+        cat.scriptedHeight=Math.sin(p*Math.PI)*22;cat.action='walk';cat.facing=arrival.to.x>=arrival.from.x?1:-1;
+        if(p>=1){cat.pose=arrival.pose;cat.furnitureArrival=undefined;cat.scriptedHeight=0;cat.action='sit';}
+        continue;
+      }
       if(cat.pose)continue;
       if(cat.action==='nose'){if(this.homeTime>=cat.noseUntil)cat.action='sit';continue;}
       if(cat.action==='walk' && cat.target){
@@ -852,7 +869,7 @@ export class DemoScene {
   }
   private drawHomeCats(stage:number){
     const objects=homeObjects(this.state!).filter(object=>!object.front);let nextObject=0;
-    const paintUntil=(y:number)=>{while(nextObject<objects.length&&objects[nextObject].y<=y)paintHomeObject(this.context,objects[nextObject++],this.homeArtwork);};
+    const paintUntil=(y:number)=>{while(nextObject<objects.length&&objects[nextObject].y<=y)paintHomeObject(this.context,objects[nextObject++],this.homeArtwork,this.homeTime);};
     const depth=(cat:HomeCatAgent)=>cat.slot?objects.find(object=>object.slot===cat.slot)?.y??cat.y:cat.y;
     for(const cat of [...this.ensureHomeCats(stage)].sort((a,b)=>depth(a)-depth(b))){
       const furniture=cat.slot?objects.find(object=>object.slot===cat.slot):undefined;
@@ -864,6 +881,7 @@ export class DemoScene {
       else if(cat.pose==='bowl_eat')this.drawBowlEat(cat, jump);
       else if(cat.pose==='castle_peek')this.drawCastlePeek(cat, jump);
       else if(cat.pose==='belly')this.drawBellyBask(cat, jump);
+      else if(cat.pose)this.drawFurniturePlay(cat,jump,stage);
       else this.drawRoamingCat(cat, stage);
       if(furniture)paintHomeFurnitureFront(this.context,furniture,this.homeArtwork);
       if(this.homeBeat?.speaker===cat.breed){
@@ -875,9 +893,28 @@ export class DemoScene {
     paintUntil(Infinity);
   }
   private catStartleOffset(cat:HomeCatAgent):number{
-    if(cat.scripted)return -(cat.scriptedHeight??0);
+    if(cat.scripted||cat.furnitureArrival)return -(cat.scriptedHeight??0);
     if(cat.startledUntil<=this.homeTime)return 0;
     return Math.sin(Math.min(1,(cat.startledUntil-this.homeTime)/650)*Math.PI)*-6;
+  }
+  private drawFurniturePlay(cat:HomeCatAgent,jump:number,stage:number){
+    const t=this.homeTime*.003+cat.seed,ctx=this.context;
+    ctx.save();
+    if(cat.pose==='sniff')ctx.translate(Math.sin(t)*3,Math.sin(t*1.8)*1.5);
+    if(cat.pose==='watch')ctx.translate(0,-2-Math.sin(t)*2);
+    this.drawRoamingCat(cat,stage);ctx.restore();
+    if(cat.pose==='bat_ball'){
+      const reach=Math.max(0,Math.sin(t*2))*9,bx=cat.x+36+Math.sin(t*2)*10,by=cat.y+jump-3;
+      this.rect(cat.x+16,cat.y-17,12+reach,4,this.colorOf(cat.breed));
+      this.rect(bx-5,by-7,10,9,0xc38d64);this.rect(bx-3,by-9,6,2,0xe9bc89);this.rect(bx-2,by-6,2,6,0xeee0b9);
+      this.rect(bx+5,by+1,11,1,0xc38d64);
+    }
+    if(cat.pose==='bat_chime'){
+      const lift=Math.max(0,Math.sin(t*2))*12;
+      this.rect(cat.x-8,cat.y-45-lift,5,17+lift,this.colorOf(cat.breed));
+      if(lift>8)this.drawPixelHeart(cat.x-12,cat.y-80,1,.65);
+    }
+    if(cat.pose==='watch'&&Math.sin(t)>.8)this.rect(cat.x-2,cat.y-69,4,4,0xe5c37a,.75);
   }
   // 自由漫步的猫:标准像素猫 + 呼吸起伏、弓背懒腰、尾巴轻摇与走路颠步。
   private drawRoamingCat(cat:HomeCatAgent, stage:number){
@@ -1012,16 +1049,35 @@ export class DemoScene {
     ctx.fillStyle='#493f31';lines.forEach((value,i)=>ctx.fillText(value,bx+10,by+21+i*18));ctx.restore();
   }
   // 点击花房里的猫:受惊小跳 + 治愈台词气泡。
-  private pokeHomeCat(x:number,y:number){
-    if(this.homeTime<this.homePokeCooldownUntil)return;
+  private pokeHomeCat(x:number,y:number):boolean{
+    // Poke throttling must not swallow a click on the next piece of furniture.
+    if(this.homeTime<this.homePokeCooldownUntil)return false;
     for(const cat of this.homeCats){
       if(Math.hypot(cat.x-x,(cat.y-26)-y)>34)continue;
       cat.startledUntil=this.homeTime+650;
+      this.canvas.dataset.homeInteraction=JSON.stringify({kind:'cat',breed:cat.breed,x,y});
       cat.bubble=DemoScene.pokeLines[cat.breed];
       cat.bubbleUntil=this.homeTime+3400;
       this.homePokeCooldownUntil=this.homeTime+280;
-      return;
+      return true;
     }
+    return false;
+  }
+  private inviteFurnitureCat(x:number,y:number){
+    if(!this.state||this.state.phase!=='home'||this.homeBeat)return;
+    const objects=homeObjects(this.state).reverse();
+    const object=objects.find(o=>{
+      if(!o.furnitureId||!isParcelFurniture(o.furnitureId))return false;
+      const frame=HOME_FRAMES[o.sprite],height=o.width*frame.height/frame.width;
+      return Math.abs(x-o.x)<o.width/2&&y>=o.y-height&&y<=o.y+8;
+    });
+    if(!object?.furnitureId||!isParcelFurniture(object.furnitureId)||!object.slot)return;
+    const meta=PARCEL_ART[object.furnitureId],cat=this.homeCats.find(c=>c.breed===meta.cat);
+    this.canvas.dataset.homeInteraction=JSON.stringify({kind:'furniture',id:object.furnitureId,breed:meta.cat,x,y});
+    if(!cat){this.onInspectHint?.('等这位伙伴加入后，就能一起来玩这件家具啦。');return;}
+    cat.furnitureArrival={from:{x:cat.x,y:cat.y},to:homePosePoint(object.slot,object.furnitureId),pose:meta.pose,started:this.homeTime};
+    cat.pose=null;cat.slot=object.slot;cat.bubble='（竖起耳朵）这就过来！';cat.bubbleUntil=this.homeTime+2300;
+    this.homePokeCooldownUntil=this.homeTime+280;
   }
   private marketCameraFrame() {return this.marketFrame??measureMarketCameraFrame(this.canvas,this.viewWidth,this.viewHeight);}
   private snapMarketCamera() {this.marketCamera.snap({x:this.x,y:this.y},this.marketCameraFrame(),1672,941);}

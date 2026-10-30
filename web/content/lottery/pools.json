@@ -1,66 +1,123 @@
 [
   {
-    "id": "rainy_box",
-    "name": "雨夜纸箱包裹",
+    "id": "moss_letters",
+    "name": "苔叶来信包裹",
+    "theme": "苔叶来信",
     "cost": 1,
+    "currency": "stamp",
     "requiredFlag": "alley_rescued",
+    "description": "把林间的温柔寄进花房。原木、苔绿与柔软编织，拼成一间手作小屋。",
+    "pityEvery": 3,
+    "duplicateMaterial": 2,
     "entries": [
       {
-        "furnitureId": "soft_blanket",
-        "weight": 60
+        "furnitureId": "moss_cottage",
+        "weight": 12
       },
       {
-        "furnitureId": "tin_lamp",
-        "weight": 40
-      }
-    ]
-  },
-  {
-    "id": "midnight_market",
-    "name": "午夜集市包裹",
-    "cost": 1,
-    "requiredFlag": "market_explored",
-    "entries": [
+        "furnitureId": "fern_lantern",
+        "weight": 10
+      },
       {
-        "furnitureId": "snack_cushion",
-        "weight": 100
-      }
-    ]
-  },
-  {
-    "id": "underground_moon",
-    "name": "地下月光包裹",
-    "cost": 1,
-    "requiredFlag": "tunnel_explored",
-    "entries": [
+        "furnitureId": "acorn_library",
+        "weight": 8
+      },
       {
-        "furnitureId": "moon_hammock",
-        "weight": 100
+        "furnitureId": "leaf_swing",
+        "weight": 10
+      },
+      {
+        "furnitureId": "clover_rug",
+        "weight": 12
+      },
+      {
+        "furnitureId": "willow_sofa",
+        "weight": 8
+      },
+      {
+        "furnitureId": "herb_desk",
+        "weight": 8
+      },
+      {
+        "furnitureId": "letter_cabinet",
+        "weight": 6
+      },
+      {
+        "furnitureId": "sprout_planter",
+        "weight": 8
+      },
+      {
+        "furnitureId": "postmark_clock",
+        "weight": 6
+      },
+      {
+        "furnitureId": "wicker_basket",
+        "weight": 6
+      },
+      {
+        "furnitureId": "seedling_stool",
+        "weight": 6
       }
     ]
   },
   {
-    "id": "starlight_greenhouse",
-    "name": "星空温室包裹",
+    "id": "moonsea_observatory",
+    "name": "月海观星包裹",
+    "theme": "月海观星",
     "cost": 60,
     "currency": "tuna",
     "requiredFlag": "alley_rescued",
+    "description": "把一小片星海搬进家。奶油白、月海蓝与黄铜星轨，白天也明亮温暖。",
+    "pityEvery": 3,
+    "duplicateMaterial": 2,
     "entries": [
       {
-        "furnitureId": "moon_hammock",
-        "weight": 30
+        "furnitureId": "luna_boat",
+        "weight": 12
       },
       {
-        "furnitureId": "sun_lamp",
-        "weight": 30
+        "furnitureId": "orrery_lamp",
+        "weight": 10
       },
       {
-        "furnitureId": "star_glass",
-        "weight": 25
+        "furnitureId": "tide_observatory",
+        "weight": 8
       },
       {
-        "furnitureId": "cloud_nest",
-        "weight": 15
+        "furnitureId": "orbit_hammock",
+        "weight": 10
+      },
+      {
+        "furnitureId": "starmap_carpet",
+        "weight": 12
+      },
+      {
+        "furnitureId": "crescent_sofa",
+        "weight": 8
+      },
+      {
+        "furnitureId": "astral_desk",
+        "weight": 8
+      },
+      {
+        "furnitureId": "pearl_cabinet",
+        "weight": 6
+      },
+      {
+        "furnitureId": "nebula_planter",
+        "weight": 8
+      },
+      {
+        "furnitureId": "lunar_clock",
+        "weight": 6
+      },
+      {
+        "furnitureId": "comet_mobile",
+        "weight": 6
+      },
+      {
+        "furnitureId": "star_stool",
+        "weight": 6
       }
     ]
   }

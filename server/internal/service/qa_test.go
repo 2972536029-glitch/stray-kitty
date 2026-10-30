@@ -114,7 +114,7 @@ func TestQARestoreSurvivesRestartAndReplaysWithoutOverwritingOriginal(t *testing
 		t.Fatal("retry changed the checkpoint or attempt")
 	}
 	execute(t, g, token, domain.Command{Type: "QA_CHECKPOINT", CheckpointID: "greenhouse.home_3"})
-	execute(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: "rainy_box"})
+	execute(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: "moss_letters"})
 	store, err := repository.Open(path)
 	if err != nil {
 		t.Fatal(err)

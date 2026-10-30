@@ -209,7 +209,7 @@ func TestOptimisticConcurrency(t *testing.T) {
 func TestFailedCommandRollsBack(t *testing.T) {
 	g, token, _ := setup(t)
 	s, _ := g.State(token)
-	_, err := g.Execute(token, "invalid-command", domain.CommandRequest{ExpectedRevision: &s.Revision, Command: domain.Command{Type: "DRAW_FURNITURE", PoolID: "rainy_box"}})
+	_, err := g.Execute(token, "invalid-command", domain.CommandRequest{ExpectedRevision: &s.Revision, Command: domain.Command{Type: "DRAW_FURNITURE", PoolID: "moss_letters"}})
 	if err == nil {
 		t.Fatal("phase bypass accepted")
 	}

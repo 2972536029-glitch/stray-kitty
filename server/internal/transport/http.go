@@ -314,6 +314,7 @@ func validateCommand(body []byte, kind string) error {
 		"EXIT_MARKET":         {"layer", "position"},
 		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
 		"DRAW_FURNITURE":      {"poolId"},
+		"CLAIM_PARCEL_REWARD": {"rewardId"},
 		"CHECK_RANDOM_ZONE":   {"zoneId", "layer", "position"},
 		"BUY_FURNITURE":       {"productId"},
 		"REPAIR_HOME":         {},
@@ -335,6 +336,7 @@ func validateCommand(body []byte, kind string) error {
 		"EXIT_MARKET":         {"layer", "position"},
 		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
 		"DRAW_FURNITURE":      {"poolId"},
+		"CLAIM_PARCEL_REWARD": {"rewardId"},
 		"BUY_FURNITURE":       {"productId"},
 		"REPAIR_HOME":         {},
 	}

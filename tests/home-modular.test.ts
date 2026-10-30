@@ -6,6 +6,20 @@ import {HOME_SIZE, HOME_SLOTS, HOME_ROAM_NODES, HOME_SHELTER_NODES} from '../web
 import {HOME_FRAMES, HOME_SPRITES, HOME_ATLASES, HOME_STAGE_SPRITES} from '../web/src/modules/home/assets';
 import {homeObjects, homePosePoint} from '../web/src/modules/home/objects';
 import {homeWalkable, homeWalkStep} from '../web/src/modules/home/navigation';
+import {PARCEL_ART} from '../web/src/modules/lottery/furnitureArt';
+
+test('both twelve-piece collections pair real art, placeable slots and the matching original cat interaction',()=>{
+  const catalog=JSON.parse(fs.readFileSync('web/content/catalog.json','utf8'));
+  assert.equal(catalog.pools.length,2);
+  for(const pool of catalog.pools){
+    assert.equal(pool.entries.length,12);
+    for(const entry of pool.entries){
+      const item=catalog.furniture.find((f:{id:string})=>f.id===entry.furnitureId),meta=PARCEL_ART[entry.furnitureId as keyof typeof PARCEL_ART];
+      assert.equal(meta.widthCm,item.widthCm);assert.equal(meta.cat,item.interactionCat);assert.equal(meta.pose,item.interaction);assert.equal(meta.slot,item.preferredSlot);
+      assert.ok(meta.slot in HOME_SLOTS);assert.ok(fs.existsSync(`web/public/assets/home/parcels/${item.id}.png`));assert.notEqual(item.source,'story');
+    }
+  }
+});
 
 test('the full home fits phones and desktops; zoom, pan and hit projection stay inside the building',()=>{
   for(const [width,height] of [[800,480],[222,480],[800,250]]){

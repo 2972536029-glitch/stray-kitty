@@ -1,5 +1,7 @@
 import atlas from './atlas.json';
 import stageAtlas from './stage-atlas.json';
+import parcelAtlas from '../lottery/atlas.json';
+import {PARCEL_IDS} from '../lottery/furnitureArt';
 
 export const HOME_ART_ID = 'arched-greenhouse-staged-v2';
 const legacySprites = ['window.broken','window.patched','window.restored','window.festive','roof.broken','roof.patched','roof.restored','roof.festive','nest','blanket','bowls','chest','tower','planter','workbench','hammock','lantern','string','cushion','floor'] as const;
@@ -10,12 +12,13 @@ export const HOME_STAGE_SPRITES = {
   celebration:['s4.banquet','s4.flags','s4.entryleft','s4.entryright','s4.rug','s4.gifts','s4.flowers','s4.pennant','s4.redcushion','s4.sunlamp','s4.starlamp','s4.wreath'],
   botany:['botany.dryvine','botany.ivy','botany.flowering','botany.hanging','botany.tropical','botany.geranium','botany.spill','botany.herbtub']
 } as const;
-export const HOME_SPRITES=[...legacySprites,...HOME_STAGE_SPRITES.shelter,...HOME_STAGE_SPRITES.improvised,...HOME_STAGE_SPRITES.timber,...HOME_STAGE_SPRITES.celebration,...HOME_STAGE_SPRITES.botany] as const;
+const parcelSprites=PARCEL_IDS.map(id=>`parcel.${id}` as const);
+export const HOME_SPRITES=[...legacySprites,...HOME_STAGE_SPRITES.shelter,...HOME_STAGE_SPRITES.improvised,...HOME_STAGE_SPRITES.timber,...HOME_STAGE_SPRITES.celebration,...HOME_STAGE_SPRITES.botany,...parcelSprites] as const;
 export type HomeSprite = typeof HOME_SPRITES[number];
-export const HOME_ATLASES={atlas:'/assets/home/components.png',shelter:'/assets/home/furniture-shelter-v2.png',improvised:'/assets/home/furniture-improvised-v2.png',timber:'/assets/home/furniture-timber-v2.png',celebration:'/assets/home/furniture-celebration-v2.png',botany:'/assets/home/furniture-botany-v2.png'} as const;
+export const HOME_ATLASES={atlas:'/assets/home/components.png',shelter:'/assets/home/furniture-shelter-v2.png',improvised:'/assets/home/furniture-improvised-v2.png',timber:'/assets/home/furniture-timber-v2.png',celebration:'/assets/home/furniture-celebration-v2.png',botany:'/assets/home/furniture-botany-v2.png',parcelMoss:'/assets/home/furniture-parcels-moss-v2.png',parcelMoon:'/assets/home/furniture-parcels-moon-v2.png'} as const;
 export type HomeSheet=keyof typeof HOME_ATLASES;
 export interface HomeFrame {x:number;y:number;width:number;height:number;sheet:HomeSheet}
-const staged=stageAtlas as unknown as Record<Exclude<HomeSheet,'atlas'>,{width:number;height:number;frames:Record<string,Omit<HomeFrame,'sheet'>>}>;
+const staged={...stageAtlas,parcelMoss:parcelAtlas.moss,parcelMoon:parcelAtlas.moon} as unknown as Record<Exclude<HomeSheet,'atlas'>,{width:number;height:number;frames:Record<string,Omit<HomeFrame,'sheet'>>}>;
 export const HOME_FRAMES=Object.fromEntries([
   ...legacySprites.map((id,i)=>[id,{...atlas.frames[i],sheet:'atlas'}]),
   ...Object.entries(staged).flatMap(([sheet,data])=>Object.entries(data.frames).map(([id,frame])=>[id,{...frame,sheet}]))

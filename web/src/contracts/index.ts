@@ -1,3 +1,4 @@
+import type {LotteryState, ParcelDraw, ParcelPool, ParcelReward} from '../modules/lottery/types';
 export type GamePhase = 'dialogue' | 'explore' | 'event' | 'preparation' | 'battle' | 'settlement' | 'home';
 export type BattleCarryId = 'lantern' | 'mirror' | 'bell' | 'box' | 'dog' | 'dove' | 'rats' | 'kitten';
 export interface BattleModifiers {shadowPressure: -1 | 0 | 1; situation?: 'detour' | 'forced_chase'; carry?: BattleCarryId}
@@ -20,8 +21,9 @@ export interface GameState {
   pendingEventSource?: 'node' | 'random'; drawnEvents?: string[]; exploreDistance?: number; pushTokens?: number;
   eventState?: EventState;
   txns?: PaymentTxn[];
+  lottery?: LotteryState;
   alleyBattleReturn?: {x: number; y: number};
-  lastResult: {message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string};
+  lastResult: {draw?: ParcelDraw; message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string};
   qaCheckpointId?: string;
 }
 export interface QACheckpoint {id: string; chapterId: string; title: string; phase: GamePhase; mapId: string; kind: 'story' | 'explore' | 'battle' | 'home' | 'event'; detail: string}
@@ -43,6 +45,7 @@ export type GameCommand =
   | {type: 'EXIT_MARKET'; layer: string; position: {x:number;y:number}}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
   | {type: 'DRAW_FURNITURE'; poolId: string}
+  | {type: 'CLAIM_PARCEL_REWARD'; rewardId: string}
   | {type: 'BUY_FURNITURE'; productId: string}
   | {type: 'REPAIR_HOME'};
 export interface CommandRequest {expectedRevision: number; command: GameCommand}
@@ -56,7 +59,7 @@ export type CurrencyId = 'stamp' | 'tuna';
 // 一档金枪鱼充值礼包(模拟支付网关商品,priceCents 为人民币分)。
 export interface RechargePack {id: string; name: string; desc: string; priceCents: number; tunaGranted: number; icon: string}
 // 一笔充值或消费流水:充值带 amount(分)与卡尾号;抽卡消费 amount=0、去向写在 reason。
-export interface PaymentTxn {id: string; playerId: string; packId: string; amount: number; status: 'confirmed' | 'declined'; reason?: string; cardSuffix?: string; createdAt: string}
+export interface PaymentTxn {currency?: string; spent?: number; id: string; playerId: string; packId: string; amount: number; status: 'confirmed' | 'declined'; reason?: string; cardSuffix?: string; createdAt: string}
 // POST /api/payment/charge 的响应:declined 时附 reason 与治愈文案 healingMsg。
 export interface ChargeResponse {txnId: string; pack: RechargePack; status: 'confirmed' | 'declined'; reason?: string; healingMsg?: string; tunaGranted: number; tunaBalance: number}
 export interface PaymentHistoryResponse {playerId: string; txns: PaymentTxn[]}
@@ -83,11 +86,12 @@ export interface Catalog {
   chapters: {id: string; title: string; summary: string; status: string}[];
   story: StoryNode[]; maps: MapDefinition[]; events: EventDefinition[]; stages: StageDefinition[];
   cats: {id: string; name: string; color: string; description: string; skill: string}[];
-  furniture: {id: string; name: string; theme: string}[];
+  furniture: {id: string; name: string; theme: string; source?: 'story' | 'free_pool' | 'paid_pool'; description?: string; widthCm?: number; preferredSlot?: string; interactionCat?: string; interaction?: string}[];
   slots: {id: string; name: string}[];
   renovations?: RenovationDefinition[];
   items: {id: string; name: string; description: string}[];
-  pools: {id: string; name: string; cost: number; currency?: CurrencyId; requiredFlag: string; entries: {furnitureId: string; weight: number}[]}[];
+  pools: ParcelPool[];
+  parcelRewards?: ParcelReward[];
   rechargePacks?: RechargePack[];
   tutorials: {phase: GamePhase; text: string}[];
   assets: {id: string; kind: string; path: string}[];

@@ -23,7 +23,7 @@ export default function HomeMap({state, catalog}: {state: GameState; catalog: Ca
   return <figure className="home-map" data-layout={HOME_LAYOUT_ID}>
     <figcaption><div><span className="eyebrow">OUR LITTLE HOMESTEAD</span><h3>拱顶花房</h3></div><span>修缮 {homeStage(state)} / 4</span></figcaption>
     {loadError && <p role="alert">花房素材加载失败，请刷新重试。</p>}
-    <canvas ref={canvas} width={HOME_SIZE.width} height={HOME_SIZE.height} data-artwork={art?'ready':'loading'} role="img" aria-label="单层拱顶花房地图，显示南侧入口、室内花圃、活动区和五处家具位置"/>
+    <canvas ref={canvas} width={HOME_SIZE.width} height={HOME_SIZE.height} data-artwork={art?'ready':'loading'} role="img" aria-label="单层拱顶花房地图，显示南侧入口、室内花圃、活动区和十二处家具位置"/>
     <ul>{slots.map((slot, index) => <li key={slot.id}><b>{String.fromCharCode(65 + index)}</b><span>{slot.name}<small>{catalog.furniture.find(f => f.id === state.placements[slot.id])?.name ?? '还没有摆放家具'}</small></span></li>)}</ul>
   </figure>;
 }

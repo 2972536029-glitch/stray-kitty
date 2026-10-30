@@ -1,0 +1,60 @@
+[
+  {
+    "id": "daily_letter",
+    "name": "今日来信",
+    "description": "回花房签收一封来信，每日可领 1 张邮票。",
+    "kind": "daily",
+    "condition": "home",
+    "stamp": 1,
+    "tuna": 0
+  },
+  {
+    "id": "daily_wish",
+    "name": "猫咪的小心愿",
+    "description": "在花房摆上一件喜欢的家具，让猫咪有个舒适的小角落。",
+    "kind": "daily",
+    "condition": "furnished",
+    "stamp": 1,
+    "tuna": 0
+  },
+  {
+    "id": "rescue_letter",
+    "name": "点点的感谢信",
+    "description": "第一次把点点接回家，附赠 3 张猫爪邮票。",
+    "kind": "milestone",
+    "condition": "flag",
+    "requiredFlag": "alley_rescued",
+    "stamp": 3,
+    "tuna": 0
+  },
+  {
+    "id": "market_letter",
+    "name": "集市的回信",
+    "description": "守住集市后，街坊们寄来 2 张邮票和 30 罐金枪鱼。",
+    "kind": "milestone",
+    "condition": "flag",
+    "requiredFlag": "market_cleared",
+    "stamp": 2,
+    "tuna": 30
+  },
+  {
+    "id": "greenhouse_letter",
+    "name": "花房的第一束光",
+    "description": "完成原木温室修缮，附赠 2 张邮票和 30 罐金枪鱼。",
+    "kind": "milestone",
+    "condition": "flag",
+    "requiredFlag": "greenhouse_fortified_full",
+    "stamp": 2,
+    "tuna": 30
+  },
+  {
+    "id": "finale_letter",
+    "name": "王国庆典邀请函",
+    "description": "故事落幕也是生活的开始：3 张邮票与 60 罐金枪鱼。",
+    "kind": "milestone",
+    "condition": "flag",
+    "requiredFlag": "finale_completed",
+    "stamp": 3,
+    "tuna": 60
+  }
+]
