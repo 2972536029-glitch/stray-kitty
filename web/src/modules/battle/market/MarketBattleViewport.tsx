@@ -5,6 +5,7 @@ import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES, ROUTE
 import {advanceMarket, createMarketBattle, dispatchMarket, getAttackCells, getBossCells, getMarketAdvice, getMarketSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintMarket} from './painter';
 import {drawCat} from '../l00/painter';
+import {triggerBossSkillShake} from '../battleFx';
 import {getMarketAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
@@ -157,7 +158,9 @@ export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult
       const frozen=hostPauseRef.current||document.hidden;
       if(current.externallyPaused!==frozen)current=dispatchMarket(current,{type:'SET_EXTERNAL_PAUSE',paused:frozen});
       if(current.uiPaused!==uiPauseRef.current)current=dispatchMarket(current,{type:'SET_UI_PAUSE',paused:uiPauseRef.current});
+      const previousBossSkills=current.boss.slams;
       current=advanceMarket(current,dt);gameRef.current=current;
+      triggerBossSkillShake(boardRef.current,previousBossSkills,current.boss.slams);
       const context=canvasRef.current?.getContext('2d');if(context)paintMarket(context,current,selectedRef.current,hoverRef.current);
       if(time-lastRender>=50){setGame(current);lastRender=time;}
       handle=requestAnimationFrame(frame);

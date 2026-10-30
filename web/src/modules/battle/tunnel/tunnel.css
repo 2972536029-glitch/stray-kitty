@@ -30,7 +30,7 @@
 @media(max-width:850px){.battle-tunnel .tunnel-unit-state .btl-unit-name{font-size:7px;gap:1px;padding:1px 2px}.battle-tunnel .tunnel-unit-state .btl-unit-name .tunnel-role-badge{font-size:7px;padding:0 1px}.battle-tunnel .tunnel-unit-state .btl-unit-name .tunnel-unit-energy{font-size:6px}.battle-tunnel .is-overview .tunnel-unit-state .tunnel-role-badge{display:none}.battle-tunnel .is-overview .tunnel-unit-state .btl-unit-name{max-width:calc(100% - 2px);padding:0 1px}.battle-tunnel .is-overview .tunnel-unit-state .btl-unit-name .tunnel-role-badge{font-size:7px;padding:0 1px}}
 
 .battle-tunnel .tunnel-vision-status{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin:7px 0;padding:6px 10px;border:1px solid #d6dec9;border-radius:4px;background:#f3f4e9;color:#708062;font-size:10px;line-height:1.5}.battle-tunnel .tunnel-vision-status strong{font-size:10px}.battle-tunnel .tunnel-vision-status.is-dark{background:#526353;color:#f1eed6;border-color:#7e9277}.battle-tunnel .tunnel-vision-status.is-night-vision{background:#e5efe1;border-color:#a5c0a4;color:#53785d}.battle-tunnel .is-darkened .tunnel-unit-state .btl-unit-name{background:#f3eed7;color:#425b3e;border:1px solid #bac69d}.battle-tunnel .is-darkened .tunnel-cell:focus-visible{box-shadow:inset 0 0 0 3px #e6c78c}.battle-tunnel .has-night-vision .tunnel-cell:focus-visible{box-shadow:inset 0 0 0 3px #84b99d}
-/* == 战斗读数强化（与 l00 统一）：描边渐变血条/能量条、蓄满金光、名字分层。 == */
+/* == 战斗读数强化（与 l00 统一）：描边渐变血条/能量条、蓄满金光。 == */
 .battle-tunnel .tunnel-boss-health{background:#c8d0b8;border-color:#8d9a7d;box-shadow:inset 0 1px 3px rgba(24,34,22,.42),0 0 0 1.5px #2d3927}
 .battle-tunnel .tunnel-boss-health i{background:linear-gradient(180deg,#ff9d84 0%,#ef5350 45%,#c62838 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4);transition:width .2s}
 .battle-tunnel .tunnel-cat-hp{height:7px;background:#c8d0b8;box-shadow:inset 0 1px 3px rgba(24,34,22,.42),0 0 0 1.5px #2d3927}
@@ -39,13 +39,8 @@
 .battle-tunnel .tunnel-cat-energy i{background:linear-gradient(180deg,#a5dcff 0%,#54a3e8 45%,#2f6fd0 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
 .battle-tunnel .tunnel-cat-energy.is-full i{background:linear-gradient(180deg,#ffefad 0%,#f4c542 55%,#d99a27 100%)}
 .battle-tunnel .tunnel-cat-energy.is-full{animation:kitty-energy-full 1.15s ease-in-out infinite}
-.battle-l00.battle-tunnel .tunnel-unit-state .btl-unit-name{flex-direction:row;align-items:center;flex-wrap:wrap;justify-content:center;line-height:1.25;background:rgba(21,31,19,.82);color:#fbf6e2;padding:2px 4px;font-weight:700;text-shadow:0 1px 0 #141d12,1px 0 0 #141d12,-1px 0 0 #141d12,0 -1px 0 #141d12}
-@media(min-width:851px){.battle-l00.battle-tunnel .tunnel-unit-state .btl-unit-name{font-size:9.5px}}
-.battle-l00.battle-tunnel .tunnel-unit-state .btl-unit-name .tunnel-unit-energy{flex-basis:100%;text-align:center;color:#8ec9ff;font-weight:600}
-.battle-l00.battle-tunnel .tunnel-unit-state .btl-unit-name .tunnel-role-badge{border-color:#4c5e46;background:#2c3a28;color:#cfe3c0}
 @media(prefers-reduced-motion:reduce){.battle-tunnel .tunnel-cat-energy.is-full{animation:none!important}}
 
-.battle-l00.battle-tunnel .is-darkened .tunnel-unit-state .btl-unit-name{text-shadow:none}
 /* 沉浸 HUD 首领条同款强化（immersive.css 后加载会压过章节规则，这里以更高特异性夺回统一视觉）。 */
 .battle-l00.battle-tunnel.battle-immersive .battle-hud-boss>[role=meter]{background:#c8d0b8;border-color:#8d9a7d;box-shadow:inset 0 1px 3px rgba(24,34,22,.42),0 0 0 1.5px #2d3927}
 .battle-l00.battle-tunnel.battle-immersive .battle-hud-boss>[role=meter] i{background:linear-gradient(180deg,#ff9d84 0%,#ef5350 45%,#c62838 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4);transition:width .2s}

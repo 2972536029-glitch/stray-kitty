@@ -5,6 +5,7 @@ import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES, ROUTE
 import {advanceFinale, createFinaleBattle, dispatchFinale, getAttackCells, getBossCells, getBossDamageMultiplier, getFinaleAdvice, getFinaleSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, OBSTACLE_NAMES, paintFinale} from './painter';
 import {drawCat} from '../l00/painter';
+import {triggerBossSkillShake} from '../battleFx';
 import {getFinaleAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
@@ -157,7 +158,9 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
       const frozen=hostPauseRef.current||document.hidden;
       if(current.externallyPaused!==frozen)current=dispatchFinale(current,{type:'SET_EXTERNAL_PAUSE',paused:frozen});
       if(current.uiPaused!==uiPauseRef.current)current=dispatchFinale(current,{type:'SET_UI_PAUSE',paused:uiPauseRef.current});
+      const previousBossSkills=current.boss.slams;
       current=advanceFinale(current,dt);gameRef.current=current;
+      triggerBossSkillShake(boardRef.current,previousBossSkills,current.boss.slams);
       const context=canvasRef.current?.getContext('2d');if(context)paintFinale(context,current,selectedRef.current,hoverRef.current);
       if(time-lastRender>=50){setGame(current);lastRender=time;}
       handle=requestAnimationFrame(frame);

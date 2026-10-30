@@ -1,43 +1,43 @@
 import {expect, test, type APIRequestContext, type Locator, type Page} from '@playwright/test';
 import {spawn, type ChildProcess} from 'node:child_process';
-import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import type {GameCommand, GameState, Session} from '../../web/src/contracts';
 
-// Persistent host fixtures provide chapter access only. Energy, casts, movement
+// Official QA checkpoints provide chapter access only. Energy, casts, movement
 // and combat all use the real player controls and the unmodified simulation.
 const port=8244, origin=`http://127.0.0.1:${port}`;
 const chapters=['chapter','market','greenhouse','tunnel','finale'] as const;
-const sessions=new Map<string,Session>();
+const checkpoints={chapter:'alley.battle',market:'market.battle',greenhouse:'greenhouse.battle',tunnel:'rescue.battle',finale:'finale.battle'} as const;
+const stageIds={chapter:'alley_rescue',market:'market_boss',greenhouse:'greenhouse_boss',tunnel:'tunnel_boss',finale:'finale_boss'} as const;
 let child:ChildProcess|undefined, closed:Promise<void>|undefined;
 test.beforeAll(async({request})=>{
   await new Promise<void>((resolve,reject)=>{const probe=net.createServer();probe.once('error',reject);probe.listen(port,'127.0.0.1',()=>probe.close(error=>error?reject(error):resolve()));});
-  const catalog=await(await request.get('/api/v1/content')).json();
   const directory=fs.mkdtempSync(path.join(os.tmpdir(),'kitty-skill-feedback-'));
-  const players:Record<string,unknown>={};
-  for(const chapter of chapters){
-    const session={playerId:`skill-feedback-${chapter}`,token:`skill-feedback-fixture-${chapter}`};sessions.set(chapter,session);
-    const state:GameState={schemaVersion:1,contentVersion:catalog.version,revision:1,phase:'home',chapterId:'alley',storyNodeId:'',mapId:'greenhouse',flags:['l00_completed','alley_rescued','rescue_story_done','chapter_3_started','momo_joined'],cats:['miaomiao','tuanzi','diandian','momo'],inventory:{material:3,food:0},currencies:{stamp:2},furniture:['cardboard_nest'],placements:{},completedStages:['l00_tutorial','alley_rescue'],pendingEventId:'',activeBattle:null,eventState:{pendingModifiers:{shadowPressure:-1}},lastResult:{message:'浏览器验证：从家园进入各章，真实蓄能后释放技能。'}};
-    players[createHash('sha256').update(session.token).digest('hex')]={id:session.playerId,state,receipts:{},receiptOrder:[]};
-  }
-  const save=path.join(directory,'save.json');fs.writeFileSync(save,JSON.stringify({schemaVersion:1,players}));
-  child=spawn(process.env.KITTY_FIXTURE_BINARY??path.join(process.cwd(),'.runtime',process.platform==='win32'?'kitty-preview.exe':'kitty-preview'),[],{cwd:path.join(process.cwd(),'server'),windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,GAME_ADDR:`127.0.0.1:${port}`,GAME_DATA_FILE:save,GAME_WEB_DIR:path.join(process.cwd(),'web/dist')}});
+  const save=path.join(directory,'save.json');
+  child=spawn(process.env.KITTY_FIXTURE_BINARY??path.join(process.cwd(),'.runtime',process.platform==='win32'?'kitty-preview.exe':'kitty-preview'),[],{cwd:path.join(process.cwd(),'server'),windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,GAME_QA_ENABLED:'true',GAME_ADDR:`127.0.0.1:${port}`,GAME_DATA_FILE:save,GAME_WEB_DIR:path.join(process.cwd(),'web/dist')}});
   closed=new Promise(resolve=>child!.once('close',()=>resolve()));
   let output='';child.stdout?.on('data',chunk=>output+=chunk);child.stderr?.on('data',chunk=>output+=chunk);
   await expect.poll(async()=>{if(child!.exitCode!==null)throw new Error(output);try{return(await request.get(origin+'/healthz',{timeout:500})).ok();}catch{return false;}},{timeout:10000}).toBe(true);
 });
 test.afterAll(async()=>{if(child&&closed){const force=setTimeout(()=>child?.kill('SIGKILL'),3000);child.kill('SIGTERM');await closed;clearTimeout(force);}});
 
-async function openChapter(page:Page,chapter:string){
+async function openChapter(page:Page,chapter:typeof chapters[number]){
   page.setDefaultTimeout(10000);
-  await page.addInitScript(({origin,session})=>{if(location.origin===origin)localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));},{origin,session:sessions.get(chapter)!});
+  const created=await page.request.post(origin+'/api/v1/sessions');expect(created.ok()).toBe(true);
+  const session=await created.json() as Session;
+  const headers={Authorization:`Bearer ${session.token}`};
+  const current=await page.request.get(origin+'/api/v1/state',{headers});expect(current.ok()).toBe(true);
+  const state=await current.json() as GameState;
+  const loaded=await page.request.post(origin+'/api/v1/commands',{headers:{...headers,'Idempotency-Key':`skill-feedback-${chapter}-${state.revision}`},data:{expectedRevision:state.revision,command:{type:'QA_CHECKPOINT',checkpointId:checkpoints[chapter]} satisfies GameCommand}});
+  expect(loaded.ok()).toBe(true);
+  const checkpoint=(await loaded.json()).state as GameState;
+  expect(checkpoint.qaCheckpointId).toBe(checkpoints[chapter]);
+  expect(checkpoint.activeBattle?.stageId).toBe(stageIds[chapter]);
+  await page.addInitScript(({origin,session})=>{if(location.origin===origin)localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));},{origin,session});
   await page.goto(origin);await page.getByRole('button',{name:/^继续冒险/}).click();
-  const battle=page.getByTestId(`${chapter}-battle`),entry=page.getByTestId(`${chapter}-enter`);
-  await expect(battle.or(entry)).toBeVisible();
-  if(await entry.isVisible())await entry.click();
   await expect(page.getByTestId(`${chapter}-battle`)).toHaveAttribute('data-phase','ready');
 }
 async function openTutorial(page:Page,request:APIRequestContext){
@@ -63,11 +63,14 @@ test('序章真实护盾释放保留清晰提示，暂停时视觉消退且持�
   const battle=page.locator('section[aria-label="序章塔防战斗"]');
   await page.getByTestId('battle-speed-toggle').click();await page.getByTestId('battle-play-toggle').click();
   await expect(battle).toHaveAttribute('data-phase','teach_position',{timeout:20000});
-  await move(page,page.getByTestId('battle-cat-caster'),page.getByTestId('battle-cell-A4'));
-  await expect(battle).toHaveAttribute('data-phase','teach_move');
-  await move(page,page.getByTestId('battle-cat-guard'),page.getByTestId('battle-cell-B5'));
+  await move(page,page.getByTestId('battle-cat-caster'),page.getByTestId('battle-cell-C4'));
   await expect(battle).toHaveAttribute('data-phase','teach_energy');
   await page.getByTestId('battle-begin-skill-practice').click();
+  await expect(battle).toHaveAttribute('data-phase','teach_move');
+  await move(page,page.getByTestId('battle-cat-guard'),page.getByTestId('battle-cell-B4'));
+  await expect(battle).toHaveAttribute('data-phase','teach_live_move');
+  await move(page,page.getByTestId('battle-cat-guard'),page.getByTestId('battle-cell-B5'));
+  await expect(battle).toHaveAttribute('data-phase','skill_charge');
   await expect(battle).toHaveAttribute('data-phase','teach_guard_skill',{timeout:40000});
   await page.getByTestId('battle-cat-guard').click();await page.getByTestId('battle-skill-guard').click();
   const castAt=Date.now();
@@ -85,7 +88,8 @@ test('序章真实护盾释放保留清晰提示，暂停时视觉消退且持�
   await page.getByTestId('battle-cat-caster').click();await page.getByTestId('battle-skill-caster').click();
   await page.keyboard.press('Escape');await expect(page.getByTestId('skill-release-caster')).toHaveCount(0);
   await page.getByTestId('battle-cat-caster').click();await page.getByTestId('battle-skill-caster').click();
-  await page.getByTestId('battle-cell-C6').press('Enter');
+  const target=await page.locator('.btl-live-enemy[data-cell]').first().getAttribute('data-cell');expect(target).toBeTruthy();
+  await page.getByTestId(`battle-cell-${target}`).press('Enter');
   await expect(page.getByTestId('skill-release-caster')).toHaveAttribute('data-skill-variant','star');
   await expect(page.getByTestId('skill-release-caster').locator('[data-skill-cell]')).not.toHaveCount(0);
   await page.waitForTimeout(250);
@@ -100,7 +104,9 @@ test.describe('窄屏技能反馈',()=>{
   test.use({viewport:{width:390,height:844},hasTouch:true});
   test('护盾名称保持在画面内，亮起时仍能点选猫咪',async({page},info)=>{
     test.setTimeout(60000);await openChapter(page,'market');
-    const fit=page.getByRole('button',{name:'查看全图',exact:true});if(await fit.isVisible())await fit.click();
+    // The QA checkpoint badge overlaps this setup control at mobile width.
+    // Set overview by keyboard; the skill and cat interactions below use real taps/clicks.
+    const fit=page.getByRole('button',{name:'查看全图',exact:true});if(await fit.isVisible())await fit.press('Enter');
     await page.getByTestId('market-speed-toggle').click();await page.getByTestId('market-play-toggle').click();
     await expect.poll(async()=>Number(await page.getByTestId('market-cat-guard').getAttribute('data-energy')),{timeout:30000}).toBe(100);
     await page.getByTestId('market-cat-guard').click();await page.getByTestId('market-skill-guard').click();

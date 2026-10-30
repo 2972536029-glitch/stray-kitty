@@ -3,7 +3,6 @@ import {drawCat} from '../l00/painter';
 import type {ChapterState, ChapterCat, ChapterCatId as CatId, Position} from './types';
 import {getAttackCells, getBossCells, getSkillCells} from './engine';
 import {CELLS, MAP} from './config';
-import {battleReducedMotion, drawDamagePop, drawHitBurst, drawShatter, type BattleFloatText} from '../battleFx';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
 
 export const CELL = 80;
@@ -77,7 +76,7 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:ChapterState){
   ctx.restore();
 }
 
-export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,selected:CatId|null,moveTarget:Position|null,floats?:BattleFloatText[]){
+export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,selected:CatId|null,moveTarget:Position|null){
   ctx.clearRect(0,0,BOARD_WIDTH,BOARD_HEIGHT);ctx.imageSmoothingEnabled=false;
   // Pixel scenery remains inside the existing combat footprint.
   // Clip every combat drawing to real cells so the convex map's empty area stays transparent.
@@ -164,22 +163,12 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
       const center=(p:Position)=>p.x===state.boss.x&&p.y===state.boss.y?{x:state.boss.x+state.boss.width/2-.5,y:state.boss.y+state.boss.height/2-.5}:p;
       const from=center(fx.from),to=center(fx.to);
       ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo((from.x+.5)*CELL,(from.y+.5)*CELL);ctx.lineTo((to.x+.5)*CELL,(to.y+.5)*CELL);ctx.stroke();
-      // 命中黑影：白色像素爆裂闪光（表现层增强，攻击判定本身不变）。
-      if(!battleReducedMotion())drawHitBurst(ctx,(to.x+.5)*CELL,(to.y+.5)*CELL,(1-fx.remaining/.4)*.9);
-    }else if(fx.kind==='defeat'){
-      // 黑影被击败：碎裂成黑色像素块消散。
-      if(!battleReducedMotion())drawShatter(ctx,(fx.to.x+.5)*CELL,(fx.to.y+.5)*CELL,1-fx.remaining/.4);
     }else if(fx.kind==='heal'||fx.kind==='shield'){
       const x=(fx.to.x+.5)*CELL,y=(fx.to.y+.4)*CELL;ctx.fillStyle=fx.kind==='heal'?'#a9e0a8':'#a0e3ed';ctx.fillRect(x-13,y-2,26,4);ctx.fillRect(x-2,y-13,4,26);
     }else{
       for(const p of fx.cells??[fx.to]){ctx.strokeStyle=fx.kind==='slam'?SCENE_INK.danger:SCENE_INK.gold;ctx.lineWidth=3;ctx.beginPath();ctx.arc((p.x+.5)*CELL,(p.y+.5)*CELL,25+8*Math.sin(fx.remaining*10),0,Math.PI*2);ctx.stroke();}
     }
     ctx.restore();
-  }
-  // 伤害飘字：引擎 effect 不带数值，由 Viewport diff 敌方 hp 后传入（表现层，不影响任何判定）。
-  if(floats&&floats.length&&!battleReducedMotion()){
-    const now=performance.now();
-    for(const item of floats)drawDamagePop(ctx,item.x,item.y,item.text,Math.min(1,(now-item.born)/760));
   }
   // The boss HP belongs to the HUD; the board carries its body-language warning only.
   ctx.restore();

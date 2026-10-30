@@ -13,7 +13,6 @@ import {getAttackCells, getSkillCells, isSkillTargetAllowed} from './ranges';
 import {drawCat, paintBattle} from './painter';
 import {TutorialSpotlight} from './TutorialSpotlight';
 import {whenSceneArtReady} from '../scene-art';
-import {triggerBattleShake, triggerSkillGlow} from '../battleFx';
 import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
 import {useBattleBoardFit} from '../useBattleBoardFit';
 import {getSkillTooltipPosition} from '../skillTooltipPosition';
@@ -90,9 +89,6 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const suppressClick=useRef(false),suppressBoardClick=useRef(false);
   const animationRef=useRef<AnimationBook>(new Map());
   const chatLogRef=useRef<HTMLDivElement>(null);
-  // —— 表现层 diff：对比前后快照的黑影血量/击败数，触发屏幕震动与技能泛光（只读，不改任何战斗状态）。 ——
-  const hostRef=useRef<HTMLElement>(null);
-  const prevFxRef=useRef<{hpSum:number;defeated:number}|null>(null);
 
   function clearPointers(){
     const pointerId=aimPointerRef.current;aimPointerRef.current=null;
@@ -123,16 +119,6 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     const paint=()=>{if(game&&canvasRef.current){const ctx=canvasRef.current.getContext('2d');if(ctx)paintBattle(ctx,game,selected,animationRef.current);}};
     paint();return whenSceneArtReady(paint);
   },[game,selected]);
-  // 黑影掉血 → 轻震；黑影被击败 → 强震（DOM 层 CSS keyframes，reduced-motion 时自动跳过）。
-  useEffect(()=>{
-    if(!game)return;
-    const hpSum=game.enemies.reduce((sum,enemy)=>sum+Math.max(0,enemy.hp),0);
-    const previous=prevFxRef.current;
-    prevFxRef.current={hpSum,defeated:game.defeated};
-    if(!previous)return;
-    if(game.defeated>previous.defeated){triggerBattleShake(boardRef.current,'strong');return;}
-    if(hpSum<previous.hpSum)triggerBattleShake(boardRef.current,'light');
-  },[game]);
   useEffect(()=>{const log=chatLogRef.current;if(log)log.scrollTop=log.scrollHeight;},[advisorChat.messages,advisorChat.loading,advisorChat.notice,chatOpen]);
   useEffect(()=>{
     const cancel=(event:KeyboardEvent)=>{if(event.key!=='Escape')return;if(runtime.getSnapshot()?.skillAim){event.preventDefault();runtime.dispatch({type:'CANCEL_SKILL'});clearPointers();}else if(inspectedRef.current){event.preventDefault();closeInspection();}else setMoveSelection(null);};
@@ -276,7 +262,6 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     if(!previewAt(position)||!position)return;
     const currentAim=runtime.getSnapshot()?.skillAim;
     if(currentAim)dispatch({type:'CAST_SKILL',catId:currentAim.catId,...position});
-    if(runtime.getSnapshot()?.lastAction?.ok)triggerSkillGlow(hostRef.current); // 施法成功：屏幕边缘金色泛光
   }
   function aimDown(event:ReactPointerEvent<HTMLDivElement>){
     if(!runtime.getSnapshot()?.skillAim||blocked||event.button!==0)return;
@@ -311,7 +296,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     setSelected(cat.id);setAimOutside(false);suppressBoardClick.current=false;
     if(SKILLS[cat.id].targeting==='area')dispatch({type:'SELECT_SKILL',catId:cat.id});
     else dispatch({type:'CAST_SKILL',catId:cat.id});
-    if(runtime.getSnapshot()?.lastAction?.ok){closeInspection();triggerSkillGlow(hostRef.current);}
+    if(runtime.getSnapshot()?.lastAction?.ok)closeInspection();
   }
   async function startOrPause(){
     if(blocked||startingRef.current)return;
@@ -340,7 +325,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const guideSource=movementLesson?`[data-testid="battle-cat-${guideCat}"]`:game.phase==='teach_guard_skill'||game.phase==='teach_caster_skill'?`[data-testid="battle-${aim?'cell-'+enemyCell:inspectedCat===guideCat?'skill-'+guideCat:'cat-'+guideCat}"]`:'[data-testid="battle-energy-guard-compact"]';
   const guideTarget=recommendedCell?`[data-testid="battle-cell-${cellName(recommendedCell)}"]`:undefined;
   const guideFocus=movementLesson?[guideSource,...(guideTarget?[guideTarget]:[]),'.btl-live-enemy',...(game.phase==='teach_live_move'?['.btl-unit:not(.btl-hero-unit)']:[])]:game.phase==='teach_energy'?['[data-testid="battle-cat-hero"]']:game.phase==='skill_charge'?['[data-testid="battle-energy-caster-compact"]','[data-testid="battle-energy-guard-compact"]']:['.btl-cat-menu',guideSource,...(aim?['.btl-cells']:[])];
-  return <section ref={hostRef} className={`battle-l00 battle-immersive${guide?' btl-teaching':''}`} data-scene="prologue" aria-label="序章塔防战斗" data-phase={game.phase} data-inspecting={inspectedCat??undefined} data-effective-speed={effectiveSpeed} data-playback-speed={game.playbackSpeed} data-battle-time={game.time.toFixed(3)} onPointerDown={event=>{if(inspectedRef.current&&!(event.target as HTMLElement).closest('.btl-unit,.btl-cat-menu,.btl-playback'))closeInspection();}}>
+  return <section className={`battle-l00 battle-immersive${guide?' btl-teaching':''}`} data-scene="prologue" aria-label="序章塔防战斗" data-phase={game.phase} data-inspecting={inspectedCat??undefined} data-effective-speed={effectiveSpeed} data-playback-speed={game.playbackSpeed} data-battle-time={game.time.toFixed(3)} onPointerDown={event=>{if(inspectedRef.current&&!(event.target as HTMLElement).closest('.btl-unit,.btl-cat-menu,.btl-playback'))closeInspection();}}>
     <BattleSceneBackdrop scene="prologue" boardRef={boardRef} columns={7} rows={3}/>
     {startError&&<p role="alert">{startError}</p>}
     <div className="btl-head"><div><span className="btl-eyebrow">PROLOGUE · CAT DEFENSE</span><strong>{phaseNames[game.phase]}</strong></div><div className="btl-progress"><span data-testid="battle-enemy-progress" aria-label={`全程共 ${game.totalEnemies} 只黑影，已有 ${game.defeated+game.escaped} 只离场，包含开场救援`}>黑影已离场 {game.defeated+game.escaped} / {game.totalEnemies}<small>含开场救援</small></span><span aria-label={`已漏过 ${game.leaks} 只黑影，最多 ${game.maxLeaks} 次`}>防线 {'●'.repeat(Math.max(0,game.maxLeaks-game.leaks))}{'○'.repeat(Math.min(game.maxLeaks,game.leaks))}</span></div></div>

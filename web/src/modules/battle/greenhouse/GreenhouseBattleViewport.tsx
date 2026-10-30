@@ -5,6 +5,7 @@ import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES, ROUTE
 import {advanceGreenhouse, createGreenhouseBattle, dispatchGreenhouse, getAttackCells, getBossCells, getGreenhouseAdvice, getGreenhouseSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintGreenhouse} from './painter';
 import {drawCat} from '../l00/painter';
+import {triggerBossSkillShake} from '../battleFx';
 import {getGreenhouseAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
@@ -157,7 +158,9 @@ export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onRe
       const frozen=hostPauseRef.current||document.hidden;
       if(current.externallyPaused!==frozen)current=dispatchGreenhouse(current,{type:'SET_EXTERNAL_PAUSE',paused:frozen});
       if(current.uiPaused!==uiPauseRef.current)current=dispatchGreenhouse(current,{type:'SET_UI_PAUSE',paused:uiPauseRef.current});
+      const previousBossSkills=current.boss.slams;
       current=advanceGreenhouse(current,dt);gameRef.current=current;
+      triggerBossSkillShake(boardRef.current,previousBossSkills,current.boss.slams);
       const context=canvasRef.current?.getContext('2d');if(context)paintGreenhouse(context,current,selectedRef.current,hoverRef.current);
       if(time-lastRender>=50){setGame(current);lastRender=time;}
       handle=requestAnimationFrame(frame);

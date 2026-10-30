@@ -2,6 +2,7 @@ import {useId, useLayoutEffect, useRef, useState} from 'react';
 import type {CSSProperties, ReactNode, RefObject} from 'react';
 import {createPortal} from 'react-dom';
 import './tutorial.css';
+import {placeTutorialCard, type TutorialBox as Box} from './tutorialCardPosition';
 
 export interface TutorialSpotlightProps {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -17,7 +18,6 @@ export interface TutorialSpotlightProps {
   portrait?: ReactNode;
   children?: ReactNode;
 }
-interface Box {x: number; y: number; width: number; height: number}
 interface Point {x: number; y: number}
 interface Layout {
   frame: Box;
@@ -27,32 +27,10 @@ interface Layout {
   targetOutside: boolean;
   card: Box;
   cardMeasured: boolean;
+  cardScrollable: boolean;
 }
-const initialLayout: Layout = {frame: {x: 0, y: 0, width: 0, height: 0}, holes: [], source: null, target: null, targetOutside: false, card: {x: 10, y: 10, width: 500, height: 180}, cardMeasured: false};
+const initialLayout: Layout = {frame: {x: 0, y: 0, width: 0, height: 0}, holes: [], source: null, target: null, targetOutside: false, card: {x: 10, y: 10, width: 500, height: 180}, cardMeasured: false, cardScrollable: false};
 const rounded = (value: number) => Math.round(value * 2) / 2;
-const intersection = (a: Box, b: Box) => Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
-
-/** Prefer an empty corner, then the empty strips beside the current controls. */
-function placeCard(frame: Box, width: number, height: number, protectedBoxes: Box[], secondaryBoxes: Box[], preferLeft = false): Box {
-  const gap = 12;
-  const maxX = Math.max(gap, frame.width - width - gap), maxY = Math.max(gap, frame.height - height - gap);
-  const xs = preferLeft ? [gap] : [maxX, gap, Math.max(gap, (frame.width - width) / 2)];
-  const ys = [maxY, gap];
-  for (const box of protectedBoxes) {
-    if (!preferLeft) xs.push(box.x - width - gap, box.x + box.width + gap);
-    ys.push(box.y - height - gap, box.y + box.height + gap);
-  }
-  let best: Box = {x: maxX, y: maxY, width, height}, bestScore = Infinity;
-  for (const x of xs) for (const y of ys) {
-    const candidate = {x: rounded(Math.max(gap, Math.min(maxX, x))), y: rounded(Math.max(gap, Math.min(maxY, y))), width, height};
-    const score = protectedBoxes.reduce((sum, box) => sum + intersection(candidate, box) * 1000, 0)
-      + secondaryBoxes.reduce((sum, box) => sum + intersection(candidate, box), 0)
-      + Math.abs(candidate.y - maxY) * .01 + Math.abs(candidate.x - (preferLeft ? gap : maxX)) * .005;
-    if (score < bestScore) {best = candidate; bestScore = score;}
-  }
-  return best;
-}
-
 /** Visual guidance only: all game interactions still go to the real cats/cells. */
 export function TutorialSpotlight({containerRef, phase, title, text, step, total = 5, sourceSelector, targetSelector, focusSelectors = [], gesture, portrait, children}: TutorialSpotlightProps) {
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, '');
@@ -60,7 +38,7 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
   const [layout, setLayout] = useState<Layout>(initialLayout);
   const cardRef = useRef<HTMLElement>(null);
   const selectorsKey = JSON.stringify(focusSelectors);
-  const preferLeft = phase.startsWith('skill_charge');
+  const observeEnergy = phase.startsWith('skill_charge');
 
   useLayoutEffect(() => {
     if (!containerRef.current) return;
@@ -83,8 +61,11 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
       const visible = viewport.getBoundingClientRect();
       const scaleX = outer.width / (container.offsetWidth || 1) || 1;
       const scaleY = outer.height / (container.offsetHeight || 1) || 1;
-      const left = Math.max(outer.left, visible.left), top = Math.max(outer.top, visible.top);
-      const right = Math.min(outer.right, visible.right), bottom = Math.min(outer.bottom, visible.bottom);
+      const screen = window.visualViewport;
+      const screenLeft = screen?.offsetLeft ?? 0, screenTop = screen?.offsetTop ?? 0;
+      const left = Math.max(outer.left, visible.left, screenLeft), top = Math.max(outer.top, visible.top, screenTop);
+      const right = Math.min(outer.right, visible.right, screenLeft + (screen?.width ?? window.innerWidth));
+      const bottom = Math.min(outer.bottom, visible.bottom, screenTop + (screen?.height ?? window.innerHeight));
       const frame = {x: rounded((left - outer.left) / scaleX - container.clientLeft), y: rounded((top - outer.top) / scaleY - container.clientTop), width: rounded(Math.max(0, right - left) / scaleX), height: rounded(Math.max(0, bottom - top) / scaleY)};
       const nodes = new Set<Element>();
       for (const selector of [...JSON.parse(selectorsKey) as string[], sourceSelector, targetSelector]) {
@@ -101,7 +82,7 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
       };
       for (const node of nodes) {track(node); const box = boxFor(node); if (box) holes.push(box);}
       const protectedBoxes: Box[] = [], secondaryBoxes: Box[] = [];
-      for (const selector of [sourceSelector, targetSelector, '.btl-cat-menu', '.btl-skill-tooltip.btl-tooltip-visible', ...(preferLeft ? ['.btl-unit'] : [])]) {
+      for (const selector of [sourceSelector, targetSelector, '.btl-cat-menu', '.btl-skill-tooltip.btl-tooltip-visible', ...(observeEnergy ? ['.btl-unit'] : [])]) {
         if (selector) for (const node of container.querySelectorAll(selector)) {
           track(node); const box = boxFor(node); if (box) protectedBoxes.push(box);
         }
@@ -120,43 +101,33 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
       };
       const source = pointFor(sourceSelector), target = pointFor(targetSelector);
       track(cardRef.current);
+      track(cardRef.current?.querySelector('.btl-tutorial-card-copy') ?? null);
+      track(cardRef.current?.querySelector('.btl-tutorial-card-actions') ?? null);
       const board = container.querySelector<HTMLElement>('[data-testid="battle-board"]');
       track(board);
       const boardRect = board?.getBoundingClientRect();
-      // Anchor the dialogue to the actual tiles, not the spare scenery below a
-      // vertically centred board. On a short mobile board, attach the card just
-      // above the tiles instead of obscuring the entire playable surface.
-      const cardBounds = boardRect ? {
+      // The visible tiles provide the reading anchor; the whole visible field
+      // remains available above/below them when a lesson must leave a cat clear.
+      const boardBounds = boardRect ? {
         x: Math.max(0, (Math.max(left, boardRect.left) - left) / scaleX),
         y: Math.max(0, (Math.max(top, boardRect.top) - top) / scaleY),
         width: Math.max(1, (Math.min(right, boardRect.right) - Math.max(left, boardRect.left)) / scaleX),
         height: Math.max(1, (Math.min(bottom, boardRect.bottom) - Math.max(top, boardRect.top)) / scaleY),
       } : {x: 0, y: 0, width: frame.width, height: frame.height};
-      const cardWidth = Math.min(preferLeft ? 400 : 520, Math.max(1, cardBounds.width - 24));
-      const cardHeight = Math.min(cardRef.current?.offsetHeight || 180, Math.max(1, frame.height - 24));
-      const boardBounds = {...cardBounds};
-      cardBounds.height = Math.max(cardBounds.height, cardHeight + 24);
-      cardBounds.y = Math.max(0, Math.min(cardBounds.y, frame.height - cardBounds.height));
-      const relativeBox = (box: Box): Box => ({...box, x: box.x - cardBounds.x, y: box.y - cardBounds.y});
-      const localCard = placeCard(cardBounds, cardWidth, cardHeight, protectedBoxes.map(relativeBox), secondaryBoxes.map(relativeBox), preferLeft);
-      let card = {...localCard, x: rounded(localCard.x + cardBounds.x), y: rounded(localCard.y + cardBounds.y)};
-      const focusHeight = Math.max(72, ...protectedBoxes.map(box => box.height));
-      const coversCat = preferLeft && protectedBoxes.some(box => intersection(card, box) > 0);
-      if (coversCat || frame.width < 700 && boardBounds.height < cardHeight + focusHeight + 24) {
-        const x = Math.max(12, Math.min(frame.width - cardWidth - 12, preferLeft ? boardBounds.x + 12 : boardBounds.x + (boardBounds.width - cardWidth) / 2));
-        const above = {x, y: Math.max(12, boardBounds.y - cardHeight - 12), width: cardWidth, height: cardHeight};
-        const below = {x, y: Math.max(12, Math.min(frame.height - cardHeight - 12, boardBounds.y + boardBounds.height + 12)), width: cardWidth, height: cardHeight};
-        const obstruction = (box: Box) => protectedBoxes.reduce((sum, focus) => sum + intersection(box, focus) * 1000, 0)
-          + secondaryBoxes.reduce((sum, cat) => sum + intersection(box, cat) * 10, 0) + intersection(box, boardBounds);
-        const outside = obstruction(above) <= obstruction(below) ? above : below;
-        if (!preferLeft || obstruction(outside) < obstruction(card)) card = outside;
-      }
-      const next: Layout = {frame, holes, source, target, targetOutside: !!targetSelector && !!container.querySelector(targetSelector) && !target, card, cardMeasured: !!cardRef.current};
+      const cardWidth = Math.min(520, Math.max(1, boardBounds.width - 24));
+      const cardNode = cardRef.current;
+      const cardHeight = cardNode ? cardNode.scrollHeight + cardNode.offsetHeight - cardNode.clientHeight : 180;
+      const card = placeTutorialCard(frame, boardBounds, {width: cardWidth, height: cardHeight}, protectedBoxes, secondaryBoxes);
+      const next: Layout = {frame, holes, source, target, targetOutside: !!targetSelector && !!container.querySelector(targetSelector) && !target, card, cardMeasured: !!cardRef.current, cardScrollable: cardHeight > card.height + .5};
       setLayout(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
     }
     function schedule() {if (!pending) pending = requestAnimationFrame(measure);}
     const mutations = new MutationObserver(records => {
-      if (records.some(record => !(record.target instanceof Element && record.target.closest('[data-tutorial-layer]')))) schedule();
+      if (records.some(record => {
+        const layer = record.target instanceof Element ? record.target.closest('[data-tutorial-layer]') : null;
+        // New error/actions content can grow behind max-height; ignore our own positioning attributes.
+        return !layer || record.type === 'childList' && layer.classList.contains('btl-tutorial-card');
+      })) schedule();
     });
     mutations.observe(container, {subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class', 'hidden']});
     measure();
@@ -168,7 +139,7 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
       window.removeEventListener('resize', schedule); window.removeEventListener('scroll', schedule, true);
       window.visualViewport?.removeEventListener('resize', schedule);
     };
-  }, [containerRef, phase, sourceSelector, targetSelector, selectorsKey, host, preferLeft]);
+  }, [containerRef, phase, sourceSelector, targetSelector, selectorsKey, host, observeEnergy]);
 
   const {frame, holes, source, target} = layout;
   const from = gesture === 'tap' ? target ?? source : source;
@@ -200,7 +171,7 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
           <g transform="translate(-5 -4) rotate(-18)"><path d="M4 4V-14Q4-19 8-19Q12-19 12-14V0Q14-6 18-3Q22-6 25-1Q30-3 32 3L31 19Q30 28 25 31H12L0 17Q-4 12 0 9Q3 7 7 12L4 4Z" fill="#fff6db" stroke="#3b574b" strokeWidth="2.5" strokeLinejoin="round"/><path d="M13 7V13M20 6V14M26 9V16" stroke="#8a9d7d" strokeWidth="2" strokeLinecap="round"/></g>
         </g></g>}
       </svg>
-    <aside ref={cardRef} className="btl-tutorial-card" data-tutorial-layer="true" data-testid="battle-tutorial-card" data-tutorial-phase={phase} aria-label="阿策的新手引导" style={{left: frame.x + layout.card.x, top: frame.y + layout.card.y, width: layout.card.width, maxHeight: Math.max(1, frame.height - 24), visibility: layout.cardMeasured ? 'visible' : 'hidden'}}>
+    <aside ref={cardRef} className="btl-tutorial-card" data-tutorial-layer="true" data-testid="battle-tutorial-card" data-tutorial-phase={phase} data-scrollable={layout.cardScrollable} aria-label="阿策的新手引导" style={{left: frame.x + layout.card.x, top: frame.y + layout.card.y, width: layout.card.width, maxHeight: layout.card.height, visibility: layout.cardMeasured ? 'visible' : 'hidden'}}>
       {portrait && <div className="btl-tutorial-portrait" aria-hidden="true">{portrait}</div>}
       <div className="btl-tutorial-card-copy" role="status" aria-live="polite" aria-atomic="true">
         <div className="btl-tutorial-kicker"><span>阿策 · 实战课堂</span><span>{step} / {total}</span></div>

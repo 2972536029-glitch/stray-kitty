@@ -86,8 +86,8 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
     ? `靠近「${nearTarget.label.replace(/\s*·\s*E$/, '')}」了，按 E 互动`
     : null;
   const hintHidden = state.phase === 'explore' && introHintDone && !nearHint && !inspectHint;
-  // 沉浸式顶栏：展开时点顶栏以外的空白（画布、面板外壳）自动收起；战斗阶段点画布频繁，只允许手动收起。
-  const topbarOpen = topExpanded;
+  // 探索时保留折叠偏好；战斗顶栏常显，暂停和旅程工具始终可见。
+  const topbarOpen = state.phase === 'battle' || topExpanded;
   useEffect(() => {
     if (!topExpanded || state.phase === 'battle') return;
     const dismiss = (event: PointerEvent) => {
@@ -168,17 +168,17 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
   };
   const isHomeScene = state.chapterId !== 'prologue' && (state.phase === 'home' || (state.phase === 'dialogue' && node?.scene === 'home'));
   return <div className="app-shell" data-phase={state.phase} data-home-scene={isHomeScene || undefined}>
-    <button type="button"
+    {state.phase !== 'battle' && <button type="button"
       className={`topbar-toggle${topExpanded ? ' expanded' : ''}${toggleDrag ? ' dragging' : ''}`}
       style={toggleDrag ? {left: toggleDrag.x - 32, top: toggleDrag.y - 17} : toggleRestStyle}
       aria-expanded={topExpanded} aria-label={topExpanded ? '收起顶部信息栏' : '展开顶部信息栏（可拖拽）'}
       onPointerDown={onTogglePointerDown} onPointerMove={onTogglePointerMove} onPointerUp={onTogglePointerUp} onPointerCancel={onTogglePointerUp}>
       <span className="topbar-toggle-paw" aria-hidden="true">ฅ</span><span className="topbar-toggle-chev" aria-hidden="true">▾</span>
-    </button>
+    </button>}
     <header className={`topbar${topbarOpen ? '' : ' topbar-collapsed'}`}><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
       <span className="chapter-pill">{finaleBattle ? '第五章 · 终局试玩' : tunnelBattle ? '第四章 · 地下通道试玩' : greenhouseBattle ? '第三章 · 废弃花房试玩' : marketBattle ? '第二章 · 集市防线战斗试玩' : tutorialBattle ? '序章 · 金枪鱼事件' : chapterBattle ? '第一章 · 陌生小巷' : chapter?.title}</span>
       <div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>
-      <nav aria-label="旅程工具">{state.phase === 'battle' && <button className="battle-host-pause" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button><button className="map-button" aria-label="章节地图" onClick={onMap}>▦ <span>章节地图</span></button><button className="parcel-button" aria-label="猫爪邮局" onClick={onParcels}>✉ <span>猫爪邮局</span></button><button className="shop-button" aria-label="猫国商店" onClick={onShop}>▣ <span>猫国商店</span></button><button className="settings-button" aria-label="游戏设置" onClick={onSettings}>⚙ <span>设置</span></button>{isDevelopment && <button className="dev-button" aria-label="验收工具" aria-haspopup="dialog" aria-expanded={qaOpen} onClick={onQA}>🛠️ <span>验收</span></button>}</nav></header>
+      <nav aria-label="旅程工具">{state.phase === 'battle' && <button className="battle-host-pause" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button><button className="map-button" aria-label="章节地图" onClick={onMap}>▦ <span>章节地图</span></button><button className="parcel-button" aria-label="猫爪邮局" onClick={onParcels}>✉ <span>猫爪邮局</span></button><button className="shop-button" aria-label="猫国商店" onClick={onShop}>▣ <span>猫国商店</span></button>{state.phase !== 'battle' && <button className="settings-button" aria-label="游戏设置" onClick={onSettings}>⚙ <span>设置</span></button>}{isDevelopment && <button className="dev-button" aria-label="验收工具" aria-haspopup="dialog" aria-expanded={qaOpen} onClick={onQA}>🛠️ <span>验收</span></button>}</nav></header>
     <main><h1 className="visually-hidden">一只猫的旅程，一群猫的家。</h1>
       <div className="game-layout"><section className="world-panel"><div className="world-toolbar"><div><span className="live-dot"/><strong>{finaleBattle && state.phase === 'battle' ? '终局试玩' : tunnelBattle && state.phase === 'battle' ? '第四章试玩' : greenhouseBattle && state.phase === 'battle' ? '第三章试玩' : marketBattle && state.phase === 'battle' ? '第二章试玩' : chapterBattle && state.phase === 'battle' ? '第一章守护' : phases[state.phase]}</strong><span className="area-label">{finaleBattle ? '总仓库决战' : tunnelBattle ? '暗道守护' : greenhouseBattle ? '花房守护' : marketBattle ? '集市守护' : chapterBattle ? '深巷守护' : isHomeScene ? '拱顶花房' : map?.name}</span></div>{state.phase !== 'battle' && <button className="quiet" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}</div>
         <div className="world-wrap">{children}

@@ -5,6 +5,7 @@ import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES, ROUTE
 import {advanceTunnel, createTunnelBattle, dispatchTunnel, getAttackCells, getBossCells, getTunnelAdvice, getTunnelSpeed, getDeployError, getSkillCells, isDarkened, isDeployableCell, isEnemyVisible} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, OBSTACLE_NAMES, paintTunnel} from './painter';
 import {drawCat} from '../l00/painter';
+import {triggerBossSkillShake} from '../battleFx';
 import {getTunnelAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
@@ -157,7 +158,9 @@ export function TunnelBattleViewport({attemptId,difficulty,carry,paused,onResult
       const frozen=hostPauseRef.current||document.hidden;
       if(current.externallyPaused!==frozen)current=dispatchTunnel(current,{type:'SET_EXTERNAL_PAUSE',paused:frozen});
       if(current.uiPaused!==uiPauseRef.current)current=dispatchTunnel(current,{type:'SET_UI_PAUSE',paused:uiPauseRef.current});
+      const previousBossSkills=current.boss.slams;
       current=advanceTunnel(current,dt);gameRef.current=current;
+      triggerBossSkillShake(boardRef.current,previousBossSkills,current.boss.slams);
       const context=canvasRef.current?.getContext('2d');if(context)paintTunnel(context,current,selectedRef.current,hoverRef.current);
       if(time-lastRender>=50){setGame(current);lastRender=time;}
       handle=requestAnimationFrame(frame);

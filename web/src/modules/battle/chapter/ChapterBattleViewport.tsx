@@ -5,7 +5,7 @@ import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES} from 
 import {advanceChapter, createChapterBattle, dispatchChapter, getAttackCells, getBossCells, getChapterAdvice, getChapterSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintChapter} from './painter';
 import {drawCat} from '../l00/painter';
-import {pruneFloats, triggerBattleShake, triggerSkillGlow, type BattleFloatText} from '../battleFx';
+import {triggerBossSkillShake} from '../battleFx';
 import {getChapterAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
@@ -71,11 +71,6 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
   const attemptRef=useRef(attemptId),gesture=useRef<DragGesture|null>(null),suppressClick=useRef(false);
   const aimPointer=useRef<number|null>(null);
   const emitted=useRef(false),callbackRef=useRef(onResult);callbackRef.current=onResult;
-  // —— 表现层 diff（只读快照）：黑影掉血→伤害飘字+轻震；击败→强震；施法→边缘泛光。不影响任何战斗状态。 ——
-  const hostRef=useRef<HTMLElement>(null);
-  const floatsRef=useRef<BattleFloatText[]>([]);
-  const prevFoesRef=useRef<Map<string,{hp:number;x:number;y:number}>|null>(null);
-  const prevDefeatedRef=useRef(0);
   const hostPauseRef=useRef(paused);hostPauseRef.current=paused;
   const selectedRef=useRef(selected);selectedRef.current=selected;
   const hoverRef=useRef(hover);hoverRef.current=hover;
@@ -113,13 +108,13 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
     if(paused||hidden||chatOpen)return;
     setMoving(null);setSelected(id);
     const next=act({type:'SELECT_SKILL',catId:id});
-    if(!next.aim&&next.lastAction?.ok){setSelected(null);act({type:'CLOSE_INSPECTION'});triggerSkillGlow(hostRef.current);} // 即时技能施放成功同样泛光
+    if(!next.aim&&next.lastAction?.ok){setSelected(null);act({type:'CLOSE_INSPECTION'});}
     else if(next.aim)requestAnimationFrame(()=>boardRef.current?.focus({preventScroll:true}));
   }
   function confirmAim(position:Position){
     const aim=gameRef.current.aim;if(!aim)return;
     const next=act({type:'CAST_SKILL',catId:aim.catId,target:position});
-    if(next.lastAction?.ok){setSelected(null);setHover(null);triggerSkillGlow(hostRef.current);} // 施法成功：屏幕边缘金色泛光
+    if(next.lastAction?.ok){setSelected(null);setHover(null);}
   }
   function showMapArea(area:'goal'|'branch'|'boss'){
     setOverview(false);
@@ -163,27 +158,10 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
       const frozen=hostPauseRef.current||document.hidden;
       if(current.externallyPaused!==frozen)current=dispatchChapter(current,{type:'SET_EXTERNAL_PAUSE',paused:frozen});
       if(current.uiPaused!==uiPauseRef.current)current=dispatchChapter(current,{type:'SET_UI_PAUSE',paused:uiPauseRef.current});
+      const previousBossSkills=current.boss.slams;
       current=advanceChapter(current,dt);gameRef.current=current;
-      // 表现层 diff：黑影（含首领）掉血 → 红色像素伤害飘字 + 轻震；击败 → 强震。只读快照，不改状态。
-      const CELL_SIZE=80;
-      const foes=new Map<string,{hp:number;x:number;y:number}>();
-      for(const enemy of current.enemies)foes.set(enemy.id,{hp:Math.max(0,enemy.hp),x:(enemy.x+.5)*CELL_SIZE,y:(enemy.y+.5)*CELL_SIZE});
-      foes.set('boss',{hp:current.boss.hp,x:(current.boss.x+current.boss.width/2)*CELL_SIZE,y:(current.boss.y+current.boss.height/2)*CELL_SIZE});
-      const previousFoes=prevFoesRef.current;prevFoesRef.current=foes;
-      if(previousFoes&&!document.hidden){
-        let hitAny=false;
-        for(const[id,next]of foes){
-          const before=previousFoes.get(id);
-          if(!before||next.hp>=before.hp)continue;
-          hitAny=true;
-          floatsRef.current.push({x:next.x,y:next.y-14,text:`−${Math.round(before.hp-next.hp)}`,born:performance.now()});
-        }
-        if(current.defeated>prevDefeatedRef.current)triggerBattleShake(boardRef.current,'strong');
-        else if(hitAny)triggerBattleShake(boardRef.current,'light');
-        prevDefeatedRef.current=current.defeated;
-      }
-      pruneFloats(floatsRef.current,performance.now());
-      const context=canvasRef.current?.getContext('2d');if(context)paintChapter(context,current,selectedRef.current,hoverRef.current,floatsRef.current);
+      triggerBossSkillShake(boardRef.current,previousBossSkills,current.boss.slams);
+      const context=canvasRef.current?.getContext('2d');if(context)paintChapter(context,current,selectedRef.current,hoverRef.current);
       if(time-lastRender>=50){setGame(current);lastRender=time;}
       handle=requestAnimationFrame(frame);
     };
@@ -334,7 +312,7 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
     return()=>{observer.disconnect();window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);};
   },[inspected?.id,inspected?.x,inspected?.y,overview,skillTooltipOpen]);
 
-  return <section ref={hostRef} className="battle-l00 battle-chapter battle-immersive" data-scene="alley" data-testid="chapter-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.chapter-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
+  return <section className="battle-l00 battle-chapter battle-immersive" data-scene="alley" data-testid="chapter-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.chapter-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
     <BattleSceneBackdrop scene="alley" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS}/>
     <div className="btl-head"><div><span className="btl-eyebrow">CHAPTER 01 · CAT DEFENSE</span><strong>第一章 · 长巷尽头的黑影</strong></div><div className="btl-progress"><span>黑影已离场 {game.defeated+game.leaks} / {game.totalEnemies}</span><span data-testid="chapter-leaks" aria-label={`已漏过 ${game.leaks} 只黑影，最多 ${game.maxLeaks} 次`}>防线 {'●'.repeat(Math.max(0,game.maxLeaks-game.leaks))}{'○'.repeat(Math.min(game.maxLeaks,game.leaks))}</span></div></div>
     <div className="btl-wave-status"><strong data-testid="chapter-wave">第 {game.wave} / {game.totalWaves} 波 · 剩余 {remaining} 只黑影</strong><span>A4、D10、E10 三处来敌 · 首领必须击退</span></div>

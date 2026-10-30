@@ -11,7 +11,8 @@
 .battle-l00 .btl-tutorial-hand{filter:drop-shadow(2px 3px 1px #07191e)}
 .battle-l00 .btl-tutorial-hand.is-drag{animation:btl-tutorial-drag 2.8s ease-in-out infinite}
 .battle-l00 .btl-tutorial-hand.is-tap{animation:btl-tutorial-tap 1.8s ease-in-out infinite}
-.battle-l00 .btl-tutorial-card{position:absolute;z-index:18;box-sizing:border-box;min-width:0;max-width:calc(100% - 24px);margin:0;padding:16px 20px;border:1px solid #9ecbcb;border-left:5px solid #b5e4dc;border-radius:4px;background:linear-gradient(110deg,#142b35cc,#14252bd6);color:#fff9e8;box-shadow:0 5px 18px #07121888,inset 0 0 0 1px #d9f1e910;text-align:left;pointer-events:none;overflow:visible;text-shadow:0 1px 2px #000}
+.battle-l00 .btl-tutorial-card{position:absolute;z-index:18;box-sizing:border-box;min-width:0;max-width:calc(100% - 24px);margin:0;padding:16px 20px;border:1px solid #9ecbcb;border-left:5px solid #b5e4dc;border-radius:4px;background:linear-gradient(110deg,#142b35cc,#14252bd6);color:#fff9e8;box-shadow:0 5px 18px #07121888,inset 0 0 0 1px #d9f1e910;text-align:left;pointer-events:none;overflow:auto;text-shadow:0 1px 2px #000}
+.battle-l00 .btl-tutorial-card[data-scrollable=true]{pointer-events:auto}
 .battle-l00 .btl-tutorial-card *{pointer-events:none}
 .battle-l00 .btl-tutorial-card-copy{min-width:0}
 .battle-l00 .btl-tutorial-kicker{display:flex;justify-content:space-between;gap:12px;min-height:18px;margin:0 0 6px;color:#a6e1dc;font-size:13px;font-weight:600;line-height:1.4;letter-spacing:.04em}
