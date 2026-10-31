@@ -14,6 +14,8 @@ pwsh -File deploy/team-preview-haozhe/Deploy-Preview.ps1 -Init
 # kubeconfig 不在默认位置时
 pwsh -File deploy/team-preview-haozhe/Deploy-Preview.ps1 -KubeConfig <路径>
 
+# 预检已提交版本（默认使用本地 HEAD，不读未提交修改；无网络、镜像或集群操作）
+pwsh -NoProfile -File deploy/team-preview-haozhe/Deploy-Preview.ps1 -ValidateOnly
 # 改动部署配置后先跑本地离线校验（不碰集群、不碰镜像）
 pwsh -NoProfile -File deploy/team-preview-haozhe/Test-PreviewConfig.ps1 -AllowPlaceholder
 pwsh -NoProfile -File deploy/team-preview-haozhe/Test-Offline.ps1

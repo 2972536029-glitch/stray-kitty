@@ -20,6 +20,7 @@
   git diff --stat $online..origin/main -- server
   ```
 - [ ] 存档/账本兼容性确认：`GameState` 新增字段（如 `homeLayout`、`homeRepairs`）或 `payments.json` 结构变化时，评估「新代码写过的数据能否被旧代码读」——**回滚会丢新字段**（见文末回滚注意事项）
+- [ ] 目标 commit 的只读预检通过（只需 Git，本地无网络、镜像或集群操作）：`pwsh -NoProfile -File deploy/team-preview-haozhe/Deploy-Preview.ps1 -ValidateOnly`
 - [ ] 若改过本目录模板/脚本：离线校验已通过
   ```powershell
   pwsh -NoProfile -File deploy/team-preview-haozhe/Test-PreviewConfig.ps1 -AllowPlaceholder

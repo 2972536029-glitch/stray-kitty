@@ -17,6 +17,7 @@
 param(
     [ValidatePattern('^[a-fA-F0-9]{40}$')][string]$Commit,
     [switch]$Init,
+    [switch]$ValidateOnly,
     [string]$KubeConfig
 )
 
@@ -78,11 +79,16 @@ try {
         throw 'PowerShell 7 or later is required.'
     }
 
-    foreach ($tool in @('git', 'docker', 'kubectl')) {
+    $requiredTools = if ($ValidateOnly) { @('git') } else { @('git', 'docker', 'kubectl') }
+    foreach ($tool in $requiredTools) {
         $null = Get-Command -Name $tool -CommandType Application -ErrorAction Stop
     }
 
-    if (-not $Commit) {
+    if (-not $Commit -and $ValidateOnly) {
+        $currentPhase = 'resolve current checkout HEAD for offline validation'
+        $resolved = Invoke-NativeChecked -FilePath 'git' -Arguments @('-C', $repoRoot, 'rev-parse', '--verify', 'HEAD^{commit}') -Step 'Resolve HEAD' -Quiet
+        $Commit = $resolved.StdOut.Trim()
+    } elseif (-not $Commit) {
         $currentPhase = 'fetch origin/main'
         Step 'Refresh origin/main'
         $null = Invoke-NativeChecked -FilePath 'git' -Arguments @('-C', $repoRoot, 'fetch', 'origin', 'main') -Step 'git fetch origin main'
@@ -130,6 +136,17 @@ try {
     $worktreeHead = Invoke-NativeChecked -FilePath 'git' -Arguments @('-C', $worktree, 'rev-parse', 'HEAD') -Step 'Verify worktree commit' -Quiet
     if ($worktreeHead.StdOut.Trim() -ne $Commit) {
         throw 'Detached worktree HEAD does not match the selected release commit.'
+    }
+
+    if ($ValidateOnly) {
+        $currentPhase = 'offline validation'
+        Step 'Validate selected commit release template without Docker, registry, or Kubernetes'
+        $validation = & (Join-Path $worktreeBundle 'Test-PreviewConfig.ps1') -AllowPlaceholder
+        if ($validation.Validation -ne 'passed-offline') { throw 'Template validation did not pass.' }
+        $offlineReport = & (Join-Path $worktreeBundle 'Test-Offline.ps1') | ConvertFrom-Json
+        if ($offlineReport.status -ne 'passed') { throw 'Release offline negative tests did not pass.' }
+        Write-Host "Validation complete: commit $Commit; $($offlineReport.count) offline cases passed. No registry or cluster access."
+        return
     }
 
     $settings = Get-Content -LiteralPath (Join-Path $worktreeBundle 'release-settings.json') -Raw | ConvertFrom-Json

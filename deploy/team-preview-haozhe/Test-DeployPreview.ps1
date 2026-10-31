@@ -71,6 +71,11 @@ try {
     if (Test-Path -LiteralPath $tempPath) { Remove-Item -LiteralPath $tempPath -Force }
 }
 
+$repo = (Resolve-Path (Join-Path $bundle '../..')).Path
+$head = (Invoke-NativeChecked -FilePath 'git' -Arguments @('-C', $repo, 'rev-parse', 'HEAD') -Step 'test current commit' -Quiet).StdOut.Trim()
+$offlineRun = Invoke-NativeChecked -FilePath 'pwsh' -Arguments @('-NoProfile', '-File', $deployPath, '-ValidateOnly', '-Commit', $head) -Step 'release validation-only integration test' -Quiet
+Assert-Case 'validate-only-is-successful-without-registry-or-cluster' ($offlineRun.StdOut -match 'No registry or cluster access' -and $offlineRun.StdOut -match [regex]::Escape($head))
+
 $report = [ordered]@{
     status = 'passed'
     count = $results.Count
