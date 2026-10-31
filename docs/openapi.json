@@ -927,6 +927,21 @@
             "items": {
               "$ref": "#/components/schemas/PaymentTxn"
             }
+          },
+          "homeLayout": {
+            "type": "object",
+            "maxProperties": 200,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/HomePlacement"
+            },
+            "description": "可选的家具布置覆盖；furniture:家具ID 或 stage:阶段:摆件ID，缺省兼容旧 placements。stored=true 收回背包。"
+          },
+          "homeRepairs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "已完成的场景修缮部位；旧存档可省略，阶段标记仍有效。"
           }
         },
         "required": [
@@ -1497,6 +1512,12 @@
             "items": {
               "type": "string"
             }
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HomeRepairPart"
+            }
           }
         },
         "required": [
@@ -1938,6 +1959,9 @@
           },
           {
             "$ref": "#/components/schemas/ClaimParcelReward"
+          },
+          {
+            "$ref": "#/components/schemas/SaveHomeLayoutCommand"
           }
         ]
       },
@@ -2111,6 +2135,12 @@
             "items": {
               "$ref": "#/components/schemas/ParcelReward"
             }
+          },
+          "homeDecor": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HomeDecor"
+            }
           }
         },
         "required": [
@@ -2127,7 +2157,8 @@
           "pools",
           "tutorials",
           "assets",
-          "products"
+          "products",
+          "homeDecor"
         ]
       },
       "FurnitureProduct": {
@@ -2195,6 +2226,11 @@
           "type": {
             "type": "string",
             "const": "REPAIR_HOME"
+          },
+          "repairId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "场景修补部位 ID；省略时兼容修缮本阶段剩余工程。"
           }
         },
         "required": [
@@ -2930,6 +2966,180 @@
           "status",
           "createdAt"
         ]
+      },
+      "HomePlacement": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "x",
+          "y",
+          "stored"
+        ],
+        "properties": {
+          "x": {
+            "type": "integer",
+            "minimum": 80,
+            "maximum": 1592
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 150,
+            "maximum": 890
+          },
+          "stored": {
+            "type": "boolean"
+          }
+        }
+      },
+      "HomeLayoutChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "x",
+          "y",
+          "stored"
+        ],
+        "properties": {
+          "x": {
+            "type": "integer",
+            "minimum": 80,
+            "maximum": 1592
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 150,
+            "maximum": 890
+          },
+          "stored": {
+            "type": "boolean"
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        }
+      },
+      "SaveHomeLayoutCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "changes"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "SAVE_HOME_LAYOUT"
+          },
+          "changes": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 96,
+            "items": {
+              "$ref": "#/components/schemas/HomeLayoutChange"
+            }
+          }
+        }
+      },
+      "HomeDecor": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "objectId",
+          "stage",
+          "name",
+          "sprite",
+          "x",
+          "y",
+          "width",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "objectId": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "name": {
+            "type": "string"
+          },
+          "sprite": {
+            "type": "string"
+          },
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "integer"
+          },
+          "width": {
+            "type": "number",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string"
+          },
+          "front": {
+            "type": "boolean"
+          },
+          "wall": {
+            "type": "boolean"
+          },
+          "replacementSlot": {
+            "type": "string"
+          }
+        }
+      },
+      "HomeRepairPart": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description",
+          "x",
+          "y",
+          "cost"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "cost": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   },

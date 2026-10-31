@@ -1,329 +1,313 @@
 {
   "shelter": {
-    "width": 1536,
-    "height": 1024,
-    "alphaRange": [
-      0,
-      254
-    ],
+    "width": 2048,
+    "height": 1536,
     "frames": {
       "s1.box": {
-        "x": 44,
-        "y": 76,
-        "width": 331,
-        "height": 239
-      },
-      "s1.rag": {
-        "x": 423,
-        "y": 101,
-        "width": 354,
-        "height": 208
-      },
-      "s1.bucket": {
-        "x": 870,
-        "y": 81,
-        "width": 195,
-        "height": 229
-      },
-      "s1.basin": {
-        "x": 1192,
-        "y": 117,
-        "width": 303,
-        "height": 192
-      },
-      "s1.deadpots": {
-        "x": 32,
-        "y": 385,
-        "width": 371,
-        "height": 267
-      },
-      "s1.brokenrack": {
-        "x": 459,
-        "y": 342,
-        "width": 277,
-        "height": 333
-      },
-      "s1.boards": {
-        "x": 786,
-        "y": 439,
-        "width": 355,
-        "height": 218
-      },
-      "s1.tools": {
-        "x": 1199,
-        "y": 429,
-        "width": 300,
-        "height": 219
-      },
-      "s1.vine": {
-        "x": 18,
-        "y": 684,
-        "width": 370,
-        "height": 287
-      },
-      "s1.bench": {
-        "x": 408,
-        "y": 750,
-        "width": 372,
-        "height": 198
-      },
-      "s1.sack": {
-        "x": 795,
-        "y": 718,
-        "width": 378,
+        "x": 96,
+        "y": 131,
+        "width": 320,
         "height": 249
       },
+      "s1.rag": {
+        "x": 613,
+        "y": 161,
+        "width": 309,
+        "height": 190
+      },
+      "s1.bucket": {
+        "x": 1168,
+        "y": 119,
+        "width": 224,
+        "height": 274
+      },
+      "s1.basin": {
+        "x": 1626,
+        "y": 173,
+        "width": 332,
+        "height": 165
+      },
+      "s1.deadpots": {
+        "x": 66,
+        "y": 647,
+        "width": 379,
+        "height": 241
+      },
+      "s1.brokenrack": {
+        "x": 621,
+        "y": 623,
+        "width": 294,
+        "height": 289
+      },
+      "s1.boards": {
+        "x": 1117,
+        "y": 666,
+        "width": 326,
+        "height": 203
+      },
+      "s1.tools": {
+        "x": 1642,
+        "y": 662,
+        "width": 299,
+        "height": 212
+      },
+      "s1.vine": {
+        "x": 193,
+        "y": 1114,
+        "width": 125,
+        "height": 332
+      },
+      "s1.bench": {
+        "x": 538,
+        "y": 1146,
+        "width": 460,
+        "height": 267
+      },
+      "s1.sack": {
+        "x": 1148,
+        "y": 1135,
+        "width": 264,
+        "height": 289
+      },
       "s1.can": {
-        "x": 1185,
-        "y": 718,
-        "width": 315,
-        "height": 236
+        "x": 1638,
+        "y": 1163,
+        "width": 308,
+        "height": 234
       }
     }
   },
   "improvised": {
-    "width": 1448,
-    "height": 1086,
-    "alphaRange": [
-      0,
-      255
-    ],
+    "width": 2048,
+    "height": 1536,
     "frames": {
       "s2.workbench": {
-        "x": 38,
-        "y": 127,
-        "width": 316,
-        "height": 251
+        "x": 48,
+        "y": 100,
+        "width": 415,
+        "height": 311
       },
       "s2.straw": {
-        "x": 386,
-        "y": 194,
-        "width": 332,
-        "height": 183
-      },
-      "s2.bowls": {
-        "x": 753,
-        "y": 229,
-        "width": 327,
-        "height": 161
-      },
-      "s2.blanket": {
-        "x": 1122,
-        "y": 183,
-        "width": 293,
+        "x": 597,
+        "y": 153,
+        "width": 341,
         "height": 205
       },
+      "s2.bowls": {
+        "x": 1132,
+        "y": 189,
+        "width": 295,
+        "height": 133
+      },
+      "s2.blanket": {
+        "x": 1663,
+        "y": 161,
+        "width": 257,
+        "height": 189
+      },
       "s2.tinlamp": {
-        "x": 90,
-        "y": 459,
-        "width": 149,
-        "height": 241
+        "x": 184,
+        "y": 634,
+        "width": 143,
+        "height": 267
       },
       "s2.shelf": {
-        "x": 399,
-        "y": 428,
-        "width": 244,
-        "height": 273
+        "x": 612,
+        "y": 609,
+        "width": 312,
+        "height": 317
       },
       "s2.seedlings": {
-        "x": 719,
-        "y": 497,
-        "width": 367,
-        "height": 204
+        "x": 1093,
+        "y": 686,
+        "width": 373,
+        "height": 163
       },
       "s2.storage": {
-        "x": 1125,
-        "y": 488,
-        "width": 291,
-        "height": 224
+        "x": 1666,
+        "y": 662,
+        "width": 252,
+        "height": 212
       },
       "s2.nest": {
-        "x": 27,
-        "y": 732,
-        "width": 350,
-        "height": 269
+        "x": 44,
+        "y": 1144,
+        "width": 423,
+        "height": 271
       },
       "s2.scratcher": {
-        "x": 431,
-        "y": 753,
-        "width": 273,
-        "height": 249
+        "x": 652,
+        "y": 1156,
+        "width": 232,
+        "height": 247
       },
       "s2.cushion": {
-        "x": 778,
-        "y": 797,
-        "width": 287,
-        "height": 204
+        "x": 1115,
+        "y": 1176,
+        "width": 329,
+        "height": 207
       },
       "s2.plantstool": {
-        "x": 1161,
-        "y": 729,
-        "width": 254,
-        "height": 275
+        "x": 1691,
+        "y": 1138,
+        "width": 202,
+        "height": 283
       }
     }
   },
   "timber": {
-    "width": 1446,
-    "height": 1087,
-    "alphaRange": [
-      0,
-      255
-    ],
+    "width": 2048,
+    "height": 1536,
     "frames": {
       "s3.bench": {
-        "x": 28,
-        "y": 51,
-        "width": 359,
-        "height": 307
+        "x": 71,
+        "y": 82,
+        "width": 369,
+        "height": 348
       },
       "s3.chest": {
-        "x": 418,
-        "y": 116,
+        "x": 615,
+        "y": 160,
         "width": 305,
-        "height": 224
+        "height": 191
       },
       "s3.tower": {
-        "x": 798,
-        "y": 47,
-        "width": 229,
-        "height": 307
+        "x": 1137,
+        "y": 70,
+        "width": 286,
+        "height": 372
       },
       "s3.hammock": {
-        "x": 1090,
-        "y": 111,
-        "width": 334,
-        "height": 237
+        "x": 1626,
+        "y": 118,
+        "width": 331,
+        "height": 275
       },
       "s3.herbs": {
-        "x": 45,
-        "y": 390,
-        "width": 327,
-        "height": 313
+        "x": 56,
+        "y": 644,
+        "width": 399,
+        "height": 248
       },
       "s3.citrus": {
-        "x": 421,
-        "y": 369,
-        "width": 275,
-        "height": 332
+        "x": 645,
+        "y": 618,
+        "width": 246,
+        "height": 299
       },
       "s3.flowerpots": {
-        "x": 748,
-        "y": 401,
-        "width": 378,
-        "height": 328
+        "x": 1063,
+        "y": 655,
+        "width": 434,
+        "height": 226
       },
       "s3.seedlingrack": {
-        "x": 1203,
-        "y": 387,
-        "width": 176,
-        "height": 327
+        "x": 1676,
+        "y": 596,
+        "width": 231,
+        "height": 343
       },
       "s3.vine": {
-        "x": 31,
-        "y": 758,
-        "width": 360,
-        "height": 286
+        "x": 159,
+        "y": 1106,
+        "width": 194,
+        "height": 348
       },
       "s3.cloudnest": {
-        "x": 421,
-        "y": 810,
-        "width": 287,
-        "height": 181
+        "x": 632,
+        "y": 1119,
+        "width": 272,
+        "height": 322
       },
       "s3.castle": {
-        "x": 772,
-        "y": 750,
-        "width": 266,
-        "height": 293
+        "x": 1118,
+        "y": 1093,
+        "width": 324,
+        "height": 373
       },
       "s3.supplies": {
-        "x": 1079,
-        "y": 786,
-        "width": 335,
-        "height": 242
+        "x": 1636,
+        "y": 1163,
+        "width": 312,
+        "height": 234
       }
     }
   },
   "celebration": {
-    "width": 1448,
-    "height": 1086,
-    "alphaRange": [
-      0,
-      255
-    ],
+    "width": 2048,
+    "height": 1536,
     "frames": {
       "s4.banquet": {
-        "x": 88,
-        "y": 171,
-        "width": 336,
-        "height": 175
+        "x": 23,
+        "y": 123,
+        "width": 466,
+        "height": 265
       },
       "s4.flags": {
-        "x": 493,
-        "y": 179,
-        "width": 368,
-        "height": 142
+        "x": 582,
+        "y": 145,
+        "width": 372,
+        "height": 221
       },
       "s4.entryleft": {
-        "x": 907,
-        "y": 101,
-        "width": 154,
-        "height": 270
+        "x": 1197,
+        "y": 108,
+        "width": 166,
+        "height": 295
       },
       "s4.entryright": {
-        "x": 1176,
-        "y": 162,
-        "width": 204,
-        "height": 196
+        "x": 1624,
+        "y": 131,
+        "width": 336,
+        "height": 250
       },
       "s4.rug": {
-        "x": 67,
-        "y": 521,
-        "width": 352,
-        "height": 126
+        "x": 25,
+        "y": 656,
+        "width": 461,
+        "height": 223
       },
       "s4.gifts": {
-        "x": 491,
-        "y": 495,
-        "width": 264,
-        "height": 181
+        "x": 614,
+        "y": 640,
+        "width": 308,
+        "height": 255
       },
       "s4.flowers": {
-        "x": 824,
-        "y": 486,
-        "width": 285,
-        "height": 195
+        "x": 1157,
+        "y": 599,
+        "width": 246,
+        "height": 337
       },
       "s4.pennant": {
-        "x": 1230,
-        "y": 410,
-        "width": 117,
-        "height": 271
+        "x": 1700,
+        "y": 597,
+        "width": 184,
+        "height": 341
       },
       "s4.redcushion": {
-        "x": 83,
-        "y": 801,
-        "width": 291,
-        "height": 185
+        "x": 81,
+        "y": 1175,
+        "width": 350,
+        "height": 209
       },
       "s4.sunlamp": {
-        "x": 526,
-        "y": 783,
-        "width": 158,
-        "height": 195
+        "x": 663,
+        "y": 1129,
+        "width": 209,
+        "height": 301
       },
       "s4.starlamp": {
-        "x": 845,
-        "y": 751,
-        "width": 151,
-        "height": 227
+        "x": 1188,
+        "y": 1126,
+        "width": 184,
+        "height": 307
       },
       "s4.wreath": {
-        "x": 1150,
-        "y": 764,
-        "width": 230,
-        "height": 242
+        "x": 1625,
+        "y": 1114,
+        "width": 333,
+        "height": 332
       }
     }
   },
