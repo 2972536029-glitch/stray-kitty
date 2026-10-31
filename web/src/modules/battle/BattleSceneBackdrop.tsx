@@ -11,7 +11,7 @@ import {paintScenePerimeter} from './scene-perimeter-art';
 import {paintPerimeterProps} from './scene-perimeter-props';
 import {getJoinedObstacleCells,paintConnectedObstacleScenery} from './scene-connected-obstacles';
 import {paintForegroundScenery} from './scene-foreground-art';
-import {whenDetailedExteriorsReady} from './scene-detailed-exteriors';
+import {paintDetailedAccent,whenDetailedExteriorsReady} from './scene-detailed-exteriors';
 
 interface Props {scene:BattleSceneId;boardRef:RefObject<HTMLDivElement|null>;columns:number;rows:number;cells?:readonly {x:number;y:number}[];spawns?:readonly {x:number;y:number}[];goal?:{x:number;y:number};darkened?:boolean}
 const scrollSelector='.prologue-board-scroll,.chapter-board-scroll,.market-board-scroll,.greenhouse-board-scroll,.tunnel-board-scroll,.finale-board-scroll';
@@ -125,7 +125,10 @@ export function BattleSceneBackdrop({scene,boardRef,columns,rows,cells,spawns,go
       if(room.left>0)occupied.push({x:0,y:0,width:room.left,height:h});
       if(room.right<w)occupied.push({x:Math.max(0,room.right),y:0,width:w-Math.max(0,room.right),height:h});
       const prop=(kind:ScenePropKind,x:number,y:number,size:number,index=0)=>{
-        paintSceneProp(ctx,scene,kind,x,y,size,index);occupied.push({x,y,width:size,height:size});
+        ctx.save();ctx.translate(x,y);ctx.scale(size/80,size/80);
+        const detailed=paintDetailedAccent(ctx,kind);ctx.restore();
+        if(!detailed)paintSceneProp(ctx,scene,kind,x,y,size,index);
+        occupied.push({x,y,width:size,height:size});
       };
       // The adviser's own foreground seat is scenery, never a cat slot or an attack target.
       if(!illustrated)prop('crate',24,h-111,124);

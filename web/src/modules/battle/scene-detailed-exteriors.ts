@@ -9,12 +9,13 @@ const crops:Record<DetailedExteriorKind,readonly [number,number,number,number]>=
   'planted-bed':[76,686,758,262],
   'glass-frame':[1008,683,452,272],
 };
-type Asset='exteriors'|'obstacles'|'workstations'|'materials';
+type Asset='exteriors'|'obstacles'|'workstations'|'materials'|'accents';
 const urls:Record<Asset,string>={
   exteriors:new URL('./assets/scene-detailed-residences-garden-v1.png',import.meta.url).href,
   obstacles:new URL('./assets/scene-detailed-obstacles-v1.png',import.meta.url).href,
   workstations:new URL('./assets/scene-detailed-workstations-v1.png',import.meta.url).href,
   materials:new URL('./assets/scene-refined-materials-v1.png',import.meta.url).href,
+  accents:new URL('./assets/scene-small-accents-v1.png',import.meta.url).href,
 };
 const atlases=new Map<Asset,HTMLImageElement>(),listeners=new Map<Asset,Set<()=>void>>();
 function source(asset:Asset='exteriors'){
@@ -97,6 +98,29 @@ export function paintDetailedWorkstation(ctx:CanvasRenderingContext2D,kind:Works
   const [sx,sy,sw,sh]=workstations[kind],scale=Math.min(width/sw,height/sh),dw=sw*scale,dh=sh*scale;
   const sprite=sceneryRaster(image,[sx,sy,sw,sh],dw,dh);if(!sprite)return false;
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(sprite,(width-dw)/2,height-dh,dw,dh);ctx.restore();return true;
+}
+
+type Accent='bin'|'crate'|'sacks'|'drain'|'planter'|'broken-pot'|'pipe'|'barrier'|'notice-stall';
+// The small legacy accents keep their original 80-unit placement boxes. Only
+// their material rendering changes; these are never used for tactical obstacles.
+const accentBoxes:Record<Accent,readonly [number,number,number,number]>={
+  bin:[12,8,58,59],crate:[10,10,64,58],sacks:[8,18,63,48],
+  drain:[10,20,60,51],planter:[10,17,59,48],'broken-pot':[11,20,61,47],
+  pipe:[5,22,70,51],barrier:[8,16,68,52],'notice-stall':[4,4,72,66],
+};
+const accentCrops:Record<Accent,readonly [number,number,number,number]>={
+  bin:[77,79,295,355],crate:[452,90,353,357],sacks:[852,113,370,329],
+  drain:[46,619,365,171],planter:[441,496,359,316],'broken-pot':[873,533,343,283],
+  pipe:[52,943,353,187],barrier:[447,921,358,217],'notice-stall':[858,842,358,333],
+};
+export function paintDetailedAccent(ctx:CanvasRenderingContext2D,kind:string){
+  if(!Object.prototype.hasOwnProperty.call(accentBoxes,kind))return false;
+  const image=source('accents');if(!image)return false;
+  const key=kind as Accent,[x,y,w,h]=accentBoxes[key],crop=accentCrops[key];
+  const scale=Math.min(w/crop[2],h/crop[3]),dw=crop[2]*scale,dh=crop[3]*scale;
+  const sprite=sceneryRaster(image,crop,dw,dh);if(!sprite)return false;
+  ctx.save();ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(sprite,x+(w-dw)/2,y+h-dh,dw,dh);ctx.restore();return true;
 }
 
 type RefinedMaterial='teal-cloth'|'rust-cloth'|'olive-cloth'|'blue-cloth'|'metal'|'wood';
