@@ -1,6 +1,7 @@
 import geometry from '../../../../level_design/chapter4/data/chapter4.surfaces.json';
 import {TunnelWalkableMask} from './TunnelWalkableMask';
 import type {TunnelLayer, tunnelConnections} from './navigation';
+import {tunnelExitBlockerPolygon} from './battleExit';
 
 export const tunnelSurfaces = geometry;
 export type RaisedTunnelSurface = 'tank-ridge' | 'south-ridge' | 'west-ridge';
@@ -45,6 +46,7 @@ export function tunnelGroundMask(floor: TunnelLayer, width: number, height: numb
   for (const polygon of geometry[floor].walkable) paint(pixels, width, height, polygon, 255);
   const layer = geometry[floor];
   if ('blockedAfterWalkable' in layer) for (const polygon of layer.blockedAfterWalkable) paint(pixels, width, height, polygon, 0);
+  if (floor === 'L0') paint(pixels, width, height, tunnelExitBlockerPolygon, 0);
   return new TunnelWalkableMask(width, height, pixels, radius);
 }
 

@@ -1,4 +1,5 @@
 import {TunnelEventMarkers,nearbyLockedTunnelEvent,type TunnelMarkerState} from './eventMarkers';
+import {drawTunnelExitBarrier,tunnelBossAt,tunnelExitBlockerPolygon} from './battleExit';
 import {drawPixelCat} from '../../adapters/canvas/pixelCat';
 import mapData from '../../../../level_design/chapter4/data/chapter4.map.json';
 import lighting from '../../../../level_design/chapter4/data/chapter4.lighting.json';
@@ -124,7 +125,7 @@ export class TunnelMap {
     }
     if (this.movement) return;
     if (this.keys.has('e')) {this.keys.delete('e'); if (this.nearby) interact(this.nearby.id);}
-    if (flags.includes('tunnel_false_kitten_trap_found') && flags.includes('valve_three_investigated') && this.floor === 'L0' && this.position.x >= 1475 && this.position.x <= 1602 && this.position.y >= 721 && this.position.y <= 798) {
+    if (tunnelBossAt(this.floor, this.surface, this.position, flags)) {
       if (!this.bossRequested) {this.bossRequested = true; interact('tunnel_exit_boss');}
     } else this.bossRequested = false;
   }
@@ -188,6 +189,7 @@ export class TunnelMap {
     const offsetX = (width - camera.width * scale) / 2, offsetY = (height - camera.height * scale) / 2;
     context.translate(offsetX, offsetY); context.scale(scale, scale); context.translate(-this.cameraPosition.x, -this.cameraPosition.y);
     const art = this.art[this.floor]; if (art.complete && art.naturalWidth) context.drawImage(art, 0, 0, WIDTH, HEIGHT);
+    if (this.floor === 'L0') drawTunnelExitBarrier(context);
     if (this.collisionVisible) {
       context.save(); context.globalAlpha = .45;
       const paint = (polygon: number[][], color: string) => {
@@ -201,6 +203,7 @@ export class TunnelMap {
         for (const polygon of tunnelSurfaces[this.floor].blocked) paint(polygon, '#000');
         if (this.floor === 'L0') for (const polygons of Object.values(raisedSurfacePolygons)) for (const polygon of polygons) paint(polygon, '#000');
         for (const polygon of tunnelSurfaces[this.floor].walkable) paint(polygon, '#fff');
+        if (this.floor === 'L0') paint(tunnelExitBlockerPolygon, '#000');
       }
       context.restore();
     }

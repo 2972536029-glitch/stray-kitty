@@ -7,6 +7,7 @@ import map from '../level_design/chapter4/data/chapter4.map.json';
 import {tunnelConnections, tunnelPortalDisplay} from '../web/src/modules/chapter4/navigation';
 import {raisedRidgeMask, tankRidgeMask, tunnelClimbSurface, tunnelGroundMask, tunnelSurfaceConnections} from '../web/src/modules/chapter4/surfaces';
 import {nearbyLockedTunnelEvent,tunnelMovementChoices,type TunnelMarkerState} from '../web/src/modules/chapter4/eventMarkers';
+import {tunnelBattleExit,tunnelBossAt} from '../web/src/modules/chapter4/battleExit';
 
 test('valve E approach stays clear of C/Space activation and keeps prerequisite feedback',()=>{
   const valve=map.events.find(e=>e.id==='tunnel_valve_three')!;
@@ -68,6 +69,20 @@ function decodeGrayPng(path:string) {
 }
 
 const mask=(file:string)=>decodeGrayPng(fileURLToPath(new URL(`../level_design/chapter4/collision/${file}`,import.meta.url)));
+
+test('final battle approach remains reachable while the visible exit grate blocks the deck edge',()=>{
+  const ground=mask('chapter4_L0_walkable.png'),flags=['tunnel_false_kitten_trap_found','valve_three_investigated'];
+  let cursor={x:1520,y:759};
+  assert.ok(ground.isWalkable(cursor));
+  for(let frame=0;frame<100;frame++)cursor=ground.move(cursor,{x:3,y:0}).position;
+  assert.ok(cursor.x>1570,'the approach to the grate stays open');
+  assert.ok(cursor.x<tunnelBattleExit.blocker.left-9,'the cat cannot pass the grate');
+  assert.equal(tunnelBossAt('L0','ground',cursor,flags),true,'the stopped cat remains inside the boss trigger');
+  assert.equal(tunnelBossAt('L0','ground',cursor,[]),false,'the existing prerequisite still applies');
+  assert.equal(tunnelBossAt('Lm1','ground',cursor,flags),false);
+  assert.equal(tunnelBossAt('L0','south-ridge',cursor,flags),false);
+  for(const y of [730,750,775,795])assert.equal(ground.isWalkable({x:1620,y}),false,'the whole exit deck beyond the grate is blocked');
+});
 
 test('production surfaces admit the authored spawn and all C/F/Space connector landings',()=>{
   const l0=mask('chapter4_L0_walkable.png'),lm1=mask('chapter4_Lminus1_walkable.png');

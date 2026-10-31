@@ -22,6 +22,10 @@
     "Lm1": "collision/chapter4_Lminus1_walkable.png",
     "pixelInterpretation": "white=walkable black=blocked; production collision samples the paw contact ellipse, not the upright sprite; do not use outdated embedded draft SVG geometry"
   },
+  "battleExit": {
+    "trigger": {"left": 1475, "right": 1602, "top": 721, "bottom": 798},
+    "blocker": {"left": 1608, "right": 1672, "top": 720, "bottom": 804}
+  },
   "events": [
     {
       "id": "tunnel_entry",

@@ -68,3 +68,5 @@ The reviewed L0/L-1 pavement trace is now exported into the production grayscale
 The six fixed interactions now use cached pixel props and floating labels. Unfinished mandatory names stay visible on their floor; optional names fade with proximity. Random encounter zones remain unmarked. Nearby E interactions take priority over crossing labels.
 
 The approved north C, west ridge C and valve-side Space anchors are separated from the third valve's 56px interaction circle. Their canonical coordinates are shared by marker drawing and traversal. Raised landings, collision masks, deliberate blockers, event outcomes and prerequisite flags are unchanged. The standalone review is `tools/map-review/chapter4-events`.
+
+The final L0 exit has a visible metal grate at x=1608 across the deck. Its collision boundary and the existing battle trigger share `chapter4.map.json` data: the cat stops inside the trigger instead of reaching the map edge, including while prerequisites are missing or a battle request is pending. Victory continues to the authored rescue narrative and then home; Chapter 5 starts from the greenhouse with the existing three-clue requirement.
