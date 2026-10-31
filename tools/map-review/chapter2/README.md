@@ -17,12 +17,18 @@ Preparation reads the current runtime geometry and generates the ignored JSON ma
 - Southern cargo curbs: http://127.0.0.1:5190/?focus=south-curb
 - L0 paved junction: http://127.0.0.1:5190/?focus=junction
 - Widened L1 northwest roof: http://127.0.0.1:5190/?focus=nw-roof
+- North street above the information stalls: http://127.0.0.1:5190/?focus=north-curb
+- Striped-awning island curb: http://127.0.0.1:5190/?focus=island-curb
+- Planted-block bend: http://127.0.0.1:5190/?focus=island-bend
+- Both restored stall obstacles: http://127.0.0.1:5190/?focus=stalls
 
 ## Candidate behavior
 
 `build-trace.py` defines the outlines and writes the inspectable `trace-profile.json`, 2px raw masks and centre-safe masks eroded by the existing 10px collision radius. Yellow shows the combined pavement outline, without internal seams between overlapping shapes. Cyan shows legal cat-centre positions. Difference mode shows old-only positions in red and candidate-only positions in green; these are review differences, not automatically proven errors.
 
 The L0 southern curve and junction follow the visible curbs. The L1 northwest connector is wide enough to walk straight north from the right side of the C landing. The southern cargo obstacle and north gate are visible using the existing warehouse crate sprite at map pixel density, with ambient shading and contact shadows. Source artwork is reused without editing the image files.
+
+The approved L0 follow-up restores two solid footprints beneath the existing information-stall row and striped-awning island. These are ground footprints rather than silhouettes of overhanging art: the northern passage permits rightward travel and the island's western edge permits walking close to its curb. The northern street and planted-block bend also follow the visible road edges more closely. Both the game and review tool apply these solids in addition to the traced surface. Roof/underground masks, existing cargo and battle barriers, and C/F anchors are retained.
 
 The preview retains the original cargo and battle obstacles and reuses the C/F transition controller, animation timing, portal identities and victory gate. Candidate endpoints snap locally to legal ground within 48px; the actual game coordinates are unchanged. The local walking model uses swept steps and axis sliding. It is a review model, not an integrated gameplay replacement.
 

@@ -19,12 +19,13 @@ let floor:MarketFloor='L0',cat:Point={x:marketEntry.x,y:marketEntry.y},height=0,
 let zoom=1,pan:Point={x:0,y:0},size={width:1,height:1},drag:{start:Point;pan:Point}|null=null,artOnly=false,follow=false;
 let lastTime=performance.now(),lastInfo=0,message='候选描边已载入。所有行走只发生在预览中。';
 const focusName=new URLSearchParams(location.search).get('focus');
-const focusCenter=focusName==='nw-roof'?{x:679,y:208}:focusName==='junction'?{x:795,y:625}:focusName==='south-curb'?{x:902,y:706}:null;
+const focusCenter=focusName==='island-curb'?{x:1100,y:310}:focusName==='north-curb'?{x:945,y:165}:focusName==='island-bend'?{x:850,y:535}:focusName==='stalls'?{x:1000,y:270}:focusName==='nw-roof'?{x:679,y:208}:focusName==='junction'?{x:795,y:625}:focusName==='south-curb'?{x:902,y:706}:null;
 const mode=()=>get<HTMLSelectElement>('mode').value,cleared=()=>checked('cleared');
 const candidate=()=>mode()!=='current';
 function index(p:Point){const x=Math.floor(p.x/step),y=Math.floor(p.y/step);return x<0||y<0||x>=cols||y>=rows?-1:y*cols+x;}
 function specialBlock(f:MarketFloor,p:Point){
   if(p.x<10||p.y<10||p.x>1662||p.y>931)return true;
+  if(f==='L0'&&marketMovementBlockReason(f,p.x,p.y,cleared())?.startsWith('solid building'))return true;
   if(f==='L0'&&nightMarketSpatial.actionObstacles.some(o=>distanceToSegment(p.x,p.y,o.a,o.b)<o.radius+10))return true;
   const b=nightMarketSpatial.battleBarrier;return f===b.layer&&distanceToSegment(p.x,p.y,b.a,b.b)<b.radius+10+(cleared()?3:0);
 }
@@ -107,6 +108,13 @@ function render(){
   const d=devicePixelRatio||1;ctx.setTransform(d,0,0,d,0,0);ctx.fillStyle='#071019';ctx.fillRect(0,0,size.width,size.height);ctx.translate(pan.x,pan.y);ctx.scale(zoom,zoom);ctx.imageSmoothingEnabled=true;
   const image=images[floor];if(image.complete&&image.naturalWidth)ctx.drawImage(image,0,0,1672,941);
   if(floor==='L0')paintMarketCargo(ctx);
+  if(!artOnly&&['stalls','north-curb','island-curb'].includes(focusName??'')&&floor==='L0'){
+    for(const solid of nightMarketSpatial.solids.filter(s=>'id' in s)){
+      if(solid.type!=='poly')continue;
+      ctx.beginPath();solid.pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();
+      ctx.fillStyle='#ffad5920';ctx.fill();ctx.strokeStyle='#ffad59';ctx.lineWidth=1.5/zoom;ctx.stroke();
+    }
+  }
   if(!artOnly){
     ctx.save();ctx.globalAlpha=Number(get<HTMLInputElement>('opacity').value)/100;ctx.imageSmoothingEnabled=false;
     if(checked('showMask')){if(mode()==='difference'){ctx.drawImage(removed,0,0,cols*2,rows*2);ctx.drawImage(added,0,0,cols*2,rows*2);}else ctx.drawImage(candidate()?candidateView.canvas:currentView.canvas,0,0,cols*2,rows*2);}
@@ -133,6 +141,9 @@ function frame(now:number){const dt=Math.min((now-lastTime)/1000,.05);lastTime=n
   requestAnimationFrame(frame);
 }
 buildViews();const start=nearest('L0',cat);if(start)cat=start;
+if(focusName==='north-curb'||focusName==='island-bend'){get<HTMLInputElement>('raw').checked=true;get<HTMLInputElement>('anchors').checked=false;relocate(focusName==='north-curb'?{x:935,y:178}:{x:840,y:533},'L0');center(focusCenter!,5);message='黄线：铺装路缘；青线：预留猫咪碰撞半径后的可走中心。北侧街面与花坛转角已按路缘放宽，原有实物障碍与 C / F 连接保持。';}
+if(focusName==='island-curb'){get<HTMLInputElement>('anchors').checked=false;relocate({x:1090,y:316},'L0');center(focusCenter!,5);message='条纹棚花坛：橙线为实物落地碰撞，青线为可走中心；已向内收回左侧碰撞，使猫咪能沿路缘通行。';}
+if(focusName==='stalls'){get<HTMLInputElement>('anchors').checked=false;relocate({x:1025,y:236},'L0');center(focusCenter!,4);message='橙线：两处实物障碍的落地轮廓；青线：已留出猫咪碰撞半径的可走中心区域。此处缝隙已小幅放宽；WASD / 方向键试走，按住 Tab 对照原图。';}
 if(focusName==='south-curb'){get<HTMLInputElement>('raw').checked=true;get<HTMLInputElement>('anchors').checked=false;relocate({x:865,y:717},'L0');center({x:902,y:706},5);message='本轮重描两侧路缘。黄线为铺装边缘，青色为保留 10px 碰撞余量后的猫咪中心区域。';}
 if(focusName==='junction'){get<HTMLInputElement>('raw').checked=true;get<HTMLInputElement>('anchors').checked=false;relocate({x:795,y:610},'L0');center(focusCenter!,5);message='Pavement bend retraced; internal seams removed. Cat collision radius remains 10px.';}
 if(focusName==='nw-roof'){get<HTMLInputElement>('raw').checked=true;relocate({x:700,y:257},'L1');center(focusCenter!,5);message='L1 northwest roof: straight-up clearance from the right side of the C landing; anchors unchanged.';}
