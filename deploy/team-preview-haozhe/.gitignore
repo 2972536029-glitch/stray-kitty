@@ -1,5 +1,6 @@
 rendered/
 test-output/
+releases/
 build-context/
 private/
 *.env
