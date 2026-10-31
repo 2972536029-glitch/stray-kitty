@@ -8,19 +8,20 @@ import './repairs.css';
 interface Props {scene:DemoScene;state:GameState;catalog:Catalog;busy:boolean;pending:boolean;error:string;onRepair:(c:GameCommand)=>Promise<boolean>;onRetry:()=>void}
 export default function HomeRepairOverlay({scene,state,catalog,busy,pending,error,onRepair,onRetry}:Props){
   const project=currentHomeRenovation(state,catalog),parts=project?.parts??[];
-  const [selected,setSelected]=useState(''),[message,setMessage]=useState('');
+  const [selected,setSelected]=useState(''),[message,setMessage]=useState(''),[renovating,setRenovating]=useState(scene.homeRenovating);
   const root=useRef<HTMLDivElement>(null),inFlight=useRef(false);
   const part=parts.find(p=>p.id===selected&&!state.homeRepairs?.includes(p.id));
-  const locked=busy||pending,requirement=part&&repairRequirements(state,part);
+  const locked=busy||pending||renovating,requirement=part&&repairRequirements(state,part);
   useEffect(()=>{
-    let frame=0;
+    let frame=0,wasRenovating=scene.homeRenovating;setRenovating(wasRenovating);
     const position=()=>{
+      if(wasRenovating!==scene.homeRenovating){wasRenovating=scene.homeRenovating;setRenovating(wasRenovating);}
       const bounds=scene.homeCanvas.getBoundingClientRect();
       for(const p of parts){
         const marker=root.current?.querySelector<HTMLElement>(`[data-repair-id="${p.id}"]`);if(!marker)continue;
         const point=scene.homeWorldToClient(p.x,p.y);
         marker.style.left=point.x+'px';marker.style.top=point.y+'px';
-        marker.hidden=point.x<bounds.left+18||point.x>bounds.right-18||point.y<bounds.top+20||point.y>bounds.bottom-32;
+        marker.hidden=wasRenovating||point.x<bounds.left+18||point.x>bounds.right-18||point.y<bounds.top+20||point.y>bounds.bottom-32;
       }
       if(part){const card=root.current?.querySelector<HTMLElement>('.home-repair-card');if(card){const p=scene.homeWorldToClient(part.x,part.y);card.style.left=Math.max(16,Math.min(window.innerWidth-card.offsetWidth-16,p.x+28))+'px';card.style.top=Math.max(100,Math.min(window.innerHeight-card.offsetHeight-18,p.y+30))+'px';}}
       frame=requestAnimationFrame(position);
@@ -34,10 +35,10 @@ export default function HomeRepairOverlay({scene,state,catalog,busy,pending,erro
   },[locked]);
   const repair=async()=>{
     if(!part||locked||inFlight.current||!requirement?.affordable||requirement.missing.length)return;
-    inFlight.current=true;const name=part.name;
+    inFlight.current=true;const name=part.name;scene.prepareHomeRepair(part);
     try {if(await onRepair({type:'REPAIR_HOME',repairId:part.id})){playSound('pickup');setMessage(`✓ ${name}完成`);setSelected('');}}finally{inFlight.current=false;}
   };
-  useEffect(()=>{if(!message)return;const timer=setTimeout(()=>setMessage(''),2600);return()=>clearTimeout(timer);},[message]);
+  useEffect(()=>{if(!message||renovating)return;const timer=setTimeout(()=>setMessage(''),2600);return()=>clearTimeout(timer);},[message,renovating]);
   return <div className="home-repairs" ref={root} aria-label="花房场景修缮">
     {parts.filter(p=>!state.homeRepairs?.includes(p.id)).map(p=>{
       const waiting=repairRequirements(state,p).missing.length>0;
@@ -52,6 +53,6 @@ export default function HomeRepairOverlay({scene,state,catalog,busy,pending,erro
       <button className="home-repair-confirm" disabled={locked||!requirement?.affordable||!!requirement?.missing.length} onClick={()=>void repair()}>{busy?'正在修补…':'修补这里'}</button>
       {(error||pending)&&<div role="alert" className="home-repair-error">{error||'修缮结果待确认，请重试。'}<button disabled={busy} onClick={onRetry}>重试上次操作</button></div>}
     </section>}
-    {message&&<p className="home-repair-toast" role="status">{message}</p>}
+    {message&&!renovating&&<p className="home-repair-toast" role="status">{message}</p>}
   </div>;
 }

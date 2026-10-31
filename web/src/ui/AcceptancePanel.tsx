@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
 import type {Catalog, GameCommand, GameState, QATools} from '../contracts';
 import {QA_CHAPTERS, QA_PHASE_LABELS, qaCurrentActions} from '../modules/qa/flow';
 import Modal from './Modal';
+import {HomeBattleTrials} from './HomePanel';
 import './acceptance.css';
 
 interface Props {
@@ -49,6 +50,7 @@ export default function AcceptancePanel({state, catalog, busy, pending, error, l
       {tools?.enabled && <ol className="qa-checkpoints">{checkpoints.map((point, index) => <li key={point.id} data-current={state.qaCheckpointId === point.id || undefined}><span className="qa-step" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span><div><h4>{point.title}<small>{QA_PHASE_LABELS[point.phase]}</small></h4><p>{point.detail}</p></div><button data-testid={point.id === 'market.explore' ? 'dev-enter-market-exploration' : point.id === 'market.story' ? 'dev-start-market-story' : point.id === 'alley.explore' ? 'dev-direct-alley' : `qa-load-${point.id}`} disabled={locked} onClick={() => void onCommand({type: 'QA_CHECKPOINT', checkpointId: point.id})}>{state.qaCheckpointId === point.id ? '重新验收' : '进入验收'}</button></li>)}</ol>}
       {tools?.enabled && events.length > 0 && <section className="qa-events"><div><h4>单张事件卡</h4><p>直接打开指定事件，检查选项、掷骰与后果。所需伙伴和事件链条件会自动备齐。</p></div><label>选择事件<select value={event?.id ?? ''} disabled={locked} onChange={e => setEventId(e.target.value)}>{events.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label><button data-testid="qa-load-event" disabled={locked || !event} onClick={() => event && void onCommand({type: 'QA_CHECKPOINT', checkpointId: event.id})}>验收这张事件卡</button>{(selected.id === 'greenhouse' || selected.id === 'finale') && <small>这里提供独立事件卡验收，自由探索地图尚未接入。</small>}</section>}
     </section>
+    {state.phase==='home' && tools?.enabled && <HomeBattleTrials state={state} disabled={locked} onCommand={c=>void onCommand(c)}/>}
     <details className="qa-diagnostics"><summary>查看状态详情</summary><dl><dt>阶段 / 地图</dt><dd>{state.phase} / {state.mapId}</dd><dt>剧情节点</dt><dd>{state.storyNodeId || '无'}</dd><dt>验收节点</dt><dd>{state.qaCheckpointId || '未进入验收进度'}</dd><dt>存档版本</dt><dd>{state.revision}</dd></dl><p>{state.lastResult.message}</p></details>
   </Modal>;
 }

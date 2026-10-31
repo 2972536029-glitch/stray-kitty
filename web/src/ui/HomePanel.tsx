@@ -1,23 +1,10 @@
-import {useEffect, useState} from 'react';
-import type {Catalog, GameCommand, GameState} from '../contracts';
+import type {GameCommand,GameState} from '../contracts';
 import {ChapterLoadout} from '../modules/battle/ChapterLoadout';
 import {MarketLoadout} from '../modules/battle/MarketLoadout';
 import {GreenhouseLoadout} from '../modules/battle/GreenhouseLoadout';
 import {TunnelLoadout} from '../modules/battle/TunnelLoadout';
 import {FinaleLoadout} from '../modules/battle/FinaleLoadout';
-import {playSound} from './soundEffects';
-import {chapterExploreCommand, chapterStoryCommand} from '../core/chapter-navigation';
-
-const PANEL_OPEN_KEY = 'stray-kitty.make-it-ours.open';
-// 记忆玩家上次的折叠/展开状态；第一次进花房（还没有记忆）默认展开。
-function rememberedOpen(): boolean {
-  try {
-    const saved = localStorage.getItem(PANEL_OPEN_KEY);
-    return saved === null || saved === 'open';
-  } catch {
-    return true;
-  }
-}
+import {chapterExploreCommand,chapterStoryCommand} from '../core/chapter-navigation';
 
 const CHATTER_CALLBACKS: {flag: string; speaker: string; text: string}[] = [
   {flag: 'sack_cat_freed', speaker: '团子', text: '“上回麻袋里那只小的，今天蹲在墙头冲我摆尾巴。这巷子啊，记情。”'},
@@ -31,153 +18,29 @@ const CHATTER_CALLBACKS: {flag: string; speaker: string; text: string}[] = [
   {flag: 'wall_kitten_friend', speaker: '旁白', text: '回花房的路上，墙头方向传来一声短促的招呼，像在替你们看着巷口。'},
 ];
 
-export default function HomePanel({state, disabled, onCommand, onShop, onParcels, onWarehouse, onDecorate}: {state: GameState; catalog: Catalog; disabled: boolean; onCommand: (command: GameCommand) => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onWarehouse: () => void; onDecorate: () => void}) {
-  // 伸缩抽屉：先按收缩态挂载，延迟一拍再展开，让玩家看清“这里有一个可以伸缩的面板”。
-  const [open, setOpen] = useState(rememberedOpen);
-  const [revealed, setRevealed] = useState(false);
-  // 首次展开走 1s 的慢速滑入，之后恢复常规速度。
-  const [settled, setSettled] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setRevealed(true), 180);
-    return () => clearTimeout(timer);
-  }, []);
-  useEffect(() => {
-    if (!revealed || !open || settled) return;
-    const timer = setTimeout(() => setSettled(true), 1100);
-    return () => clearTimeout(timer);
-  }, [revealed, open, settled]);
-  const expanded = revealed && open;
-  const toggle = (next: boolean) => {
-    setOpen(next);
-    playSound(next ? 'open' : 'close');
-    try {localStorage.setItem(PANEL_OPEN_KEY, next ? 'open' : 'closed');} catch {/* 隐私模式下记忆失败，不影响本次游玩 */}
-  };
-  const hasBattleTrials = state.flags.includes('alley_rescued') || state.flags.includes('momo_joined');
-  const needsGreenhouseDefense = state.flags.includes('chapter_3_started') && state.flags.includes('momo_joined') && !state.flags.includes('greenhouse_fortified');
-  const tunnelComplete = state.flags.includes('tunnel_explored') && state.flags.includes('cats_rescued_batch1');
-  return <section className={`journal-card home-panel ${expanded ? 'home-panel-open' : 'home-panel-closed'}${settled ? '' : ' home-panel-entering'}`}>
-    {!expanded && <button className="home-drawer-tab" aria-expanded={false} aria-controls="make-it-ours-panel" onClick={() => toggle(true)}><span aria-hidden="true">◀</span><small>整理家园</small></button>}
-    <div className="home-panel-content" id="make-it-ours-panel">
-      <div className="home-panel-head"><div className="home-panel-title"><span className="eyebrow">MAKE IT OURS</span><h2>整理我们的家</h2></div><button className="home-panel-close" aria-expanded onClick={() => toggle(false)} aria-controls="make-it-ours-panel"><span aria-hidden="true">✕</span><small>收起</small></button></div>
-      <button className="home-warehouse-entry" data-sound="open" onClick={() => {playSound('open');onWarehouse();}}>▧ 家园仓库<small>查看库存 · 选择出战补给</small></button>
-    {tunnelComplete && !state.flags.includes('finale_completed') && <section className="home-mainline-step" aria-label="第五章进度"><h3>第五章：废弃大仓库</h3><p>第四章救援已完成。准备好后，前往仓库营救剩下的伙伴。</p>{(
-      !state.flags.includes('finale_started') ? (
-        (state.inventory.clue ?? 0) < 3 ? (
-          <div style={{marginTop: '8px', padding: '10px 12px', background: 'rgba(255, 180, 0, 0.08)', borderRadius: '8px', border: '1px dashed #e2a03f'}}>
-            <div style={{fontSize: '13px', color: '#ffb300', fontWeight: 'bold', marginBottom: '4px'}}>
-              🔍 废弃大仓库线索不足（当前收集：{state.inventory.clue ?? 0} / 3）
-            </div>
-            <div style={{fontSize: '12px', color: 'var(--text-subtle, #a0aec0)', marginBottom: '8px', lineHeight: '1.4'}}>
-              前往总仓库需至少 3 条线索。线索不足无法锁定据点，大家决定先回集市多打听些情报再行动。
-            </div>
-            <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-              <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand({type: 'START_STORY', nodeId: 'finale_clue_insufficient'})}>
-                💬 听阿策分析线索 →
-              </button>
-              <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('market'))}>
-                🌙 回集市收集线索 →
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button className="primary-action-btn" style={{marginTop: '8px'}} disabled={disabled} onClick={() => onCommand(chapterStoryCommand('finale'))}>
-            🌟 启程：第五章仓库探索（线索 {state.inventory.clue ?? 0}/3） →
-          </button>
-        )
-      ) : (
-        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px'}}>
-          <button className="primary-action-btn" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('warehouse'))}>继续探索仓库 →</button>
-          <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('finale'))}>
-            📖 重温第五章开场
-          </button>
-        </div>
-      )
-    )}</section>}
-    {!tunnelComplete && (needsGreenhouseDefense || state.flags.includes('greenhouse_fortified')) && <section className="home-mainline-step" aria-label="主线进度">
-      {needsGreenhouseDefense ? <>
-        <h3>下一步：守住花房防线</h3>
-        <p>墨墨已经加入。完成第三章花房保卫战后，就能跟随墨墨进入第四章地下通道。</p>
-        <button className="primary-action-btn" data-testid="chapter3-defense-start" disabled={disabled} onClick={() => onCommand({type:'START_BATTLE',stageId:'greenhouse_boss'})}>继续第三章：守住花房防线 →</button>
-      </> : <>
-        <h3>第四章：消失的猫咪们</h3>
-        <p>花房防线已经守住，地下通道已开放。跟随墨墨寻找失踪的伙伴。</p>
-        {!state.flags.includes('chapter_4_started') ? <button className="primary-action-btn" data-testid="chapter4-start" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('rescue'))}>🐾 启程：第四章《消失的猫咪们》 →</button> : <>
-          <button className="primary-action-btn" data-testid="chapter4-explore" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('tunnel'))}>🐾 前往地下暗道 →</button>
-          <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('rescue'))}>📖 重温第四章剧情</button>
-        </>}
-      </>}
-    </section>}
-    <div className="chapter-exploration-trials" aria-label="章节试玩">
-      <button disabled={disabled} onClick={() => onCommand(chapterExploreCommand('alley'))}>进入第一章试玩 · 雨后小巷探索</button>
-      {state.flags.includes('chapter_2_started') && <button disabled={disabled} onClick={() => onCommand(chapterExploreCommand('market'))}>进入第二章试玩 · 午夜集市探索</button>}
-      {state.flags.includes('market_exit_crossed') && <button disabled={disabled} onClick={() => onCommand(chapterStoryCommand('greenhouse'))}>进入第三章剧情 · 探索尚未开放</button>}
-      {state.flags.includes('greenhouse_fortified') && <button disabled={disabled} onClick={() => onCommand(chapterExploreCommand('tunnel'))}>进入第四章试玩 · 地下通道探索</button>}
-      {state.flags.includes('tunnel_explored') && state.flags.includes('cats_rescued_batch1') && (state.inventory.clue ?? 0) >= 3 && <button disabled={disabled} onClick={() => onCommand(chapterStoryCommand('finale'))}>进入第五章剧情 · 仓库探索</button>}
-    </div>
-    {hasBattleTrials && <h3 className="chapter-loadout-kicker" style={{margin: '4px 0 0'}}>战斗试玩 · 花房防线胜利可解锁第四章</h3>}
-    {state.flags.includes('alley_rescued') && <ChapterLoadout disabled={disabled} onCommand={onCommand}/>}
-    {state.flags.includes('alley_rescued') && <MarketLoadout disabled={disabled} onCommand={onCommand}/>}
-    {state.flags.includes('momo_joined') && <GreenhouseLoadout disabled={disabled} onCommand={onCommand}/>}
-    {state.flags.includes('alley_rescued') && <TunnelLoadout disabled={disabled} onCommand={onCommand}/>}
-    {state.flags.includes('alley_rescued') && <FinaleLoadout disabled={disabled} onCommand={onCommand}/>}
-    <button className="home-warehouse-entry" disabled={disabled} onClick={onDecorate}>▧ 打开家具背包<small>直接拖进花房 · 所有家具都能移动和收回</small></button>
-    <button className="shop-home" disabled={disabled} onClick={onShop}>去猫国商店挑一件家具 ↗</button>
-    <button className="home-parcel-entry" onClick={onParcels} disabled={disabled}><span>✉ 猫爪邮局<small>苔叶来信 · 月海观星 / 两套独立主题家具</small></span><span aria-hidden="true">→</span></button>
-    <p className="home-result" role="status">{state.lastResult.message}</p>
-    {CHATTER_CALLBACKS.some(c => state.flags.includes(c.flag)) && (
-      <div className="cat-chatter-box">
-        <div className="cat-chatter-head">
-          <span>🐾 伙伴日常絮语</span>
-          <span className="cat-chatter-sub">（世界记住了你的善意与选择）</span>
-        </div>
-        {CHATTER_CALLBACKS.filter(c => state.flags.includes(c.flag)).map((c, i) => (
-          <div key={i} className="cat-chatter-item">
-            <strong>{c.speaker}</strong>：{c.text}
-          </div>
-        ))}
-      </div>
-    )}
-    {(state.flags.includes('alley_rescued') || state.flags.includes('rescue_story_done')) && (
-      !state.flags.includes('chapter_2_started') ? (
-        <button data-testid="chapter2-start" className="primary-action-btn" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('market'))}>
-          🌙 启程：第二章《午夜集市》 →
-        </button>
-      ) : (
-        <div className="home-action-row">
-          <button data-testid="chapter2-explore" className="primary-action-btn" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('market'))}>
-            🌙 前往午夜集市 →
-          </button>
-          <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('market'))}>
-            📖 重温第二章剧情
-          </button>
-        </div>
-      )
-    )}
-    {state.flags.includes('market_cleared') && state.flags.includes('market_exit_crossed') && (
-      !state.flags.includes('chapter_3_started') ? (
-        <button className="primary-action-btn home-action-gap" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('greenhouse'))}>
-          🌿 启程：第三章剧情（结识墨墨后守护花房） →
-        </button>
-      ) : (
-        <div className="home-action-row home-action-gap">
-          <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('greenhouse'))}>
-            📖 重温第三章剧情
-          </button>
-        </div>
-      )
-    )}
-    {state.flags.includes('finale_completed') && (
-      <div className="celebration-card home-action-gap">
-        <div className="celebration-title">👑 全剧终 · 流浪猫王国落成！</div>
-        <div className="celebration-text">
-          喵喵与伙伴们用光明驱散了废弃仓库的所有黑影，救回了全部被困猫咪。花房如今挂起暖黄串灯、搭起纸箱城堡，成为了温暖坚固的流浪猫王国！喵喵回到主人身边吃到了金枪鱼，也每天都会回来和大家一起守护王国！
-        </div>
-      </div>
-    )}
-    <div className="home-action-row home-action-gap">
-      <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterExploreCommand('alley'))}>再去小巷走走 →</button>
-      <button className="quiet" disabled={disabled} onClick={() => onCommand(chapterStoryCommand('alley'))}>📖 重温第一章剧情</button>
-    </div>
-    </div>
-  </section>;
+interface Props {state:GameState;disabled:boolean;onCommand:(command:GameCommand)=>void}
+export default function HomePanel({state,disabled,onCommand}:Props){
+  const has=(flag:string)=>state.flags.includes(flag),tunnelComplete=has('tunnel_explored')&&has('cats_rescued_batch1');
+  const clue=state.inventory.clue??0;
+  let step;
+  if(has('finale_completed'))step=<><h3>流浪猫王国已经落成</h3><p>所有的光终于照亮了归途。可以带着伙伴重走熟悉的小巷，也可以在花房里歇一歇。</p><button disabled={disabled} onClick={()=>onCommand(chapterExploreCommand('alley'))}>再去小巷走走 →</button></>;
+  else if(tunnelComplete)step=<><h3>第五章：废弃大仓库</h3><p>暗道救援已经完成。准备好后，前往仓库营救剩下的伙伴。</p>{has('finale_started')?<button disabled={disabled} onClick={()=>onCommand(chapterExploreCommand('warehouse'))}>继续探索仓库 →</button>:clue<3?<><p>还需要线索：{clue} / 3。先去集市打听更多消息。</p><button disabled={disabled} onClick={()=>onCommand({type:'START_STORY',nodeId:'finale_clue_insufficient'})}>听阿策分析线索 →</button><button className="quiet" disabled={disabled} onClick={()=>onCommand(chapterExploreCommand('market'))}>回集市收集线索 →</button></>:<button disabled={disabled} onClick={()=>onCommand(chapterStoryCommand('finale'))}>启程：第五章仓库探索 →</button>}</>;
+  else if(has('chapter_3_started')&&has('momo_joined')&&!has('greenhouse_fortified'))step=<><h3>下一步：守住花房防线</h3><p>墨墨已经加入。完成第三章花房保卫战后，就能跟随墨墨进入地下通道。</p><button disabled={disabled} data-testid="chapter3-defense-start" onClick={()=>onCommand({type:'START_BATTLE',stageId:'greenhouse_boss'})}>继续第三章：守住花房防线 →</button></>;
+  else if(has('greenhouse_fortified'))step=<><h3>第四章：消失的猫咪们</h3><p>花房防线已经守住。跟随墨墨，寻找失踪的伙伴。</p><button disabled={disabled} data-testid={has('chapter_4_started')?'chapter4-explore':'chapter4-start'} onClick={()=>onCommand(has('chapter_4_started')?chapterExploreCommand('tunnel'):chapterStoryCommand('rescue'))}>{has('chapter_4_started')?'前往地下暗道 →':'启程：第四章《消失的猫咪们》 →'}</button></>;
+  else if(has('market_cleared')&&has('market_exit_crossed'))step=<><h3>第三章：废弃花房</h3><p>{has('chapter_3_started')?'和墨墨再聊聊，准备一起守护我们的花房。':'穿过集市，和伙伴们一起修缮花房，结识新的朋友。'}</p><button disabled={disabled} onClick={()=>onCommand(chapterStoryCommand('greenhouse'))}>{has('chapter_3_started')?'重温第三章剧情 →':'启程：第三章剧情 →'}</button></>;
+  else step=<><h3>第二章：午夜集市</h3><p>循着热闹的灯火，去集市寻找更多伙伴与线索。</p><button disabled={disabled} data-testid={has('chapter_2_started')?'chapter2-explore':'chapter2-start'} onClick={()=>onCommand(has('chapter_2_started')?chapterExploreCommand('market'):chapterStoryCommand('market'))}>{has('chapter_2_started')?'前往午夜集市 →':'启程：第二章《午夜集市》 →'}</button></>;
+  return <section className="home-journey-panel" aria-label="接下来要做的事">{step}</section>;
+}
+export function HomeBattleTrials({state,disabled,onCommand}:Props){
+  const alley=state.flags.includes('alley_rescued');
+  return <details className="qa-home-trials"><summary>已解锁关卡试玩</summary><div>{alley&&<ChapterLoadout disabled={disabled} onCommand={onCommand}/>}{alley&&<MarketLoadout disabled={disabled} onCommand={onCommand}/>}{state.flags.includes('momo_joined')&&<GreenhouseLoadout disabled={disabled} onCommand={onCommand}/>}{alley&&<TunnelLoadout disabled={disabled} onCommand={onCommand}/>}{alley&&<FinaleLoadout disabled={disabled} onCommand={onCommand}/>}</div></details>;
+}
+export function HomeMemories({state}:{state:GameState}){
+  const memories=CHATTER_CALLBACKS.filter(c=>state.flags.includes(c.flag));
+  return memories.length?<section className="home-memories"><h4>伙伴记得的小事</h4>{memories.map(c=><p key={c.flag}><b>{c.speaker}</b>：{c.text}</p>)}</section>:null;
+}
+
+export function HomeStoryReplays({state,disabled,onCommand}:Props){const has=(flag:string)=>state.flags.includes(flag);
+  const replays=[['alley','第一章 · 雨后小巷',true],['market','第二章 · 午夜集市',has('chapter_2_started')],['greenhouse','第三章 · 废弃花房',has('chapter_3_started')],['rescue','第四章 · 消失的猫咪们',has('chapter_4_started')],['finale','第五章 · 废弃大仓库',has('finale_started')]] as const;
+  return <><details className="home-replay"><summary>重温已经到达的故事</summary><div>{replays.filter(r=>r[2]).map(([id,title])=><button key={id} disabled={disabled} onClick={()=>onCommand(chapterStoryCommand(id))}>{title}</button>)}</div></details></>;
 }
