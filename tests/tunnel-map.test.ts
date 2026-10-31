@@ -6,6 +6,23 @@ import {fileURLToPath} from 'node:url';
 import map from '../level_design/chapter4/data/chapter4.map.json';
 import {tunnelConnections, tunnelPortalDisplay} from '../web/src/modules/chapter4/navigation';
 import {raisedRidgeMask, tankRidgeMask, tunnelClimbSurface, tunnelGroundMask, tunnelSurfaceConnections} from '../web/src/modules/chapter4/surfaces';
+import {nearbyLockedTunnelEvent,tunnelMovementChoices,type TunnelMarkerState} from '../web/src/modules/chapter4/eventMarkers';
+
+test('valve E approach stays clear of C/Space activation and keeps prerequisite feedback',()=>{
+  const valve=map.events.find(e=>e.id==='tunnel_valve_three')!;
+  for(const id of ['ridge-climb','west-ridge-east-descent','south-spillway-jump']) {
+    const portal=map.portals.find(p=>p.id===id)!;
+    const point=id==='south-spillway-jump'?portal.b:portal.a;
+    assert.ok(Math.hypot(point.x-valve.x,point.y-valve.y)>56+portal.reach,`${id} must not overlap valve E`);
+  }
+  const state:TunnelMarkerState={floor:'L0',surface:'ground',position:valve,flags:[],drawnEvents:[],nearTarget:null,connections:tunnelSurfaceConnections('L0','ground',tunnelConnections('L0',valve))};
+  assert.equal(nearbyLockedTunnelEvent(state)?.id,valve.id);
+  assert.equal(tunnelMovementChoices(state).eventFocus,true);
+  assert.equal(tunnelMovementChoices(state).labeled,undefined);
+  state.flags=['tunnel_false_kitten_trap_found'];state.nearTarget={id:valve.id,label:valve.label};
+  assert.equal(nearbyLockedTunnelEvent(state),undefined);
+  assert.equal(tunnelMovementChoices(state).eventFocus,true);
+});
 
 test('tunnel movement prompts match their usable endpoint and Chapter 2 proximity/opacity',()=>{
   const flags=['tunnel_false_kitten_trap_found'];

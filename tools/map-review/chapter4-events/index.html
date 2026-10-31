@@ -1,0 +1,10 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>第四章 · 事件图标预览</title><link rel="stylesheet" href="./style.css"><style>select{width:100%;margin:5px 0 8px;padding:8px;border:1px solid #65746a;background:#2c3e3c;color:#f1eed7;border-radius:4px}#locations{grid-template-columns:1fr}#gallery{grid-template-columns:repeat(3,1fr)}#movementHint{position:absolute;bottom:14px;left:14px;padding:9px 12px;background:#142b2ee8;border:1px solid #afbd9a;color:#f3e8c9;border-radius:4px;pointer-events:none}</style></head><body>
+<aside><span class="tag">第四章 · 独立预览</span><h1>暗渠里的线索</h1><p>检查事件物件、浮动名称和原有跨越提示。沿用已批准的地图与通行边界，先预览再接入游戏。</p>
+<div class="modes"><button id="candidate" class="selected">新图标</button><button id="baseline">原有标记</button></div>
+<label><input id="names" type="checkbox">对照：始终显示全部名称</label>
+<label for="progress">剧情状态（只影响预览）</label><select id="progress"><option value="arrival">尚未调查诱饵</option><option value="trap">已识破诱饵 · F 已解锁</option><option value="valve">阀门已调查 · 可前往战斗</option><option value="cleared">救援已完成</option></select>
+<label><input type="checkbox" id="optionalDone">三处可选事件已完成</label>
+<section><h2>逐个查看</h2><div id="locations"></div></section><section><h2>图稿对照</h2><div id="gallery"></div></section>
+<div class="modes"><button id="backAway">退远看淡出</button><button id="fit">缩小看周围</button></div>
+<p class="hint">方向键 / WASD 行走，E 模拟完成固定点，C 攀爬，F 上下层，Space 跳沟。滚轮缩放，按住 Tab 对照原有标记。</p><output id="status">加载中…</output><p class="hint">未完成主线名称常显，可选名称靠近浮现。E 仅模拟进度，不掷骰、不连接 API、不读写存档；正式游戏仍需完成事件卡。随机区域不画标记。</p>
+</aside><main><header><strong>第四章 · 事件物件与浮动名称</strong><span>像素风格 · 对比配色 · 先预览再接入</span></header><div id="stage"><canvas id="map" tabindex="0" aria-label="第四章事件图标与原有通路试走"></canvas><div id="badge" class="badge">新图标 · 主线目标常显</div><div id="movementHint" hidden></div><div id="feedback" role="status"></div></div><footer>沿用正式 TunnelMap 移动、灯光和阻挡 · C / F / Space 保留原有门槛 · E 仅模拟完成，不写入游戏</footer></main><script type="module" src="./main.ts"></script></body></html>

@@ -115,7 +115,8 @@ stray-kitty/
 │  └─ e2e/  浏览器流程
 ├─ tools/
 │  └─ map-review/
-│     └─ chapter4/
+│     ├─ chapter4/
+│     └─ chapter4-events/
 ├─ web/  浏览器前端
 │  ├─ content/  独立内容数据
 │  │  ├─ assets/  素材索引
