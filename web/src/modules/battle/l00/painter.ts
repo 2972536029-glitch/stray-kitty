@@ -2,7 +2,6 @@ import type {CatId, CombatState} from './state';
 import {COMMANDER_POSITION, SPAWN_POINTS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, getSkillTargetCells} from './ranges';
 import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
-import {battleReducedMotion, drawDamagePop, drawHitBurst, drawShatter} from '../battleFx';
 
 export type CatKind = CatId | 'advisor';
 export type CatPose = 'idle' | 'attack' | 'hurt' | 'sleep';
@@ -75,7 +74,6 @@ export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selec
     const goal=x===COMMANDER_POSITION.x&&y===COMMANDER_POSITION.y;
     paintSceneTile(ctx,'prologue',x,y,100,{goal,spawn:isSpawnCell(x,y)});
     paintSceneEdge(ctx,'prologue',x,y,100,boardCell);
-    if(!goal){ctx.fillStyle=SCENE_INK.label;ctx.font='11px "Microsoft YaHei", sans-serif';ctx.fillText(`${'ABC'[y]}${x+1}`,x*100+9,y*100+91);}
   }
   // B7 is the only reserved spawn entry in this prologue.
   for(const entry of SPAWN_POINTS){
@@ -85,21 +83,6 @@ export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selec
     ctx.fillStyle=SCENE_INK.danger;
     blocks(ctx,ctx.fillStyle as string,[[x+76,y+39,4,22],[x+72,y+43,4,14],[x+68,y+47,4,6]]);ctx.restore();
   }
-  // Logical lanes only: upper/lower routes turn at A1/C1, never at column 2.
-  // Scene art shares these logical tiles; lane turns and targeting remain unchanged.
-  ctx.save();ctx.strokeStyle=SCENE_INK.route;ctx.lineWidth=1.4;ctx.setLineDash([5,7]);
-  for(const row of [0,1,2]){
-    const y=(row+.5)*100;ctx.beginPath();ctx.moveTo(690,y);ctx.lineTo(50,y);
-    if(row!==1)ctx.lineTo(50,150);ctx.stroke();
-  }
-  ctx.setLineDash([]);
-  for(const row of [0,1,2])for(let column=1;column<7;column++){
-    const x=column*100+25,y=(row+.5)*100;
-    ctx.beginPath();ctx.moveTo(x+8,y-6);ctx.lineTo(x,y);ctx.lineTo(x+8,y+6);ctx.stroke();
-  }
-  // Down from A1, up from C1, both into the fixed B1 protection cell.
-  ctx.beginPath();ctx.moveTo(44,77);ctx.lineTo(50,85);ctx.lineTo(56,77);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(44,223);ctx.lineTo(50,215);ctx.lineTo(56,223);ctx.stroke();ctx.restore();
   const selectedCat=state.cats.find(c=>c.id===selected&&c.status==='active'&&c.combatant);
   if(selectedCat&&!state.skillAim){
     ctx.save();ctx.fillStyle='#8ee2cb30';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;
@@ -145,24 +128,11 @@ export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selec
     blocks(ctx,SCENE_INK.gold,[[x-7,y-2,14,4],[x-2,y-7,4,14]]);pixel(ctx,x-2,y-2,4,4,'#fff6c6');
   }
   for(const effect of state.effects){
-    const progress=1-effect.ttl/effect.maxTtl;
     if(effect.kind==='skill-area'){
-      const x=(effect.x+.5)*100,y=(effect.y+.5)*100;
+      const progress=1-effect.ttl/effect.maxTtl,x=(effect.x+.5)*100,y=(effect.y+.5)*100;
       ctx.save();ctx.globalAlpha=1-progress;ctx.fillStyle='#f3dc974f';ctx.fillRect(effect.x*100+5,effect.y*100+5,90,90);
       ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,12+progress*30,0,Math.PI*2);ctx.stroke();
       blocks(ctx,SCENE_INK.gold,[[x-14,y-3,28,6],[x-3,y-14,6,28]]);ctx.restore();continue;
-    }
-    // 命中黑影：红色像素伤害数字弹跳上飘 + 白色像素爆裂闪光（表现层增强，读数本身仍来自引擎 effect）。
-    if(effect.kind==='damage'&&!battleReducedMotion()){
-      const x=(effect.x+.5)*100,y=(effect.y+.5)*100;
-      if(effect.text)drawDamagePop(ctx,x,y,effect.text,progress);
-      drawHitBurst(ctx,x,y,progress*.9);
-      continue;
-    }
-    // 黑影被击败：碎裂成黑色像素块消散（配合引擎的“黑影退去”事件）。
-    if(effect.kind==='defeat'&&!battleReducedMotion()){
-      drawShatter(ctx,(effect.x+.5)*100,(effect.y+.5)*100,progress);
-      continue;
     }
     if(!effect.text)continue;
     ctx.save();ctx.fillStyle=effect.kind==='heal'?'#a9e0a8':effect.kind.includes('shield')?'#a0e3ed':SCENE_INK.danger;ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.fillText(effect.text,(effect.x+.5)*100,(effect.y+.35)*100-(1-effect.ttl/effect.maxTtl)*12);ctx.restore();

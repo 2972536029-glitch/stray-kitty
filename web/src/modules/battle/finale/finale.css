@@ -25,9 +25,9 @@
 .battle-finale .finale-attack-buff{display:block;margin:5px 0;color:#9b784b;font-size:10px}.battle-finale .finale-boss-panel.is-warning{background:#efe8d5;border-color:#b19a70;color:#88703e}
 .battle-finale .finale-role-badge{display:inline-block;flex-shrink:0;padding:0 3px;border:1px solid #c7d2ba;border-radius:3px;background:#eef0e1;color:#647b55;font-size:8px;font-weight:400;line-height:1.4;white-space:nowrap;vertical-align:middle}
 .battle-finale .finale-unit-state .btl-unit-name{display:flex;align-items:center;gap:2px;max-width:calc(100% - 4px);padding:1px 3px;font-size:8px;line-height:1.3}
-.battle-finale .finale-unit-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.battle-finale .finale-unit-state .btl-unit-name .finale-role-badge{font-size:7px;padding:0 2px;line-height:1.2}.battle-finale .finale-unit-state .btl-unit-name .finale-unit-energy{flex-shrink:0;font-size:7px;margin-left:0;font-variant-numeric:tabular-nums}
+.battle-finale .finale-unit-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.battle-finale .finale-unit-state .btl-unit-name .finale-role-badge{font-size:7px;padding:0 2px;line-height:1.2}
 .battle-finale .finale-menu-cat-name{display:flex;flex-wrap:wrap;gap:2px 4px;min-width:0}.battle-finale .btl-skill-tooltip>p.finale-positioning{padding-bottom:7px;margin-bottom:7px;border-bottom:1px solid #dbddcd;color:#647b55}
-@media(max-width:850px){.battle-finale .finale-unit-state .btl-unit-name{font-size:7px;gap:1px;padding:1px 2px}.battle-finale .finale-unit-state .btl-unit-name .finale-role-badge{font-size:7px;padding:0 1px}.battle-finale .finale-unit-state .btl-unit-name .finale-unit-energy{font-size:6px}.battle-finale .is-overview .finale-unit-state .finale-role-badge{display:none}.battle-finale .is-overview .finale-unit-state .btl-unit-name{max-width:calc(100% - 2px);padding:0 1px}.battle-finale .is-overview .finale-unit-state .btl-unit-name .finale-role-badge{font-size:7px;padding:0 1px}}
+@media(max-width:850px){.battle-finale .finale-unit-state .btl-unit-name{font-size:7px;gap:1px;padding:1px 2px}.battle-finale .finale-unit-state .btl-unit-name .finale-role-badge{font-size:7px;padding:0 1px}.battle-finale .is-overview .finale-unit-state .finale-role-badge{display:none}.battle-finale .is-overview .finale-unit-state .btl-unit-name{max-width:calc(100% - 2px);padding:0 1px}.battle-finale .is-overview .finale-unit-state .btl-unit-name .finale-role-badge{font-size:7px;padding:0 1px}}
 
 .battle-finale .finale-vision-status{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin:7px 0;padding:6px 10px;border:1px solid #d6dec9;border-radius:4px;background:#f3f4e9;color:#708062;font-size:10px;line-height:1.5}.battle-finale .finale-vision-status strong{font-size:10px}.battle-finale .finale-vision-status.is-dark{background:#526353;color:#f1eed6;border-color:#7e9277}.battle-finale .finale-vision-status.is-night-vision{background:#e5efe1;border-color:#a5c0a4;color:#53785d}.battle-finale .is-darkened .finale-unit-state .btl-unit-name{background:#f3eed7;color:#425b3e;border:1px solid #bac69d}.battle-finale .is-darkened .finale-cell:focus-visible{box-shadow:inset 0 0 0 3px #e6c78c}.battle-finale .has-night-vision .finale-cell:focus-visible{box-shadow:inset 0 0 0 3px #84b99d}
 
@@ -109,7 +109,7 @@
  .battle-finale .btl-playback>button{padding:4px 7px;font-size:10px}
  .battle-finale .finale-map-tools button{padding:4px 6px}
 }
-/* == 战斗读数强化（与 l00 统一）：描边渐变血条/能量条、蓄满金光、名字分层。 == */
+/* == 战斗读数强化（与 l00 统一）：描边渐变血条/能量条、蓄满金光。 == */
 .battle-finale .finale-boss-health{background:#c8d0b8;border-color:#8d9a7d;box-shadow:inset 0 1px 3px rgba(24,34,22,.42),0 0 0 1.5px #2d3927}
 .battle-finale .finale-boss-health i{background:linear-gradient(180deg,#ff9d84 0%,#ef5350 45%,#c62838 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4);transition:width .2s}
 .battle-finale .finale-cat-hp{height:7px;background:#c8d0b8;box-shadow:inset 0 1px 3px rgba(24,34,22,.42),0 0 0 1.5px #2d3927}
@@ -118,13 +118,8 @@
 .battle-finale .finale-cat-energy i{background:linear-gradient(180deg,#a5dcff 0%,#54a3e8 45%,#2f6fd0 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
 .battle-finale .finale-cat-energy.is-full i{background:linear-gradient(180deg,#ffefad 0%,#f4c542 55%,#d99a27 100%)}
 .battle-finale .finale-cat-energy.is-full{animation:kitty-energy-full 1.15s ease-in-out infinite}
-.battle-l00.battle-finale .finale-unit-state .btl-unit-name{flex-direction:row;align-items:center;flex-wrap:wrap;justify-content:center;line-height:1.25;background:rgba(21,31,19,.82);color:#fbf6e2;padding:2px 4px;font-weight:700;text-shadow:0 1px 0 #141d12,1px 0 0 #141d12,-1px 0 0 #141d12,0 -1px 0 #141d12}
-@media(min-width:851px){.battle-l00.battle-finale .finale-unit-state .btl-unit-name{font-size:9.5px}}
-.battle-l00.battle-finale .finale-unit-state .btl-unit-name .finale-unit-energy{flex-basis:100%;text-align:center;color:#8ec9ff;font-weight:600}
-.battle-l00.battle-finale .finale-unit-state .btl-unit-name .finale-role-badge{border-color:#4c5e46;background:#2c3a28;color:#cfe3c0}
 @media(prefers-reduced-motion:reduce){.battle-finale .finale-cat-energy.is-full{animation:none!important}}
 
-.battle-l00.battle-finale .is-darkened .finale-unit-state .btl-unit-name{text-shadow:none}
 /* 沉浸 HUD 首领条同款强化（immersive.css 后加载会压过章节规则，这里以更高特异性夺回统一视觉）。 */
 .battle-l00.battle-finale.battle-immersive .battle-hud-boss>[role=meter]{background:#c8d0b8;border-color:#8d9a7d;box-shadow:inset 0 1px 3px rgba(24,34,22,.42),0 0 0 1.5px #2d3927}
 .battle-l00.battle-finale.battle-immersive .battle-hud-boss>[role=meter] i{background:linear-gradient(180deg,#ff9d84 0%,#ef5350 45%,#c62838 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4);transition:width .2s}

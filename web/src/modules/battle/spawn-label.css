@@ -1,0 +1,42 @@
+/* Each label scales with its own tile. Chapter cells already use this named
+   container for unit labels; include the prologue's separate grid as well. */
+.battle-l00.battle-immersive :is(.btl-cell,.chapter-cell,.market-cell,.greenhouse-cell,.tunnel-cell,.finale-cell){
+  container-name:battle-unit-cell;
+  container-type:inline-size;
+}
+
+.battle-l00.battle-immersive :is(.btl-cell,.chapter-cell,.market-cell,.greenhouse-cell,.tunnel-cell,.finale-cell)>.btl-spawn-label{
+  position:absolute;
+  left:50%;
+  /* Canvas draws the entry frame inside the logical tile (its inner edge is
+     6/80 of a chapter tile). Clear that frame plus the text shadow at every zoom. */
+  bottom:calc(7.5cqw + 3px);
+  transform:translateX(-50%);
+  display:block;
+  box-sizing:border-box;
+  width:max-content;
+  max-width:calc(100% - 4px);
+  margin:0;
+  padding:1px 2px;
+  border:0;
+  background:transparent;
+  color:#ff9979;
+  font-size:clamp(9px,18cqw,18px);
+  font-weight:800;
+  line-height:1.1;
+  white-space:nowrap;
+  text-shadow:0 1px 1px #211a19,0 -1px 1px #211a19,-1px 0 1px #211a19,1px 0 1px #211a19;
+  pointer-events:none;
+  user-select:none;
+  z-index:1;
+}
+
+/* At full-map mobile zoom, fit all three characters rather than clipping or
+   hiding the entry name. Keep the center clear for the existing canvas arrow. */
+@container battle-unit-cell (max-width:40px){
+  .battle-l00.battle-immersive :is(.btl-cell,.chapter-cell,.market-cell,.greenhouse-cell,.tunnel-cell,.finale-cell)>.btl-spawn-label{
+    max-width:calc(100% - 2px);
+    padding:0 1px;
+    font-size:clamp(6px,28cqw,10px);
+  }
+}
