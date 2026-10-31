@@ -1,6 +1,6 @@
 # Chapter 2 map trace preview
 
-This standalone review tool compares the existing Night Market walkability with a manually traced candidate on L0, L1 and L-1. It does not change the game, approved PNGs, events, C/F anchors, progression or saves. No game API or browser storage is used.
+This standalone review tool compares the existing Night Market walkability with a manually traced candidate on L0, L1 and L-1. The reviewed tracing and crate visuals are now integrated into the production Night Market module on this branch. The approved PNGs, events, C/F anchors, progression and saves are unchanged; the review tool itself remains isolated. No game API or browser storage is used.
 
 ## Run locally
 
@@ -32,6 +32,6 @@ WASD/arrows move; C/F traverse; Shift-click places the cat; wheel zooms and righ
 
 Focused checks passed for L0 bend traversal in both directions, the southern C crossing, and straight-up keyboard movement from the right side of the L1 northwest landing. Earlier baseline checks covered four C/F journeys, the north exit gate and floor rendering. The floor mask hashes confirmed that the L1 widening did not change L0 or L-1. Browser checks reported no page errors or game API calls; standalone TypeScript checking passed.
 
-For a fresh geometry connectivity and source integrity audit, run `python -X utf8 tools/map-review/chapter2/verify-preview.py`. This checks landmark reachability with the retained gates and records source/art hashes in ignored `proof.json`. It is not a full chapter playthrough.
+For a fresh geometry connectivity and source integrity audit, run `python -X utf8 tools/map-review/chapter2/verify-preview.py`. This checks landmark reachability with the retained gates and records artwork/spatial/transition hashes in ignored `proof.json`. It is not a full chapter playthrough.
 
-L-1 still needs manual review. This branch contains only the Chapter 2 preview; integrating these candidates into the live game is a separate change after review. Generated masks, screenshots, local proofs and Vite caches are ignored. Chapter 1 changes stay on their own branches.
+L-1 still needs manual review. This branch contains the Chapter 2 preview and runtime integration. `export-runtime.py` exports compact run-length encoded collision data to `specs/night-market/night_market_traced_mask.json`; the game loads it synchronously, so no gameplay API or asynchronous image-loading dependency is added. The existing building, cargo and battle guards still apply, and the scene now renders the approved crate painter. Nearby stale saved positions can recover to traced pavement within 48px, while obstacle recovery remains tightly bounded. Generated masks, screenshots, local proofs and Vite caches are ignored. Chapter 1 changes stay on their own branches.

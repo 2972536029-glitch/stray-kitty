@@ -1,3 +1,4 @@
+import {paintMarketCargo} from '../../modules/nightMarket/cargoPainter';
 import {PARCEL_ART, PARCEL_IDS} from '../../modules/lottery/furnitureArt';
 import type {BattleResult, GameState, StoryNode, HomeRepairPart} from '../../contracts';
 import {drawPixelCat,type CatBreed} from '../../adapters/canvas/pixelCat';
@@ -969,6 +970,7 @@ export class DemoScene {
     this.context.translate(frame.viewport.x-camera.x*frame.scale,frame.viewport.y-camera.y*frame.scale);
     this.context.scale(frame.scale,frame.scale);
     if(image.complete&&image.naturalWidth>0)this.context.drawImage(image,0,0,1672,941);
+    if(this.marketFloor==='L0')paintMarketCargo(this.context);
     this.drawMarketRoadSigns();
     this.drawMarketMarkers();
     this.context.fillStyle='rgba(10,16,22,.38)';this.context.beginPath();this.context.ellipse(this.x,this.y+3,9,3,0,0,Math.PI*2);this.context.fill();

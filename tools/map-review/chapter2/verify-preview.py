@@ -39,10 +39,10 @@ def run(cleared):
  assert all(status[k] for k in ['entry','crow','pigeon','momo','boss'])
  assert status['exit']==cleared,status
  return status
-paths=['web/public/assets/night-market/night_market_L0_streets_1672x941.png','web/public/assets/night-market/night_market_L1_rooftops_1672x941.png','web/public/assets/night-market/night_market_Lminus1_tunnel_1672x941.png','specs/night-market/night_market_v016_spatial_reference.json','web/src/modules/nightMarket/map.ts','web/src/modules/nightMarket/transitions.ts']
+paths=['web/public/assets/night-market/night_market_L0_streets_1672x941.png','web/public/assets/night-market/night_market_L1_rooftops_1672x941.png','web/public/assets/night-market/night_market_Lminus1_tunnel_1672x941.png','specs/night-market/night_market_v016_spatial_reference.json','web/src/modules/nightMarket/transitions.ts']
 checks=[]
 for name in paths:
  actual=subprocess.check_output(['git','hash-object','--path='+name,name],text=True).strip();expected=subprocess.check_output(['git','rev-parse','HEAD:'+name],text=True).strip();checks.append({'path':name,'unchangedFromMain':actual==expected,'sha256':hashlib.sha256(Path(name).read_bytes()).hexdigest()})
 assert all(x['unchangedFromMain'] for x in checks)
 proof={'previewOnly':True,'sourceCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'beforeVictoryReachable':run(False),'afterVictoryReachable':run(True),'sourceChecks':checks,'scope':'2px sampled candidate surface connectivity with existing cargo/battle gates and C/F links; not a complete gameplay run'}
-(b/'proof.json').write_text(json.dumps(proof,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps({k:proof[k] for k in ['beforeVictoryReachable','afterVictoryReachable']},ensure_ascii=False));print('All six source/art files unchanged from main.')
+(b/'proof.json').write_text(json.dumps(proof,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps({k:proof[k] for k in ['beforeVictoryReachable','afterVictoryReachable']},ensure_ascii=False));print('Approved artwork, spatial data and transition implementation unchanged.')
