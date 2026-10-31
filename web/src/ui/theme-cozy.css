@@ -125,9 +125,9 @@ button{font-size:14px}
 .journal-card p,.event-card p{font-size:14px}
 .quiet,.map-button,.shop-button{font-size:13px}
 @media(max-width:520px){button{font-size:13px}.choice-list button{font-size:12px}.journal-card p,.event-card p{font-size:13px}}
-/* ===== 沉浸式可折叠顶栏：默认收起只留木签小钮，展开滑出深色磨砂横栏 ===== */
-/* 折叠收起：整条滑出屏外并失去命中；展开态压成深色磨砂木纹（特异性盖过 layout-viewport 的浅渐变）。 */
-.app-shell:not([data-phase=battle]) .topbar{background:linear-gradient(180deg,rgba(26,36,34,.92),rgba(26,36,34,.78));border-bottom:2px solid rgba(197,154,85,.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s cubic-bezier(.4,0,.2,1)}
+/* ===== 沉浸式可折叠顶栏：默认收起只留木签小钮，展开即 Overlay 悬浮（纯透明无底色，底图完整透出） ===== */
+/* 折叠收起：整条滑出屏外并失去命中；展开态为纯透明悬浮层（V2：去掉深色渐变与毛玻璃，只留文字描边可读性）。 */
+.app-shell:not([data-phase=battle]) .topbar{background:transparent;border-bottom:2px solid transparent;backdrop-filter:none;-webkit-backdrop-filter:none;transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s cubic-bezier(.4,0,.2,1)}
 .app-shell:not([data-phase=battle]) .topbar.topbar-collapsed{transform:translateY(-112%);opacity:0;pointer-events:none}
 .app-shell:not([data-phase=battle]) .topbar.topbar-collapsed .wallet b,.app-shell:not([data-phase=battle]) .topbar.topbar-collapsed nav{visibility:hidden}
 /* 木质小签折叠钮：位置完全由内联 left/top 决定（可自由拖拽、松手吸附最近屏幕边）；此处只管外观与动效。 */
@@ -159,3 +159,62 @@ button{font-size:14px}
 .furniture-picker-list button.selected{background:linear-gradient(90deg,#ffe9ae,#f2d38c);color:#5d3d1e;font-weight:800;box-shadow:inset 0 0 0 2px #c59a5588}
 .furniture-picker-list button.selected:before{content:'🐾 ';font-size:11px}
 @media(prefers-reduced-motion:reduce){.furniture-picker-list,.furniture-picker-list li{animation:none}.furniture-picker-button,.furniture-picker-list button{transition:none}}
+/* ===== 沉浸化收尾 V2：顶栏 Overlay 悬浮化（全阶段纯透明） + 底部提示磨砂黑底、字号统一 ===== */
+/* 顶栏容器 Overlay 化：不再有任何底色/渐变/毛玻璃/边框，直接悬浮叠在画面上，底图完整透出；文字可读性交给多层像素描边。 */
+.app-shell .topbar,.app-shell[data-phase=battle] .topbar{background:transparent;border-color:transparent;border-bottom-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+/* 顶栏默认态：按钮/资源块去掉底色、边框与投影，只留纯文字与图标；多层像素描边+柔影兜住深浅背景下的可读性。 */
+.app-shell .topbar .brand-mark{background:transparent;border-color:transparent;box-shadow:none;color:#ffd76e;text-shadow:0 1px 0 #000,0 2px 0 rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.6)}
+.app-shell .topbar .brand strong,.app-shell .topbar .brand small{color:#f6ecd2;text-shadow:0 1px 0 #000,0 2px 0 rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.6)}
+.app-shell .topbar .brand:hover{transform:none;box-shadow:none}
+.app-shell .topbar .chapter-pill{background:transparent;border-color:transparent;box-shadow:none;color:#ffe9a8;text-shadow:0 1px 0 #000,0 2px 0 rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.6)}
+.app-shell .topbar .wallet>span,.app-shell .topbar .wallet-tuna{background:transparent;border-color:transparent;box-shadow:none;backdrop-filter:none;color:#f6ecd2;text-shadow:0 1px 0 #000,0 2px 0 rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.6)}
+.app-shell .topbar .wallet b,.app-shell .topbar .wallet-tuna b{color:#ffd76e}
+.app-shell .topbar .wallet-tuna small{color:#ffe9a8;border-color:rgba(255,233,168,.35)}
+.app-shell .topbar .wallet-tuna:hover{background:transparent;color:#ffe9a8;transform:none;box-shadow:none}
+/* 展开后的工具按钮（二级菜单）：纯文字列表，仅 :hover 提供轻微亮色反馈，不弹起、不投影。 */
+.app-shell .topbar nav button{background:transparent;border-color:transparent;box-shadow:none;backdrop-filter:none;color:#f6ecd2;text-shadow:0 1px 0 #000,0 2px 0 rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.6)}
+.app-shell .topbar nav button:hover{background:transparent;color:#ffe9a8;transform:none;box-shadow:none}
+.app-shell .topbar nav button:active{transform:none;box-shadow:none}
+/* 底部提示·Overlay 一体化：与顶栏同一套语言——默认纯透明悬浮（无底色/边框/投影），鼠标或键盘聚焦时才浮现极轻黑纱便于阅读。 */
+.app-shell:not([data-phase=battle]) .world-footer{background:transparent;border:1.5px solid transparent;border-radius:10px;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;transition:opacity .4s ease,background .25s ease}
+.app-shell:not([data-phase=battle]) .world-footer:hover,.app-shell:not([data-phase=battle]) .world-footer:focus-within{background:rgba(0,0,0,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+/* 提示可读性：footer 内所有文字与正文同字号（15px），不再出现 9~18px 参差；透明底上统一暖白+描边，爪印图标同尺寸。 */
+.app-shell:not([data-phase=battle]) .world-footer p{font-size:15px;line-height:1.5;color:#f6ecd2;text-shadow:0 1px 0 #000,0 2px 0 rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.6)}
+.app-shell:not([data-phase=battle]) .world-footer>button{font-size:15px;background:transparent;border-color:transparent;box-shadow:none;color:#ffe9a8;text-shadow:0 1px 0 #000,0 2px 0 rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.6)}
+.app-shell:not([data-phase=battle]) .world-footer>button:hover{background:transparent;color:#ffd76e;transform:none;box-shadow:none}
+.app-shell:not([data-phase=battle]) .world-footer .hint-paw{font-size:15px}
+.app-shell:not([data-phase=battle]) .world-footer p.inspect-hint{color:#ffe9a8!important}
+/* 顶栏字号统一：Overlay 悬浮后文字直接压在画面上，8~10px 的小字全部提到可读尺寸。 */
+.app-shell .topbar .brand small{font-size:12px}
+.app-shell .topbar .chapter-pill{font-size:13px}
+.app-shell .topbar .wallet>span{font-size:14px}
+.app-shell .topbar nav button{font-size:14px}
+/* ===== “亮几秒→淡出，悬停唤回”统一节奏（除顶栏外的四部分共用；keyframes 名字即文档） ===== */
+@keyframes overlay-hint-autohide{to{opacity:0}}
+/* ① 底部提示文字（按 E 互动 / 小巷探索教学 / 章节目标）：内容一变就重新亮 6 秒（<p key> 变化即重挂重放），之后淡出；鼠标放回提示条区域立即恢复。 */
+.app-shell .world-footer p{animation:overlay-hint-autohide .6s ease 6s forwards}
+.app-shell .world-footer:hover p,.app-shell .world-footer:focus-within p{animation:none;opacity:1}
+/* 整栏 hint-idle 淡出时保留命中区域（去掉失焦死区），鼠标放回即唤回。 */
+.app-shell:not([data-phase=battle]) .world-footer.hint-idle{pointer-events:auto}
+.app-shell:not([data-phase=battle]) .world-footer.hint-idle:hover{opacity:1;transform:none}
+/* ② 雨巷线索：同一套透明+描边+15px；亮 6 秒淡出，鼠标移到线索牌位置即唤回（hover 浮现轻纱）。 */
+.app-shell:not([data-phase=battle]) .alley-objective{background:transparent;border:2px solid transparent;box-shadow:none;pointer-events:auto;color:#f6ecd2;font-size:15px;text-shadow:0 1px 0 #000,0 2px 0 rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.6);border-radius:10px;animation:overlay-hint-autohide .6s ease 6s forwards}
+.app-shell:not([data-phase=battle]) .alley-objective span{color:#ffe9a8;font-size:13px;text-shadow:0 1px 0 #000,0 2px 0 rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.6)}
+.app-shell:not([data-phase=battle]) .alley-objective strong{text-shadow:inherit}
+.app-shell:not([data-phase=battle]) .alley-objective:hover,.app-shell:not([data-phase=battle]) .alley-objective:focus-visible{animation:none;opacity:1;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+/* ③ 验收进度徽标：同一套（样式主体在 acceptance.css，此处只挂统一淡出节奏与唤回）。 */
+.app-shell .qa-active-badge{animation:overlay-hint-autohide .6s ease 6s forwards}
+.app-shell .qa-active-badge:hover,.app-shell .qa-active-badge:focus-within{animation:none;opacity:1}
+/* 减少动态效果：淡出动画改为常显（内容仍可读，不做节奏变化）。 */
+@media(prefers-reduced-motion:reduce){.app-shell .world-footer p,.app-shell:not([data-phase=battle]) .alley-objective,.app-shell .qa-active-badge{animation:none}}
+/* ===== 战斗页顶栏：米色纸张底不吃“奶油字叠奶油底” ===== */
+/* 战斗阶段整页底色是米色（layout-battle），上面 V2 的奶油色描边文字会完全看不清。
+   战斗页顶栏回归墨色/木牌配色（布局仍是 immersive.css 的 44px 预留长条，不动）；
+   选择器加 [data-phase=battle] + :has 抬特异性，压过后加载的 immersive.css 紧凑规则。 */
+.app-shell[data-phase=battle]:has(.battle-l00.battle-immersive) .topbar .brand-mark{background:#925140;color:#f6ecd2;text-shadow:none}
+.app-shell[data-phase=battle]:has(.battle-l00.battle-immersive) .topbar .brand strong{color:#382f2b;text-shadow:none;font-size:13px}
+.app-shell[data-phase=battle]:has(.battle-l00.battle-immersive) .topbar .chapter-pill{background:#4f6e78;color:#f1e8d3;text-shadow:none;font-size:12px}
+.app-shell[data-phase=battle]:has(.battle-l00.battle-immersive) .topbar .wallet>span,.app-shell[data-phase=battle]:has(.battle-l00.battle-immersive) .topbar .wallet-tuna{color:#382f2b;text-shadow:none}
+.app-shell[data-phase=battle]:has(.battle-l00.battle-immersive) .topbar .wallet b,.app-shell[data-phase=battle]:has(.battle-l00.battle-immersive) .topbar .wallet-tuna b{color:#4f6e78}
+.app-shell[data-phase=battle]:has(.battle-l00.battle-immersive) .topbar nav button{color:#382f2b;text-shadow:none;font-size:12px}
+.app-shell[data-phase=battle]:has(.battle-l00.battle-immersive) .topbar nav button:hover{color:#925140;background:transparent}

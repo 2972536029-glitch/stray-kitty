@@ -87,6 +87,51 @@ func TestRepairHomeRequiresHomePhase(t *testing.T) {
 	expectCode(t, g, token, domain.Command{Type: "REPAIR_HOME"}, "INVALID_PHASE")
 }
 
+func TestRepairHomePartsPersistRetryAndChargeOnlyRemainingWork(t *testing.T) {
+	g, _, _, token, path := setupWithPlayer(t)
+	reachHome(t, g, token)
+	setStock(t, g, token, 30, 1)
+	expectCode(t, g, token, domain.Command{Type: "REPAIR_HOME", RepairID: "dry_bedding"}, "REPAIR_LOCKED")
+	expectCode(t, g, token, domain.Command{Type: "REPAIR_HOME", RepairID: "restore_skylight"}, "REPAIR_LOCKED")
+	expectCode(t, g, token, domain.Command{Type: "REPAIR_HOME", RepairID: "unknown"}, "INVALID_REPAIR")
+	before, _ := g.State(token)
+	req := domain.CommandRequest{ExpectedRevision: &before.Revision, Command: domain.Command{Type: "REPAIR_HOME", RepairID: "patch_windows"}}
+	first, err := g.Execute(token, "repair-window-once", req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.State.Inventory["material"] != 26 || domain.Contains(first.State.Flags, "greenhouse_sealed") || !domain.Contains(first.State.HomeRepairs, "patch_windows") {
+		t.Fatal("part did not consume exactly its own cost or advanced stage early")
+	}
+	store, err := repository.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restart := service.New(store, g.Catalog)
+	replay, err := restart.Execute(token, "repair-window-once", req)
+	if err != nil || !replay.Replayed || !sameStateJSON(first.State, replay.State) {
+		t.Fatalf("repair retry after restart: %v", err)
+	}
+	expectCode(t, restart, token, domain.Command{Type: "REPAIR_HOME", RepairID: "patch_windows"}, "REPAIR_ALREADY_COMPLETE")
+	s := execute(t, restart, token, domain.Command{Type: "REPAIR_HOME"})
+	if s.Inventory["material"] != 20 || len(s.HomeRepairs) != 3 || !domain.Contains(s.Flags, "greenhouse_sealed") {
+		t.Fatal("legacy command charged completed work twice")
+	}
+	setStock(t, restart, token, 6, 1)
+	expectCode(t, restart, token, domain.Command{Type: "REPAIR_HOME", RepairID: "restore_skylight"}, "INSUFFICIENT_MATERIAL")
+	setStock(t, restart, token, 20, 0)
+	expectCode(t, restart, token, domain.Command{Type: "REPAIR_HOME", RepairID: "restore_skylight"}, "INSUFFICIENT_CURRENCY")
+	setStock(t, restart, token, 20, 1)
+	for _, id := range []string{"restore_skylight", "reinforce_floor", "revive_garden"} {
+		s = execute(t, restart, token, domain.Command{Type: "REPAIR_HOME", RepairID: id})
+	}
+	if s.Inventory["material"] != 0 || s.Currencies["stamp"] != 0 || len(s.HomeRepairs) != 6 || !domain.Contains(s.Flags, "greenhouse_fortified_full") {
+		t.Fatal("individual work did not complete greenhouse at original total cost")
+	}
+	// A pre-existing stage flag makes its old damage implicitly repaired.
+	expectCode(t, restart, token, domain.Command{Type: "REPAIR_HOME", RepairID: "patch_windows"}, "REPAIR_ALREADY_COMPLETE")
+}
+
 func TestRenovationSlotsStayLockedUntilStageThree(t *testing.T) {
 	g, token, _ := setup(t)
 	reachHome(t, g, token)

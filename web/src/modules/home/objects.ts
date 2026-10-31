@@ -1,10 +1,12 @@
+import decor from '../../../content/home/decor.json';
 import type {GameState} from '../../contracts';
+import type {CatBreed} from '../../adapters/canvas/pixelCat';
 import {HOME_SLOTS, homeStage, type HomePoint} from './layout';
 import {HOME_FRAMES, type HomeSprite} from './assets';
 import {PARCEL_ART, PARCEL_IDS, isParcelFurniture, parcelWidth} from '../lottery/furnitureArt';
-export type HomeAppearance=Pick<GameState,'flags'|'placements'> & Partial<Pick<GameState,'phase'|'storyNodeId'>>;
+export type HomeAppearance=Pick<GameState,'flags'|'placements'> & Partial<Pick<GameState,'phase'|'storyNodeId'|'furniture'|'homeLayout'|'homeRepairs'>>;
 export type HomeObjectKind='decor'|'plant'|'storage'|'workbench'|'nest'|'castle'|'hammock'|'blanket'|'cushion'|'bowls'|'lamp'|'tower'|'sofa'|'seat';
-export interface HomeObject extends HomePoint {id:string;sprite:HomeSprite;width:number;kind:HomeObjectKind;solid:boolean;front?:boolean;slot?:string;furnitureId?:string}
+export interface HomeObject extends HomePoint {id:string;layoutKey:string;wall?:boolean;sprite:HomeSprite;width:number;kind:HomeObjectKind;solid:boolean;front?:boolean;slot?:string;furnitureId?:string}
 const furnitureSprites:Record<string,{sprite:HomeSprite;width:number;kind:HomeObjectKind}>={
   ...Object.fromEntries(PARCEL_IDS.map(id=>[id,{sprite:`parcel.${id}` as HomeSprite,width:parcelWidth(id),kind:PARCEL_ART[id].kind}])),
   cardboard_nest:{sprite:'s1.box',width:186,kind:'nest'},box_castle:{sprite:'s3.castle',width:192,kind:'castle'},
@@ -13,75 +15,53 @@ const furnitureSprites:Record<string,{sprite:HomeSprite;width:number;kind:HomeOb
   cloud_nest:{sprite:'s3.cloudnest',width:154,kind:'blanket'},moon_hammock:{sprite:'s3.hammock',width:194,kind:'hammock'},
   tin_lamp:{sprite:'s2.tinlamp',width:52,kind:'lamp'},sun_lamp:{sprite:'s4.sunlamp',width:64,kind:'lamp'},star_glass:{sprite:'s4.starlamp',width:66,kind:'lamp'}
 };
-type DecorSpec=readonly [id:string,sprite:HomeSprite,x:number,y:number,width:number,kind?:HomeObjectKind];
-const derelict:readonly DecorSpec[]=[
-  ['old-rag','s1.rag',292,427,120,'blanket'],['rain-bucket','s1.bucket',575,490,48],['rain-basin','s1.basin',965,604,74],
-  ['dead-pots','s1.deadpots',1435,414,163,'plant'],['broken-rack','s1.brokenrack',144,453,112,'storage'],
-  ['loose-boards','s1.boards',570,360,124],['rusty-tools','s1.tools',1095,358,112,'storage'],
-  ['dry-vine','botany.dryvine',770,315,52],['damaged-bench','s1.bench',1300,373,184,'workbench'],
-  ['wet-sacks','s1.sack',1180,372,85],['rusty-can','s1.can',1486,544,55]
-];
-const improvised:readonly DecorSpec[]=[
-  ['workbench','s2.workbench',820,370,210,'workbench'],['straw','s2.straw',327,425,158,'blanket'],
-  ['work-lantern','s2.tinlamp',998,365,44],['crate-shelf','s2.shelf',1080,370,126,'storage'],
-  ['young-plants','s2.seedlings',1415,410,165,'plant'],['supply-crate','s2.storage',560,370,143,'storage'],
-  ['scratching-ramp','s2.scratcher',1270,405,126],['stool-seedling','s2.plantstool',154,480,87,'plant']
-];
-const garden:readonly DecorSpec[]=[
-  ['workbench','s3.bench',820,375,236,'workbench'],['food-storage','s3.chest',555,369,168,'storage'],
-  ['cat-tower','s3.tower',1470,455,160,'tower'],['north-herbs','s3.herbs',1120,375,208,'plant'],
-  ['citrus-tree','s3.citrus',1320,379,142,'plant'],['south-flowers','s3.flowerpots',470,716,203,'plant'],
-  ['west-plant-stand','s3.seedlingrack',147,478,119,'plant'],['north-vines','botany.ivy',775,315,63],
-  ['west-vines','botany.flowering',440,315,64],['east-vines','botany.ivy',1256,316,48],
-  ['hanging-fern','botany.hanging',1100,256,71],['garden-handcart','s3.supplies',1200,710,154,'storage'],
-  ['crate-shelf','s2.shelf',405,379,106,'storage'],['stool-seedling','s2.plantstool',1523,553,87,'plant'],
-  ['work-lantern','s2.tinlamp',994,365,42],['round-bed','s3.cloudnest',1300,505,149,'blanket'],
-  ['west-leaf-tub','botany.tropical',166,701,153,'plant'],['red-geraniums','botany.geranium',1330,725,112,'plant'],
-  ['herb-tub','botany.herbtub',1440,552,94,'plant'],['wall-ivy','botany.spill',438,866,192],['south-east-ivy','botany.spill',1193,860,154]
-];
-const celebration:readonly DecorSpec[]=[
-  ['workbench','s4.banquet',815,385,250,'workbench'],['welcome-left','s4.entryleft',643,726,132],
-  ['welcome-right','s4.entryright',1005,725,147,'plant'],['entry-rug','s4.rug',824,723,191],
-  ['gifts','s4.gifts',530,420,142,'storage'],['celebration-flowers','s4.flowers',1230,411,163,'plant'],
-  ['celebration-banner','s4.pennant',180,564,78],['entry-wreath','s4.wreath',821,805,72]
-];
-export function homeObjects(state:HomeAppearance):HomeObject[]{
-  const stage=homeStage(state),objects:HomeObject[]=[];
-  const add=([id,sprite,x,y,width,kind='decor']:DecorSpec)=>objects.push({id,sprite,x,y,width,kind,front:['wall-ivy','south-east-ivy','entry-wreath'].includes(id),solid:['plant','storage','workbench','nest','castle','hammock','tower'].includes(kind)});
-  // Repair stages own different furnishing schemes; the celebration retains
-  // the living garden and turns the work area into a communal feast.
-  const scheme=stage===1?derelict:stage===2?improvised:stage===3?garden:[...garden.filter(item=>item[0]!=='workbench'),...celebration];
-  const replaced=new Set<string>();
-  for(const [slot,ids] of Object.entries({desk:['workbench','damaged-bench'],cabinet:['food-storage','supply-crate','gifts'],planter:['citrus-tree','celebration-flowers'],wall_clock:['north-herbs'],courtyard:['garden-handcart','red-geraniums']}))if(state.placements[slot])for(const id of ids)replaced.add(id);
-  for(const item of scheme)if(!replaced.has(item[0]))add(item);
-  if(!state.placements.corner)add(['shelter',stage===1?'s1.box':stage===2?'s2.nest':'s3.castle',HOME_SLOTS.corner.x,HOME_SLOTS.corner.y,186,stage>=3?'castle':'nest']);
-  // Default living corners disappear when the player places their own item.
-  // They do not grant furniture ownership or overwrite any saved placement.
-  if(stage>=2&&!state.placements.window)add(['feeding-corner','s2.bowls',HOME_SLOTS.window.x,HOME_SLOTS.window.y,114,'bowls']);
-  if(stage>=3&&!state.placements.beam)add(['reading-hammock','s3.hammock',HOME_SLOTS.beam.x,HOME_SLOTS.beam.y,194,'hammock']);
-  if(stage>=3&&!state.placements.sun_spot)add(['sun-bedding','s2.blanket',HOME_SLOTS.sun_spot.x,HOME_SLOTS.sun_spot.y,150,'blanket']);
-  for(const [slot,id] of Object.entries(state.placements)){
-    const point=HOME_SLOTS[slot],appearance=furnitureSprites[id];
-    if(!point||!appearance||((slot==='beam'||slot==='sun_spot')&&stage<3))continue;
-    const sprite=id==='cardboard_nest'&&stage>=2?'s2.nest':appearance.sprite;
-    const y=id==='star_glass'?Math.min(350,point.y-150):point.y;
-    objects.push({id:'placed:'+slot,...point,y:id==='comet_mobile'?y-58:y,...appearance,sprite,solid:['nest','castle','hammock','storage','workbench','plant','sofa','seat'].includes(appearance.kind),slot,furnitureId:id});
+export interface HomeItem extends HomeObject {stored:boolean;name:string}
+export function homeInventory(state:HomeAppearance):HomeItem[]{
+  const stage=homeStage(state),items:HomeItem[]=[];
+  for(const d of decor.filter(d=>d.stage===stage)){
+    const override=state.homeLayout?.[d.id],kind=d.kind as HomeObjectKind;
+    items.push({id:d.objectId,layoutKey:d.id,sprite:d.sprite as HomeSprite,x:d.x,y:d.y,width:d.width,kind,front:'front' in d&&d.front,wall:'wall' in d&&d.wall,solid:['plant','storage','workbench','nest','castle','hammock','tower'].includes(kind),name:d.name,stored:!!(d.replacementSlot&&state.placements[d.replacementSlot]),...override});
   }
-  return objects.sort((a,b)=>a.y-b.y);
+  const owned=state.furniture??Object.values(state.placements);
+  for(const id of owned){
+    const appearance=furnitureSprites[id];if(!appearance)continue;
+    const slot=Object.keys(state.placements).find(slot=>state.placements[slot]===id),point=HOME_SLOTS[slot??'']??{x:820,y:540};
+    const locked=!!slot&&['beam','sun_spot'].includes(slot)&&stage<3;
+    const sprite=id==='cardboard_nest'&&stage>=2?'s2.nest':appearance.sprite;
+    const layoutKey='furniture:'+id,override=state.homeLayout?.[layoutKey];
+    items.push({id:slot?'placed:'+slot:layoutKey,layoutKey,...appearance,sprite,...point,y:id==='star_glass'?Math.min(350,point.y-150):id==='comet_mobile'?point.y-58:point.y,solid:['nest','castle','hammock','storage','workbench','plant','sofa','seat'].includes(appearance.kind),slot:slot??layoutKey,furnitureId:id,name:id,wall:['star_glass','postmark_clock','lunar_clock','comet_mobile'].includes(id),stored:!slot||locked,...override});
+  }
+  return items;
 }
-export function homePosePoint(slot:string,id:string):HomePoint {
-  const point=HOME_SLOTS[slot]??HOME_SLOTS.corner,appearance=furnitureSprites[id];
+export function homeObjects(state:HomeAppearance):HomeObject[]{return homeInventory(state).filter(item=>!item.stored).sort((a,b)=>a.y-b.y);}
+export function homeObjectInteraction(object:HomeObject):{cat:CatBreed;pose:string;point:HomePoint}{
+  const id=object.furnitureId;
+  if(id&&isParcelFurniture(id)){const m=PARCEL_ART[id];return{cat:m.cat,pose:m.pose,point:homePosePoint(object.slot??'',id,object)};}
+  const h=object.width*HOME_FRAMES[object.sprite].height/HOME_FRAMES[object.sprite].width;
+  const base={x:object.x,y:Math.max(375,Math.min(723,object.y))};
+  if(object.kind==='castle'||object.kind==='nest')return{cat:'diandian',pose:'castle_peek',point:{x:object.x,y:object.y-h*.18+16}};
+  if(object.kind==='tower')return{cat:'diandian',pose:'perch',point:{x:object.x,y:object.y-h*.8}};
+  if(object.kind==='hammock')return{cat:'momo',pose:'hammock_sleep',point:{x:object.x,y:object.y-h*.31}};
+  if(object.kind==='bowls')return{cat:'tuanzi',pose:'bowl_eat',point:{x:object.x+37,y:object.y-2}};
+  if(object.kind==='cushion')return{cat:'tuanzi',pose:'knead',point:{x:object.x,y:object.y-h*.3}};
+  if(object.kind==='blanket')return{cat:'miaomiao',pose:'belly',point:{x:object.x,y:object.y-h*.3}};
+  if(object.kind==='plant'||object.kind==='storage'||object.kind==='workbench')return{cat:'miaomiao',pose:'sniff',point:{x:Math.min(1510,object.x+object.width*.4),y:base.y}};
+  return{cat:'momo',pose:'watch',point:{x:base.x,y:Math.max(385,base.y+20)}};
+}
+export function homePosePoint(slot:string,id:string,position?:HomePoint):HomePoint {
+  const point=position??HOME_SLOTS[slot]??HOME_SLOTS.corner,appearance=furnitureSprites[id];
   if(!appearance)return point;
   const frame=HOME_FRAMES[appearance.sprite],height=appearance.width*frame.height/frame.width;
   if(isParcelFurniture(id)){
     const pose=PARCEL_ART[id].pose;
+    if(pose==='castle_peek')return{x:point.x,y:point.y-height*.18+16};
     if(pose==='perch')return{x:point.x,y:point.y-height*.67};
     if(pose==='watch')return{x:point.x,y:Math.max(375,point.y+55)};
     if(pose==='sniff')return{x:point.x+appearance.width*.33,y:point.y+12};
     if(pose==='bat_ball'||pose==='bat_chime')return{x:point.x+35,y:point.y};
     if(id==='willow_sofa'||id==='crescent_sofa')return{x:point.x,y:point.y-height*.36};
   }
-  if(id==='box_castle')return{x:point.x-appearance.width*.14,y:point.y-height*.28};
+  if(id==='box_castle'||id==='cardboard_nest')return{x:point.x,y:point.y-height*.18+16};
   if(id==='moss_cottage')return{x:point.x-appearance.width*.06,y:point.y-height*.3};
   if(id==='tide_observatory')return{x:point.x-appearance.width*.13,y:point.y-height*.21};
   if(id==='acorn_library')return{x:point.x,y:point.y-height*.24};

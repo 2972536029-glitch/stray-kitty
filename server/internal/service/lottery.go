@@ -175,7 +175,7 @@ func (g *Game) claimParcelReward(s *domain.GameState, rewardID string) error {
 		if reward.RequiredFlag != "" && !domain.Contains(s.Flags, reward.RequiredFlag) {
 			return domain.Fail("REWARD_LOCKED", "完成对应的旅程后，这封来信就会送达。", 409)
 		}
-		if reward.Condition == "furnished" && len(s.Placements) == 0 {
+		if reward.Condition == "furnished" && !homeFurnished(s) {
 			return domain.Fail("WISH_UNFINISHED", "先在花房摆上一件喜欢的家具，再来听猫咪道谢。", 409)
 		}
 		if reward.Stamp < 0 || reward.Tuna < 0 {

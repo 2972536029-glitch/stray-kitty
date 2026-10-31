@@ -52,5 +52,5 @@ export function Viewport(props: Props) {
     latest.current.onSceneReady?.(runtime);
     // CanvasViewport 只认 destroy；在这里补一次 onSceneReady(null) 的通知。
     return {destroy() {runtime.destroy();scene.current = null;latest.current.onSceneReady?.(null);}};
-  }}/>{home && <div className="home-camera-controls" aria-label="花房视角"><button disabled={props.paused} aria-label="放大花房" onClick={()=>scene.current?.homeZoom(.35)}>＋</button><button disabled={props.paused} aria-label="缩小花房" onClick={()=>scene.current?.homeZoom(-.35)}>－</button><button disabled={props.paused} onClick={()=>scene.current?.homeZoom(0)}>花房全景</button><span>拖动查看 · 点猫咪或家具互动</span></div>}</>;
+  }}/>{home && <div className="home-camera-controls" aria-label="花房视角"><button disabled={props.paused} aria-label="放大花房" onClick={()=>scene.current?.homeZoom(.35)}>＋</button><button disabled={props.paused} aria-label="缩小花房" onClick={()=>scene.current?.homeZoom(-.35)}>－</button><button disabled={props.paused} onClick={()=>scene.current?.homeZoom(0)}>花房全景</button><span>拖空地看场景 · 拖猫咪去互动</span></div>}</>;
 }

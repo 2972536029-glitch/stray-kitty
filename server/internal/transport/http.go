@@ -395,11 +395,12 @@ func validateCommand(body []byte, kind string) error {
 		"GO_EXPLORE":          {"mapId"},
 		"EXIT_MARKET":         {"layer", "position"},
 		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
+		"SAVE_HOME_LAYOUT":    {"changes"},
 		"DRAW_FURNITURE":      {"poolId"},
 		"CLAIM_PARCEL_REWARD": {"rewardId"},
 		"CHECK_RANDOM_ZONE":   {"zoneId", "layer", "position"},
 		"BUY_FURNITURE":       {"productId"},
-		"REPAIR_HOME":         {},
+		"REPAIR_HOME":         {"repairId"},
 	}
 	required := map[string][]string{
 		"ADVANCE_STORY":       {"nodeId"},
@@ -417,6 +418,7 @@ func validateCommand(body []byte, kind string) error {
 		"GO_EXPLORE":          {},
 		"EXIT_MARKET":         {"layer", "position"},
 		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
+		"SAVE_HOME_LAYOUT":    {"changes"},
 		"DRAW_FURNITURE":      {"poolId"},
 		"CLAIM_PARCEL_REWARD": {"rewardId"},
 		"BUY_FURNITURE":       {"productId"},
@@ -437,7 +439,30 @@ func validateCommand(body []byte, kind string) error {
 			return domain.Fail("INVALID_REQUEST", "命令包含不适用的字段", 400)
 		}
 	}
+	if value, exists := raw.Command["repairId"]; exists {
+		var id string
+		if json.Unmarshal(value, &id) != nil || id == "" {
+			return domain.Fail("INVALID_REQUEST", "repairId 必须为非空字符串", 400)
+		}
+	}
 	for _, key := range required[kind] {
+		if key == "changes" {
+			var changes []map[string]json.RawMessage
+			if json.Unmarshal(raw.Command[key], &changes) != nil || len(changes) < 1 || len(changes) > 96 {
+				return domain.Fail("INVALID_REQUEST", "changes 需要 1 到 96 项", 400)
+			}
+			for _, change := range changes {
+				if len(change) != 4 {
+					return domain.Fail("INVALID_REQUEST", "每项必须包含 key、x、y、stored", 400)
+				}
+				for _, field := range []string{"key", "x", "y", "stored"} {
+					if value, ok := change[field]; !ok || string(value) == "null" {
+						return domain.Fail("INVALID_REQUEST", "布局字段不能为空", 400)
+					}
+				}
+			}
+			continue
+		}
 		if key == "position" {
 			var point map[string]json.RawMessage
 			if json.Unmarshal(raw.Command[key], &point) != nil || point == nil {
