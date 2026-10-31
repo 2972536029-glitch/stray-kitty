@@ -4,7 +4,7 @@ import type {CatBreed} from '../../adapters/canvas/pixelCat';
 import {HOME_SLOTS, homeStage, type HomePoint} from './layout';
 import {HOME_FRAMES, type HomeSprite} from './assets';
 import {PARCEL_ART, PARCEL_IDS, isParcelFurniture, parcelWidth} from '../lottery/furnitureArt';
-export type HomeAppearance=Pick<GameState,'flags'|'placements'> & Partial<Pick<GameState,'phase'|'storyNodeId'|'furniture'|'homeLayout'>>;
+export type HomeAppearance=Pick<GameState,'flags'|'placements'> & Partial<Pick<GameState,'phase'|'storyNodeId'|'furniture'|'homeLayout'|'homeRepairs'>>;
 export type HomeObjectKind='decor'|'plant'|'storage'|'workbench'|'nest'|'castle'|'hammock'|'blanket'|'cushion'|'bowls'|'lamp'|'tower'|'sofa'|'seat';
 export interface HomeObject extends HomePoint {id:string;layoutKey:string;wall?:boolean;sprite:HomeSprite;width:number;kind:HomeObjectKind;solid:boolean;front?:boolean;slot?:string;furnitureId?:string}
 const furnitureSprites:Record<string,{sprite:HomeSprite;width:number;kind:HomeObjectKind}>={

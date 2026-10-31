@@ -148,7 +148,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "BUY_FURNITURE":
 		return g.buyFurniture(s, c.ProductID)
 	case "REPAIR_HOME":
-		return g.repairHome(s)
+		return g.repairHome(s, c.RepairID)
 	case "START_STORY":
 		if domain.Contains([]string{"finale_intro_2", "finale_intro_3", "finale_intro_4", "finale_intro_5", "finale_intro_6", "finale_intro_7", "finale_intro_8", "finale_intro_9"}, c.NodeID) {
 			return domain.Fail("STORY_LOCKED", "这段仓库剧情由地图与战斗流程推进", 409)

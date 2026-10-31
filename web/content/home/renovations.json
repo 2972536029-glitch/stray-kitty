@@ -8,7 +8,43 @@
     "grantsFlag": "greenhouse_sealed",
     "cost": {
       "material": 10
-    }
+    },
+    "parts": [
+      {
+        "id": "patch_windows",
+        "name": "修补破损窗框",
+        "description": "钉稳松动的窗框，再用木板挡住吹进来的冷雨。",
+        "x": 502,
+        "y": 190,
+        "cost": {
+          "material": 4
+        }
+      },
+      {
+        "id": "stop_roof_leaks",
+        "name": "堵住屋顶漏缝",
+        "description": "补好这排漏雨的接缝，让水滴不再落进花房。",
+        "x": 965,
+        "y": 108,
+        "cost": {
+          "material": 4
+        }
+      },
+      {
+        "id": "dry_bedding",
+        "name": "排干积水、铺好干草",
+        "description": "等窗和屋顶挡住雨，再清理地面，给伙伴铺上干草和旧毛毯。",
+        "x": 575,
+        "y": 490,
+        "cost": {
+          "material": 2
+        },
+        "requires": [
+          "patch_windows",
+          "stop_roof_leaks"
+        ]
+      }
+    ]
   },
   {
     "id": "timber_greenhouse",
@@ -25,6 +61,43 @@
     "unlockSlots": [
       "beam",
       "sun_spot"
+    ],
+    "parts": [
+      {
+        "id": "reinforce_floor",
+        "name": "修补原木地板",
+        "description": "换掉松软翘起的旧地板，铺稳新的原木木条。",
+        "x": 820,
+        "y": 610,
+        "cost": {
+          "material": 8
+        }
+      },
+      {
+        "id": "restore_skylight",
+        "name": "修复透光天窗",
+        "description": "换好透光玻璃、加固窗格，把温暖的阳光请进花房。",
+        "x": 1090,
+        "y": 150,
+        "cost": {
+          "material": 7,
+          "stamp": 1
+        }
+      },
+      {
+        "id": "revive_garden",
+        "name": "整理花架、复苏花草",
+        "description": "地板和天窗修好后，整理花架，安置储粮箱与猫爬架。",
+        "x": 1410,
+        "y": 465,
+        "cost": {
+          "material": 5
+        },
+        "requires": [
+          "reinforce_floor",
+          "restore_skylight"
+        ]
+      }
     ]
   }
 ]

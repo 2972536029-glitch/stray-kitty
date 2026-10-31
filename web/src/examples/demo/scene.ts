@@ -11,12 +11,12 @@ import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nea
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 import {HOME_LAYOUT_ID, HOME_SIZE, HOME_RESIDENTS, HOME_ROAM_NODES, HOME_SHELTER_NODES, homeStage} from '../../modules/home/layout';
-import {homeAppearanceKey, paintHomeStructure, paintHomeObject, paintHomeFurnitureFront, paintHomeFrontWall, paintHomeWeather, homeObjects} from '../../modules/home/painter';
+import {homeAppearanceKey, paintHomestead, paintHomeStructure, paintHomeObject, paintHomeFurnitureFront, paintHomeFrontWall, paintHomeWeather, homeObjects} from '../../modules/home/painter';
 import {loadHomeArtwork, HOME_FRAMES, type HomeArtwork} from '../../modules/home/assets';
 import {paintResident} from '../../modules/home/catPainter';
 import {CAT_NAMES,SOCIAL_KINDS,freeCatPoint,furnitureAt,furnitureActivity,useFurniture,socialize,endSocial,stepHomeLife,settleCats,type LifeCat} from '../../modules/home/life';
 import {HomeCamera} from '../../modules/home/camera';
-import {homePosePoint} from '../../modules/home/objects';
+import {homePosePoint, homeInventory, type HomeAppearance} from '../../modules/home/objects';
 import {homeWalkable} from '../../modules/home/navigation';
 import {displayedCanvasRect} from '../../adapters/canvas/camera';
 import {homeStoryBeat, storyActorPosition, type HomeStoryActor, type HomeStoryBeat} from '../../modules/home/story';
@@ -89,6 +89,27 @@ export class DemoScene {
   private homeAssetLoading=false;
   private homeAssetError=false;
   private homeCamera=new HomeCamera();
+  private homeEditing?:{state:HomeAppearance;selection:string;valid:boolean};
+  get homeCanvas(){return this.canvas;}
+  get homeZoomLevel(){return this.homeCamera.zoom;}
+  setHomeEditing(draft?:{state:HomeAppearance;selection:string;valid:boolean}){
+    this.homeEditing=draft;this.clearInput();this.canvas.dataset.homeEditing=String(!!draft);
+    this.canvas.style.cursor=draft?'grab':'';
+    if(!draft){delete this.canvas.dataset.editorView;delete this.canvas.dataset.editorItems;}
+  }
+  homeClientToWorld(clientX:number,clientY:number){
+    const point=this.homeScreenPoint({clientX,clientY}),view=this.homeView(),r=this.canvas.getBoundingClientRect();
+    return{x:Math.round((point.x-view.x)/view.scale),y:Math.round((point.y-view.y)/view.scale),inside:clientX>=r.left&&clientX<=r.right&&clientY>=r.top&&clientY<=r.bottom};
+  }
+  homeWorldToClient(x:number,y:number){
+    const r=this.canvas.getBoundingClientRect(),view=this.homeView(),cover=getComputedStyle(this.canvas).objectFit==='cover',s=(cover?Math.max:Math.min)(r.width/this.viewWidth,r.height/this.viewHeight);
+    return{x:r.left+(r.width-this.viewWidth*s)/2+(view.x+x*view.scale)*s,y:r.top+(r.height-this.viewHeight*s)/2+(view.y+y*view.scale)*s};
+  }
+  panHomeEditor(from:{x:number;y:number},to:{x:number;y:number}){
+    if(!this.homeEditing)return;
+    const a=this.homeScreenPoint({clientX:from.x,clientY:from.y}),b=this.homeScreenPoint({clientX:to.x,clientY:to.y}),view=this.homeView();
+    this.homeCamera.pan(b.x-a.x,b.y-a.y,view.viewport.width,view.viewport.height);
+  }
   private homeDrag:{id:number;start:{x:number;y:number};last:{x:number;y:number};moved:boolean;cat?:CatBreed;offset?:{x:number;y:number}}|null=null;
   private homeSocialSerial=0;
   private homeSocialStamp=-1;
@@ -255,7 +276,7 @@ export class DemoScene {
     return{...frame,x:frame.x+viewport.x,y:frame.y+viewport.y,viewport};
   }
   homeZoom(amount:number){
-    if(this.state?.phase!=='home'||this.pausedByUser)return;
+    if(this.state?.phase!=='home'||(this.pausedByUser&&!this.homeEditing))return;
     if(this.homeDrag?.cat)return;
     if(amount===0)this.homeCamera.reset();else this.homeCamera.changeZoom(amount);
   }
@@ -279,7 +300,7 @@ export class DemoScene {
   };
   private homePointerCancel=()=>{this.homeDrag=null;this.canvas.style.cursor='';delete this.canvas.dataset.homeDropTarget;};
   private homeWheel=(event:WheelEvent)=>{
-    if(this.state?.phase!=='home'||this.state.chapterId==='prologue'||this.pausedByUser)return;
+    if(this.state?.phase!=='home'||this.state.chapterId==='prologue'||(this.pausedByUser&&!this.homeEditing))return;
     event.preventDefault();this.homeZoom(event.deltaY<0?.15:-.15);
   };
   start() {
@@ -529,7 +550,7 @@ export class DemoScene {
     else if (this.state.mapId === 'greenhouse' || (this.state.qaCheckpointId?.startsWith('event:warehouse:') && mode === 'event')) this.drawHome();
     else if (this.state.mapId === 'alley') this.rainyAlley.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, {phase: mode, eventId: this.state.pendingEventId, pendingEventSource: this.state.pendingEventSource, randomEligible: this.randomEligible});
     else this.drawAlley();
-    if (this.pausedByUser) {this.graphics.fillStyle(0x18282a, .6);this.graphics.fillRect(0, 0, 800, 480);}
+    if (this.pausedByUser && !this.homeEditing) {this.graphics.fillStyle(0x18282a, .6);this.graphics.fillRect(0, 0, 800, 480);}
     if (import.meta.env.DEV || import.meta.env.MODE === 'e2e') this.publishNavigationDiagnostics();
   }
   private publishNavigationDiagnostics() {
@@ -556,7 +577,7 @@ export class DemoScene {
       this.canvas.dataset.homeStage = String(this.homeStage());
       this.canvas.dataset.homeTime = this.homeTime.toFixed(0);
       this.canvas.dataset.homeFurniture=JSON.stringify(homeObjects(this.state!).filter(o=>o.furnitureId).map(o=>{const frame=HOME_FRAMES[o.sprite];return{id:o.furnitureId,slot:o.slot,x:o.x,y:o.y,width:o.width,height:o.width*frame.height/frame.width};}));
-      this.canvas.dataset.homeCats = JSON.stringify(this.homeCats.map(cat => ({breed: cat.breed, x: Math.round(cat.x), y: Math.round(cat.y), pose: cat.pose, slot:cat.slot, action: cat.action, height: Math.round(cat.scriptedHeight ?? 0), bubble:cat.bubbleUntil>this.homeTime&&this.homeTime>=(cat.bubbleAt??0)?cat.bubble:null,social:cat.social?.kind,partner:cat.social?.partner,held:this.homeDrag?.cat===cat.breed})));
+      this.canvas.dataset.homeCats = JSON.stringify(this.homeEditing?[]:this.homeCats.map(cat => ({breed: cat.breed, x: Math.round(cat.x), y: Math.round(cat.y), pose: cat.pose, slot:cat.slot, action: cat.action, height: Math.round(cat.scriptedHeight ?? 0), bubble:cat.bubbleUntil>this.homeTime&&this.homeTime>=(cat.bubbleAt??0)?cat.bubble:null,social:cat.social?.kind,partner:cat.social?.partner,held:this.homeDrag?.cat===cat.breed})));
       this.canvas.dataset.homeCamera=JSON.stringify({...this.homeView(),zoom:this.homeCamera.zoom,worldWidth:HOME_SIZE.width,worldHeight:HOME_SIZE.height});
       this.canvas.dataset.homeArtwork=this.homeArtwork?'ready':this.homeAssetError?'error':'loading';
       this.canvas.dataset.homeObjects=JSON.stringify(homeObjects(state));
@@ -701,10 +722,21 @@ export class DemoScene {
   private drawHome(){
     if(this.state?.chapterId === 'prologue'){this.drawPrologueHome();return;}
     if(!this.state)return;
-    if(this.pausedByUser)this.homePointerCancel();
+    if(this.pausedByUser&&!this.homeEditing)this.homePointerCancel();
     if(!this.homeAssetLoading){
       this.homeAssetLoading=true;
       void loadHomeArtwork().then(art=>{if(!this.destroyed)this.homeArtwork=art;}).catch(()=>{if(!this.destroyed)this.homeAssetError=true;});
+    }
+    if(this.homeEditing){
+      const {state,selection,valid}=this.homeEditing,ctx=this.context,view=this.homeView();
+      ctx.save();ctx.fillStyle='#13262e';ctx.fillRect(0,0,this.viewWidth,this.viewHeight);
+      ctx.beginPath();ctx.rect(view.viewport.x,view.viewport.y,view.viewport.width,view.viewport.height);ctx.clip();
+      ctx.translate(view.x,view.y);ctx.scale(view.scale,view.scale);paintHomestead(ctx,state,this.homeArtwork);
+      const selected=homeInventory(state).find(i=>i.layoutKey===selection&&!i.stored);
+      if(selected){const f=HOME_FRAMES[selected.sprite],h=selected.width*f.height/f.width;ctx.strokeStyle=valid?'#ffe19a':'#ff8377';ctx.lineWidth=2/view.scale;ctx.setLineDash([7/view.scale,4/view.scale]);ctx.strokeRect(selected.x-selected.width/2-5,selected.y-h-5,selected.width+10,h+10);ctx.setLineDash([]);}
+      ctx.restore();
+      if(import.meta.env.DEV||import.meta.env.MODE==='e2e'){this.canvas.dataset.editorView=JSON.stringify(view);this.canvas.dataset.editorItems=JSON.stringify(homeInventory(state));}
+      return;
     }
     const key=homeAppearanceKey(this.state)+(this.homeArtwork?'|loaded':'|loading');
     if(!this.homeBackdrop||this.homeBackdropKey!==key){

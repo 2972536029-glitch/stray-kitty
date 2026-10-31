@@ -31,7 +31,7 @@ const CHATTER_CALLBACKS: {flag: string; speaker: string; text: string}[] = [
   {flag: 'wall_kitten_friend', speaker: '旁白', text: '回花房的路上，墙头方向传来一声短促的招呼，像在替你们看着巷口。'},
 ];
 
-export default function HomePanel({state, catalog, disabled, onCommand, onShop, onParcels, onWarehouse, onDecorate}: {state: GameState; catalog: Catalog; disabled: boolean; onCommand: (command: GameCommand) => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onWarehouse: () => void; onDecorate: () => void}) {
+export default function HomePanel({state, disabled, onCommand, onShop, onParcels, onWarehouse, onDecorate}: {state: GameState; catalog: Catalog; disabled: boolean; onCommand: (command: GameCommand) => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onWarehouse: () => void; onDecorate: () => void}) {
   // 伸缩抽屉：先按收缩态挂载，延迟一拍再展开，让玩家看清“这里有一个可以伸缩的面板”。
   const [open, setOpen] = useState(rememberedOpen);
   const [revealed, setRevealed] = useState(false);
@@ -52,18 +52,6 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     playSound(next ? 'open' : 'close');
     try {localStorage.setItem(PANEL_OPEN_KEY, next ? 'open' : 'closed');} catch {/* 隐私模式下记忆失败，不影响本次游玩 */}
   };
-  // 花房四阶修缮:阶段 1 是初始漏雨状态,阶段 2/3 由 REPAIR_HOME 逐段推进,阶段 4 随终章 flag 自动点亮。
-  const renovations = catalog.renovations ?? [];
-  const kingdomFounded = state.flags.includes('finale_completed') || state.flags.includes('kingdom_founded');
-  const nextRenovation = renovations.find(r => !state.flags.includes(r.grantsFlag));
-  const stage = kingdomFounded ? 4 : renovations.filter(r => state.flags.includes(r.grantsFlag)).length + 1;
-  const stageTitles = ['漏雨避雨处', '封窗止水', '原木温室与猫爬架', '流浪猫王国庆典'];
-  const stageHints = ['屋顶还漏着雨，大家先挤在纸箱边避雨。', '破窗钉上木板、堵住漏缝，花房干燥又温暖。', '原木横梁架起天窗，阳光洒下条条光斑。', '暖黄串灯亮起，街坊们送来了水碗与毛毯。'];
-  const material = state.inventory.material ?? 0;
-  const stamp = state.currencies.stamp ?? 0;
-  const nextMaterial = nextRenovation?.cost?.material ?? 0;
-  const nextStamp = nextRenovation?.cost?.stamp ?? 0;
-  const affordable = material >= nextMaterial && stamp >= nextStamp;
   const hasBattleTrials = state.flags.includes('alley_rescued') || state.flags.includes('momo_joined');
   const needsGreenhouseDefense = state.flags.includes('chapter_3_started') && state.flags.includes('momo_joined') && !state.flags.includes('greenhouse_fortified');
   const tunnelComplete = state.flags.includes('tunnel_explored') && state.flags.includes('cats_rescued_batch1');
@@ -132,24 +120,6 @@ export default function HomePanel({state, catalog, disabled, onCommand, onShop, 
     {state.flags.includes('momo_joined') && <GreenhouseLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('alley_rescued') && <TunnelLoadout disabled={disabled} onCommand={onCommand}/>}
     {state.flags.includes('alley_rescued') && <FinaleLoadout disabled={disabled} onCommand={onCommand}/>}
-    <div className="renovation-card">
-      <span className="eyebrow">GREENHOUSE RENOVATION</span>
-      <h3 className="renovation-title">🛠️ 花房修缮 · 阶段 {stage}/4「{stageTitles[stage - 1]}」</h3>
-      <div className="renovation-track" aria-label="修缮进度">
-        {stageTitles.map((title, index) => <div key={title} title={title} className={`renovation-seg ${index < stage ? 'done' : ''}`}/>)}
-      </div>
-      <p className="renovation-hint muted">{stageHints[stage - 1]}</p>
-      {nextRenovation ? <>
-        <p className="renovation-next"><b>下一工程：</b>{nextRenovation.name} —— {nextRenovation.description}</p>
-        <div className="renovation-cost-row">
-          <span className="muted renovation-cost-label">所需：◆ 材料 ×{nextMaterial}{nextStamp > 0 ? ` ＋ ✦ 邮票 ×${nextStamp}` : ''}（现有 ◆{material} ✦{stamp}）</span>
-          {nextMaterial > 0 && <span className="renovation-progress"><span style={{width: `${Math.min(100, Math.round(material / nextMaterial * 100))}%`}}/></span>}
-        </div>
-        <button disabled={disabled || !affordable} data-sound="pickup" onClick={() => {playSound('pickup');onCommand({type: 'REPAIR_HOME'});}}>{affordable ? `🔨 动手修缮：${nextRenovation.name}` : `🔨 材料还不够（◆${material}/${nextMaterial}）`}</button>
-      </> : kingdomFounded
-        ? <p className="renovation-done muted">🎉 修缮全部完成！暖黄串灯下的流浪猫王国正热闹着，街坊们常来送水碗和猫粮。</p>
-        : <p className="renovation-done muted">花房已经修缮完毕，点亮终章后，这里会成为真正的流浪猫王国。</p>}
-    </div>
     <button className="home-warehouse-entry" disabled={disabled} onClick={onDecorate}>▧ 打开家具背包<small>直接拖进花房 · 所有家具都能移动和收回</small></button>
     <button className="shop-home" disabled={disabled} onClick={onShop}>去猫国商店挑一件家具 ↗</button>
     <button className="home-parcel-entry" onClick={onParcels} disabled={disabled}><span>✉ 猫爪邮局<small>苔叶来信 · 月海观星 / 两套独立主题家具</small></span><span aria-hidden="true">→</span></button>

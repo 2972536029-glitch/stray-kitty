@@ -10,10 +10,26 @@ import (
 // 阶段 4(流浪猫王国庆典)由剧情 flag finale_completed/kingdom_founded 自动点亮,不走本命令。
 // 推进路径、材料消耗与解锁槽位全部来自目录 renovations,按 stage 升序执行。
 
-// repairHome 推进花房的下一个修缮工程:校验前置 flag 与材料,扣除后追加 grantsFlag。
-func (g *Game) repairHome(s *domain.GameState) error {
+// repairHome 结算场景部位；不带部位 ID 的旧命令结算剩余工程，全部完成才追加阶段 flag。
+func (g *Game) repairHome(s *domain.GameState, repairID string) error {
 	if err := domain.RequirePhase(*s, "home"); err != nil {
 		return err
+	}
+	if repairID != "" {
+		known := false
+		for _, r := range g.Catalog.Renovations {
+			for _, part := range r.Parts {
+				if part.ID == repairID {
+					known = true
+					if domain.Contains(s.HomeRepairs, repairID) || domain.Contains(s.Flags, r.GrantsFlag) {
+						return domain.Fail("REPAIR_ALREADY_COMPLETE", "这里已经修好了", 409)
+					}
+				}
+			}
+		}
+		if !known {
+			return domain.Fail("INVALID_REPAIR", "找不到这处修补工程", 400)
+		}
 	}
 	for _, r := range g.renovationsByStage() {
 		if domain.Contains(s.Flags, r.GrantsFlag) {
@@ -22,7 +38,31 @@ func (g *Game) repairHome(s *domain.GameState) error {
 		if r.RequiredFlag != "" && !domain.Contains(s.Flags, r.RequiredFlag) {
 			return domain.Fail("RENOVATION_LOCKED", "上一阶段的花房修缮还没有完成", 409)
 		}
-		for item, amount := range r.Cost {
+		cost, completed, label := r.Cost, []string{}, r.Name
+		if len(r.Parts) > 0 {
+			cost = map[string]int{}
+			for _, part := range r.Parts {
+				if domain.Contains(s.HomeRepairs, part.ID) || repairID != "" && part.ID != repairID {
+					continue
+				}
+				if repairID != "" {
+					for _, required := range part.Requires {
+						if !domain.Contains(s.HomeRepairs, required) {
+							return domain.Fail("REPAIR_LOCKED", "先修好相邻的窗、屋顶或地板，再来整理这里吧", 409)
+						}
+					}
+					label = part.Name
+				}
+				completed = append(completed, part.ID)
+				for item, amount := range part.Cost {
+					cost[item] += amount
+				}
+			}
+		}
+		if repairID != "" && len(completed) == 0 {
+			return domain.Fail("REPAIR_LOCKED", "先完成上一阶段的修缮", 409)
+		}
+		for item, amount := range cost {
 			if amount > 0 && g.walletOf(s, item)[item] < amount {
 				if item == "stamp" {
 					return domain.Fail("INSUFFICIENT_CURRENCY", "猫爪邮票不足，完成救援可以获得更多", 409)
@@ -30,16 +70,30 @@ func (g *Game) repairHome(s *domain.GameState) error {
 				return domain.Fail("INSUFFICIENT_MATERIAL", "修缮材料不足，去小巷与集市再收集一些吧", 409)
 			}
 		}
-		for item, amount := range r.Cost {
+		for item, amount := range cost {
 			wallet := g.walletOf(s, item)
 			wallet[item] -= amount
 		}
-		s.Flags = domain.Add(s.Flags, r.GrantsFlag)
-		message := r.Message
+		for _, id := range completed {
+			s.HomeRepairs = domain.Add(s.HomeRepairs, id)
+		}
+		complete := true
+		for _, part := range r.Parts {
+			if !domain.Contains(s.HomeRepairs, part.ID) {
+				complete = false
+			}
+		}
+		message := fmt.Sprintf("修好了：%s。花房又暖和了一点。", label)
+		outcome := repairID
+		if complete {
+			s.Flags = domain.Add(s.Flags, r.GrantsFlag)
+			message = r.Message
+			outcome = r.ID
+		}
 		if message == "" {
 			message = fmt.Sprintf("花房修缮完成：%s。", r.Name)
 		}
-		s.LastResult = domain.Result{Message: message, Outcome: r.ID}
+		s.LastResult = domain.Result{Message: message, Outcome: outcome}
 		return nil
 	}
 	return domain.Fail("RENOVATION_COMPLETE", "花房已经修缮完毕，就等街坊们送来庆典装饰啦。", 409)

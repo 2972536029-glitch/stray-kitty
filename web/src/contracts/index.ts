@@ -23,6 +23,7 @@ export interface GameState {
   txns?: PaymentTxn[];
   lottery?: LotteryState;
   homeLayout?: Record<string, HomePlacement>;
+  homeRepairs?: string[];
   alleyBattleReturn?: {x: number; y: number};
   lastResult: {draw?: ParcelDraw; message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string};
   qaCheckpointId?: string;
@@ -52,7 +53,7 @@ export type GameCommand =
   | {type: 'DRAW_FURNITURE'; poolId: string}
   | {type: 'CLAIM_PARCEL_REWARD'; rewardId: string}
   | {type: 'BUY_FURNITURE'; productId: string}
-  | {type: 'REPAIR_HOME'};
+  | {type: 'REPAIR_HOME'; repairId?:string};
 export interface CommandRequest {expectedRevision: number; command: GameCommand}
 export interface CommandResponse {state: GameState; replayed: boolean}
 export interface Session {playerId: string; token: string}
@@ -80,7 +81,9 @@ export interface RenovationDefinition {
   id: string; stage: number; name: string; description?: string; message?: string;
   requiredFlag?: string; grantsFlag: string; cost?: {material?: number; stamp?: number; tuna?: number};
   unlockSlots?: string[];
+  parts?: HomeRepairPart[];
 }
+export interface HomeRepairPart {id:string;name:string;description:string;x:number;y:number;cost:Partial<Record<'material'|'stamp'|'tuna',number>>;requires?:string[]}
 export interface MapInteraction {id: string; x: number; y: number; label: string; eventId: string}
 export interface MapDefinition {id: string; name: string; status: string; width: number; height: number; interactions: MapInteraction[]; dangerLevel?: 0 | 1 | 2 | 3}
 export interface EventOption {id: string; label: string; requireCat?: string; outcomes: Record<EventTier, EventOutcome>}

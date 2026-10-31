@@ -3,7 +3,7 @@ import {HOME_FRAMES, type HomeArtwork, type HomeSprite} from './assets';
 import {homeObjects, type HomeAppearance, type HomeObject} from './objects';
 export {homeObjects} from './objects';
 export function homeAppearanceKey(state:HomeAppearance):string {
-  return JSON.stringify(state.homeLayout??{})+'|'+homeStage(state)+'|'+Object.entries(state.placements).sort(([a],[b])=>a.localeCompare(b)).map(([slot,id])=>slot+':'+id).join('|');
+  return JSON.stringify(state.homeLayout??{})+'|'+(state.homeRepairs??[]).join(',')+'|'+homeStage(state)+'|'+Object.entries(state.placements).sort(([a],[b])=>a.localeCompare(b)).map(([slot,id])=>slot+':'+id).join('|');
 }
 function filterFor(stage:number){return stage===1?'saturate(.3) brightness(.58)':stage===2?'saturate(.7) brightness(.83)':stage===4?'saturate(1.04) brightness(1.03)':'none';}
 export function drawHomeSprite(ctx:CanvasRenderingContext2D,art:HomeArtwork,sprite:HomeSprite,x:number,y:number,width:number){
@@ -20,9 +20,10 @@ export function paintHomeStructure(ctx:CanvasRenderingContext2D,state:HomeAppear
   const stage=homeStage(state);ctx.save();ctx.globalAlpha=1;ctx.imageSmoothingEnabled=false;
   ctx.fillStyle='#13262e';ctx.fillRect(0,0,HOME_SIZE.width,HOME_SIZE.height);
   if(!art){ctx.fillStyle='#d4c398';ctx.font='24px sans-serif';ctx.fillText('正在打开花房……',HOME_SIZE.width/2-100,HOME_SIZE.height/2);ctx.restore();return;}
-  ctx.filter=filterFor(stage);ctx.drawImage(art.base,0,0,HOME_SIZE.width,HOME_SIZE.height);
-  if(stage<=2){
-    const source=HOME_FRAMES[stage===1?'window.broken':'window.patched'];
+  const repairs=state.homeRepairs??[],sunlight=repairs.includes('restore_skylight');
+  ctx.filter=filterFor(sunlight?Math.max(3,stage):stage);ctx.drawImage(art.base,0,0,HOME_SIZE.width,HOME_SIZE.height);
+  if(stage<=2&&!sunlight){
+    const source=HOME_FRAMES[stage===1&&!repairs.includes('patch_windows')?'window.broken':'window.patched'];
     for(const panel of HOME_REPAIR_PANELS)ctx.drawImage(art.atlas,source.x,source.y,source.width,source.height,panel.x,panel.y,panel.width,panel.height);
   }
   ctx.filter='none';
@@ -34,7 +35,10 @@ export function paintHomeStructure(ctx:CanvasRenderingContext2D,state:HomeAppear
       ctx.fillStyle='#becfd33d';ctx.fillRect(p.x-8,p.y-8,13,19);
     }
   }
-  if(stage>=3){
+  if(stage===2&&repairs.includes('reinforce_floor')){
+    ctx.fillStyle='#c7a87766';for(let row=0;row<4;row++){ctx.fillRect(650+row%2*16,548+row*17,340,14);ctx.fillStyle='#a17e4844';ctx.fillRect(650,562+row*17,340,2);ctx.fillStyle='#c7a87766';}
+  }
+  if(stage>=3||sunlight){
     // Registered window light falls across the open floor between the living
     // corners; window mullions and leaves break it up, as in the approved art.
     ctx.fillStyle=stage===4?'#ffe8a959':'#ffe69a52';
@@ -73,14 +77,14 @@ export function paintHomeFurnitureFront(ctx:CanvasRenderingContext2D,object:Home
   drawHomeSprite(ctx,art,object.sprite,object.x,object.y,w);ctx.restore();
 }
 export function paintHomeFrontWall(ctx:CanvasRenderingContext2D,state:HomeAppearance,art?:HomeArtwork){
-  if(!art)return;ctx.save();ctx.globalAlpha=1;ctx.filter=filterFor(homeStage(state));
+  if(!art)return;ctx.save();ctx.globalAlpha=1;ctx.filter=filterFor(state.homeRepairs?.includes('restore_skylight')?Math.max(3,homeStage(state)):homeStage(state));
   for(const [x,w] of [[0,706],[924,748]])ctx.drawImage(art.base,x,733,w,208,x,733,w,208);
   ctx.restore();
 }
 export function paintHomeWeather(ctx:CanvasRenderingContext2D,state:HomeAppearance,time:number){
   const stage=homeStage(state);ctx.save();ctx.globalAlpha=1;
   if(stage===1)for(const p of HOME_LEAKS){
-    for(let i=0;i<4;i++){
+    for(let i=0;i<(state.homeRepairs?.includes('stop_roof_leaks')?0:4);i++){
       const progress=((time*.2+i*101+p.x)%360)/360,y=p.top+progress*(p.y-p.top);
       ctx.fillStyle='#b7d8e3bb';ctx.fillRect(p.x,y,3,9);ctx.fillRect(p.x+1,y-3,1,3);
     }

@@ -22,15 +22,26 @@ test.beforeAll(async({request})=>{
   await expect.poll(async()=>{if(child.exitCode!==null)throw Error(output);try{return(await request.get(origin+'/healthz',{timeout:500})).ok();}catch{return false;}},{timeout:10000}).toBe(true);fs.mkdirSync('output/home-editor',{recursive:true});
 });
 test.afterAll(async()=>{if(child){const timer=setTimeout(()=>child.kill('SIGKILL'),3000);child.kill();await closed;clearTimeout(timer);}});
-async function open(page:Page,id:string){await page.addInitScript(({origin,session})=>{if(location.origin===origin){localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));localStorage.setItem('stray-kitty.make-it-ours.open','closed');}},{origin,session:sessions.get(id)!});await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();await page.getByRole('button',{name:/^▧ 家具背包/}).click();await expect(editor(page)).toBeVisible();await expect(canvas(page)).toHaveAttribute('data-artwork','ready');}
-const editor=(p:Page)=>p.getByRole('dialog',{name:'家具背包 · 布置模式'});
-const canvas=(p:Page)=>editor(p).locator('.backpack-scene canvas');
-async function worldPoint(c:Locator,x:number,y:number){return c.evaluate((element:HTMLCanvasElement,{x,y})=>{const v=JSON.parse(element.dataset.editorView!),r=element.getBoundingClientRect();return{x:r.left+(v.x+x*v.scale)*r.width/element.clientWidth,y:r.top+(v.y+y*v.scale)*r.height/element.clientHeight};},{x,y});}
+async function open(page:Page,id:string){await page.addInitScript(({origin,session})=>{if(location.origin===origin){localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));localStorage.setItem('stray-kitty.make-it-ours.open','closed');localStorage.setItem('stray-kitty.tutorial.home','done');}},{origin,session:sessions.get(id)!});await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();await page.locator('.game-viewport canvas').evaluate(c=>{(window as any).__homeCanvas=c;(window as any).__homeView=c.getAttribute('data-home-camera');});await page.getByRole('button',{name:/^▧ 家具背包/}).click();await expect(editor(page)).toBeVisible();await expect.poll(()=>page.locator('.game-viewport canvas').evaluate(c=>c===(window as any).__homeCanvas&&c.getAttribute('data-home-camera')===(window as any).__homeView)).toBe(true);await expect(canvas(page)).toHaveAttribute('data-home-artwork','ready');}
+const editor=(p:Page)=>p.getByRole('region',{name:'家具背包 · 布置模式'});
+const canvas=(p:Page)=>p.locator('.game-viewport canvas');
+async function worldPoint(c:Locator,x:number,y:number){return c.evaluate((element:HTMLCanvasElement,{x,y})=>{const v=JSON.parse(element.dataset.editorView!),r=element.getBoundingClientRect(),w=Number(element.dataset.logicalWidth),h=Number(element.dataset.logicalHeight),fit=getComputedStyle(element).objectFit==='cover'?Math.max:Math.min,scale=fit(r.width/w,r.height/h);return{x:r.left+(r.width-w*scale)/2+(v.x+x*v.scale)*scale,y:r.top+(r.height-h*scale)/2+(v.y+y*v.scale)*scale};},{x,y});}
 async function item(p:Page,key:string){return canvas(p).evaluate((c:HTMLCanvasElement,key)=>JSON.parse(c.dataset.editorItems!).find((i:{layoutKey:string})=>i.layoutKey===key),key);}
 async function drag(p:Page,from:{x:number;y:number},to:{x:number;y:number}){await p.mouse.move(from.x,from.y);await p.mouse.down();await p.mouse.move(to.x,to.y,{steps:12});await p.mouse.up();}
 
 test('default and owned furniture drag, store, undo, cancel and persist together; cats use the moved anchor',async({page,request})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await open(page,'desktop');
+  await expect(canvas(page)).toHaveAttribute('data-home-editing','true');
+  expect(JSON.parse((await canvas(page).getAttribute('data-home-cats'))!)).toEqual([]);
+  expect(await page.locator('.backpack-scene canvas').count()).toBe(0);
+  // Keep the live camera (including zoom), then restore the full view for placement.
+  await editor(page).getByRole('button',{name:'取消布置',exact:true}).click();
+  await page.getByRole('button',{name:'放大花房',exact:true}).click();
+  await expect.poll(async()=>JSON.parse((await canvas(page).getAttribute('data-home-camera'))!).zoom).toBe(1.35);
+  const viewBefore=await canvas(page).getAttribute('data-home-camera');
+  await page.getByRole('button',{name:/^▧ 家具背包/}).click();
+  await expect(canvas(page)).toHaveAttribute('data-home-camera',viewBefore!);
+  await editor(page).getByRole('button',{name:'135%',exact:true}).click();
   const card=editor(page).locator('[data-layout-key="furniture:moss_cottage"]');await card.scrollIntoViewIfNeeded();const r=await card.boundingBox();await drag(page,{x:r!.x+r!.width/2,y:r!.y+35},await worldPoint(canvas(page),870,580));
   await expect.poll(async()=>({x:(await item(page,'furniture:moss_cottage')).x,stored:(await item(page,'furniture:moss_cottage')).stored})).toEqual({x:870,stored:false});
   // All default furniture is present under the Scene filter and can move.
@@ -41,6 +52,10 @@ test('default and owned furniture drag, store, undo, cancel and persist together
   await editor(page).getByRole('button',{name:'撤销',exact:true}).click();expect((await item(page,'stage:3:cat-tower')).stored).toBe(false);
   await editor(page).getByRole('button',{name:'重做',exact:true}).click();expect((await item(page,'stage:3:cat-tower')).stored).toBe(true);
   await editor(page).getByRole('button',{name:'撤销',exact:true}).click();
+  const bag=await editor(page).getByRole('region',{name:'家具背包',exact:true}).boundingBox();
+  await drag(page,await worldPoint(canvas(page),1190,420),{x:bag!.x+90,y:bag!.y+50});
+  expect((await item(page,'stage:3:cat-tower')).stored).toBe(true);
+  await editor(page).getByRole('button',{name:'撤销',exact:true}).click();
   await editor(page).getByRole('button',{name:'▼ 收起背包'}).click();await expect(editor(page).locator('.backpack-grid')).toBeHidden();await editor(page).getByRole('button',{name:'▲ 展开背包'}).click();
   await page.screenshot({path:'output/home-editor/desktop-backpack.png',fullPage:true});
   await editor(page).getByRole('button',{name:/保存布置/}).click();await expect(editor(page)).not.toBeVisible();
@@ -48,7 +63,7 @@ test('default and owned furniture drag, store, undo, cancel and persist together
   expect(saved.homeLayout!['furniture:moss_cottage']).toEqual({x:870,y:580,stored:false});expect(saved.homeLayout!['stage:3:cat-tower'].x).toBe(1190);
   await expect.poll(async()=>JSON.parse((await page.locator('.game-viewport canvas').getAttribute('data-home-cats'))!).find((c:{breed:string})=>c.breed==='diandian')?.pose).toBe('castle_peek');
   const cats=JSON.parse((await page.locator('.game-viewport canvas').getAttribute('data-home-cats'))!);expect(Math.abs(cats.find((c:{breed:string})=>c.breed==='diandian').x-870)).toBeLessThan(40);
-  await page.getByRole('button',{name:/^▧ 家具背包/}).click();await expect(canvas(page)).toHaveAttribute('data-artwork','ready');
+  await page.getByRole('button',{name:/^▧ 家具背包/}).click();await expect(canvas(page)).toHaveAttribute('data-home-artwork','ready');
   await editor(page).getByRole('tab',{name:/场景/}).click();await editor(page).locator('[data-layout-key="stage:3:cat-tower"]').click();await editor(page).getByRole('button',{name:'收回背包',exact:true}).click();
   await editor(page).getByRole('button',{name:'取消布置',exact:true}).click();const after=await(await request.get(origin+'/api/v1/state',{headers})).json();expect(after.revision).toBe(saved.revision);expect(after.homeLayout).toEqual(saved.homeLayout);
   await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();await page.getByRole('button',{name:/^▧ 家具背包/}).click();expect((await item(page,'stage:3:cat-tower')).x).toBe(1190);expect(errors).toEqual([]);

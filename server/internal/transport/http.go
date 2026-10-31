@@ -400,7 +400,7 @@ func validateCommand(body []byte, kind string) error {
 		"CLAIM_PARCEL_REWARD": {"rewardId"},
 		"CHECK_RANDOM_ZONE":   {"zoneId", "layer", "position"},
 		"BUY_FURNITURE":       {"productId"},
-		"REPAIR_HOME":         {},
+		"REPAIR_HOME":         {"repairId"},
 	}
 	required := map[string][]string{
 		"ADVANCE_STORY":       {"nodeId"},
@@ -437,6 +437,12 @@ func validateCommand(body []byte, kind string) error {
 	for key := range raw.Command {
 		if key != "type" && !domain.Contains(allowedKeys, key) {
 			return domain.Fail("INVALID_REQUEST", "命令包含不适用的字段", 400)
+		}
+	}
+	if value, exists := raw.Command["repairId"]; exists {
+		var id string
+		if json.Unmarshal(value, &id) != nil || id == "" {
+			return domain.Fail("INVALID_REQUEST", "repairId 必须为非空字符串", 400)
 		}
 	}
 	for _, key := range required[kind] {

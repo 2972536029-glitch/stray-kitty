@@ -73,6 +73,7 @@ type GameState struct {
 	QACheckpointID string                   `json:"qaCheckpointId,omitempty"`
 	Lottery        *LotteryState            `json:"lottery,omitempty"`
 	HomeLayout     map[string]HomePlacement `json:"homeLayout,omitempty"`
+	HomeRepairs    []string                 `json:"homeRepairs,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -91,6 +92,7 @@ func AppendTxn(s *GameState, t Txn) {
 }
 
 type Command struct {
+	RepairID      string             `json:"repairId,omitempty"`
 	Changes       []HomeLayoutChange `json:"changes,omitempty"`
 	Type          string             `json:"type"`
 	NodeID        string             `json:"nodeId,omitempty"`
@@ -196,15 +198,25 @@ type Furniture struct {
 // Renovation:花房四阶修缮工程。按 stage 升序推进;cost 键 material 走背包、stamp 走邮票;
 // unlockSlots 列出的槽位在 grantsFlag 记录前保持锁定。
 type Renovation struct {
-	ID           string         `json:"id"`
-	Stage        int            `json:"stage"`
-	Name         string         `json:"name"`
-	Description  string         `json:"description,omitempty"`
-	Message      string         `json:"message,omitempty"`
-	RequiredFlag string         `json:"requiredFlag,omitempty"`
-	GrantsFlag   string         `json:"grantsFlag"`
-	Cost         map[string]int `json:"cost,omitempty"`
-	UnlockSlots  []string       `json:"unlockSlots,omitempty"`
+	Parts        []HomeRepairPart `json:"parts,omitempty"`
+	ID           string           `json:"id"`
+	Stage        int              `json:"stage"`
+	Name         string           `json:"name"`
+	Description  string           `json:"description,omitempty"`
+	Message      string           `json:"message,omitempty"`
+	RequiredFlag string           `json:"requiredFlag,omitempty"`
+	GrantsFlag   string           `json:"grantsFlag"`
+	Cost         map[string]int   `json:"cost,omitempty"`
+	UnlockSlots  []string         `json:"unlockSlots,omitempty"`
+}
+type HomeRepairPart struct {
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	X           float64        `json:"x"`
+	Y           float64        `json:"y"`
+	Cost        map[string]int `json:"cost"`
+	Requires    []string       `json:"requires,omitempty"`
 }
 type Product struct {
 	ID           string `json:"id"`

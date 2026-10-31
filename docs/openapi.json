@@ -935,6 +935,13 @@
               "$ref": "#/components/schemas/HomePlacement"
             },
             "description": "可选的家具布置覆盖；furniture:家具ID 或 stage:阶段:摆件ID，缺省兼容旧 placements。stored=true 收回背包。"
+          },
+          "homeRepairs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "已完成的场景修缮部位；旧存档可省略，阶段标记仍有效。"
           }
         },
         "required": [
@@ -1504,6 +1511,12 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HomeRepairPart"
             }
           }
         },
@@ -2213,6 +2226,11 @@
           "type": {
             "type": "string",
             "const": "REPAIR_HOME"
+          },
+          "repairId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "场景修补部位 ID；省略时兼容修缮本阶段剩余工程。"
           }
         },
         "required": [
@@ -3078,6 +3096,48 @@
           },
           "replacementSlot": {
             "type": "string"
+          }
+        }
+      },
+      "HomeRepairPart": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description",
+          "x",
+          "y",
+          "cost"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "cost": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }

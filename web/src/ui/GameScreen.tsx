@@ -20,6 +20,7 @@ import {explorationFooterText} from './explorationFooter';
 
 const phases: Record<string, string> = {dialogue: '猫咪物语', explore: '小巷探索', event: '一次相遇', preparation: '守护准备', battle: '序章守护', settlement: '救援结果', home: '我们的花房'};
 interface Props {
+  homeEditing?:boolean;
   state: GameState; catalog: Catalog; busy: boolean; pending: boolean; disabled: boolean; paused: boolean; near: boolean;
   nearTarget?: {id: string; label: string} | null;
   inspectHint?: string | null;
@@ -33,7 +34,7 @@ interface Props {
   onCommand: (command: GameCommand) => void; onInteract: (interactionId?: string) => void;
   onPause: () => void; onMap: () => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onSettings: () => void; onWarehouse: () => void; onDecorate: () => void; onTitle: () => void; children: ReactNode;
 }
-export default function GameScreen({state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, topExpanded, onToggleTopbar, speakerAnchor, onJournal, onSkip, qaOpen, onQA, onCommand, onInteract, onPause, onMap, onShop, onParcels, onRecharge, onSettings, onWarehouse, onDecorate, onTitle, children}: Props) {
+export default function GameScreen({homeEditing,state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, topExpanded, onToggleTopbar, speakerAnchor, onJournal, onSkip, qaOpen, onQA, onCommand, onInteract, onPause, onMap, onShop, onParcels, onRecharge, onSettings, onWarehouse, onDecorate, onTitle, children}: Props) {
   // 首次进入守护准备时的教学高亮；完成后记在本地，不再打扰。
   const [battleTutorialDone, setBattleTutorialDone] = useState(() => {try {return localStorage.getItem('stray-kitty.tutorial.battle') === 'done';} catch {return true;}});
   const [homeTutorialDone, setHomeTutorialDone] = useState(() => {try {return localStorage.getItem('stray-kitty.tutorial.home') === 'done';} catch {return true;}});
@@ -175,7 +176,7 @@ export default function GameScreen({state, catalog, busy, pending, disabled, pau
     setToggleDrag(null);
   };
   const isHomeScene = state.chapterId !== 'prologue' && (state.phase === 'home' || (state.phase === 'dialogue' && node?.scene === 'home'));
-  return <div className="app-shell" data-phase={state.phase} data-home-scene={isHomeScene || undefined}>
+  return <div className="app-shell" data-home-editing={homeEditing||undefined} data-phase={state.phase} data-home-scene={isHomeScene || undefined}>
     <button type="button"
       className={`topbar-toggle${topExpanded ? ' expanded' : ''}${toggleDrag ? ' dragging' : ''}`}
       style={toggleDrag ? {left: toggleDrag.x - 32, top: toggleDrag.y - 17} : toggleRestStyle}

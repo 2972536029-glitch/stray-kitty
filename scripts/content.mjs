@@ -14,6 +14,16 @@ export function validateContent(c) {
     if (ids.some(id=>!id) || new Set(ids).size!==ids.length) errors.push(`${key}: missing/duplicate ID`);
   }
   const has=(key,id)=>c[key].some(x=>x.id===id);
+  const repairIds=new Set();
+  for(const r of c.renovations){
+    const earlier=new Set(),total={};
+    for(const p of r.parts??[]){
+      if(!p.id||repairIds.has(p.id)||!p.name||!p.description||![p.x,p.y].every(Number.isFinite)||p.x<0||p.x>1672||p.y<0||p.y>941||(p.requires??[]).some(id=>!earlier.has(id)))errors.push(`repair part invalid: ${r.id}/${p.id}`);
+      repairIds.add(p.id);earlier.add(p.id);
+      for(const [key,n]of Object.entries(p.cost??{})){if(!['material','stamp','tuna'].includes(key)||!Number.isSafeInteger(n)||n<0)errors.push(`repair cost invalid: ${p.id}`);total[key]=(total[key]??0)+n;}
+    }
+    if(r.parts?.length&&new Set([...Object.keys(total),...Object.keys(r.cost??{})]).size&&[...new Set([...Object.keys(total),...Object.keys(r.cost??{})])].some(key=>(total[key]??0)!==(r.cost?.[key]??0)))errors.push(`repair costs differ from stage: ${r.id}`);
+  }
   for(const d of c.homeDecor) if(![1,2,3,4].includes(d.stage)||d.id!==`stage:${d.stage}:${d.objectId}`||!d.name||!d.sprite||!Number.isFinite(d.width)||d.width<=0||![d.x,d.y].every(Number.isInteger)||d.replacementSlot&&!has('slots',d.replacementSlot)) errors.push(`home decor invalid: ${d.id}`);
   for(const n of c.story){if(!has('chapters',n.chapterId)||n.next&&!has('story',n.next)||!['','explore','home','preparation'].includes(n.exit)) errors.push(`story reference: ${n.id}`);}
   for(const m of c.maps) if(m.dangerLevel!==undefined&&(!Number.isInteger(m.dangerLevel)||m.dangerLevel<0||m.dangerLevel>3)) errors.push(`map danger: ${m.id}`);
