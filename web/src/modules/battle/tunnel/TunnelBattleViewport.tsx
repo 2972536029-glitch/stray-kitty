@@ -5,6 +5,7 @@ import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES, ROUTE
 import {advanceTunnel, createTunnelBattle, dispatchTunnel, getAttackCells, getBossCells, getTunnelAdvice, getTunnelSpeed, getDeployError, getSkillCells, isDarkened, isDeployableCell, isEnemyVisible} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, OBSTACLE_NAMES, paintTunnel} from './painter';
 import {drawCat} from '../l00/painter';
+import {triggerBossSkillShake} from '../battleFx';
 import {getTunnelAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
@@ -13,9 +14,14 @@ import {useBattleBoardFit} from '../useBattleBoardFit';
 import {getSkillTooltipPosition} from '../skillTooltipPosition';
 import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
+import {UnitMeters} from '../UnitMeters';
 import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
+import {SpawnLabel} from '../SpawnLabel';
+import {GoalLabel} from '../GoalLabel';
+import {TripwireLabel, TRIPWIRE_DESCRIPTION} from '../TripwireLabel';
 import '../carry.css';
 import '../l00/battle.css';
+import '../l00/tutorial.css'; // 新伙伴说明卡复用序章教程卡的样式（.btl-tutorial-card 作用域是 .battle-l00，本视口自带该类）
 import './tunnel.css';
 
 export interface TunnelBattleResult {
@@ -27,6 +33,12 @@ export interface TunnelBattleViewportProps {
 }
 interface DragGesture {catId:TunnelCatId;pointerId:number;startX:number;startY:number;moved:boolean}
 const ICONS:Record<TunnelCatId,string>={caster:'✧',guard:'◈',tuanzi:'✦',momo:'☼',bruiser:'◆',diandian:'✚'};
+// 第四章新伙伴说明：点点（本章随队出战）与墨墨（本章解锁夜视）此前没有像序章那样介绍过技能，
+// 这里用序章同款教程卡在 ready 阶段各介绍一次；开战即收起，不参与任何战斗逻辑。
+const NEW_CAT_INTROS:readonly {id:TunnelCatId;title:string;text:string}[]=[
+  {id:'diandian',title:'新伙伴 · 点点（暖心伙伴）',text:'暹罗猫辅助，本章随队出战。技能「安心呼噜」：为全部仍在场伙伴恢复 80 体力，不超过体力上限，不能复活退场伙伴。能量满 100 时点点周围会亮起金色光环，点击它就能释放。'},
+  {id:'momo',title:'新伙伴 · 墨墨（巡光护卫）',text:'黑猫辅助，本章解锁夜视。技能「夜视护行」：恢复全场视野 10 秒，并为全部在场伙伴提供 45 护盾，持续 8 秒。通道断灯、远处黑影隐身时的关键对策。'},
+];
 
 function RoleBadge({id}:{id:TunnelCatId}){
   return <span className="tunnel-role-badge" data-role={CAT_PRESENTATION[id].label}>{CAT_PRESENTATION[id].label}</span>;
@@ -56,6 +68,7 @@ export function TunnelBattleViewport({attemptId,difficulty,carry,paused,onResult
   const [tooltipPosition,setTooltipPosition]=useState({left:0,top:0,maxHeight:240});
   const [skillTooltipOpen,setSkillTooltipOpen]=useState(false);
   const [question,setQuestion]=useState('');
+  const [introStep,setIntroStep]=useState(0);
   const advisorChat=useModelAdvisor({
     attemptId,stageId:'tunnel_boss',open:chatOpen,
     blocked:paused||hidden||submitted||retreatOpen||game.phase==='won'||game.phase==='lost',
@@ -133,7 +146,7 @@ export function TunnelBattleViewport({attemptId,difficulty,carry,paused,onResult
     if(attemptRef.current===attemptId)return;
     attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);skillFeedback.clear();
     setSelected(null);setMoving(null);setHover(null);setChatOpen(false);setDragging(null);setNotice('');
-    setQuestion('');
+    setQuestion('');setIntroStep(0);
     publish(createTunnelBattle({difficulty,carry}));
   },[attemptId,difficulty,carry]);
 
@@ -157,7 +170,9 @@ export function TunnelBattleViewport({attemptId,difficulty,carry,paused,onResult
       const frozen=hostPauseRef.current||document.hidden;
       if(current.externallyPaused!==frozen)current=dispatchTunnel(current,{type:'SET_EXTERNAL_PAUSE',paused:frozen});
       if(current.uiPaused!==uiPauseRef.current)current=dispatchTunnel(current,{type:'SET_UI_PAUSE',paused:uiPauseRef.current});
+      const previousBossSkills=current.boss.slams;
       current=advanceTunnel(current,dt);gameRef.current=current;
+      triggerBossSkillShake(boardRef.current,previousBossSkills,current.boss.slams);
       const context=canvasRef.current?.getContext('2d');if(context)paintTunnel(context,current,selectedRef.current,hoverRef.current);
       if(time-lastRender>=50){setGame(current);lastRender=time;}
       handle=requestAnimationFrame(frame);
@@ -312,7 +327,7 @@ export function TunnelBattleViewport({attemptId,difficulty,carry,paused,onResult
   },[inspected?.id,inspected?.x,inspected?.y,overview,skillTooltipOpen]);
 
   return <section className="battle-l00 battle-tunnel battle-immersive" data-scene="tunnel" data-testid="tunnel-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} data-darkened={darkened} data-darkness-remaining={game.darknessRemaining.toFixed(2)} data-night-vision-remaining={game.nightVisionRemaining.toFixed(2)} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.tunnel-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
-    <BattleSceneBackdrop scene="tunnel" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS} darkened={darkened}/>
+    <BattleSceneBackdrop scene="tunnel" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS} spawns={MAP.spawns} goal={MAP.goal} darkened={darkened}/>
     <div className="btl-head"><div><span className="btl-eyebrow">CHAPTER 04 · CAT DEFENSE</span><strong>第四章 · 地下通道</strong></div><div className="btl-progress"><span>黑影已离场 {game.defeated+game.leaks} / {game.totalEnemies}</span><span data-testid="tunnel-leaks" aria-label={`已漏过 ${game.leaks} 只黑影，最多 ${game.maxLeaks} 次`}>防线 {'●'.repeat(Math.max(0,game.maxLeaks-game.leaks))}{'○'.repeat(Math.min(game.maxLeaks,game.leaks))}</span></div></div>
     <div className="btl-wave-status"><strong data-testid="tunnel-wave">第 {game.wave} / {game.totalWaves} 波 · 剩余 {remaining} 只黑影</strong><span>A2、B8、D8 来敌 · 守住 C2</span></div>
     <details className="battle-hud-details"><summary>战况说明</summary>
@@ -324,7 +339,7 @@ export function TunnelBattleViewport({attemptId,difficulty,carry,paused,onResult
     </details>
     <div className={`tunnel-boss-panel battle-hud-boss${bossWindup?' is-warning':''}`} data-testid="tunnel-boss" data-boss-phase={game.boss.phase} data-boss-attacks={game.boss.attacks} data-boss-basic-attacking={bossBasicAttacking} data-boss-pulses={game.boss.slams}>
       <strong>{game.boss.phase==='defeated'?'首领已击退':game.boss.name}</strong><div className="tunnel-boss-health" role="meter" aria-label="首领体力" aria-valuemin={0} aria-valuemax={game.boss.maxHp} aria-valuenow={Math.ceil(game.boss.hp)} data-testid="tunnel-boss-health"><i style={{width:`${100*game.boss.hp/game.boss.maxHp}%`}}/><span>{Math.ceil(game.boss.hp)} / {game.boss.maxHp}</span></div>
-      <small>{bossWindup?`断灯脉冲预警！${Math.max(0,RULES.bossPulseWindup-game.boss.phaseTime).toFixed(1)} 秒后全场受击，可提前开盾。`:game.boss.phase==='defeated'?'首领已击退，继续处理全部波次。':bossBasicAttacking?'普通攻击 · 闸臂拍击':'固定占据 C6、C7、D6、D7 · 留意断灯脉冲'}</small>
+      <small>{bossWindup?`断灯脉冲预警！${Math.max(0,RULES.bossPulseWindup-game.boss.phaseTime).toFixed(1)} 秒后全场受击，可提前开盾。`:game.boss.phase==='defeated'?'首领已击退，继续处理全部波次。':bossBasicAttacking?'普通攻击 · 闸臂拍击':'留意断灯脉冲'}</small>
     </div>
     <p className={`tunnel-vision-status battle-hud-mechanic${darkened?' is-dark':game.nightVisionRemaining>0?' is-night-vision':''}`} data-testid="tunnel-vision-status"><strong>{darkened?'通道断灯':game.nightVisionRemaining>0?'墨墨 · 夜视生效':'通道视野正常'}</strong><span>{darkened?`远处黑影暂不可见 · ${game.darknessRemaining.toFixed(1)} 秒后自然恢复`:game.nightVisionRemaining>0?`全场敌情可见 · 夜视剩余 ${game.nightVisionRemaining.toFixed(1)} 秒`:'墨墨可用夜视恢复全场敌情'}</span></p>
     <CarryPanel compact carry={game.carry} phase={game.phase} wave={game.wave} waves={WAVES} entrances={Object.fromEntries(Object.entries(ROUTES).map(([route,path])=>[route,path[0]]))} enemies={ENEMY_DEFINITIONS} disabled={paused||hidden||game.paused||game.uiPaused||game.externallyPaused} onUse={()=>act({type:'USE_CARRY'})}/>
@@ -342,16 +357,18 @@ export function TunnelBattleViewport({attemptId,difficulty,carry,paused,onResult
             <div className="tunnel-cells">{CELLS.map(position=>{
               const cat=game.cats.find(c=>c.status==='active'&&c.x===position.x&&c.y===position.y);
               const blocked=obstacleCell(position.x,position.y),name=cellName(position);
+              const clearedTripwire=blocked&&name==='D2';
 
               const telegraph=bossWindup;
 
               const enemyCount=visibleEnemies.filter(enemy=>Math.round(enemy.x)===position.x&&Math.round(enemy.y)===position.y).length;
               const bossCell=bossFootprint.some(cell=>cell.x===position.x&&cell.y===position.y),spawnCell=MAP.spawns.some(cell=>cell.x===position.x&&cell.y===position.y);
               const attack=attackCells.some(cell=>cell.x===position.x&&cell.y===position.y),effect=skillCells.some(cell=>cell.x===position.x&&cell.y===position.y);
-              return <button type="button" key={name} className={`tunnel-cell${blocked?' is-obstacle':''}`} style={{gridColumn:position.x+1,gridRow:position.y+1}} data-cell={`${position.x},${position.y}`} data-testid={`tunnel-cell-${name}`} data-boss-danger={telegraph} data-danger={telegraph} data-enemies={enemyCount} data-deployable={isDeployableCell(position)} data-boss-footprint={bossCell} data-spawn={spawnCell} data-attack-range={attack} data-skill-range={effect} aria-label={`${name}${blocked?`，${OBSTACLE_NAMES[name]}，不可通行`:cat?`，${cat.name}，${CAT_PRESENTATION[cat.id].label}，体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}，能量 ${Math.floor(cat.energy)} / 100`:position.x===MAP.goal.x&&position.y===MAP.goal.y?'，喵喵，守护目标，全程不参与战斗':spawnCell?'，出怪口':bossCell?'，四格首领占格':'，地格'}${enemyCount?`，${enemyCount} 个普通黑影`:''}${telegraph?'，全场断灯脉冲预警':''}${attack?'，普通攻击可达':''}${effect?'，技能覆盖':''}`} disabled={paused||hidden||ended} onClick={()=>cellClick(position)} onPointerEnter={()=>{setHover(position);if(gameRef.current.aim)act({type:'AIM_SKILL',...position});}} onFocus={()=>{if(gameRef.current.aim){setHover(position);act({type:'AIM_SKILL',...position});}}} onPointerDown={event=>{if(cat)pointerDown(event,cat.id);}} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancel}>{cat&&<span className="tunnel-unit-state" data-testid={`tunnel-cat-${cat.id}`} data-status={cat.status} data-x={cat.x} data-y={cat.y} data-energy={cat.energy} data-attack-buff={cat.attackBuffRemaining.toFixed(2)} data-hp={Math.ceil(cat.hp)}><span className="btl-unit-name"><span className="tunnel-unit-name">{cat.name}</span><RoleBadge id={cat.id}/><small className="tunnel-unit-energy">{Math.floor(cat.energy)}</small></span></span>}</button>;
+              return <button type="button" key={name} className={`tunnel-cell${blocked?' is-obstacle':''}`} style={{gridColumn:position.x+1,gridRow:position.y+1}} data-cell={`${position.x},${position.y}`} data-testid={`tunnel-cell-${name}`} title={clearedTripwire?TRIPWIRE_DESCRIPTION:undefined} data-boss-danger={telegraph} data-danger={telegraph} data-enemies={enemyCount} data-deployable={isDeployableCell(position)} data-boss-footprint={bossCell} data-spawn={spawnCell} data-attack-range={attack} data-skill-range={effect} aria-label={`${name}${blocked?`，${OBSTACLE_NAMES[name]}，不可通行`:cat?`，${cat.name}，${CAT_PRESENTATION[cat.id].label}，体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}，能量 ${Math.floor(cat.energy)} / 100`:position.x===MAP.goal.x&&position.y===MAP.goal.y?'，喵喵，守护目标，全程不参与战斗':spawnCell?'，出怪口':bossCell?'，四格首领占格':'，地格'}${enemyCount?`，${enemyCount} 个普通黑影`:''}${telegraph?'，全场断灯脉冲预警':''}${attack?'，普通攻击可达':''}${effect?'，技能覆盖':''}`} disabled={paused||hidden||ended} onClick={()=>cellClick(position)} onPointerEnter={()=>{setHover(position);if(gameRef.current.aim)act({type:'AIM_SKILL',...position});}} onFocus={()=>{if(gameRef.current.aim){setHover(position);act({type:'AIM_SKILL',...position});}}} onPointerDown={event=>{if(cat)pointerDown(event,cat.id);}} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancel}>{position.x===MAP.goal.x&&position.y===MAP.goal.y&&<GoalLabel/>}{spawnCell&&<SpawnLabel/>}{clearedTripwire&&<TripwireLabel/>}{cat&&<span className={`tunnel-unit-state${cat.energy>=100?' btl-energy-halo':''}`} data-testid={`tunnel-cat-${cat.id}`} data-status={cat.status} data-x={cat.x} data-y={cat.y} data-energy={cat.energy} data-attack-buff={cat.attackBuffRemaining.toFixed(2)} data-hp={Math.ceil(cat.hp)}><span className="btl-unit-name"><span className="tunnel-unit-name">{cat.name}</span><RoleBadge id={cat.id}/></span><UnitMeters cat={cat} prefix="tunnel"/></span>}</button>;
             })}</div>
           </div></div>
           {inspected&&<><div ref={menuRef} className="btl-cat-menu" role="group" aria-label={`${inspected.name}，${CAT_PRESENTATION[inspected.id].label}的技能菜单`} data-testid="tunnel-cat-menu" data-cat-id={inspected.id} style={menuPosition} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()} onContextMenu={event=>{event.preventDefault();closeInspection();}}><div className="btl-cat-menu-heading"><strong className="tunnel-menu-cat-name">{inspected.name}<RoleBadge id={inspected.id}/></strong><button type="button" className="btl-cat-menu-close" data-testid="tunnel-close-cat-menu" aria-label="关闭猫咪菜单" onClick={closeInspection}>×</button></div><button type="button" className={`btl-skill-orb${canCast?' btl-skill-orb-ready':''}`} data-testid={`tunnel-skill-${inspected.id}`} aria-label={`${SKILLS[inspected.id].name}，能量 ${inspected.energy} / 100${canCast?'，点击释放':'，当前不可释放，可查看说明'}`} aria-disabled={!canCast} aria-describedby={`tunnel-skill-description-${inspected.id}`} onMouseEnter={()=>setSkillTooltipOpen(true)} onMouseLeave={event=>{if(document.activeElement!==event.currentTarget)setSkillTooltipOpen(false);}} onFocus={()=>setSkillTooltipOpen(true)} onBlur={()=>setSkillTooltipOpen(false)} onClick={()=>{if(canCast)chooseSkill(inspected.id);else setSkillTooltipOpen(true);}}><span aria-hidden="true">{ICONS[inspected.id]}</span></button><div className="btl-cat-menu-footer"><span>{Math.floor(inspected.energy)} / 100</span></div></div><div ref={tooltipRef} className={`btl-skill-tooltip${skillTooltipOpen?' btl-tooltip-visible':''}`} role="tooltip" id={`tunnel-skill-description-${inspected.id}`} data-testid="tunnel-skill-tooltip" style={tooltipPosition} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}><p className="tunnel-positioning" data-testid="tunnel-cat-positioning">{CAT_PRESENTATION[inspected.id].positioning}</p><strong>{SKILLS[inspected.id].name}</strong><p>{SKILLS[inspected.id].description}{SKILLS[inspected.id].targeting==='area'?' 全地图选点，黄色十字为本次作用范围；左键或 Enter 释放，右键 / Esc 取消。':''}</p>{inspected.attackBuffRemaining>0&&<span className="tunnel-attack-buff">普攻强化剩余 {inspected.attackBuffRemaining.toFixed(1)} 秒</span>}{inspected.shield>0&&<span className="btl-shield-detail">额外护盾 {Math.ceil(inspected.shield)} · 剩余 {inspected.shieldRemaining.toFixed(1)} 秒</span>}</div></>}
+          {game.phase==='ready'&&NEW_CAT_INTROS[introStep]&&<div className="tunnel-intro-layer"><aside className="btl-tutorial-card" data-testid="tunnel-newcat-intro" aria-label="本章新伙伴说明"><div className="btl-tutorial-card-copy" role="status" aria-live="polite"><div className="btl-tutorial-kicker"><span>阿策 · 实战课堂</span><span>{introStep+1} / {NEW_CAT_INTROS.length}</span></div><strong><i aria-hidden="true">{ICONS[NEW_CAT_INTROS[introStep].id]}</i> {NEW_CAT_INTROS[introStep].title}</strong><p>{NEW_CAT_INTROS[introStep].text}</p></div><div className="btl-tutorial-card-actions"><button type="button" onClick={()=>setIntroStep(value=>value+1)}>{introStep+1<NEW_CAT_INTROS.length?'下一位':'知道了'}</button></div></aside></div>}
         </div>
         <div className="btl-range-legend" aria-label="范围图例"><span><i/>灰绿 · 普攻可达</span><span><i className="btl-legend-aim"/>浅青 · 可选技能中心</span><span><i className="btl-legend-effect"/>黄色 · 技能作用范围</span></div>
         <p className="btl-board-caption" aria-live="polite">{paused?'主流程已暂停战斗。':hidden?'页面隐藏，战斗暂停。':moveProblem??(dragging?`正在移动${game.cats.find(cat=>cat.id===dragging)?.name}，松开到合法地格。`:game.aim?`${SKILLS[game.aim.catId].name}：移动预览，左键或 Enter 释放，右键 / Esc 取消。`:moving?`${game.cats.find(cat=>cat.id===moving)?.name}：点击目标地格，可与另一只在场猫交换。`:inspected?`查看${inspected.name} · 临时 ×0.5（暂停优先）· 悬停技能图标看说明 · 点击空白、× 或 Esc 关闭`:'点击战场小猫查看技能 · 可直接拖动猫咪换位')}{game.aim&&<button type="button" className="btl-quiet btl-inline-cancel" data-testid="tunnel-cancel-skill" onClick={cancelAim}>取消</button>}</p>

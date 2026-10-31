@@ -49,7 +49,7 @@ test.beforeAll(async ({request}) => {
 test.afterAll(async () => {if (child && closed) {const force = setTimeout(() => child?.kill('SIGKILL'), 3000);child.kill('SIGTERM');await closed;clearTimeout(force);}});
 
 async function open(page: Page, id: string) {
-  await page.addInitScript(({origin, session}) => {if (location.origin === origin) localStorage.setItem('stray-kitty.session.v1', JSON.stringify(session));}, {origin, session: sessions.get(id)!});
+  await page.addInitScript(({origin, session}) => {if (location.origin === origin) {localStorage.setItem('stray-kitty.session.v1', JSON.stringify(session));localStorage.setItem('stray-kitty.tutorial.home','done');}}, {origin, session: sessions.get(id)!});
   await page.goto(origin);await page.getByRole('button', {name: '继续冒险'}).click();
   await expect(scene(page)).toHaveAttribute('data-rendered-scene', 'home');
   await expect(scene(page)).toHaveAttribute('data-home-artwork', 'ready');
@@ -129,13 +129,34 @@ test('free cats move, map freezes the clock and its terrain matches the actual h
 test('repairs update both views and placed furniture survives refresh', async ({page}) => {
   await open(page, 'repair');
   await expect(scene(page)).toHaveAttribute('data-home-stage', '1');
-  await page.getByRole('button', {name: /动手修缮：封窗止水/}).click();
+  expect(await page.locator('.renovation-card').count()).toBe(0);
+  await page.getByRole('button',{name:'排干积水、铺好干草 · 需要修补'}).click();
+  await expect(page.getByRole('button',{name:'修补这里',exact:true})).toBeDisabled();
+  for(const id of ['patch_windows','stop_roof_leaks','dry_bedding']){
+    await page.locator('[data-repair-id="'+id+'"]').click();await page.getByRole('button',{name:'修补这里',exact:true}).click();
+    await expect(page.locator('[data-repair-id="'+id+'"]').first()).toHaveCount(0);
+    if(id==='patch_windows'){
+      await expect(scene(page)).toHaveAttribute('data-home-stage','1');
+      await page.screenshot({path:'output/home-review/repair-in-place.png'});
+      await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+      await expect(page.locator('[data-repair-id="patch_windows"]')).toHaveCount(0);
+    }
+  }
   await expect(scene(page)).toHaveAttribute('data-home-stage', '2');
-  await page.getByRole('button', {name: /动手修缮：原木温室/}).click();
+  for(const id of ['reinforce_floor','restore_skylight','revive_garden']){
+    await page.locator('[data-repair-id="'+id+'"]').click();await page.getByRole('button',{name:'修补这里',exact:true}).click();
+    await expect(page.locator('[data-repair-id="'+id+'"]').first()).toHaveCount(0);
+  }
+  await page.screenshot({path:'output/home-review/repaired-greenhouse.png'});
   await expect(scene(page)).toHaveAttribute('data-home-stage', '3');
   await page.reload();await page.getByRole('button', {name: '继续冒险'}).click();
   await expect(scene(page)).toHaveAttribute('data-home-stage', '3');
-  await expect(page.getByRole('button', {name: '窗边'})).toContainText('蓝色饭碗');
+  await page.getByRole('button', {name: /^▧ 家具背包/}).click();
+  const backpack=page.getByRole('region',{name:'家具背包 · 布置模式'});
+  await backpack.getByRole('tab',{name:/场景/}).click();
+  await expect(backpack.getByRole('button',{name:'选择蓝色饭碗',exact:true})).toBeVisible();
+  await backpack.getByRole('button',{name:'取消布置',exact:true}).click();
+  if(await page.getByRole('button',{name:'展开顶部信息栏（可拖拽）'}).isVisible())await page.getByRole('button',{name:'展开顶部信息栏（可拖拽）'}).click();
   await page.getByRole('button', {name: '章节地图'}).click();
   await expect(page.locator('.home-map')).toContainText('修缮 3 / 4');
   await expect(page.locator('.home-map')).toContainText('蓝色饭碗');

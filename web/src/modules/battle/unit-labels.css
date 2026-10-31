@@ -1,0 +1,89 @@
+/* Keep chapter names readable at the board's actual zoom, including mobile
+   overview. The fixed grid tracks size these containers; labels never size a tile. */
+.battle-l00.battle-immersive :is(.chapter-cell,.market-cell,.greenhouse-cell,.tunnel-cell,.finale-cell){
+  container-name:battle-unit-cell;
+  container-type:inline-size;
+}
+
+.battle-l00.battle-immersive :is(.chapter-cell,.market-cell,.greenhouse-cell,.tunnel-cell,.finale-cell)
+  > :is(.chapter-unit-state,.market-unit-state,.greenhouse-unit-state,.tunnel-unit-state,.finale-unit-state,.finale-ally-state)
+  > :is(.btl-unit-name,.finale-ally-name){
+  position:absolute;
+  top:1px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(2px,3cqw,5px);
+  box-sizing:border-box;
+  width:max-content;
+  max-width:calc(100% - 4px);
+  margin:0;
+  padding:1px 4px;
+  border:1px solid #b6c6a7;
+  border-radius:3px;
+  background:rgb(17 39 43 / 94%);
+  color:#fff8df;
+  box-shadow:0 1px 2px #071b1d99;
+  font-size:clamp(10px,18cqw,20px);
+  font-weight:800;
+  line-height:1.1;
+  text-shadow:0 1px 1px #071719,-1px 0 #071719,1px 0 #071719;
+  white-space:nowrap;
+  pointer-events:none;
+  z-index:2;
+}
+
+.battle-l00.battle-immersive :is(.chapter-unit-state,.market-unit-state,.greenhouse-unit-state,.tunnel-unit-state,.finale-unit-state)
+  > .btl-unit-name
+  > :is(.chapter-unit-name,.market-unit-name,.greenhouse-unit-name,.tunnel-unit-name,.finale-unit-name){
+  display:block;
+  flex:0 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:inherit;
+  font-weight:inherit;
+  color:inherit;
+}
+
+.battle-l00.battle-immersive :is(.chapter-unit-state,.market-unit-state,.greenhouse-unit-state,.tunnel-unit-state,.finale-unit-state,.finale-ally-state)
+  > :is(.btl-unit-name,.finale-ally-name)
+  > :is(.chapter-role-badge,.market-role-badge,.greenhouse-role-badge,.tunnel-role-badge,.finale-role-badge,small){
+  display:block;
+  flex:0 0 auto;
+  margin:0;
+  padding:1px 2px;
+  border:0;
+  border-radius:2px;
+  background:#56726473;
+  color:#e1e7c9;
+  font-size:clamp(10px,11cqw,12px);
+  font-weight:500;
+  line-height:1.1;
+}
+
+/* Keep the name, rather than replacing it with a tiny role badge. Role details
+   remain available in the skill menu and the cell's accessible description. */
+@container battle-unit-cell (max-width:74px){
+  .battle-l00.battle-immersive :is(.chapter-unit-state,.market-unit-state,.greenhouse-unit-state,.tunnel-unit-state,.finale-unit-state,.finale-ally-state)
+    > :is(.btl-unit-name,.finale-ally-name)
+    > :is(.chapter-role-badge,.market-role-badge,.greenhouse-role-badge,.tunnel-role-badge,.finale-role-badge,small){
+    display:none;
+  }
+}
+
+/* Small overview tiles retain a full, single-line name and leave the lower
+   portion of the tile available for the cat and its health / energy meters. */
+@container battle-unit-cell (max-width:48px){
+  .battle-l00.battle-immersive :is(.chapter-cell,.market-cell,.greenhouse-cell,.tunnel-cell,.finale-cell)
+    > :is(.chapter-unit-state,.market-unit-state,.greenhouse-unit-state,.tunnel-unit-state,.finale-unit-state,.finale-ally-state)
+    > :is(.btl-unit-name,.finale-ally-name){
+    top:0;
+    max-width:calc(100% - 2px);
+    padding:0 2px;
+    font-size:10px;
+  }
+}

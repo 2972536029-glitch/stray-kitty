@@ -5,7 +5,7 @@ import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES} from 
 import {advanceChapter, createChapterBattle, dispatchChapter, getAttackCells, getBossCells, getChapterAdvice, getChapterSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintChapter} from './painter';
 import {drawCat} from '../l00/painter';
-import {pruneFloats, triggerBattleShake, triggerSkillGlow, type BattleFloatText} from '../battleFx';
+import {triggerBossSkillShake} from '../battleFx';
 import {getChapterAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
@@ -14,7 +14,10 @@ import {useBattleBoardFit} from '../useBattleBoardFit';
 import {getSkillTooltipPosition} from '../skillTooltipPosition';
 import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
+import {UnitMeters} from '../UnitMeters';
 import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
+import {SpawnLabel} from '../SpawnLabel';
+import {GoalLabel} from '../GoalLabel';
 import '../carry.css';
 import '../l00/battle.css';
 import './chapter.css';
@@ -71,11 +74,6 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
   const attemptRef=useRef(attemptId),gesture=useRef<DragGesture|null>(null),suppressClick=useRef(false);
   const aimPointer=useRef<number|null>(null);
   const emitted=useRef(false),callbackRef=useRef(onResult);callbackRef.current=onResult;
-  // —— 表现层 diff（只读快照）：黑影掉血→伤害飘字+轻震；击败→强震；施法→边缘泛光。不影响任何战斗状态。 ——
-  const hostRef=useRef<HTMLElement>(null);
-  const floatsRef=useRef<BattleFloatText[]>([]);
-  const prevFoesRef=useRef<Map<string,{hp:number;x:number;y:number}>|null>(null);
-  const prevDefeatedRef=useRef(0);
   const hostPauseRef=useRef(paused);hostPauseRef.current=paused;
   const selectedRef=useRef(selected);selectedRef.current=selected;
   const hoverRef=useRef(hover);hoverRef.current=hover;
@@ -113,13 +111,13 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
     if(paused||hidden||chatOpen)return;
     setMoving(null);setSelected(id);
     const next=act({type:'SELECT_SKILL',catId:id});
-    if(!next.aim&&next.lastAction?.ok){setSelected(null);act({type:'CLOSE_INSPECTION'});triggerSkillGlow(hostRef.current);} // 即时技能施放成功同样泛光
+    if(!next.aim&&next.lastAction?.ok){setSelected(null);act({type:'CLOSE_INSPECTION'});}
     else if(next.aim)requestAnimationFrame(()=>boardRef.current?.focus({preventScroll:true}));
   }
   function confirmAim(position:Position){
     const aim=gameRef.current.aim;if(!aim)return;
     const next=act({type:'CAST_SKILL',catId:aim.catId,target:position});
-    if(next.lastAction?.ok){setSelected(null);setHover(null);triggerSkillGlow(hostRef.current);} // 施法成功：屏幕边缘金色泛光
+    if(next.lastAction?.ok){setSelected(null);setHover(null);}
   }
   function showMapArea(area:'goal'|'branch'|'boss'){
     setOverview(false);
@@ -163,27 +161,10 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
       const frozen=hostPauseRef.current||document.hidden;
       if(current.externallyPaused!==frozen)current=dispatchChapter(current,{type:'SET_EXTERNAL_PAUSE',paused:frozen});
       if(current.uiPaused!==uiPauseRef.current)current=dispatchChapter(current,{type:'SET_UI_PAUSE',paused:uiPauseRef.current});
+      const previousBossSkills=current.boss.slams;
       current=advanceChapter(current,dt);gameRef.current=current;
-      // 表现层 diff：黑影（含首领）掉血 → 红色像素伤害飘字 + 轻震；击败 → 强震。只读快照，不改状态。
-      const CELL_SIZE=80;
-      const foes=new Map<string,{hp:number;x:number;y:number}>();
-      for(const enemy of current.enemies)foes.set(enemy.id,{hp:Math.max(0,enemy.hp),x:(enemy.x+.5)*CELL_SIZE,y:(enemy.y+.5)*CELL_SIZE});
-      foes.set('boss',{hp:current.boss.hp,x:(current.boss.x+current.boss.width/2)*CELL_SIZE,y:(current.boss.y+current.boss.height/2)*CELL_SIZE});
-      const previousFoes=prevFoesRef.current;prevFoesRef.current=foes;
-      if(previousFoes&&!document.hidden){
-        let hitAny=false;
-        for(const[id,next]of foes){
-          const before=previousFoes.get(id);
-          if(!before||next.hp>=before.hp)continue;
-          hitAny=true;
-          floatsRef.current.push({x:next.x,y:next.y-14,text:`−${Math.round(before.hp-next.hp)}`,born:performance.now()});
-        }
-        if(current.defeated>prevDefeatedRef.current)triggerBattleShake(boardRef.current,'strong');
-        else if(hitAny)triggerBattleShake(boardRef.current,'light');
-        prevDefeatedRef.current=current.defeated;
-      }
-      pruneFloats(floatsRef.current,performance.now());
-      const context=canvasRef.current?.getContext('2d');if(context)paintChapter(context,current,selectedRef.current,hoverRef.current,floatsRef.current);
+      triggerBossSkillShake(boardRef.current,previousBossSkills,current.boss.slams);
+      const context=canvasRef.current?.getContext('2d');if(context)paintChapter(context,current,selectedRef.current,hoverRef.current);
       if(time-lastRender>=50){setGame(current);lastRender=time;}
       handle=requestAnimationFrame(frame);
     };
@@ -334,18 +315,18 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
     return()=>{observer.disconnect();window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);};
   },[inspected?.id,inspected?.x,inspected?.y,overview,skillTooltipOpen]);
 
-  return <section ref={hostRef} className="battle-l00 battle-chapter battle-immersive" data-scene="alley" data-testid="chapter-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.chapter-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
-    <BattleSceneBackdrop scene="alley" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS}/>
+  return <section className="battle-l00 battle-chapter battle-immersive" data-scene="alley" data-testid="chapter-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.chapter-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
+    <BattleSceneBackdrop scene="alley" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS} spawns={MAP.spawns} goal={MAP.goal}/>
     <div className="btl-head"><div><span className="btl-eyebrow">CHAPTER 01 · CAT DEFENSE</span><strong>第一章 · 长巷尽头的黑影</strong></div><div className="btl-progress"><span>黑影已离场 {game.defeated+game.leaks} / {game.totalEnemies}</span><span data-testid="chapter-leaks" aria-label={`已漏过 ${game.leaks} 只黑影，最多 ${game.maxLeaks} 次`}>防线 {'●'.repeat(Math.max(0,game.maxLeaks-game.leaks))}{'○'.repeat(Math.min(game.maxLeaks,game.leaks))}</span></div></div>
     <div className="btl-wave-status"><strong data-testid="chapter-wave">第 {game.wave} / {game.totalWaves} 波 · 剩余 {remaining} 只黑影</strong><span>A4、D10、E10 三处来敌 · 首领必须击退</span></div>
     <details className="battle-hud-details"><summary>战况说明</summary>
-      <div className="btl-subhead"><span>凸形小巷 · 垃圾占格不可部署</span><span>已上阵 {game.cats.filter(cat=>cat.status==='active').length} / {RULES.maxCats}</span><span>体力归零退场 · 点点治疗在场伙伴</span></div>
+      <div className="btl-subhead"><span>凸形小巷 · 杂物区域不可部署</span><span>已上阵 {game.cats.filter(cat=>cat.status==='active').length} / {RULES.maxCats}</span><span>体力归零退场 · 点点治疗在场伙伴</span></div>
       <div className="btl-difficulty-strip" data-testid="chapter-difficulty"><strong>{DIFFICULTIES[difficulty].label} · 敌人体力 {Math.round(DIFFICULTIES[difficulty].hpMultiplier*100)}%</strong><span>守完全部波次并击退首领；3 次突破则失败。所有猫退场也会失败。</span></div>
       {game.phase==='ready'&&<p className="chapter-ready" data-testid="chapter-ready">推荐阵型已就位，可拖动小猫调整。点猫查看技能，点击开始守护。</p>}
       <div className="btl-range-legend" aria-label="范围图例"><span><i/>灰绿 · 普攻可达</span><span><i className="btl-legend-aim"/>浅青 · 可选技能中心</span><span><i className="btl-legend-effect"/>黄色 · 技能作用范围</span></div>
       <p className="btl-board-help">点击战场小猫查看技能，可直接拖动猫咪换位。满能后点击技能图标施放；需要选点时，左键或 Enter 确认，右键或 Esc 取消。</p>
     </details>
-    <div className={`chapter-boss-panel battle-hud-boss${bossWindup?' is-warning':''}`} data-testid="chapter-boss" data-boss-phase={game.boss.phase} data-boss-attacks={game.boss.attacks} data-boss-basic-attacking={bossBasicAttacking}><strong>{game.boss.phase==='defeated'?'首领已击退':game.boss.name}</strong><div className="chapter-boss-health" role="meter" aria-label="首领体力" aria-valuemin={0} aria-valuemax={game.boss.maxHp} aria-valuenow={Math.ceil(game.boss.hp)} data-testid="chapter-boss-health"><i style={{width:`${100*game.boss.hp/game.boss.maxHp}%`}}/><span>{Math.ceil(game.boss.hp)} / {game.boss.maxHp}</span></div><small>{bossWindup?'举起路障了！移开裂纹范围内的猫咪。':game.boss.phase==='recovery'?'重砸落地，正在收势。':game.boss.phase==='defeated'?'首领已击退，继续处理全部波次。':bossBasicAttacking?'普通攻击 · 挥动路障':'固定占据 D8–E9 四格 · 普攻 / 路障重砸'}</small></div>
+    <div className={`chapter-boss-panel battle-hud-boss${bossWindup?' is-warning':''}`} data-testid="chapter-boss" data-boss-phase={game.boss.phase} data-boss-attacks={game.boss.attacks} data-boss-basic-attacking={bossBasicAttacking}><strong>{game.boss.phase==='defeated'?'首领已击退':game.boss.name}</strong><div className="chapter-boss-health" role="meter" aria-label="首领体力" aria-valuemin={0} aria-valuemax={game.boss.maxHp} aria-valuenow={Math.ceil(game.boss.hp)} data-testid="chapter-boss-health"><i style={{width:`${100*game.boss.hp/game.boss.maxHp}%`}}/><span>{Math.ceil(game.boss.hp)} / {game.boss.maxHp}</span></div><small>{bossWindup?'举起路障了！移开裂纹范围内的猫咪。':game.boss.phase==='recovery'?'重砸落地，正在收势。':game.boss.phase==='defeated'?'首领已击退，继续处理全部波次。':bossBasicAttacking?'普通攻击 · 挥动路障':'普攻 / 路障重砸'}</small></div>
     <CarryPanel compact carry={game.carry} phase={game.phase} wave={game.wave} waves={WAVES} entrances={{'0':MAP.spawns[2],'3':MAP.spawns[0],'4':MAP.spawns[1]}} enemies={ENEMY_DEFINITIONS} disabled={paused||hidden||game.paused||game.uiPaused||game.externallyPaused} onUse={()=>act({type:'USE_CARRY'})}/>
     <div className="btl-tactics battle-advisor"><button type="button" data-testid="chapter-advisor" aria-label="与军师阿策交谈" title={advice} aria-expanded={chatOpen} disabled={paused||hidden||ended||!!game.aim} onClick={()=>{closeInspection();setChatOpen(value=>!value);}}><AdvisorPortrait/><strong>阿策</strong><span>聊聊战况</span></button></div>
     {game.cats.some(cat=>cat.status==='retired')&&<p className="btl-retirement-note" role="status" data-testid="chapter-retired">{game.cats.filter(cat=>cat.status==='retired').map(cat=>cat.name).join('、')}已退场，本场无法复活。</p>}
@@ -355,7 +336,7 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
         <div className="chapter-map-tools"><button type="button" className="btl-quiet" aria-pressed={overview} onClick={()=>setOverview(value=>!value)}>{overview?'放大战场':'查看全图'}</button><button type="button" className="btl-quiet" onClick={()=>showMapArea('goal')}>← 守护点</button><button type="button" className="btl-quiet" onClick={()=>showMapArea('branch')}>支巷 ↓</button><button type="button" className="btl-quiet" onClick={()=>showMapArea('boss')}>首领 →</button></div>
         <div className="chapter-battlefield" ref={battlefieldRef}>
           <div ref={scrollRef} className="chapter-board-scroll" role="region" aria-label="小巷战场，窄屏可横向滚动"><div ref={boardRef} tabIndex={-1} className={`chapter-board${overview?' is-overview':''}${moving?' is-moving':''}${game.aim?' is-aiming':''}`} style={{width:overview?fittedWidth:Math.max(MAP.columns*80,(fittedWidth??0)*1.25)}} data-testid="chapter-board" onClick={event=>{if(event.target===event.currentTarget){if(suppressClick.current)suppressClick.current=false;else closeInspection();}}} onPointerDown={event=>{if(gameRef.current.aim&&event.pointerType!=='mouse'&&event.button===0){aimPointer.current=event.pointerId;event.currentTarget.setPointerCapture(event.pointerId);previewTouch(event);}}} onPointerMove={previewTouch} onPointerUp={event=>finishTouchAim(event)} onPointerCancel={event=>finishTouchAim(event,true)} onLostPointerCapture={()=>{aimPointer.current=null;}} onContextMenu={event=>{event.preventDefault();if(gameRef.current.aim)cancelAim();else closeInspection();}} onPointerLeave={()=>{if(!gesture.current){setHover(null);if(gameRef.current.aim)act({type:'AIM_SKILL',x:-1,y:-1});}}}>
-            <canvas ref={canvasRef} width={BOARD_WIDTH} height={BOARD_HEIGHT} aria-label="凸形小巷、三格垃圾障碍、三个出怪口与占据四格的固定首领"/>
+            <canvas ref={canvasRef} width={BOARD_WIDTH} height={BOARD_HEIGHT} aria-label="凸形小巷、连续三格生活杂物角、三个出怪口与占据四格的固定首领"/>
             <SkillFeedback columns={MAP.columns} rows={MAP.rows} bursts={skillFeedback.bursts} shields={game.cats.filter(cat=>cat.status==='active'&&cat.shield>0)}/>
 
             <div className="chapter-cells">{CELLS.map(position=>{
@@ -365,7 +346,7 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
               const enemyCount=game.enemies.filter(enemy=>Math.round(enemy.x)===position.x&&Math.round(enemy.y)===position.y).length;
               const bossCell=bossFootprint.some(cell=>cell.x===position.x&&cell.y===position.y),spawnCell=MAP.spawns.some(cell=>cell.x===position.x&&cell.y===position.y);
               const attack=attackCells.some(cell=>cell.x===position.x&&cell.y===position.y),effect=skillCells.some(cell=>cell.x===position.x&&cell.y===position.y);
-              return <button type="button" key={name} className={`chapter-cell${blocked?' is-obstacle':''}`} style={{gridColumn:position.x+1,gridRow:position.y+1}} data-cell={`${position.x},${position.y}`} data-testid={`chapter-cell-${name}`} data-boss-danger={danger} data-danger={danger} data-enemies={enemyCount} data-deployable={isDeployableCell(position)} data-boss-footprint={bossCell} data-spawn={spawnCell} data-attack-range={attack} data-skill-range={effect} aria-label={`${name}${blocked?'，垃圾障碍':cat?`，${cat.name}，${CAT_PRESENTATION[cat.id].label}，体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}，能量 ${cat.energy} / 100`:position.x===0&&position.y===3?'，守护点':spawnCell?'，出怪口':bossCell?'，固定首领占格，四格共享体力':'，地格'}${enemyCount?`，${enemyCount} 个普通黑影`:''}${danger?'，重砸落点':''}${attack?'，普通攻击可达':''}${effect?'，技能覆盖':''}`} disabled={paused||hidden||ended} onClick={()=>cellClick(position)} onPointerEnter={()=>{setHover(position);if(gameRef.current.aim)act({type:'AIM_SKILL',...position});}} onFocus={()=>{if(gameRef.current.aim){setHover(position);act({type:'AIM_SKILL',...position});}}} onPointerDown={event=>{if(cat)pointerDown(event,cat.id);}} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancel}>{cat&&<span className={`chapter-unit-state${cat.energy>=100?' btl-energy-halo':''}`} data-testid={`chapter-cat-${cat.id}`} data-status={cat.status} data-x={cat.x} data-y={cat.y} data-energy={cat.energy} data-hp={Math.ceil(cat.hp)}><span className="btl-unit-name"><span className="chapter-unit-name">{cat.name}</span><RoleBadge id={cat.id}/><small className="chapter-unit-energy">{Math.floor(cat.energy)}</small></span></span>}</button>;
+              return <button type="button" key={name} className={`chapter-cell${blocked?' is-obstacle':''}`} style={{gridColumn:position.x+1,gridRow:position.y+1}} data-cell={`${position.x},${position.y}`} data-testid={`chapter-cell-${name}`} data-boss-danger={danger} data-danger={danger} data-enemies={enemyCount} data-deployable={isDeployableCell(position)} data-boss-footprint={bossCell} data-spawn={spawnCell} data-attack-range={attack} data-skill-range={effect} aria-label={`${name}${blocked?'，生活杂物，不可通行':cat?`，${cat.name}，${CAT_PRESENTATION[cat.id].label}，体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}，能量 ${cat.energy} / 100`:position.x===0&&position.y===3?'，守护点':spawnCell?'，出怪口':bossCell?'，固定首领占格，四格共享体力':'，地格'}${enemyCount?`，${enemyCount} 个普通黑影`:''}${danger?'，重砸落点':''}${attack?'，普通攻击可达':''}${effect?'，技能覆盖':''}`} disabled={paused||hidden||ended} onClick={()=>cellClick(position)} onPointerEnter={()=>{setHover(position);if(gameRef.current.aim)act({type:'AIM_SKILL',...position});}} onFocus={()=>{if(gameRef.current.aim){setHover(position);act({type:'AIM_SKILL',...position});}}} onPointerDown={event=>{if(cat)pointerDown(event,cat.id);}} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancel}>{position.x===MAP.goal.x&&position.y===MAP.goal.y&&<GoalLabel/>}{spawnCell&&<SpawnLabel/>}{cat&&<span className={`chapter-unit-state${cat.energy>=100?' btl-energy-halo':''}`} data-testid={`chapter-cat-${cat.id}`} data-status={cat.status} data-x={cat.x} data-y={cat.y} data-energy={cat.energy} data-hp={Math.ceil(cat.hp)}><span className="btl-unit-name"><span className="chapter-unit-name">{cat.name}</span><RoleBadge id={cat.id}/></span><UnitMeters cat={cat} prefix="chapter"/></span>}</button>;
             })}</div>
           </div></div>
           {inspected&&<><div ref={menuRef} className="btl-cat-menu" role="group" aria-label={`${inspected.name}，${CAT_PRESENTATION[inspected.id].label}的技能菜单`} data-testid="chapter-cat-menu" data-cat-id={inspected.id} style={menuPosition} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()} onContextMenu={event=>{event.preventDefault();closeInspection();}}><div className="btl-cat-menu-heading"><strong className="chapter-menu-cat-name">{inspected.name}<RoleBadge id={inspected.id}/></strong><button type="button" className="btl-cat-menu-close" data-testid="chapter-close-cat-menu" aria-label="关闭猫咪菜单" onClick={closeInspection}>×</button></div><button type="button" className={`btl-skill-orb${canCast?' btl-skill-orb-ready':''}`} data-testid={`chapter-skill-${inspected.id}`} aria-label={`${SKILLS[inspected.id].name}，能量 ${inspected.energy} / 100${canCast?'，点击释放':'，当前不可释放，可查看说明'}`} aria-disabled={!canCast} aria-describedby={`chapter-skill-description-${inspected.id}`} onMouseEnter={()=>setSkillTooltipOpen(true)} onMouseLeave={event=>{if(document.activeElement!==event.currentTarget)setSkillTooltipOpen(false);}} onFocus={()=>setSkillTooltipOpen(true)} onBlur={()=>setSkillTooltipOpen(false)} onClick={()=>{if(canCast)chooseSkill(inspected.id);else setSkillTooltipOpen(true);}}><span aria-hidden="true">{ICONS[inspected.id]}</span></button><div className="btl-cat-menu-footer"><span>{Math.floor(inspected.energy)} / 100</span></div></div><div ref={tooltipRef} className={`btl-skill-tooltip${skillTooltipOpen?' btl-tooltip-visible':''}`} role="tooltip" id={`chapter-skill-description-${inspected.id}`} data-testid="chapter-skill-tooltip" style={tooltipPosition} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}><p className="chapter-positioning" data-testid="chapter-cat-positioning">{CAT_PRESENTATION[inspected.id].positioning}</p><strong>{SKILLS[inspected.id].name}</strong><p>{SKILLS[inspected.id].description}{SKILLS[inspected.id].targeting==='area'?' 全地图选点，黄色十字为本次作用范围；左键或 Enter 释放，右键 / Esc 取消。':''}</p>{inspected.shield>0&&<span className="btl-shield-detail">额外护盾 {Math.ceil(inspected.shield)} · 剩余 {inspected.shieldRemaining.toFixed(1)} 秒</span>}</div></>}

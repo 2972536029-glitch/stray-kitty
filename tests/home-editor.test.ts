@@ -1,0 +1,32 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {homeInventory,homeObjects,homeObjectInteraction,type HomeAppearance} from '../web/src/modules/home/objects';
+import {homeLayoutChanges,validHomePosition} from '../web/src/modules/home/editor';
+import {homeAppearanceKey} from '../web/src/modules/home/painter';
+import {homeWalkable} from '../web/src/modules/home/navigation';
+
+test('every default stage furnishing is editable, including hanging and front wall pieces',()=>{
+  for(const flags of [[],['greenhouse_sealed'],['greenhouse_fortified_full'],['kingdom_founded']]){
+    const state={flags,placements:{}},items=homeInventory(state);
+    assert.ok(items.length>=10);assert.equal(new Set(items.map(i=>i.layoutKey)).size,items.length);
+    for(const item of items){assert.ok(validHomePosition(item,item.x,item.y),item.layoutKey);const edited={...state,homeLayout:{[item.layoutKey]:{x:item.x,y:item.y,stored:true}}};assert.ok(!homeObjects(edited).some(i=>i.layoutKey===item.layoutKey));assert.equal(homeLayoutChanges(state,edited).length,1);}
+  }
+});
+test('draft cancellation is isolated; default moves affect navigation and cat interaction at the actual new anchor',()=>{
+  const state:HomeAppearance={flags:['greenhouse_fortified_full'],placements:{},furniture:['moon_hammock']},before=structuredClone(state);
+  const original=homeObjects(state).find(i=>i.id==='cat-tower')!;
+  const edited={...state,homeLayout:{[original.layoutKey]:{x:870,y:560,stored:false},'furniture:moon_hammock':{x:590,y:650,stored:false}}};
+  const tower=homeObjects(edited).find(i=>i.id==='cat-tower')!;
+  assert.equal(homeWalkable({x:870,y:554},homeObjects(edited)),false);
+  assert.equal(homeObjectInteraction(tower).point.x,870);
+  assert.equal(homeObjectInteraction(homeObjects(edited).find(i=>i.furnitureId==='moon_hammock')!).point.x,590);
+  assert.notEqual(homeAppearanceKey(state),homeAppearanceKey(edited));assert.deepEqual(state,before);
+  assert.equal(homeLayoutChanges(state,edited).length,2);
+  assert.equal(homeObjects(state).find(i=>i.id==='cat-tower')!.x,original.x);
+});
+test('stored legacy furniture stays stored and stage-specific overrides do not hide the next stage defaults',()=>{
+  const state={flags:[],placements:{corner:'cardboard_nest'},furniture:['cardboard_nest'],homeLayout:{'furniture:cardboard_nest':{x:254,y:382,stored:true},'stage:1:old-rag':{x:292,y:427,stored:true}}};
+  assert.ok(!homeObjects(state).some(i=>i.furnitureId==='cardboard_nest'));
+  assert.ok(!homeObjects(state).some(i=>i.id==='old-rag'));
+  assert.ok(homeObjects({...state,flags:['greenhouse_sealed']}).some(i=>i.id==='straw'));
+});

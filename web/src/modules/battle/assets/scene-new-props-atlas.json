@@ -1,0 +1,161 @@
+{
+  "file": "scene-new-props-atlas.png",
+  "generatedOn": "2026-10-30",
+  "generator": "Built-in image_gen; one generation and one packing correction; no CLI/API fallback",
+  "width": 1774,
+  "height": 887,
+  "columns": 4,
+  "rows": 2,
+  "pixelFormat": "Format32bppArgb",
+  "gridCellWidth": 443.5,
+  "gridCellHeight": 443.5,
+  "alphaPreserved": true,
+  "alphaZeroPixels": 1157114,
+  "alpha1To16Pixels": 66867.0,
+  "alpha240To255Pixels": 299805.0,
+  "verticalGridLineMaxAlpha": [
+    1,
+    0,
+    1
+  ],
+  "horizontalGridLineMaxAlpha": 1,
+  "rectConvention": "[x, y, width, height], zero-based pixels; cellRect uses floor-rounded equal-grid boundaries; visibleBoundsAlpha16 is metadata only, no alpha modification",
+  "sprites": [
+    {
+      "id": "bicycle-railing",
+      "column": 0,
+      "row": 0,
+      "cellRect": [
+        0,
+        0,
+        443,
+        443
+      ],
+      "visibleBoundsAlpha16": [
+        99,
+        188,
+        323,
+        211
+      ]
+    },
+    {
+      "id": "hydrant-hose",
+      "column": 1,
+      "row": 0,
+      "cellRect": [
+        443,
+        0,
+        444,
+        443
+      ],
+      "visibleBoundsAlpha16": [
+        552,
+        146,
+        276,
+        251
+      ]
+    },
+    {
+      "id": "repair-tea-cart",
+      "column": 2,
+      "row": 0,
+      "cellRect": [
+        887,
+        0,
+        443,
+        443
+      ],
+      "visibleBoundsAlpha16": [
+        956,
+        120,
+        309,
+        279
+      ]
+    },
+    {
+      "id": "vendor-bundles",
+      "column": 3,
+      "row": 0,
+      "cellRect": [
+        1330,
+        0,
+        444,
+        443
+      ],
+      "visibleBoundsAlpha16": [
+        1398,
+        132,
+        284,
+        266
+      ]
+    },
+    {
+      "id": "garden-wheelbarrow",
+      "column": 0,
+      "row": 1,
+      "cellRect": [
+        0,
+        443,
+        443,
+        444
+      ],
+      "visibleBoundsAlpha16": [
+        103,
+        592,
+        298,
+        192
+      ]
+    },
+    {
+      "id": "greenhouse-water-barrel",
+      "column": 1,
+      "row": 1,
+      "cellRect": [
+        443,
+        443,
+        444,
+        444
+      ],
+      "visibleBoundsAlpha16": [
+        549,
+        535,
+        296,
+        248
+      ]
+    },
+    {
+      "id": "maintenance-cabinet",
+      "column": 2,
+      "row": 1,
+      "cellRect": [
+        887,
+        443,
+        443,
+        444
+      ],
+      "visibleBoundsAlpha16": [
+        986,
+        527,
+        268,
+        265
+      ]
+    },
+    {
+      "id": "manual-pallet-jack",
+      "column": 3,
+      "row": 1,
+      "cellRect": [
+        1330,
+        443,
+        444,
+        444
+      ],
+      "visibleBoundsAlpha16": [
+        1403,
+        543,
+        294,
+        241
+      ]
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "size": [
+    1536,
+    1024
+  ],
+  "alpha": true,
+  "cropThreshold": 32,
+  "alphaGutterPadding": 4,
+  "crops": {
+    "northWest": [
+      37,
+      89,
+      709,
+      399
+    ],
+    "northEast": [
+      788,
+      93,
+      716,
+      336
+    ],
+    "southWest": [
+      37,
+      533,
+      710,
+      412
+    ],
+    "southEast": [
+      790,
+      582,
+      716,
+      329
+    ]
+  },
+  "insideTurns": {
+    "northWest": {
+      "source": [
+        184,
+        256
+      ],
+      "target": [
+        112,
+        112
+      ]
+    },
+    "southWest": {
+      "source": [
+        184,
+        153
+      ],
+      "target": [
+        112,
+        80
+      ]
+    }
+  }
+}

@@ -16,6 +16,7 @@
  .app-shell[data-phase=battle] .world-wrap{padding:8px;scrollbar-gutter:auto}
  .app-shell[data-phase=battle] .world-footer{margin:5px 8px 7px;padding:5px 8px}
 }
-/* 战斗阶段也支持折叠：流式顶栏以 max-height 收起（其余面板自动上移），保留 0.3s 同款节奏。 */
-.app-shell[data-phase=battle] .topbar{transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .3s cubic-bezier(.4,0,.2,1),margin .3s cubic-bezier(.4,0,.2,1),padding .3s cubic-bezier(.4,0,.2,1);overflow:hidden}
-.app-shell[data-phase=battle] .topbar.topbar-collapsed{max-height:0;min-height:0;margin:0;padding-top:0;padding-bottom:0;border-width:0;opacity:0;pointer-events:none}
+/* Keep the battle header on its original solid palette; immersive.css owns its compact sizing. */
+.app-shell[data-phase=battle] .topbar{background:#ebe1ccf7;border:2px solid #382f2b;backdrop-filter:none;-webkit-backdrop-filter:none}
+.app-shell[data-phase=battle] .topbar :is(nav button,.chapter-pill,.wallet>span){border:2px solid #382f2b;backdrop-filter:none;-webkit-backdrop-filter:none}
+.app-shell[data-phase=battle] .topbar .wallet>span{background:#f1e8d3}

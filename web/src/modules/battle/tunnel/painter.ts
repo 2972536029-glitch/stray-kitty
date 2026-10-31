@@ -1,8 +1,9 @@
 import {paintCarryAnchor} from '../carry-painter';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintTunnelObstacleScenery, TUNNEL_JOINED_OBSTACLE_CELLS} from '../scene-industrial-obstacles';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
-import {CELLS, MAP, ROUTES} from './config';
+import {CELLS, MAP} from './config';
 import {getAttackCells, getSkillCells, isDarkened, isEnemyVisible} from './engine';
 import type {TunnelCatId, TunnelState, Position} from './types';
 
@@ -13,9 +14,10 @@ export const cellName=({x,y}:Position)=>`${'ABCDE'[y]}${x+1}`;
 /** The bounding rectangle is not the map: absent cells never accept pointers. */
 export const mapCell=(x:number,y:number)=>Number.isInteger(x)&&Number.isInteger(y)&&CELLS.some(cell=>cell.x===x&&cell.y===y);
 export const obstacleCell=(x:number,y:number)=>MAP.obstacles.some(cell=>cell.x===x&&cell.y===y);
+const joinedObstacles=new Set(TUNNEL_JOINED_OBSTACLE_CELLS.map(({x,y})=>`${x},${y}`));
 export const OBSTACLE_NAMES:Readonly<Record<string,string>>={
   A3:'旧管堆',A7:'塌方碎石',A8:'封闭栅栏',B2:'封闭暗管',C8:'废弃机箱',
-  D1:'塌方砖墙',D2:'绊线已识破',E7:'三号泄洪阀',E8:'铁栅后待救',
+  D1:'塌方砖墙',D2:'绊线已排除',E7:'三号泄洪阀',E8:'铁栅后待救',
 };
 const rect=(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h);};
 const blocks=(ctx:CanvasRenderingContext2D,color:string,points:number[][])=>{for(const [x,y,w,h] of points)rect(ctx,x,y,w,h,color);};
@@ -55,28 +57,39 @@ function rescuedCat(ctx:CanvasRenderingContext2D,x:number,y:number,fur:string,sm
 function drawObstacle(ctx:CanvasRenderingContext2D,p:Position){
   const key=cellName(p);ctx.save();ctx.translate(p.x*CELL,p.y*CELL);
   if(key==='A3'||key==='B2'){drawPipe(ctx,true);if(key==='A3'){rect(ctx,27,17,36,6,'#807967');rect(ctx,33,12,8,11,'#b8b6a3');}}
-  else if(key==='A7'||key==='D1'){
-    blocks(ctx,'#777969',[[13,42,19,18],[33,28,22,28],[53,44,13,15],[20,20,12,18]]);
-    blocks(ctx,'#bcbcac',[[15,42,15,5],[35,29,17,6],[22,20,8,5],[52,45,12,5]]);
-    blocks(ctx,'#414b3e',[[27,55,8,5],[44,51,8,7],[16,60,47,3]]);
-  }else if(key==='A8'){
-    paintSceneProp(ctx,'tunnel','barrier',0,0,CELL);
-    blocks(ctx,SCENE_INK.gold,[[35,37,10,11],[38,32,5,6]]);
-  }else if(key==='C8'){
-    blocks(ctx,'#73786b',[[18,23,44,34],[15,57,50,5]]);blocks(ctx,'#b4b9a8',[[21,26,38,7],[22,38,16,14]]);
-    blocks(ctx,'#303b31',[[42,38,14,3],[42,44,14,3],[42,50,14,3],[26,42,6,6]]);rect(ctx,25,44,5,2,SCENE_INK.gold);
+  else if(key==='C8'){
+    blocks(ctx,'#152a2d77',[[13,59,55,7],[20,65,41,3]]);
+    blocks(ctx,'#3e514e',[[18,23,44,36],[58,24,7,35],[15,58,50,5]]);
+    blocks(ctx,'#818d80',[[18,25,40,31],[21,20,35,5]]);
+    blocks(ctx,'#b6c0ac',[[21,18,35,4],[19,25,37,2],[20,28,2,26]]);
+    blocks(ctx,'#5d6f63',[[56,22,6,33],[23,55,34,3],[17,59,46,2]]);
+    blocks(ctx,'#d3d5bc',[[23,19,25,1],[20,25,4,1],[20,56,6,1]]);
+    blocks(ctx,'#384d49',[[23,36,15,17],[41,35,14,19],[24,28,29,4]]);
+    blocks(ctx,'#9da994',[[24,37,13,2],[24,39,2,12],[43,36,10,1]]);
+    blocks(ctx,'#202f31',[[42,38,12,3],[42,44,12,3],[42,50,12,3],[27,42,6,6]]);
+    blocks(ctx,'#708274',[[43,41,10,1],[43,47,10,1],[43,53,10,1],[60,30,2,17]]);
+    blocks(ctx,'#c4c6ae',[[21,29,2,2],[54,29,2,2],[21,52,2,2],[54,52,2,2]]);
+    blocks(ctx,'#8a7359',[[31,24,6,2],[55,46,3,5],[18,52,3,4],[40,57,5,2]]);
+    blocks(ctx,'#263d3b',[[18,63,7,2],[25,64,10,2],[34,61,2,4]]);
+    rect(ctx,25,44,5,2,SCENE_INK.gold);
   }else if(key==='D2'){
-    blocks(ctx,'#8c7965',[[15,29,11,29],[54,31,11,27]]);ctx.strokeStyle='#c4a17a';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(23,42);ctx.lineTo(36,47);ctx.moveTo(45,48);ctx.lineTo(58,41);ctx.stroke();ctx.setLineDash([]);
+    // The continuous footing owns the posts; retain the clipped wire, tool and cleared check.
+    ctx.strokeStyle='#c4a17a';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(23,42);ctx.lineTo(36,47);ctx.moveTo(45,48);ctx.lineTo(58,41);ctx.stroke();ctx.setLineDash([]);
     blocks(ctx,'#c4c4b5',[[32,26,17,13],[37,21,8,6],[38,39,5,9]]);ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(28,54);ctx.lineTo(36,60);ctx.lineTo(53,44);ctx.stroke();
   }else if(key==='E7'){
     paintSceneProp(ctx,'tunnel','valve',0,0,CELL);
-    rect(ctx,12,13,14,15,SCENE_INK.gold);ctx.fillStyle='#333a2f';ctx.textAlign='center';ctx.font='bold 11px sans-serif';ctx.fillText('3',19,25);
   }else if(key==='E8'){
+    blocks(ctx,'#15292c88',[[8,60,65,7],[14,67,54,2],[12,21,55,39]]);
+    blocks(ctx,'#3b4e48',[[12,22,54,3],[12,25,3,33],[63,25,3,33]]);
     rescuedCat(ctx,15,25,'#be9872');rescuedCat(ctx,42,25,'#b4ada0');rescuedCat(ctx,28,49,'#c4a88b',true);rescuedCat(ctx,45,50,'#a5ada0',true);
     blocks(ctx,'#7c7869',[[9,17,62,4],[9,60,62,3],[9,17,3,46],[68,17,3,46]]);
-    for(const x of [22,38,54])rect(ctx,x,18,2,43,'#c4c6b7');
+    blocks(ctx,'#b1b7a3',[[10,15,59,2],[9,19,1,40],[10,60,58,1]]);
+    blocks(ctx,'#455b51',[[69,21,2,39],[12,62,57,2],[12,21,55,1]]);
+    for(const x of [22,38,54]){rect(ctx,x+2,21,2,40,'#344940');rect(ctx,x,18,2,43,'#c4c6b7');rect(ctx,x,24,1,24,'#e1dfc7');}
+    blocks(ctx,'#d0ccb0',[[10,18,2,2],[68,18,2,2],[10,60,2,2],[68,60,2,2]]);
+    blocks(ctx,'#978266',[[29,18,5,2],[59,61,6,2],[69,45,2,5]]);
   }
-  rect(ctx,5,64,70,12,'#142630d9');ctx.fillStyle=SCENE_INK.label;ctx.textAlign='center';ctx.font='9px sans-serif';ctx.fillText(OBSTACLE_NAMES[key],40,73);ctx.restore();
+  ctx.restore();
 }
 
 /** A sluice-armoured shadow with a visible breaker lamp; footprint remains exactly 2 × 2. */
@@ -86,14 +99,30 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:TunnelState){
   const lunge=basic?Math.sin(Math.PI*(1-Math.min(1,basic.remaining/.4)))*3:0;
   ctx.save();ctx.translate(boss.x*CELL+10-lunge,boss.y*CELL+6);ctx.scale(1.7,1.7);
   blocks(ctx,'#263b3533',[[6,77,70,6],[14,82,54,3]]);
-  blocks(ctx,'#3c5464',[[20,15,42,16],[15,30,52,36],[10,66,23,13],[49,66,23,13],[10,33,8,30],[65,33,8,30]]);
-  blocks(ctx,'#7894a0',[[19,29,8,36],[56,30,8,35],[24,17,34,5]]);
-  blocks(ctx,'#a3b4b7',[[15,9,52,7],[11,20,6,52],[67,20,6,52],[15,70,52,5]]);
-  blocks(ctx,'#e8d8a5',[[27,31,9,4],[47,31,9,4]]);
+  blocks(ctx,'#2e475b',[[20,15,42,16],[15,30,52,36],[10,66,23,13],[49,66,23,13],[10,33,8,30],[65,33,8,30]]);
+  blocks(ctx,'#739bac',[[19,29,8,36],[56,30,8,35],[24,17,34,5]]);
+  // Visor, inset plates and stepped boots add form inside the existing blue armour.
+  blocks(ctx,'#213b50',[[23,24,36,6],[28,35,28,5],[29,49,25,11],[12,74,17,3],[52,74,17,3]]);
+  blocks(ctx,'#4f7488',[[22,17,4,7],[54,18,5,6],[20,36,3,22],[59,36,3,20],[13,67,16,4],[53,67,15,4]]);
+  blocks(ctx,'#9ebcc4',[[24,18,2,3],[55,19,2,3],[21,37,1,8],[60,37,1,8],[15,68,9,1],[55,68,9,1]]);
+  blocks(ctx,'#c5d9dc',[[15,9,52,7],[11,20,6,52],[67,20,6,52],[15,70,52,5]]);
+  blocks(ctx,'#8caab8',[[18,14,46,1],[15,23,1,43],[71,23,1,43],[18,74,46,1]]);
+  blocks(ctx,'#e0e9df',[[19,10,10,1],[49,10,12,1],[12,23,1,8],[68,23,1,8]]);
+  for(const [x,y] of [[13,26],[69,26],[13,64],[69,64]]){
+    rect(ctx,x,y,2,2,'#3a5c70');rect(ctx,x,y,1,1,'#d8e3d8');
+  }
+  blocks(ctx,'#f3d68a',[[27,31,9,4],[47,31,9,4]]);
+  blocks(ctx,'#2e475b',[[38,37,7,2]]);
+  blocks(ctx,'#f5e3a4',[[28,31,2,1],[53,31,2,1]]);
   blocks(ctx,SCENE_INK.gold,[[27,43,29,4],[27,62,29,3]]);
-  ctx.strokeStyle='#abc4c4';ctx.lineWidth=3;ctx.beginPath();ctx.arc(42,55,12,0,Math.PI*2);ctx.moveTo(30,55);ctx.lineTo(54,55);ctx.moveTo(42,43);ctx.lineTo(42,67);ctx.stroke();
-  blocks(ctx,'#657460',[[3,32,10,10],[70,32,10,10],[0,43,7,22],[76,43,7,22]]);
+  ctx.strokeStyle='#dfbf7f';ctx.lineWidth=3;ctx.beginPath();ctx.arc(42,55,12,0,Math.PI*2);ctx.moveTo(30,55);ctx.lineTo(54,55);ctx.moveTo(42,43);ctx.lineTo(42,67);ctx.stroke();
+  blocks(ctx,'#927f5b',[[40,53,4,4],[28,45,7,1],[47,64,7,1]]);
+  blocks(ctx,'#eddaa0',[[40,53,3,1],[41,54,1,1],[29,43,8,1],[48,62,6,1]]);
+  blocks(ctx,'#678492',[[3,32,10,10],[70,32,10,10],[0,43,7,22],[76,43,7,22]]);
+  blocks(ctx,'#94adb6',[[4,34,7,2],[71,34,7,2],[1,46,3,2],[77,46,3,2]]);
+  blocks(ctx,'#3d5a6d',[[5,39,6,2],[72,39,6,2],[1,54,4,1],[1,61,4,2],[77,54,4,1],[77,61,4,2]]);
   rect(ctx,32,0,20,10,'#6f7d65');rect(ctx,35,2,14,6,windup&&Math.sin(state.elapsed*9)>0?'#dba86e':windup?'#f0d8a0':'#b5c99c');
+  blocks(ctx,'#445c59',[[33,8,18,1],[50,2,1,5]]);rect(ctx,33,1,1,3,'#a1b39a');
   if(windup){
     ctx.strokeStyle='#caa56e';ctx.lineWidth=2;
     for(const [x,y,dx,dy] of [[20,0,-5,-4],[62,0,5,-4],[14,10,-8,0],[68,10,8,0]]){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+dx,y+dy);ctx.stroke();}
@@ -129,18 +158,17 @@ export function paintTunnel(ctx:CanvasRenderingContext2D,state:TunnelState,selec
   for(const p of CELLS){
     const goal=p.x===MAP.goal.x&&p.y===MAP.goal.y,obstacle=obstacleCell(p.x,p.y);
     paintSceneTile(ctx,'tunnel',p.x,p.y,CELL,{goal,obstacle,spawn:MAP.spawns.some(cell=>cell.x===p.x&&cell.y===p.y),boss:MAP.bossCells.some(cell=>cell.x===p.x&&cell.y===p.y)});
-    paintSceneEdge(ctx,'tunnel',p.x,p.y,CELL,mapCell);
-    if(obstacle)drawObstacle(ctx,p);
-    if(p.x===0&&p.y===0){ctx.save();ctx.translate(0,0);drawPipe(ctx,false);rect(ctx,4,61,72,13,'#142630d9');ctx.fillStyle=SCENE_INK.gold;ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText('破管 · 可绕行',40,70);ctx.restore();}
+    if(!joinedObstacles.has(`${p.x},${p.y}`))paintSceneEdge(ctx,'tunnel',p.x,p.y,CELL,mapCell);
   }
-  ctx.save();ctx.strokeStyle=SCENE_INK.route;ctx.lineWidth=1.2;ctx.setLineDash([4,7]);for(const path of Object.values(ROUTES)){ctx.beginPath();path.forEach((p,i)=>{if(i===0)ctx.moveTo((p.x+.5)*CELL,(p.y+.5)*CELL);else ctx.lineTo((p.x+.5)*CELL,(p.y+.5)*CELL);});ctx.stroke();}ctx.restore();
+  paintTunnelObstacleScenery(ctx);
+  for(const p of MAP.obstacles)drawObstacle(ctx,p);
+  ctx.save();drawPipe(ctx,false);ctx.restore();
   for(const p of MAP.spawns){
     const x=p.x*CELL,y=p.y*CELL;ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(x+5,y+5,CELL-10,CELL-10);
     if(p.y===0){
       ctx.fillStyle='#8b9283';ctx.beginPath();ctx.ellipse(x+42,y+35,22,17,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#242e29';ctx.beginPath();ctx.ellipse(x+42,y+35,16,12,0,0,Math.PI*2);ctx.fill();
       blocks(ctx,'#d3c39a',[[x+20,y+32,13,4],[x+20,y+28,4,12]]);
     }else blocks(ctx,SCENE_INK.danger,[[x+45,y+24,4,23],[x+41,y+28,4,15],[x+37,y+32,4,7]]);
-    ctx.textAlign='center';ctx.font='9px sans-serif';ctx.fillStyle=SCENE_INK.danger;ctx.fillText(p.y===0?'暗管口 ←':'出怪口 ←',x+40,y+62);
   }
   for(const p of MAP.bossCells)rect(ctx,p.x*CELL+3,p.y*CELL+3,CELL-6,CELL-6,'#e0b26c17');
   paintCarryAnchor(ctx,state.carry,CELL,mapCell);
@@ -166,7 +194,7 @@ export function paintTunnel(ctx:CanvasRenderingContext2D,state:TunnelState,selec
   // Cats, HP and energy are drawn last, never under the blackout or full-board pulse.
   const gx=MAP.goal.x*CELL,gy=MAP.goal.y*CELL;
   if(dark){ctx.fillStyle='#e5e8cb24';ctx.beginPath();ctx.ellipse(gx+40,gy+40,33,33,0,0,Math.PI*2);ctx.fill();}
-  drawCat(ctx,'hero',gx+9,gy+5,62);ctx.fillStyle=SCENE_INK.gold;ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText('喵喵 · 守护 C2',gx+40,gy+73);
+  drawCat(ctx,'hero',gx+9,gy+5,62);
   for(const cat of state.cats){
     if(cat.status!=='active')continue;const x=cat.x*CELL,y=cat.y*CELL;
     if(dark){ctx.fillStyle='#dfe7c926';ctx.beginPath();ctx.ellipse(x+40,y+42,33,30,0,0,Math.PI*2);ctx.fill();}
@@ -174,8 +202,7 @@ export function paintTunnel(ctx:CanvasRenderingContext2D,state:TunnelState,selec
     drawTunnelCat(ctx,cat.id,x+9,y+7,62,cat.cooldown>.5);
     if(cat.shield>0){ctx.strokeStyle='#a1dce0';ctx.fillStyle='#83bdc018';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x+40,y+42,31,29,0,0,Math.PI*2);ctx.fill();ctx.stroke();}
     if(cat.attackBuffRemaining>0){ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+64,y+25);ctx.lineTo(x+68,y+17);ctx.lineTo(x+72,y+25);ctx.stroke();}
-    rect(ctx,x+10,y+65,60,5,'#203946');rect(ctx,x+10,y+65,60*cat.hp/cat.maxHp,5,'#9bcc9b');rect(ctx,x+10,y+72,60,3,'#203946');rect(ctx,x+10,y+72,60*cat.energy/100,3,cat.energy>=100?SCENE_INK.gold:'#93c3c0');
+
   }
-  for(const p of CELLS){rect(ctx,p.x*CELL+4,p.y*CELL+3,21,11,'#18303dba');ctx.fillStyle=SCENE_INK.label;ctx.font='8px sans-serif';ctx.textAlign='start';ctx.fillText(cellName(p),p.x*CELL+6,p.y*CELL+12);}
   ctx.restore();
 }

@@ -1,0 +1,18 @@
+/* Names and destination captions use the tile's existing responsive container. */
+.battle-l00.battle-immersive .btl-goal-label{position:absolute;inset:0;display:block;pointer-events:none;user-select:none;z-index:2}
+.battle-l00.battle-immersive .btl-goal-label> :is(.btl-goal-name,.btl-goal-caption){position:absolute;left:50%;transform:translateX(-50%);display:block;box-sizing:border-box;width:max-content;max-width:calc(100% - 2px);margin:0;white-space:nowrap;pointer-events:none;background:#152c31ed;color:#fff1bb;border:1px solid #c6bd87;border-radius:3px;text-shadow:0 1px 1px #07191e,-1px 0 #07191e,1px 0 #07191e;line-height:1.1}
+.battle-l00.battle-immersive .btl-goal-label>.btl-goal-name{top:0;padding:1px 3px;font-size:clamp(12px,19cqw,22px);font-weight:800}
+.battle-l00.battle-immersive .btl-goal-label>.btl-goal-caption{bottom:0;padding:0 2px;font-size:clamp(8px,12cqw,12px);font-weight:700;color:#ead99b}
+
+/* The prologue name belongs to the moving hero, never to the initially empty goal tile. */
+.battle-l00.battle-immersive[data-scene=prologue] .btl-unit.btl-hero-unit{container-name:battle-hero-unit;container-type:inline-size}
+.battle-l00.battle-immersive[data-scene=prologue] .btl-unit.btl-hero-unit>.btl-unit-name{top:0;left:50%;transform:translateX(-50%);display:block;width:max-content;max-width:calc(100% - 2px);margin:0;padding:1px 4px;background:#152c31ed;color:#fff1bb;border:1px solid #c6bd87;border-radius:3px;font-size:clamp(14px,19cqw,22px);font-weight:800;line-height:1.1;white-space:nowrap;text-shadow:0 1px 1px #07191e,-1px 0 #07191e,1px 0 #07191e;pointer-events:none}
+.battle-l00.battle-immersive[data-scene=prologue] .btl-unit.btl-hero-unit>.btl-health{bottom:16px}
+@container battle-hero-unit (max-width:48px){
+ .battle-l00.battle-immersive[data-scene=prologue] .btl-unit.btl-hero-unit>.btl-unit-name{font-size:clamp(10px,30cqw,12px);line-height:1;padding:0 2px}
+ .battle-l00.battle-immersive[data-scene=prologue] .btl-unit.btl-hero-unit>.btl-health{height:3px;bottom:12px}
+}
+@container battle-unit-cell (max-width:40px){
+ .battle-l00.battle-immersive .btl-goal-label>.btl-goal-name{font-size:clamp(8px,30cqw,12px);padding:0 2px}
+ .battle-l00.battle-immersive .btl-goal-label>.btl-goal-caption{font-size:clamp(6px,26cqw,9px);padding:0 1px}
+}

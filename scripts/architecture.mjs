@@ -45,6 +45,7 @@ const labels = {
   'web/content/tutorials': '操作提示', 'web/content/assets': '素材索引',
   'web/public': '静态资源', 'web/public/assets': '图片、动画、声音与字体',
   'web/public/assets/home': '无猫建筑、四阶修缮与主题家具透明图集',
+  'web/public/assets/home/stages': '四阶段四十八件正向透明家具组件',
   'web/public/assets/home/parcels': '两套主题的二十四件独立透明家具组件',
   server: 'Go 服务端', 'server/cmd': '服务入口', 'server/cmd/api': 'HTTP 启动',
   'server/internal': '服务实现', 'server/internal/transport': '请求、认证与参数检查',
@@ -131,9 +132,13 @@ ${directory}
 | 会话与结果未知的原始请求 | adapters/storage；不作为权威存档 |
 | 阿策最近三轮手动问答、请求取消状态 | 战斗页面内存；切换场次清空，不写存档 |
 
-home 管十二个位置的建设、摆放与原猫咪互动；lottery 管苔叶来信与月海观星两个主题池（各十二件新家具）、概率、开箱和收据。Go 的 service/lottery.go 在原命令事务内扣费、计保底、补偿重复和签收日常／里程碑奖励；旧家具由剧情确定性赠送。旧存档的 lottery 字段惰性初始化，家具与摆放不重命名。免费池每抽 1 邮票，付费池每抽 60 罐头，最多三抽得未拥有家具；两个池独立累计，历史保留 50 次。模拟支付已有进程内和独立服务两种形态，真实支付尚未接入。
+home 管自由布置、场景修缮与原猫咪互动，保留十二个旧槽位的兼容入口；lottery 管苔叶来信与月海观星两个主题池（各十二件新家具）、概率、开箱和收据。Go 的 service/lottery.go 在原命令事务内扣费、计保底、补偿重复和签收日常／里程碑奖励；旧家具由剧情确定性赠送。旧存档的 lottery 字段惰性初始化，家具与摆放不重命名。免费池每抽 1 邮票，付费池每抽 60 罐头，最多三抽得未拥有家具；两个池独立累计，历史保留 50 次。模拟支付已有进程内和独立服务两种形态，真实支付尚未接入。
 
-花房使用 modules/home 的 assets、layout、objects、painter 共用 1672×941 室内布局：建筑底图与透明组件不含猫咪，HomeMap 和场景使用同一装配；四套阶段家具和独立植物图集的裁切坐标放在模块内的 atlas.json／stage-atlas.json，每种购买家具有独立图稿，默认陈设让位于已保存的摆放。camera 管缩放、拖动与点击坐标转换，navigation 按对象地面占位阻挡，原有像素猫按家具脚点排序，前墙藤蔓和家具前缘独立遮挡。story 在对白期间接管角色和站位，空闲 home 阶段才运行日常行为；四阶外观从既有修缮与终章标记推导，不新增服务端存档字段，图集仅在需要花房时加载。
+花房使用 modules/home 的 assets、layout、objects、painter 共用 1672×941 室内布局：建筑底图与透明组件不含猫咪，HomeMap 和场景使用同一装配；四套阶段家具和独立植物图集的裁切坐标放在模块内的 atlas.json／stage-atlas.json，每种购买家具有独立图稿，默认陈设让位于已保存的摆放。camera 管缩放、拖动与点击坐标转换，navigation 按对象地面占位阻挡，原有像素猫按家具脚点排序，前墙藤蔓和家具前缘独立遮挡。story 在对白期间接管角色和站位，空闲 home 阶段才运行日常行为；四阶外观从既有修缮与终章标记推导，图集仅在需要花房时加载。FurnitureBackpack 通过 DemoScene 的投影与编辑接口在同一张 Canvas 预览本地草稿，底部背包覆盖在原场景上，不重建场景或相机；编辑时暂停并隐藏猫咪，退出后恢复。可选 homeLayout 记录默认及收藏家具的位置与收纳状态，SAVE_HOME_LAYOUT 校验后整批提交。HomeRepairOverlay 将目录 parts 的坐标投影为破损处标记，REPAIR_HOME 的可选 repairId 在服务端校验工程、前置部位与库存，单处扣费并保存到可选 homeRepairs；全部部位修完才写入原阶段 flag。省略 repairId 的旧命令只结算本阶段剩余成本，已完成的阶段 flag 对旧存档继续有效。HomeMap 与现场共享局部修缮后的绘制。
+
+GameScreen 在原顶栏分别提供家园手册、邮局、商店、章节地图、仓库与布置按钮，沿用设置按钮样式，家园顶栏移除资源与充值常驻展示。modules/home/HomeHub 复用居中原生 dialog 容器，每次直接打开对应模块，不再提供统一功能导航；设置保持独立 SettingsPanel。家园手册合并 HomeMap 和共享 JourneyRecord，分类按钮放左、文案放右，伙伴资料集中在猫咪伙伴分类；章节路线使用移除花房图片后的 WorldMap。HomePanel 只处理主线下一步与已解锁故事回顾，关卡试玩由 AcceptancePanel 承接。Modal 的 EmbeddedModalContext 仅消耗一层，供邮局、商店、仓库与补给在各自窗口内复用，家具详情等子弹窗仍为独立原生 dialog。ShopPanel 移除旧家具陈列，使用 lottery/ParcelRewards 签收来信、猫咪心愿与里程碑；该组件沿用原服务端命令与北京时间刷新，ParcelDialog 专注主题池和开箱。货币余额只在使用场景展示；顶栏布置按钮直接使用原 FurnitureBackpack，不修改其画布、相机与保存流程。HomeRepairOverlay 的场景标记保留自身定位变换，不受全局按钮悬停、按下或禁用变换影响。home/renovation 在服务端快照新增修缮部位或提升阶段后，缓存一次旧画面并绘制施工、渐显与暖光；场景在过渡期间暂停猫咪与点击，标记隐藏，完成后恢复。首次加载和家具布置不触发修缮动画，后台或菜单暂停，减少动态偏好使用短淡入。
+
+home/dialogue 按性格、动作和情绪维护台词轮换，reactions 管逐猫摸摸间隔、短时情绪恢复、闲聊节流及家具邀请距离。catPainter 共享正向／逆向身体变换与原猫图稿的透明度命中，picking 检查家具纹理遮挡；点击、拖起和放到伙伴身边共用可见猫判定。鼠标按下命中猫后，松开只处理该猫，防抖期间也不会落到家具邀请。日常状态仅在 Canvas 场景内存中，剧情接管与暂停逻辑保持优先。
 
 ## 4. 接入与分工
 

@@ -47,24 +47,25 @@
 .battle-l00.battle-immersive :is(.prologue-map-tools,.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools){position:absolute;z-index:8;right:18px;bottom:85px;display:flex!important;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:440px;margin:0!important}
 .battle-l00.battle-immersive :is(.prologue-map-tools,.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools) button{background:#18342ee8;color:#eee2bf;border:1px solid #829779;font-size:11px!important;padding:7px 9px!important;border-radius:3px}
 .battle-l00.battle-immersive .btl-board-caption{position:absolute;z-index:7;left:215px;right:260px;bottom:85px;margin:0;padding:3px 5px;max-height:40px;overflow:auto;color:#f1e9d2;font-size:11px;line-height:1.5;text-align:center;text-shadow:0 1px #142c25;pointer-events:auto}
-.battle-l00.battle-immersive .battle-hud-boss{position:absolute;z-index:8;bottom:12px;left:220px;right:220px;width:auto;max-width:1000px;min-height:54px;margin:0 auto!important;padding:8px 12px;background:#162d2af0;border:1px solid #b8a370;border-radius:3px;color:#e6d9b6;box-shadow:0 4px 0 #17292180;gap:5px 12px}
-.battle-l00.battle-immersive .battle-hud-boss>strong{font-size:13px;color:#f0d395;min-width:140px}
-.battle-l00.battle-immersive .battle-hud-boss>[role=meter]{width:180px;flex:1;min-width:120px;height:17px;border-color:#ab9463;background:#3f4b3d}
+.battle-l00.battle-immersive .battle-hud-boss{position:absolute;z-index:8;bottom:12px;left:220px;right:220px;display:grid;grid-template-columns:minmax(120px,max-content) minmax(0,1fr);align-items:center;width:auto;max-width:1000px;min-height:54px;margin:0 auto!important;padding:8px 12px;background:#162d2af0;border:1px solid #b8a370;border-radius:3px;color:#e6d9b6;box-shadow:0 4px 0 #17292180;gap:5px 12px}
+.battle-l00.battle-immersive .battle-hud-boss>strong{min-width:0;font-size:19px;font-weight:800;line-height:1.25;color:#fff0c2;overflow-wrap:anywhere}
+.battle-l00.battle-immersive .battle-hud-boss>[role=meter]{width:100%;min-width:0;height:22px;border-color:#ab9463;background:#3f4b3d}
 .battle-l00.battle-immersive .battle-hud-boss>[role=meter] i{background:#c7925a}
-.battle-l00.battle-immersive .battle-hud-boss>[role=meter] span{font-size:11px;line-height:15px}
-.battle-l00.battle-immersive .battle-hud-boss>small{font-size:10px;color:#c5cfb8;flex-basis:100%}
+.battle-l00.battle-immersive .battle-hud-boss>[role=meter] span{display:grid;place-items:center;font-size:14px;font-weight:700;line-height:1}
+.battle-l00.battle-immersive .battle-hud-boss>small{grid-column:1/-1;min-width:0;max-height:2.8em;overflow:auto;overflow-wrap:anywhere;scrollbar-width:thin;font-size:14px;line-height:1.4;color:#e0e5d1}
 .battle-l00.battle-immersive .battle-hud-boss.is-warning{border-color:#efae76;background:#4b392be8}
 .battle-l00.battle-immersive .battle-hud-boss.is-warning>small{color:#ffcc93;font-weight:600}
-.battle-l00.battle-immersive .finale-leaders.battle-hud-boss{display:grid;grid-template-columns:1fr 1.8fr 1fr;align-items:center;gap:10px;padding:7px 10px}
-.battle-l00.battle-immersive .finale-leaders .finale-boss-panel{display:flex;background:transparent;color:#dedbbd;padding:0!important;border:0;gap:3px 6px}
+.battle-l00.battle-immersive .finale-leaders.battle-hud-boss{grid-template-columns:minmax(0,1fr) minmax(0,1.8fr) minmax(0,1fr);align-items:start;gap:8px 10px;padding:8px 10px}
+.battle-l00.battle-immersive .finale-leaders .finale-boss-panel{display:flex;min-width:0;background:transparent;color:#dedbbd;padding:0!important;border:0;gap:4px 6px}
 .battle-l00.battle-immersive .finale-leaders .finale-leader-boss{grid-column:2;grid-row:1}
-.battle-l00.battle-immersive .finale-leaders .finale-boss-health{min-width:0!important;width:100%!important;flex:auto!important;height:14px}
-.battle-l00.battle-immersive .finale-leaders .finale-leader-boss .finale-boss-health{height:18px}
-.battle-l00.battle-immersive .finale-leaders .finale-leader-boss .finale-boss-health span{font-size:11px;line-height:16px}
-.battle-l00.battle-immersive .finale-leaders strong{font-size:11px;white-space:nowrap}
-.battle-l00.battle-immersive .finale-leaders .finale-leader-boss strong{font-size:13px;color:#f0d395}
+.battle-l00.battle-immersive .finale-leaders .finale-boss-health{min-width:0!important;width:100%!important;flex:auto!important;height:20px}
+.battle-l00.battle-immersive .finale-leaders .finale-leader-boss .finale-boss-health{height:22px}
+.battle-l00.battle-immersive .finale-leaders .finale-boss-health span{display:grid;place-items:center;font-size:13px;font-weight:700;line-height:1}
+.battle-l00.battle-immersive .finale-leaders .finale-leader-boss .finale-boss-health span{font-size:14px}
+.battle-l00.battle-immersive .finale-leaders strong{min-width:0;font-size:16px;font-weight:800;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
+.battle-l00.battle-immersive .finale-leaders .finale-leader-boss strong{font-size:19px;color:#fff0c2}
 .battle-l00.battle-immersive .finale-leaders small{display:none;min-height:0}
-.battle-l00.battle-immersive .finale-leaders .is-warning small{display:block;position:absolute;bottom:calc(100% + 4px);left:0;width:100%;text-align:center;padding:5px;background:#3c2e22ee;color:#ffd3a3;font-size:12px}
+.battle-l00.battle-immersive .finale-leaders .is-warning small{display:block;position:static;width:100%;max-height:4.2em;overflow:auto;overflow-wrap:anywhere;scrollbar-width:thin;text-align:left;padding:0;background:transparent;color:#ffd3a3;font-size:14px;line-height:1.4}
 .battle-l00.battle-immersive .battle-hud-mechanic{position:absolute;z-index:5;top:54px;left:50%;transform:translateX(-50%);width:max-content;max-width:46%;margin:0;padding:4px 9px;background:#1b3631e8;border-color:#8c9f85;color:#dce8d0;font-size:11px;pointer-events:none}
 .battle-l00.battle-immersive .battle-hud-mechanic strong{font-size:11px}
 .battle-l00.battle-immersive .battle-advisor{position:absolute;z-index:9;left:10px;bottom:0;margin:0!important;width:205px;height:166px;display:block}
@@ -128,8 +129,8 @@
  .battle-l00.battle-immersive .battle-hud-details[open]{width:calc(100% - 16px);max-height:calc(100% - 180px)}
  .battle-l00.battle-immersive .battle-hud-mechanic{top:94px;max-width:calc(100% - 16px);font-size:10px;padding:2px 6px}.battle-l00.battle-immersive .battle-hud-mechanic strong{font-size:10px}
  .battle-l00.battle-immersive .battle-advisor,.battle-l00.battle-immersive .battle-advisor>button{left:0;width:120px;height:128px;bottom:15px}.battle-l00.battle-immersive .battle-advisor canvas,.battle-l00.battle-immersive .battle-advisor .btl-portrait{width:100px!important;height:100px!important}.battle-l00.battle-immersive .battle-advisor strong{left:25px;bottom:2px;padding:1px 5px;font-size:11px}.battle-l00.battle-immersive .battle-advisor button>span:not(.btl-portrait){left:53px;top:4px;font-size:10px;padding:4px 6px}
- .battle-l00.battle-immersive .battle-hud-boss{left:112px;right:8px;bottom:9px;min-height:58px;padding:6px 8px;gap:3px}.battle-l00.battle-immersive .battle-hud-boss>strong{min-width:0;font-size:11px}.battle-l00.battle-immersive .battle-hud-boss>[role=meter]{width:100%;flex-basis:100%;min-width:0;height:15px}.battle-l00.battle-immersive .battle-hud-boss>small{font-size:9px;line-height:1.4;max-height:28px;overflow:hidden}
- .battle-l00.battle-immersive .finale-leaders.battle-hud-boss{grid-template-columns:1fr 1fr;gap:5px;padding:5px 7px}.battle-l00.battle-immersive .finale-leaders .finale-leader-boss{grid-column:1/-1;grid-row:1}.battle-l00.battle-immersive .finale-leaders .finale-boss-health{height:10px}.battle-l00.battle-immersive .finale-leaders .finale-leader-boss .finale-boss-health{height:15px}.battle-l00.battle-immersive .finale-leaders .finale-boss-health span{font-size:8px;line-height:8px}.battle-l00.battle-immersive .finale-leaders .finale-leader-boss .finale-boss-health span{font-size:10px;line-height:13px}.battle-l00.battle-immersive .finale-leaders strong{font-size:9px}.battle-l00.battle-immersive .finale-leaders .finale-leader-boss strong{font-size:11px}
+ .battle-l00.battle-immersive .battle-hud-boss{left:112px;right:8px;bottom:9px;grid-template-columns:minmax(0,1fr);min-height:58px;padding:6px 8px;gap:4px}.battle-l00.battle-immersive .battle-hud-boss>strong{font-size:16px}.battle-l00.battle-immersive .battle-hud-boss>[role=meter]{height:20px}.battle-l00.battle-immersive .battle-hud-boss>[role=meter] span{font-size:12px}.battle-l00.battle-immersive .battle-hud-boss>small{font-size:13px;max-height:4.2em}
+ .battle-l00.battle-immersive .finale-leaders.battle-hud-boss{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:6px 7px}.battle-l00.battle-immersive .finale-leaders .finale-leader-boss{grid-column:1/-1;grid-row:1}.battle-l00.battle-immersive .finale-leaders .finale-boss-health{height:18px}.battle-l00.battle-immersive .finale-leaders .finale-leader-boss .finale-boss-health{height:20px}.battle-l00.battle-immersive .finale-leaders .finale-boss-health span,.battle-l00.battle-immersive .finale-leaders .finale-leader-boss .finale-boss-health span{font-size:12px}.battle-l00.battle-immersive .finale-leaders strong{font-size:14px}.battle-l00.battle-immersive .finale-leaders .finale-leader-boss strong{font-size:16px}.battle-l00.battle-immersive .finale-leaders .is-warning small{font-size:13px;max-height:2.8em}
  .battle-l00.battle-immersive :is(.prologue-map-tools,.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools){right:8px;bottom:116px;max-width:calc(100% - 94px);gap:3px}.battle-l00.battle-immersive :is(.prologue-map-tools,.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools) button{font-size:9px!important;padding:5px 6px!important}
  .battle-l00.battle-immersive .btl-board-caption{left:8px;right:8px;bottom:151px;max-height:32px;font-size:10px;background:#18372ce0;padding:2px 4px}
  .battle-l00.battle-immersive .btl-tutorial{left:112px;right:8px;bottom:9px;max-height:129px;min-height:0;padding:6px 8px}.battle-l00.battle-immersive .btl-tutorial strong{font-size:12px}.battle-l00.battle-immersive .btl-tutorial p{font-size:11px;line-height:1.4;margin:3px 0}.battle-l00.battle-immersive .btl-tutorial small{font-size:9px}.battle-l00.battle-immersive .btl-tutorial .btl-practice-button{font-size:11px;padding:5px 8px}
@@ -141,4 +142,38 @@
  .battle-l00.battle-immersive .battle-carry-panel.is-compact{left:8px;top:94px;max-width:calc(100% - 16px);width:max-content;flex-wrap:nowrap}
  .battle-l00.battle-immersive:has(.battle-carry-panel.is-compact) :is(.chapter-battlefield,.market-battlefield,.greenhouse-battlefield,.tunnel-battlefield,.finale-battlefield){top:149px}
  .battle-l00.battle-immersive:has(.battle-carry-panel.is-compact) .battle-hud-mechanic{top:128px}
+}
+
+/* Boss readouts reserve only the height they need. On desktop, map buttons and
+   transient hints share a row; the prologue tutorial keeps its original layout. */
+.battle-l00.battle-immersive:has(.battle-hud-boss){--boss-tools-bottom:104px;--boss-tools-height:36px;--boss-caption-space:0px;--boss-retirement-space:0px;--boss-hints-bottom:var(--boss-tools-bottom)}
+/* Reserve the finale warning area before combat starts. Resizing the board when
+   a Boss winds up can move a skill button between pointer-down and click. */
+.battle-l00.battle-immersive:has(.finale-leaders){--boss-tools-bottom:152px}
+.battle-l00.battle-immersive:has(.battle-hud-boss):has(.btl-retirement-note){--boss-retirement-space:26px}
+.battle-l00.battle-immersive:has(.battle-hud-boss) :is(.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools){bottom:var(--boss-tools-bottom);flex-wrap:nowrap;max-width:calc(100% - 238px)}
+.battle-l00.battle-immersive:has(.battle-hud-boss) .btl-board-caption{left:220px;right:330px;bottom:var(--boss-hints-bottom);max-height:36px;line-height:1.35}
+.battle-l00.battle-immersive:has(.battle-hud-boss) .btl-retirement-note{left:220px;right:18px;bottom:calc(var(--boss-tools-bottom) + var(--boss-tools-height) + var(--boss-caption-space) + 4px);max-height:22px;overflow:auto}
+.battle-l00.battle-immersive:has(.battle-hud-boss) :is(.chapter-battlefield,.market-battlefield,.greenhouse-battlefield,.tunnel-battlefield,.finale-battlefield){bottom:calc(var(--boss-tools-bottom) + var(--boss-tools-height) + var(--boss-caption-space) + var(--boss-retirement-space) + 4px)}
+@media(min-width:700px) and (max-width:1100px){
+ .battle-l00.battle-immersive:has(.battle-hud-boss) :is(.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools){max-width:calc(100% - 208px)}
+ .battle-l00.battle-immersive:has(.battle-hud-boss) :is(.btl-board-caption,.btl-retirement-note){left:190px}
+}
+@media(min-width:700px) and (max-width:900px){
+ .battle-l00.battle-immersive:has(.battle-hud-boss):has(.btl-board-caption){--boss-caption-space:28px;--boss-hints-bottom:calc(var(--boss-tools-bottom) + 34px)}
+ .battle-l00.battle-immersive:has(.battle-hud-boss) .btl-board-caption{right:18px;max-height:30px;line-height:1.2}
+ .battle-l00.battle-immersive:has(.finale-leaders){--boss-tools-bottom:176px}
+ .battle-l00.battle-immersive .finale-leaders.battle-hud-boss{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .battle-l00.battle-immersive .finale-leaders .finale-leader-boss{grid-column:1/-1;grid-row:1}
+ .battle-l00.battle-immersive .finale-leaders .is-warning small{max-height:2.8em}
+}
+@media(max-width:699px){
+ .battle-l00.battle-immersive:has(.battle-hud-boss){--boss-tools-bottom:160px;--boss-tools-height:36px;--boss-caption-space:0px;--boss-retirement-space:0px;--boss-hints-bottom:calc(var(--boss-tools-bottom) + 36px)}
+ .battle-l00.battle-immersive:has(.finale-leaders){--boss-tools-bottom:172px}
+ .battle-l00.battle-immersive:has(.battle-hud-boss):has(.btl-board-caption){--boss-caption-space:38px}
+ .battle-l00.battle-immersive:has(.battle-hud-boss):has(.btl-retirement-note){--boss-retirement-space:22px}
+ .battle-l00.battle-immersive:has(.battle-hud-boss) :is(.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools){left:8px;right:8px;max-width:none}
+ .battle-l00.battle-immersive:has(.battle-hud-boss) :is(.btl-board-caption,.btl-retirement-note){left:8px;right:8px}
+ .battle-l00.battle-immersive:has(.battle-hud-boss) .btl-board-caption{max-height:32px}
+ .battle-l00.battle-immersive:has(.battle-hud-boss) .btl-retirement-note{max-height:18px}
 }
