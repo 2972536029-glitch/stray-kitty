@@ -1,4 +1,6 @@
+import {useCallback, useRef, useState} from 'react';
 import type {BattleResult, Catalog, GameState} from '../../contracts';
+import {BattleResultScreen} from './BattleResultScreen';
 import {L00BattleHost} from './L00BattleHost';
 import {createChapterContext} from './chapter-context';
 import {ChapterBattleViewport} from './chapter/ChapterBattleViewport';
@@ -13,7 +15,48 @@ import {FinaleBattleViewport} from './finale/FinaleBattleViewport';
 import './scene-art.css';
 import './immersive.css';
 
-export function BattleHost({state, catalog, paused, onResult}: {
+interface Props {
+  state:GameState;catalog:Catalog;paused:boolean;
+  onResult:(result:BattleResult)=>void|boolean|Promise<boolean|void>;
+  settlement?:{busy:boolean;pending:boolean;error:string;retry:()=>void|Promise<void>};
+}
+
+export function BattleHost(props:Props){
+  return <BattleSession key={props.state.activeBattle?.id??'missing-attempt'} {...props}/>;
+}
+
+function BattleSession(props:Props){
+  const [result,setResult]=useState<BattleResult|null>(null),[continued,setContinued]=useState(false);
+  const [submitting,setSubmitting]=useState(false),[localError,setLocalError]=useState('');
+  const inFlight=useRef(false);
+  // Terminal callbacks are local notifications. Persistence and navigation wait
+  // for confirmation, for every chapter and for both outcomes.
+  const capture=useCallback((next:BattleResult)=>setResult(previous=>previous??next),[]);
+  async function continueBattle(){
+    if(!result||inFlight.current||props.settlement?.busy)return;
+    inFlight.current=true;setSubmitting(true);setLocalError('');
+    try{
+      if(props.settlement?.pending){
+        // Reuse the app's pending command/idempotency key after an uncertain
+        // response, rather than submitting a second completion request.
+        await props.settlement.retry();
+      }else{
+        const accepted=await props.onResult(result);
+        if(accepted===false)setLocalError('暂时未能确认战斗结果，请重试。');
+        else setContinued(true);
+      }
+    }catch(error){setLocalError(error instanceof Error?error.message:'暂时未能确认战斗结果，请重试。');}
+    finally{inFlight.current=false;setSubmitting(false);}
+  }
+  const stageName=props.catalog.stages.find(stage=>stage.id===props.state.activeBattle?.stageId)?.name??'一起守住回家的路';
+  return <>
+    <BattleStage {...props} onResult={capture}/>
+    {result&&!continued&&<BattleResultScreen outcome={result.outcome} stageName={stageName} busy={submitting||props.settlement?.busy}
+      error={props.settlement?.error||localError} onContinue={()=>void continueBattle()}/>}
+  </>;
+}
+
+function BattleStage({state, catalog, paused, onResult}: {
   state: GameState; catalog: Catalog; paused: boolean; onResult: (result: BattleResult) => void;
 }) {
   // The prologue teaches combat; the first rescue and home replay share L01.

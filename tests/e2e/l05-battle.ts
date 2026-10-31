@@ -1,3 +1,4 @@
+import {confirmBattleResult} from './battle-result';
 import {expect, type Page, type TestInfo} from '@playwright/test';
 
 const initial:Record<string,{x:number;y:number}>={caster:{x:6,y:1},guard:{x:4,y:2},tuanzi:{x:7,y:3},bruiser:{x:4,y:4},diandian:{x:3,y:3},momo:{x:6,y:5}};
@@ -13,7 +14,7 @@ async function snapshot(page:Page){
     return {phase:root.getAttribute('data-phase'),elapsed:Number(root.getAttribute('data-elapsed')),light:Number(root.getAttribute('data-light-stage')),boss:root.querySelector('[data-testid="finale-boss"]')?.getAttribute('data-boss-phase'),cats:units('cat'),allies:units('ally'),elites:units('elite'),cells:Array.from(root.querySelectorAll<HTMLElement>('.finale-cell')).map(c=>({name:c.dataset.testid!.replace('finale-cell-',''),x:Number(c.dataset.cell!.split(',')[0]),y:Number(c.dataset.cell!.split(',')[1]),enemies:Number(c.dataset.enemies??0),deployable:c.dataset.deployable==='true',danger:c.dataset.danger==='true'}))};
   });
 }
-function won(page:Page){return page.locator('.app-shell[data-phase="settlement"]').getByRole('button',{name:'返回家园 →',exact:true});}
+function won(page:Page){return page.locator('[data-testid="battle-result"][data-outcome="won"]');}
 async function dragCat(page:Page,move:{id:string;x:number;y:number}){
   await page.keyboard.press('Escape');
   const source=page.getByTestId('finale-cat-'+move.id);
@@ -74,5 +75,6 @@ export async function playFinaleVisibleControls(page:Page,info:TestInfo){
     }catch(error){if(await won(page).isVisible())break;throw error;}
   }
   expect(Date.now()).toBeLessThan(deadline);expect(arrivals.size).toBe(3);expect(dodges).toBeGreaterThan(0);expect(maxLight).toBe(3);expect(nightVision).toBe(true);
+  await confirmBattleResult(page,'won');
   return {skills:[...skills],arrivals:[...arrivals],dodges,nightVision,maxLight};
 }

@@ -17,6 +17,7 @@ import {drawCat, paintBattle} from './painter';
 import {TutorialSpotlight} from './TutorialSpotlight';
 import {whenSceneArtReady} from '../scene-art';
 import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
+import {BattleResultScreen} from '../BattleResultScreen';
 import {useBattleBoardFit} from '../useBattleBoardFit';
 import {getSkillTooltipPosition} from '../skillTooltipPosition';
 import type {AnimationBook, CatKind, CatPose} from './painter';
@@ -26,7 +27,7 @@ interface Props {
   context:BattleContext;paused:boolean;onResult:(result:BattleResult)=>void;onStart?:()=>void;
   /** Prepare the host attempt before starting. A false result leaves the battle ready. */
   onBeforeStart?:()=>Promise<boolean>;
-  /** Opt in to terminal completion; the default host contract remains explicit completion. */
+  /** Notify the host at battle end; the host still waits for player confirmation before settlement. */
   autoComplete?:boolean;
 }
 interface Drag {catId:CatId;pointerId:number;startX:number;startY:number;x:number;y:number}
@@ -391,7 +392,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     </div>
     <div className="btl-controls"><p role="status">{blocked?'战斗已暂停。':game.lastAction?.type==='INSPECT_CAT'&&!inspectedCat?speedStatus:game.lastAction?.reason??'先观察喵喵的遭遇，伙伴很快就会赶来。'}{!blocked&&(game.paused||chatOpen||aim||inspectedCat)&&<small>{speedStatus}</small>}</p></div>
     {chatOpen&&<section className="btl-chat" aria-label="军师阿策聊天"><div className="btl-panel-heading"><span><strong>阿策的战术小纸条</strong><small>当前战况 · 模型建议 / 本地兜底</small></span><button className="btl-quiet" disabled={blocked} onClick={()=>setChatOpen(false)}>收起聊天</button></div><div className="btl-chat-log" aria-live="polite" aria-busy={advisorChat.loading} ref={chatLogRef}><article><strong>阿策 · 军师喵</strong><p>我会陪你观察战场。先完成站位和技能教学，之后可以问我怎么摆阵、怎样蓄能、伙伴退场后怎么办。</p></article><AdvisorChatMessages {...advisorChat}/></div><div className="btl-suggestions">{['现在怎么摆阵？','伙伴退场怎么办？','怎样蓄能？','猫咪有什么能力？'].map(text=><button key={text} disabled={blocked||advisorChat.loading} onClick={()=>ask(text)}>{text}</button>)}</div><form onSubmit={event=>{event.preventDefault();ask(question);}}><label className="btl-sr-only" htmlFor="battle-question">询问军师</label><input id="battle-question" value={question} disabled={blocked||advisorChat.loading} onChange={event=>setQuestion(event.target.value)} maxLength={500} placeholder="问问阵型、退场、蓄能或猫咪能力……"/><button disabled={blocked||advisorChat.loading||!question.trim()}>{advisorChat.loading?'思考中…':'询问'}</button></form></section>}
-    {(game.phase==='won'||game.phase==='failed')&&<div className="btl-milestone"><CatPortrait kind="hero" size={70}/><div><h2>{game.phase==='won'?'大家一起守住了！':'伙伴们已经撤离'}</h2><p>{game.phase==='won'?'站位、移动、自动蓄能与技能释放都学会了。本次战斗已经完成。':'防线被突破或伙伴全部退场。本场已经结束，结算后可重新挑战。'}</p><button disabled={blocked} onClick={()=>runtime.complete()}>{submitted?'战斗结果已提交':'完成战斗'}</button></div></div>}
+    {terminal&&!autoComplete&&<BattleResultScreen outcome={game.phase==='won'?'won':'lost'} stageName={context.stage.name} busy={blocked} onContinue={()=>runtime.complete()}/>}
     {drag&&Math.hypot(drag.x-drag.startX,drag.y-drag.startY)>7&&<div className="btl-drag-ghost" style={{left:drag.x,top:drag.y}}><CatPortrait kind={drag.catId} size={70}/></div>}
   </section>;
 }

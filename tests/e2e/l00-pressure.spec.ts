@@ -1,3 +1,4 @@
+import {confirmBattleResult} from './battle-result';
 import {expect, test, type Page} from '@playwright/test';
 import {spawn, type ChildProcess} from 'node:child_process';
 import {createHash} from 'node:crypto';
@@ -137,7 +138,7 @@ for (const entry of cases) {
     await completeL00Tutorial(page,battle);await page.getByTestId('battle-play-toggle').click();
     await moveCat(page,'caster','A7');await moveCat(page,'guard','C7');
     await page.getByTestId('battle-play-toggle').click();
-    await expect(page.getByRole('button',{name:'重新开始教学',exact:true})).toBeVisible({timeout:45000});
+    await expect(page.getByTestId('battle-result')).toBeVisible({timeout:45000});await confirmBattleResult(page,'lost');await expect(page.getByRole('button',{name:'重新开始教学',exact:true})).toBeVisible({timeout:45000});
     const failed=await readSavedState();expect(failed.phase).toBe('settlement');expect(failed.activeBattle).toMatchObject({id:expectedState.activeBattle!.id,stageId:'l00_tutorial',status:'lost',modifiers:{shadowPressure:entry.pressure}});
     await expect(page.getByRole('button',{name:/免费重整|重新上阵/})).toHaveCount(0);
     await page.getByRole('button',{name:'重新开始教学',exact:true}).click();

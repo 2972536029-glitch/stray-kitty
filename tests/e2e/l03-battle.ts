@@ -1,3 +1,4 @@
+import {confirmBattleResult} from './battle-result';
 import {expect, type Page} from '@playwright/test';
 
 
@@ -16,7 +17,7 @@ async function snapshot(page:Page){
   });
 }
 function winningSettlement(page:Page){
-  return page.locator('.app-shell[data-phase="settlement"]').getByRole('button',{name:'返回家园 →',exact:true});
+  return page.locator('[data-testid="battle-result"][data-outcome="won"]');
 }
 async function inspectOnBoard(page:Page,id:string){
   await page.getByTestId(`greenhouse-cat-${id}`).click({timeout:1500});
@@ -90,5 +91,6 @@ export async function playVisibleControls(page:Page){
     }
   }
   expect(Date.now()).toBeLessThan(until);
+  await confirmBattleResult(page,'won');
   return {skills:[...used],dodges};
 }
