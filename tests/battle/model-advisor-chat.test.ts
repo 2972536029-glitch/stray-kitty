@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ModelAdvisorChat,cleanAdvisorQuestion} from '../../web/src/modules/battle/model-advisor-chat';
-import {requestModelAdvisor,type ModelAdvisorAnswer,type ModelAdvisorRequest} from '../../web/src/modules/battle/model-advisor-client';
+import {AdvisorContextChanged,requestModelAdvisor,type ModelAdvisorAnswer,type ModelAdvisorRequest} from '../../web/src/modules/battle/model-advisor-client';
 
 const fallback={title:'本地阵型建议',text:'先让盾卫站在入口附近。'};
 const model:ModelAdvisorAnswer={source:'model',title:'守住两路',text:'先观察两路黑影的位置。'};
@@ -108,4 +108,28 @@ test('HTML-like answer stays a plain string and never becomes a game command',as
   const text='<script>START_BATTLE()</script> **只读建议**';
   const chat=new ModelAdvisorChat(async()=>({...model,text}));chat.setScope('same',true);chat.ask(request,fallback);await flush();
   assert.equal(chat.getSnapshot().messages[0].answer.text,text);
+});
+
+test('opt-in journey session keeps completed rounds across scenes but cancels stale pending answers',async()=>{
+  const delayed=deferred<ModelAdvisorAnswer>();let calls=0;let oldSignal:AbortSignal|undefined;
+  const inputs:ModelAdvisorRequest[]=[];
+  const chat=new ModelAdvisorChat(async(body,signal)=>{inputs.push(body);calls++;if(calls===2){oldSignal=signal;return delayed.promise;}return model;});
+  chat.setScope('journey-one:home',true,true);chat.ask(request,fallback);await flush();
+  chat.ask({...request,question:'旧场景的问题'},fallback);await flush();
+  chat.setScope('journey-one:explore',true,true);assert.equal(oldSignal?.aborted,true);
+  assert.equal(chat.getSnapshot().messages.length,1);assert.equal(chat.getSnapshot().pendingQuestion,null);
+  delayed.resolve({...model,text:'已经过期的回答'});await flush();
+  assert.equal(chat.getSnapshot().messages.length,1);
+  chat.ask({scope:'journey',sceneKey:'explore',expectedRevision:8,question:'现在去哪',context:'{}'},fallback);await flush();
+  assert.deepEqual(inputs[2].history.map(m=>m.content),[request.question,model.text]);
+  chat.setScope('another-player:explore',true);assert.deepEqual(chat.getSnapshot().messages,[]);
+});
+
+test('a changed server context never becomes a stale fallback and is not retried',async()=>{
+  let calls=0;const chat=new ModelAdvisorChat(async()=>{calls++;throw new AdvisorContextChanged();});
+  chat.setScope('home',true,true);chat.ask(request,fallback);await flush();
+  assert.equal(calls,1);assert.deepEqual(chat.getSnapshot().messages,[]);
+  assert.equal(chat.getSnapshot().pendingQuestion,null);assert.match(chat.getSnapshot().notice,/情况已经变化/);
+  chat.setScope('home',false,true);chat.setScope('home',true,true);await flush();assert.equal(calls,1);
+  await assert.rejects(requestModelAdvisor(payload,new AbortController().signal,{session,fetch:async()=>new Response('{}',{status:409})}),AdvisorContextChanged);
 });

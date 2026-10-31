@@ -382,9 +382,9 @@
     },
     "/api/v1/advisor": {
       "post": {
-        "operationId": "askBattleAdvisor",
-        "summary": "阿策只读战斗问答",
-        "description": "需要有效会话和匹配的活动战斗。单次模型请求12秒，无自动重试；未配置、限流或提供商故障时200 source=local，客户端用本章本地规则回答。每会话1并发/6次每分钟，全局4并发/200次UTC日（单进程内存，重启重置）。不执行游戏命令或改变revision。正文最多128KiB。",
+        "operationId": "askAdvisor",
+        "summary": "阿策只读战斗与旅程问答",
+        "description": "有效会话必需。缺省battle核对活动场次；scope=journey核对sceneKey及请求开始的expectedRevision，并在模型返回前核对相关进度。单次12秒，无自动重试；模型不可用时source=local，客户端按当前场景回退。现有限流继续生效。问答不执行游戏命令、不改变revision。正文最多128KiB。",
         "requestBody": {
           "required": true,
           "content": {
@@ -413,7 +413,7 @@
             "description": "会话无效"
           },
           "409": {
-            "description": "活动场次不匹配或已结束"
+            "description": "场次、当前位置或相关进度已变化；重新获取当前状态后由玩家再次提问，不自动重发。"
           },
           "413": {
             "description": "正文超过128KiB"
@@ -2491,8 +2491,6 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "attemptId",
-          "stageId",
           "question",
           "context"
         ],
@@ -2523,7 +2521,7 @@
             "type": "string",
             "minLength": 2,
             "maxLength": 24000,
-            "description": "客户端白名单构建的当前可见战况 JSON 对象字符串，不是完整引擎状态。服务端额外解析校验对象。"
+            "description": "客户端白名单构建的当前可见信息JSON对象字符串，不能发送完整存档、未来剧情或隐藏事件结果；journey服务端另附当前可信进度。"
           },
           "history": {
             "type": "array",
@@ -2550,8 +2548,67 @@
                 }
               }
             }
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "battle",
+              "journey"
+            ],
+            "description": "缺省为既有战斗问答；journey按当前旅程场景问答。"
+          },
+          "sceneKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "description": "JSON.stringify([phase,chapterId,mapId,storyNodeId,pendingEventId,activeBattle?.id ?? \"\"])；使用当前最新状态生成。"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0
           }
-        }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "attemptId",
+              "stageId"
+            ],
+            "properties": {
+              "scope": {
+                "enum": [
+                  "battle"
+                ]
+              }
+            }
+          },
+          {
+            "required": [
+              "scope",
+              "sceneKey",
+              "expectedRevision"
+            ],
+            "properties": {
+              "scope": {
+                "const": "journey"
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "attemptId"
+                  ]
+                },
+                {
+                  "required": [
+                    "stageId"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
       },
       "AdvisorResponse": {
         "type": "object",

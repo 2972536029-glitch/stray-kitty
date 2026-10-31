@@ -1,4 +1,4 @@
-import type {AdvisorHistoryEntry,ModelAdvisorAnswer,ModelAdvisorRequest} from './model-advisor-client';
+import {AdvisorContextChanged,type AdvisorHistoryEntry,type ModelAdvisorAnswer,type ModelAdvisorRequest} from './model-advisor-client';
 
 export interface LocalAdvisorAnswer {title:string;text:string}
 export interface AdvisorChatMessage {id:number;question:string;answer:ModelAdvisorAnswer}
@@ -20,8 +20,8 @@ export class ModelAdvisorChat {
   getSnapshot=()=>this.state;
   subscribe=(listener:()=>void)=>{this.listeners.add(listener);return()=>{this.listeners.delete(listener);};};
   private publish(next:AdvisorChatSnapshot){this.state=next;for(const listener of this.listeners)listener();}
-  setScope(key:string,enabled:boolean){
-    if(key!==this.key){this.cancel(false);this.key=key;this.publish({messages:[],pendingQuestion:null,notice:''});}
+  setScope(key:string,enabled:boolean,preserveHistory=false){
+    if(key!==this.key){this.cancel(false);this.key=key;this.publish({messages:preserveHistory?this.state.messages:[],pendingQuestion:null,notice:''});}
     if(!enabled)this.cancel(true);
     this.enabled=enabled;
   }
@@ -55,9 +55,14 @@ export class ModelAdvisorChat {
       this.active=null;
       if(answer.source==='model')this.append(question,answer,'');
       else this.append(question,{...fallback,source:'local'},'模型暂时不可用，这次由本地规则给出建议。');
-    }).catch(()=>{
+    }).catch(error=>{
       if(!current())return;
-      this.active=null;this.append(question,{...fallback,source:'local'},'暂时连不上模型，先参考本地建议。');
+      this.active=null;
+      if(error instanceof AdvisorContextChanged){
+        this.publish({...this.state,pendingQuestion:null,notice:'眼前的情况已经变化，请重新问一次，我会查看最新进度。'});
+        return;
+      }
+      this.append(question,{...fallback,source:'local'},'暂时连不上模型，先参考本地建议。');
     });
     return true;
   }

@@ -4,7 +4,12 @@ import {BrowserSessionStore} from '../../adapters/storage/BrowserSessionStore';
 export interface ModelAdvisorAnswer {source:'model'|'local';title:string;text:string;reason?:string}
 export interface AdvisorHistoryEntry {role:'user'|'assistant';content:string}
 export interface ModelAdvisorRequest {
-  attemptId:string;stageId:string;question:string;context:string;history:AdvisorHistoryEntry[];
+  scope?:'battle'|'journey';attemptId?:string;stageId?:string;
+  sceneKey?:string;expectedRevision?:number;
+  question:string;context:string;history:AdvisorHistoryEntry[];
+}
+export class AdvisorContextChanged extends Error {
+  constructor(){super('advisor_context_changed');}
 }
 interface Dependencies {
   fetch?:typeof fetch;
@@ -28,7 +33,10 @@ export async function requestModelAdvisor(payload:ModelAdvisorRequest,signal:Abo
       headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.token},
       body:JSON.stringify(payload),
     });
-    if(!response.ok)throw new Error('advisor_request_unavailable');
+    if(!response.ok){
+      if(response.status===409)throw new AdvisorContextChanged();
+      throw new Error('advisor_request_unavailable');
+    }
     const answer:unknown=await response.json();
     if(!answer||typeof answer!=='object')throw new Error('advisor_invalid_response');
     const value=answer as Record<string,unknown>;

@@ -7,11 +7,15 @@ type AdvisorMessage struct {
 }
 
 type AdvisorRequest struct {
-	AttemptID string           `json:"attemptId"`
-	StageID   string           `json:"stageId"`
-	Question  string           `json:"question"`
-	Context   string           `json:"context"`
-	History   []AdvisorMessage `json:"history"`
+	// An omitted scope preserves the original battle-only request contract.
+	Scope            string           `json:"scope,omitempty"`
+	SceneKey         string           `json:"sceneKey,omitempty"`
+	ExpectedRevision *int             `json:"expectedRevision,omitempty"`
+	AttemptID        string           `json:"attemptId"`
+	StageID          string           `json:"stageId"`
+	Question         string           `json:"question"`
+	Context          string           `json:"context"`
+	History          []AdvisorMessage `json:"history"`
 }
 
 type AdvisorResponse struct {

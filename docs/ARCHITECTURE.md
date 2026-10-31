@@ -47,6 +47,7 @@ stray-kitty/
 │        ├─ L04-underground-tunnel/  第四章地下通道设计
 │        └─ L05-final-warehouse/  第五章终极仓库设计
 ├─ docs/  需求、架构、接口与集成记录
+│  ├─ ADVISOR-INTEGRATION.md
 │  ├─ ARCHITECTURE.md  架构、目录与接入
 │  ├─ BATTLE-ADVISOR-MODEL.md  阿策模型配置、可见战况与回退边界
 │  ├─ BATTLE-EVENT-ALLIES.md
@@ -111,6 +112,7 @@ stray-kitty/
 ├─ specs/
 │  └─ night-market/
 ├─ tests/  自动验证
+│  ├─ advisor-sdk/
 │  ├─ battle/
 │  └─ e2e/  浏览器流程
 ├─ web/  浏览器前端
@@ -153,6 +155,7 @@ stray-kitty/
 │     ├─ examples/  参考实现
 │     │  └─ demo/  可替换的贯通 Demo
 │     ├─ modules/  正式模块接入口
+│     │  ├─ advisor/
 │     │  ├─ battle/  塔防 · 闫琦雯
 │     │  │  ├─ assets/
 │     │  │  ├─ chapter/  第一章紧凑棋盘、四猫与固定首领

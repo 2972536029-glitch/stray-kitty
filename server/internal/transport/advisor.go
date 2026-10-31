@@ -37,7 +37,11 @@ func (a *API) advise(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, r, domain.Fail("INVALID_ADVISOR_REQUEST", "军师请求必须为对象", 400))
 		return
 	}
-	for _, field := range []string{"attemptId", "stageId", "question", "context"} {
+	required := []string{"attemptId", "stageId", "question", "context"}
+	if input.Scope == "journey" {
+		required = []string{"sceneKey", "expectedRevision", "question", "context"}
+	}
+	for _, field := range required {
 		value, exists := fields[field]
 		if !exists || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
 			a.fail(w, r, domain.Fail("INVALID_ADVISOR_REQUEST", "军师请求缺少必要字段", 400))
