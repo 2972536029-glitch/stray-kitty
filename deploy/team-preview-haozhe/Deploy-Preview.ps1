@@ -1,138 +1,390 @@
 <#
 .SYNOPSIS
-  haozhe-wang 试玩实例一键部署/更新(三服务:前端/游戏/支付)。
+  Build and deploy the three-service team preview from one immutable Git commit.
 
 .DESCRIPTION
-  从指定提交(默认最新 origin/main)构建三个镜像(前端 nginx、游戏 API、支付服务)、
-  推送 GitLab Registry、渲染清单并更新集群。常规更新对三个 Deployment 原地滚动
-  (Recreate 短暂停机;游戏存档与支付账本分别在各自 PVC 上,不受影响,公网 IP 不变)。
-  首次部署加 -Init,额外创建拉取镜像 Secret。本脚本不改代码、不建 MR——代码合入 main 仍是前置条件。
+  All build inputs and Kubernetes release files (Dockerfiles, dockerignore files,
+  release settings, renderer, validator and manifest template) are read from the
+  detached worktree for the selected commit. The invoking checkout is used only
+  for this deployment runner and for storing the local release archive.
 
 .EXAMPLE
-  pwsh -File deploy/team-preview-haozhe/Deploy-Preview.ps1                 # 部署最新 main
-  pwsh -File deploy/team-preview-haozhe/Deploy-Preview.ps1 -Commit <sha>   # 部署指定提交
-  pwsh -File deploy/team-preview-haozhe/Deploy-Preview.ps1 -Init           # 首次部署(含拉取 Secret)
+  pwsh -File deploy/team-preview-haozhe/Deploy-Preview.ps1
+  pwsh -File deploy/team-preview-haozhe/Deploy-Preview.ps1 -Commit <full-sha>
+  pwsh -File deploy/team-preview-haozhe/Deploy-Preview.ps1 -Init
 #>
 [CmdletBinding()]
 param(
-  [string]$Commit,
-  [switch]$Init,
-  [string]$KubeConfig
+    [ValidatePattern('^[a-fA-F0-9]{40}$')][string]$Commit,
+    [switch]$Init,
+    [string]$KubeConfig
 )
+
 $ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
 $bundle = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $bundle '../..')).Path
-$settings = Get-Content -LiteralPath (Join-Path $bundle 'release-settings.json') -Raw | ConvertFrom-Json
-$context = $settings.context
-$namespace = $settings.namespace
-if (-not $KubeConfig) {
-  if ($env:KUBECONFIG) { $KubeConfig = ($env:KUBECONFIG -split ';')[0] }
-  else { $KubeConfig = Join-Path $env:USERPROFILE 'Desktop/xsolla/cn-haozhe-wang.kubeconfig' }
+$commonPath = Join-Path $bundle 'Release.Common.ps1'
+if (-not (Test-Path -LiteralPath $commonPath)) {
+    throw "Missing release helper: $commonPath"
 }
-if (-not (Test-Path -LiteralPath $KubeConfig)) { throw "找不到 kubeconfig: $KubeConfig（用 -KubeConfig 指定）" }
-$env:KUBECONFIG = $KubeConfig
-$kube = @('-n', $namespace, '--context', $context)
+. $commonPath
 
-function Step([string]$m) { Write-Host ("==> " + $m) -ForegroundColor Cyan }
-function GitCredential() {
-  $psi = [System.Diagnostics.ProcessStartInfo]::new()
-  $psi.FileName = 'git'; $psi.Arguments = 'credential fill'
-  $psi.RedirectStandardInput = $true; $psi.RedirectStandardOutput = $true; $psi.UseShellExecute = $false
-  $p = [System.Diagnostics.Process]::Start($psi)
-  $p.StandardInput.Write("protocol=https`nhost=school-gitlab.xsolla.dev`n`n")
-  $p.StandardInput.Close(); $out = $p.StandardOutput.ReadToEnd(); $p.WaitForExit()
-  $u = $null; $pw = $null
-  foreach ($line in ($out -split "`n")) {
-    $l = $line.TrimEnd("`r")
-    if ($l -like 'username=*') { $u = $l.Substring(9) }
-    if ($l -like 'password=*') { $pw = $l.Substring(9) }
-  }
-  if (-not $u -or -not $pw) { throw '无法从 git 凭据助手取得 registry 凭据' }
-  [pscustomobject]@{User = $u; Password = $pw}
+$worktree = $null
+$worktreeCreated = $false
+$renderedDirectory = $null
+$archiveDirectory = $null
+$releaseRecord = $null
+$releaseArchivePath = $null
+$releaseRenderedPath = $null
+$currentPhase = 'preflight'
+$exitCode = 0
+$credential = $null
+$registryAuth = $null
+$loginInput = $null
+
+function Step([string]$Message) {
+    Write-Host ("==> " + $Message) -ForegroundColor Cyan
 }
 
-Step '获取发布提交'
-git -C $repoRoot fetch origin main | Out-Null
-if (-not $Commit) { $Commit = (git -C $repoRoot rev-parse origin/main).Trim() }
-$short = $Commit.Substring(0, 7)
-Write-Host "发布提交: $Commit"
-
-Step '准备干净构建目录(worktree)'
-$wt = Join-Path $env:TEMP 'stray-kitty-deploy-wt'
-git -C $repoRoot worktree remove $wt --force 2>$null
-git -C $repoRoot worktree add --detach $wt $Commit | Out-Null
-try {
-  Step '登录 GitLab Registry'
-  $cred = GitCredential
-  $pwFile = Join-Path $env:TEMP ('.reg-pw-' + [Guid]::NewGuid().ToString('N'))
-  [IO.File]::WriteAllText($pwFile, $cred.Password + "`n", [Text.UTF8Encoding]::new($false))
-  try { Get-Content -LiteralPath $pwFile | docker login school-gitlab.xsolla.dev:5050 -u $cred.User --password-stdin | Out-Null }
-  finally { Remove-Item -LiteralPath $pwFile -Force }
-
-  # 三个服务:名称 → (镜像仓库, Dockerfile)。构建上下文都是仓库根。
-  $services = [ordered]@{
-    game     = @{ Repo = $settings.images.game;     Dockerfile = 'Dockerfile.game' }
-    payment  = @{ Repo = $settings.images.payment;  Dockerfile = 'Dockerfile.payment' }
-    frontend = @{ Repo = $settings.images.frontend; Dockerfile = 'Dockerfile.frontend' }
-  }
-  $digests = @{}
-  foreach ($name in $services.Keys) {
-    $svc = $services[$name]
-    Step ("构建镜像 " + $name)
-    $tag = "$($svc.Repo):$Commit"
-    docker build --platform linux/amd64 --build-arg "BUILD_REVISION=$Commit" -f (Join-Path $bundle $svc.Dockerfile) -t $tag $wt 2>&1 | Select-Object -Last 3 | Write-Host
-    if ($LASTEXITCODE -ne 0) { throw ("镜像构建失败: " + $name) }
-    Step ("推送镜像 " + $name)
-    $digest = $null
-    docker push $tag 2>&1 | ForEach-Object { if ($_ -match 'digest: (sha256:[a-f0-9]{64})') { $digest = $Matches[1] } }
-    if (-not $digest) { throw ("推送失败或未取得 digest: " + $name) }
-    $digests[$name] = "$($svc.Repo)@$digest"
-    Write-Host ("镜像 " + $name + ": " + $digests[$name])
-  }
-
-  Step '渲染部署清单'
-  $rendered = Join-Path $bundle 'rendered'
-  & (Join-Path $bundle 'Prepare-Preview.ps1') -GameImage $digests.game -PaymentImage $digests.payment -FrontendImage $digests.frontend -SourceCommit $Commit -OutputDirectory $rendered | Out-Null
-
-  if ($Init) {
-    Step '创建拉取镜像 Secret'
-    $secretName = $settings.registrySecret
-    $existing = kubectl @kube get secret $secretName --ignore-not-found -o name 2>$null
-    if ($existing) { Write-Host "Secret $secretName 已存在，跳过" }
-    else {
-      $auth = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($cred.User + ':' + $cred.Password))
-      $cfg = @{auths = @{'school-gitlab.xsolla.dev:5050' = @{auth = $auth}}} | ConvertTo-Json -Compress
-      $cfgFile = Join-Path $env:TEMP ('.dockercfg-' + [Guid]::NewGuid().ToString('N'))
-      [IO.File]::WriteAllText($cfgFile, $cfg, [Text.UTF8Encoding]::new($false))
-      try { kubectl @kube create secret generic $secretName --from-file=".dockerconfigjson=$cfgFile" --type=kubernetes.io/dockerconfigjson | Out-Host }
-      finally { Remove-Item -LiteralPath $cfgFile -Force }
+function Get-RegistryCredential {
+    $request = "protocol=https" + [Environment]::NewLine + "host=school-gitlab.xsolla.dev" + [Environment]::NewLine + [Environment]::NewLine
+    $result = Invoke-NativeChecked -FilePath 'git' -Arguments @('credential', 'fill') -Step 'Read Git registry credentials' -StandardInput $request -Quiet
+    $username = $null
+    $password = $null
+    foreach ($line in ($result.StdOut -split "\r?\n")) {
+        if ($line -like 'username=*') { $username = $line.Substring(9) }
+        if ($line -like 'password=*') { $password = $line.Substring(9) }
     }
-  }
+    if ([string]::IsNullOrWhiteSpace($username) -or [string]::IsNullOrWhiteSpace($password)) {
+        throw 'Git credential helper did not return a registry username and password.'
+    }
+    return [pscustomobject]@{ User = $username; Password = $password }
+}
 
-  Step '应用清单(2 PVC + 3 Deployment + 3 Service)'
-  $manifestPath = Join-Path $rendered 'preview.json'
-  kubectl @kube apply -f $manifestPath | Out-Host
+function Save-ReleaseRecord {
+    if ($null -eq $script:releaseRecord) { return }
+    if ($script:releaseArchivePath) {
+        Write-JsonAtomically -Path $script:releaseArchivePath -Value $script:releaseRecord
+    }
+    if ($script:releaseRenderedPath) {
+        Write-JsonAtomically -Path $script:releaseRenderedPath -Value $script:releaseRecord
+    }
+}
 
-  Step '清理单体时代遗留 Deployment(若存在)'
-  kubectl @kube delete deployment stray-kitty-preview --ignore-not-found | Out-Host
+try {
+    if ($PSVersionTable.PSVersion.Major -lt 7) {
+        throw 'PowerShell 7 or later is required.'
+    }
 
-  foreach ($name in @('stray-kitty-payment', 'stray-kitty-game', 'stray-kitty-frontend')) {
-    Step ("等待滚动完成 " + $name)
-    kubectl @kube rollout status deployment/$name --timeout=300s | Out-Host
-  }
+    foreach ($tool in @('git', 'docker', 'kubectl')) {
+        $null = Get-Command -Name $tool -CommandType Application -ErrorAction Stop
+    }
 
-  Step '验证'
-  $ip = (kubectl @kube get service stray-kitty-preview -o jsonpath='{.status.loadBalancer.ingress[0].ip}').Trim()
-  if (-not $ip) { Write-Host 'Service 尚无公网 IP(首次部署需等待分配,稍后 kubectl get svc 查看)'; }
-  else {
-    $health = Invoke-RestMethod -Uri "http://$ip/healthz" -TimeoutSec 20
-    Write-Host ("healthz: " + ($health | ConvertTo-Json -Compress))
-    Write-Host "线上地址: http://$ip" -ForegroundColor Green
-  }
-  Write-Host "`n部署完成：commit $short"
-  Write-Host ("  game     -> " + $digests.game)
-  Write-Host ("  payment  -> " + $digests.payment)
-  Write-Host ("  frontend -> " + $digests.frontend)
+    if (-not $Commit) {
+        $currentPhase = 'fetch origin/main'
+        Step 'Refresh origin/main'
+        $null = Invoke-NativeChecked -FilePath 'git' -Arguments @('-C', $repoRoot, 'fetch', 'origin', 'main') -Step 'git fetch origin main'
+        $resolved = Invoke-NativeChecked -FilePath 'git' -Arguments @('-C', $repoRoot, 'rev-parse', '--verify', 'origin/main^{commit}') -Step 'Resolve origin/main' -Quiet
+        $Commit = $resolved.StdOut.Trim()
+    } else {
+        $currentPhase = 'resolve requested commit'
+        $resolved = Invoke-NativeChecked -FilePath 'git' -Arguments @('-C', $repoRoot, 'rev-parse', '--verify', "$Commit^{commit}") -Step 'Resolve requested commit' -Quiet
+        $Commit = $resolved.StdOut.Trim()
+    }
+
+    if ($Commit -notmatch '^[a-f0-9]{40}$') {
+        throw "Resolved commit is not a full 40-character SHA: $Commit"
+    }
+    $shortCommit = $Commit.Substring(0, 7)
+    Write-Host "Release commit: $Commit"
+
+    $runId = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')
+    $worktree = Join-Path $env:TEMP ("stray-kitty-deploy-" + $Commit.Substring(0, 12) + "-" + [Guid]::NewGuid().ToString('N'))
+    $currentPhase = 'create detached worktree'
+    Step 'Create isolated source worktree'
+    $null = Invoke-NativeChecked -FilePath 'git' -Arguments @('-C', $repoRoot, 'worktree', 'add', '--detach', $worktree, $Commit) -Step 'git worktree add'
+    $worktreeCreated = $true
+
+    $worktreeBundle = Join-Path $worktree 'deploy/team-preview-haozhe'
+    $requiredFiles = @(
+        'release-settings.json',
+        'Prepare-Preview.ps1',
+        'Test-PreviewConfig.ps1',
+        'k8s/preview.template.json',
+        'Dockerfile.game',
+        'Dockerfile.game.dockerignore',
+        'Dockerfile.payment',
+        'Dockerfile.payment.dockerignore',
+        'Dockerfile.frontend',
+        'Dockerfile.frontend.dockerignore'
+    )
+    foreach ($relativePath in $requiredFiles) {
+        $candidate = Join-Path $worktreeBundle $relativePath
+        if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+            throw "Selected commit is missing required release input: $relativePath"
+        }
+    }
+
+    $worktreeHead = Invoke-NativeChecked -FilePath 'git' -Arguments @('-C', $worktree, 'rev-parse', 'HEAD') -Step 'Verify worktree commit' -Quiet
+    if ($worktreeHead.StdOut.Trim() -ne $Commit) {
+        throw 'Detached worktree HEAD does not match the selected release commit.'
+    }
+
+    $settings = Get-Content -LiteralPath (Join-Path $worktreeBundle 'release-settings.json') -Raw | ConvertFrom-Json
+    $context = [string]$settings.context
+    $namespace = [string]$settings.namespace
+    if ([string]::IsNullOrWhiteSpace($context) -or [string]::IsNullOrWhiteSpace($namespace)) {
+        throw 'release-settings.json must define both context and namespace.'
+    }
+    foreach ($name in @('game', 'payment', 'frontend')) {
+        if ([string]::IsNullOrWhiteSpace([string]$settings.images.$name)) {
+            throw "release-settings.json is missing images.$name."
+        }
+    }
+    if ($Init -and [string]::IsNullOrWhiteSpace([string]$settings.registrySecret)) {
+        throw 'release-settings.json is missing registrySecret required by -Init.'
+    }
+
+    if (-not $KubeConfig) {
+        if ($env:KUBECONFIG) {
+            $KubeConfig = ($env:KUBECONFIG -split ';')[0]
+        } else {
+            $KubeConfig = Join-Path $env:USERPROFILE 'Desktop/xsolla/cn-haozhe-wang.kubeconfig'
+        }
+    }
+    if (-not (Test-Path -LiteralPath $KubeConfig -PathType Leaf)) {
+        throw "Kubeconfig not found: $KubeConfig (use -KubeConfig to specify it)."
+    }
+    $env:KUBECONFIG = $KubeConfig
+    $kubeArguments = @('-n', $namespace, '--context', $context)
+
+    $currentPhase = 'registry authentication'
+    Step 'Read GitLab registry credentials and log in'
+    $credential = Get-RegistryCredential
+    if ($Init) {
+        $registryAuth = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($credential.User + ':' + $credential.Password))
+    }
+    $loginInput = $credential.Password + [Environment]::NewLine
+    $null = Invoke-NativeChecked -FilePath 'docker' -Arguments @('login', 'school-gitlab.xsolla.dev:5050', '-u', $credential.User, '--password-stdin') -Step 'docker login' -StandardInput $loginInput -Quiet
+    $loginInput = $null
+    $credential.Password = $null
+    $credential = $null
+    Write-Host 'GitLab Registry login succeeded.'
+
+    $services = [ordered]@{
+        game = @{ Repository = [string]$settings.images.game; Dockerfile = 'Dockerfile.game' }
+        payment = @{ Repository = [string]$settings.images.payment; Dockerfile = 'Dockerfile.payment' }
+        frontend = @{ Repository = [string]$settings.images.frontend; Dockerfile = 'Dockerfile.frontend' }
+    }
+    $digests = @{}
+
+    foreach ($name in $services.Keys) {
+        $service = $services[$name]
+        $dockerfile = Join-Path $worktreeBundle $service.Dockerfile
+        $tag = "$($service.Repository):$Commit"
+
+        $currentPhase = "build $name image"
+        Step "Build $name image from commit $shortCommit"
+        $null = Invoke-NativeChecked -FilePath 'docker' -Arguments @(
+            'build', '--platform', 'linux/amd64',
+            '--build-arg', "BUILD_REVISION=$Commit",
+            '-f', $dockerfile, '-t', $tag, $worktree
+        ) -Step "docker build ($name)" -TailLines 12
+
+        $currentPhase = "push $name image"
+        Step "Push $name image"
+        $push = Invoke-NativeChecked -FilePath 'docker' -Arguments @('push', $tag) -Step "docker push ($name)" -TailLines 12
+        $pushText = $push.StdOut + [Environment]::NewLine + $push.StdErr
+        $digestMatch = [regex]::Match($pushText, 'digest: (sha256:[a-f0-9]{64})')
+        if (-not $digestMatch.Success) {
+            throw "docker push ($name) succeeded but did not report a SHA-256 digest."
+        }
+        $digests[$name] = "$($service.Repository)@$($digestMatch.Groups[1].Value)"
+        Write-Host ("$name -> " + $digests[$name])
+    }
+
+    $currentPhase = 'render and validate release manifest'
+    Step 'Render manifest using files from the selected commit'
+    $renderedDirectory = Join-Path $env:TEMP ("stray-kitty-render-" + [Guid]::NewGuid().ToString('N'))
+    $prepareScript = Join-Path $worktreeBundle 'Prepare-Preview.ps1'
+    $prepareArguments = @{
+        GameImage = $digests.game
+        PaymentImage = $digests.payment
+        FrontendImage = $digests.frontend
+        SourceCommit = $Commit
+        OutputDirectory = $renderedDirectory
+    }
+    $prepareOutput = & $prepareScript @prepareArguments
+    if (-not $?) {
+        throw 'Prepare-Preview.ps1 failed.'
+    }
+    $prepareOutput | ForEach-Object { Write-Host $_ }
+
+    $manifestPath = Join-Path $renderedDirectory 'preview.json'
+    $preparedReleasePath = Join-Path $renderedDirectory 'release.json'
+    foreach ($path in @($manifestPath, $preparedReleasePath)) {
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+            throw "Release renderer did not produce required file: $path"
+        }
+    }
+    $manifestHash = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+
+    $archiveDirectory = Join-Path $bundle ("releases/" + $Commit + "/" + $runId)
+    $null = New-Item -ItemType Directory -Path $archiveDirectory -Force
+    $releaseArchivePath = Join-Path $archiveDirectory 'release.json'
+    $releaseRenderedPath = $preparedReleasePath
+    Copy-Item -LiteralPath $manifestPath -Destination (Join-Path $archiveDirectory 'preview.json') -Force
+    Copy-Item -LiteralPath $preparedReleasePath -Destination $releaseArchivePath -Force
+
+    $releaseRecord = Get-Content -LiteralPath $releaseArchivePath -Raw | ConvertFrom-Json
+    if ($releaseRecord.sourceCommit -ne $Commit -or $releaseRecord.manifestSha256 -ne $manifestHash) {
+        throw 'Release record does not match the rendered commit or manifest hash.'
+    }
+    $releaseRecord.status = 'deploying'
+    $releaseRecord.clusterContacted = $false
+    $releaseRecord.credentialsRead = $true
+    $archiveRelativePath = 'releases/' + $Commit + '/' + $runId
+    $releaseRecord | Add-Member -NotePropertyName archiveDirectory -NotePropertyValue $archiveRelativePath -Force
+    $releaseRecord | Add-Member -NotePropertyName deployment -NotePropertyValue ([pscustomobject]@{
+        status = 'deploying'
+        startedAtUtc = [DateTime]::UtcNow.ToString('o')
+        finishedAtUtc = $null
+        context = $context
+        namespace = $namespace
+        failurePhase = $null
+    }) -Force
+    Save-ReleaseRecord
+    Write-Host "Local release archive: $archiveDirectory"
+
+    $currentPhase = 'apply Kubernetes resources'
+    $releaseRecord.clusterContacted = $true
+    Save-ReleaseRecord
+    if ($Init) {
+        Step 'Ensure registry image-pull Secret exists'
+        $secretName = [string]$settings.registrySecret
+        $existingSecret = Invoke-NativeChecked -FilePath 'kubectl' -Arguments ($kubeArguments + @('get', 'secret', $secretName, '--ignore-not-found', '-o', 'name')) -Step 'kubectl get registry Secret' -TailLines 5
+        if ([string]::IsNullOrWhiteSpace($existingSecret.StdOut)) {
+            $dockerConfig = @{ auths = @{ 'school-gitlab.xsolla.dev:5050' = @{ auth = $registryAuth } } } | ConvertTo-Json -Compress
+            $configPath = Join-Path $env:TEMP ('.dockercfg-' + [Guid]::NewGuid().ToString('N'))
+            try {
+                [IO.File]::WriteAllText($configPath, $dockerConfig, [Text.UTF8Encoding]::new($false))
+                $null = Invoke-NativeChecked -FilePath 'kubectl' -Arguments ($kubeArguments + @('create', 'secret', 'generic', $secretName, "--from-file=.dockerconfigjson=$configPath", '--type=kubernetes.io/dockerconfigjson')) -Step 'kubectl create registry Secret'
+            } finally {
+                if (Test-Path -LiteralPath $configPath) { Remove-Item -LiteralPath $configPath -Force }
+                $dockerConfig = $null
+            }
+        } else {
+            Write-Host "Registry Secret $secretName already exists; skipping creation."
+        }
+        $registryAuth = $null
+    }
+
+    Step 'Apply the two PVCs, three Deployments and three Services'
+    $null = Invoke-NativeChecked -FilePath 'kubectl' -Arguments ($kubeArguments + @('apply', '-f', $manifestPath)) -Step 'kubectl apply'
+
+    $currentPhase = 'remove legacy single-service Deployment'
+    Step 'Remove legacy single-service Deployment if present'
+    $null = Invoke-NativeChecked -FilePath 'kubectl' -Arguments ($kubeArguments + @('delete', 'deployment', 'stray-kitty-preview', '--ignore-not-found')) -Step 'kubectl delete legacy Deployment'
+
+    foreach ($name in @('stray-kitty-payment', 'stray-kitty-game', 'stray-kitty-frontend')) {
+        $currentPhase = "rollout $name"
+        Step "Wait for $name rollout"
+        $null = Invoke-NativeChecked -FilePath 'kubectl' -Arguments ($kubeArguments + @('rollout', 'status', "deployment/$name", '--timeout=300s')) -Step "kubectl rollout status ($name)"
+    }
+
+    $currentPhase = 'verify payment readiness'
+    Step 'Verify payment service readiness endpoint'
+    $paymentReadyResult = Invoke-NativeChecked -FilePath 'kubectl' -Arguments ($kubeArguments + @('exec', 'deployment/stray-kitty-payment', '--', 'wget', '-qO-', 'http://127.0.0.1:8082/readyz')) -Step 'Payment /readyz' -TailLines 5
+    $paymentReady = $paymentReadyResult.StdOut | ConvertFrom-Json
+    if ($paymentReady.status -ne 'ready' -or $paymentReady.storage -ne 'payment-ledger') {
+        throw 'Payment /readyz did not confirm ready payment-ledger storage.'
+    }
+
+    $currentPhase = 'wait for frontend LoadBalancer IP'
+    Step 'Wait for frontend public IP'
+    $ip = $null
+    for ($attempt = 1; $attempt -le 24; $attempt++) {
+        $serviceResult = Invoke-NativeChecked -FilePath 'kubectl' -Arguments ($kubeArguments + @('get', 'service', 'stray-kitty-preview', '-o', 'jsonpath={.status.loadBalancer.ingress[0].ip}')) -Step 'Read frontend LoadBalancer IP' -TailLines 3
+        $ip = $serviceResult.StdOut.Trim()
+        if ($ip) { break }
+        if ($attempt -lt 24) {
+            Write-Host "LoadBalancer IP is not assigned yet ($attempt/24); retrying in 5 seconds."
+            Start-Sleep -Seconds 5
+        }
+    }
+    if (-not $ip) {
+        throw 'Frontend LoadBalancer did not receive a public IP within 120 seconds.'
+    }
+
+    $currentPhase = 'verify public health endpoint'
+    Step 'Verify public /healthz'
+    $health = Invoke-RestMethod -Uri "http://$ip/healthz" -TimeoutSec 20 -ErrorAction Stop
+    if ($health.status -ne 'ok') {
+        throw 'Public /healthz did not return status=ok.'
+    }
+
+    $releaseRecord.status = 'deployed'
+    $releaseRecord.deployment.status = 'deployed'
+    $releaseRecord.deployment.finishedAtUtc = [DateTime]::UtcNow.ToString('o')
+    $releaseRecord | Add-Member -NotePropertyName publicAddress -NotePropertyValue "http://$ip" -Force
+    $releaseRecord | Add-Member -NotePropertyName paymentReadiness -NotePropertyValue $paymentReady -Force
+    $releaseRecord | Add-Member -NotePropertyName healthCheck -NotePropertyValue $health -Force
+    Save-ReleaseRecord
+
+    Step 'Deployment verified'
+    Write-Host "Commit: $Commit"
+    Write-Host "Public URL: http://$ip" -ForegroundColor Green
+    Write-Host "Release archive: $archiveDirectory"
+    Write-Host 'All three rollouts, payment readiness and public health checks passed.'
+} catch {
+    $exitCode = 1
+    $failureMessage = $_.Exception.Message
+    Write-Host "ERROR during '$currentPhase': $failureMessage" -ForegroundColor Red
+    if ($null -ne $releaseRecord) {
+        try {
+            $releaseRecord.status = 'failed'
+            if ($null -eq $releaseRecord.PSObject.Properties['deployment'] -or $null -eq $releaseRecord.deployment) {
+                $releaseRecord | Add-Member -NotePropertyName deployment -NotePropertyValue ([pscustomobject]@{
+                    status = 'failed'
+                    startedAtUtc = $null
+                    finishedAtUtc = $null
+                    context = $null
+                    namespace = $null
+                    failurePhase = $currentPhase
+                }) -Force
+            }
+            $releaseRecord.deployment.status = 'failed'
+            $releaseRecord.deployment.failurePhase = $currentPhase
+            $releaseRecord.deployment.finishedAtUtc = [DateTime]::UtcNow.ToString('o')
+            Save-ReleaseRecord
+        } catch {
+            Write-Warning 'Could not update the local release record after failure.'
+        }
+    }
 } finally {
-  git -C $repoRoot worktree remove $wt --force 2>$null
+    $loginInput = $null
+    if ($null -ne $credential) {
+        $credential.Password = $null
+        $credential = $null
+    }
+    $registryAuth = $null
+    if ($worktreeCreated -and $worktree -and (Test-Path -LiteralPath $worktree)) {
+        try {
+            $null = Invoke-NativeChecked -FilePath 'git' -Arguments @('-C', $repoRoot, 'worktree', 'remove', '--force', $worktree) -Step 'Clean up detached worktree' -Quiet
+            Write-Host 'Temporary worktree removed.'
+        } catch {
+            Write-Warning "Could not remove temporary worktree: $worktree"
+        }
+    }
+    if ($renderedDirectory -and (Test-Path -LiteralPath $renderedDirectory)) {
+        try { Remove-Item -LiteralPath $renderedDirectory -Recurse -Force } catch {
+            Write-Warning "Could not remove temporary render directory: $renderedDirectory"
+        }
+    }
+}
+
+if ($exitCode -ne 0) {
+    exit $exitCode
 }
