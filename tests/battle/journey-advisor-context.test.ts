@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import type {Catalog, GameState, EventDefinition} from '../../web/src/contracts/index.ts';
 import {buildJourneyAdvisorContext, getJourneyLocalAnswer, journeySceneKey, journeySceneLabel} from '../../web/src/modules/advisor/journey-context.ts';
 
@@ -80,6 +81,11 @@ test('warehouse gates distinguish clues from unfinished rescue and do not disclo
   assert.match(answer({...rescued, flags: ['tunnel_explored'], inventory: {clue: 5}}, '可以进仓库吗'), /救援尚未全部完成/);
   assert.match(answer(state(), '有几条线索'), /当前有2条线索/);
   assert.doesNotMatch(answer(state(), '有几条线索'), /仓库|第五章|3条/);
+  const inside = state({phase: 'explore', chapterId: 'finale', mapId: 'warehouse', flags: ['finale_started', 'tunnel_explored', 'cats_rescued_batch1'], inventory: {clue: 3}});
+  assert.match(answer(inside, '仓库里往哪走'), /探索仓库.*北侧首领/);
+  assert.doesNotMatch(answer(inside, '仓库里往哪走'), /从家园的第五章入口/);
+  assert.match(answer(inside, '目前几条线索'), /当前有3条线索/);
+  assert.doesNotMatch(answer(inside, '目前几条线索'), /首次进入仓库/);
 });
 
 test('home repair summary uses current project parts, resources and prerequisites only', () => {
@@ -117,4 +123,108 @@ test('large catalog data stays bounded and cannot leak full content through loca
   const text = buildJourneyAdvisorContext(s, c), reply = getJourneyLocalAnswer(s, c, '怎么选');
   assert.ok(text.length < 24000); assert.ok(Array.from(reply.text).length <= 1200);
   assert.doesNotMatch(text, /HIDDEN_|SECRET_/);
+});
+
+test('journey roster explicitly separates known characters from combatants and keeps Miaomiao protected', () => {
+  const c = catalog(); c.cats.push({id: 'miaomiao', name: '喵喵', color: '', description: '', skill: ''});
+  const s = state({cats: ['miaomiao', 'tuanzi', 'diandian']}), snapshot = read(s, c);
+  assert.deepEqual(snapshot.已结识伙伴, ['喵喵', '团子', '点点']);
+  assert.match(snapshot.伙伴名单说明, /不是当前出战名单/);
+  assert.match(snapshot.伙伴名单说明, /喵喵是保护目标，全程不参战/);
+  assert.match(snapshot.伙伴名单说明, /当前战斗快照/);
+  const reply = getJourneyLocalAnswer(s, c, '喵喵能参战吗').text;
+  assert.match(reply, /全程不参战/); assert.doesNotMatch(reply, /出战.*3只/);
+});
+
+test('market advice explicitly forbids direct home return without inventing a UI button', () => {
+  for (const phase of ['explore', 'preparation'] as const) {
+    const s = state({phase, flags: ['market_cleared']});
+    assert.match(read(s).集市离开规则, /不能直接回家.*北侧出口/);
+    const reply = answer(s, '怎么回花房');
+    assert.match(reply, /不能直接回家/); assert.match(reply, /已经守住集市防线.*北侧出口/);
+    assert.doesNotMatch(reply, /点击.*回家|没有.*按钮|不存在.*按钮/);
+  }
+  assert.match(answer(state(), '怎么回家'), /还没有完成集市防卫/);
+  const trial = state({phase: 'settlement', lastResult: {message: '胜利', stageId: 'market_boss', outcome: 'won'}, activeBattle: {id: 'trial', stageId: 'market_boss', status: 'won', mainline: false}});
+  assert.equal(read(trial).集市离开规则, undefined);
+  assert.match(answer(trial, '能回家吗'), /返回家园/); assert.doesNotMatch(answer(trial, '能回家吗'), /必须.*北侧出口/);
+  const mainline = {...trial, activeBattle: {...trial.activeBattle!, mainline: true}};
+  assert.match(answer(mainline, '能回家吗'), /返回集市探索.*北侧出口/);
+});
+
+test('resource labels have fixed player-facing names even if catalog item labels differ', () => {
+  const c = catalog(); c.items = ['food', 'material', 'clue', 'stamp', 'tuna'].map(id => ({id, name: `WRONG_${id}`, description: ''}));
+  const s = state({inventory: {food: 2, material: 3, clue: 4}, currencies: {stamp: 5, tuna: 6}}), snapshot = read(s, c);
+  assert.deepEqual(snapshot.资源名称对照, {food: '鱼干', material: '修缮材料', clue: '线索', stamp: '猫爪邮票', tuna: '金枪鱼罐头'});
+  assert.deepEqual([...snapshot.已有物品, ...snapshot.资源].map((r: {名称: string}) => r.名称), ['鱼干', '修缮材料', '线索', '猫爪邮票', '金枪鱼罐头']);
+  const reply = getJourneyLocalAnswer(s, c, '有多少物品和资源').text;
+  assert.match(reply, /鱼干2、修缮材料3、线索4、猫爪邮票5、金枪鱼罐头6/); assert.doesNotMatch(reply, /WRONG_/);
+});
+
+test('actual seal_windows dry_bedding chain costs ten materials and subtracts one balance just once', () => {
+  const c = catalog(); c.renovations = JSON.parse(readFileSync(new URL('../../web/content/home/renovations.json', import.meta.url), 'utf8'));
+  const s = state({phase: 'home', mapId: 'greenhouse', inventory: {material: 1}}), project = read(s, c).家园修缮;
+  const bedding = project.部件.find((p: {名称: string}) => p.名称 === '排干积水、铺好干草').完成本部件所需;
+  assert.equal(bedding.已核实, true);
+  assert.deepEqual(bedding.修缮顺序, ['修补破损窗框', '堵住屋顶漏缝', '排干积水、铺好干草']);
+  assert.deepEqual(bedding.累计资源, [{名称: '修缮材料', 总需要: 10, 现有余额: 1, 总缺口: 9}]);
+  assert.deepEqual(project.剩余工程.累计资源, bedding.累计资源);
+  for (const question of ['排干积水要多少材料', '封窗止水总共还缺多少材料']) {
+    const reply = getJourneyLocalAnswer(s, c, question).text;
+    assert.match(reply, /总共需要10，现有1，还差9/); assert.match(reply, /余额只抵扣一次/);
+  }
+  const remaining = read({...s, homeRepairs: ['patch_windows']}, c).家园修缮.部件.find((p: {名称: string}) => p.名称 === '排干积水、铺好干草').完成本部件所需;
+  assert.deepEqual(remaining.累计资源, [{名称: '修缮材料', 总需要: 6, 现有余额: 1, 总缺口: 5}]);
+});
+
+test('shared repair prerequisites are counted once per resource and completed prerequisites are free', () => {
+  const c = catalog(), part = (id: string, material: number, stamp = 0, requires: string[] = []) => ({id, name: id, description: '', x: 0, y: 0, cost: {material, stamp}, requires});
+  c.renovations = [{id: 'diamond', name: '共享前置工程', stage: 2, grantsFlag: 'done', parts: [part('base', 2, 1), part('left', 3, 0, ['base']), part('right', 5, 1, ['base']), part('top', 7, 1, ['left', 'right'])]}];
+  const s = state({phase: 'home', inventory: {material: 1}, currencies: {stamp: 2}});
+  const plan = read(s, c).家园修缮.部件.find((p: {名称: string}) => p.名称 === 'top').完成本部件所需;
+  assert.deepEqual(plan.修缮顺序, ['base', 'left', 'right', 'top']);
+  assert.deepEqual(plan.累计资源, [{名称: '修缮材料', 总需要: 17, 现有余额: 1, 总缺口: 16}, {名称: '猫爪邮票', 总需要: 3, 现有余额: 2, 总缺口: 1}]);
+  const completed = read({...s, homeRepairs: ['base']}, c).家园修缮.剩余工程;
+  assert.deepEqual(completed.修缮顺序, ['left', 'right', 'top']);
+  assert.deepEqual(completed.累计资源, [{名称: '修缮材料', 总需要: 15, 现有余额: 1, 总缺口: 14}, {名称: '猫爪邮票', 总需要: 2, 现有余额: 2, 总缺口: 0}]);
+});
+
+test('invalid repair dependencies never report a misleading partial total', () => {
+  for (const kind of ['cycle', 'missing', 'duplicate', 'negative', 'overflow']) {
+    const c = catalog(), parts = c.renovations![1].parts!;
+    if (kind === 'cycle') parts[0].requires = ['floor'];
+    if (kind === 'missing') parts[1].requires = ['unknown_part'];
+    if (kind === 'duplicate') parts.push({...parts[0]});
+    if (kind === 'negative') parts[0].cost.material = -1;
+    if (kind === 'overflow') parts[0].cost.material = Number.MAX_SAFE_INTEGER;
+    const s = state({phase: 'home'}), plan = read(s, c).家园修缮.部件[1].完成本部件所需;
+    assert.equal(plan.已核实, false, kind); assert.equal(plan.累计资源, undefined, kind);
+    assert.match(getJourneyLocalAnswer(s, c, '怎么修地板').text, /无法可靠计算|不能给出未经核实的总数/, kind);
+  }
+});
+
+test('public dice thresholds are available without exposing hidden event outcomes', () => {
+  const s = state({phase: 'event', pendingEventId: 'current_event'}), snapshot = read(s);
+  assert.deepEqual(snapshot.当前事件.公开点数档位, [{点数: '12', 档位: '大成功'}, {点数: '9–11', 档位: '成功'}, {点数: '5–8', 档位: '成功但有代价'}, {点数: '2–4', 档位: '失败，局势推进'}]);
+  const reply = answer(s, '骰子几点算成功');
+  assert.match(reply, /12点为大成功.*9–11点为成功.*5–8点为成功但有代价.*2–4点为失败/);
+  assert.doesNotMatch(reply, /HIDDEN_|保证.*老黄/); assert.match(reply, /不保证获得某个隐藏奖励/);
+});
+
+test('narrative food choices remain available with zero inventory and only encouragement has a separate cost', () => {
+  const c = catalog(); c.events[0].options[0].label = '放一点鱼干安抚老黄';
+  const s = state({phase: 'event', pendingEventId: 'current_event', inventory: {food: 0}, pushTokens: 2}), before = structuredClone(s);
+  const serialized = buildJourneyAdvisorContext(s, c), snapshot = JSON.parse(serialized);
+  assert.deepEqual(snapshot.当前事件.可见选项.map((o: {名称: string}) => o.名称), ['放一点鱼干安抚老黄']);
+  assert.match(snapshot.当前事件.普通选项费用, /不要求拥有库存物品.*不扣除库存物品/);
+  assert.match(snapshot.当前事件.普通选项费用, /叙事行动，不是鱼干库存费用/);
+  assert.match(snapshot.当前事件.鼓励费用, /消耗1次鼓励次数.*普通掷骰不消耗鼓励次数/);
+  for (const question of ['鱼干不够还能选吗', '要花几份', '放鱼干会扣库存吗', '这次选项消耗什么']) {
+    const reply = getJourneyLocalAnswer(s, c, question);
+    assert.equal(reply.title, '事件选项与费用');
+    assert.match(reply.text, /鱼干库存为0.*不要求拥有库存物品.*不扣除库存物品/);
+    assert.match(reply.text, /鼓励剩余2次/);
+    assert.doesNotMatch(reply.text, /先收集鱼干|需要至少1份鱼干|HIDDEN_|SECRET_/);
+  }
+  assert.doesNotMatch(serialized, /HIDDEN_|SECRET_/); assert.deepEqual(s, before);
 });

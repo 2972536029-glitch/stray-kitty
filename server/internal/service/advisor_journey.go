@@ -27,12 +27,22 @@ func advisorContextChanged() error {
 func (g *Game) advisorJourneyProgress(s domain.GameState) map[string]any {
 	progress := map[string]any{
 		"phase": s.Phase, "chapterId": s.ChapterID, "mapId": s.MapID,
-		"cats": s.Cats, "knownFlags": s.Flags, "completedStages": s.CompletedStages,
-		"resources":  map[string]int{"food": s.Inventory["food"], "material": s.Inventory["material"], "clue": s.Inventory["clue"], "stamp": s.Currencies["stamp"], "tuna": s.Currencies["tuna"]},
-		"pushTokens": s.PushTokens,
+		"knownCompanionIds": s.Cats, "knownFlags": s.Flags, "completedStages": s.CompletedStages,
+		"companionListMeaning": "仅表示旅程中已结识的伙伴，不是本场出战名单。未提供实际战斗阵容时，不能推断谁上场或有几位主力。",
+		"fixedCharacterRoles":  map[string]string{"喵喵": "全程不参战的保护目标，在后方指挥，不计入战斗主力。", "阿策": "场外顾问，不参战、不计入战斗主力。"},
+		"resources":            map[string]int{"food": s.Inventory["food"], "material": s.Inventory["material"], "clue": s.Inventory["clue"], "stamp": s.Currencies["stamp"], "tuna": s.Currencies["tuna"]},
+		"resourceNames":        map[string]string{"food": "鱼干", "material": "修缮材料", "clue": "线索", "stamp": "猫爪邮票", "tuna": "金枪鱼罐头"},
+		"pushTokens":           s.PushTokens,
 	}
 	if s.ActiveBattle != nil {
-		progress["battle"] = map[string]string{"stageId": s.ActiveBattle.StageID, "status": s.ActiveBattle.Status}
+		progress["battle"] = map[string]any{"stageId": s.ActiveBattle.StageID, "status": s.ActiveBattle.Status, "mainline": s.ActiveBattle.Mainline}
+	}
+	if s.MapID == "market" && (s.Phase == "explore" || s.Phase == "preparation") {
+		progress["navigationRules"] = map[string]any{
+			"canReturnHomeDirectly":  false,
+			"marketDefenseCompleted": domain.Contains(s.Flags, "market_cleared"),
+			"explanation":            "集市探索或准备阶段禁止通过回家按钮直接离开，按钮是否可见不改变此规则。需要完成集市防卫，并从北侧木箱翻越至出口。",
+		}
 	}
 	if s.Phase == "dialogue" {
 		for _, node := range g.Catalog.Story {
@@ -55,7 +65,12 @@ func (g *Game) advisorJourneyProgress(s domain.GameState) map[string]any {
 					options = append(options, map[string]string{"id": option.ID, "label": visible.optionLabel(option.ID)})
 				}
 			}
-			progress["currentEvent"] = map[string]any{"id": event.ID, "title": event.Title, "text": visible.Text, "options": options}
+			progress["currentEvent"] = map[string]any{
+				"id": event.ID, "title": event.Title, "text": visible.Text, "options": options,
+				"selectionInventoryCost": map[string]int{},
+				"selectionRules":         "当前可见普通选项没有库存数量门槛，不扣除鱼干、材料等库存资源。选项中放下鱼干等叙事动作不代表库存成本，不能绑定到玩家现有库存。只有主动选择使用伙伴鼓励时，才在掷骰前单独消耗1次鼓励次数。",
+				"encouragementCost":      map[string]int{"pushTokens": 1},
+			}
 			break
 		}
 	}
@@ -114,18 +129,94 @@ func (g *Game) advisorJourneyProgress(s domain.GameState) map[string]any {
 						affordable = false
 					}
 				}
-				parts = append(parts, map[string]any{"id": part.ID, "name": part.Name, "description": part.Description, "cost": part.Cost, "completed": completed, "unlocked": unlocked, "affordable": affordable, "requires": part.Requires})
+				parts = append(parts, map[string]any{"id": part.ID, "name": part.Name, "description": part.Description, "cost": part.Cost, "completed": completed, "unlocked": unlocked, "affordable": affordable, "requires": part.Requires,
+					"remainingPlan": g.advisorRepairPlan(s, renovation.Parts, []string{part.ID})})
 			}
 			current := map[string]any{"name": renovation.Name, "description": renovation.Description, "parts": parts}
 			// Older catalogs may have only a whole-stage cost; current catalogs use parts.
 			if len(renovation.Parts) == 0 {
 				current["cost"] = renovation.Cost
+				current["remainingPlan"] = g.advisorRepairPlan(s, []domain.HomeRepairPart{{ID: renovation.ID, Name: renovation.Name, Cost: renovation.Cost}}, []string{renovation.ID})
+			} else {
+				targets := make([]string, 0, len(renovation.Parts))
+				for _, part := range renovation.Parts {
+					targets = append(targets, part.ID)
+				}
+				current["remainingPlan"] = g.advisorRepairPlan(s, renovation.Parts, targets)
 			}
 			progress["currentHomeRenovation"] = current
 			break
 		}
 	}
 	return progress
+}
+
+// A plan includes the unfinished targets and all unfinished prerequisites once.
+// It describes current costs; it never spends resources or predicts future income.
+func (g *Game) advisorRepairPlan(s domain.GameState, parts []domain.HomeRepairPart, targets []string) map[string]any {
+	invalid := func(reason string) map[string]any {
+		return map[string]any{"calculable": false, "reason": reason, "explanation": "无法完整核对修缮前置或成本，不提供可能遗漏部分工程的总数。"}
+	}
+	index := map[string]domain.HomeRepairPart{}
+	for _, part := range parts {
+		if _, duplicate := index[part.ID]; part.ID == "" || duplicate {
+			return invalid("invalid_part_graph")
+		}
+		index[part.ID] = part
+	}
+	visited := map[string]int{}
+	ordered := []map[string]string{}
+	cost := map[string]int{}
+	maxInt := int(^uint(0) >> 1)
+	var visit func(string) string
+	visit = func(id string) string {
+		if domain.Contains(s.HomeRepairs, id) {
+			return ""
+		}
+		part, exists := index[id]
+		if !exists {
+			return "missing_dependency"
+		}
+		if visited[id] == 1 {
+			return "dependency_cycle"
+		}
+		if visited[id] == 2 {
+			return ""
+		}
+		visited[id] = 1
+		for _, required := range part.Requires {
+			if reason := visit(required); reason != "" {
+				return reason
+			}
+		}
+		for resource, amount := range part.Cost {
+			if amount < 0 || cost[resource] > maxInt-amount {
+				return "invalid_cost"
+			}
+			cost[resource] += amount
+		}
+		ordered = append(ordered, map[string]string{"id": part.ID, "name": part.Name})
+		visited[id] = 2
+		return ""
+	}
+	for _, target := range targets {
+		if reason := visit(target); reason != "" {
+			return invalid(reason)
+		}
+	}
+	available, missing := map[string]int{}, map[string]int{}
+	for resource, amount := range cost {
+		balance := g.walletOf(&s, resource)[resource]
+		if balance < 0 {
+			return invalid("invalid_resource_balance")
+		}
+		available[resource] = balance
+		missing[resource] = 0
+		if amount > balance {
+			missing[resource] = amount - balance
+		}
+	}
+	return map[string]any{"calculable": true, "parts": ordered, "cost": cost, "available": available, "missing": missing}
 }
 
 func (g *Game) adviseJourney(ctx context.Context, token string, input domain.AdvisorRequest) (domain.AdvisorResponse, error) {
