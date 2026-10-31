@@ -59,3 +59,7 @@ Do not source collision from the old v0.2 SVG `draft-walkable-footprint`. It pre
 | `handoff/ACCEPTANCE.md` | Exact review and test checklist |
 | `CODEX_PROMPT.md` | Single ready-to-copy integration instruction |
 | `data/integrity_manifest.json` | SHA-256 file integrity checks |
+
+## Registered collision update (2026-10-31)
+
+The reviewed L0/L-1 pavement trace is now exported into the production grayscale collision masks. The three raised ridge surfaces and all earlier deliberate blocks remain intact. The lower east bridge approach keeps the approved width correction without opening the water north of it. A reversible C connects the west ridge east end `(730,744)` to the adjacent paved road `(780,720)`. Existing event positions and portal anchors are unchanged. Production F access still requires the false-kitten investigation; failed key attempts now give visible feedback. The isolated review tool is under `tools/map-review/chapter4/`. Approved artwork is unchanged.

@@ -56,6 +56,8 @@ export class TunnelMap {
   private collisionVisible = false;
   private nearby: {id: string; label: string} | null = null;
   private traversalHint: string | null = null;
+  private traversalFeedback: string | null = null;
+  private traversalFeedbackMs = 0;
   private movement: {from: Point; to: Point; elapsed: number; duration: number} | null = null;
   private zonesInside = new Set<string>();
 
@@ -81,13 +83,14 @@ export class TunnelMap {
 
   get layer() {return this.floor;}
   get isReady() {return !!this.masks;}
-  get hint() {return this.movement ? null : this.nearby?.label ?? this.traversalHint;}
+  get hint() {return this.movement ? null : this.traversalFeedback ?? this.nearby?.label ?? this.traversalHint;}
   get nearTarget() {return this.nearby;}
   positionNow() {return {...this.position};}
   setCollisionVisible(value: boolean) {this.collisionVisible = value;}
   toggleLabels() {this.labelsVisible = !this.labelsVisible;}
   toggleCollision() {this.collisionVisible = !this.collisionVisible;}
   reset() {
+    this.traversalFeedback = null; this.traversalFeedbackMs = 0;
     if (this.masks) this.position = reachableSpawn(this.masks.L0, {x: 845, y: 135});
     this.floor = 'L0'; this.surface = 'ground'; this.movement = null; this.nearby = null; this.traversalHint = null; this.keys.clear(); this.zonesInside.clear(); this.updateCamera(0);
   }
@@ -95,6 +98,8 @@ export class TunnelMap {
 
   update(deltaMs: number, dx: number, dy: number, flags: readonly string[], onRandomZone: (zone: string) => Promise<boolean>, interact: (id: string) => void, drawnEvents: readonly string[] = []) {
     if (!this.masks) return;
+    this.traversalFeedbackMs = Math.max(0, this.traversalFeedbackMs - deltaMs);
+    if (!this.traversalFeedbackMs) this.traversalFeedback = null;
     if (this.movement) {
       this.movement.elapsed = Math.min(this.movement.duration, this.movement.elapsed + deltaMs);
       const t = this.movement.elapsed / this.movement.duration, eased = t * t * (3 - 2 * t);
@@ -131,14 +136,16 @@ export class TunnelMap {
   interactKeyPressed() {return this.keys.has('e');}
   traverse(key: 'f' | 'c' | ' ', flags: readonly string[]) {
     if (!this.masks || this.movement) return false;
-    if (key === 'f' && !flags.includes('tunnel_false_kitten_trap_found')) return false;
+    const feedback = (text: string) => {this.traversalFeedback = text; this.traversalFeedbackMs = 3500; return false;};
+    if (key === 'f' && !flags.includes('tunnel_false_kitten_trap_found')) return feedback('先调查假猫叫诱饵，再靠近木梯按 F');
     const authoredKey = key === ' ' ? 'space' : key;
     const connection = this.connections().find(value => value.portal.key.toLowerCase() === authoredKey && value.distance <= value.portal.reach);
-    if (!connection) return false;
+    if (!connection) return feedback(key === 'f' ? '靠近木梯后按 F；石脊上请先按 C 回到地面' : key === 'c' ? '靠近石脊端点的 C 标记' : '靠近水沟两岸的 Space 标记');
     const {from, to} = connection;
     const nextSurface = to === connection.portal.b ? tunnelClimbSurface(connection.portal.id) ?? 'ground' : 'ground';
     const landingMask = nextSurface !== 'ground' ? this.raisedMasks[nextSurface] : this.masks[to.layer as Layer];
     if (!landingMask.isWalkable(to)) return false;
+    this.traversalFeedback = null; this.traversalFeedbackMs = 0;
     const crossFloor = from.layer !== to.layer;
     const landing = {x: to.x, y: to.y};
     this.movement = {from: crossFloor ? landing : {...this.position}, to: landing, elapsed: 0, duration: key === ' ' ? 520 : key === 'c' ? 640 : 420};
@@ -191,6 +198,7 @@ export class TunnelMap {
     }
     this.drawLighting(context);
     this.drawMarkers(context, flags, drawnEvents);
+    if (this.traversalFeedback && !this.movement) this.drawLabel(context, this.traversalFeedback, this.position, true);
     this.drawCat(context);
     context.restore();
   }
