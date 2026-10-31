@@ -1,0 +1,71 @@
+{
+  "size": [
+    1024,
+    1536
+  ],
+  "alpha": true,
+  "cropThreshold": 32,
+  "alphaGutterPadding": 4,
+  "crops": {
+    "loading-dock": [
+      21,
+      118,
+      506,
+      157
+    ],
+    "vent": [
+      563,
+      150,
+      445,
+      121
+    ],
+    "market-counter": [
+      23,
+      358,
+      497,
+      255
+    ],
+    "market-counter-cloth": [
+      581,
+      383,
+      415,
+      228
+    ],
+    "prologue-corner": [
+      32,
+      707,
+      477,
+      178
+    ],
+    "alley-cart": [
+      524,
+      709,
+      476,
+      178
+    ],
+    "market-handcart": [
+      85,
+      938,
+      357,
+      249
+    ],
+    "garden-cart": [
+      588,
+      956,
+      403,
+      229
+    ],
+    "tunnel-pipe": [
+      27,
+      1279,
+      483,
+      164
+    ],
+    "warehouse-beam": [
+      542,
+      1284,
+      458,
+      166
+    ]
+  }
+}

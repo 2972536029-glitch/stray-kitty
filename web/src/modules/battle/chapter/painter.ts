@@ -3,7 +3,8 @@ import {drawCat} from '../l00/painter';
 import type {ChapterState, ChapterCat, ChapterCatId as CatId, Position} from './types';
 import {getAttackCells, getBossCells, getSkillCells} from './engine';
 import {CELLS, MAP} from './config';
-import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintAlleyObstacleScenery} from '../scene-garden-alley-obstacles';
 
 export const CELL = 80;
 export const BOARD_WIDTH = MAP.columns * CELL;
@@ -36,10 +37,6 @@ export function drawChapterCat(ctx:CanvasRenderingContext2D,id:CatId,x:number,y:
   ctx.restore();
 }
 
-function drawRubbish(ctx:CanvasRenderingContext2D,x:number,y:number,index:number){
-  paintSceneProp(ctx,'alley',(['bin','crate','sacks'] as const)[index],x,y,CELL,index);
-}
-
 function drawBoss(ctx:CanvasRenderingContext2D,state:ChapterState){
   const boss=state.boss;
   if(boss.phase==='defeated')return;
@@ -56,17 +53,31 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:ChapterState){
   pixelBlocks(ctx,SCENE_INK.enemyLight,[[17,18,8,34],[22,7,29,5],[53,25,9,39]]);
   pixelBlocks(ctx,SCENE_INK.gold,[[25,29,10,5],[44,29,10,5]]);
   pixelBlocks(ctx,'#917b5c',[[17,47,46,8],[23,55,7,11],[48,55,7,11]]);
+  // Broad mask planes and a few clear plate joints keep the original heavy silhouette.
+  pixelBlocks(ctx,'#1c303e',[[25,27,10,2],[44,27,10,2],[33,36,12,3],[27,21,2,5],[53,20,3,7]]);
+  pixelBlocks(ctx,'#526b78',[[26,19,8,5],[45,19,8,5],[29,24,4,2],[46,24,4,2],[12,35,11,5],[55,35,10,5]]);
+  pixelBlocks(ctx,'#b3c4c3',[[24,8,24,1],[18,20,2,12],[14,35,8,1],[56,35,7,1]]);
+  pixelBlocks(ctx,'#f4dfac',[[27,30,2,1],[46,30,2,1]]);
+  pixelBlocks(ctx,'#b6a074',[[19,48,41,1],[24,56,2,7],[49,56,2,7]]);
+  pixelBlocks(ctx,'#3c4545',[[35,49,10,5],[28,57,2,12],[44,57,2,12],[11,75,13,3],[49,75,12,3]]);
+  pixelBlocks(ctx,'#cfb77e',[[37,50,6,2],[18,38,1,1],[61,38,1,1]]);
+  pixelBlocks(ctx,'#708591',[[12,72,12,1],[49,72,11,1],[18,42,2,3],[60,42,2,3]]);
   if(windup){
     // A raised road barrier and leaning torso are the tell; no charge meter exists.
     pixelBlocks(ctx,'#5f6f63',[[5,3,11,35],[61,3,10,35]]);
     pixelBlocks(ctx,'#263c36',[[0,-4,76,8],[3,4,70,16]]);
     pixelBlocks(ctx,'#a98c58',[[3,-2,70,6],[5,7,66,8]]);
     pixelBlocks(ctx,'#e6c67c',[[9,-1,9,5],[31,-1,9,5],[53,-1,9,5]]);
+    pixelBlocks(ctx,'#ead29a',[[6,-1,62,1],[7,7,61,1],[7,21,6,1],[63,21,5,1]]);
+    pixelBlocks(ctx,'#554c3e',[[7,11,7,2],[26,11,12,2],[50,11,12,2],[7,27,6,1],[63,27,5,1]]);
+    pixelBlocks(ctx,'#e8d1a0',[[5,1,2,2],[68,1,2,2],[7,16,2,2],[65,16,2,2]]);
     ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=3;for(const a of [-1,1]){ctx.beginPath();ctx.moveTo(38+a*44,-4);ctx.lineTo(38+a*48,-11);ctx.stroke();}
   }else{
     // The actual basic-hit effect drives a short horizontal swing, separate from the overhead slam.
     ctx.save();ctx.translate(direction*8*swing,-5*swing);ctx.rotate(direction*.16*swing);
     pixelBlocks(ctx,'#263c36',[[-8,43,49,13],[-5,56,43,9]]);pixelBlocks(ctx,'#b09460',[[-5,46,44,7],[-2,56,37,5]]);
+    pixelBlocks(ctx,'#ddc48a',[[-3,47,39,1],[0,57,32,1],[0,49,2,2],[31,49,2,2]]);
+    pixelBlocks(ctx,'#5c5140',[[7,50,10,2],[22,50,7,2],[1,60,30,1]]);
     ctx.restore();
     if(boss.phase==='recovery'){ctx.strokeStyle='#edc078';ctx.lineWidth=3;ctx.beginPath();ctx.arc(30,78,38,Math.PI,Math.PI*2);ctx.stroke();}
   }
@@ -82,15 +93,16 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
   ctx.clip();
   for(let y=0;y<MAP.rows;y++)for(let x=0;x<MAP.columns;x++){
     if(!mapCell(x,y))continue;
-    const bx=x*CELL,by=y*CELL,goal=x===MAP.goal.x&&y===MAP.goal.y,spawn=MAP.spawns.some(p=>p.x===x&&p.y===y),obstacle=obstacleCell(x,y);
+    const goal=x===MAP.goal.x&&y===MAP.goal.y,spawn=MAP.spawns.some(p=>p.x===x&&p.y===y),obstacle=obstacleCell(x,y);
     paintSceneTile(ctx,'alley',x,y,CELL,{goal,spawn,obstacle});
-    paintSceneEdge(ctx,'alley',x,y,CELL,mapCell);
-    if(obstacle)drawRubbish(ctx,bx,by,y);
-    if(spawn){
-      rect(ctx,bx+5,by+5,CELL-10,CELL-10,'#b77d6730');ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(bx+5,by+5,CELL-10,CELL-10);
-      if(y===0){pixelBlocks(ctx,SCENE_INK.danger,[[bx+29,by+30,23,4],[bx+33,by+34,15,4],[bx+37,by+38,7,4]]);}
-      else pixelBlocks(ctx,SCENE_INK.danger,[[bx+50,by+29,4,23],[bx+46,by+33,4,15],[bx+42,by+37,4,7]]);
-    }
+    if(!obstacle)paintSceneEdge(ctx,'alley',x,y,CELL,mapCell);
+  }
+  paintAlleyObstacleScenery(ctx);
+  for(const p of MAP.spawns){
+    const bx=p.x*CELL,by=p.y*CELL;
+    rect(ctx,bx+5,by+5,CELL-10,CELL-10,'#b77d6730');ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(bx+5,by+5,CELL-10,CELL-10);
+    if(p.y===0){pixelBlocks(ctx,SCENE_INK.danger,[[bx+29,by+30,23,4],[bx+33,by+34,15,4],[bx+37,by+38,7,4]]);}
+    else pixelBlocks(ctx,SCENE_INK.danger,[[bx+50,by+29,4,23],[bx+46,by+33,4,15],[bx+42,by+37,4,7]]);
   }
   // One footprint spans four logical cells; one boss sprite and one HP pool occupy it.
   ctx.save();ctx.fillStyle='#b77d6730';ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;

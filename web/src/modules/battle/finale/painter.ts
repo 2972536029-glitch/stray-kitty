@@ -1,5 +1,6 @@
 import {paintCarryAnchor} from '../carry-painter';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintFinaleObstacleScenery, FINALE_JOINED_OBSTACLE_CELLS} from '../scene-industrial-obstacles';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP} from './config';
@@ -12,7 +13,8 @@ export const BOARD_HEIGHT=MAP.rows*CELL;
 export const cellName=({x,y}:Position)=>`${String.fromCharCode(65+y)}${x+1}`;
 export const mapCell=(x:number,y:number)=>Number.isInteger(x)&&Number.isInteger(y)&&CELLS.some(cell=>cell.x===x&&cell.y===y);
 export const obstacleCell=(x:number,y:number)=>MAP.obstacles.some(cell=>cell.x===x&&cell.y===y);
-export const OBSTACLE_NAMES:Readonly<Record<string,string>>={A4:'废钢架',A5:'断梁',B2:'旧箱垛',B3:'排除绊线',B11:'北侧隔间',B12:'受困伙伴',C1:'旧墙',C7:'断裂立柱',D1:'仓库侧墙',E1:'旧墙',E7:'废钢架',F2:'旧箱垛',F3:'排除绊线',F11:'南侧隔间',F12:'受困伙伴',G4:'断梁',G5:'废钢架'};
+const joinedObstacles=new Set(FINALE_JOINED_OBSTACLE_CELLS.map(({x,y})=>`${x},${y}`));
+export const OBSTACLE_NAMES:Readonly<Record<string,string>>={A4:'废钢架',A5:'断梁',B2:'旧箱垛',B3:'绊线已排除',B11:'北侧隔间',B12:'受困伙伴',C1:'旧墙',C7:'断裂立柱',D1:'仓库侧墙',E1:'旧墙',E7:'废钢架',F2:'旧箱垛',F3:'绊线已排除',F11:'南侧隔间',F12:'受困伙伴',G4:'断梁',G5:'废钢架'};
 const rect=(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h);};
 const blocks=(ctx:CanvasRenderingContext2D,color:string,points:number[][])=>{for(const [x,y,w,h] of points)rect(ctx,x,y,w,h,color);};
 const text=(ctx:CanvasRenderingContext2D,value:string,x:number,y:number,color:string=SCENE_INK.label,size=9)=>{ctx.fillStyle=color;ctx.font=`${size}px sans-serif`;ctx.textAlign='center';ctx.fillText(value,x,y);};
@@ -31,19 +33,19 @@ function drawFinaleCat(ctx:CanvasRenderingContext2D,id:FinaleCatId,x:number,y:nu
 function drawObstacle(ctx:CanvasRenderingContext2D,p:Position,state:FinaleState){
   const key=cellName(p);ctx.save();ctx.translate(p.x*CELL,p.y*CELL);
   if(key.endsWith('12')){
+    // The shared holding room stays behind the partners; a win still removes every bar.
     if(state.phase!=='won'){smallCat(ctx,15,25,'#be9872','#896b51',.9);smallCat(ctx,42,30,'#ccc9ba','#8e9d8b',.8);}
-    blocks(ctx,'#7e7569',[[8,18,64,4],[8,60,64,4],[8,18,4,46],[68,18,4,46]]);if(state.phase!=='won')for(const x of [22,39,55])rect(ctx,x,22,3,38,'#c6c4b9');else text(ctx,'已撤离',40,48,SCENE_INK.selected,11);
-  }else if(key==='B11'||key==='F11'){
-    blocks(ctx,'#6e665d',[[12,18,55,42],[16,12,47,6]]);blocks(ctx,'#ada696',[[16,21,47,7],[16,31,8,25],[55,31,8,25]]);rect(ctx,30,35,18,20,'#35312d');rect(ctx,36,39,4,5,SCENE_INK.gold);
+    if(state.phase!=='won')for(const x of [22,39,55]){
+      rect(ctx,x+3,24,2,36,'#414b45');rect(ctx,x,22,3,38,'#c6c4b9');rect(ctx,x,26,1,26,'#e2dcc3');
+      blocks(ctx,'#8c8f80',[[x-1,23,5,2],[x-1,56,5,2]]);
+    }else text(ctx,'已撤离',40,48,SCENE_INK.selected,11);
   }else if(key==='B3'||key==='F3'){
-    paintSceneProp(ctx,'finale','cable',0,0,CELL);
-    // The clipped wire and check mark keep the already-cleared trap explicit.
-    blocks(ctx,'#a08869',[[10,24,10,34],[60,24,10,34]]);rect(ctx,36,39,8,12,'#3d3832');
+    // The posts belong to the cargo deck; cut ends, tool and check remain on top.
+    ctx.strokeStyle='#c2aa83';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();
+    ctx.moveTo(18,42);ctx.lineTo(33,47);ctx.moveTo(47,47);ctx.lineTo(62,41);ctx.stroke();ctx.setLineDash([]);
+    rect(ctx,36,39,8,12,'#3d3832');
     ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(28,32);ctx.lineTo(36,40);ctx.lineTo(52,24);ctx.stroke();
-  }else if(key==='B2'||key==='F2'){
-    paintSceneProp(ctx,'finale','warehouse-crates',0,0,CELL,p.y);
-  }else if(p.x===0){for(let row=0;row<4;row++)for(let col=0;col<3;col++)rect(ctx,9+col*20+(row%2)*5,18+row*10,18,8,row%2?'#777065':'#a49c8e');}
-  else paintSceneProp(ctx,'finale','storage-rack',0,0,CELL,p.x+p.y);
+  }else if(!joinedObstacles.has(`${p.x},${p.y}`))paintSceneProp(ctx,'finale','storage-rack',0,0,CELL,p.x+p.y);
   ctx.restore();
 }
 /** One nine-cell silhouette and one health pool, with a changed crown in phase two. */
@@ -53,6 +55,15 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:FinaleState){
   blocks(ctx,'#263b3533',[[6,74,68,6],[15,80,50,3]]);blocks(ctx,SCENE_INK.enemy,[[24,15,33,21],[17,30,48,34],[10,60,61,15],[5,41,14,30],[64,41,13,30],[18,74,19,7],[48,74,19,7]]);
   blocks(ctx,SCENE_INK.enemyLight,[[20,36,9,28],[54,36,9,28],[27,17,28,6],[8,43,7,19],[68,43,6,19]]);blocks(ctx,'#1a2e3e',[[30,39,22,33],[22,66,8,8],[53,66,8,8]]);
   blocks(ctx,raging?'#d0a06d':'#b9ac7b',[[22,8,37,8],[20,0,6,12],[37,2,6,12],[55,0,6,12],[16,31,11,5],[55,31,11,5],[31,57,20,4]]);blocks(ctx,windup?'#ffdc92':'#e8d7a3',[[29,27,8,4],[47,27,8,4]]);blocks(ctx,'#a7b398',[[35,45,13,7],[39,39,5,19]]);
+  // Crown, mask and large armour plates gain readable planes without growing the body.
+  blocks(ctx,'#526b79',[[26,23,6,12],[51,23,4,12],[33,34,16,3],[31,40,2,13],[49,40,2,13],[8,46,5,13],[69,46,4,13]]);
+  blocks(ctx,'#203646',[[32,25,5,2],[47,25,7,2],[34,33,15,2],[39,28,3,7],[18,45,2,17],[63,45,2,17],[34,63,15,2],[20,78,15,3],[50,78,15,3]]);
+  blocks(ctx,'#b3c5c5',[[28,18,24,1],[22,38,2,13],[55,38,2,13],[9,44,4,1],[69,44,3,1],[21,75,13,1],[51,75,12,1]]);
+  blocks(ctx,windup?'#fff0c1':'#f3e6b9',[[30,28,2,1],[48,28,2,1]]);
+  blocks(ctx,raging?'#f1c68a':'#dfd0a0',[[21,1,3,1],[38,3,3,1],[56,1,3,1],[24,9,31,1],[19,32,6,1],[57,32,7,1]]);
+  blocks(ctx,'#77674f',[[24,3,1,7],[41,5,1,6],[59,3,1,7],[23,14,33,1]]);
+  blocks(ctx,'#d1c49b',[[28,11,2,2],[50,11,2,2],[22,40,1,1],[59,40,1,1],[8,63,7,1],[68,63,6,1]]);
+  blocks(ctx,'#4f6570',[[24,67,2,5],[56,67,2,5],[37,66,1,4],[43,66,1,4]]);
   if(raging){blocks(ctx,'#e6be78',[[26,9,7,3],[48,10,8,3],[32,38,3,11],[35,47,3,12],[46,56,3,13]]);ctx.strokeStyle='#d4ab6c';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(7,28);ctx.lineTo(1,21);ctx.moveTo(73,28);ctx.lineTo(79,21);ctx.stroke();}
   if(state.nightVisionRemaining>0){ctx.strokeStyle='#e7d392';ctx.lineWidth=1;ctx.strokeRect(18,16,46,58);}ctx.restore();
 }
@@ -74,12 +85,13 @@ export function paintFinale(ctx:CanvasRenderingContext2D,state:FinaleState,selec
   for(const p of CELLS){
     const goal=p.x===MAP.goal.x&&p.y===MAP.goal.y,obstacle=obstacleCell(p.x,p.y);
     paintSceneTile(ctx,'finale',p.x,p.y,CELL,{goal,obstacle,spawn:MAP.spawns.some(cell=>cell.x===p.x&&cell.y===p.y),boss:MAP.bossCells.some(cell=>cell.x===p.x&&cell.y===p.y)});
-    paintSceneEdge(ctx,'finale',p.x,p.y,CELL,mapCell);
-    if(obstacle)drawObstacle(ctx,p,state);
+    if(!joinedObstacles.has(`${p.x},${p.y}`))paintSceneEdge(ctx,'finale',p.x,p.y,CELL,mapCell);
   }
+  paintFinaleObstacleScenery(ctx);
+  for(const p of MAP.obstacles)drawObstacle(ctx,p,state);
   for(const p of MAP.spawns){const x=p.x*CELL,y=p.y*CELL;ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(x+6,y+6,CELL-12,CELL-12);blocks(ctx,SCENE_INK.danger,[[x+46,y+23,5,26],[x+41,y+27,5,18],[x+36,y+31,5,10]]);}
   for(const p of MAP.bossCells)rect(ctx,p.x*CELL+3,p.y*CELL+3,CELL-6,CELL-6,'#d6a05d17');drawLights(ctx,state);paintCarryAnchor(ctx,state.carry,CELL,mapCell);
-  for(const ally of state.allies){const x=ally.x*CELL,y=ally.y*CELL;rect(ctx,x+8,y+18,64,46,'#264f5b88');ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.strokeRect(x+8,y+18,64,46);ctx.setLineDash([]);if(ally.status==='waiting'){text(ctx,`第${ally.arriveWave}波`,x+40,y+44,SCENE_INK.label,11);}else if(ally.status==='retired')text(ctx,'已退场',x+40,y+48,'#a8b9bc',11);}
+  for(const ally of state.allies){const x=ally.x*CELL,y=ally.y*CELL;rect(ctx,x+8,y+18,64,46,'#264f5b88');ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.strokeRect(x+8,y+18,64,46);ctx.setLineDash([]);if(ally.status==='waiting'){text(ctx,`第${ally.arriveWave}波支援`,x+40,y+44,SCENE_INK.label,11);}else if(ally.status==='retired')text(ctx,'已退场',x+40,y+48,'#a8b9bc',11);}
   const chosen=state.cats.find(cat=>cat.id===selected&&cat.status==='active');
   if(chosen&&!state.aim){ctx.fillStyle='#8ee2cb28';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;for(const p of getAttackCells(chosen)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);}}
   if(state.aim){ctx.fillStyle='#7ccbd12d';for(const p of CELLS)if(!obstacleCell(p.x,p.y))ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);const cat=state.cats.find(value=>value.id===state.aim?.catId);if(cat&&state.aim.target){ctx.fillStyle='#f4ce8366';ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;for(const p of getSkillCells(cat,state.aim.target)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+5,p.y*CELL+5,CELL-10,CELL-10);}}}

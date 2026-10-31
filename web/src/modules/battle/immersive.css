@@ -147,7 +147,9 @@
 /* Boss readouts reserve only the height they need. On desktop, map buttons and
    transient hints share a row; the prologue tutorial keeps its original layout. */
 .battle-l00.battle-immersive:has(.battle-hud-boss){--boss-tools-bottom:104px;--boss-tools-height:36px;--boss-caption-space:0px;--boss-retirement-space:0px;--boss-hints-bottom:var(--boss-tools-bottom)}
-.battle-l00.battle-immersive:has(.finale-leaders .is-warning){--boss-tools-bottom:152px}
+/* Reserve the finale warning area before combat starts. Resizing the board when
+   a Boss winds up can move a skill button between pointer-down and click. */
+.battle-l00.battle-immersive:has(.finale-leaders){--boss-tools-bottom:152px}
 .battle-l00.battle-immersive:has(.battle-hud-boss):has(.btl-retirement-note){--boss-retirement-space:26px}
 .battle-l00.battle-immersive:has(.battle-hud-boss) :is(.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools){bottom:var(--boss-tools-bottom);flex-wrap:nowrap;max-width:calc(100% - 238px)}
 .battle-l00.battle-immersive:has(.battle-hud-boss) .btl-board-caption{left:220px;right:330px;bottom:var(--boss-hints-bottom);max-height:36px;line-height:1.35}
@@ -160,15 +162,14 @@
 @media(min-width:700px) and (max-width:900px){
  .battle-l00.battle-immersive:has(.battle-hud-boss):has(.btl-board-caption){--boss-caption-space:28px;--boss-hints-bottom:calc(var(--boss-tools-bottom) + 34px)}
  .battle-l00.battle-immersive:has(.battle-hud-boss) .btl-board-caption{right:18px;max-height:30px;line-height:1.2}
- .battle-l00.battle-immersive:has(.finale-leaders){--boss-tools-bottom:132px}
- .battle-l00.battle-immersive:has(.finale-leaders .is-warning){--boss-tools-bottom:176px}
+ .battle-l00.battle-immersive:has(.finale-leaders){--boss-tools-bottom:176px}
  .battle-l00.battle-immersive .finale-leaders.battle-hud-boss{grid-template-columns:repeat(2,minmax(0,1fr))}
  .battle-l00.battle-immersive .finale-leaders .finale-leader-boss{grid-column:1/-1;grid-row:1}
  .battle-l00.battle-immersive .finale-leaders .is-warning small{max-height:2.8em}
 }
 @media(max-width:699px){
  .battle-l00.battle-immersive:has(.battle-hud-boss){--boss-tools-bottom:160px;--boss-tools-height:36px;--boss-caption-space:0px;--boss-retirement-space:0px;--boss-hints-bottom:calc(var(--boss-tools-bottom) + 36px)}
- .battle-l00.battle-immersive:has(.finale-leaders .is-warning){--boss-tools-bottom:172px}
+ .battle-l00.battle-immersive:has(.finale-leaders){--boss-tools-bottom:172px}
  .battle-l00.battle-immersive:has(.battle-hud-boss):has(.btl-board-caption){--boss-caption-space:38px}
  .battle-l00.battle-immersive:has(.battle-hud-boss):has(.btl-retirement-note){--boss-retirement-space:22px}
  .battle-l00.battle-immersive:has(.battle-hud-boss) :is(.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools){left:8px;right:8px;max-width:none}

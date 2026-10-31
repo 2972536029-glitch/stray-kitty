@@ -1,3 +1,6 @@
+import {paintDetailedSceneProp} from './scene-props';
+import {hasIllustratedRoom,whenIllustratedRoomReady} from './illustrated-room';
+
 /** Battle-owned, deterministic pixel scenery. Geometry and simulation remain in chapter configs. */
 export type BattleSceneId = 'prologue' | 'alley' | 'market' | 'greenhouse' | 'tunnel' | 'finale';
 export type ScenePropKind = 'bin' | 'crate' | 'sacks' | 'food-stall' | 'toy-stall' | 'notice-stall'
@@ -18,16 +21,21 @@ const palettes: Record<BattleSceneId, ScenePalette> = {
   tunnel: {stone:['#506a77','#5d7480','#4b6472','#667a82'],mortar:'#293e50',edge:'#142a3b',rim:'#8da8a9',water:'#295771',moss:'#3f685d',metal:'#426576',metalLight:'#8eb3b8',timber:'#77674e',timberLight:'#b59b69',seed:83},
   finale: {stone:['#77736b','#807a6f','#6e6b63','#858074'],mortar:'#484740',edge:'#303635',rim:'#b6b09a',water:'#3e5c70',moss:'#5c7059',metal:'#626b65',metalLight:'#b1b5a3',timber:'#806448',timberLight:'#c6a26c',seed:101},
 };
+/** Art-only extents anchor the light to the map, including the floor beyond its cells. */
+const groundLightExtents:Record<BattleSceneId,readonly [number,number]>={
+  prologue:[7,3],alley:[10,5],market:[8,5],greenhouse:[9,6],tunnel:[8,5],finale:[12,7],
+};
 const block=(ctx:CanvasRenderingContext2D,color:string,x:number,y:number,w:number,h:number)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h);};
 const blocks=(ctx:CanvasRenderingContext2D,color:string,shapes:readonly (readonly number[])[])=>{for(const [x,y,w,h] of shapes)block(ctx,color,x,y,w,h);};
 const noise=(x:number,y:number,seed:number)=>((Math.imul(x+17,73856093)^Math.imul(y+23,19349663)^Math.imul(seed,83492791))>>>0);
 const atlasPanels:Record<BattleSceneId,number>={prologue:0,alley:1,market:2,greenhouse:3,tunnel:4,finale:5};
 let floorAtlas:HTMLImageElement|undefined;
+const groundTileCache=new Map<string,HTMLCanvasElement>();
 const atlasListeners=new Set<()=>void>();
 function sceneAtlas(){
   if(!floorAtlas&&typeof Image!=='undefined'){
     floorAtlas=new Image();
-    floorAtlas.onload=()=>{for(const listener of atlasListeners)listener();atlasListeners.clear();};
+    floorAtlas.onload=()=>{groundTileCache.clear();for(const listener of atlasListeners)listener();atlasListeners.clear();};
     floorAtlas.onerror=()=>atlasListeners.clear();
     floorAtlas.src=new URL('./assets/floor-material-atlas.png',import.meta.url).href;
   }
@@ -35,8 +43,9 @@ function sceneAtlas(){
 }
 /** L00 can wait on a teaching step: repaint on asset load without advancing its simulation. */
 export function whenSceneArtReady(paint:()=>void){
-  if(sceneAtlas())return()=>{};
-  atlasListeners.add(paint);return()=>{atlasListeners.delete(paint);};
+  const stopRoom=whenIllustratedRoomReady(paint);
+  if(sceneAtlas())return stopRoom;
+  atlasListeners.add(paint);return()=>{atlasListeners.delete(paint);stopRoom();};
 }
 
 /** Pixel light pools use nested flat shapes rather than blurring the tactical board. */
@@ -47,207 +56,203 @@ function lightPool(ctx:CanvasRenderingContext2D,x:number,y:number,strength=1){
   ctx.restore();
 }
 
-export function paintSceneTile(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number,size:number,flags:SceneTileFlags={}){
-  const p=palettes[scene],n=noise(x,y,p.seed),atlas=sceneAtlas();
-  ctx.save();ctx.translate(x*size,y*size);ctx.scale(size/80,size/80);
-  block(ctx,p.mortar,0,0,80,80);
-  // Staggered masonry is clipped locally so it cannot invent an extra tile.
-  if(!atlas){
-  ctx.save();ctx.beginPath();ctx.rect(2,2,76,76);ctx.clip();
-  const rowHeight=scene==='finale'?38:scene==='greenhouse'?25:scene==='tunnel'?18:18;
-  const brickWidth=scene==='finale'?76:scene==='greenhouse'?38:scene==='market'?38:27;
-  for(let row=0;row<5;row++)for(let col=-1;col<4;col++){
-    const bx=col*brickWidth+(row%2?brickWidth/2:0),by=row*rowHeight;
-    const index=noise(x*5+col,y*5+row,p.seed)%4;
-    block(ctx,p.stone[index],bx+2,by+2,brickWidth-2,rowHeight-2);
-    block(ctx,p.rim+'45',bx+3,by+2,brickWidth-4,1);
-    block(ctx,p.edge+'4d',bx+3,by+rowHeight-2,brickWidth-3,1);
-    if(index===0)block(ctx,p.rim+'2b',bx+8,by+7,5,2);
+/** A few authored clusters describe the material; seeded variation avoids per-frame shimmer. */
+function paintMaterialAccents(ctx:CanvasRenderingContext2D,scene:BattleSceneId,p:ScenePalette,x:number,y:number,n:number){
+  const worn=8+n%15;
+  // Broken grout and small bevels read as worked stone, rather than uniform UI squares.
+  blocks(ctx,p.edge+'38',[[worn,5,8,1],[worn+6,6,3,1],[64,56+n%8,1,5]]);
+  blocks(ctx,p.rim+'4d',[[worn+1,4,6,1],[65,55+n%8,1,4]]);
+  if(scene==='prologue'||scene==='alley'){
+    if(n%3===0){
+      const px=8+n%9,py=56+n%7;
+      blocks(ctx,p.edge+'66',[[px,py,31,3],[px+5,py-3,23,3],[px+4,py+3,23,2]]);
+      blocks(ctx,p.water+'a0',[[px+2,py,27,2],[px+7,py-2,18,2],[px+8,py+2,15,2]]);
+      blocks(ctx,'#bdd6cf70',[[px+5,py,9,1],[px+18,py+2,5,1]]);
+      if(scene==='prologue')blocks(ctx,'#a8c7cb55',[[px+10,py-4,5,1],[px+8,py-3,2,1],[px+15,py-3,2,1]]);
+    }
+    if(n%4===0){
+      blocks(ctx,'#2b444744',[[4,14,3,10],[7,17,3,4],[66,66,7,3]]);
+      blocks(ctx,p.moss+'70',[[5,17,2,4],[8,19,2,2],[67,65,4,2]]);
+    }
+    // A warm window reflection is local and sparse, preserving the cool alley palette.
+    if(scene==='prologue'&&(x+y)%5===0)blocks(ctx,'#d6bb7d24',[[49,9,11,2],[46,12,18,1],[51,15,8,1]]);
+  }else if(scene==='market'){
+    if(n%3===0){
+      blocks(ctx,'#d1bb8c38',[[9,64,17,1],[12,67,9,1],[59,12,9,1]]);
+      blocks(ctx,'#64574550',[[11,62,11,1],[61,14,6,1]]);
+    }
+    if(n%5===0){
+      blocks(ctx,'#856748',[[65,62,4,3],[66,61,2,1]]);
+      blocks(ctx,'#c5ad77',[[65,62,3,1],[66,63,1,1]]);
+    }
+    if(n%4===1)blocks(ctx,'#b18b5b28',[[7,8,22,3],[11,11,16,2]]);
+  }else if(scene==='greenhouse'){
+    blocks(ctx,p.edge+'40',[[4,58,2,13],[6,67,12,2],[66,8,7,2]]);
+    blocks(ctx,p.moss+'a0',[[5,61,3,6],[7,66,7,2],[13,68,5,2],[66,9,5,2],[69,11,3,3]]);
+    blocks(ctx,'#a4b28090',[[6,61,2,2],[9,66,3,1],[69,10,2,1]]);
+    if(n%3===0){
+      // Glass fragments stay at the perimeter; never resemble a target or an extra tile.
+      blocks(ctx,'#bdd3c650',[[57,61,8,1],[61,58,1,4],[62,63,6,1]]);
+      blocks(ctx,'#e1ead275',[[59,60,3,1],[65,63,2,1]]);
+    }
+    if((x+y)%4===0){
+      blocks(ctx,'#e4dfb31c',[[7,14,64,8],[11,22,55,5]]);
+      blocks(ctx,'#314d4423',[[55,5,2,68],[5,35,68,2]]);
+    }
+    if(n%5===1)blocks(ctx,'#b19169a0',[[12,14,4,2],[15,16,3,1]]);
+  }else if(scene==='tunnel'){
+    if(n%3===0){
+      blocks(ctx,'#173d4d70',[[8,64,28,3],[12,61,21,3],[14,67,18,2]]);
+      blocks(ctx,p.water+'a0',[[10,64,23,2],[15,62,14,2]]);
+      blocks(ctx,'#91b4b366',[[13,64,10,1],[27,66,4,1]]);
+    }
+    if(n%4===0){
+      blocks(ctx,'#abb7a353',[[61,8,1,8],[64,10,1,5],[59,18,7,1]]);
+      blocks(ctx,'#69836a70',[[6,47,2,13],[7,59,5,2]]);
+    }
+    if(n%5===0)blocks(ctx,'#b08b665c',[[67,39,3,2],[66,42,2,3],[68,47,1,2]]);
+  }else{
+    // Warehouse expansion seams have fasteners and rubbed edges, not wet moss.
+    if(x%3===0){
+      block(ctx,'#303a3c70',7,4,3,72);block(ctx,'#b1aa8b66',7,5,1,68);
+      for(const yy of [15,62]){block(ctx,'#263337b0',7,yy,3,3);block(ctx,'#c2b999a0',7,yy,2,1);}
+    }
+    if(n%3===1){
+      blocks(ctx,'#303b3b55',[[52,56,2,5],[54,60,7,1],[59,61,1,5],[60,65,7,1]]);
+      blocks(ctx,'#b2ab8a40',[[55,59,6,1],[61,64,5,1]]);
+    }
+    if(n%4===0)blocks(ctx,'#d0b98b35',[[12,66,17,1],[15,68,9,1],[59,12,9,1]]);
   }
+}
+
+/** Sample the same broad ellipse in world coordinates on both canvas layers.
+ * The ellipse has no knowledge of CELLS, so no lighting edge follows the map mask. */
+function paintGroundLight(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number){
+  const p=palettes[scene],[columns,rows]=groundLightExtents[scene];
+  const radiusX=columns*80*.8,radiusY=rows*80*.95,stretchY=radiusY/radiusX;
+  const centerX=(columns/2-x)*80,centerY=(rows/2-y)*80/stretchY;
+  ctx.save();ctx.scale(1,stretchY);
+  const light=ctx.createRadialGradient(centerX,centerY,0,centerX,centerY,radiusX);
+  light.addColorStop(0,p.rim+'12');
+  light.addColorStop(.3,p.rim+'09');
+  light.addColorStop(.58,p.edge+'00');
+  light.addColorStop(.82,p.edge+'25');
+  light.addColorStop(1,p.edge+'64');
+  ctx.fillStyle=light;ctx.fillRect(0,0,80,80/stretchY);
   ctx.restore();
-  }
+}
+
+/** One continuous material surface shared by tactical cells and the environment. */
+function paintGround(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number,accents=true){
+  const p=palettes[scene],n=noise(x,y,p.seed),atlas=sceneAtlas();
+  block(ctx,p.mortar,0,0,80,80);
   if(atlas){
     const panel=atlasPanels[scene],pw=atlas.naturalWidth/3,ph=atlas.naturalHeight/2;
-    const sx=(panel%3)*pw+(x%4)*pw/4,sy=Math.floor(panel/3)*ph+(y%4)*ph/4;
+    const wrap=(value:number)=>((value%4)+4)%4;
+    const sx=(panel%3)*pw+wrap(x)*pw/4,sy=Math.floor(panel/3)*ph+wrap(y)*ph/4;
     ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(atlas,sx,sy,pw/4,ph/4,2,2,76,76);
-    // Quiet the ground under units and keep the same tactical contrast in every chapter.
-    block(ctx,p.stone[n%4]+'40',2,2,76,76);
+    ctx.drawImage(atlas,sx,sy,pw/4,ph/4,0,0,80,80);
+    block(ctx,p.stone[n%4]+'40',0,0,80,80);
+  }else{
+    ctx.save();ctx.beginPath();ctx.rect(0,0,80,80);ctx.clip();
+    const rowHeight=scene==='finale'?38:scene==='greenhouse'?25:18;
+    const brickWidth=scene==='finale'?76:scene==='greenhouse'||scene==='market'?38:27;
+    for(let row=0;row<5;row++)for(let col=-1;col<4;col++){
+      const bx=col*brickWidth+(row%2?brickWidth/2:0),by=row*rowHeight;
+      const index=noise(x*5+col,y*5+row,p.seed)%4;
+      block(ctx,p.stone[index],bx+1,by+1,brickWidth-1,rowHeight-1);
+      block(ctx,p.rim+'45',bx+2,by+1,brickWidth-3,1);
+      block(ctx,p.edge+'4d',bx+2,by+rowHeight-1,brickWidth-2,1);
+    }
+    ctx.restore();
   }
-  // Shared pixel technique, chapter-specific materials. Rain is a story fact only in the alley.
-  if(!atlas&&!flags.goal&&!flags.obstacle){
-    if(n%3===0&&(scene==='prologue'||scene==='alley')){
-      const px=10+(n%3)*8,py=48+(n%2)*7;
-      blocks(ctx,p.water,[[px,py,30,4],[px+5,py-3,22,3],[px+3,py+4,24,3]]);
-      blocks(ctx,'#9ac5d366',[[px+4,py,12,1],[px+19,py+4,5,1]]);
+  if(accents)paintMaterialAccents(ctx,scene,p,x,y,n);
+  paintGroundLight(ctx,scene,x,y);
+}
+
+/** The terrain grid follows the board origin and its actual CSS cell scale, even when scrolled. */
+export function paintSceneGround(ctx:CanvasRenderingContext2D,scene:BattleSceneId,originX:number,originY:number,cellWidth:number,cellHeight:number,width:number,height:number){
+  if(cellWidth<=0||cellHeight<=0)return;
+  const x0=Math.floor(-originX/cellWidth),x1=Math.ceil((width-originX)/cellWidth);
+  const y0=Math.floor(-originY/cellHeight),y1=Math.ceil((height-originY)/cellHeight);
+  const cacheLimit=Math.max(384,(x1-x0)*(y1-y0));
+  for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+    // Match the tactical canvas's two-stage nearest-neighbour sampling: first
+    // rasterize to its native 80/100px cell, then scale to the CSS cell bounds.
+    const key=scene+':'+x+':'+y;
+    let tile=groundTileCache.get(key);
+    if(!tile&&typeof document!=='undefined'){
+      tile=document.createElement('canvas');tile.width=tile.height=scene==='prologue'?100:80;
+      const groundCtx=tile.getContext('2d');
+      if(groundCtx){groundCtx.scale(tile.width/80,tile.height/80);paintGround(groundCtx,scene,x,y);groundTileCache.set(key,tile);}
     }
-    if(scene==='greenhouse'||(scene==='tunnel'&&n%5===0)){
-      blocks(ctx,p.moss,[[5,64,9,3],[7,60,3,4],[12,66,7,2],[67,10,6,2],[70,7,2,4]]);
-      block(ctx,'#a6b88955',9,61,2,2);
+    if(tile){
+      // Keep this frame's working set even when small cells exceed 384 samples.
+      groundTileCache.delete(key);groundTileCache.set(key,tile);
+      ctx.imageSmoothingEnabled=false;ctx.drawImage(tile,originX+x*cellWidth,originY+y*cellHeight,cellWidth,cellHeight);
     }
-    if(scene==='finale'&&n%3===0){
-      block(ctx,'#c9ad704d',6,7,24,2);block(ctx,'#c9ad704d',6,7,2,12);
-      blocks(ctx,p.edge+'66',[[51,52,14,2],[61,48,2,5],[65,54,7,2]]);
-    }
-    if(scene==='market'&&n%4===0){
-      blocks(ctx,'#c3ad7970',[[54,59,5,3],[56,57,2,2],[14,24,2,2]]);
-      block(ctx,'#4c514a',55,59,2,1);
-    }
-    if(scene==='greenhouse'){
-      // Broken skylight: quiet, fixed patches of diffuse light, without inventing a time of day.
-      blocks(ctx,'#e2dfaf18',[[5,12,70,16],[11,28,60,9]]);
-      if((x+y)%3===0)blocks(ctx,'#435a4435',[[53,3,3,73],[2,32,75,3]]);
-      if(n%4===0)blocks(ctx,'#b5967270',[[58,58,9,3],[64,62,5,3]]);
-    }
-    if(scene==='tunnel'&&n%4===0){
-      blocks(ctx,p.water,[[7,62,29,3],[10,65,20,2]]);block(ctx,'#91b6b358',12,62,13,1);
-    }
-    if(scene==='finale'){
-      blocks(ctx,'#c6baa524',[[11,15,2,2],[56,20,3,2],[21,62,3,1],[63,67,2,2]]);
-      if(x%3===0){block(ctx,'#3c403c75',7,4,3,72);blocks(ctx,'#b3ab8855',[[7,17,2,3],[7,62,2,3]]);}
-    }
+    else {ctx.save();ctx.translate(originX+x*cellWidth,originY+y*cellHeight);ctx.scale(cellWidth/80,cellHeight/80);paintGround(ctx,scene,x,y);ctx.restore();}
   }
-  block(ctx,p.edge+'b0',0,77,80,3);block(ctx,p.edge+'80',77,0,3,77);
-  block(ctx,p.rim+'80',2,2,75,1);block(ctx,p.rim+'42',2,3,1,74);
+  while(groundTileCache.size>cacheLimit)groundTileCache.delete(groundTileCache.keys().next().value!);
+}
+
+export function paintSceneTile(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number,size:number,flags:SceneTileFlags={}){
+  const p=palettes[scene];
+  ctx.save();ctx.translate(x*size,y*size);ctx.scale(size/80,size/80);
+  const illustrated=scene==='finale'&&hasIllustratedRoom();
+  if(!illustrated)paintGround(ctx,scene,x,y,!flags.goal&&!flags.obstacle&&!flags.spawn);
+  // The usable paving is a little quieter and lighter than the service floor.
+  // Its material remains shared; broad bevels and real masonry outside mark its extent.
+  block(ctx,illustrated?'#b1b7a720':p.stone[(x+y)%4]+'22',0,0,80,80);
+  if(illustrated){
+    block(ctx,'#15232ec0',0,78,80,2);block(ctx,'#15232ea0',78,0,2,78);
+    block(ctx,'#c2d1d08c',0,0,78,1.5);block(ctx,'#c2d1d070',0,1.5,1.5,76.5);
+  }else{
+    block(ctx,p.edge+'c0',0,78,80,2);block(ctx,p.edge+'a8',78,0,2,78);
+    block(ctx,p.rim+'c0',0,0,78,1.5);block(ctx,p.rim+'98',0,1.5,1.5,76.5);
+  }
   if(flags.obstacle){
-    block(ctx,p.edge+'80',4,5,72,70);
-    blocks(ctx,'#d8ad6766',[[6,7,9,2],[6,7,2,9],[65,7,9,2],[72,7,2,9]]);
+    // Ambient contact stays under the prop's feet; the rest is ordinary floor.
+    blocks(ctx,p.edge+'0c',[[8,58,64,10],[14,68,52,5]]);
+    blocks(ctx,p.edge+'12',[[14,60,52,8],[21,68,38,3]]);
+    block(ctx,p.edge+'18',21,62,38,5);
   }
   if(flags.goal){
     lightPool(ctx,40,40,2);
     block(ctx,'#bca06c66',6,6,68,68);
+    blocks(ctx,'#263e3a80',[[9,9,62,2],[9,11,2,58]]);
+    blocks(ctx,'#dfc99370',[[13,67,54,1],[67,13,1,54]]);
     ctx.strokeStyle='#f2cf8d';ctx.lineWidth=2;ctx.strokeRect(6,6,68,68);
     blocks(ctx,'#ffe2a4',[[5,5,12,3],[5,5,3,12],[63,5,12,3],[72,5,3,12],[5,72,12,3],[5,63,3,12],[63,72,12,3],[72,63,3,12]]);
   }
   if(flags.spawn){
-    block(ctx,'#181e38aa',7,7,66,66);
-    blocks(ctx,'#a7766955',[[10,10,60,3],[10,66,60,3]]);
+    // Recessed entrance lining stays inside the existing red frame and under its arrow.
+    block(ctx,'#141f30bc',7,7,66,66);
+    blocks(ctx,p.edge,[[9,9,62,4],[9,13,4,55],[13,68,56,3]]);
+    blocks(ctx,p.mortar,[[13,13,5,48],[62,13,6,48],[18,13,44,4]]);
+    blocks(ctx,p.rim+'80',[[13,13,4,1],[18,13,20,1],[42,13,20,1],[62,14,1,9],[13,29,4,1],[13,45,4,1],[63,29,5,1],[63,45,5,1]]);
+    blocks(ctx,'#ad756064',[[19,18,2,35],[60,18,2,35],[19,64,43,2]]);
+    blocks(ctx,'#101c2b66',[[24,20,32,5],[22,25,36,28]]);
   }
   ctx.restore();
 }
 
-/** Raised perimeter sits inside existing cells; holes retain alpha=0 in the main canvas. */
+/** Worn ground-level boundary, with no metal rim or raised platform thickness. */
 export function paintSceneEdge(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y:number,size:number,exists:(x:number,y:number)=>boolean){
-  const p=palettes[scene];ctx.save();ctx.translate(x*size,y*size);ctx.scale(size/80,size/80);
-  if(!exists(x,y-1)){block(ctx,p.edge,0,0,80,5);block(ctx,p.rim,2,5,76,2);for(let k=0;k<4;k++)block(ctx,p.rim+'66',k*20+4,1,12,1);}
-  if(!exists(x-1,y)){block(ctx,p.edge,0,0,5,80);block(ctx,p.rim+'a0',5,5,2,70);}
-  if(!exists(x+1,y)){block(ctx,p.edge,75,0,5,80);block(ctx,p.mortar,72,5,3,72);for(let k=0;k<4;k++)block(ctx,p.rim+'66',76,k*20+4,2,12);}
-  if(!exists(x,y+1)){block(ctx,p.mortar,0,72,80,3);block(ctx,p.edge,0,75,80,5);for(let k=0;k<4;k++)block(ctx,p.rim+'66',k*20+3,76,13,2);}
+  if(scene==='finale'&&hasIllustratedRoom())return;
+  const p=palettes[scene],n=noise(x,y,p.seed);
+  ctx.save();ctx.translate(x*size,y*size);ctx.scale(size/80,size/80);
+  const joint=p.edge+'85',worn=p.rim+'60';
+  if(!exists(x,y-1)){block(ctx,joint,0,0,80,1);block(ctx,worn,12+n%28,1,23,1);}
+  if(!exists(x-1,y)){block(ctx,joint,0,0,1,80);block(ctx,worn,1,16+n%24,1,19);}
+  if(!exists(x+1,y)){block(ctx,joint,79,0,1,80);block(ctx,p.mortar+'50',78,28+n%17,1,15);}
+  if(!exists(x,y+1)){block(ctx,joint,0,79,80,1);block(ctx,p.mortar+'60',23+n%19,78,21,1);}
   ctx.restore();
 }
 
-function lantern(ctx:CanvasRenderingContext2D,x:number,y:number,red=false){
-  lightPool(ctx,x+5,y+12,1.6);
-  blocks(ctx,'#253548',[[x+3,y-4,4,6],[x-1,y+1,12,3],[x-1,y+20,12,3],[x-2,y+5,2,14],[x+10,y+5,2,14]]);
-  block(ctx,red?'#c55a43':'#e6ae58',x,y+4,10,16);
-  block(ctx,red?'#ffad68':'#ffe7a4',x+3,y+6,4,12);
-  block(ctx,'#fff3c4',x+4,y+7,2,7);
-  block(ctx,'#a67a48',x+4,y+23,2,5);
-}
-function crate(ctx:CanvasRenderingContext2D,p:ScenePalette,x:number,y:number,w=31,h=28){
-  block(ctx,'#202e3b',x-2,y-2,w+4,h+4);
-  block(ctx,p.timber,x,y,w,h);block(ctx,p.timberLight,x,y,w,4);
-  for(let k=8;k<w-3;k+=8){block(ctx,'#3e3b354f',x+k,y+5,1,h-7);block(ctx,p.timberLight+'55',x+k+2,y+5,1,h-7);}
-  block(ctx,'#4d4438',x,y+h-4,w,4);block(ctx,p.timberLight,x+2,y+5,3,h-10);block(ctx,p.timberLight,x+w-5,y+5,3,h-10);
-  for(let k=0;k<Math.min(w-10,h-8);k+=3)block(ctx,p.timberLight,x+6+k,y+5+k,4,4);
-  blocks(ctx,'#2c3640',[[x+3,y+1,2,2],[x+w-5,y+1,2,2],[x+3,y+h-3,2,2],[x+w-5,y+h-3,2,2]]);
-}
-function leaves(ctx:CanvasRenderingContext2D,x:number,y:number,tint=0){
-  blocks(ctx,tint?'#365b4e':'#356252',[[x-11,y,12,6],[x+3,y-7,12,6],[x-4,y-13,8,10],[x-13,y+8,12,5],[x+2,y+4,14,6]]);
-  blocks(ctx,tint?'#76966c':'#7da57b',[[x-10,y,7,2],[x+4,y-7,8,2],[x-3,y-13,3,6],[x+4,y+4,7,2]]);
-  block(ctx,'#b0bd8555',x+1,y,2,10);
-}
-function pot(ctx:CanvasRenderingContext2D,x:number,y:number,small=false){
-  const w=small?14:22,h=small?12:18;
-  block(ctx,'#40363a',x-2,y-2,w+4,h+3);block(ctx,'#c78e62',x,y,w,4);
-  block(ctx,'#a96f53',x+2,y+4,w-4,h-4);block(ctx,'#e5ad77',x+3,y+4,3,h-6);
-  block(ctx,'#6c4c46',x+w-5,y+4,3,h-4);block(ctx,'#443c3b',x+3,y-1,w-6,3);
-}
-function stall(ctx:CanvasRenderingContext2D,p:ScenePalette,kind:ScenePropKind,index:number){
-  const food=kind==='food-stall',toy=kind==='toy-stall';
-  const roof=food?'#9e514a':toy?'#3d787e':'#586953',roofLight=food?'#d17a57':toy?'#71a8a0':'#a7a575';
-  block(ctx,'#203345',8,17,64,45);
-  blocks(ctx,p.timber,[[11,12,4,51],[65,12,4,51],[14,44,51,18]]);
-  block(ctx,p.timberLight,13,43,54,4);for(let k=0;k<6;k++)block(ctx,'#5b473c',17+k*8,49,2,11);
-  block(ctx,'#263846',8,12,64,6);block(ctx,roof,11,6,58,10);block(ctx,roofLight,14,6,52,3);
-  for(let k=0;k<7;k++){const xx=8+k*9;block(ctx,k%2?'#d4c49a':roof,xx,17,9,9);block(ctx,k%2?'#f1dca9':roofLight,xx,17,9,3);block(ctx,k%2?'#9e977e':'#493e3d',xx,26,8,3);}
-  block(ctx,p.timberLight,16,32,3,10);block(ctx,p.timberLight,61,31,3,11);
-  if(food){
-    blocks(ctx,'#bac5b1',[[23,36,14,5],[20,34,5,9],[38,38,12,4],[49,36,4,8]]);block(ctx,'#273f4f',33,37,2,2);
-    block(ctx,'#ce9556',52,37,9,5);block(ctx,'#e8c888',54,35,5,3);
-  }else if(toy){
-    blocks(ctx,'#b88777',[[23,34,9,9],[25,32,5,13]]);blocks(ctx,'#dbc092',[[25,35,6,2],[27,33,2,9]]);
-    blocks(ctx,'#9bbab5',[[40,35,15,7],[53,32,5,12],[40,33,4,3]]);
-  }else{
-    block(ctx,'#c8b286',21,32,17,11);block(ctx,'#f2ddb0',23,31,13,10);block(ctx,'#557176',25,34,8,1);block(ctx,'#557176',25,37,6,1);
-    block(ctx,'#f0d9ab',43,30,13,13);blocks(ctx,'#6a7769',[[45,33,8,1],[45,36,7,1],[45,39,5,1]]);
-  }
-  lantern(ctx,index%2?61:6,30,true);
-}
-
-/** Detailed obstacles fit their existing reserved cells and carry no gameplay behavior. */
+/** Detailed props share one local 80px drawing space across maps and their backdrops. */
 export function paintSceneProp(ctx:CanvasRenderingContext2D,scene:BattleSceneId,kind:ScenePropKind,x:number,y:number,size:number,index=0){
-  const p=palettes[scene];ctx.save();ctx.translate(x,y);ctx.scale(size/80,size/80);ctx.imageSmoothingEnabled=false;
-  blocks(ctx,'#102b3c88',[[10,58,60,7],[17,65,46,3]]);
-  if(kind.endsWith('stall'))stall(ctx,p,kind,index);
-  else if(kind==='crate'){
-    crate(ctx,p,14,29,39,32);crate(ctx,p,38,15,25,23);lantern(ctx,60,34);
-  }else if(kind==='warehouse-crates'){
-    crate(ctx,p,9,34,31,28);crate(ctx,p,40,30,30,32);crate(ctx,p,24,10,31,26);
-    block(ctx,'#ded2a4',29,17,13,8);blocks(ctx,'#657b80',[[31,19,8,1],[31,22,5,1]]);
-  }else if(kind==='bin'){
-    blocks(ctx,'#263a4a',[[17,19,35,43],[13,17,43,6],[20,12,29,5],[28,8,14,4]]);
-    block(ctx,p.metal,20,23,29,35);block(ctx,p.metalLight,19,23,5,33);
-    for(let k=0;k<3;k++)block(ctx,'#283f4a',29+k*7,26,2,27);
-    block(ctx,'#abc0b1',18,18,33,3);block(ctx,'#c7a46a',29,32,10,12);block(ctx,'#747966',31,35,6,2);
-    blocks(ctx,'#87937f',[[53,47,12,12],[55,44,8,4]]);block(ctx,'#b0b595',55,46,3,8);
-  }else if(kind==='sacks'){
-    blocks(ctx,'#9a865f',[[11,41,29,19],[15,31,20,13],[20,23,10,9],[37,38,30,23],[42,26,21,14],[47,20,9,7]]);
-    blocks(ctx,'#d0ba85',[[16,36,6,18],[44,31,6,24],[15,56,20,3],[43,57,19,3]]);
-    blocks(ctx,'#5c6454',[[19,30,13,3],[46,25,12,3],[34,47,3,12]]);block(ctx,p.moss,8,60,18,3);
-  }else if(kind==='planter'){
-    pot(ctx,12,40);leaves(ctx,23,33);pot(ctx,43,44);leaves(ctx,54,36,1);
-    blocks(ctx,'#d7b287',[[18,21,4,4],[21,18,4,4],[24,21,4,4],[21,24,4,4]]);block(ctx,'#f9df9d',21,21,3,3);
-  }else if(kind==='broken-pot'){
-    pot(ctx,13,39);leaves(ctx,24,32);blocks(ctx,'#b6825a',[[41,46,22,11],[38,53,10,6],[51,40,8,7],[62,55,8,5]]);
-    blocks(ctx,'#e0b07b',[[43,46,16,3],[53,40,4,3],[63,55,5,2]]);blocks(ctx,'#3d4d43',[[45,51,12,5],[50,47,5,3]]);
-    blocks(ctx,'#a4c3b655',[[43,30,13,2],[54,26,3,7]]);
-  }else if(kind==='trellis'){
-    block(ctx,'#273e42',11,8,58,55);block(ctx,p.metal,15,11,50,48);block(ctx,'#294749',19,15,42,40);
-    for(let k=0;k<4;k++){block(ctx,p.metalLight,19+k*13,12,2,46);block(ctx,p.metalLight,16,17+k*12,48,2);}
-    blocks(ctx,'#aed1c349',[[22,20,8,6],[35,33,10,7],[49,21,8,7]]);
-    leaves(ctx,23,20,1);leaves(ctx,54,42);pot(ctx,19,50,true);
-  }else if(kind==='drain'){
-    blocks(ctx,p.metal,[[13,23,54,35],[18,18,44,5],[18,58,44,4]]);block(ctx,'#142e40',18,27,44,25);
-    for(let k=0;k<6;k++)block(ctx,p.metalLight,21+k*7,28,3,23);
-    block(ctx,'#c3b68a',17,22,46,2);blocks(ctx,p.water,[[17,62,42,3],[25,67,22,2]]);
-  }else if(kind==='pipe'||kind==='valve'){
-    blocks(ctx,'#21394a',[[6,29,68,28],[14,21,8,40],[58,21,8,40]]);
-    block(ctx,p.metal,9,33,62,20);block(ctx,p.metalLight,11,34,59,5);block(ctx,'#284856',10,49,61,5);
-    blocks(ctx,p.metalLight,[[15,24,5,33],[59,24,5,33]]);blocks(ctx,'#e0c98c',[[16,27,2,3],[16,51,2,3],[60,27,2,3],[60,51,2,3]]);
-    if(kind==='valve'){
-      block(ctx,p.metalLight,37,18,7,18);
-      blocks(ctx,'#b87751',[[27,10,27,5],[22,15,5,17],[27,32,27,5],[54,15,5,17]]);
-      blocks(ctx,'#f0bc6e',[[28,10,23,2],[23,16,2,13],[38,14,5,19],[27,21,27,4]]);
-    }else{
-      blocks(ctx,'#223b48',[[33,32,7,23],[37,37,9,10]]);block(ctx,'#b99f6a',41,43,4,3);
-      blocks(ctx,p.water,[[34,61,9,2],[40,65,16,2],[36,69,23,2]]);
-    }
-  }else if(kind==='storage-rack'){
-    blocks(ctx,'#213347',[[9,9,62,56],[12,64,5,4],[63,64,5,4]]);
-    block(ctx,p.metal,12,12,56,49);
-    for(const sy of [13,36,60]){block(ctx,p.metalLight,12,sy,56,3);block(ctx,'#24394a',14,sy+3,52,2);}
-    blocks(ctx,p.metalLight,[[12,12,4,51],[64,12,4,51]]);crate(ctx,p,19,17,20,17);crate(ctx,p,42,39,18,19);
-    blocks(ctx,'#a19676',[[45,22,13,10],[21,45,15,13]]);blocks(ctx,'#d2c295',[[46,21,11,3],[22,44,13,3]]);
-  }else if(kind==='cable'){
-    blocks(ctx,p.timberLight,[[14,27,8,33],[58,27,8,33],[20,30,40,6],[20,54,40,5]]);
-    block(ctx,'#223443',23,24,33,35);block(ctx,'#4d6470',26,25,27,31);
-    for(let k=0;k<5;k++){block(ctx,'#8b9e9d',28+k*5,27,2,27);block(ctx,'#273c4a',30+k*5,29,2,23);}
-    blocks(ctx,'#253b4a',[[48,59,15,3],[60,61,3,7],[51,67,10,3]]);
-  }else{
-    blocks(ctx,p.metal,[[12,17,5,45],[63,17,5,45],[12,23,56,19]]);
-    block(ctx,'#d2ac64',16,26,48,11);for(let k=0;k<6;k++)block(ctx,'#3c4549',18+k*8,26,4,11);
-    blocks(ctx,p.metalLight,[[12,17,3,44],[63,17,3,44],[9,61,12,3],[59,61,12,3]]);
-  }
+  ctx.save();ctx.translate(x,y);ctx.scale(size/80,size/80);ctx.imageSmoothingEnabled=false;
+  paintDetailedSceneProp(ctx,palettes[scene],kind,index);
   ctx.restore();
 }

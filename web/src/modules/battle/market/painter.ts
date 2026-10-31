@@ -4,7 +4,8 @@ import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP} from './config';
 import {getAttackCells, getSkillCells} from './engine';
 import type {MarketCatId, MarketState, Position} from './types';
-import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintMarketObstacleScenery} from '../scene-market-obstacles';
 
 export const CELL=80;
 export const BOARD_WIDTH=MAP.columns*CELL;
@@ -34,12 +35,6 @@ function drawMarketCat(ctx:CanvasRenderingContext2D,id:MarketCatId,x:number,y:nu
   ctx.restore();
 }
 
-/** Fourteen fixed obstacle cells become pixel stalls, kept inside their tiles. */
-function drawStall(ctx:CanvasRenderingContext2D,x:number,y:number,index:number){
-  const kind=index%3;
-  paintSceneProp(ctx,'market',(['food-stall','toy-stall','notice-stall'] as const)[kind],x,y,CELL,index);
-}
-
 /** A one-cell lantern keeper closes its lamp before sweeping sideways; no charge bar. */
 function drawBoss(ctx:CanvasRenderingContext2D,state:MarketState){
   const boss=state.boss;if(boss.phase==='defeated')return;
@@ -54,17 +49,30 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:MarketState){
   blocks(ctx,SCENE_INK.enemyLight,[[26,17,25,4],[21,30,5,26],[52,35,5,23]]);
   blocks(ctx,SCENE_INK.gold,[[28,29,7,3],[44,29,7,3]]);
   blocks(ctx,'#85928a',[[26,46,27,5],[33,51,5,10]]);
+  // A folded cowl and a small metal mask read at the same pixel scale as the cats.
+  blocks(ctx,'#526b77',[[28,21,7,6],[45,21,5,6],[26,27,7,2],[45,27,7,2]]);
+  blocks(ctx,'#1d3240',[[35,22,2,5],[28,28,7,1],[44,28,7,1],[35,35,10,2],[28,53,2,10],[45,53,2,10],[19,62,39,2]]);
+  blocks(ctx,'#b5c6c4',[[28,18,20,1],[22,32,1,11],[53,37,1,11],[28,47,23,1]]);
+  blocks(ctx,'#f4dfab',[[29,30,2,1],[45,30,2,1]]);
+  blocks(ctx,'#2a3e48',[[36,47,7,3],[23,68,9,2],[46,68,9,2]]);
+  blocks(ctx,'#c2b386',[[38,48,3,1],[28,32,1,1],[51,32,1,1],[34,53,1,6]]);
   if(windup){
     // Both arms close the lantern shutters; dark rings spill along the marked row.
     blocks(ctx,SCENE_INK.enemy,[[10,31,13,7],[54,31,12,7]]);
     blocks(ctx,'#756748',[[10,15,4,47],[8,11,8,4]]);
     blocks(ctx,'#30484b',[[5,19,15,17],[7,17,11,3],[7,36,11,3]]);
     rect(ctx,11,22,3,10,'#b0a475');
+    blocks(ctx,'#71817c',[[6,20,1,13],[8,18,8,1],[8,36,8,1],[15,33,7,1],[55,33,7,1]]);
+    blocks(ctx,'#203842',[[8,22,2,11],[15,22,2,11],[8,27,9,1]]);
+    blocks(ctx,'#d1bb80',[[11,23,1,3],[10,12,3,1]]);
     ctx.strokeStyle='#687b88';ctx.lineWidth=2;ctx.beginPath();ctx.arc(12,28,18,Math.PI*.65,Math.PI*1.9);ctx.stroke();
   }else{
     blocks(ctx,'#85714d',[[11-jab*5,24,4,40],[8-jab*5,19,10,4]]);
     blocks(ctx,'#b4a16c',[[5-jab*5,27,17,19],[8-jab*5,24,11,3]]);
     blocks(ctx,'#f0d68a',[[9-jab*5,30,9,12],[11-jab*5,28,5,16]]);
+    blocks(ctx,'#6a6049',[[7-jab*5,29,2,14],[18-jab*5,29,2,14],[8-jab*5,35,11,1]]);
+    blocks(ctx,'#f8e9b9',[[12-jab*5,30,2,4],[12-jab*5,37,2,4],[9-jab*5,25,8,1]]);
+    blocks(ctx,'#c4b283',[[8-jab*5,44,11,1],[12-jab*5,48,1,12]]);
     if(recover){ctx.strokeStyle='#b8ab7a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(13,37,17,0,Math.PI);ctx.stroke();}
   }
   ctx.restore();
@@ -74,12 +82,12 @@ export function paintMarket(ctx:CanvasRenderingContext2D,state:MarketState,selec
   ctx.clearRect(0,0,BOARD_WIDTH,BOARD_HEIGHT);ctx.imageSmoothingEnabled=false;ctx.save();
   ctx.beginPath();ctx.rect(0,0,BOARD_WIDTH,BOARD_HEIGHT);ctx.clip();
   for(const position of CELLS){
-    const {x,y}=position,bx=x*CELL,by=y*CELL,goal=x===MAP.goal.x&&y===MAP.goal.y,obstacle=obstacleCell(x,y);
+    const {x,y}=position,goal=x===MAP.goal.x&&y===MAP.goal.y,obstacle=obstacleCell(x,y);
     const spawn=MAP.spawns.some(cell=>cell.x===x&&cell.y===y);
     paintSceneTile(ctx,'market',x,y,CELL,{goal,obstacle,spawn});
-    paintSceneEdge(ctx,'market',x,y,CELL,mapCell);
-    if(obstacle)drawStall(ctx,bx,by,MAP.obstacles.findIndex(cell=>cell.x===x&&cell.y===y));
+    if(!obstacle)paintSceneEdge(ctx,'market',x,y,CELL,mapCell);
   }
+  paintMarketObstacleScenery(ctx);
   for(const {x,y} of MAP.spawns){
     const bx=x*CELL,by=y*CELL;ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(bx+5,by+5,CELL-10,CELL-10);
     const points=y===0?[[bx+29,by+26,23,4],[bx+33,by+30,15,4],[bx+37,by+34,7,4]]:y===4?[[bx+37,by+26,7,4],[bx+33,by+30,15,4],[bx+29,by+34,23,4]]:[[bx+45,by+24,4,23],[bx+41,by+28,4,15],[bx+37,by+32,4,7]];

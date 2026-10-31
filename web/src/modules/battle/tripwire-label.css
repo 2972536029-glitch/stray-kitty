@@ -1,0 +1,31 @@
+/* Keep the five-character caption below the existing check mark, whose lowest
+   point is 60/80 of the tunnel tile. Scale with the cell even in mobile overview. */
+.battle-l00.battle-immersive :is(.tunnel-cell,.finale-cell)>.btl-tripwire-label{
+  position:absolute;
+  left:50%;
+  bottom:5cqw;
+  transform:translateX(-50%);
+  display:block;
+  box-sizing:border-box;
+  width:max-content;
+  max-width:calc(100% - 2px);
+  margin:0;
+  padding:0 2px;
+  border:0;
+  border-radius:2px;
+  background:#183832c9;
+  color:#d6e8c8;
+  font-size:min(12px,15cqw);
+  font-weight:700;
+  line-height:1.1;
+  letter-spacing:0;
+  white-space:nowrap;
+  text-shadow:0 0 1px #102923;
+  pointer-events:none;
+  user-select:none;
+  z-index:1;
+}
+
+@container battle-unit-cell (max-width:48px){
+  .battle-l00.battle-immersive :is(.tunnel-cell,.finale-cell)>.btl-tripwire-label{padding:0 1px}
+}
