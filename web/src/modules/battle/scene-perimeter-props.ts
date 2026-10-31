@@ -1,5 +1,5 @@
 import type {BattleSceneId} from './scene-art';
-import {paintDetailedExterior,paintDetailedGardenWall,paintRefinedMaterial} from './scene-detailed-exteriors';
+import {paintDetailedExterior,paintDetailedGardenWall,paintDetailedStructure,paintRefinedMaterial} from './scene-detailed-exteriors';
 
 export interface PerimeterPropBounds {x:number;y:number;width:number;height:number}
 type StructureKind='house'|'soil-bed'|'garden-wall'|'flower-frame'|'counter'|'vent'|'loading-dock';
@@ -156,6 +156,7 @@ function flowerFrame(ctx:Context,p:Material,w:number,h:number){
   r(ctx,p.edge,12,h-25,w-27,14);r(ctx,'#886e4b',14,h-23,w-31,10);r(ctx,'#a2946c',14,h-23,w-31,2);
 }
 function counter(ctx:Context,p:Material,w:number,h:number,variant:number){
+  if(paintDetailedStructure(ctx,variant?'market-counter-cloth':'market-counter',w,h))return;
   shadow(ctx,w,h);
   const front=h*.47,foot=h-16;
   r(ctx,p.edge,7,front,w-16,foot-front);r(ctx,'#493e30',11,front+5,w-24,foot-front-7);
@@ -181,6 +182,7 @@ function counter(ctx:Context,p:Material,w:number,h:number,variant:number){
   if(variant){r(ctx,'#6c8178',w*.62,front+5,24,foot-front-8);r(ctx,'#95a59870',w*.62+2,front+6,3,foot-front-11);}
 }
 function vent(ctx:Context,p:Material,w:number,h:number){
+  if(paintDetailedStructure(ctx,'vent',w,h))return;
   shadow(ctx,w,h);brickFace(ctx,p,8,22,w-18,h-36);ledge(ctx,p,5,12,w-12,14);
   paintRefinedMaterial(ctx,'metal',8,22,w-18,h-36,.3);
   r(ctx,p.edge,15,16,w-33,8);
@@ -190,6 +192,7 @@ function vent(ctx:Context,p:Material,w:number,h:number){
   for(const xx of [12,w-18]){r(ctx,'#a3a78b',xx,16,2,2);r(ctx,'#2d4548',xx,31,2,2);}
 }
 function loadingDock(ctx:Context,p:Material,w:number,h:number,variant:number){
+  if(paintDetailedStructure(ctx,'loading-dock',w,h,variant===1))return;
   shadow(ctx,w,h);brickFace(ctx,p,8,20,w-18,h-34);ledge(ctx,p,5,12,w-12,12);
   for(let xx=14;xx<w-20;xx+=18){r(ctx,p.edge+'75',xx,15,1,5);r(ctx,p.light+'35',xx+2,14,11,1);}
   const pileX=variant?w*.55:18,pileW=Math.min(57,w*.32);

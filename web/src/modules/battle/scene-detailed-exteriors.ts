@@ -9,13 +9,15 @@ const crops:Record<DetailedExteriorKind,readonly [number,number,number,number]>=
   'planted-bed':[76,686,758,262],
   'glass-frame':[1008,683,452,272],
 };
-type Asset='exteriors'|'obstacles'|'workstations'|'materials'|'accents';
+type Asset='exteriors'|'obstacles'|'workstations'|'materials'|'accents'|'structures'|'market-banks';
 const urls:Record<Asset,string>={
   exteriors:new URL('./assets/scene-detailed-residences-garden-v1.png',import.meta.url).href,
   obstacles:new URL('./assets/scene-detailed-obstacles-v1.png',import.meta.url).href,
   workstations:new URL('./assets/scene-detailed-workstations-v1.png',import.meta.url).href,
   materials:new URL('./assets/scene-refined-materials-v1.png',import.meta.url).href,
   accents:new URL('./assets/scene-small-accents-v1.png',import.meta.url).href,
+  structures:new URL('./assets/scene-perimeter-foreground-v1.png',import.meta.url).href,
+  'market-banks':new URL('./assets/scene-market-banks-v1.png',import.meta.url).href,
 };
 const atlases=new Map<Asset,HTMLImageElement>(),listeners=new Map<Asset,Set<()=>void>>();
 function source(asset:Asset='exteriors'){
@@ -121,6 +123,69 @@ export function paintDetailedAccent(ctx:CanvasRenderingContext2D,kind:string){
   const sprite=sceneryRaster(image,crop,dw,dh);if(!sprite)return false;
   ctx.save();ctx.imageSmoothingEnabled=false;
   ctx.drawImage(sprite,x+(w-dw)/2,y+h-dh,dw,dh);ctx.restore();return true;
+}
+
+export type DetailedStructureKind='loading-dock'|'vent'|'market-counter'|'market-counter-cloth'
+  |'prologue-corner'|'alley-cart'|'market-handcart'|'garden-cart'|'tunnel-pipe'|'warehouse-beam';
+const structureCrops:Record<DetailedStructureKind,readonly [number,number,number,number]>={
+  'loading-dock':[21,118,506,157],vent:[563,150,445,121],
+  'market-counter':[23,358,497,255],'market-counter-cloth':[581,383,415,228],
+  'prologue-corner':[32,707,477,178],'alley-cart':[524,709,476,178],
+  'market-handcart':[85,938,357,249],'garden-cart':[588,956,403,229],
+  'tunnel-pipe':[27,1279,483,164],'warehouse-beam':[542,1284,458,166],
+};
+/** Complete perimeter and foreground groups retain the original reserved box. */
+export function paintDetailedStructure(ctx:CanvasRenderingContext2D,kind:DetailedStructureKind,width:number,height:number,mirror=false){
+  const image=source('structures');if(!image||width<=4||height<=4)return false;
+  const crop=structureCrops[kind],scale=Math.min((width-4)/crop[2],(height-4)/crop[3]);
+  const dw=crop[2]*scale,dh=crop[3]*scale,sprite=sceneryRaster(image,crop,dw,dh);if(!sprite)return false;
+  ctx.save();ctx.imageSmoothingEnabled=false;ctx.beginPath();ctx.rect(0,0,width,height);ctx.clip();
+  if(mirror){ctx.translate(width,0);ctx.scale(-1,1);}
+  ctx.drawImage(sprite,(width-dw)/2,height-dh-2,dw,dh);ctx.restore();return true;
+}
+
+const marketBankCrops:readonly (readonly [number,number,number,number])[]=[
+  [37,89,709,399],[788,93,716,336],[37,533,710,412],[790,582,716,329],
+];
+const marketBankBoxes:readonly (readonly [number,number,number,number])[]=[
+  [-32,-32,272,192],[400,-32,272,112],[-32,240,272,192],[400,320,272,112],
+];
+const marketBankFootprints:readonly (readonly (readonly [number,number])[])[]=[
+  [[-32,-32],[240,-32],[240,80],[80,80],[80,160],[-32,160]],
+  [[400,-32],[672,-32],[672,80],[400,80]],
+  [[-32,240],[80,240],[80,320],[240,320],[240,432],[-32,432]],
+  [[400,320],[672,320],[672,432],[400,432]],
+];
+const marketBankRasters:(HTMLCanvasElement|undefined)[]=[];
+function marketRaster(image:HTMLImageElement,index:number){
+  if(marketBankRasters[index])return marketBankRasters[index];
+  const [sx,sy,sw,sh]=marketBankCrops[index],[,,w,h]=marketBankBoxes[index];
+  const raster=index===0||index===2?createSceneryRaster(w,h,ink=>{
+    // The generated L's inside turn is registered to the real cell corner.
+    // All three panels share one raster, so no independently rounded seam forms.
+    const arm=184,turn=index===0?256:153,targetTurn=index===0?112:80;
+    ink.drawImage(image,sx,sy,arm,turn,0,0,112,targetTurn);
+    ink.drawImage(image,sx,sy+turn,arm,sh-turn,0,targetTurn,112,h-targetTurn);
+    if(index===0)ink.drawImage(image,sx+arm,sy,sw-arm,turn,112,0,w-112,targetTurn);
+    else ink.drawImage(image,sx+arm,sy+turn,sw-arm,sh-turn,112,targetTurn,w-112,h-targetTurn);
+  }):sceneryRaster(image,[sx,sy,sw,sh],w,h);
+  if(raster)marketBankRasters[index]=raster;
+  return raster;
+}
+/** Both canvas layers use identical world coordinates and clips, including the
+ * two L notches. No generated shadow or counter may cover a playable cell. */
+export function hasDetailedMarketBanks(){return !!source('market-banks');}
+export function paintDetailedMarketBanks(ctx:CanvasRenderingContext2D){
+  const image=source('market-banks');if(!image)return false;
+  const sprites=marketBankBoxes.map((_,i)=>marketRaster(image,i));
+  if(sprites.some(sprite=>!sprite))return false;
+  for(let i=0;i<marketBankBoxes.length;i++){
+    const [x,y,w,h]=marketBankBoxes[i],points=marketBankFootprints[i];
+    ctx.save();ctx.imageSmoothingEnabled=false;ctx.beginPath();ctx.moveTo(...points[0]);
+    for(const point of points.slice(1))ctx.lineTo(...point);
+    ctx.closePath();ctx.clip();ctx.drawImage(sprites[i]!,x,y,w,h);ctx.restore();
+  }
+  return true;
 }
 
 type RefinedMaterial='teal-cloth'|'rust-cloth'|'olive-cloth'|'blue-cloth'|'metal'|'wood';

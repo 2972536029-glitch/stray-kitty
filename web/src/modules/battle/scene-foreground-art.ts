@@ -1,9 +1,9 @@
 import type {BattleSceneId} from './scene-art';
-import {paintRefinedMaterial} from './scene-detailed-exteriors';
+import {paintDetailedStructure,paintRefinedMaterial,type DetailedStructureKind} from './scene-detailed-exteriors';
 
 export interface ForegroundSceneryBounds {x:number;y:number;width:number;height:number}
 type Context=CanvasRenderingContext2D;
-interface ForegroundPlan {x:number;y:number;width:number;height:number;paint:(ctx:Context)=>void}
+interface ForegroundPlan {x:number;y:number;width:number;height:number;art:DetailedStructureKind;paint:(ctx:Context)=>void}
 const r=(ctx:Context,color:string,x:number,y:number,w:number,h:number)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h);};
 function blocks(ctx:Context,color:string,items:readonly number[][]){for(const [x,y,w,h] of items)r(ctx,color,x,y,w,h);}
 function softContact(ctx:Context,x:number,y:number,w:number,h:number){
@@ -180,12 +180,12 @@ function warehouseBeam(ctx:Context){
 
 // Authored anchors stay outside real cells and entrance lanes; no per-frame randomness.
 const plans:Record<BattleSceneId,ForegroundPlan>={
-  prologue:{x:.35,y:3.02,width:1.75,height:.6,paint:prologueCorner},
-  alley:{x:.15,y:5.02,width:2.85,height:.675,paint:alleyCart},
-  market:{x:-1.38,y:4.05,width:1.12,height:.675,paint:marketHandcart},
-  greenhouse:{x:4.7,y:5.6,width:1.1,height:.675,paint:gardenCart},
-  tunnel:{x:5.65,y:5.02,width:2.75,height:.675,paint:tunnelPipe},
-  finale:{x:8.2,y:7.02,width:2.8,height:.675,paint:warehouseBeam},
+  prologue:{x:.35,y:3.02,width:1.75,height:.6,art:'prologue-corner',paint:prologueCorner},
+  alley:{x:.15,y:5.02,width:2.85,height:.675,art:'alley-cart',paint:alleyCart},
+  market:{x:-1.38,y:4.05,width:1.12,height:.675,art:'market-handcart',paint:marketHandcart},
+  greenhouse:{x:4.7,y:5.6,width:1.1,height:.675,art:'garden-cart',paint:gardenCart},
+  tunnel:{x:5.65,y:5.02,width:2.75,height:.675,art:'tunnel-pipe',paint:tunnelPipe},
+  finale:{x:8.2,y:7.02,width:2.8,height:.675,art:'warehouse-beam',paint:warehouseBeam},
 };
 
 /** The caller translates to board origin and clips out actual cells before drawing.
@@ -194,6 +194,8 @@ export function paintForegroundScenery(ctx:Context,scene:BattleSceneId,cellWidth
   if(!Number.isFinite(cellWidth)||!Number.isFinite(cellHeight)||cellWidth<=0||cellHeight<=0)return [];
   const plan=plans[scene];
   ctx.save();ctx.scale(cellWidth/80,cellHeight/80);ctx.translate(plan.x*80,plan.y*80);
-  ctx.imageSmoothingEnabled=false;plan.paint(ctx);ctx.restore();
+  ctx.imageSmoothingEnabled=false;
+  if(!paintDetailedStructure(ctx,plan.art,plan.width*80,plan.height*80))plan.paint(ctx);
+  ctx.restore();
   return [{x:plan.x*cellWidth,y:plan.y*cellHeight,width:plan.width*cellWidth,height:plan.height*cellHeight}];
 }

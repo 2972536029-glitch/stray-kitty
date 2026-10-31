@@ -1,4 +1,4 @@
-import {paintRefinedMaterial,hasRefinedMaterials} from './scene-detailed-exteriors';
+import {hasDetailedMarketBanks,paintDetailedMarketBanks,paintRefinedMaterial,hasRefinedMaterials} from './scene-detailed-exteriors';
 
 /** A market stall bank uses one continuous structure, in native 80px tile space.
  * The two western banks wrap the corner; their doors face the central aisle.
@@ -181,8 +181,21 @@ function southEast(ctx:Context){
 function paintMarketBanks(ctx:Context){northWest(ctx);northEast(ctx);southWest(ctx);southEast(ctx);}
 let marketSurface:HTMLCanvasElement|undefined;
 let marketSurfaceHasMaterials=false;
+let detailedMarketSurface:HTMLCanvasElement|undefined;
 /** Pure display only: unchanged obstacle footprint, entrances, routing and collision. */
 export function paintMarketObstacleScenery(ctx:CanvasRenderingContext2D):void{
+  if(hasDetailedMarketBanks()){
+    // Register the art on the tactical canvas's native 80px cell grid first.
+    // The backdrop and live board then enlarge the same pixels once; otherwise
+    // fractional CSS zoom can give their halves different pixel-step patterns.
+    if(!detailedMarketSurface&&typeof document!=='undefined'){
+      const surface=document.createElement('canvas');surface.width=704;surface.height=464;
+      const ink=surface.getContext('2d');
+      if(ink){ink.translate(32,32);if(paintDetailedMarketBanks(ink))detailedMarketSurface=surface;}
+    }
+    if(detailedMarketSurface){ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(detailedMarketSurface,-32,-32,704,464);ctx.restore();return;}
+    if(paintDetailedMarketBanks(ctx))return;
+  }
   ctx.save();ctx.imageSmoothingEnabled=false;
   // Static half-pixel stitching and soft local light need rasterizing only once.
   // Node geometry checks keep the direct path, without any DOM requirement.
