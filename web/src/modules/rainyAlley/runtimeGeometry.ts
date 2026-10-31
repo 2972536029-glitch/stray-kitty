@@ -56,7 +56,9 @@ export function crateClimbTarget(point: Point, normalField: CollisionField, resc
 }
 
 export function squeezeExitTarget(normalField: CollisionField, squeezeField: CollisionField, direction: -1 | 1) {
-  const ideal = {x: SQUEEZE_CENTER_X, y: direction > 0 ? SQUEEZE_BOUNDS.bottom + SQUEEZE_FOOTPRINT_RADIUS : SQUEEZE_BOUNDS.top - SQUEEZE_FOOTPRINT_RADIUS};
+  // Release beyond the narrow mouth so the ordinary footprint can turn again.
+  const clearance = normalField.colliderRadius + 6;
+  const ideal = {x: SQUEEZE_CENTER_X, y: direction > 0 ? SQUEEZE_BOUNDS.bottom + clearance : SQUEEZE_BOUNDS.top - clearance};
   const target = normalField.nearestTraversable(ideal, 48);
   return target && squeezeField.isTraversable(target.x, target.y) ? target : null;
 }

@@ -3,6 +3,8 @@ import {followCameraPoint} from '../../adapters/canvas/camera';
 import {rainyAlleyObjectEligible, rainyAlleyRegistration, rainyAlleySource, type RainyFixedObject} from './assets';
 import {findPath, sweepMove} from './collision';
 import {paintSqueezePassage} from './squeezePainter';
+import {paintEventProp} from './eventProps';
+import {RainyEventLabels, EVENT_PROP_SCALE} from './eventLabels';
 import {
   rainyAlleyFieldClosed, rainyAlleyFieldOpen, rainyAlleyGeometryClosed, rainyAlleyGeometryOpen,
   rainyAlleySqueezeFieldClosed, rainyAlleySqueezeFieldOpen, SQUEEZE_BOUNDS, SQUEEZE_CENTER_X,
@@ -54,6 +56,7 @@ export class IntegratedRainyAlley {
   private zoomTarget = 1;
   private zoom = 1;
   private now = 0;
+  private readonly eventLabels = new RainyEventLabels();
   // 顶栏展开时小地图下移避让的当前/目标位移（canvas 逻辑像素，每帧向目标缓动）。
   private minimapShift = 0;
   private minimapShiftTarget = 0;
@@ -75,6 +78,7 @@ export class IntegratedRainyAlley {
         : {...spawn};
     this.camera = {x: 0, y: rainyAlleyRegistration.worldHeight - cameraSize.height / this.zoom};
     this.path = []; this.destination = null; this.nearby = null;
+    this.eventLabels.reset();
     this.zonesInside.clear();
     for (const zone of rainyAlleySource.objects.zones) if (Math.hypot(this.position.x - zone.x, this.position.y - zone.y) <= zone.r) this.zonesInside.add(zone.id);
     this.zoneChecksInFlight.clear(); this.squeezeTargetY = null; this.climbTime = 0; this.climbFrom = null; this.climbTo = null; this.climbCrateId = null;
@@ -214,7 +218,11 @@ export class IntegratedRainyAlley {
     context.translate(registration.tx, registration.ty);
     context.scale(registration.sx, registration.sy);
     this.drawSqueezeOverlay(context);
+    context.save();
+    const dog = rainyAlleySource.objects.fixed.find(object => object.id === DOG_FRIEND_ID);
+    if (dog) {context.translate(dog.x, dog.y); context.scale(EVENT_PROP_SCALE, EVENT_PROP_SCALE); context.translate(-dog.x, -dog.y);}
     this.drawDogFriend(context, flags);
+    context.restore();
     this.drawMarkers(context, flags);
     context.save();
     context.translate(this.position.x, this.position.y);
@@ -239,7 +247,7 @@ export class IntegratedRainyAlley {
 
   /** 老黄像素画调色板：k 深棕轮廓（像素画的骨架，色块全靠它收边）/ l 背部受光 / m 主面 / d 腹侧暗面 / s 垂耳与爪尖 / e 眼黑 / w 口鼻与眉间白毛。 */
   private static readonly dogPalette: Readonly<Record<string, string>> = {
-    k: '#5b4426', l: '#ecc268', m: '#d7a44a', d: '#b9893b', s: '#8a6a3c', e: '#221609', w: '#f2ead6'
+    k: '#3c3038', l: '#fff2d2', m: '#ead9b4', d: '#a47e66', s: '#74534d', e: '#211f25', w: '#fffbed'
   };
   /** 部件字符画（'.' 透明）：侧视趴卧、面朝左。鼻尖/口鼻在头左端，垂耳盖在头颈交界，尾巴单独两节摇摆。 */
   private static readonly dogHeadArt = [
@@ -309,7 +317,7 @@ export class IntegratedRainyAlley {
     stamp(IntegratedRainyAlley.dogEarArt, -11 * u, -10.5 * u - headLift);
     // 黑鼻头（口鼻最前端）+ 一点湿鼻头反光
     const noseX = -18.6 * u, noseY = -7 * u - headLift;
-    context.fillStyle = '#33261a'; context.fillRect(noseX, noseY + 0.2, u * 1.8, u * 1.5);
+    context.fillStyle = '#30252e'; context.fillRect(noseX, noseY + 0.2, u * 1.8, u * 1.5);
     context.fillStyle = 'rgba(255,255,255,.4)'; context.fillRect(noseX + 0.4, noseY + 0.5, 0.8, 0.6);
     // 眼睛：平时眯眼打盹（暖棕横条），靠近/交互时睁圆黑眼 + 白高光
     const eyeX = -18.5 * u, eyeY = -8 * u - headLift;
@@ -320,7 +328,7 @@ export class IntegratedRainyAlley {
     context.translate(5 * u, -6.6 * u - breatheLift);
     context.rotate(wag * (excited ? 0.42 : 0.2));
     context.fillStyle = palette.k!; context.fillRect(0, -2.1, 5.6, 4.2);
-    context.fillStyle = '#c9963f'; context.fillRect(0.7, -1.4, 4.2, 2.8);
+    context.fillStyle = '#e2cba1'; context.fillRect(0.7, -1.4, 4.2, 2.8);
     context.fillStyle = palette.l!; context.fillRect(0.7, -1.4, 4.2, 1);
     context.translate(5.4, 0);
     context.rotate(wag * (excited ? 0.3 : 0.12));
@@ -328,6 +336,11 @@ export class IntegratedRainyAlley {
     context.fillStyle = palette.l!; context.fillRect(0.3, -1, 3.4, 2.2);
     context.restore();
     // 欢呼时从狗头顶也冒一点小心心，提示“它很开心”
+    // Mint collar separates the cream coat from the warm alley lighting.
+    context.fillStyle = '#293f3d'; context.fillRect(-13, -9 + breatheLift, 3.5, 8);
+    context.fillStyle = '#70caba'; context.fillRect(-12.2, -8.4 + breatheLift, 2.2, 6.8);
+    context.fillStyle = '#d9f5df'; context.fillRect(-11.8, -8.4 + breatheLift, .8, 4.4);
+    context.fillStyle = '#e3e4bd'; context.fillRect(-11.7, -1.5 + breatheLift, 2, 2);
     if (this.cheering()) {
       const bob = Math.sin(this.now / 260) * 1.2;
       context.font = '700 9px system-ui, sans-serif';
@@ -366,7 +379,7 @@ export class IntegratedRainyAlley {
       context.lineTo(bubbleX + 1, bubbleY + bubbleH + 6);
       context.closePath(); context.fill();
       context.shadowBlur = 0; context.shadowOffsetY = 0;
-      context.strokeStyle = '#8a6a3c'; context.lineWidth = 1.4;
+      context.strokeStyle = '#74534d'; context.lineWidth = 1.4;
       this.roundRectPath(context, bubbleX, bubbleY, bubbleW, bubbleH, 6); context.stroke();
       context.fillStyle = '#7a4a22';
       context.textAlign = 'center'; context.textBaseline = 'middle';
@@ -542,103 +555,33 @@ export class IntegratedRainyAlley {
     };
   }
 
-  /** 交互点标签的像素小图标：让“雨水倒影”“空鱼罐头”这类名字一眼可辨。 */
-  private static readonly markerEmoji: Record<string, string> = {
-    alley_puddle_reflection: '💧', alley_empty_fish_can: '🥫', alley_fish_dry: '🐟',
-    alley_crate: '📦', alley_poster: '📄', alley_scratch_marks: '🐾',
-    alley_blanket_stack: '🧺', alley_dog_friend_point: '🐕'
-  };
-
   private drawMarkers(context: CanvasRenderingContext2D, flags: readonly string[]) {
     this.drawClimbMarkers(context);
-    const completed = (object: RainyFixedObject) =>
-      (object.id === 'alley_fish_dry' && flags.includes('alley_fish_collected')) ||
-      (object.id === 'alley_crate' && flags.includes('alley_rescued')) ||
-      (object.id === 'alley_poster' && flags.includes('lost_poster_found')) ||
-      (object.id === 'alley_blanket_stack' && ['blanket_secured', 'blanket_half', 'blanket_lost'].some(flag => flags.includes(flag)));
-    // 各类交互点的辉光色（RGB）与主体色：调查=薄荷绿放大镜，其余=彩色像素四芒星。
-    const palette = {
-      inspection: {glow: '190,232,206', core: '#d9efe2'},
-      node_event: {glow: '255,209,102', core: '#ffe9a3'},
-      pickup_proposed: {glow: '237,201,121', core: '#ffdf8e'},
-      story: {glow: '238,168,209', core: '#ffd3ec'}
-    } as const;
+    this.drawSqueezeMarker(context);
     for (const object of rainyAlleySource.objects.fixed) {
-      const kind = palette[object.kind];
-      const dimmed = completed(object) || !rainyAlleyObjectEligible(object, flags);
-      const pulse = 0.5 + 0.5 * Math.sin(this.now / 430 + object.x * 0.031);
-      const bob = Math.sin(this.now / 520 + object.x * 0.021) * 2.6;
-      context.save();
-      context.globalAlpha = dimmed ? 0.42 : 1;
-      context.translate(object.x, object.y + bob * 0.4);
-
-      // 主线目标物：呼吸大光晕，指明“下一步在这里”。
-      const isObjective = (object.id === 'alley_crate' && !flags.includes('alley_rescued')) ||
-        (object.id === 'alley_poster' && flags.includes('alley_rescued') && !flags.includes('lost_poster_found'));
-      if (isObjective) {
-        // 目标物光晕：更亮更大的呼吸光 + 一圈金色描边，深色地面/雨幕里也一眼可辨。
-        const halo = context.createRadialGradient(0, 0, 4, 0, 0, 26 + pulse * 9);
-        halo.addColorStop(0, `rgba(255,236,178,${0.5 + pulse * 0.28})`);
-        halo.addColorStop(1, 'rgba(248,234,192,0)');
-        context.fillStyle = halo;
-        context.beginPath(); context.arc(0, 0, 33 + pulse * 9, 0, Math.PI * 2); context.fill();
-        context.strokeStyle = `rgba(255,222,130,${0.45 + pulse * 0.3})`;
-        context.lineWidth = 2.2;
-        context.beginPath(); context.arc(0, 0, 25 + pulse * 4, 0, Math.PI * 2); context.stroke();
-      }
-
-      // 图标本体的背光，让标记在深浅地面上都醒目。
-      const glow = context.createRadialGradient(0, 0, 1, 0, 0, 14 + pulse * 5);
-      glow.addColorStop(0, `rgba(${kind.glow},${(dimmed ? 0.14 : 0.3) + pulse * 0.16})`);
-      glow.addColorStop(1, `rgba(${kind.glow},0)`);
-      context.fillStyle = glow;
-      context.beginPath(); context.arc(0, 0, 19 + pulse * 5, 0, Math.PI * 2); context.fill();
-
-      if (object.kind === 'inspection') {
-        // 可调查线索 = 微呼吸的发光放大镜。
-        const breathe = 5.9 + pulse * 0.9;
-        context.fillStyle = `rgba(${kind.glow},0.32)`;
-        context.beginPath(); context.arc(-1.5, -1.5, breathe, 0, Math.PI * 2); context.fill();
-        context.strokeStyle = kind.core; context.lineWidth = 2.3;
-        context.beginPath(); context.arc(-1.5, -1.5, breathe, 0, Math.PI * 2); context.stroke();
-        context.lineWidth = 2.6;
-        context.beginPath(); context.moveTo(3, 3); context.lineTo(7.6, 7.6); context.stroke();
-        context.strokeStyle = 'rgba(255,255,255,.85)'; context.lineWidth = 1.3;
-        context.beginPath(); context.arc(-3.3, -3.3, breathe * 0.46, Math.PI * 0.95, Math.PI * 1.45); context.stroke();
-      } else if (object.id !== DOG_FRIEND_ID) {
-        // 事件/拾取/剧情 = 闪烁的像素四芒星（纯方块拼出，保持像素气质）。
-        // 老黄例外：它有像素实体狗与呼吸/摇尾动画，四芒星叠在狗身上会杂乱，只留淡光晕示意可交互。
-        const arm = 5.5 + pulse * 4.5;
-        context.shadowColor = 'rgba(14,30,34,.85)'; context.shadowBlur = 3;
-        context.fillStyle = kind.core;
-        const px = (x: number, y: number, w: number, h: number) => context.fillRect(x, y, w, h);
-        px(-1.5, -1.5, 3, 3);
-        px(-1.5, -arm, 3, arm - 1.5);
-        px(-1.5, 2.5, 3, arm - 2.5);
-        px(-arm, -1.5, arm - 1.5, 3);
-        px(2.5, -1.5, arm - 2.5, 3);
-        context.shadowBlur = 0;
-        context.fillStyle = '#ffffff';
-        px(-0.5, -0.5, 1, 1);
-      }
-
-      // 标签：半透明深色圆角胶囊 + emoji 图标，悬浮在交互点上方轻轻浮动。
-      const label = `${IntegratedRainyAlley.markerEmoji[object.id] ?? '✦'} ${object.label}`;
-      context.font = '700 12.5px system-ui, sans-serif';
-      const chipWidth = context.measureText(label).width + 18, chipHeight = 19;
-      const chipX = -chipWidth / 2, chipY = -14 - chipHeight - 3 + bob;
-      context.fillStyle = isObjective ? 'rgba(24,38,30,.92)' : 'rgba(13,26,30,.8)';
-      this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 6);
-      context.fill();
-      context.strokeStyle = isObjective ? 'rgba(255,222,130,.95)' : `rgba(${kind.glow},.5)`; // 目标物标签压金边，其余与辉光同色系
-      context.lineWidth = 1.4;
-      this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 6);
-      context.stroke();
-      context.fillStyle = '#f7f2df';
-      context.textAlign = 'center'; context.textBaseline = 'middle';
-      context.fillText(label, 0, chipY + chipHeight / 2 + 0.5);
+      if (object.id === DOG_FRIEND_ID || (object.requiresFlag && !flags.includes(object.requiresFlag))) continue;
+      const completed = !rainyAlleyObjectEligible(object, flags);
+      context.save(); context.globalAlpha = completed ? .48 : 1;
+      paintEventProp(context, object.id, object.x, object.y, EVENT_PROP_SCALE, completed);
       context.restore();
+      if (object.id === 'alley_crate' && !completed) {
+        context.save(); context.strokeStyle = 'rgba(225,197,123,.48)'; context.lineWidth = 1;
+        context.beginPath(); context.ellipse(object.x, object.y + 3, 19 * EVENT_PROP_SCALE, 5 * EVENT_PROP_SCALE, 0, 0, Math.PI * 2); context.stroke(); context.restore();
+      }
     }
+    this.eventLabels.draw(context, rainyAlleySource.objects.fixed, flags, this.position, this.nearby?.id, this.now);
+  }
+
+  private drawSqueezeMarker(context: CanvasRenderingContext2D) {
+    if (this.squeezeTargetY !== null) return;
+    const top = {x: SQUEEZE_CENTER_X, y: SQUEEZE_BOUNDS.top - 12}, bottom = {x: SQUEEZE_CENTER_X, y: SQUEEZE_BOUNDS.bottom + 12};
+    const point = Math.hypot(this.position.x - top.x, this.position.y - top.y) < Math.hypot(this.position.x - bottom.x, this.position.y - bottom.y) ? top : bottom;
+    if (Math.hypot(this.position.x - point.x, this.position.y - point.y) > 72) return;
+    context.save(); context.globalAlpha = this.squeezeDirection() ? 1 : .72;
+    context.translate(SQUEEZE_BOUNDS.left - 12, point.y);
+    context.fillStyle = '#9adbd4'; context.strokeStyle = '#28494b'; context.lineWidth = 1.6;
+    context.beginPath(); context.arc(0, 0, 7, 0, Math.PI * 2); context.fill(); context.stroke();
+    context.fillStyle = '#183638'; context.font = '700 10px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText('S', 0, .5); context.restore();
   }
 
   private drawClimbMarkers(context: CanvasRenderingContext2D) {

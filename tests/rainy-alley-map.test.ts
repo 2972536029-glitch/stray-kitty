@@ -63,6 +63,10 @@ for (const gateOpen of [false, true]) for (const direction of [-1, 1] as const) 
       position = sweepMove(squeeze, position, {x: dx / distance * amount, y: dy / distance * amount}, 2).position;
     }
     assert.ok(normal.isTraversable(position.x, position.y));
+    if (direction < 0) for (const x of [-12, 12]) {
+      const turn = sweepMove(normal, position, {x, y: 0}, 2);
+      assert.ok(Math.abs(turn.position.x - position.x) >= 10, 'upper squeeze exit must release sideways movement');
+    }
     const resumed = sweepMove(normal, position, {x: 0, y: direction * 4}, 2).position;
     assert.ok(direction * (resumed.y - position.y) > 0, 'normal foot collider must move outward after squeezing');
     assert.ok(normal.isTraversable(resumed.x, resumed.y));
