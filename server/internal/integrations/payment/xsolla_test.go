@@ -123,8 +123,12 @@ func TestCreateSessionSandbox(t *testing.T) {
 	}
 	body := (*tokenRequests)[0]
 	settings := body["settings"].(map[string]any)
-	if settings["mode"] != "sandbox" || settings["external_id"] != out.TxnID || settings["project_id"].(float64) != 123 {
+	// external_id 未默认携带:项目未开启 External ID 选项时 Xsolla 回 422。
+	if settings["mode"] != "sandbox" || settings["project_id"].(float64) != 123 {
 		t.Fatalf("unexpected settings: %v", settings)
+	}
+	if _, exists := settings["external_id"]; exists {
+		t.Fatalf("external_id must not be sent unless the project option is enabled: %v", settings)
 	}
 	checkout := body["purchase"].(map[string]any)["checkout"].(map[string]any)
 	if checkout["currency"] != "CNY" || checkout["amount"].(float64) != 6 {

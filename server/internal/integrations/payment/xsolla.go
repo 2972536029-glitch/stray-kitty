@@ -80,16 +80,17 @@ func (x *XsollaClient) ProviderInfo() ProviderInfo {
 	return ProviderInfo{Provider: "xsolla", Sandbox: x.cfg.Sandbox}
 }
 
-// CreateSession 生成一笔支付会话。external_id 携带我们生成的流水号(xs- 前缀),
-// webhook 会原样带回,是对账与幂等的主键;custom_parameters 捎带 playerId/packId,
-// webhook 里免去任何反查。金额用人民币分换算成元(CNY 两位小数)。
+// CreateSession 生成一笔支付会话。幂等主键 = Xsolla 侧 transaction.id(webhook 里
+// 兜底生成 "xs-"+id 的流水号);external_id 需要在发布商账户开启 External ID 选项
+// (未开启时 Xsolla 对该字段回 422),项目开启后可恢复携带以实现对账主键前置。
+// custom_parameters 捎带 playerId/packId,webhook 里免去任何反查。
+// 金额用人民币分换算成元(CNY 两位小数)。
 func (x *XsollaClient) CreateSession(playerID string, pack domain.RechargePack) (SessionResult, error) {
 	txnID := "xs-" + newTxnID()
 	settings := map[string]any{
-		"project_id":  x.projectID(),
-		"external_id": txnID,
-		"language":    "zh",
-		"currency":    "CNY",
+		"project_id": x.projectID(),
+		"language":   "zh",
+		"currency":   "CNY",
 	}
 	if x.cfg.Sandbox {
 		settings["mode"] = "sandbox"
@@ -133,7 +134,12 @@ func (x *XsollaClient) CreateSession(playerID string, pack domain.RechargePack) 
 	defer resp.Body.Close()
 	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return SessionResult{}, domain.Fail("XSOLLA_REJECTED", fmt.Sprintf("支付渠道创建会话失败(%d)", resp.StatusCode), 502)
+		// 带上渠道的具体报错(Xsolla 422 会指明哪个字段不合规),排障不用重放请求。
+		detail := strings.TrimSpace(string(respBody))
+		if len(detail) > 300 {
+			detail = detail[:300]
+		}
+		return SessionResult{}, domain.Fail("XSOLLA_REJECTED", fmt.Sprintf("支付渠道创建会话失败(%d):%s", resp.StatusCode, detail), 502)
 	}
 	var token struct {
 		Token string `json:"token"`
