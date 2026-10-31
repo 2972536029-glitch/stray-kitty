@@ -47,7 +47,7 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:GreenhouseState){
   blocks(ctx,'#527357',[[22,16,5,8],[53,18,5,7],[17,33,4,14],[59,37,4,17],[14,66,13,3],[52,66,13,3]]);
   blocks(ctx,'#98b389',[[24,17,2,4],[53,19,2,3],[20,31,2,7],[58,34,2,6],[16,67,7,1],[54,67,7,1]]);
   blocks(ctx,'#f1dc9d',[[26,31,9,4],[46,31,9,4]]);
-  blocks(ctx,'#365143',[[31,32,2,2],[47,32,2,2],[37,37,6,2]]);
+  blocks(ctx,'#365143',[[37,37,6,2]]);
   blocks(ctx,'#f4e3ae',[[27,31,2,1],[52,31,2,1]]);
   blocks(ctx,'#9aa77c',[[35,40,3,1],[42,40,3,1],[38,41,4,1]]);
   // Plant armour and a crown of leaves make this a different creature from prior bosses.

@@ -9,7 +9,7 @@ const crops:Record<DetailedExteriorKind,readonly [number,number,number,number]>=
   'planted-bed':[76,686,758,262],
   'glass-frame':[1008,683,452,272],
 };
-type Asset='exteriors'|'obstacles'|'workstations'|'materials'|'accents'|'structures'|'market-banks';
+type Asset='exteriors'|'obstacles'|'workstations'|'materials'|'accents'|'structures'|'market-banks'|'back-walls';
 const urls:Record<Asset,string>={
   exteriors:new URL('./assets/scene-detailed-residences-garden-v1.png',import.meta.url).href,
   obstacles:new URL('./assets/scene-detailed-obstacles-v1.png',import.meta.url).href,
@@ -18,6 +18,7 @@ const urls:Record<Asset,string>={
   accents:new URL('./assets/scene-small-accents-v1.png',import.meta.url).href,
   structures:new URL('./assets/scene-perimeter-foreground-v1.png',import.meta.url).href,
   'market-banks':new URL('./assets/scene-market-banks-v1.png',import.meta.url).href,
+  'back-walls':new URL('./assets/scene-chapter-backwalls-v1.png',import.meta.url).href,
 };
 const atlases=new Map<Asset,HTMLImageElement>(),listeners=new Map<Asset,Set<()=>void>>();
 function source(asset:Asset='exteriors'){
@@ -186,6 +187,21 @@ export function paintDetailedMarketBanks(ctx:CanvasRenderingContext2D){
     ctx.closePath();ctx.clip();ctx.drawImage(sprites[i]!,x,y,w,h);ctx.restore();
   }
   return true;
+}
+
+const backWallRows:Readonly<Record<string,number>>={alley:0,market:1,greenhouse:2,tunnel:3};
+/** Wall modules use a stable material raster and their own height, rather than
+ * stretching one image across an arbitrary viewport. Only chapters 1–4 opt in. */
+export function paintDetailedBackWall(ctx:CanvasRenderingContext2D,scene:string,width:number,height:number){
+  if(!Object.prototype.hasOwnProperty.call(backWallRows,scene)||width<=0||height<=0)return false;
+  const image=source('back-walls');if(!image)return false;
+  const band=image.naturalHeight/4,crop=[0,backWallRows[scene]*band,image.naturalWidth,band] as const;
+  const nativeHeight=160,nativeWidth=nativeHeight*crop[2]/crop[3];
+  const sprite=sceneryRaster(image,crop,nativeWidth,nativeHeight);if(!sprite)return false;
+  const span=height*crop[2]/crop[3],offset=span*[.13,.27,.08,.34][backWallRows[scene]];
+  ctx.save();ctx.imageSmoothingEnabled=false;ctx.beginPath();ctx.rect(0,0,width,height);ctx.clip();
+  for(let x=-offset;x<width;x+=span)ctx.drawImage(sprite,x,0,span,height);
+  ctx.restore();return true;
 }
 
 type RefinedMaterial='teal-cloth'|'rust-cloth'|'olive-cloth'|'blue-cloth'|'metal'|'wood';

@@ -54,7 +54,7 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:MarketState){
   blocks(ctx,'#1d3240',[[35,22,2,5],[28,28,7,1],[44,28,7,1],[35,35,10,2],[28,53,2,10],[45,53,2,10],[19,62,39,2]]);
   blocks(ctx,'#b5c6c4',[[28,18,20,1],[22,32,1,11],[53,37,1,11],[28,47,23,1]]);
   blocks(ctx,'#f4dfab',[[29,30,2,1],[45,30,2,1]]);
-  blocks(ctx,'#2a3e48',[[33,29,1,3],[49,29,1,3],[36,47,7,3],[23,68,9,2],[46,68,9,2]]);
+  blocks(ctx,'#2a3e48',[[36,47,7,3],[23,68,9,2],[46,68,9,2]]);
   blocks(ctx,'#c2b386',[[38,48,3,1],[28,32,1,1],[51,32,1,1],[34,53,1,6]]);
   if(windup){
     // Both arms close the lantern shutters; dark rings spill along the marked row.

@@ -1,6 +1,6 @@
 import type {BattleSceneId} from './scene-art';
 import type {SceneRoomLayout} from './scene-room-layout';
-import {paintRefinedMaterial} from './scene-detailed-exteriors';
+import {paintDetailedBackWall,paintRefinedMaterial} from './scene-detailed-exteriors';
 
 interface BackdropTheme {base:string;wall:string;rim:string;floor:string;wood:string;light:string}
 export const BACKDROP_THEMES:Record<BattleSceneId,BackdropTheme>={
@@ -193,7 +193,9 @@ export function paintBackdropArchitecture(ctx:CanvasRenderingContext2D,scene:Bat
   // remains behind the battlefield, including during zooming and scrolling.
   ctx.save();ctx.beginPath();ctx.rect(0,0,w,Math.max(0,room.back+10));ctx.clip();
   ctx.translate(0,room.back-wallHeight);
-  if(scene==='prologue'||scene==='alley'){
+  if(paintDetailedBackWall(ctx,scene,w,wallHeight)){
+    // The complete material face replaces the old flat wall/window blocks.
+  }else if(scene==='prologue'||scene==='alley'){
     masonry(ctx,p,0,0,w,wallHeight,scene==='prologue'?38:46,18);
     metalBeam(ctx,p,0,wallHeight-4,w,7);
     for(let x=34,index=0;x<w-32;x+=scene==='prologue'?182:216,index++){

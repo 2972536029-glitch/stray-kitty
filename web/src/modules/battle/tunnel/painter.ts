@@ -112,7 +112,7 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:TunnelState){
     rect(ctx,x,y,2,2,'#3a5c70');rect(ctx,x,y,1,1,'#d8e3d8');
   }
   blocks(ctx,'#f3d68a',[[27,31,9,4],[47,31,9,4]]);
-  blocks(ctx,'#2e475b',[[32,32,2,2],[48,32,2,2],[38,37,7,2]]);
+  blocks(ctx,'#2e475b',[[38,37,7,2]]);
   blocks(ctx,'#f5e3a4',[[28,31,2,1],[53,31,2,1]]);
   blocks(ctx,SCENE_INK.gold,[[27,43,29,4],[27,62,29,3]]);
   ctx.strokeStyle='#dfbf7f';ctx.lineWidth=3;ctx.beginPath();ctx.arc(42,55,12,0,Math.PI*2);ctx.moveTo(30,55);ctx.lineTo(54,55);ctx.moveTo(42,43);ctx.lineTo(42,67);ctx.stroke();
