@@ -88,7 +88,7 @@ for(const stage of [1,2,4])test(`stage ${stage} defaults are individually editab
 const liveCanvas=(p:Page)=>p.locator('.game-viewport canvas');
 async function livePoint(p:Page,x:number,y:number){return liveCanvas(p).evaluate((c:HTMLCanvasElement,{x,y})=>{const v=JSON.parse(c.dataset.homeCamera!),r=c.getBoundingClientRect(),w=Number(c.dataset.logicalWidth),h=Number(c.dataset.logicalHeight),fit=getComputedStyle(c).objectFit==='cover'?Math.max:Math.min,s=fit(r.width/w,r.height/h);return{x:r.left+(r.width-w*s)/2+(v.x+x*v.scale)*s,y:r.top+(r.height-h*s)/2+(v.y+y*v.scale)*s};},{x,y});}
 async function liveCats(p:Page){return JSON.parse((await liveCanvas(p).getAttribute('data-home-cats'))!) as {breed:string;x:number;y:number;hitX:number;hitY:number;pose:string|null;slot?:string;social?:string;mood:string;petPressure:number;bubble:string|null}[];}
-async function dragCat(p:Page,breed:string,x:number,y:number){const c=(await liveCats(p)).find(c=>c.breed===breed)!;await drag(p,await livePoint(p,c.hitX,c.hitY),await livePoint(p,x,y));}
+async function dragCat(p:Page,breed:string,x:number,y:number){await expect.poll(async()=>(await liveCats(p)).some(c=>c.breed===breed)).toBe(true);const c=(await liveCats(p)).find(c=>c.breed===breed)!;await drag(p,await livePoint(p,c.hitX,c.hitY),await livePoint(p,x,y));}
 test('drag cats to free floor and all five social activities, with separated bodies and cancelable carrying',async({page})=>{
   await open(page,'cats');await editor(page).getByRole('button',{name:'取消布置',exact:true}).click();
   await dragCat(page,'miaomiao',820,610);await expect.poll(async()=>JSON.parse((await liveCanvas(page).getAttribute('data-home-interaction'))!).kind).toBe('cat-drop');

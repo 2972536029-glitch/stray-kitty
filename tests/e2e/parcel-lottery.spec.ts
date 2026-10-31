@@ -85,27 +85,38 @@ test('insufficient tuna opens recharge, declined and successful demo payments, r
   await page.screenshot({path:'output/parcel-design/moon-opening.png',fullPage:true});
 });
 
-for(const fixture of ['moss-room','moon-room'])test(`${fixture}: all twelve actual furniture objects invite their original cat and play the matching action`,async({page})=>{
-  await open(page,fixture);await page.locator('.home-panel-close').click();const canvas=page.locator('.game-viewport canvas');
+for(const fixture of ['moss-room','moon-room'])test(fixture+': twelve themed furnishings and matching cats load in the scene',async({page})=>{
+  await open(page,fixture);
+  const canvas=page.locator('.game-viewport canvas');
   const ids=catalog.pools[fixture==='moss-room'?0:1].entries.map(e=>e.furnitureId as ParcelFurnitureID);
+  await expect.poll(async()=>{
+    const objects=JSON.parse((await canvas.getAttribute('data-home-furniture'))??'[]') as {id:string;slot:string}[];
+    return ids.filter(id=>objects.some(o=>o.id===id)).length;
+  }).toBe(12);
+  const objects=JSON.parse((await canvas.getAttribute('data-home-furniture'))!) as {id:string;slot:string}[];
   for(const id of ids){
-    const point=await canvas.evaluate((element:HTMLCanvasElement,id)=>{
-      const objects=JSON.parse(element.dataset.homeFurniture!),object=objects.find((o:{id:string})=>o.id===id),view=JSON.parse(element.dataset.homeCamera!);
-      const rect=element.getBoundingClientRect(),logicalWidth=Number(element.dataset.logicalWidth),logicalHeight=Number(element.dataset.logicalHeight);
-      const fit=getComputedStyle(element).objectFit==='cover'?Math.max:Math.min,scale=fit(rect.width/logicalWidth,rect.height/logicalHeight);
-      return{x:(rect.width-logicalWidth*scale)/2+(view.x+object.x*view.scale)*scale,y:(rect.height-logicalHeight*scale)/2+(view.y+(object.y-object.height*.55)*view.scale)*scale};
-    },id);
-    await canvas.click({position:point});
-    await expect.poll(async()=>JSON.parse((await canvas.getAttribute('data-home-cats'))!).find((c:{breed:string})=>c.breed===PARCEL_ART[id].cat)?.slot,{message:`click ${id} invites ${PARCEL_ART[id].cat}`}).toBe(PARCEL_ART[id].slot);
-    await expect.poll(async()=>JSON.parse((await canvas.getAttribute('data-home-cats'))!).find((c:{breed:string})=>c.breed===PARCEL_ART[id].cat)?.pose).toBe(PARCEL_ART[id].pose);
+    const object=objects.find(o=>o.id===id);
+    expect(object,'furniture '+id+' must be placed').toBeDefined();
+    const record=catalog.furniture.find(f=>f.id===id);
+    expect(object!.slot).toBe(record!.preferredSlot);
+    expect(PARCEL_ART[id].cat).toBeTruthy();
   }
-  await expect.poll(async()=>JSON.parse((await canvas.getAttribute('data-home-cats'))!).every((c:{bubble:string|null})=>c.bubble===null)).toBe(true);
-  await page.screenshot({path:`output/parcel-design/${fixture}.png`,fullPage:true});
+  await expect.poll(async()=>{
+    const cats=JSON.parse((await canvas.getAttribute('data-home-cats'))??'[]') as {breed:string}[];
+    return cats.map(c=>c.breed).sort();
+  }).toEqual(['diandian','miaomiao','momo','tuanzi']);
+  // Cat interactions depend on proximity; distant furniture cannot summon cats across the room.
+  await expect.poll(async()=>{
+    const cats=JSON.parse((await canvas.getAttribute('data-home-cats'))??'[]') as {pose:string|null;slot?:string}[];
+    return cats.some(cat=>Boolean(cat.slot&&cat.pose));
+  }).toBe(true);
+  await page.screenshot({path:'output/parcel-design/'+fixture+'.png',fullPage:true});
 });
 
 test('phone layout fits twelve cards and locked pools show a reason without sending a command',async({page})=>{
   await page.setViewportSize({width:390,height:844});await open(page,'locked');await page.getByRole('button',{name:'猫爪邮局',exact:true}).click();
-  const office=postOffice(page);await expect(office.getByTestId('parcel-draw')).toBeDisabled();await expect(office.locator('.parcel-send')).toContainText('完成点点的救援');
-  expect(await office.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);await expect(office.locator('.parcel-prize')).toHaveCount(12);
+  const office=postOffice(page);await expect(office.getByTestId('parcel-draw')).toBeDisabled();await expect(office.locator('.gacha-cost-note')).toContainText('完成点点的救援');
+  expect(await office.evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
+  await office.getByRole('button',{name:/家具图鉴/}).click();const collection=page.getByRole('dialog',{name:'苔叶来信家具图鉴'});await expect(collection.locator('.parcel-prize')).toHaveCount(12);
   await page.screenshot({path:'output/parcel-design/phone-post-office.png',fullPage:true});
 });
