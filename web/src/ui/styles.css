@@ -175,3 +175,7 @@
 .auth-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
 .auth-actions .secondary{box-shadow:none}
 .auth-done{display:grid;gap:14px;min-width:260px;font-size:13px;line-height:1.9}
+
+/* Local scenery observations stay readable until the player resumes exploration. */
+.inspection-dialog{width:min(560px,calc(100% - 48px))}
+.inspection-dialog>p{font-size:15px;line-height:1.9;margin:18px 0 24px}
