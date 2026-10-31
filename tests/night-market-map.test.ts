@@ -175,6 +175,41 @@ test('independent painted-road waypoints traverse the reported seams and complet
   }
 });
 
+test('reported south-curb, inside-bend and northwest roof paths allow directional walking',()=>{
+  for(const [name,floor,start,delta] of [
+    ['upper roof connector','L1',{x:640,y:262},{x:0,y:45}],
+    ['lower roof connector','L1',{x:635,y:338},{x:0,y:36}],
+    ['south cargo curb','L0',{x:865,y:717},{x:0,y:20}],
+    ['inside market bend','L0',{x:875,y:640},{x:-45,y:0}],
+  ] as const){
+    assert.equal(isMarketTraversable(floor,start.x,start.y),true,`${name} starts on the walkable surface`);
+    const result=sweepMarketMove(floor,start,delta);
+    assert.equal(result.blocked,false,`${name} allows the reported direction`);
+    assert.ok(Math.hypot(result.position.x-start.x-delta.x,result.position.y-start.y-delta.y)<.01,`${name} reaches its intended endpoint`);
+    assert.equal(sweepMarketMove(floor,result.position,{x:-delta.x,y:-delta.y}).blocked,false,`${name} also allows return movement`);
+  }
+  // Check the usable width beside the original reports, where the follow-up
+  // screenshots exposed curb and roof pinches away from the first test line.
+  for(const [name,floor,xs,ys,delta] of [
+    ['lower bend','L0',[850,860,870],[650,654,658],{x:-40,y:0}],
+    ['above planter tip','L0',[740,746,750],[588,594,598],{x:48,y:0}],
+    ['wider roof connector','L1',[688,698,708],[296,300,310],{x:0,y:-72}],
+    ['north roof connection','L1',[698,708,718],[139,143,147],{x:0,y:78}],
+    ['lower roof connection','L1',[622,632,642],[330,334,338],{x:0,y:44}],
+  ] as const)for(const x of xs)for(const y of ys){
+    assert.equal(isMarketTraversable(floor,x,y),true,`${name} start (${x},${y}) has clearance`);
+    const result=sweepMarketMove(floor,{x,y},delta);
+    assert.equal(result.blocked,false,`${name} (${x},${y}) stays connected across its usable width`);
+    assert.equal(sweepMarketMove(floor,result.position,{x:-delta.x,y:-delta.y}).blocked,false,`${name} (${x},${y}) allows returning across the same connection`);
+  }
+  for(const x of [716,720,724,728]){
+    const result=sweepMarketMove('L1',{x,y:270},{x:0,y:-115});
+    assert.equal(result.blocked,false,`right-hand roof seam at x=${x} stays open through the full upper connection`);
+    assert.ok(Math.abs(result.position.y-155)<.01);
+    assert.equal(sweepMarketMove('L1',result.position,{x:0,y:115}).blocked,false,'the roof seam also allows returning downward');
+  }
+});
+
 test('the battle barricade and crate crossing stay gameplay-gated after road expansion',()=>{
   const barricade=sweepMarketMove('L0',{x:1365,y:150},{x:0,y:-40},false);
   assert.equal(barricade.blocked,true);

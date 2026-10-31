@@ -1,3 +1,4 @@
+import {MarketEventMarkers} from '../../modules/nightMarket/eventLabels';
 import {paintMarketCargo} from '../../modules/nightMarket/cargoPainter';
 import {PARCEL_ART, PARCEL_IDS} from '../../modules/lottery/furnitureArt';
 import type {BattleResult, GameState, StoryNode, HomeRepairPart} from '../../contracts';
@@ -49,6 +50,7 @@ export class DemoScene {
   private cityBackdrop: HTMLImageElement;
   private marketImages: Record<MarketFloor, HTMLImageElement> = {L0:new Image(),L1:new Image(),Lm1:new Image()};
   private marketFloor: MarketFloor = 'L0';
+  private readonly marketMarkers=new MarketEventMarkers();
   private marketCamera = new FollowCamera();
   private marketTransition = new MarketTransitionController();
   private marketTransitionHeight = 0;
@@ -375,7 +377,7 @@ export class DemoScene {
     if(this.marketTransition.active&&(mode!=='explore'||this.state.mapId!=='market')){const interrupted=this.marketTransition.cancel();if(interrupted){this.marketFloor=interrupted.floor;this.x=interrupted.position.x;this.y=interrupted.position.y;}this.marketTransitionHeight=0;}
     if (mode !== this.lastMode || this.state.mapId !== this.lastMapId) {
       const mapChanged = this.state.mapId !== this.lastMapId;
-      if (mapChanged && this.state.mapId === 'market') {this.marketInitialized = false;this.marketExitRequested = false;}
+      if (mapChanged && this.state.mapId === 'market') {this.marketInitialized = false;this.marketExitRequested = false;this.marketMarkers.reset();}
       this.clearInput();
       if (mode === 'explore') {
         if (this.state.mapId === 'alley') {
@@ -991,28 +993,20 @@ export class DemoScene {
       ctx.fillStyle='#d8a85d';ctx.fillRect(-12,-12,24,2);ctx.fillRect(-12,-2,24,1);
       ctx.fillStyle='#f5e3b2';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(sign.directions.includes('↑')||sign.directions.includes('↗')?'↑':sign.directions.includes('↓')?'↓':'→',0,-6);
       if(close){
-        const label=`${sign.area} · ${sign.directions}`;ctx.font='14px "Microsoft YaHei",system-ui,sans-serif';const width=ctx.measureText(label).width+14,bx=18,by=-19;
-        ctx.fillStyle='rgba(16,28,38,.93)';ctx.fillRect(bx,by,width,24);ctx.strokeStyle='#d8a85d';ctx.lineWidth=1;ctx.strokeRect(bx+.5,by+.5,width-1,23);ctx.fillStyle='#fff0c4';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(label,bx+7,by+12);
+        const alpha=Math.max(0,Math.min(1,(sign.revealRadius-nearby.distance)/40));
+        this.marketMarkers.labels.draw(ctx,`${sign.area} · ${sign.directions}`,-80,25,alpha*.8,false,true);
       }
       ctx.restore();
     }
   }
   private drawMarketMarkers() {
     const ctx=this.context,flags=this.state?.flags??[];
-    for(const item of marketItems.filter(value=>['crow','pigeon','momo','boss','exit'].includes(value.id)&&value.layer===this.marketFloor)){
-      const completed=item.id==='crow'?flags.includes('market_crow_clue_completed'):item.id==='pigeon'?flags.includes('market_pigeon_clue_completed'):item.id==='momo'?!!this.state?.drawnEvents?.includes('node:momo_trail_event'):item.id==='boss'?flags.includes('market_cleared'):false;
-      const locked=(item.id==='boss'&&(!flags.includes('market_crow_clue_completed')||!flags.includes('market_pigeon_clue_completed')))||(item.id==='exit'&&!flags.includes('market_cleared'));
-      const title=item.id==='crow'?'老黑羽情报摊':item.id==='pigeon'?'咕咕大盗传言棚':item.id==='momo'?'墨墨的踪迹':item.id==='boss'?'集市保卫战':flags.includes('market_cleared')?'北街出口 · 第三章花房':'北街出口';
-      ctx.save();ctx.globalAlpha=completed?.62:1;ctx.beginPath();ctx.arc(item.x,item.y,11,0,Math.PI*2);ctx.fillStyle=locked?'#a6a497':item.id==='boss'?'#ef906a':'#f0cd79';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#172630';ctx.stroke();
-      ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#172630';ctx.fillText(item.id==='boss'?'!':item.id==='exit'?'↑':'E',item.x,item.y+.5);
-      const label=`${item.id==='momo'?'OPTIONAL · ':''}${title}${locked?' · 未解锁':completed?' · 已完成':''}`;ctx.font='13px "Microsoft YaHei",system-ui,sans-serif';const width=ctx.measureText(label).width+12,bx=item.x+15,by=item.y-23;
-      ctx.fillStyle='rgba(16,28,38,.9)';ctx.fillRect(bx,by,width,21);ctx.strokeStyle='#f2e4c4';ctx.lineWidth=1;ctx.strokeRect(bx+.5,by+.5,width-1,20);ctx.fillStyle='#fff0c4';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(label,bx+6,by+10.5);ctx.restore();
-    }
+    this.marketMarkers.draw(ctx,this.marketFloor,{x:this.x,y:this.y},flags,this.state?.drawnEvents??[],this.now);
     for(const portal of marketPortals){
       for(const point of [portal.a,portal.b]){
         const display=marketPortalDisplay(portal,point,this.marketFloor,this.x,this.y,flags);if(!display?.visible)continue;
         ctx.save();ctx.globalAlpha=display.alpha;ctx.beginPath();ctx.arc(point.x,point.y,9,0,Math.PI*2);ctx.fillStyle=display.active?'#73e1dd':'#91bab8';ctx.fill();ctx.strokeStyle='#102b38';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#10232b';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(portal.key.toUpperCase(),point.x,point.y);
-        if(display.active){ctx.globalAlpha=1;ctx.font='12px "Microsoft YaHei",system-ui,sans-serif';const width=ctx.measureText(display.label).width+12,bx=point.x+12,by=point.y-22;ctx.fillStyle='rgba(16,28,38,.92)';ctx.fillRect(bx,by,width,20);ctx.strokeStyle='#f2e4c4';ctx.lineWidth=1;ctx.strokeRect(bx+.5,by+.5,width-1,19);ctx.fillStyle='#fff0c4';ctx.textAlign='left';ctx.fillText(display.label,bx+6,by+10);}
+        if(display.active){ctx.globalAlpha=1;this.marketMarkers.labels.draw(ctx,display.label,point.x+70,point.y-25,1,false,true);}
         ctx.restore();
       }
     }
