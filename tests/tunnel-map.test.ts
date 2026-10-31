@@ -119,7 +119,7 @@ test('lower bridge admits leftward movement and tank climb stays on its separate
 
 test('both requested ledge descents have valid road landings and nearby C prompts',()=>{
   const ground=mask('chapter4_L0_walkable.png');
-  for(const id of ['tank-east-descent','west-ridge-climb']) {
+  for(const id of ['tank-east-descent','west-ridge-climb','west-ridge-east-descent']) {
     const portal=map.portals.find(p=>p.id===id)!,surface=tunnelClimbSurface(id)!;
     assert.ok(raisedRidgeMask(surface,map.world.width,map.world.height).isWalkable(portal.b),`${id} stone top`);
     assert.ok(ground.isWalkable(portal.a),`${id} road landing`);

@@ -12,24 +12,24 @@
     "size": 2029120
   },
   "collision/chapter4_L0_walkable.png": {
-    "sha256": "cd2445284ac32ec94704e306f3215137656f1a956650d0adcaef2a74643c3f2d",
-    "size": 10414
+    "sha256": "fca822698e8ef25f9bb81f71f42ddf936592b2946fc038a841f6384a2a52c7d9",
+    "size": 5654
   },
   "collision/chapter4_Lminus1_walkable.png": {
-    "sha256": "178ad0b2578b377163451dd9d8946488901eb4e0cbbe1f5d21c1ac3c7ca911e0",
-    "size": 6814
+    "sha256": "8cff2046e695d6cbe84ac1b3f14390b83405df6e57e271eb9da80075e637a0e1",
+    "size": 5605
   },
   "data/chapter4.lighting.json": {
     "sha256": "9051ee223dbc561d4c8dd9abdb7fa1f48bcea2a8957a0a3bd729e2f234864fec",
     "size": 1992
   },
   "data/chapter4.map.json": {
-    "sha256": "62449d93cc2a95f38bb827d6cf50f72a0366519fd671f2d3d9728feb695ad967",
-    "size": 7978
+    "sha256": "2b6f129676e6a13b8a726655ccb4a3c4e80af6ee508b875fcdcffe9422468d9b",
+    "size": 8813
   },
   "data/chapter4.surfaces.json": {
-    "sha256": "2cc5b1dde139647a0deceed534c31afbe951c79350e660abf4a33aaeb636a4f6",
-    "size": 1838
+    "sha256": "af2c5ceb93e390a0b048613e7dec80784688d81f01e6f15ebf329530d01b4666",
+    "size": 2132
   },
   "handoff/ACCEPTANCE.md": {
     "sha256": "a3595c0717c20cd665b1c3dda7469926c4a23a794e042692d49dfd050fff8ae2",
