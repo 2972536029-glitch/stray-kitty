@@ -1,4 +1,18 @@
-// 抽奖模块定义奖池展示与玩家意图，扣费和抽取结果以服务端为准。
-export interface DrawIntent {poolId: string}
-export interface PrizeEntry {itemId: string; itemType: 'furniture' | 'item'; weight: number}
-export interface LotteryPool {id: string; name: string; costCurrencyId: string; costAmount: number; entries: readonly PrizeEntry[]}
+export interface ParcelPool {
+  id: string; name: string; theme: string; description: string;
+  cost: number; currency: 'stamp' | 'tuna'; requiredFlag: string;
+  pityEvery: number; duplicateMaterial: number;
+  entries: {furnitureId: string; weight: number}[];
+}
+export interface ParcelDraw {
+  id: string; poolId: string; furnitureId: string; currency: string; cost: number;
+  number: number; duplicate: boolean; guaranteed: boolean; material: number; createdAt: string;
+}
+export interface LotteryState {
+  progress: Record<string, {draws: number; misses: number}>;
+  history: ParcelDraw[]; day: string; dailyClaims: string[]; milestones: string[];
+}
+export interface ParcelReward {
+  id: string; name: string; description: string; kind: 'daily' | 'milestone';
+  condition: 'home' | 'furnished' | 'flag'; requiredFlag?: string; stamp: number; tuna: number;
+}

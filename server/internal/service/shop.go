@@ -12,6 +12,11 @@ func (g *Game) buyFurniture(s *domain.GameState, productID string) error {
 		if p.ID != productID {
 			continue
 		}
+		for _, f := range g.Catalog.Furniture {
+			if f.ID == p.FurnitureID && f.Source == "story" {
+				return domain.Fail("STORY_GIFT", "这件家具随剧情免费赠送，不需要购买。", 409)
+			}
+		}
 		if p.Status != "available" || p.Price < 1 || p.CurrencyID != "stamp" {
 			return domain.Fail("PRODUCT_UNAVAILABLE", "这件商品暂时不能购买", 409)
 		}

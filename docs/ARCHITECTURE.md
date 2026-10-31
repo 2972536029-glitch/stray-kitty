@@ -62,6 +62,7 @@ stray-kitty/
 │  ├─ L04-INTEGRATION.md  第四章夜视护盾与独立试玩边界
 │  ├─ L05-INTEGRATION.md  第五章光路援军与独立试玩边界
 │  ├─ LEVEL-EXPLORATION-ARCHITECTURE.md
+│  ├─ MAP-QA-FOLLOWUP.md
 │  ├─ openapi.json  API 规范
 │  ├─ PAYMENT-XSOLLA-SANDBOX.md
 │  ├─ PRD.md  需求与分工
@@ -72,6 +73,17 @@ stray-kitty/
 │  │  ├─ art/
 │  │  ├─ collision/
 │  │  └─ reference/
+│  ├─ chapter5/
+│  │  ├─ art/
+│  │  │  ├─ source/
+│  │  │  │  ├─ sprites/
+│  │  │  │  └─ stateful/
+│  │  │  └─ variants/
+│  │  ├─ reference/
+│  │  ├─ review/
+│  │  ├─ source/
+│  │  │  └─ v07/
+│  │  └─ tools/
 │  ├─ maps/
 │  │  └─ reference/
 │  ├─ night_market/
@@ -90,7 +102,7 @@ stray-kitty/
 │  │  ├─ advisor/  阿策服务端模型客户端与限流
 │  │  ├─ domain/  状态、命令与错误
 │  │  ├─ integrations/  外部集成
-│  │  │  └─ payment/  支付渠道 · 预留
+│  │  │  └─ payment/  独立模拟支付与账本
 │  │  ├─ platform/  嵌入内容配置
 │  │  ├─ repository/  单进程 JSON 文件事务
 │  │  ├─ service/  长期规则、判定、奖励与结算
@@ -106,7 +118,7 @@ stray-kitty/
 │  │  ├─ assets/  素材索引
 │  │  ├─ battles/  关卡与波次
 │  │  ├─ cats/  猫咪档案
-│  │  ├─ economy/  经济配置 · 预留
+│  │  ├─ economy/  模拟充值商品
 │  │  ├─ events/  事件与选项
 │  │  ├─ home/  家具与摆放位置
 │  │  ├─ items/  道具
@@ -117,6 +129,8 @@ stray-kitty/
 │  │  └─ tutorials/  操作提示
 │  ├─ public/  静态资源
 │  │  └─ assets/  图片、动画、声音与字体
+│  │     ├─ home/  无猫建筑、四阶修缮与主题家具透明图集
+│  │     │  └─ parcels/  两套主题的二十四件独立透明家具组件
 │  │     └─ night-market/
 │  └─ src/  运行代码
 │     ├─ adapters/  具体运行能力
@@ -148,11 +162,12 @@ stray-kitty/
 │     │  │  └─ tunnel/  第四章37格不规则暗道、断灯脉冲与墨墨夜视
 │     │  ├─ cats/  猫咪档案、救援与成长
 │     │  ├─ chapter4/
+│     │  ├─ chapter5/
 │     │  ├─ economy/  货币、扣费与奖励
 │     │  ├─ events/  随机事件 · 余尧
 │     │  ├─ home/  家园建设、摆放与互动
 │     │  ├─ inventory/  道具与家具持有
-│     │  ├─ lottery/  奖池、抽取与结果
+│     │  ├─ lottery/  两套十二件主题家具、预览、开箱与收据
 │     │  ├─ map/  地图 · Jenny
 │     │  ├─ nightMarket/  Chapter 2 Night Market spatial map and progression
 │     │  ├─ qa/  按游戏流程组织的验收操作与服务端能力检查
@@ -184,7 +199,9 @@ stray-kitty/
 | 会话与结果未知的原始请求 | adapters/storage；不作为权威存档 |
 | 阿策最近三轮手动问答、请求取消状态 | 战斗页面内存；切换场次清空，不写存档 |
 
-home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余额与结算，inventory 统一拥有状态。抽到／买到家具后再交 home 摆放。真实付费预留在前后端 payment 目录，本次没有支付实现。
+home 管十二个位置的建设、摆放与原猫咪互动；lottery 管苔叶来信与月海观星两个主题池（各十二件新家具）、概率、开箱和收据。Go 的 service/lottery.go 在原命令事务内扣费、计保底、补偿重复和签收日常／里程碑奖励；旧家具由剧情确定性赠送。旧存档的 lottery 字段惰性初始化，家具与摆放不重命名。免费池每抽 1 邮票，付费池每抽 60 罐头，最多三抽得未拥有家具；两个池独立累计，历史保留 50 次。模拟支付已有进程内和独立服务两种形态，真实支付尚未接入。
+
+花房使用 modules/home 的 assets、layout、objects、painter 共用 1672×941 室内布局：建筑底图与透明组件不含猫咪，HomeMap 和场景使用同一装配；四套阶段家具和独立植物图集的裁切坐标放在模块内的 atlas.json／stage-atlas.json，每种购买家具有独立图稿，默认陈设让位于已保存的摆放。camera 管缩放、拖动与点击坐标转换，navigation 按对象地面占位阻挡，原有像素猫按家具脚点排序，前墙藤蔓和家具前缘独立遮挡。story 在对白期间接管角色和站位，空闲 home 阶段才运行日常行为；四阶外观从既有修缮与终章标记推导，不新增服务端存档字段，图集仅在需要花房时加载。
 
 ## 4. 接入与分工
 
@@ -304,6 +321,16 @@ The exploration interaction contract is in `web/content/maps/maps.json`; server 
 `web/src/modules/battle/qa.ts` builds the development-only `QA_SIMULATE_VICTORY` command. `scripts/dev.mjs` enables that command on the local API process; production API processes leave `GAME_QA_ENABLED` unset and reject it. The service derives a valid stage result from the active attempt and routes it through the same battle completion validator as normal callbacks. `import.meta.env.DEV` excludes the control from production builds. The QA path does not directly mutate story flags.
 
 The tunnel's raster world position is runtime-only and returns to its authored spawn after a page refresh. Battle return position and progression state are validated and persisted through the existing server attempt/state flow. This is distinct from persisting free-roam coordinates, which the current exploration API does not provide.
+
+### Chapter 5 warehouse exploration and art review
+
+The development-only `?warehouseWalk=1` entry mounts `WarehouseWalkPreview` with the existing `CanvasViewport` and `DemoScene` input/frame lifecycle. `WarehouseWalkMap` loads the locked v07 floor mask, subtracts all 38 authored solid rectangles and the three initially closed gate rectangles, and reuses swept raster movement with the authored cat radius 13. Prop alpha never determines collision. The existing cat renderer uses 0.75 sprite scale, anchored at its paws, with a closer 680 × 400 camera area. Registered prop components are depth-sorted around the cat. Art registration selects 19 mixed locations by stable seeded SHA-256 ranking and retains 19 single obstacles. Mixed groups use two to five existing sprites with different material themes and independent uniform scales. Selected taller groups declare bounded upward visual height; collision footprints and horizontal/lower art limits are unchanged. The manifest records the seed, themes, rotated natural sizes and visual envelopes. This is fixed art placement, not runtime event randomness.
+
+The same lazy-loaded map now runs for actual `mapId=warehouse` states through the existing `App`/`GameController`/`DemoScene` lifecycle. Separate L0/L1 raster masks use manifest solid rectangles and the six authored elevated regions; only C1/C2 switch layers. The user-requested local solid-edge insets in `level_design/chapter5/playtest_adjustments.json` are applied by the art builder to both artwork and manifest collision, leaving the locked source unchanged. Deck and overhead fascia exports use approved tiled sprite pixels. C/E labels appear near their targets; all four random zones remain invisible. Closed shortcuts and the boss gate use registered mesh barricade assets inside their existing collision footprints and hide when unlocked. All three controllable lamps toggle through the existing interaction command; their existing flags and authored unlock keys control runtime light pools and gate collision; unlit areas are nearly black, with wider, brighter green/orange lamp pools. Event-outcome props are decorative only. Free-roam position/floor remain runtime-only.
+
+`server/internal/service/warehouse.go` validates fixed interactions and random-zone positions against a byte-identical embedded geometry mirror maintained by `scripts/content.mjs`. All four hidden zones roll on entry; the client rearms after exiting with a 12px margin. Misses do not consume a zone, and old persisted zone-attempt records are ignored. The six authored cards retain existing persistent without-replacement records, pending state, outcomes and rewards. The finale introduction stops at exploration, the authored boss starts the existing mainline battle, defeat returns to retry, victory returns through post-battle dialogue to exploration, and the victory-only exit starts the existing ending. Optional fixed events are not prerequisites. Home finale trials retain their independent behavior.
+
+Development `?warehouseQA=1` uses the real reversible `finale.explore` checkpoint; `finale.exit` supports checking the victory exit. The current isolated local session is on 5186/API 8185 with separate QA storage. The older 5185 art comparison has no game session or commands. Focused service/schema/type/build checks and anchor-level browser interactions were run; full route traversal and visual/support approval remain manual. The art registration script and manifests remain under `scripts/register-warehouse-l0.py` and `level_design/chapter5/`; the original JSON/SVG hashes remain locked.
 
 ## 5. 启动与检查
 

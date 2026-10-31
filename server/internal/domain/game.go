@@ -30,11 +30,12 @@ type BattleReport struct {
 	ElitesDefeated *int  `json:"elitesDefeated,omitempty"`
 }
 type Result struct {
-	Message    string `json:"message"`
-	Roll       int    `json:"roll,omitempty"`
-	Outcome    string `json:"outcome,omitempty"`
-	FirstClear bool   `json:"firstClear,omitempty"`
-	StageID    string `json:"stageId,omitempty"`
+	Message    string      `json:"message"`
+	Roll       int         `json:"roll,omitempty"`
+	Outcome    string      `json:"outcome,omitempty"`
+	FirstClear bool        `json:"firstClear,omitempty"`
+	StageID    string      `json:"stageId,omitempty"`
+	Draw       *ParcelDraw `json:"draw,omitempty"`
 }
 type WorldPoint struct {
 	X float64 `json:"x"`
@@ -68,8 +69,9 @@ type GameState struct {
 	EventState        *EventState `json:"eventState,omitempty"`
 	AlleyBattleReturn *WorldPoint `json:"alleyBattleReturn,omitempty"`
 	// Txns:金枪鱼充值与消费流水(最新的在末尾),供 /api/payment/history 展示;超出上限丢弃最旧。
-	Txns           []Txn  `json:"txns,omitempty"`
-	QACheckpointID string `json:"qaCheckpointId,omitempty"`
+	Txns           []Txn         `json:"txns,omitempty"`
+	QACheckpointID string        `json:"qaCheckpointId,omitempty"`
+	Lottery        *LotteryState `json:"lottery,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -103,6 +105,7 @@ type Command struct {
 	MapID         string      `json:"mapId,omitempty"`
 	ZoneID        string      `json:"zoneId,omitempty"`
 	CheckpointID  string      `json:"checkpointId,omitempty"`
+	RewardID      string      `json:"rewardId,omitempty"`
 	Layer         string      `json:"layer,omitempty"`
 	Position      *WorldPoint `json:"position,omitempty"`
 	// REPORT_MOVE 携带的本次行走里程(画布像素)。
@@ -165,10 +168,14 @@ type Entry struct {
 	Weight      int    `json:"weight"`
 }
 type Pool struct {
-	ID           string  `json:"id"`
-	Cost         int     `json:"cost"`
-	RequiredFlag string  `json:"requiredFlag"`
-	Entries      []Entry `json:"entries"`
+	ID                string  `json:"id"`
+	Name              string  `json:"name"`
+	Theme             string  `json:"theme"`
+	PityEvery         int     `json:"pityEvery"`
+	DuplicateMaterial int     `json:"duplicateMaterial"`
+	Cost              int     `json:"cost"`
+	RequiredFlag      string  `json:"requiredFlag"`
+	Entries           []Entry `json:"entries"`
 	// Currency:该池扣哪种货币——stamp(免费)/tuna(付费);空值按 stamp 处理,旧目录无需迁移。
 	Currency string `json:"currency,omitempty"`
 }
@@ -178,7 +185,9 @@ type Slot struct {
 	Name string `json:"name,omitempty"`
 }
 type Furniture struct {
-	ID string `json:"id"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Source string `json:"source,omitempty"`
 }
 
 // Renovation:花房四阶修缮工程。按 stage 升序推进;cost 键 material 走背包、stamp 走邮票;
@@ -218,6 +227,7 @@ type Catalog struct {
 	Renovations []Renovation `json:"renovations,omitempty"`
 	// RechargePacks:金枪鱼充值礼包目录(模拟支付网关的商品来源)。
 	RechargePacks []RechargePack `json:"rechargePacks"`
+	ParcelRewards []ParcelReward `json:"parcelRewards"`
 }
 type Chapter struct {
 	ID string `json:"id"`
@@ -236,6 +246,8 @@ type RechargePack struct {
 // Txn 一笔充值或消费流水。充值:Amount=实付分、Status=confirmed/declined;
 // 消费(抽卡扣金枪鱼):Amount=0、Status=confirmed、Reason 记录去向。
 type Txn struct {
+	Currency   string    `json:"currency,omitempty"`
+	Spent      int       `json:"spent,omitempty"`
 	ID         string    `json:"id"`
 	PlayerID   string    `json:"playerId"`
 	PackID     string    `json:"packId"`

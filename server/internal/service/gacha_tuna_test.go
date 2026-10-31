@@ -1,9 +1,12 @@
 package service_test
 
 import (
+	"encoding/json"
 	"errors"
 	"path/filepath"
+	"reflect"
 	"testing"
+	"time"
 
 	"stray-kitty/server/internal/domain"
 	"stray-kitty/server/internal/integrations/payment"
@@ -48,62 +51,133 @@ func toHomeAfterRescue(t *testing.T, g *service.Game, token string) domain.GameS
 	return finishStory(t, g, token)
 }
 
-func TestTunaPoolDrawsDeductTunaAndRecordSpend(t *testing.T) {
-	g, gateway, playerID, token, _ := setupWithPlayer(t)
+func TestParcelTunaChargeAndReplay(t *testing.T) {
+	g, gateway, player, token, path := setupWithPlayer(t)
 	s := toHomeAfterRescue(t, g, token)
-	if s.Phase != "home" {
-		t.Fatalf("expected home phase, got %s", s.Phase)
-	}
-	// 没充过钱:金枪鱼不足要被拒绝,且不产生流水。
-	_, err := g.Execute(token, "tuna-draw-broke", domain.CommandRequest{ExpectedRevision: &s.Revision, Command: domain.Command{Type: "DRAW_FURNITURE", PoolID: "starlight_greenhouse"}})
-	var fault *domain.Fault
-	if !errors.As(err, &fault) || fault.Code != "INSUFFICIENT_CURRENCY" {
-		t.Fatalf("expected INSUFFICIENT_CURRENCY, got %v", err)
-	}
+	expectCode(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: "moonsea_observatory"}, "INSUFFICIENT_CURRENCY")
+	recharge(t, gateway, player, "pack_small")
 	s, _ = g.State(token)
-	if len(s.Txns) != 0 {
-		t.Fatal("rejected draw should not append txn")
+	request := domain.CommandRequest{ExpectedRevision: &s.Revision, Command: domain.Command{Type: "DRAW_FURNITURE", PoolID: "moonsea_observatory"}}
+	first, err := g.Execute(token, "parcel-once-only", request)
+	if err != nil {
+		t.Fatal(err)
 	}
-	// 充值 60 罐后抽取:Random=0 命中首个月亮吊床。
-	recharge(t, gateway, playerID, "pack_small")
-	s, _ = g.State(token)
-	if s.Currencies["tuna"] != 60 {
-		t.Fatalf("recharge did not land in state, tuna=%d", s.Currencies["tuna"])
+	if first.State.Currencies["tuna"] != 0 || first.State.Currencies["stamp"] != 2 || !domain.Contains(first.State.Furniture, "luna_boat") {
+		t.Fatalf("wrong draw: %+v", first.State)
 	}
-	s = execute(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: "starlight_greenhouse"})
-	if s.Currencies["tuna"] != 0 {
-		t.Fatalf("tuna was not deducted: %d", s.Currencies["tuna"])
+	if len(first.State.Txns) != 2 || first.State.Txns[1].Spent != 60 || first.State.Txns[1].Currency != "tuna" || len(first.State.Lottery.History) != 1 {
+		t.Fatal("missing receipt")
 	}
-	if !domain.Contains(s.Furniture, "moon_hammock") {
-		t.Fatalf("expected moon_hammock from first entry, furniture=%v", s.Furniture)
+	store, err := repository.Open(path)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if len(s.Txns) != 2 || s.Txns[1].PackID != "starlight_greenhouse" || s.Txns[1].Status != "confirmed" || s.Txns[1].Amount != 0 {
-		t.Fatalf("spend txn missing or malformed: %+v", s.Txns)
+	restart := service.New(store, g.Catalog)
+	replay, err := restart.Execute(token, "parcel-once-only", request)
+	if err != nil || !replay.Replayed || !sameStateJSON(replay.State, first.State) {
+		t.Fatalf("replay charged twice or changed result: %v", err)
 	}
-	// 邮票余额不应被付费池动过(首次救援结算 +2)。
-	if s.Currencies["stamp"] != 2 {
-		t.Fatalf("stamp currency should be untouched, got %d", s.Currencies["stamp"])
-	}
-	// 再抽一次:重复家具转化为 2 份材料。
-	recharge(t, gateway, playerID, "pack_small")
-	s = execute(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: "starlight_greenhouse"})
-	if s.Inventory["material"] != 5 { // 救援结算已给 3 份,重复转化再 +2。
-		t.Fatalf("duplicate conversion did not add materials: %d", s.Inventory["material"])
-	}
-	if s.LastResult.Outcome != "moon_hammock" || s.LastResult.Message != "星空温室的包裹里是熟悉的家具，化作了 2 份修缮材料。" {
-		t.Fatalf("duplicate message mismatch: %+v", s.LastResult)
+	expectCode(t, restart, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: "rainy_box"}, "POOL_UNAVAILABLE")
+}
+
+func TestParcelStampAndIndependentPity(t *testing.T) {
+	for _, pool := range []string{"moss_letters", "moonsea_observatory"} {
+		t.Run(pool, func(t *testing.T) {
+			g, _, _, token, path := setupWithPlayer(t)
+			toHomeAfterRescue(t, g, token)
+			_, err := g.Store.Transact(service.Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+				p.State.Currencies["stamp"] = 100
+				p.State.Currencies["tuna"] = 5000
+				return domain.CommandResponse{}, nil
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			for i := 0; i < 3; i++ {
+				execute(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: pool})
+			}
+			before, _ := g.State(token)
+			if before.Lottery.Progress[pool].Misses != 2 || before.Inventory["material"] != 7 {
+				t.Fatalf("duplicate compensation or counter wrong: %+v", before.Lottery)
+			}
+			other := "moss_letters"
+			if pool == other {
+				other = "moonsea_observatory"
+			}
+			execute(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: other})
+			store, err := repository.Open(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			restart := service.New(store, g.Catalog)
+			restart.Random = func(int) (int, error) { return 0, nil }
+			s := execute(t, restart, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: pool})
+			draw := s.LastResult.Draw
+			if draw == nil || !draw.Guaranteed || draw.Duplicate || s.Lottery.Progress[pool].Misses != 0 {
+				t.Fatalf("pity lost across pools/restart: %+v", draw)
+			}
+			// Each pool completes in at most 34 draws under the worst repeated roll.
+			for s.Lottery.Progress[pool].Draws < 34 {
+				s = execute(t, restart, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: pool})
+			}
+			for _, p := range g.Catalog.Pools {
+				if p.ID == pool {
+					for _, entry := range p.Entries {
+						if !domain.Contains(s.Furniture, entry.FurnitureID) {
+							t.Fatal("set not completed by guarantee")
+						}
+					}
+				}
+			}
+			s = execute(t, restart, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: pool})
+			if !s.LastResult.Draw.Duplicate || s.LastResult.Draw.Guaranteed {
+				t.Fatal("completed collection guarantee incorrect")
+			}
+		})
 	}
 }
 
-func TestStampPoolUnchangedByTunaIntroduction(t *testing.T) {
+func TestParcelDailyAndMilestoneClaims(t *testing.T) {
+	g, _, _, token, _ := setupWithPlayer(t)
+	now := time.Date(2026, 10, 30, 15, 59, 59, 0, time.UTC)
+	g.Now = func() time.Time { return now }
+	toHomeAfterRescue(t, g, token)
+	s := execute(t, g, token, domain.Command{Type: "CLAIM_PARCEL_REWARD", RewardID: "daily_letter"})
+	if s.Currencies["stamp"] != 3 || s.Lottery.Day != "2026-10-30" {
+		t.Fatal("daily credit wrong")
+	}
+	expectCode(t, g, token, domain.Command{Type: "CLAIM_PARCEL_REWARD", RewardID: "daily_letter"}, "REWARD_CLAIMED")
+	expectCode(t, g, token, domain.Command{Type: "CLAIM_PARCEL_REWARD", RewardID: "daily_wish"}, "WISH_UNFINISHED")
+	execute(t, g, token, domain.Command{Type: "PLACE_FURNITURE", FurnitureID: "soft_blanket", SlotID: "corner"})
+	execute(t, g, token, domain.Command{Type: "CLAIM_PARCEL_REWARD", RewardID: "daily_wish"})
+	execute(t, g, token, domain.Command{Type: "CLAIM_PARCEL_REWARD", RewardID: "rescue_letter"})
+	expectCode(t, g, token, domain.Command{Type: "CLAIM_PARCEL_REWARD", RewardID: "finale_letter"}, "REWARD_LOCKED")
+	now = now.Add(2 * time.Second)
+	s = execute(t, g, token, domain.Command{Type: "CLAIM_PARCEL_REWARD", RewardID: "daily_letter"})
+	if s.Lottery.Day != "2026-10-31" || s.Currencies["stamp"] != 8 {
+		t.Fatalf("day reset wrong: %+v", s.Lottery)
+	}
+	expectCode(t, g, token, domain.Command{Type: "CLAIM_PARCEL_REWARD", RewardID: "rescue_letter"}, "REWARD_CLAIMED")
+}
+
+func TestParcelRejectsWithoutCharging(t *testing.T) {
 	g, _, _, token, _ := setupWithPlayer(t)
 	s := toHomeAfterRescue(t, g, token)
-	before := s.Currencies["stamp"]
-	s = execute(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: "rainy_box"})
-	if s.Currencies["stamp"] != before-1 {
-		t.Fatalf("stamp pool should still cost stamps: %d -> %d", before, s.Currencies["stamp"])
+	g.Random = func(int) (int, error) { return 0, errors.New("rng unavailable") }
+	_, err := g.Execute(token, "parcel-failed-rng", domain.CommandRequest{ExpectedRevision: &s.Revision, Command: domain.Command{Type: "DRAW_FURNITURE", PoolID: "moss_letters"}})
+	if err == nil {
+		t.Fatal("RNG error accepted")
 	}
-	if s.Currencies["tuna"] != 0 || len(s.Txns) != 0 {
-		t.Fatalf("stamp draw should not touch tuna or txns: %+v", s)
+	after, _ := g.State(token)
+	if !reflect.DeepEqual(s, after) {
+		t.Fatal("failed draw changed wallet or pity")
 	}
+	s = execute(t, g, token, domain.Command{Type: "GO_EXPLORE", MapID: "alley"})
+	expectCode(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: "moss_letters"}, "INVALID_PHASE")
+}
+
+func sameStateJSON(a, b domain.GameState) bool {
+	aa, _ := json.Marshal(a)
+	bb, _ := json.Marshal(b)
+	return string(aa) == string(bb)
 }

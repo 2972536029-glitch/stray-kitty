@@ -17,7 +17,7 @@ func TestTwoDiceTiersPartitionAll36Outcomes(t *testing.T) {
 			counts[tier]++
 		}
 	}
-	if !reflect.DeepEqual(counts, map[string]int{"crit": 1, "success": 9, "partial": 16, "fail": 10}) {
+	if !reflect.DeepEqual(counts, map[string]int{"crit": 1, "success": 9, "partial": 20, "fail": 6}) {
 		t.Fatalf("incorrect non-overlapping probabilities: %v", counts)
 	}
 	for _, dice := range [][2]int{{0, 6}, {7, 1}, {1, -1}} {

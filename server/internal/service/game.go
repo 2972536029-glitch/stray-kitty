@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"math"
 	"math/big"
 	"stray-kitty/server/internal/advisor"
@@ -20,10 +19,11 @@ type Game struct {
 	Random           func(int) (int, error)
 	RainyZoneChance  int
 	Advisor          *advisor.Client
+	Now              func() time.Time
 	QAVictoryEnabled bool
 }
 
-var chapterByExplorationMap = map[string]string{"alley": "alley", "market": "market", "tunnel": "rescue"}
+var chapterByExplorationMap = map[string]string{"alley": "alley", "market": "market", "tunnel": "rescue", "warehouse": "finale"}
 
 func New(store *repository.Store, c domain.Catalog) *Game {
 	return &Game{Store: store, Catalog: c, RainyZoneChance: 550, Random: func(max int) (int, error) {
@@ -64,6 +64,7 @@ func (g *Game) State(token string) (domain.GameState, error) {
 	if p.State.ContentVersion != g.Catalog.Version {
 		return domain.GameState{}, domain.Fail("CONTENT_VERSION_MISMATCH", "存档内容版本需要迁移，请保留旧存档", 409)
 	}
+	g.prepareLottery(&p.State)
 	return p.State, nil
 }
 func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.CommandResponse, error) {
@@ -95,6 +96,7 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 		if p.State.Revision != *req.ExpectedRevision {
 			return domain.CommandResponse{}, domain.Fail("REVISION_CONFLICT", "进度已变化，请重新加载后操作", 409)
 		}
+		g.prepareLottery(&p.State)
 		var applyErr error
 		if req.Command.Type == "QA_CHECKPOINT" || req.Command.Type == "QA_RESTORE" {
 			applyErr = g.applyQACheckpoint(p, req.Command)
@@ -104,6 +106,7 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 		if applyErr != nil {
 			return domain.CommandResponse{}, applyErr
 		}
+		g.prepareLottery(&p.State)
 		finishQAEventPreview(&p.State)
 		p.State.Revision++
 		response := domain.CommandResponse{State: p.State}
@@ -147,6 +150,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "REPAIR_HOME":
 		return g.repairHome(s)
 	case "START_STORY":
+		if domain.Contains([]string{"finale_intro_2", "finale_intro_3", "finale_intro_4", "finale_intro_5", "finale_intro_6", "finale_intro_7", "finale_intro_8", "finale_intro_9"}, c.NodeID) {
+			return domain.Fail("STORY_LOCKED", "这段仓库剧情由地图与战斗流程推进", 409)
+		}
 		switch c.NodeID {
 		case "rescue_intro_2", "rescue_intro_3", "rescue_intro_4", "rescue_intro_5", "rescue_intro_6", "rescue_intro_7", "rescue_intro_8", "rescue_intro_9":
 			return domain.Fail("STORY_LOCKED", "这段地下通道叙事已由地图交互与战斗流程接管", 409)
@@ -197,7 +203,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.Flags = domain.Add(s.Flags, "tunnel_unlocked")
 				}
 				if n.ChapterID == "finale" {
-					s.MapID = "greenhouse"
+					s.MapID = "warehouse"
 					s.Flags = domain.Add(s.Flags, "finale_started")
 				}
 				if n.ID == "finale_clue_insufficient" {
@@ -298,6 +304,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 					s.Flags = domain.Add(s.Flags, "market_unlocked")
 					s.Flags = domain.Add(s.Flags, "chapter_2_started")
 				}
+				if n.Exit == "explore" && n.ChapterID == "finale" {
+					s.MapID = "warehouse"
+				}
 				if n.ID == "finale_clue_insufficient" {
 					s.MapID = "market"
 					s.ChapterID = "market"
@@ -309,6 +318,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	case "INTERACT":
 		if err := domain.RequirePhase(*s, "explore"); err != nil {
 			return err
+		}
+		if s.MapID == "warehouse" {
+			return g.warehouseInteract(s, c)
 		}
 		if s.MapID == "alley" {
 			switch c.InteractionID {
@@ -425,6 +437,10 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			s.MapID = "market"
 			s.ActiveBattle = nil
 			return nil
+		} else if s.LastResult.StageID == "finale_boss" && s.MapID == "warehouse" && s.ActiveBattle != nil && s.ActiveBattle.Mainline {
+			s.Phase = "dialogue"
+			s.ChapterID = "finale"
+			s.StoryNodeID = "finale_intro_6"
 		} else if s.LastResult.StageID == "tunnel_boss" && s.MapID == "tunnel" && s.ActiveBattle != nil && s.ActiveBattle.Mainline && domain.Contains(s.Flags, "tunnel_boss_cleared") {
 			s.Phase = "dialogue"
 			s.ChapterID = "rescue"
@@ -497,6 +513,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		if targetMap == "tunnel" && !domain.Contains(s.Flags, "greenhouse_fortified") {
 			return domain.Fail("MAP_LOCKED", "先完成废弃花房的防线，再进入地下通道", 409)
 		}
+		if targetMap == "warehouse" && (!warehouseUnlocked(s) || !domain.Contains(s.Flags, "finale_started")) {
+			return domain.Fail("MAP_LOCKED", "先完成地下通道救援并开启终章", 409)
+		}
 		s.Phase = "explore"
 		s.MapID = targetMap
 		s.ChapterID = chapter
@@ -541,75 +560,9 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		s.Placements[c.SlotID] = c.FurnitureID
 		return nil
 	case "DRAW_FURNITURE":
-		if err := domain.RequirePhase(*s, "home"); err != nil {
-			return err
-		}
-		for _, p := range g.Catalog.Pools {
-			if p.ID == c.PoolID {
-				// 双货币卡池:池子里声明扣哪种货币;空值按 stamp 处理,旧目录无需迁移。
-				currency := p.Currency
-				if currency == "" {
-					currency = "stamp"
-				}
-				if currency != "stamp" && currency != "tuna" {
-					return invalid()
-				}
-				if !domain.Contains(s.Flags, p.RequiredFlag) {
-					return domain.Fail("POOL_LOCKED", "尚未解锁这个主题", 409)
-				}
-				if s.Currencies[currency] < p.Cost {
-					if currency == "tuna" {
-						return domain.Fail("INSUFFICIENT_CURRENCY", "金枪鱼罐头不足，去补给小站看看吧", 409)
-					}
-					return domain.Fail("INSUFFICIENT_CURRENCY", "猫爪邮票不足", 409)
-				}
-				total := 0
-				for _, e := range p.Entries {
-					total += e.Weight
-				}
-				if total <= 0 {
-					return invalid()
-				}
-				n, err := g.Random(total)
-				if err != nil {
-					return err
-				}
-				id := ""
-				for _, e := range p.Entries {
-					n -= e.Weight
-					if n < 0 {
-						id = e.FurnitureID
-						break
-					}
-				}
-				s.Currencies[currency] -= p.Cost
-				if domain.Contains(s.Furniture, id) {
-					s.Inventory["material"] += 2
-					if currency == "tuna" {
-						s.LastResult = domain.Result{Message: "星空温室的包裹里是熟悉的家具，化作了 2 份修缮材料。", Outcome: id}
-					} else {
-						s.LastResult = domain.Result{Message: "收到了重复家具，转化为 2 份修缮材料。", Outcome: id}
-					}
-				} else {
-					s.Furniture = domain.Add(s.Furniture, id)
-					if currency == "tuna" {
-						s.LastResult = domain.Result{Message: "星空温室包裹打开啦！一件会发光的新家具！", Outcome: id}
-					} else {
-						s.LastResult = domain.Result{Message: "猫国包裹里有一件新家具！", Outcome: id}
-					}
-				}
-				// 付费货币的消耗也记入流水账本,让 /api/payment/history 同时呈现充值与消费。
-				if currency == "tuna" {
-					txnID, err := ID()
-					if err != nil {
-						return err
-					}
-					domain.AppendTxn(s, domain.Txn{ID: "txn-" + txnID, PlayerID: "", PackID: p.ID, Amount: 0, Status: "confirmed", Reason: fmt.Sprintf("🥫 星空温室抽取 · 消耗 %d 罐，开出 %s", p.Cost, id), CreatedAt: time.Now()})
-				}
-				return nil
-			}
-		}
-		return invalid()
+		return g.drawParcel(s, c.PoolID)
+	case "CLAIM_PARCEL_REWARD":
+		return g.claimParcelReward(s, c.RewardID)
 	default:
 		return domain.Fail("UNSUPPORTED_COMMAND", "此命令尚未实现", 400)
 	}

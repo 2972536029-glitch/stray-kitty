@@ -124,7 +124,7 @@
       "id": "prologue_injured",
       "chapterId": "prologue",
       "speaker": "喵喵",
-      "text": "“哈——嘶！（弓起后背，毛发倒竖哈气）你、你们别过来！本咪可是很凶的！”黑影呼啸扑来，喵喵慌乱后撤躲避，脚下一滑摔在湿滑碎砖上，后腿擦破了皮，“呜……好痛……谁来救救咪……”",
+      "text": "（弓起后背，毛发倒竖哈气）哈——嘶！你、你们别过来！本咪可是很凶的！（慌乱后撤时脚下一滑摔在湿砖上，抱紧擦破皮的后腿）呜……好痛……谁来救救咪……",
       "next": "prologue_rescue",
       "exit": "",
       "scene": "alley"
@@ -142,7 +142,7 @@
       "id": "prologue_advisor",
       "chapterId": "prologue",
       "speaker": "阿策",
-      "text": "屋檐阴影下，一只手持折扇的斯芬克斯军师沉稳安抚道：“莫慌，小家伙。在下阿策，这两位是白猫绒绒与盾卫斑斑。黑影虽众，然其畏光惧阻。喵喵退至阵后安全处，由伙伴筑起防线——请依在下之策，指挥布阵迎敌！”",
+      "text": "（从屋檐阴影中轻摇折扇步出，从容安抚）莫慌，小家伙。在下阿策，这两位是白猫绒绒与盾卫斑斑。黑影虽众，然其畏光惧阻。喵喵退至阵后安全处，由伙伴筑起防线——请依在下之策，指挥布阵迎敌！",
       "next": "",
       "exit": "",
       "scene": "alley"
@@ -160,7 +160,7 @@
       "id": "prologue_tuanzi",
       "chapterId": "alley",
       "speaker": "团子",
-      "text": "“哟，哪来的小少爷？圆滚滚、一身奶香味，爪子都踩成泥巴球了，脖子上的小铃铛还在晃呢。”",
+      "text": "哟，哪来的小少爷？圆滚滚、一身奶香味，爪子都踩成泥巴球了，脖子上的小铃铛还在晃呢。",
       "next": "prologue_banter",
       "exit": "",
       "scene": "alley"
@@ -169,7 +169,7 @@
       "id": "prologue_banter",
       "chapterId": "alley",
       "speaker": "喵喵",
-      "text": "“谁是小少爷！本咪是微服私访的领地巡察官！……咕噜噜（肚子大声抗议）……本咪只是出来视察民情！”",
+      "text": "谁是小少爷！本咪是微服私访的领地巡察官！……咕噜噜（肚子大声抗议）……本咪只是出来视察民情！",
       "next": "prologue_2",
       "exit": "",
       "scene": "alley"
@@ -178,7 +178,7 @@
       "id": "prologue_2",
       "chapterId": "alley",
       "speaker": "团子",
-      "text": "“行行行，大巡察官。不过先别逞强了——听，那边垃圾桶后的破纸箱里有微弱的求救声！附近黑影还在盘踞，咱们快去四周探查探查！”",
+      "text": "行行行，大巡察官。不过先别逞强了——听，那边垃圾桶后的破纸箱里有微弱的求救声！附近黑影还在盘踞，咱们快去四周探查探查！",
       "next": "",
       "exit": "explore",
       "scene": "alley"
@@ -187,7 +187,7 @@
       "id": "rescue_1",
       "chapterId": "alley",
       "speaker": "点点",
-      "text": "“呜……谢谢你们！多亏喵喵沉着指挥，大家合力守住撤离路线，把我从破纸箱里接应出来……我的辅助治疗也能帮上忙，请让我和你们一起守护大家！……小巷深处最近经常有黑影游荡，已经有好几个伙伴无声无息地失踪了。”",
+      "text": "呜……谢谢你们！多亏喵喵沉着指挥，大家合力守住撤离路线，把我从破纸箱里接应出来……我的辅助治疗也能帮上忙，请让我和你们一起守护大家！……小巷深处最近经常有黑影游荡，已经有好几个伙伴无声无息地失踪了。",
       "next": "",
       "exit": "explore",
       "scene": "alley"
@@ -226,7 +226,7 @@
       "id": "poster_hesitate",
       "chapterId": "alley",
       "speaker": "团子",
-      "text": "团子也叹了口气：“点点说得对。街头的黑影越来越危险，日子不好过。趁天还没全黑，顺着熟悉的气味回你的暖毯上去吧。”",
+      "text": "（叹了口气）点点说得对。街头的黑影越来越危险，日子不好过。趁天还没全黑，顺着熟悉的气味回你的暖毯上去吧。",
       "next": "poster_3",
       "exit": "",
       "scene": "poster"
@@ -253,7 +253,7 @@
       "id": "rescue_tuanzi_admire",
       "chapterId": "alley",
       "speaker": "阿策",
-      "text": "阿策军师轻摇折扇微笑道：“临危不乱，退守指挥，喵喵果然很有天分。既然立志要救出所有伙伴，就不能让受惊的点点再窝在破纸箱里受寒。”",
+      "text": "（轻摇折扇，微笑道）临危不乱，退守指挥，喵喵果然很有天分。既然立志要救出所有伙伴，就不能让受惊的点点再窝在破纸箱里受寒。",
       "next": "rescue_greenhouse_proposal",
       "exit": "",
       "scene": "poster"
@@ -262,7 +262,7 @@
       "id": "rescue_greenhouse_proposal",
       "chapterId": "alley",
       "speaker": "绒绒",
-      "text": "绒绒擦了擦星绒法杖，斑斑也赞同地拍着罐盾：“老街转角有一座被遗忘的废弃温室花房。虽然漏雨破旧，但骨架结实，咱们一起收拾，就能变成谁也闯不进来的根据地！”",
+      "text": "（擦了擦星绒法杖，身旁的斑斑也赞同地拍着罐盾）老街转角有一座被遗忘的废弃温室花房。虽然漏雨破旧，但骨架结实，咱们一起收拾，就能变成谁也闯不进来的根据地！",
       "next": "rescue_2",
       "exit": "",
       "scene": "alley"
@@ -353,7 +353,7 @@
       "id": "greenhouse_intro_2",
       "chapterId": "greenhouse",
       "speaker": "点点",
-      "text": "点点小跑过来，耳朵敏锐地抖了抖：“等等……你们听！花房破损的天窗横梁上，好像有极轻的爪子落地声！”",
+      "text": "（小跑过来，耳朵敏锐地抖了抖）等等……你们听！花房破损的天窗横梁上，好像有极轻的爪子落地声！",
       "next": "greenhouse_intro_3",
       "exit": "",
       "scene": "home"
@@ -371,7 +371,7 @@
       "id": "greenhouse_intro_4",
       "chapterId": "greenhouse",
       "speaker": "墨墨",
-      "text": "“不用戒备。我在集市看到你们帮受困伙伴出头，一路循着气味跟到这里。外围的黑影正蠢蠢欲动，但你们居然真把这处漏雨废墟收拾成了像样的避风港。”",
+      "text": "不用戒备。我在集市看到你们帮受困伙伴出头，一路循着气味跟到这里。外围的黑影正蠢蠢欲动，但你们居然真把这处漏雨废墟收拾成了像样的避风港。",
       "next": "greenhouse_intro_5",
       "exit": "",
       "scene": "home"
@@ -380,7 +380,7 @@
       "id": "greenhouse_intro_5",
       "chapterId": "greenhouse",
       "speaker": "阿策",
-      "text": "阿策军师轻摇折扇赞许道：“墨墨兄来得正好。集市打听到的地下暗道盘根错节，正需要阁下擅长暗处夜视的侦查本领。”",
+      "text": "（轻摇折扇，赞许道）墨墨兄来得正好。集市打听到的地下暗道盘根错节，正需要阁下擅长暗处夜视的侦查本领。",
       "next": "greenhouse_intro_6",
       "exit": "",
       "scene": "home"
@@ -389,7 +389,7 @@
       "id": "greenhouse_intro_6",
       "chapterId": "greenhouse",
       "speaker": "墨墨",
-      "text": "墨墨微微颔首：“算我一个。黑影怕光，但正在向花房暗处渗透。只要咱们加固天窗防线、封锁地下通风道，这里就会成为谁也攻不破的猫咪王国要塞！”",
+      "text": "（微微颔首）算我一个。黑影怕光，但正在向花房暗处渗透。只要咱们加固天窗防线、封锁地下通风道，这里就会成为谁也攻不破的猫咪王国要塞！",
       "next": "greenhouse_intro_7",
       "exit": "",
       "scene": "home",
@@ -401,7 +401,7 @@
       "id": "greenhouse_intro_7",
       "chapterId": "greenhouse",
       "speaker": "喵喵",
-      "text": "喵喵昂起毛茸茸的小脑瓜，神情坚定：“大家分工协作！团子整理物资，点点巡视陷阱，墨墨侦查暗道，阿策指挥布防！让我们把废弃花房彻底修缮成最温暖坚固的猫国要塞！”",
+      "text": "（昂起毛茸茸的小脑瓜，神情坚定）大家分工协作！团子整理物资，点点巡视陷阱，墨墨侦查暗道，阿策指挥布防！让我们把废弃花房彻底修缮成最温暖坚固的猫国要塞！",
       "next": "",
       "exit": "home",
       "scene": "home"
@@ -410,7 +410,7 @@
       "id": "rescue_intro_1",
       "chapterId": "rescue",
       "speaker": "墨墨",
-      "text": "“跟紧我。从废弃花房后院的暗井下去，就是穿过老城地下的排污与蓄水暗道。普通猫咪在黑暗中寸步难行，但我能看清每块砖的缝隙。”",
+      "text": "跟紧我。从废弃花房后院的暗井下去，就是穿过老城地下的排污与蓄水暗道。普通猫咪在黑暗中寸步难行，但我能看清每块砖的缝隙。",
       "next": "",
       "exit": "explore",
       "scene": "tunnel"
@@ -419,7 +419,7 @@
       "id": "rescue_intro_2",
       "chapterId": "rescue",
       "speaker": "点点",
-      "text": "点点停下脚步，竖起胡须：“大家等等！前面拐角水管下有一根极细的绊线，还放着一只会发出小猫哭叫的旧发条铁盒——是黑影设下的假目标诱饵！”",
+      "text": "（停下脚步，竖起胡须）大家等等！前面拐角水管下有一根极细的绊线，还放着一只会发出小猫哭叫的旧发条铁盒——是黑影设下的假目标诱饵！",
       "next": "rescue_intro_3",
       "exit": "",
       "scene": "tunnel"
@@ -428,7 +428,7 @@
       "id": "rescue_intro_3",
       "chapterId": "rescue",
       "speaker": "团子",
-      "text": "团子惊出一身冷汗：“好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！”",
+      "text": "（拍了拍胸口，抹了把冷汗）好险！多亏点点眼睛尖！要是贸然冲过去，肯定会被上面的塌方碎石砸中。点点真有你的！",
       "next": "",
       "exit": "explore",
       "scene": "tunnel",
@@ -440,7 +440,7 @@
       "id": "rescue_intro_4",
       "chapterId": "rescue",
       "speaker": "阿策",
-      "text": "阿策轻摇折扇沉吟：“黑影不仅诡诈，而且有意将受惊的流浪幼猫逐段分割隔离在暗渠深处。墨墨，前面通风口可有生还同伴的动静？”",
+      "text": "（轻摇折扇，沉吟道）黑影不仅诡诈，而且有意将受惊的流浪幼猫逐段分割隔离在暗渠深处。墨墨，前面通风口可有生还同伴的动静？",
       "next": "rescue_intro_5",
       "exit": "",
       "scene": "tunnel"
@@ -449,7 +449,7 @@
       "id": "rescue_intro_5",
       "chapterId": "rescue",
       "speaker": "墨墨",
-      "text": "墨墨跃上生锈管道，绿眸中微光凝聚：“东北方的3号泄洪阀门后……有微弱的呼噜求救声！是失踪的花猫姐妹和几只小奶猫！它们被困在阀门铁栅栏内了！”",
+      "text": "（跃上生锈管道，双眸微光凝聚）东北方的3号泄洪阀门后……有微弱的呼噜求救声！是失踪的花猫姐妹和几只小奶猫！它们被困在阀门铁栅栏内了！",
       "next": "rescue_intro_6",
       "exit": "",
       "scene": "tunnel"
@@ -458,7 +458,7 @@
       "id": "rescue_intro_6",
       "chapterId": "rescue",
       "speaker": "团子",
-      "text": "正当大家准备靠近阀门时，管道深处骤然传来刺耳的刮擦声！一道浓稠的庞大黑影掠过，顶壁仅存的应急黄灯被硬生生掐灭，整个暗道陷入绝对死寂的浓黑！团子吓得尾巴炸毛：“呜哇！灯灭了！好浓的黑雾……我什么都看不见了！四周全都是黑影磨爪子的窸窣声！”",
+      "text": "（头顶应急灯骤然熄灭，四周陷入一片浓黑，吓得尾巴瞬间炸毛）呜哇！灯灭了！好浓的黑雾……我什么都看不见了！四周全都是黑影磨爪子的窸窣声！",
       "next": "rescue_intro_7",
       "exit": "",
       "scene": "tunnel"
@@ -467,7 +467,7 @@
       "id": "rescue_intro_7",
       "chapterId": "rescue",
       "speaker": "墨墨",
-      "text": "黑暗中，墨墨轻盈落在大伙身前。听着幼猫的哭喊与伙伴们慌乱的喘息，它双瞳骤敛，一双碧绿眸子迸发出璀璨如极光的清冽幽光！“别怕，把呼吸借给我——”莹绿微芒如水波荡开，化作坚韧的气流护盾护住全员，原本漆黑的死角瞬间被彻底看穿！墨墨目光如炬：“以前我只为自己看路……但现在，我的夜视与护盾属于大家！所有黑影的伏击路线，都在我眼里！”",
+      "text": "（轻盈落在大伙身前，双瞳中亮起清冽的极光幽芒，周身护盾如水波荡开）别怕，把呼吸借给我——以前我只为自己看路，但现在，我的夜视与护盾属于大家！所有黑影的伏击路线，都在我眼里！",
       "next": "rescue_intro_8",
       "exit": "",
       "scene": "tunnel"
@@ -476,7 +476,7 @@
       "id": "rescue_intro_8",
       "chapterId": "rescue",
       "speaker": "阿策",
-      "text": "阿策折扇凌空一展，抚掌赞道：“妙极！墨墨兄竟在绝境中破茧觉醒，引幽瞳破障、分护盾安邦！黑影以为断灯弄险能困住我们，反落入我方洞若观火之局！”",
+      "text": "（折扇凌空一展，抚掌赞道）妙极！墨墨兄竟在绝境中破茧觉醒，引幽瞳破障、分护盾安邦！黑影以为断灯弄险能困住我们，反落入我方洞若观火之局！",
       "next": "rescue_intro_9",
       "exit": "",
       "scene": "tunnel"
@@ -485,7 +485,7 @@
       "id": "rescue_intro_9",
       "chapterId": "rescue",
       "speaker": "喵喵",
-      "text": "喵喵昂首挺立在防线核心，果断挥爪指挥：“大家各就各位！斑斑顶住主渠，团子策应侧翼，点点戒备陷阱，墨墨夜视洞悉全场！无论黑暗有多深，我们彼此的光芒绝不会熄灭——掩护泄洪阀门，迎战黑影监守！”",
+      "text": "（昂首挺立在防线核心，果断挥爪指挥）大家各就各位！斑斑顶住主渠，团子策应侧翼，点点戒备陷阱，墨墨夜视洞悉全场！无论黑暗有多深，我们彼此的光芒绝不会熄灭——掩护泄洪阀门，迎战黑影监守！",
       "next": "rescue_intro_10",
       "exit": "",
       "scene": "tunnel"
@@ -508,7 +508,7 @@
       "id": "finale_clue_insufficient",
       "chapterId": "rescue",
       "speaker": "阿策",
-      "text": "军师阿策轻摇折扇拦住大家：“且慢。大仓库深层暗道纵横、戒备森严，目前我们掌握的线索还不够。大家先回午夜集市继续探索，向老黑羽和咕咕大盗多打听些情报再做决战准备！”",
+      "text": "（轻摇折扇，伸手拦住大家）且慢。大仓库深层暗道纵横、戒备森严，目前我们掌握的线索还不够。大家先回午夜集市继续探索，向老黑羽和咕咕大盗多打听些情报再做决战准备！",
       "next": "",
       "exit": "explore",
       "scene": "home"
@@ -517,7 +517,7 @@
       "id": "finale_intro_1",
       "chapterId": "finale",
       "speaker": "墨墨",
-      "text": "“前面就是黑影盘踞的废弃总仓库了。那里地形极其复杂，堆满了废弃钢架与集装箱。最后一批失踪的伙伴们全被围困在最底层的防空隔间里，黑影正层层封锁退路。”",
+      "text": "前面就是黑影盘踞的废弃总仓库了。那里地形极其复杂，堆满了废弃钢架与集装箱。最后一批失踪的伙伴们全被围困在最底层的防空隔间里，黑影正层层封锁退路。",
       "next": "finale_intro_2",
       "exit": "",
       "scene": "tunnel"
@@ -526,7 +526,7 @@
       "id": "finale_intro_2",
       "chapterId": "finale",
       "speaker": "点点",
-      "text": "点点竖起耳朵仔细倾听：“我听见微弱的呜咽声了！仓库四周布满了伪装陷阱，阴暗死角里黑影在四处游荡，小猫们吓得缩在一起根本不敢动弹。但是……黑影极度畏惧光源！”",
+      "text": "（竖起耳朵仔细倾听）我听见微弱的呜咽声了！仓库四周布满了伪装陷阱，阴暗死角里黑影在四处游荡，小猫们吓得缩在一起根本不敢动弹。但是……黑影极度畏惧光源！",
       "next": "finale_intro_3",
       "exit": "",
       "scene": "tunnel"
@@ -535,7 +535,7 @@
       "id": "finale_intro_3",
       "chapterId": "finale",
       "speaker": "团子",
-      "text": "团子抖了抖胡须，神采奕奕地拍了拍背上的包裹：“嘿嘿，看我们带来了什么！午夜集市换来的聚光手电、暖黄灯泡，还有从小巷收集的蓄光镜片！只要连成一条光之走廊，黑影就休想靠近！”",
+      "text": "（抖了抖胡须，神采奕奕地拍了拍背上的包裹）嘿嘿，看我们带来了什么！午夜集市换来的聚光手电、暖黄灯泡，还有从小巷收集的蓄光镜片！只要连成一条光之走廊，黑影就休想靠近！",
       "next": "finale_intro_4",
       "exit": "",
       "scene": "tunnel"
@@ -544,18 +544,18 @@
       "id": "finale_intro_4",
       "chapterId": "finale",
       "speaker": "阿策",
-      "text": "阿策轻摇折扇，运筹帷幄：“墨墨居高引导视线，点点排查障碍，团子与喵喵合力推移移动灯具逐段推进。每点亮一片区域，黑影退散三分，受困伙伴便可循着光芒与气味安全突围！”",
-      "next": "finale_intro_5",
-      "exit": "",
+      "text": "（轻摇折扇，从容布阵）墨墨居高引导视线，点点排查障碍，团子与喵喵合力推移移动灯具逐段推进。每点亮一片区域，黑影退散三分，受困伙伴便可循着光芒与气味安全突围！",
+      "next": "",
+      "exit": "explore",
       "scene": "tunnel"
     },
     {
       "id": "finale_intro_5",
       "chapterId": "finale",
       "speaker": "喵喵",
-      "text": "喵喵挺起胸膛，眼神无比坚毅：“行动开始！猫咪小队，跟我冲！把所有的光都聚拢过来——无论黑暗有多深，我们彼此的光芒绝不会熄灭！”",
-      "next": "finale_intro_6",
-      "exit": "",
+      "text": "（挺起胸膛，眼神无比坚毅）行动开始！猫咪小队，跟我冲！把所有的光都聚拢过来——无论黑暗有多深，我们彼此的光芒绝不会熄灭！",
+      "next": "",
+      "exit": "preparation",
       "scene": "tunnel"
     },
     {
@@ -563,8 +563,8 @@
       "chapterId": "finale",
       "speaker": "旁白",
       "text": "随着一道道金黄与皎洁的光束划破幽暗的仓库，黑影在耀眼的光明中无处遁形、溃退消散。生锈的铁锁被破开，数十只惊魂未定的流浪猫在喵喵与伙伴们的呼唤声中排成整齐的长队，沿着光之通道有序撤离。",
-      "next": "finale_intro_7",
-      "exit": "",
+      "next": "",
+      "exit": "explore",
       "scene": "tunnel"
     },
     {
@@ -580,7 +580,7 @@
       "id": "finale_intro_8",
       "chapterId": "finale",
       "speaker": "团子",
-      "text": "团子轻轻碰了碰喵喵的额头，望向花房院墙外的一张寻猫启事：“喵喵，你看！那是找你的启事，还有那个熟悉的人影……你的主人一直在找你呢，你该回家啦。”",
+      "text": "（轻轻碰了碰喵喵的额头，望向院墙外的寻猫启事）喵喵，你看！那是找你的启事，还有那个熟悉的人影……你的主人一直在找你呢，你该回家啦。",
       "next": "finale_intro_9",
       "exit": "",
       "scene": "home"
@@ -589,7 +589,7 @@
       "id": "finale_intro_9",
       "chapterId": "finale",
       "speaker": "喵喵",
-      "text": "喵喵奔向那个带着蓝色饭碗与金枪鱼罐头的温暖怀抱，眼中泛起感动的泪花。但这一次，喵喵心底无比踏实——它不仅找回了自己的家，更和伙伴们一起创造了一个属于大家的流浪猫王国。喵喵回过头，向墨墨、团子和点点骄傲地挥了挥爪子：“明天见！我每天都会回来和大家一起守护王国的！”",
+      "text": "（眼中泛起感动的泪花，扑进带着蓝色饭碗与金枪鱼的熟悉怀抱，随后转过身，向墨墨、团子和点点骄傲地挥舞小爪子）明天见！本咪每天都会回来，和大家一起守护属于我们的流浪猫王国！",
       "next": "",
       "exit": "home",
       "scene": "home",
@@ -667,8 +667,8 @@
       "id": "greenhouse",
       "name": "废弃花房",
       "status": "demo",
-      "width": 800,
-      "height": 480,
+      "width": 1672,
+      "height": 941,
       "interactions": [],
       "dangerLevel": 0
     },
@@ -720,10 +720,25 @@
     {
       "id": "warehouse",
       "name": "废弃仓库",
-      "status": "planned",
-      "width": 800,
-      "height": 480,
-      "interactions": [],
+      "status": "demo",
+      "width": 1672,
+      "height": 941,
+      "interactions": [
+        {
+          "id": "warehouse_lookout",
+          "x": 316,
+          "y": 287,
+          "label": "货架顶的瞭望位",
+          "eventId": "warehouse_lookout"
+        },
+        {
+          "id": "warehouse_light_crate",
+          "x": 574,
+          "y": 292,
+          "label": "吊在半空的灯具箱",
+          "eventId": "warehouse_light_crate"
+        }
+      ],
       "dangerLevel": 3
     }
   ],
@@ -2936,7 +2951,10 @@
               "text": "刚走近,屋里的狗叫了一声。你们退回墙根,风里的饭香还在。"
             },
             "fail": {
-              "text": "檐口的积水滴了满头。晚风不认识你们,今天先记个脸熟。"
+              "text": "檐口的积水滴了满头。晚风不认识你们,今天先记个脸熟。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -2960,7 +2978,10 @@
               "text": "半路一只夜鸟扑棱起来,吓了大家一跳,又都装作没事。"
             },
             "fail": {
-              "text": "风把一片广告纸拍在脸上,甩了半天。巷子里的生活,不总是一帆风顺。"
+              "text": "风把一片广告纸拍在脸上,甩了半天。巷子里的生活,不总是一帆风顺。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -3006,7 +3027,10 @@
               "text": "坐了一会儿,摊主翻了个身,你们悄悄让开了位置。"
             },
             "fail": {
-              "text": "刚坐下,灯串闪了两下熄了。打盹的猫头也不抬地换了个姿势,你们也该走了。"
+              "text": "刚坐下,灯串闪了两下熄了。打盹的猫头也不抬地换了个姿势,你们也该走了。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -3033,7 +3057,10 @@
               "text": "人潮涌过来,把队伍冲散了一小截,又自动合上。"
             },
             "fail": {
-              "text": "踩到一摊看不见的油渍,滑了个趔趄。打盹的猫睁开一只眼,好像在笑。"
+              "text": "踩到一摊看不见的油渍,滑了个趔趄。打盹的猫睁开一只眼,好像在笑。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -3200,7 +3227,10 @@
               "text": "排班排到一半,云飘过来把太阳挡了。大家挤在原地等云走,谁也没挪窝。"
             },
             "fail": {
-              "text": "排班表被一阵风掀跑了。算了,挤一挤,光斑够大家分。"
+              "text": "排班表被一阵风掀跑了。算了,挤一挤,光斑够大家分。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -3224,7 +3254,10 @@
               "text": "挤是挤下了,就是团子非要把爪子搭在别人脸上。抗议归抗议,没猫真的挪开。"
             },
             "fail": {
-              "text": "挤到一半发现光斑根本不够大,最边上的猫只晒到了半条尾巴。明天再来。"
+              "text": "挤到一半发现光斑根本不够大,最边上的猫只晒到了半条尾巴。明天再来。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -3271,7 +3304,10 @@
               ]
             },
             "fail": {
-              "text": "一阵风把窗台上的落叶全卷进了碗里。没关系,心意收到了,水明天再喝。"
+              "text": "一阵风把窗台上的落叶全卷进了碗里。没关系,心意收到了,水明天再喝。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -3301,7 +3337,10 @@
               "text": "花放好了,可夜里一场雨把它打蔫了。明天换一朵更结实的。"
             },
             "fail": {
-              "text": "衔花的路上,花被门框碰掉了两片瓣。歪歪扭扭地放在碗边——心意是完整的就行。"
+              "text": "衔花的路上,花被门框碰掉了两片瓣。歪歪扭扭地放在碗边——心意是完整的就行。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -3351,7 +3390,10 @@
               ]
             },
             "fail": {
-              "text": "工程进行到一半全员睡着在了建材里。醒来的时候,纸箱堆本身已经挺像一座城堡的。"
+              "text": "工程进行到一半全员睡着在了建材里。醒来的时候,纸箱堆本身已经挺像一座城堡的。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -3385,7 +3427,10 @@
               ]
             },
             "fail": {
-              "text": "图纸画完了,天黑了,大家决定明天再开工。纸箱们原地休整一晚。"
+              "text": "图纸画完了,天黑了,大家决定明天再开工。纸箱们原地休整一晚。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -3427,7 +3472,10 @@
               "text": "数到第五声的时候数乱了,只好重头再数。这大概就是幸福的声音吧。"
             },
             "fail": {
-              "text": "今晚格外安静,只有雨点敲天窗的声音。大家都在,只是都睡得更沉了。"
+              "text": "今晚格外安静,只有雨点敲天窗的声音。大家都在,只是都睡得更沉了。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -3451,7 +3499,10 @@
               "text": "守着守着,自己也开始打呼噜了。被团子用尾巴尖挠醒,换了岗。"
             },
             "fail": {
-              "text": "一阵风把窗户吹得响了一下,全队的耳朵齐刷刷立起来,又齐刷刷放下。虚惊,睡吧。"
+              "text": "一阵风把窗户吹得响了一下,全队的耳朵齐刷刷立起来,又齐刷刷放下。虚惊,睡吧。",
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -3516,7 +3567,10 @@
               },
               "flags": [
                 "echo_fled"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -5657,7 +5711,10 @@
               },
               "flags": [
                 "kitten_shy"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -5702,7 +5759,10 @@
               },
               "flags": [
                 "kitten_spooked"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -5770,7 +5830,10 @@
               },
               "flags": [
                 "huang_rain"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -5816,7 +5879,10 @@
               },
               "flags": [
                 "snack_robbed"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -5889,7 +5955,10 @@
               },
               "flags": [
                 "music_box_guarded"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         },
@@ -5940,7 +6009,10 @@
               },
               "flags": [
                 "no_show_tonight"
-              ]
+              ],
+              "reward": {
+                "clue": 1
+              }
             }
           }
         }
@@ -6201,57 +6273,332 @@
     {
       "id": "cardboard_nest",
       "name": "纸箱猫窝",
-      "theme": "基础"
+      "theme": "基础",
+      "source": "story"
     },
     {
       "id": "soft_blanket",
       "name": "柔软毛毯",
-      "theme": "雨夜纸箱"
+      "theme": "雨夜纸箱",
+      "source": "story"
     },
     {
       "id": "tin_lamp",
       "name": "罐头小灯",
-      "theme": "雨夜纸箱"
+      "theme": "雨夜纸箱",
+      "source": "story"
     },
     {
       "id": "snack_cushion",
       "name": "零食抱枕",
-      "theme": "午夜集市"
+      "theme": "午夜集市",
+      "source": "story"
     },
     {
       "id": "moon_hammock",
       "name": "月亮吊床",
-      "theme": "地下月光"
+      "theme": "地下月光",
+      "source": "story"
     },
     {
       "id": "blue_bowl",
       "name": "蓝色饭碗",
-      "theme": "家的回忆"
+      "theme": "家的回忆",
+      "source": "story"
     },
     {
       "id": "red_cushion",
       "name": "蝴蝶结软垫",
-      "theme": "花房开张"
+      "theme": "花房开张",
+      "source": "story"
     },
     {
       "id": "sun_lamp",
       "name": "小太阳灯",
-      "theme": "花房开张"
+      "theme": "花房开张",
+      "source": "story"
     },
     {
       "id": "box_castle",
       "name": "纸箱小城堡",
-      "theme": "点点最爱"
+      "theme": "点点最爱",
+      "source": "story"
     },
     {
       "id": "star_glass",
       "name": "星彩玻璃吊灯",
-      "theme": "星空温室"
+      "theme": "星空温室",
+      "source": "story"
     },
     {
       "id": "cloud_nest",
       "name": "云朵绒窝",
-      "theme": "星空温室"
+      "theme": "星空温室",
+      "source": "story"
+    },
+    {
+      "id": "moss_cottage",
+      "name": "苔顶树洞窝",
+      "theme": "苔叶来信",
+      "source": "free_pool",
+      "description": "苔绿屋顶下铺着燕麦色软垫，点点可以安心探出脑袋。",
+      "preferredSlot": "corner",
+      "interactionCat": "diandian",
+      "interaction": "castle_peek",
+      "widthCm": 85
+    },
+    {
+      "id": "fern_lantern",
+      "name": "蕨叶邮灯",
+      "theme": "苔叶来信",
+      "source": "free_pool",
+      "description": "一封没寄出的信，陪着琥珀色小灯等你回家。",
+      "preferredSlot": "window",
+      "interactionCat": "miaomiao",
+      "interaction": "belly",
+      "widthCm": 34
+    },
+    {
+      "id": "acorn_library",
+      "name": "橡果书架",
+      "theme": "苔叶来信",
+      "source": "free_pool",
+      "description": "橡果形的原木小书架，底层留了猫咪的阅读洞。",
+      "preferredSlot": "courtyard",
+      "interactionCat": "diandian",
+      "interaction": "castle_peek",
+      "widthCm": 110
+    },
+    {
+      "id": "leaf_swing",
+      "name": "叶舟吊篮",
+      "theme": "苔叶来信",
+      "source": "free_pool",
+      "description": "麻绳吊起一片卷边大叶子，墨墨在这里慢慢打盹。",
+      "preferredSlot": "beam",
+      "interactionCat": "momo",
+      "interaction": "hammock_sleep",
+      "widthCm": 100
+    },
+    {
+      "id": "clover_rug",
+      "name": "四叶草编毯",
+      "theme": "苔叶来信",
+      "source": "free_pool",
+      "description": "米白编边围住苔绿草叶，团子最爱踩这块软地方。",
+      "preferredSlot": "sun_spot",
+      "interactionCat": "tuanzi",
+      "interaction": "knead",
+      "widthCm": 185
+    },
+    {
+      "id": "luna_boat",
+      "name": "月汐小舟窝",
+      "theme": "月海观星",
+      "source": "paid_pool",
+      "description": "奶油白的小舟停在金色月弯里，柔软的星枕已经就位。",
+      "preferredSlot": "corner",
+      "interactionCat": "miaomiao",
+      "interaction": "belly",
+      "widthCm": 90
+    },
+    {
+      "id": "orrery_lamp",
+      "name": "星轨仪暖灯",
+      "theme": "月海观星",
+      "source": "paid_pool",
+      "description": "黄铜星轨围住一颗暖光小月亮，守着花房的夜晚。",
+      "preferredSlot": "window",
+      "interactionCat": "miaomiao",
+      "interaction": "belly",
+      "widthCm": 38
+    },
+    {
+      "id": "tide_observatory",
+      "name": "潮汐观星台",
+      "theme": "月海观星",
+      "source": "paid_pool",
+      "description": "蓝白小穹顶、黄铜望远镜和一间只属于猫咪的底层小屋。",
+      "preferredSlot": "courtyard",
+      "interactionCat": "diandian",
+      "interaction": "castle_peek",
+      "widthCm": 122
+    },
+    {
+      "id": "orbit_hammock",
+      "name": "环月纱幔床",
+      "theme": "月海观星",
+      "source": "paid_pool",
+      "description": "弧形月架搭起轻软纱幔，墨墨睡着时像漂在云里。",
+      "preferredSlot": "beam",
+      "interactionCat": "momo",
+      "interaction": "hammock_sleep",
+      "widthCm": 118
+    },
+    {
+      "id": "starmap_carpet",
+      "name": "星图绒毯",
+      "theme": "月海观星",
+      "source": "paid_pool",
+      "description": "暖金星座缝进深蓝绒面，团子把整片星海踩得蓬松。",
+      "preferredSlot": "sun_spot",
+      "interactionCat": "tuanzi",
+      "interaction": "knead",
+      "widthCm": 190
+    },
+    {
+      "id": "willow_sofa",
+      "name": "柳枝双人榻",
+      "theme": "苔叶来信",
+      "source": "free_pool",
+      "description": "柳枝编成弯弯的扶手，苔绿绒垫上搭着手绣草叶靠枕和旧线毯。",
+      "preferredSlot": "lounge",
+      "interactionCat": "tuanzi",
+      "interaction": "belly",
+      "widthCm": 175
+    },
+    {
+      "id": "herb_desk",
+      "name": "草药手作桌",
+      "theme": "苔叶来信",
+      "source": "free_pool",
+      "description": "抽屉、种子罐和待寄出的信都各有位置，小爪子能轻拍桌沿。",
+      "preferredSlot": "desk",
+      "interactionCat": "miaomiao",
+      "interaction": "sniff",
+      "widthCm": 150
+    },
+    {
+      "id": "letter_cabinet",
+      "name": "来信收纳柜",
+      "theme": "苔叶来信",
+      "source": "free_pool",
+      "description": "木格里装满街坊来信，低处的小抽屉留给点点藏宝贝。",
+      "preferredSlot": "cabinet",
+      "interactionCat": "diandian",
+      "interaction": "sniff",
+      "widthCm": 125
+    },
+    {
+      "id": "sprout_planter",
+      "name": "春芽长花箱",
+      "theme": "苔叶来信",
+      "source": "free_pool",
+      "description": "蕨叶、白色小花和卷卷的新芽，猫咪凑近时会轻轻嗅一嗅。",
+      "preferredSlot": "planter",
+      "interactionCat": "miaomiao",
+      "interaction": "sniff",
+      "widthCm": 120
+    },
+    {
+      "id": "postmark_clock",
+      "name": "叶印摆钟",
+      "theme": "苔叶来信",
+      "source": "free_pool",
+      "description": "叶片雕花围住暖白钟盘，橡果摆锤慢慢晃，墨墨抬头看得出神。",
+      "preferredSlot": "wall_clock",
+      "interactionCat": "momo",
+      "interaction": "watch",
+      "widthCm": 28
+    },
+    {
+      "id": "wicker_basket",
+      "name": "藤编玩具篮",
+      "theme": "苔叶来信",
+      "source": "free_pool",
+      "description": "毛线球和布鱼玩具塞满藤篮，团子伸爪把球拨来拨去。",
+      "preferredSlot": "toy_corner",
+      "interactionCat": "tuanzi",
+      "interaction": "bat_ball",
+      "widthCm": 40
+    },
+    {
+      "id": "seedling_stool",
+      "name": "苗苗软垫凳",
+      "theme": "苔叶来信",
+      "source": "free_pool",
+      "description": "三根圆木腿托着草叶绣垫，点点会轻轻跳上去坐好。",
+      "preferredSlot": "reading_stool",
+      "interactionCat": "diandian",
+      "interaction": "perch",
+      "widthCm": 38
+    },
+    {
+      "id": "crescent_sofa",
+      "name": "月湾绒沙发",
+      "theme": "月海观星",
+      "source": "paid_pool",
+      "description": "月弯扶手镶着暖金雕花，蓝绒垫和珍珠软枕接住团子的小肚皮。",
+      "preferredSlot": "lounge",
+      "interactionCat": "tuanzi",
+      "interaction": "belly",
+      "widthCm": 185
+    },
+    {
+      "id": "astral_desk",
+      "name": "星历书桌",
+      "theme": "月海观星",
+      "source": "paid_pool",
+      "description": "望远镜、星图和墨水瓶摆得整齐，喵喵喜欢踮爪研究桌上的星星。",
+      "preferredSlot": "desk",
+      "interactionCat": "miaomiao",
+      "interaction": "sniff",
+      "widthCm": 155
+    },
+    {
+      "id": "pearl_cabinet",
+      "name": "珍珠收藏柜",
+      "theme": "月海观星",
+      "source": "paid_pool",
+      "description": "拱形玻璃后藏着小小的月亮和星球，点点总想从下面找入口。",
+      "preferredSlot": "cabinet",
+      "interactionCat": "diandian",
+      "interaction": "sniff",
+      "widthCm": 128
+    },
+    {
+      "id": "nebula_planter",
+      "name": "星云玻璃花箱",
+      "theme": "月海观星",
+      "source": "paid_pool",
+      "description": "黄铜玻璃罩里长出蓝绿色蕨叶和小白花，猫咪会温柔地嗅叶尖。",
+      "preferredSlot": "planter",
+      "interactionCat": "miaomiao",
+      "interaction": "sniff",
+      "widthCm": 120
+    },
+    {
+      "id": "lunar_clock",
+      "name": "月相摆钟",
+      "theme": "月海观星",
+      "source": "paid_pool",
+      "description": "奶油白珐琅钟盘围着一圈小月亮，墨墨抬头追着摆锤看。",
+      "preferredSlot": "wall_clock",
+      "interactionCat": "momo",
+      "interaction": "watch",
+      "widthCm": 30
+    },
+    {
+      "id": "comet_mobile",
+      "name": "彗星风铃",
+      "theme": "月海观星",
+      "source": "paid_pool",
+      "description": "蓝玻璃星球和珍珠小星垂在金链上，团子抬爪拨动时轻轻摇晃。",
+      "preferredSlot": "toy_corner",
+      "interactionCat": "tuanzi",
+      "interaction": "bat_chime",
+      "widthCm": 33
+    },
+    {
+      "id": "star_stool",
+      "name": "星砂绒垫凳",
+      "theme": "月海观星",
+      "source": "paid_pool",
+      "description": "星座绣进深蓝绒垫，奶油白小脚托住一只端端正正的点点。",
+      "preferredSlot": "reading_stool",
+      "interactionCat": "diandian",
+      "interaction": "perch",
+      "widthCm": 40
     }
   ],
   "slots": [
@@ -6265,15 +6612,43 @@
     },
     {
       "id": "courtyard",
-      "name": "小庭院"
+      "name": "室内花圃"
     },
     {
       "id": "beam",
-      "name": "高空横梁"
+      "name": "横梁吊床"
     },
     {
       "id": "sun_spot",
       "name": "阳光地板"
+    },
+    {
+      "id": "lounge",
+      "name": "休憩小客厅"
+    },
+    {
+      "id": "desk",
+      "name": "北侧手作台"
+    },
+    {
+      "id": "cabinet",
+      "name": "储物收信角"
+    },
+    {
+      "id": "planter",
+      "name": "天窗花架"
+    },
+    {
+      "id": "wall_clock",
+      "name": "窗间挂饰"
+    },
+    {
+      "id": "toy_corner",
+      "name": "猫咪玩具角"
+    },
+    {
+      "id": "reading_stool",
+      "name": "阅读小坐席"
     }
   ],
   "renovations": [
@@ -6325,69 +6700,186 @@
   ],
   "pools": [
     {
-      "id": "rainy_box",
-      "name": "雨夜纸箱包裹",
+      "id": "moss_letters",
+      "name": "苔叶来信包裹",
+      "theme": "苔叶来信",
       "cost": 1,
+      "currency": "stamp",
       "requiredFlag": "alley_rescued",
+      "description": "把林间的温柔寄进花房。原木、苔绿与柔软编织，拼成一间手作小屋。",
+      "pityEvery": 3,
+      "duplicateMaterial": 2,
       "entries": [
         {
-          "furnitureId": "soft_blanket",
-          "weight": 60
+          "furnitureId": "moss_cottage",
+          "weight": 12
         },
         {
-          "furnitureId": "tin_lamp",
-          "weight": 40
-        }
-      ]
-    },
-    {
-      "id": "midnight_market",
-      "name": "午夜集市包裹",
-      "cost": 1,
-      "requiredFlag": "market_explored",
-      "entries": [
+          "furnitureId": "fern_lantern",
+          "weight": 10
+        },
         {
-          "furnitureId": "snack_cushion",
-          "weight": 100
-        }
-      ]
-    },
-    {
-      "id": "underground_moon",
-      "name": "地下月光包裹",
-      "cost": 1,
-      "requiredFlag": "tunnel_explored",
-      "entries": [
+          "furnitureId": "acorn_library",
+          "weight": 8
+        },
         {
-          "furnitureId": "moon_hammock",
-          "weight": 100
+          "furnitureId": "leaf_swing",
+          "weight": 10
+        },
+        {
+          "furnitureId": "clover_rug",
+          "weight": 12
+        },
+        {
+          "furnitureId": "willow_sofa",
+          "weight": 8
+        },
+        {
+          "furnitureId": "herb_desk",
+          "weight": 8
+        },
+        {
+          "furnitureId": "letter_cabinet",
+          "weight": 6
+        },
+        {
+          "furnitureId": "sprout_planter",
+          "weight": 8
+        },
+        {
+          "furnitureId": "postmark_clock",
+          "weight": 6
+        },
+        {
+          "furnitureId": "wicker_basket",
+          "weight": 6
+        },
+        {
+          "furnitureId": "seedling_stool",
+          "weight": 6
         }
       ]
     },
     {
-      "id": "starlight_greenhouse",
-      "name": "星空温室包裹",
+      "id": "moonsea_observatory",
+      "name": "月海观星包裹",
+      "theme": "月海观星",
       "cost": 60,
       "currency": "tuna",
       "requiredFlag": "alley_rescued",
+      "description": "把一小片星海搬进家。奶油白、月海蓝与黄铜星轨，白天也明亮温暖。",
+      "pityEvery": 3,
+      "duplicateMaterial": 2,
       "entries": [
         {
-          "furnitureId": "moon_hammock",
-          "weight": 30
+          "furnitureId": "luna_boat",
+          "weight": 12
         },
         {
-          "furnitureId": "sun_lamp",
-          "weight": 30
+          "furnitureId": "orrery_lamp",
+          "weight": 10
         },
         {
-          "furnitureId": "star_glass",
-          "weight": 25
+          "furnitureId": "tide_observatory",
+          "weight": 8
         },
         {
-          "furnitureId": "cloud_nest",
-          "weight": 15
+          "furnitureId": "orbit_hammock",
+          "weight": 10
+        },
+        {
+          "furnitureId": "starmap_carpet",
+          "weight": 12
+        },
+        {
+          "furnitureId": "crescent_sofa",
+          "weight": 8
+        },
+        {
+          "furnitureId": "astral_desk",
+          "weight": 8
+        },
+        {
+          "furnitureId": "pearl_cabinet",
+          "weight": 6
+        },
+        {
+          "furnitureId": "nebula_planter",
+          "weight": 8
+        },
+        {
+          "furnitureId": "lunar_clock",
+          "weight": 6
+        },
+        {
+          "furnitureId": "comet_mobile",
+          "weight": 6
+        },
+        {
+          "furnitureId": "star_stool",
+          "weight": 6
         }
       ]
+    }
+  ],
+  "parcelRewards": [
+    {
+      "id": "daily_letter",
+      "name": "今日来信",
+      "description": "回花房签收一封来信，每日可领 1 张邮票。",
+      "kind": "daily",
+      "condition": "home",
+      "stamp": 1,
+      "tuna": 0
+    },
+    {
+      "id": "daily_wish",
+      "name": "猫咪的小心愿",
+      "description": "在花房摆上一件喜欢的家具，让猫咪有个舒适的小角落。",
+      "kind": "daily",
+      "condition": "furnished",
+      "stamp": 1,
+      "tuna": 0
+    },
+    {
+      "id": "rescue_letter",
+      "name": "点点的感谢信",
+      "description": "第一次把点点接回家，附赠 3 张猫爪邮票。",
+      "kind": "milestone",
+      "condition": "flag",
+      "requiredFlag": "alley_rescued",
+      "stamp": 3,
+      "tuna": 0
+    },
+    {
+      "id": "market_letter",
+      "name": "集市的回信",
+      "description": "守住集市后，街坊们寄来 2 张邮票和 30 罐金枪鱼。",
+      "kind": "milestone",
+      "condition": "flag",
+      "requiredFlag": "market_cleared",
+      "stamp": 2,
+      "tuna": 30
+    },
+    {
+      "id": "greenhouse_letter",
+      "name": "花房的第一束光",
+      "description": "完成原木温室修缮，附赠 2 张邮票和 30 罐金枪鱼。",
+      "kind": "milestone",
+      "condition": "flag",
+      "requiredFlag": "greenhouse_fortified_full",
+      "stamp": 2,
+      "tuna": 30
+    },
+    {
+      "id": "finale_letter",
+      "name": "王国庆典邀请函",
+      "description": "故事落幕也是生活的开始：3 张邮票与 60 罐金枪鱼。",
+      "kind": "milestone",
+      "condition": "flag",
+      "requiredFlag": "finale_completed",
+      "stamp": 3,
+      "tuna": 60
     }
   ],
   "products": [
@@ -6428,7 +6920,7 @@
     {
       "id": "pack_small",
       "name": "一小罐金枪鱼",
-      "desc": "60 罐金枪鱼罐头，够换一次星空温室包裹。",
+      "desc": "60 罐金枪鱼罐头，可以签收一次月海观星包裹。",
       "priceCents": 600,
       "tunaGranted": 60,
       "icon": "tuna_s"
@@ -6473,6 +6965,171 @@
       "id": "city_backdrop_v2",
       "kind": "svg",
       "path": "/assets/city-backdrop.svg"
+    },
+    {
+      "id": "greenhouse_base_v1",
+      "kind": "png",
+      "path": "/assets/home/greenhouse-base.png"
+    },
+    {
+      "id": "greenhouse_components_v1",
+      "kind": "png",
+      "path": "/assets/home/components.png"
+    },
+    {
+      "id": "greenhouse_furniture_shelter_v2",
+      "kind": "png",
+      "path": "/assets/home/furniture-shelter-v2.png"
+    },
+    {
+      "id": "greenhouse_furniture_improvised_v2",
+      "kind": "png",
+      "path": "/assets/home/furniture-improvised-v2.png"
+    },
+    {
+      "id": "greenhouse_furniture_timber_v2",
+      "kind": "png",
+      "path": "/assets/home/furniture-timber-v2.png"
+    },
+    {
+      "id": "greenhouse_furniture_celebration_v2",
+      "kind": "png",
+      "path": "/assets/home/furniture-celebration-v2.png"
+    },
+    {
+      "id": "greenhouse_furniture_botany_v2",
+      "kind": "png",
+      "path": "/assets/home/furniture-botany-v2.png"
+    },
+    {
+      "id": "parcel_moss_atlas_v2",
+      "kind": "png",
+      "path": "/assets/home/furniture-parcels-moss-v2.png"
+    },
+    {
+      "id": "parcel_moon_atlas_v2",
+      "kind": "png",
+      "path": "/assets/home/furniture-parcels-moon-v2.png"
+    },
+    {
+      "id": "parcel_moss_cottage_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/moss_cottage.png"
+    },
+    {
+      "id": "parcel_fern_lantern_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/fern_lantern.png"
+    },
+    {
+      "id": "parcel_acorn_library_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/acorn_library.png"
+    },
+    {
+      "id": "parcel_leaf_swing_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/leaf_swing.png"
+    },
+    {
+      "id": "parcel_clover_rug_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/clover_rug.png"
+    },
+    {
+      "id": "parcel_luna_boat_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/luna_boat.png"
+    },
+    {
+      "id": "parcel_orrery_lamp_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/orrery_lamp.png"
+    },
+    {
+      "id": "parcel_tide_observatory_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/tide_observatory.png"
+    },
+    {
+      "id": "parcel_orbit_hammock_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/orbit_hammock.png"
+    },
+    {
+      "id": "parcel_starmap_carpet_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/starmap_carpet.png"
+    },
+    {
+      "id": "parcel_willow_sofa_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/willow_sofa.png"
+    },
+    {
+      "id": "parcel_herb_desk_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/herb_desk.png"
+    },
+    {
+      "id": "parcel_letter_cabinet_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/letter_cabinet.png"
+    },
+    {
+      "id": "parcel_sprout_planter_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/sprout_planter.png"
+    },
+    {
+      "id": "parcel_postmark_clock_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/postmark_clock.png"
+    },
+    {
+      "id": "parcel_wicker_basket_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/wicker_basket.png"
+    },
+    {
+      "id": "parcel_seedling_stool_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/seedling_stool.png"
+    },
+    {
+      "id": "parcel_crescent_sofa_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/crescent_sofa.png"
+    },
+    {
+      "id": "parcel_astral_desk_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/astral_desk.png"
+    },
+    {
+      "id": "parcel_pearl_cabinet_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/pearl_cabinet.png"
+    },
+    {
+      "id": "parcel_nebula_planter_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/nebula_planter.png"
+    },
+    {
+      "id": "parcel_lunar_clock_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/lunar_clock.png"
+    },
+    {
+      "id": "parcel_comet_mobile_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/comet_mobile.png"
+    },
+    {
+      "id": "parcel_star_stool_v2",
+      "kind": "png",
+      "path": "/assets/home/parcels/star_stool.png"
     }
   ]
 }

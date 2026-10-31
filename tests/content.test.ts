@@ -23,6 +23,7 @@ test('事件四档完整、局势指向有效剧情，剧情事件不能进入�
   (c:any)=>{delete c.events[0].options[0].outcomes.fail;},
   (c:any)=>{c.events[0].options[0].outcomes.fail.situation.storyNodeId='missing';},
   (c:any)=>{c.events[0].triggers.push('random');},
-  (c:any)=>{c.maps[0].dangerLevel=4;}
+  (c:any)=>{c.maps[0].dangerLevel=4;},
+  (c:any)=>{delete c.events[0].options[0].outcomes.fail.reward;}
  ]){const c=readCatalog();mutate(c);assert.throws(()=>validateContent(c));}
 });

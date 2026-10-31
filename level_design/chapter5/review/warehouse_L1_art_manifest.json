@@ -1,0 +1,78 @@
+{
+  "status": "manual review required; overhead fascia does not add ground collision",
+  "world": [
+    1672,
+    941
+  ],
+  "regions": [
+    {
+      "id": "lookout_platform",
+      "x": 274,
+      "y": 258,
+      "w": 112,
+      "h": 128
+    },
+    {
+      "id": "west_catwalk",
+      "x": 333,
+      "y": 278,
+      "w": 335,
+      "h": 54
+    },
+    {
+      "id": "north_connector",
+      "x": 617,
+      "y": 278,
+      "w": 60,
+      "h": 152
+    },
+    {
+      "id": "east_catwalk",
+      "x": 617,
+      "y": 370,
+      "w": 238,
+      "h": 62
+    },
+    {
+      "id": "crate_platform",
+      "x": 524,
+      "y": 250,
+      "w": 116,
+      "h": 94
+    },
+    {
+      "id": "c2_landing",
+      "x": 773,
+      "y": 372,
+      "w": 94,
+      "h": 91
+    }
+  ],
+  "climbs": [
+    {
+      "id": "C1",
+      "x": 320,
+      "y": 343,
+      "from": "L0",
+      "to": "L1",
+      "label": "West shelf climb"
+    },
+    {
+      "id": "C2",
+      "x": 816,
+      "y": 409,
+      "from": "L0",
+      "to": "L1",
+      "label": "Central catwalk descent"
+    }
+  ],
+  "deckSource": "art/source/sprites/pallet03.png",
+  "deckSourceRect": [
+    7,
+    4,
+    62,
+    47
+  ],
+  "fasciaSource": "art/variants/gate_crossbar.png",
+  "scaling": "native pixels tiled; no non-uniform stretch"
+}

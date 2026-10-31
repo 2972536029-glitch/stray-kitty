@@ -29,7 +29,7 @@ const labels = {
   'web/src/modules/battle': '塔防 · 闫琦雯', 'web/src/modules/cats': '猫咪档案、救援与成长',
   'web/src/modules/home': '家园建设、摆放与互动', 'web/src/modules/inventory': '道具与家具持有',
   'web/src/modules/qa': '按游戏流程组织的验收操作与服务端能力检查',
-  'web/src/modules/economy': '货币、扣费与奖励', 'web/src/modules/lottery': '奖池、抽取与结果',
+  'web/src/modules/economy': '货币、扣费与奖励', 'web/src/modules/lottery': '两套十二件主题家具、预览、开箱与收据',
   'web/src/modules/shop': '商品与购买', 'web/src/ui': '界面与样式 · 轩扬',
   'web/src/adapters': '具体运行能力', 'web/src/adapters/canvas': '原生 Canvas 2D',
   'web/src/adapters/api': 'HTTP 请求', 'web/src/adapters/storage': '浏览器会话与待确认请求',
@@ -40,15 +40,17 @@ const labels = {
   'web/content/story': '章节与对话', 'web/content/maps': '地图与交互点',
   'web/content/events': '事件与选项', 'web/content/cats': '猫咪档案',
   'web/content/battles': '关卡与波次', 'web/content/home': '家具与摆放位置',
-  'web/content/items': '道具', 'web/content/economy': '经济配置 · 预留',
+  'web/content/items': '道具', 'web/content/economy': '模拟充值商品',
   'web/content/lottery': '奖池', 'web/content/shop': '家具商品配置',
   'web/content/tutorials': '操作提示', 'web/content/assets': '素材索引',
   'web/public': '静态资源', 'web/public/assets': '图片、动画、声音与字体',
+  'web/public/assets/home': '无猫建筑、四阶修缮与主题家具透明图集',
+  'web/public/assets/home/parcels': '两套主题的二十四件独立透明家具组件',
   server: 'Go 服务端', 'server/cmd': '服务入口', 'server/cmd/api': 'HTTP 启动',
   'server/internal': '服务实现', 'server/internal/transport': '请求、认证与参数检查',
   'server/internal/service': '长期规则、判定、奖励与结算', 'server/internal/domain': '状态、命令与错误',
   'server/internal/repository': '单进程 JSON 文件事务', 'server/internal/platform': '嵌入内容配置',
-  'server/internal/integrations': '外部集成', 'server/internal/integrations/payment': '支付渠道 · 预留',
+  'server/internal/integrations': '外部集成', 'server/internal/integrations/payment': '独立模拟支付与账本',
   'server/migrations': 'MySQL 结构 · 尚未接入', docs: '需求、架构、接口与集成记录',
   design: '模块设计', 'design/tower-defense': '塔防规则与关卡规格',
   'web/src/modules/battle/finale': '第五章74格仓库、九格终极首领、双精英与固定援军', 'design/tower-defense/levels/L05-final-warehouse': '第五章终极仓库设计', 'docs/L05-INTEGRATION.md': '第五章光路援军与独立试玩边界',
@@ -129,7 +131,9 @@ ${directory}
 | 会话与结果未知的原始请求 | adapters/storage；不作为权威存档 |
 | 阿策最近三轮手动问答、请求取消状态 | 战斗页面内存；切换场次清空，不写存档 |
 
-home 管建设与摆放，lottery 管抽奖，shop 管购买；economy 统一余额与结算，inventory 统一拥有状态。抽到／买到家具后再交 home 摆放。真实付费预留在前后端 payment 目录，本次没有支付实现。
+home 管十二个位置的建设、摆放与原猫咪互动；lottery 管苔叶来信与月海观星两个主题池（各十二件新家具）、概率、开箱和收据。Go 的 service/lottery.go 在原命令事务内扣费、计保底、补偿重复和签收日常／里程碑奖励；旧家具由剧情确定性赠送。旧存档的 lottery 字段惰性初始化，家具与摆放不重命名。免费池每抽 1 邮票，付费池每抽 60 罐头，最多三抽得未拥有家具；两个池独立累计，历史保留 50 次。模拟支付已有进程内和独立服务两种形态，真实支付尚未接入。
+
+花房使用 modules/home 的 assets、layout、objects、painter 共用 1672×941 室内布局：建筑底图与透明组件不含猫咪，HomeMap 和场景使用同一装配；四套阶段家具和独立植物图集的裁切坐标放在模块内的 atlas.json／stage-atlas.json，每种购买家具有独立图稿，默认陈设让位于已保存的摆放。camera 管缩放、拖动与点击坐标转换，navigation 按对象地面占位阻挡，原有像素猫按家具脚点排序，前墙藤蔓和家具前缘独立遮挡。story 在对白期间接管角色和站位，空闲 home 阶段才运行日常行为；四阶外观从既有修缮与终章标记推导，不新增服务端存档字段，图集仅在需要花房时加载。
 
 ## 4. 接入与分工
 

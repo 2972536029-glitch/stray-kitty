@@ -1,0 +1,1330 @@
+{
+  "version": "v02",
+  "world": {
+    "width": 1672,
+    "height": 941,
+    "coordinateSystem": "same 1672x941 world frame as v07 SVG"
+  },
+  "sourceGround": "Chapter5_Warehouse_Ground_Only_1672x941.png",
+  "sourceAtlas": "废弃仓库工业像素素材图集(2).png",
+  "sourceGeometry": "warehouse_geometry_v07.json",
+  "sourceSvg": "warehouse_L0_graybox_v07.svg",
+  "groundRegistration": {
+    "scale": 1.0,
+    "offsetX": 0,
+    "offsetY": 0,
+    "method": "same-size canvas; source ground alpha clipped to SVG floor mask inset 10px; exact SVG perimeter redrawn as vector strokes"
+  },
+  "solidCount": 38,
+  "solids": [
+    {
+      "solidId": "west_upper_tall_rack",
+      "style": "rack",
+      "sourceAsset": "rack_wide_02",
+      "preferredSourceAsset": "rack_wide_02",
+      "selectionReason": "retained existing asset; natural orientation within tolerance",
+      "sourceComponentIndex": 1,
+      "sourceSize": {
+        "width": 162,
+        "height": 190
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 393,
+        "y": 244,
+        "w": 151,
+        "h": 101
+      },
+      "spriteDrawRect": {
+        "x": 394,
+        "y": 245,
+        "w": 149,
+        "h": 99
+      },
+      "targetAspectRatio": 1.5051,
+      "sourceAspectRatioAfterRotation": 0.8526,
+      "nonUniformScale": {
+        "x": 0.9198,
+        "y": 0.5211
+      },
+      "aspectMismatchScore": 0.5683,
+      "assetFile": "assets/placed/west_upper_tall_rack.png"
+    },
+    {
+      "solidId": "west_wide_rack",
+      "style": "rack",
+      "sourceAsset": "rack_mid_01",
+      "preferredSourceAsset": "rack_mid_01",
+      "selectionReason": "retained existing asset; natural orientation within tolerance",
+      "sourceComponentIndex": 6,
+      "sourceSize": {
+        "width": 155,
+        "height": 167
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 416,
+        "y": 412,
+        "w": 166,
+        "h": 96
+      },
+      "spriteDrawRect": {
+        "x": 417,
+        "y": 413,
+        "w": 164,
+        "h": 94
+      },
+      "targetAspectRatio": 1.7447,
+      "sourceAspectRatioAfterRotation": 0.9281,
+      "nonUniformScale": {
+        "x": 1.0581,
+        "y": 0.5629
+      },
+      "aspectMismatchScore": 0.6311,
+      "assetFile": "assets/placed/west_wide_rack.png"
+    },
+    {
+      "solidId": "west_lower_rack",
+      "style": "rack",
+      "sourceAsset": "rack_crates_03",
+      "preferredSourceAsset": "rack_drums_01",
+      "selectionReason": "same-family aspect match (score 0.382 vs preferred 0.978)",
+      "sourceComponentIndex": 17,
+      "sourceSize": {
+        "width": 151,
+        "height": 144
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 409,
+        "y": 595,
+        "w": 151,
+        "h": 99
+      },
+      "spriteDrawRect": {
+        "x": 410,
+        "y": 596,
+        "w": 149,
+        "h": 97
+      },
+      "targetAspectRatio": 1.5361,
+      "sourceAspectRatioAfterRotation": 1.0486,
+      "nonUniformScale": {
+        "x": 0.9868,
+        "y": 0.6736
+      },
+      "aspectMismatchScore": 0.3818,
+      "assetFile": "assets/placed/west_lower_rack.png"
+    },
+    {
+      "solidId": "west_crates",
+      "style": "crate",
+      "sourceAsset": "crate_cage",
+      "preferredSourceAsset": "crate_cage",
+      "selectionReason": "existing authored placement",
+      "sourceComponentIndex": 31,
+      "sourceSize": {
+        "width": 95,
+        "height": 85
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 255,
+        "y": 667,
+        "w": 106,
+        "h": 91
+      },
+      "spriteDrawRect": {
+        "x": 256,
+        "y": 668,
+        "w": 104,
+        "h": 89
+      },
+      "targetAspectRatio": 1.1685,
+      "sourceAspectRatioAfterRotation": 1.1176,
+      "nonUniformScale": {
+        "x": 1.0947,
+        "y": 1.0471
+      },
+      "aspectMismatchScore": 0.0445,
+      "assetFile": "assets/placed/west_crates.png"
+    },
+    {
+      "solidId": "west_service_equipment",
+      "style": "machine",
+      "sourceAsset": "machine_power_big",
+      "preferredSourceAsset": "machine_power_big",
+      "selectionReason": "existing authored placement",
+      "sourceComponentIndex": 33,
+      "sourceSize": {
+        "width": 70,
+        "height": 87
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 205,
+        "y": 457,
+        "w": 91,
+        "h": 102
+      },
+      "spriteDrawRect": {
+        "x": 206,
+        "y": 458,
+        "w": 89,
+        "h": 100
+      },
+      "targetAspectRatio": 0.89,
+      "sourceAspectRatioAfterRotation": 0.8046,
+      "nonUniformScale": {
+        "x": 1.2714,
+        "y": 1.1494
+      },
+      "aspectMismatchScore": 0.1009,
+      "assetFile": "assets/placed/west_service_equipment.png"
+    },
+    {
+      "solidId": "west_repair_pallet",
+      "style": "crate",
+      "sourceAsset": "crate_one",
+      "preferredSourceAsset": "crate_one",
+      "selectionReason": "existing authored placement",
+      "sourceComponentIndex": 37,
+      "sourceSize": {
+        "width": 63,
+        "height": 68
+      },
+      "rotationDegrees": 90,
+      "worldRect": {
+        "x": 174,
+        "y": 355,
+        "w": 61,
+        "h": 53
+      },
+      "spriteDrawRect": {
+        "x": 175,
+        "y": 356,
+        "w": 59,
+        "h": 51
+      },
+      "targetAspectRatio": 1.1569,
+      "sourceAspectRatioAfterRotation": 1.0794,
+      "nonUniformScale": {
+        "x": 0.8676,
+        "y": 0.8095
+      },
+      "aspectMismatchScore": 0.0693,
+      "assetFile": "assets/placed/west_repair_pallet.png"
+    },
+    {
+      "solidId": "west_broken_shelf",
+      "style": "rack",
+      "sourceAsset": "rack_mesh_01",
+      "preferredSourceAsset": "rack_steel_02",
+      "selectionReason": "same-family aspect match (score 0.029 vs preferred 0.295)",
+      "sourceComponentIndex": 12,
+      "sourceSize": {
+        "width": 82,
+        "height": 167
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 346,
+        "y": 705,
+        "w": 49,
+        "h": 95
+      },
+      "spriteDrawRect": {
+        "x": 347,
+        "y": 706,
+        "w": 47,
+        "h": 93
+      },
+      "targetAspectRatio": 0.5054,
+      "sourceAspectRatioAfterRotation": 0.491,
+      "nonUniformScale": {
+        "x": 0.5732,
+        "y": 0.5569
+      },
+      "aspectMismatchScore": 0.0288,
+      "assetFile": "assets/placed/west_broken_shelf.png"
+    },
+    {
+      "solidId": "center_upper_rack",
+      "style": "rack",
+      "sourceAsset": "rack_crates_03",
+      "preferredSourceAsset": "rack_narrow_01",
+      "selectionReason": "same-family aspect match (score 0.441 vs preferred 0.881)",
+      "sourceComponentIndex": 17,
+      "sourceSize": {
+        "width": 151,
+        "height": 144
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 637,
+        "y": 261,
+        "w": 134,
+        "h": 83
+      },
+      "spriteDrawRect": {
+        "x": 638,
+        "y": 262,
+        "w": 132,
+        "h": 81
+      },
+      "targetAspectRatio": 1.6296,
+      "sourceAspectRatioAfterRotation": 1.0486,
+      "nonUniformScale": {
+        "x": 0.8742,
+        "y": 0.5625
+      },
+      "aspectMismatchScore": 0.4409,
+      "assetFile": "assets/placed/center_upper_rack.png"
+    },
+    {
+      "solidId": "center_mid_container",
+      "style": "container",
+      "sourceAsset": "container_tarp04",
+      "preferredSourceAsset": "container_tarp04",
+      "selectionReason": "retained existing asset; natural orientation within tolerance",
+      "sourceComponentIndex": 55,
+      "sourceSize": {
+        "width": 139,
+        "height": 153
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 630,
+        "y": 424,
+        "w": 144,
+        "h": 112
+      },
+      "spriteDrawRect": {
+        "x": 631,
+        "y": 425,
+        "w": 142,
+        "h": 110
+      },
+      "targetAspectRatio": 1.2909,
+      "sourceAspectRatioAfterRotation": 0.9085,
+      "nonUniformScale": {
+        "x": 1.0216,
+        "y": 0.719
+      },
+      "aspectMismatchScore": 0.3513,
+      "assetFile": "assets/placed/center_mid_container.png"
+    },
+    {
+      "solidId": "center_lower_rack",
+      "style": "rack",
+      "sourceAsset": "rack_crates_03",
+      "preferredSourceAsset": "rack_tarp",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 17,
+      "sourceSize": {
+        "width": 151,
+        "height": 144
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 637,
+        "y": 629,
+        "w": 113,
+        "h": 113
+      },
+      "spriteDrawRect": {
+        "x": 638,
+        "y": 630,
+        "w": 111,
+        "h": 111
+      },
+      "targetAspectRatio": 1.0,
+      "sourceAspectRatioAfterRotation": 1.0486,
+      "nonUniformScale": {
+        "x": 0.7351,
+        "y": 0.7708
+      },
+      "aspectMismatchScore": 0.0475,
+      "assetFile": "assets/placed/center_lower_rack.png"
+    },
+    {
+      "solidId": "southwest_pallets",
+      "style": "crate",
+      "sourceAsset": "pallet01",
+      "preferredSourceAsset": "pallet01",
+      "selectionReason": "existing authored placement",
+      "sourceComponentIndex": 50,
+      "sourceSize": {
+        "width": 84,
+        "height": 63
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 548,
+        "y": 775,
+        "w": 76,
+        "h": 43
+      },
+      "spriteDrawRect": {
+        "x": 549,
+        "y": 776,
+        "w": 74,
+        "h": 41
+      },
+      "targetAspectRatio": 1.8049,
+      "sourceAspectRatioAfterRotation": 1.3333,
+      "nonUniformScale": {
+        "x": 0.881,
+        "y": 0.6508
+      },
+      "aspectMismatchScore": 0.3028,
+      "assetFile": "assets/placed/southwest_pallets.png"
+    },
+    {
+      "solidId": "center_fallen_boxes",
+      "style": "crate",
+      "sourceAsset": "crate_pallet_mixed",
+      "preferredSourceAsset": "crate_pallet_mixed",
+      "selectionReason": "existing authored placement",
+      "sourceComponentIndex": 23,
+      "sourceSize": {
+        "width": 88,
+        "height": 103
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 759,
+        "y": 633,
+        "w": 49,
+        "h": 65
+      },
+      "spriteDrawRect": {
+        "x": 760,
+        "y": 634,
+        "w": 47,
+        "h": 63
+      },
+      "targetAspectRatio": 0.746,
+      "sourceAspectRatioAfterRotation": 0.8544,
+      "nonUniformScale": {
+        "x": 0.5341,
+        "y": 0.6117
+      },
+      "aspectMismatchScore": 0.1356,
+      "assetFile": "assets/placed/center_fallen_boxes.png"
+    },
+    {
+      "solidId": "east_upper_container",
+      "style": "container",
+      "sourceAsset": "container_tarp02",
+      "preferredSourceAsset": "container_tarp02",
+      "selectionReason": "retained existing asset; natural orientation within tolerance",
+      "sourceComponentIndex": 60,
+      "sourceSize": {
+        "width": 131,
+        "height": 122
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 897,
+        "y": 276,
+        "w": 132,
+        "h": 113
+      },
+      "spriteDrawRect": {
+        "x": 898,
+        "y": 277,
+        "w": 130,
+        "h": 111
+      },
+      "targetAspectRatio": 1.1712,
+      "sourceAspectRatioAfterRotation": 1.0738,
+      "nonUniformScale": {
+        "x": 0.9924,
+        "y": 0.9098
+      },
+      "aspectMismatchScore": 0.0868,
+      "assetFile": "assets/placed/east_upper_container.png"
+    },
+    {
+      "solidId": "east_mid_rack",
+      "style": "rack",
+      "sourceAsset": "rack_mid_01",
+      "preferredSourceAsset": "rack_drums_01",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 6,
+      "sourceSize": {
+        "width": 155,
+        "height": 167
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 932,
+        "y": 445,
+        "w": 108,
+        "h": 96
+      },
+      "spriteDrawRect": {
+        "x": 933,
+        "y": 446,
+        "w": 106,
+        "h": 94
+      },
+      "targetAspectRatio": 1.1277,
+      "sourceAspectRatioAfterRotation": 0.9281,
+      "nonUniformScale": {
+        "x": 0.6839,
+        "y": 0.5629
+      },
+      "aspectMismatchScore": 0.1947,
+      "assetFile": "assets/placed/east_mid_rack.png"
+    },
+    {
+      "solidId": "east_lower_container",
+      "style": "container",
+      "sourceAsset": "container_tarp04",
+      "preferredSourceAsset": "container_tarp04",
+      "selectionReason": "retained existing asset; natural orientation within tolerance",
+      "sourceComponentIndex": 55,
+      "sourceSize": {
+        "width": 139,
+        "height": 153
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 909,
+        "y": 641,
+        "w": 127,
+        "h": 90
+      },
+      "spriteDrawRect": {
+        "x": 910,
+        "y": 642,
+        "w": 125,
+        "h": 88
+      },
+      "targetAspectRatio": 1.4205,
+      "sourceAspectRatioAfterRotation": 0.9085,
+      "nonUniformScale": {
+        "x": 0.8993,
+        "y": 0.5752
+      },
+      "aspectMismatchScore": 0.4469,
+      "assetFile": "assets/placed/east_lower_container.png"
+    },
+    {
+      "solidId": "east_top_rack",
+      "style": "rack",
+      "sourceAsset": "rack_pallets",
+      "preferredSourceAsset": "rack_pallets",
+      "selectionReason": "retained existing asset; natural orientation within tolerance",
+      "sourceComponentIndex": 13,
+      "sourceSize": {
+        "width": 135,
+        "height": 143
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1127,
+        "y": 320,
+        "w": 121,
+        "h": 77
+      },
+      "spriteDrawRect": {
+        "x": 1128,
+        "y": 321,
+        "w": 119,
+        "h": 75
+      },
+      "targetAspectRatio": 1.5867,
+      "sourceAspectRatioAfterRotation": 0.9441,
+      "nonUniformScale": {
+        "x": 0.8815,
+        "y": 0.5245
+      },
+      "aspectMismatchScore": 0.5192,
+      "assetFile": "assets/placed/east_top_rack.png"
+    },
+    {
+      "solidId": "east_center_rack",
+      "style": "rack",
+      "sourceAsset": "rack_crates_03",
+      "preferredSourceAsset": "rack_storage_01",
+      "selectionReason": "same-family aspect match (score 0.247 vs preferred 0.653)",
+      "sourceComponentIndex": 17,
+      "sourceSize": {
+        "width": 151,
+        "height": 144
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1124,
+        "y": 462,
+        "w": 108,
+        "h": 81
+      },
+      "spriteDrawRect": {
+        "x": 1125,
+        "y": 463,
+        "w": 106,
+        "h": 79
+      },
+      "targetAspectRatio": 1.3418,
+      "sourceAspectRatioAfterRotation": 1.0486,
+      "nonUniformScale": {
+        "x": 0.702,
+        "y": 0.5486
+      },
+      "aspectMismatchScore": 0.2465,
+      "assetFile": "assets/placed/east_center_rack.png"
+    },
+    {
+      "solidId": "east_lower_crates",
+      "style": "crate",
+      "sourceAsset": "crate_cage",
+      "preferredSourceAsset": "crate_stack_three",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 31,
+      "sourceSize": {
+        "width": 95,
+        "height": 85
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1148,
+        "y": 639,
+        "w": 112,
+        "h": 88
+      },
+      "spriteDrawRect": {
+        "x": 1149,
+        "y": 640,
+        "w": 110,
+        "h": 86
+      },
+      "targetAspectRatio": 1.2791,
+      "sourceAspectRatioAfterRotation": 1.1176,
+      "nonUniformScale": {
+        "x": 1.1579,
+        "y": 1.0118
+      },
+      "aspectMismatchScore": 0.1349,
+      "assetFile": "assets/placed/east_lower_crates.png"
+    },
+    {
+      "solidId": "far_east_top_machine",
+      "style": "machine",
+      "sourceAsset": "machine_cabinet_wide",
+      "preferredSourceAsset": "machine_workbench",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 22,
+      "sourceSize": {
+        "width": 94,
+        "height": 117
+      },
+      "rotationDegrees": 90,
+      "worldRect": {
+        "x": 1359,
+        "y": 394,
+        "w": 114,
+        "h": 94
+      },
+      "spriteDrawRect": {
+        "x": 1360,
+        "y": 395,
+        "w": 112,
+        "h": 92
+      },
+      "targetAspectRatio": 1.2174,
+      "sourceAspectRatioAfterRotation": 1.2447,
+      "nonUniformScale": {
+        "x": 0.9573,
+        "y": 0.9787
+      },
+      "aspectMismatchScore": 0.0222,
+      "assetFile": "assets/placed/far_east_top_machine.png"
+    },
+    {
+      "solidId": "far_east_bottom",
+      "style": "container",
+      "sourceAsset": "container_tarp03",
+      "preferredSourceAsset": "container_tarp03",
+      "selectionReason": "retained existing asset; natural orientation within tolerance",
+      "sourceComponentIndex": 59,
+      "sourceSize": {
+        "width": 151,
+        "height": 134
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1367,
+        "y": 654,
+        "w": 101,
+        "h": 91
+      },
+      "spriteDrawRect": {
+        "x": 1368,
+        "y": 655,
+        "w": 99,
+        "h": 89
+      },
+      "targetAspectRatio": 1.1124,
+      "sourceAspectRatioAfterRotation": 1.1269,
+      "nonUniformScale": {
+        "x": 0.6556,
+        "y": 0.6642
+      },
+      "aspectMismatchScore": 0.013,
+      "assetFile": "assets/placed/far_east_bottom.png"
+    },
+    {
+      "solidId": "southeast_pallets",
+      "style": "crate",
+      "sourceAsset": "pallet02",
+      "preferredSourceAsset": "pallet02",
+      "selectionReason": "existing authored placement",
+      "sourceComponentIndex": 48,
+      "sourceSize": {
+        "width": 84,
+        "height": 58
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1090,
+        "y": 774,
+        "w": 67,
+        "h": 45
+      },
+      "spriteDrawRect": {
+        "x": 1091,
+        "y": 775,
+        "w": 65,
+        "h": 43
+      },
+      "targetAspectRatio": 1.5116,
+      "sourceAspectRatioAfterRotation": 1.4483,
+      "nonUniformScale": {
+        "x": 0.7738,
+        "y": 0.7414
+      },
+      "aspectMismatchScore": 0.0428,
+      "assetFile": "assets/placed/southeast_pallets.png"
+    },
+    {
+      "solidId": "northeast_spare_drums",
+      "style": "machine",
+      "sourceAsset": "drums",
+      "preferredSourceAsset": "rack_drums_02",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 51,
+      "sourceSize": {
+        "width": 108,
+        "height": 89
+      },
+      "rotationDegrees": 90,
+      "worldRect": {
+        "x": 1257,
+        "y": 333,
+        "w": 56,
+        "h": 72
+      },
+      "spriteDrawRect": {
+        "x": 1258,
+        "y": 334,
+        "w": 54,
+        "h": 70
+      },
+      "targetAspectRatio": 0.7714,
+      "sourceAspectRatioAfterRotation": 0.8241,
+      "nonUniformScale": {
+        "x": 0.6067,
+        "y": 0.6481
+      },
+      "aspectMismatchScore": 0.066,
+      "assetFile": "assets/placed/northeast_spare_drums.png"
+    },
+    {
+      "solidId": "northeast_tilted_container",
+      "style": "container",
+      "sourceAsset": "container_tarp01",
+      "preferredSourceAsset": "container_tarp01",
+      "selectionReason": "retained existing asset; natural orientation within tolerance",
+      "sourceComponentIndex": 56,
+      "sourceSize": {
+        "width": 110,
+        "height": 131
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1265,
+        "y": 458,
+        "w": 77,
+        "h": 88
+      },
+      "spriteDrawRect": {
+        "x": 1266,
+        "y": 459,
+        "w": 75,
+        "h": 86
+      },
+      "targetAspectRatio": 0.8721,
+      "sourceAspectRatioAfterRotation": 0.8397,
+      "nonUniformScale": {
+        "x": 0.6818,
+        "y": 0.6565
+      },
+      "aspectMismatchScore": 0.0379,
+      "assetFile": "assets/placed/northeast_tilted_container.png"
+    },
+    {
+      "solidId": "east_mid_crate_stack",
+      "style": "crate",
+      "sourceAsset": "crate_pallet_mixed",
+      "preferredSourceAsset": "pallet02",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 23,
+      "sourceSize": {
+        "width": 88,
+        "height": 103
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1402,
+        "y": 536,
+        "w": 78,
+        "h": 83
+      },
+      "spriteDrawRect": {
+        "x": 1403,
+        "y": 537,
+        "w": 76,
+        "h": 81
+      },
+      "targetAspectRatio": 0.9383,
+      "sourceAspectRatioAfterRotation": 0.8544,
+      "nonUniformScale": {
+        "x": 0.8636,
+        "y": 0.7864
+      },
+      "aspectMismatchScore": 0.0937,
+      "assetFile": "assets/placed/east_mid_crate_stack.png"
+    },
+    {
+      "solidId": "east_loading_rejects",
+      "style": "crate",
+      "sourceAsset": "crate_cage",
+      "preferredSourceAsset": "crate_stack_four",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 31,
+      "sourceSize": {
+        "width": 95,
+        "height": 85
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1215,
+        "y": 743,
+        "w": 72,
+        "h": 62
+      },
+      "spriteDrawRect": {
+        "x": 1216,
+        "y": 744,
+        "w": 70,
+        "h": 60
+      },
+      "targetAspectRatio": 1.1667,
+      "sourceAspectRatioAfterRotation": 1.1176,
+      "nonUniformScale": {
+        "x": 0.7368,
+        "y": 0.7059
+      },
+      "aspectMismatchScore": 0.0429,
+      "assetFile": "assets/placed/east_loading_rejects.png"
+    },
+    {
+      "solidId": "south_loading_crate",
+      "style": "crate",
+      "sourceAsset": "crate_stack_two",
+      "preferredSourceAsset": "crate_pallet_mixed",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 29,
+      "sourceSize": {
+        "width": 72,
+        "height": 90
+      },
+      "rotationDegrees": 90,
+      "worldRect": {
+        "x": 850,
+        "y": 797,
+        "w": 74,
+        "h": 52
+      },
+      "spriteDrawRect": {
+        "x": 851,
+        "y": 798,
+        "w": 72,
+        "h": 50
+      },
+      "targetAspectRatio": 1.44,
+      "sourceAspectRatioAfterRotation": 1.25,
+      "nonUniformScale": {
+        "x": 0.8,
+        "y": 0.6944
+      },
+      "aspectMismatchScore": 0.1415,
+      "assetFile": "assets/placed/south_loading_crate.png"
+    },
+    {
+      "solidId": "upper_access_pallet",
+      "style": "crate",
+      "sourceAsset": "pallet03",
+      "preferredSourceAsset": "pallet03",
+      "selectionReason": "existing authored placement",
+      "sourceComponentIndex": 49,
+      "sourceSize": {
+        "width": 76,
+        "height": 75
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1064,
+        "y": 294,
+        "w": 42,
+        "h": 64
+      },
+      "spriteDrawRect": {
+        "x": 1065,
+        "y": 295,
+        "w": 40,
+        "h": 62
+      },
+      "targetAspectRatio": 0.6452,
+      "sourceAspectRatioAfterRotation": 1.0133,
+      "nonUniformScale": {
+        "x": 0.5263,
+        "y": 0.8267
+      },
+      "aspectMismatchScore": 0.4515,
+      "assetFile": "assets/placed/upper_access_pallet.png"
+    },
+    {
+      "solidId": "west_cross_spill",
+      "style": "crate",
+      "sourceAsset": "rubble03",
+      "preferredSourceAsset": "rubble03",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 89,
+      "sourceSize": {
+        "width": 89,
+        "height": 50
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 325,
+        "y": 521,
+        "w": 68,
+        "h": 32
+      },
+      "spriteDrawRect": {
+        "x": 326,
+        "y": 522,
+        "w": 66,
+        "h": 30
+      },
+      "targetAspectRatio": 2.2,
+      "sourceAspectRatioAfterRotation": 1.78,
+      "nonUniformScale": {
+        "x": 0.7416,
+        "y": 0.6
+      },
+      "aspectMismatchScore": 0.2118,
+      "assetFile": "assets/placed/west_cross_spill.png"
+    },
+    {
+      "solidId": "central_misplaced_pallet",
+      "style": "crate",
+      "sourceAsset": "pallet01",
+      "preferredSourceAsset": "pallet01",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 50,
+      "sourceSize": {
+        "width": 84,
+        "height": 63
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 805,
+        "y": 459,
+        "w": 72,
+        "h": 35
+      },
+      "spriteDrawRect": {
+        "x": 806,
+        "y": 460,
+        "w": 70,
+        "h": 33
+      },
+      "targetAspectRatio": 2.1212,
+      "sourceAspectRatioAfterRotation": 1.3333,
+      "nonUniformScale": {
+        "x": 0.8333,
+        "y": 0.5238
+      },
+      "aspectMismatchScore": 0.4643,
+      "assetFile": "assets/placed/central_misplaced_pallet.png"
+    },
+    {
+      "solidId": "east_transverse_rubble",
+      "style": "crate",
+      "sourceAsset": "rubble04",
+      "preferredSourceAsset": "rubble04",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 84,
+      "sourceSize": {
+        "width": 126,
+        "height": 85
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1055,
+        "y": 548,
+        "w": 64,
+        "h": 39
+      },
+      "spriteDrawRect": {
+        "x": 1056,
+        "y": 549,
+        "w": 62,
+        "h": 37
+      },
+      "targetAspectRatio": 1.6757,
+      "sourceAspectRatioAfterRotation": 1.4824,
+      "nonUniformScale": {
+        "x": 0.4921,
+        "y": 0.4353
+      },
+      "aspectMismatchScore": 0.1226,
+      "assetFile": "assets/placed/east_transverse_rubble.png"
+    },
+    {
+      "solidId": "east_spare_forklift",
+      "style": "machine",
+      "sourceAsset": "machine_forklift",
+      "preferredSourceAsset": "machine_forklift",
+      "selectionReason": "existing authored placement",
+      "sourceComponentIndex": 43,
+      "sourceSize": {
+        "width": 170,
+        "height": 176
+      },
+      "rotationDegrees": 90,
+      "worldRect": {
+        "x": 1273,
+        "y": 556,
+        "w": 59,
+        "h": 54
+      },
+      "spriteDrawRect": {
+        "x": 1274,
+        "y": 557,
+        "w": 57,
+        "h": 52
+      },
+      "targetAspectRatio": 1.0962,
+      "sourceAspectRatioAfterRotation": 1.0353,
+      "nonUniformScale": {
+        "x": 0.3239,
+        "y": 0.3059
+      },
+      "aspectMismatchScore": 0.0571,
+      "assetFile": "assets/placed/east_spare_forklift.png"
+    },
+    {
+      "solidId": "west_overturned_pallets",
+      "style": "crate",
+      "sourceAsset": "pallet02",
+      "preferredSourceAsset": "pallet02",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 48,
+      "sourceSize": {
+        "width": 84,
+        "height": 58
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 402,
+        "y": 260,
+        "w": 46,
+        "h": 28
+      },
+      "spriteDrawRect": {
+        "x": 403,
+        "y": 261,
+        "w": 44,
+        "h": 26
+      },
+      "targetAspectRatio": 1.6923,
+      "sourceAspectRatioAfterRotation": 1.4483,
+      "nonUniformScale": {
+        "x": 0.5238,
+        "y": 0.4483
+      },
+      "aspectMismatchScore": 0.1557,
+      "assetFile": "assets/placed/west_overturned_pallets.png"
+    },
+    {
+      "solidId": "west_collapsed_upright",
+      "style": "rack",
+      "sourceAsset": "rack_wide_01",
+      "preferredSourceAsset": "rack_steel_01",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 3,
+      "sourceSize": {
+        "width": 174,
+        "height": 181
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 307,
+        "y": 449,
+        "w": 91,
+        "h": 28
+      },
+      "spriteDrawRect": {
+        "x": 308,
+        "y": 450,
+        "w": 89,
+        "h": 26
+      },
+      "targetAspectRatio": 3.4231,
+      "sourceAspectRatioAfterRotation": 0.9613,
+      "nonUniformScale": {
+        "x": 0.5115,
+        "y": 0.1436
+      },
+      "aspectMismatchScore": 1.27,
+      "assetFile": "assets/placed/west_collapsed_upright.png"
+    },
+    {
+      "solidId": "west_loading_rejects",
+      "style": "crate",
+      "sourceAsset": "pallet02",
+      "preferredSourceAsset": "pallet03",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 48,
+      "sourceSize": {
+        "width": 84,
+        "height": 58
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 155,
+        "y": 640,
+        "w": 86,
+        "h": 39
+      },
+      "spriteDrawRect": {
+        "x": 156,
+        "y": 641,
+        "w": 84,
+        "h": 37
+      },
+      "targetAspectRatio": 2.2703,
+      "sourceAspectRatioAfterRotation": 1.4483,
+      "nonUniformScale": {
+        "x": 1.0,
+        "y": 0.6379
+      },
+      "aspectMismatchScore": 0.4495,
+      "assetFile": "assets/placed/west_loading_rejects.png"
+    },
+    {
+      "solidId": "south_central_scrap",
+      "style": "crate",
+      "sourceAsset": "rubble02",
+      "preferredSourceAsset": "rubble02",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 95,
+      "sourceSize": {
+        "width": 78,
+        "height": 49
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 763,
+        "y": 750,
+        "w": 47,
+        "h": 36
+      },
+      "spriteDrawRect": {
+        "x": 764,
+        "y": 751,
+        "w": 45,
+        "h": 34
+      },
+      "targetAspectRatio": 1.3235,
+      "sourceAspectRatioAfterRotation": 1.5918,
+      "nonUniformScale": {
+        "x": 0.5769,
+        "y": 0.6939
+      },
+      "aspectMismatchScore": 0.1846,
+      "assetFile": "assets/placed/south_central_scrap.png"
+    },
+    {
+      "solidId": "upper_east_fallen_rack",
+      "style": "rack",
+      "sourceAsset": "rack_crates_03",
+      "preferredSourceAsset": "rack_narrow_02",
+      "selectionReason": "same-family aspect match (score 0.184 vs preferred 0.534)",
+      "sourceComponentIndex": 17,
+      "sourceSize": {
+        "width": 151,
+        "height": 144
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1014,
+        "y": 460,
+        "w": 60,
+        "h": 48
+      },
+      "spriteDrawRect": {
+        "x": 1015,
+        "y": 461,
+        "w": 58,
+        "h": 46
+      },
+      "targetAspectRatio": 1.2609,
+      "sourceAspectRatioAfterRotation": 1.0486,
+      "nonUniformScale": {
+        "x": 0.3841,
+        "y": 0.3194
+      },
+      "aspectMismatchScore": 0.1843,
+      "assetFile": "assets/placed/upper_east_fallen_rack.png"
+    },
+    {
+      "solidId": "upper_east_cross_pallet",
+      "style": "crate",
+      "sourceAsset": "pallet02",
+      "preferredSourceAsset": "pallet03",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 48,
+      "sourceSize": {
+        "width": 84,
+        "height": 58
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1178,
+        "y": 413,
+        "w": 57,
+        "h": 33
+      },
+      "spriteDrawRect": {
+        "x": 1179,
+        "y": 414,
+        "w": 55,
+        "h": 31
+      },
+      "targetAspectRatio": 1.7742,
+      "sourceAspectRatioAfterRotation": 1.4483,
+      "nonUniformScale": {
+        "x": 0.6548,
+        "y": 0.5345
+      },
+      "aspectMismatchScore": 0.203,
+      "assetFile": "assets/placed/upper_east_cross_pallet.png"
+    },
+    {
+      "solidId": "east_dock_displaced_stack",
+      "style": "crate",
+      "sourceAsset": "pallet01",
+      "preferredSourceAsset": "crate_stack_two",
+      "selectionReason": "semantic override for footprint/readability",
+      "sourceComponentIndex": 50,
+      "sourceSize": {
+        "width": 84,
+        "height": 63
+      },
+      "rotationDegrees": 0,
+      "worldRect": {
+        "x": 1387,
+        "y": 383,
+        "w": 70,
+        "h": 31
+      },
+      "spriteDrawRect": {
+        "x": 1388,
+        "y": 384,
+        "w": 68,
+        "h": 29
+      },
+      "targetAspectRatio": 2.3448,
+      "sourceAspectRatioAfterRotation": 1.3333,
+      "nonUniformScale": {
+        "x": 0.8095,
+        "y": 0.4603
+      },
+      "aspectMismatchScore": 0.5645,
+      "assetFile": "assets/placed/east_dock_displaced_stack.png"
+    }
+  ],
+  "interactivePlacements": {
+    "entry_lamp": {
+      "x": 316,
+      "y": 582,
+      "initialState": "off"
+    },
+    "central_spotlight": {
+      "x": 833,
+      "y": 557,
+      "initialState": "off"
+    },
+    "secondary_lamp": {
+      "x": 1420,
+      "y": 775,
+      "initialState": "off"
+    },
+    "bunker_exit": {
+      "x": 1310,
+      "y": 126,
+      "initialState": "closed",
+      "unlock": "finale_boss_victory"
+    },
+    "dynamicGates": {
+      "boss": {
+        "id": "boss_gate",
+        "x": 1257,
+        "y": 251,
+        "w": 91,
+        "h": 22,
+        "floor": "L0",
+        "unlock": "finale_boss_victory"
+      },
+      "shadow": [
+        {
+          "id": "west_shortcut",
+          "x": 587,
+          "y": 356,
+          "w": 23,
+          "h": 47,
+          "floor": "L0",
+          "unlock": "entry_lamp"
+        },
+        {
+          "id": "east_shortcut",
+          "x": 1061,
+          "y": 524,
+          "w": 27,
+          "h": 44,
+          "floor": "L0",
+          "unlock": "secondary_lamp"
+        }
+      ]
+    }
+  },
+  "note": "Geometry unchanged. Static sprites are individually extracted from alpha-connected components in the approved atlas and fitted to each authored rectangle. Stateful props are separate and initially unlit/closed. Review all asset choices/orientations before production lock."
+}

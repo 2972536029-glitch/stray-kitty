@@ -3,5 +3,170 @@
     "id": "city_backdrop_v2",
     "kind": "svg",
     "path": "/assets/city-backdrop.svg"
+  },
+  {
+    "id": "greenhouse_base_v1",
+    "kind": "png",
+    "path": "/assets/home/greenhouse-base.png"
+  },
+  {
+    "id": "greenhouse_components_v1",
+    "kind": "png",
+    "path": "/assets/home/components.png"
+  },
+  {
+    "id": "greenhouse_furniture_shelter_v2",
+    "kind": "png",
+    "path": "/assets/home/furniture-shelter-v2.png"
+  },
+  {
+    "id": "greenhouse_furniture_improvised_v2",
+    "kind": "png",
+    "path": "/assets/home/furniture-improvised-v2.png"
+  },
+  {
+    "id": "greenhouse_furniture_timber_v2",
+    "kind": "png",
+    "path": "/assets/home/furniture-timber-v2.png"
+  },
+  {
+    "id": "greenhouse_furniture_celebration_v2",
+    "kind": "png",
+    "path": "/assets/home/furniture-celebration-v2.png"
+  },
+  {
+    "id": "greenhouse_furniture_botany_v2",
+    "kind": "png",
+    "path": "/assets/home/furniture-botany-v2.png"
+  },
+  {
+    "id": "parcel_moss_atlas_v2",
+    "kind": "png",
+    "path": "/assets/home/furniture-parcels-moss-v2.png"
+  },
+  {
+    "id": "parcel_moon_atlas_v2",
+    "kind": "png",
+    "path": "/assets/home/furniture-parcels-moon-v2.png"
+  },
+  {
+    "id": "parcel_moss_cottage_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/moss_cottage.png"
+  },
+  {
+    "id": "parcel_fern_lantern_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/fern_lantern.png"
+  },
+  {
+    "id": "parcel_acorn_library_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/acorn_library.png"
+  },
+  {
+    "id": "parcel_leaf_swing_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/leaf_swing.png"
+  },
+  {
+    "id": "parcel_clover_rug_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/clover_rug.png"
+  },
+  {
+    "id": "parcel_luna_boat_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/luna_boat.png"
+  },
+  {
+    "id": "parcel_orrery_lamp_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/orrery_lamp.png"
+  },
+  {
+    "id": "parcel_tide_observatory_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/tide_observatory.png"
+  },
+  {
+    "id": "parcel_orbit_hammock_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/orbit_hammock.png"
+  },
+  {
+    "id": "parcel_starmap_carpet_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/starmap_carpet.png"
+  },
+  {
+    "id": "parcel_willow_sofa_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/willow_sofa.png"
+  },
+  {
+    "id": "parcel_herb_desk_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/herb_desk.png"
+  },
+  {
+    "id": "parcel_letter_cabinet_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/letter_cabinet.png"
+  },
+  {
+    "id": "parcel_sprout_planter_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/sprout_planter.png"
+  },
+  {
+    "id": "parcel_postmark_clock_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/postmark_clock.png"
+  },
+  {
+    "id": "parcel_wicker_basket_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/wicker_basket.png"
+  },
+  {
+    "id": "parcel_seedling_stool_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/seedling_stool.png"
+  },
+  {
+    "id": "parcel_crescent_sofa_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/crescent_sofa.png"
+  },
+  {
+    "id": "parcel_astral_desk_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/astral_desk.png"
+  },
+  {
+    "id": "parcel_pearl_cabinet_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/pearl_cabinet.png"
+  },
+  {
+    "id": "parcel_nebula_planter_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/nebula_planter.png"
+  },
+  {
+    "id": "parcel_lunar_clock_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/lunar_clock.png"
+  },
+  {
+    "id": "parcel_comet_mobile_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/comet_mobile.png"
+  },
+  {
+    "id": "parcel_star_stool_v2",
+    "kind": "png",
+    "path": "/assets/home/parcels/star_stool.png"
   }
 ]

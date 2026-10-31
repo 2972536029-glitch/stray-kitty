@@ -44,7 +44,10 @@ func TestQACheckpointsAreGatedAndEveryPublishedNodeWorks(t *testing.T) {
 				if !found || s.Phase == "event" {
 					t.Fatal("event cannot resolve")
 				}
-				if point.MapID == "greenhouse" || point.MapID == "warehouse" {
+				if point.MapID == "warehouse" && s.MapID != "warehouse" {
+					t.Fatal("warehouse card did not preserve its implemented map")
+				}
+				if point.MapID == "greenhouse" {
 					if s.Phase == "explore" {
 						t.Fatal("card opened an unimplemented exploration map")
 					}
@@ -111,7 +114,7 @@ func TestQARestoreSurvivesRestartAndReplaysWithoutOverwritingOriginal(t *testing
 		t.Fatal("retry changed the checkpoint or attempt")
 	}
 	execute(t, g, token, domain.Command{Type: "QA_CHECKPOINT", CheckpointID: "greenhouse.home_3"})
-	execute(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: "rainy_box"})
+	execute(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: "moss_letters"})
 	store, err := repository.Open(path)
 	if err != nil {
 		t.Fatal(err)

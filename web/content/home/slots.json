@@ -9,14 +9,42 @@
   },
   {
     "id": "courtyard",
-    "name": "小庭院"
+    "name": "室内花圃"
   },
   {
     "id": "beam",
-    "name": "高空横梁"
+    "name": "横梁吊床"
   },
   {
     "id": "sun_spot",
     "name": "阳光地板"
+  },
+  {
+    "id": "lounge",
+    "name": "休憩小客厅"
+  },
+  {
+    "id": "desk",
+    "name": "北侧手作台"
+  },
+  {
+    "id": "cabinet",
+    "name": "储物收信角"
+  },
+  {
+    "id": "planter",
+    "name": "天窗花架"
+  },
+  {
+    "id": "wall_clock",
+    "name": "窗间挂饰"
+  },
+  {
+    "id": "toy_corner",
+    "name": "猫咪玩具角"
+  },
+  {
+    "id": "reading_stool",
+    "name": "阅读小坐席"
   }
 ]

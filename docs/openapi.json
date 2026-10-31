@@ -3,7 +3,7 @@
   "info": {
     "title": "小猫回家记：框架 API",
     "version": "0.1.0",
-    "description": "浏览器 Demo 已实现的 API。开发地址 http://127.0.0.1:8017；前端 5017 代理 /api/v1。\n\n会话：POST /api/v1/sessions 无正文，返回 playerId、token；其余玩家接口使用 Authorization: Bearer <token>。\n\n写命令：POST /api/v1/commands，Content-Type: application/json，Idempotency-Key 为 8–128 位字母数字、下划线或连字符；正文为 expectedRevision + command，最多 8 KiB。\n\n请求示例：{\"expectedRevision\":0,\"command\":{\"type\":\"ADVANCE_STORY\",\"nodeId\":\"prologue_1\"}}。成功返回 {state,replayed}。\n\n同键同正文重试返回原结果；replayed=true 后再 GET /api/v1/state。网络异常或 5xx 保留原键、正文重试；409 版本冲突读取最新状态。不得提交骰子、抽奖结果、价格、余额或任意完整存档。\n\n错误格式：{error:{code,message,requestId}}。400 请求无效；401 会话无效；409 阶段、版本、资格或资源冲突；413 超大正文；415 内容类型；500 内部错误。\n\n当前战斗胜负由客户端原型上报；商城和真实支付尚未实现。x-planned 中仅列后续约定，不是可调用 paths。"
+    "description": "浏览器 Demo 已实现的 API。开发地址 http://127.0.0.1:8017；前端 5017 代理 /api/v1。\n\n会话：POST /api/v1/sessions 无正文，返回 playerId、token；其余玩家接口使用 Authorization: Bearer <token>。\n\n写命令：POST /api/v1/commands，Content-Type: application/json，Idempotency-Key 为 8–128 位字母数字、下划线或连字符；正文为 expectedRevision + command，最多 8 KiB。\n\n请求示例：{\"expectedRevision\":0,\"command\":{\"type\":\"ADVANCE_STORY\",\"nodeId\":\"prologue_1\"}}。成功返回 {state,replayed}。\n\n同键同正文重试返回原结果；replayed=true 后再 GET /api/v1/state。网络异常或 5xx 保留原键、正文重试；409 版本冲突读取最新状态。不得提交骰子、抽奖结果、价格、余额或任意完整存档。\n\n错误格式：{error:{code,message,requestId}}。400 请求无效；401 会话无效；409 阶段、版本、资格或资源冲突；413 超大正文；415 内容类型；500 内部错误。\n\n当前战斗胜负由客户端原型上报；主题包裹、剧情家具赠送与模拟支付已实现；真实支付尚未接入。x-planned 中仅列后续约定，不是可调用 paths。"
   },
   "servers": [
     {
@@ -723,6 +723,10 @@
           },
           "supplies": {
             "$ref": "#/components/schemas/LegacyBattleReservation"
+          },
+          "mainline": {
+            "type": "boolean",
+            "description": "True for a battle entered through its gated chapter map; home trials remain independent."
           }
         },
         "required": [
@@ -751,6 +755,9 @@
           },
           "stageId": {
             "type": "string"
+          },
+          "draw": {
+            "$ref": "#/components/schemas/ParcelDraw"
           }
         },
         "required": [
@@ -911,6 +918,15 @@
             "type": "string",
             "minLength": 1,
             "description": "可选的当前验收节点；验收前快照仅保存在服务端，可用 QA_RESTORE 返回。"
+          },
+          "lottery": {
+            "$ref": "#/components/schemas/LotteryState"
+          },
+          "txns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentTxn"
+            }
           }
         },
         "required": [
@@ -1293,6 +1309,31 @@
           },
           "theme": {
             "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "story",
+              "free_pool",
+              "paid_pool"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "preferredSlot": {
+            "type": "string"
+          },
+          "interactionCat": {
+            "type": "string"
+          },
+          "interaction": {
+            "type": "string"
+          },
+          "widthCm": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "布置参考宽度（厘米）；同一世界比例显示，非战斗数值。"
           }
         },
         "required": [
@@ -1383,6 +1424,20 @@
             "items": {
               "$ref": "#/components/schemas/PoolEntry"
             }
+          },
+          "theme": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "pityEvery": {
+            "type": "integer",
+            "const": 3
+          },
+          "duplicateMaterial": {
+            "type": "integer",
+            "const": 2
           }
         },
         "required": [
@@ -1551,11 +1606,92 @@
           },
           "interactionId": {
             "type": "string"
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "L0",
+              "L1",
+              "Lm1"
+            ]
+          },
+          "position": {
+            "$ref": "#/components/schemas/WorldPoint"
           }
         },
         "required": [
           "type",
           "interactionId"
+        ]
+      },
+      "WorldPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ]
+      },
+      "CheckRandomZone": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "CHECK_RANDOM_ZONE"
+          },
+          "zoneId": {
+            "type": "string"
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "L0",
+              "L1",
+              "Lm1"
+            ]
+          },
+          "position": {
+            "$ref": "#/components/schemas/WorldPoint"
+          }
+        },
+        "required": [
+          "type",
+          "zoneId"
+        ]
+      },
+      "ExitMarket": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "EXIT_MARKET"
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "L0",
+              "L1",
+              "Lm1"
+            ]
+          },
+          "position": {
+            "$ref": "#/components/schemas/WorldPoint"
+          }
+        },
+        "required": [
+          "type",
+          "layer",
+          "position"
         ]
       },
       "ReportMove": {
@@ -1612,13 +1748,24 @@
           },
           "stageId": {
             "type": "string"
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "L0",
+              "L1",
+              "Lm1"
+            ]
+          },
+          "returnPosition": {
+            "$ref": "#/components/schemas/WorldPoint"
           }
         },
         "required": [
           "type",
           "stageId"
         ],
-        "description": "Starts L01 first rescue (alley_rescue), unlocked home replay (alley_boss), or a standalone home trial (market_boss / greenhouse_boss / tunnel_boss / finale_boss) after alley_rescued. Standalone trials do not require each other to be completed. Failed preparation may retry only the original stage, preserving the failed attempt pressure and carry snapshot in a new attempt ID. l00_tutorial is accepted only to retry a failed tutorial settlement and does not enable carry. No battle inventory reservation."
+        "description": "Starts L01 first rescue (alley_rescue), unlocked home replay (alley_boss), or a standalone home trial (market_boss / greenhouse_boss / tunnel_boss / finale_boss) after alley_rescued. Warehouse exploration starts finale_boss as a mainline attempt after its authored boss interaction and preparation; victory unlocks the warehouse exit. Standalone trials do not require each other to be completed. Failed preparation may retry only the original stage, preserving the failed attempt pressure and carry snapshot in a new attempt ID. l00_tutorial is accepted only to retry a failed tutorial settlement and does not enable carry. No battle inventory reservation."
       },
       "CompleteBattle": {
         "type": "object",
@@ -1727,7 +1874,8 @@
         "required": [
           "type",
           "poolId"
-        ]
+        ],
+        "description": "仅家园可抽取 moss_letters（1 邮票）或 moonsea_observatory（60 罐头）。十二件新主题家具/池；未集齐时最多三抽得一件新家具，重复补偿2材料，两池独立累计。服务端持久化保底、收据和扣费，重试不重复结算。"
       },
       "GameCommand": {
         "oneOf": [
@@ -1739,6 +1887,9 @@
           },
           {
             "$ref": "#/components/schemas/ReportMove"
+          },
+          {
+            "$ref": "#/components/schemas/CheckRandomZone"
           },
           {
             "$ref": "#/components/schemas/ChooseEvent"
@@ -1757,6 +1908,9 @@
           },
           {
             "$ref": "#/components/schemas/GoExplore"
+          },
+          {
+            "$ref": "#/components/schemas/ExitMarket"
           },
           {
             "$ref": "#/components/schemas/PlaceFurniture"
@@ -1781,6 +1935,9 @@
           },
           {
             "$ref": "#/components/schemas/QABattleResult"
+          },
+          {
+            "$ref": "#/components/schemas/ClaimParcelReward"
           }
         ]
       },
@@ -1947,6 +2104,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RechargePack"
+            }
+          },
+          "parcelRewards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParcelReward"
             }
           }
         },
@@ -2554,6 +2717,218 @@
         "required": [
           "type",
           "attemptId"
+        ]
+      },
+      "ClaimParcelReward": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "CLAIM_PARCEL_REWARD"
+          },
+          "rewardId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "rewardId"
+        ],
+        "description": "仅家园可领取；北京时间每日重置日常，里程碑每档一次，条件与奖励全部由服务端判定。"
+      },
+      "ParcelDraw": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "poolId": {
+            "type": "string"
+          },
+          "furnitureId": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "cost": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "material": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "guaranteed": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "poolId",
+          "furnitureId",
+          "currency",
+          "cost",
+          "number",
+          "duplicate",
+          "guaranteed",
+          "material",
+          "createdAt"
+        ]
+      },
+      "LotteryState": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "progress": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "draws": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "misses": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "draws",
+                "misses"
+              ]
+            }
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParcelDraw"
+            },
+            "maxItems": 50
+          },
+          "day": {
+            "type": "string"
+          },
+          "dailyClaims": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "milestones": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "progress",
+          "history",
+          "day",
+          "dailyClaims",
+          "milestones"
+        ]
+      },
+      "ParcelReward": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "requiredFlag": {
+            "type": "string"
+          },
+          "stamp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tuna": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "kind",
+          "condition",
+          "stamp",
+          "tuna"
+        ]
+      },
+      "PaymentTxn": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "playerId": {
+            "type": "string"
+          },
+          "packId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "cardSuffix": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "spent": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "playerId",
+          "packId",
+          "amount",
+          "status",
+          "createdAt"
         ]
       }
     }

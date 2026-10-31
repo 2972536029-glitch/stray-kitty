@@ -1,23 +1,24 @@
 import type {GameState} from '../../contracts';
 import type {CatBreed} from '../../adapters/canvas/pixelCat';
 
-export const HOME_SIZE = {width: 800, height: 480} as const;
-export const HOME_LAYOUT_ID = 'greenhouse-homestead-v1';
+export const HOME_SIZE = {width: 1672, height: 941} as const;
+export const HOME_LAYOUT_ID = 'arched-greenhouse-modular-v1';
 export type HomePoint = {x: number; y: number};
 export const HOME_SLOTS: Readonly<Record<string, HomePoint>> = {
-  corner: {x: 204, y: 316}, window: {x: 520, y: 184},
-  courtyard: {x: 664, y: 360}, beam: {x: 368, y: 168}, sun_spot: {x: 496, y: 316},
+  lounge:{x:600,y:538},desk:{x:820,y:375},cabinet:{x:555,y:373},planter:{x:1315,y:392},wall_clock:{x:1170,y:305},toy_corner:{x:980,y:672},reading_stool:{x:690,y:678},
+  corner: {x: 254, y: 382}, window: {x: 1400, y: 618},
+  courtyard: {x: 1255, y: 700}, beam: {x: 280, y: 640}, sun_spot: {x: 1050, y: 585},
 };
 export const HOME_RESIDENTS: Record<CatBreed, HomePoint> = {
-  miaomiao: {x: 320, y: 286}, tuanzi: {x: 400, y: 280},
-  diandian: {x: 464, y: 300}, momo: {x: 536, y: 240},
+  miaomiao: {x: 730, y: 510}, tuanzi: {x: 850, y: 540},
+  diandian: {x: 1030, y: 530}, momo: {x: 1170, y: 440},
 };
 export const HOME_ROAM_NODES: readonly HomePoint[] = [
-  {x: 264, y: 256}, {x: 328, y: 336}, {x: 416, y: 344},
-  {x: 536, y: 336}, {x: 536, y: 256}, {x: 352, y: 232}, {x: 448, y: 248},
+  {x: 540, y: 460}, {x: 630, y: 610}, {x: 820, y: 660},
+  {x: 1170, y: 630}, {x: 1240, y: 470}, {x: 760, y: 430}, {x: 1030, y: 450},
 ];
 export const HOME_SHELTER_NODES: readonly HomePoint[] = [
-  {x: 240, y: 310}, {x: 268, y: 334}, {x: 224, y: 348},
+  {x: 280, y: 422}, {x: 356, y: 436}, {x: 315, y: 470},
 ];
 
 export function homeStage(state: Pick<GameState, 'flags'> & Partial<Pick<GameState, 'phase' | 'storyNodeId'>>): number {

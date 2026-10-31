@@ -9,7 +9,14 @@ export class HttpGameApi implements GameApiPort {
   private session: Session | null;
   constructor(private cache = new BrowserSessionStore()) {this.session = cache.read();}
   async request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const response=await fetch(runtime.apiBase+path,{signal:AbortSignal.timeout(15000),...init,headers:{...(this.session?{Authorization:'Bearer '+this.session.token}:{}),...init.headers}});
+    let response: Response;
+    try {
+      response=await fetch(runtime.apiBase+path,{signal:AbortSignal.timeout(15000),...init,headers:{...(this.session?{Authorization:'Bearer '+this.session.token}:{}),...init.headers}});
+    } catch (cause) {
+      // A network failure does not confirm whether the command reached the server.
+      // Keep its pending receipt so Retry uses the same idempotency key.
+      throw new Error('无法连接游戏服务，请确认服务已启动、网络正常后，点击「重试上次操作」。', {cause});
+    }
     if(!response.ok){const body=await response.json() as ApiErrorBody;throw new ApiError(body.error.code,body.error.message,response.status);}
     return response.json() as Promise<T>;
   }
@@ -49,13 +56,9 @@ export class HttpGameApi implements GameApiPort {
     this.cache.write(this.session);return this.session;
   }
   async initialize() {
-    if(this.session) {
-      // 服务端已不认识本地令牌(存档重置/换数据目录)时,自动重建匿名会话而不是卡死在"重新连接"。
-      try {await this.load();} catch(error) {
-        if(error instanceof ApiError&&error.status===401) {this.cache.clear();this.session=null;}
-        else throw error;
-      }
-    }
+    // Keep unavailable credentials and pending commands for retry/account recovery.
+    // A replacement journey is created only through the explicit UI action below.
+    if(this.session) await this.load();
     if(!this.session) await this.createSession();
     const pending=this.pending();
     if(pending) await this.execute(pending.request,pending.key);

@@ -10,7 +10,7 @@ import type {GameState, Session} from '../../web/src/contracts';
 const port = 8179, origin = `http://127.0.0.1:${port}`;
 const sessions = new Map<string, Session>();
 let child: ChildProcess | undefined, closed: Promise<void> | undefined;
-type CatSnapshot = {breed: string; x: number; y: number; pose: string | null; action: string; height: number};
+type CatSnapshot = {breed: string; x: number; y: number; pose: string | null; action: string; height: number; bubble:string|null};
 const scene = (page: Page) => page.locator('.game-viewport canvas');
 const cats = async (page: Page) => JSON.parse((await scene(page).getAttribute('data-home-cats'))!) as CatSnapshot[];
 
@@ -52,6 +52,7 @@ async function open(page: Page, id: string) {
   await page.addInitScript(({origin, session}) => {if (location.origin === origin) localStorage.setItem('stray-kitty.session.v1', JSON.stringify(session));}, {origin, session: sessions.get(id)!});
   await page.goto(origin);await page.getByRole('button', {name: '继续冒险'}).click();
   await expect(scene(page)).toHaveAttribute('data-rendered-scene', 'home');
+  await expect(scene(page)).toHaveAttribute('data-home-artwork', 'ready');
 }
 
 test('story overrides furniture, stages Momo before recruitment, stays directed after reload and resumes daily life', async ({page, request}) => {
@@ -95,8 +96,7 @@ test('free cats move, map freezes the clock and its terrain matches the actual h
   const initial = await cats(page);
   await expect.poll(async () => JSON.stringify(await cats(page)) !== JSON.stringify(initial), {timeout: 10000}).toBe(true);
   await page.screenshot({path: 'output/home-review/homestead.png'});
-  const terrainPoints = [[20, 20], [200, 220], [680, 220], [355, 450], [100, 430]];
-  const liveSamples = await scene(page).evaluate((canvas: HTMLCanvasElement, points) => points.map(([x, y]) => Array.from(canvas.getContext('2d')!.getImageData(x, y, 1, 1).data)), terrainPoints);
+  const terrainPoints = [[300, 100], [685, 130], [1010, 210], [900, 740], [900, 850]];
   await page.getByRole('button', {name: '章节地图'}).click();
   const map = page.locator('.home-map');
   await expect(map).toHaveAttribute('data-layout', (await scene(page).getAttribute('data-home-layout'))!);
@@ -104,8 +104,23 @@ test('free cats move, map freezes the clock and its terrain matches the actual h
   const paused = await scene(page).getAttribute('data-home-time');const positions = await cats(page);
   await page.waitForTimeout(700);
   expect(await scene(page).getAttribute('data-home-time')).toBe(paused);expect(await cats(page)).toEqual(positions);
-  const previewSamples = await map.locator('canvas').evaluate((canvas: HTMLCanvasElement, points) => points.map(([x, y]) => Array.from(canvas.getContext('2d')!.getImageData(x, y, 1, 1).data)), terrainPoints);
-  expect(previewSamples).toEqual(liveSamples);
+  await expect(map.locator('canvas')).toHaveAttribute('data-artwork', 'ready');
+  // The map is world-sized; project it through the actual camera and pause tint
+  // before comparing pixels in the live canvas. Avoid cats and slot markers.
+  const samples = await scene(page).evaluate((canvas: HTMLCanvasElement, points) => {
+    const view=JSON.parse(canvas.dataset.homeCamera!),dpr=Number(canvas.dataset.dpr);
+    const projected=document.createElement('canvas');projected.width=canvas.width;projected.height=canvas.height;
+    const ctx=projected.getContext('2d')!;ctx.scale(dpr,dpr);ctx.imageSmoothingEnabled=false;
+    ctx.translate(view.x,view.y);ctx.scale(view.scale,view.scale);
+    ctx.drawImage(document.querySelector('.home-map canvas') as HTMLCanvasElement,0,0);
+    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='rgba(24,40,42,.6)';ctx.fillRect(0,0,800,480);
+    const live=canvas.getContext('2d')!;
+    return points.map(([x,y])=>{
+      const sx=Math.round((view.x+x*view.scale)*dpr),sy=Math.round((view.y+y*view.scale)*dpr);
+      return {live:Array.from(live.getImageData(sx,sy,1,1).data),map:Array.from(ctx.getImageData(sx,sy,1,1).data)};
+    });
+  }, terrainPoints);
+  for(const sample of samples)expect(sample.live).toEqual(sample.map);
   await page.screenshot({path: 'output/home-review/map.png'});
   await page.keyboard.press('Escape');
   await expect.poll(async () => Number(await scene(page).getAttribute('data-home-time'))).toBeGreaterThan(Number(paused));
@@ -139,4 +154,67 @@ test('phone can collapse home controls, view the full map and return without hor
   await page.getByRole('button', {name: '关闭猫爪地图'}).click();
   await page.getByRole('button', {name: '整理家园'}).click();
   await expect(page.getByRole('heading', {name: '整理我们的家'})).toBeVisible();
+});
+
+test('all four approved interior stages load through the real chapter checkpoints',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('/');await page.getByRole('button',{name:/^(开始冒险|继续冒险)/}).click();
+  const fingerprints:string[]=[],floorBrightness:number[]=[];
+  for(const [index,id] of ['greenhouse.home_1','greenhouse.home_2','greenhouse.home_3','finale.home'].entries()){
+    await page.getByRole('button',{name:'验收工具',exact:true}).click();
+    const panel=page.getByRole('dialog',{name:'流程验收'});
+    await panel.getByTestId('qa-chapter-'+(index===3?'finale':'greenhouse')).click();
+    await panel.getByTestId('qa-load-'+id).click();await expect(panel).not.toBeVisible();
+    await expect(scene(page)).toHaveAttribute('data-home-stage',String(index+1));
+    await expect(scene(page)).toHaveAttribute('data-home-artwork','ready');
+    if(await page.getByRole('button',{name:'收起家园面板'}).isVisible())await page.getByRole('button',{name:'收起家园面板'}).click();
+    const objects=JSON.parse((await scene(page).getAttribute('data-home-objects'))!) as {id:string}[];
+    expect(objects.some(o=>o.id==='workbench')).toBe(index>=1);
+    expect(objects.some(o=>o.id==='cat-tower')).toBe(index>=2);
+    fingerprints.push(await scene(page).evaluate((canvas:HTMLCanvasElement)=>canvas.toDataURL()));
+    floorBrightness.push(await scene(page).evaluate((canvas:HTMLCanvasElement)=>{
+      const view=JSON.parse(canvas.dataset.homeCamera!),dpr=Number(canvas.dataset.dpr),ctx=canvas.getContext('2d')!;
+      return [[840,600],[930,670],[1150,560]].reduce((sum,[x,y])=>{
+        const [r,g,b]=ctx.getImageData(Math.round((view.x+x*view.scale)*dpr),Math.round((view.y+y*view.scale)*dpr),1,1).data;
+        return sum+r*.2126+g*.7152+b*.0722;
+      },0)/3;
+    }));
+    await page.screenshot({path:`output/home-review/stage-${index+1}.png`});
+  }
+  expect(new Set(fingerprints).size).toBe(4);expect(errors).toEqual([]);
+  expect(floorBrightness[3],'the finished celebration keeps the restored greenhouse daylight').toBeGreaterThanOrEqual(floorBrightness[2]);
+});
+
+test('desktop and touch phone can zoom, pan, poke the same original cat and return to the full interior',async({browser})=>{
+  for(const mobile of [false,true]){
+    const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1440,height:1100},deviceScaleFactor:mobile?2:1,isMobile:mobile,hasTouch:mobile});
+    const page=await context.newPage();const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+    await open(page,'mobile');await page.getByRole('button',{name:'收起家园面板'}).click();
+    const camera=async()=>JSON.parse((await scene(page).getAttribute('data-home-camera'))!);
+    await page.getByRole('button',{name:'放大花房'}).click({clickCount:3,delay:80});
+    await expect.poll(async()=>(await camera()).zoom).toBe(2.05);
+    const previous=await camera();
+    const box=(await scene(page).boundingBox())!,start={x:box.x+box.width*.58,y:box.y+box.height*.5};
+    if(mobile){
+      const cdp=await context.newCDPSession(page);
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});
+      for(let i=1;i<=6;i++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x+i*6,y:start.y+i*3}]});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();
+    }else{await page.mouse.move(start.x,start.y);await page.mouse.down();await page.mouse.move(start.x+50,start.y+30,{steps:6});await page.mouse.up();}
+    await expect.poll(async()=>(await camera()).x).not.toBe(previous.x);
+    expect((await cats(page)).every(cat=>!cat.bubble)).toBe(true,'dragging must not poke a cat');
+    const target=await scene(page).evaluate((canvas:HTMLCanvasElement)=>{
+      const view=JSON.parse(canvas.dataset.homeCamera!),cat=JSON.parse(canvas.dataset.homeCats!).find((item:CatSnapshot)=>item.breed==='miaomiao');
+      const bounds=canvas.getBoundingClientRect(),w=Number(canvas.dataset.logicalWidth),h=Number(canvas.dataset.logicalHeight);
+      const scale=(getComputedStyle(canvas).objectFit==='cover'?Math.max:Math.min)(bounds.width/w,bounds.height/h);
+      return{x:bounds.left+(bounds.width-w*scale)/2+(view.x+cat.x*view.scale)*scale,y:bounds.top+(bounds.height-h*scale)/2+(view.y+(cat.y-16)*view.scale)*scale};
+    });
+    if(mobile)await page.touchscreen.tap(target.x,target.y);else await page.mouse.click(target.x,target.y);
+    await expect.poll(async()=>(await cats(page)).find(cat=>cat.breed==='miaomiao')?.bubble).toContain('本咪');
+    await page.screenshot({path:`output/home-review/${mobile?'mobile':'desktop'}-interaction.png`});
+    await page.getByRole('button',{name:'花房全景',exact:true}).click();
+    await expect.poll(async()=>(await camera()).zoom).toBe(1);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    expect(errors).toEqual([]);await context.close();
+  }
 });
