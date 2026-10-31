@@ -1,0 +1,11 @@
+current.json
+candidate.json
+trace-audit.json
+proof.json
+before-junction-review.json
+*.png
+*.log
+.vite/
+junction-proof.json
+roof-before.json
+roof-proof.json
