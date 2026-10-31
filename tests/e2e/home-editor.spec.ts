@@ -10,10 +10,11 @@ const origin='http://127.0.0.1:8193';let child:ChildProcess,closed:Promise<void>
 const sessions=new Map<string,{playerId:string;token:string}>();
 test.beforeAll(async({request})=>{
   catalog=await(await request.get('/api/v1/content')).json();const directory=fs.mkdtempSync(path.join(os.tmpdir(),'kitty-home-editor-')),players:Record<string,unknown>={};
-  for(const [id,stage] of [['desktop',3],['cats',3],['cat-actions',3],['retry',3],['stage1',1],['stage2',2],['stage4',4]] as const){
+  for(const [id,stage] of [['desktop',3],['cats',3],['cat-actions',3],['reactions',3],['retry',3],['stage1',1],['stage2',2],['stage4',4]] as const){
     const session={playerId:'home-'+id,token:'home-editor-test-'+id};sessions.set(id,session);
     const state:GameState={schemaVersion:1,contentVersion:catalog.version,revision:1,phase:'home',chapterId:'greenhouse',storyNodeId:'',mapId:'greenhouse',flags:['l00_completed','alley_rescued','rescue_story_done',...(stage>=2?['greenhouse_sealed']:[]),...(stage>=3?['greenhouse_fortified_full','momo_joined']:[]),...(stage===4?['kingdom_founded']:[])],cats:['miaomiao','tuanzi','diandian','momo'],inventory:{material:40},currencies:{stamp:10,tuna:0},furniture:['soft_blanket','moon_hammock','moss_cottage','luna_boat'],placements:{},completedStages:[],pendingEventId:'',activeBattle:null,lastResult:{message:'布置验收'}};
     if(id==='cat-actions')state.cats=['miaomiao'];
+    if(id==='reactions')state.cats=['tuanzi'];
     players[createHash('sha256').update(session.token).digest('hex')]={id:session.playerId,state,receipts:{},receiptOrder:[]};
   }
   const save=path.join(directory,'save.json');fs.writeFileSync(save,JSON.stringify({schemaVersion:1,players}));
@@ -82,15 +83,15 @@ for(const stage of [1,2,4])test(`stage ${stage} defaults are individually editab
 
 const liveCanvas=(p:Page)=>p.locator('.game-viewport canvas');
 async function livePoint(p:Page,x:number,y:number){return liveCanvas(p).evaluate((c:HTMLCanvasElement,{x,y})=>{const v=JSON.parse(c.dataset.homeCamera!),r=c.getBoundingClientRect(),w=Number(c.dataset.logicalWidth),h=Number(c.dataset.logicalHeight),fit=getComputedStyle(c).objectFit==='cover'?Math.max:Math.min,s=fit(r.width/w,r.height/h);return{x:r.left+(r.width-w*s)/2+(v.x+x*v.scale)*s,y:r.top+(r.height-h*s)/2+(v.y+y*v.scale)*s};},{x,y});}
-async function liveCats(p:Page){return JSON.parse((await liveCanvas(p).getAttribute('data-home-cats'))!) as {breed:string;x:number;y:number;pose:string|null;slot?:string;social?:string}[];}
-async function dragCat(p:Page,breed:string,x:number,y:number){const c=(await liveCats(p)).find(c=>c.breed===breed)!;await drag(p,await livePoint(p,c.x,c.y-26),await livePoint(p,x,y));}
+async function liveCats(p:Page){return JSON.parse((await liveCanvas(p).getAttribute('data-home-cats'))!) as {breed:string;x:number;y:number;hitX:number;hitY:number;pose:string|null;slot?:string;social?:string;mood:string;petPressure:number;bubble:string|null}[];}
+async function dragCat(p:Page,breed:string,x:number,y:number){const c=(await liveCats(p)).find(c=>c.breed===breed)!;await drag(p,await livePoint(p,c.hitX,c.hitY),await livePoint(p,x,y));}
 test('drag cats to free floor and all five social activities, with separated bodies and cancelable carrying',async({page})=>{
   await open(page,'cats');await editor(page).getByRole('button',{name:'取消布置',exact:true}).click();
   await dragCat(page,'miaomiao',820,610);await expect.poll(async()=>JSON.parse((await liveCanvas(page).getAttribute('data-home-interaction'))!).kind).toBe('cat-drop');
   const dropped=(await liveCats(page)).find(c=>c.breed==='miaomiao')!;expect(Math.abs(dropped.x-820)).toBeLessThan(65);
-  for(const kind of ['nose','rub','groom','play','nap']){const target=(await liveCats(page)).find(c=>c.breed==='tuanzi')!;await dragCat(page,'miaomiao',target.x,target.y-26);await expect.poll(async()=>(await liveCats(page)).find(c=>c.breed==='miaomiao')?.social).toBe(kind);const cats=await liveCats(page),a=cats.find(c=>c.breed==='miaomiao')!,b=cats.find(c=>c.breed==='tuanzi')!;expect(Math.abs(a.x-b.x)>=60||Math.abs(a.y-b.y)>=52).toBe(true);}
+  for(const kind of ['nose','rub','groom','play','nap']){const target=(await liveCats(page)).find(c=>c.breed==='tuanzi')!;await dragCat(page,'miaomiao',target.hitX,target.hitY);await expect.poll(async()=>(await liveCats(page)).find(c=>c.breed==='miaomiao')?.social).toBe(kind);const cats=await liveCats(page),a=cats.find(c=>c.breed==='miaomiao')!,b=cats.find(c=>c.breed==='tuanzi')!;expect(Math.abs(a.x-b.x)>=60||Math.abs(a.y-b.y)>=52).toBe(true);}
   await page.screenshot({path:'output/home-editor/cat-social.png',fullPage:true});
-  const before=(await liveCats(page)).find(c=>c.breed==='miaomiao')!,from=await livePoint(page,before.x,before.y-26),to=await livePoint(page,1120,500);await page.mouse.move(from.x,from.y);await page.mouse.down();await page.mouse.move(to.x,to.y,{steps:8});await expect(liveCanvas(page)).toHaveAttribute('data-home-drop-target',/ground|furniture|cat/);await page.keyboard.press('Escape');await page.mouse.up();expect((await liveCats(page)).find(c=>c.breed==='miaomiao')!.x).toBe(before.x);
+  const before=(await liveCats(page)).find(c=>c.breed==='miaomiao')!,from=await livePoint(page,before.hitX,before.hitY),to=await livePoint(page,1120,500);await page.mouse.move(from.x,from.y);await page.mouse.down();await page.mouse.move(to.x,to.y,{steps:8});await expect(liveCanvas(page)).toHaveAttribute('data-home-drop-target',/ground|furniture|cat/);await page.keyboard.press('Escape');await page.mouse.up();expect((await liveCats(page)).find(c=>c.breed==='miaomiao')!.x).toBe(before.x);
 });
 test('the same original cat can eat, sleep, climb, investigate, garden and use the workbench without being buried under furniture',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await open(page,'cat-actions');await editor(page).getByRole('button',{name:'取消布置',exact:true}).click();
@@ -98,4 +99,29 @@ test('the same original cat can eat, sleep, climb, investigate, garden and use t
   const opaqueFur=await liveCanvas(page).evaluate((c:HTMLCanvasElement)=>{const cat=JSON.parse(c.dataset.homeCats!)[0],v=JSON.parse(c.dataset.homeCamera!),dpr=c.width/Number(c.dataset.logicalWidth),x=Math.round((v.x+(cat.x-36)*v.scale)*dpr),y=Math.round((v.y+(cat.y-65)*v.scale)*dpr),w=Math.ceil(75*v.scale*dpr),h=Math.ceil(80*v.scale*dpr),data=c.getContext('2d')!.getImageData(x,y,w,h).data;let count=0;for(let i=0;i<data.length;i+=4)if(Math.abs(data[i]-242)<3&&Math.abs(data[i+1]-223)<3&&Math.abs(data[i+2]-184)<3)count++;return count;});
   expect(opaqueFur).toBeGreaterThan(12);
   await page.screenshot({path:'output/home-editor/cat-furniture-sleep.png',fullPage:true});expect(errors).toEqual([]);
+});
+
+test('far furniture and transparent cat margins never pet or summon cats; actual touches vary moods after zoom and pan',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await open(page,'reactions');await editor(page).getByRole('button',{name:'取消布置',exact:true}).click();
+  const far=await livePoint(page,1400,608);await page.mouse.click(far.x,far.y);
+  await expect.poll(async()=>JSON.parse((await liveCanvas(page).getAttribute('data-home-interaction'))!).kind).toBe('point');
+  expect((await liveCats(page))[0].slot).toBeUndefined();expect((await liveCats(page))[0].petPressure).toBe(0);
+  await dragCat(page,'tuanzi',820,610);await expect.poll(async()=>JSON.parse((await liveCanvas(page).getAttribute('data-home-interaction'))!).kind).toBe('cat-drop');
+  const c=(await liveCats(page))[0],corner=await livePoint(page,c.x+31,c.y-59);await page.mouse.click(corner.x,corner.y);
+  expect((await liveCats(page))[0].petPressure).toBe(0);
+  const lines=new Set<string>();
+  for(const [i,mood]of ['happy','happy','neutral','irritated'].entries()){
+    if(i)await page.waitForTimeout(380);
+    const cat=(await liveCats(page))[0],p=await livePoint(page,cat.hitX,cat.hitY);await page.mouse.click(p.x,p.y);
+    await expect.poll(async()=>(await liveCats(page))[0].petPressure).toBe(i+1);
+    expect((await liveCats(page))[0].mood).toBe(mood);lines.add((await liveCats(page))[0].bubble!);
+    expect(JSON.parse((await liveCanvas(page).getAttribute('data-home-interaction'))!).kind).toBe('cat');
+  }
+  expect(lines.size).toBe(4);await page.screenshot({path:'output/home-editor/petting-moods.png'});
+  await page.getByRole('button',{name:'放大花房',exact:true}).click();
+  const from=await livePoint(page,820,450),to=await livePoint(page,720,450);await drag(page,from,to);
+  await page.waitForTimeout(380);
+  const current=(await liveCats(page))[0],p=await livePoint(page,current.hitX,current.hitY);await page.mouse.click(p.x,p.y);
+  await expect.poll(async()=>(await liveCats(page))[0].petPressure).toBe(5);expect(errors).toEqual([]);
 });

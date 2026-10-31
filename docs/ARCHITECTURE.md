@@ -204,6 +204,8 @@ home 管自由布置、场景修缮与原猫咪互动，保留十二个旧槽位
 
 花房使用 modules/home 的 assets、layout、objects、painter 共用 1672×941 室内布局：建筑底图与透明组件不含猫咪，HomeMap 和场景使用同一装配；四套阶段家具和独立植物图集的裁切坐标放在模块内的 atlas.json／stage-atlas.json，每种购买家具有独立图稿，默认陈设让位于已保存的摆放。camera 管缩放、拖动与点击坐标转换，navigation 按对象地面占位阻挡，原有像素猫按家具脚点排序，前墙藤蔓和家具前缘独立遮挡。story 在对白期间接管角色和站位，空闲 home 阶段才运行日常行为；四阶外观从既有修缮与终章标记推导，图集仅在需要花房时加载。FurnitureBackpack 通过 DemoScene 的投影与编辑接口在同一张 Canvas 预览本地草稿，底部背包覆盖在原场景上，不重建场景或相机；编辑时暂停并隐藏猫咪，退出后恢复。可选 homeLayout 记录默认及收藏家具的位置与收纳状态，SAVE_HOME_LAYOUT 校验后整批提交。HomeRepairOverlay 将目录 parts 的坐标投影为破损处标记，REPAIR_HOME 的可选 repairId 在服务端校验工程、前置部位与库存，单处扣费并保存到可选 homeRepairs；全部部位修完才写入原阶段 flag。省略 repairId 的旧命令只结算本阶段剩余成本，已完成的阶段 flag 对旧存档继续有效。HomeMap 与现场共享局部修缮后的绘制。
 
+home/dialogue 按性格、动作和情绪维护台词轮换，reactions 管逐猫摸摸间隔、短时情绪恢复、闲聊节流及家具邀请距离。catPainter 共享正向／逆向身体变换与原猫图稿的透明度命中，picking 检查家具纹理遮挡；点击、拖起和放到伙伴身边共用可见猫判定。鼠标按下命中猫后，松开只处理该猫，防抖期间也不会落到家具邀请。日常状态仅在 Canvas 场景内存中，剧情接管与暂停逻辑保持优先。
+
 ## 4. 接入与分工
 
 | 负责人 | 主要位置 | 输入 → 输出 |

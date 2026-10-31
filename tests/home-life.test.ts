@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import {homeObjects,type HomeObject} from '../web/src/modules/home/objects';
 import {catOverlap,freeCatPoint,furnitureActivity,useFurniture,socialize,endSocial,stepHomeLife,SOCIAL_KINDS,type LifeCat} from '../web/src/modules/home/life';
 import type {CatBreed} from '../web/src/adapters/canvas/pixelCat';
+import {petCat,nearbyFurnitureCat,canChatter} from '../web/src/modules/home/reactions';
+import {currentCatMood,PET_LINES,FURNITURE_LINES,SOCIAL_LINES,furnitureLine,setCatMood,socialLines} from '../web/src/modules/home/dialogue';
+import {residentContains,residentWorldPoint,residentLocalPoint} from '../web/src/modules/home/catPainter';
 const cat=(breed:CatBreed,x:number,y:number):LifeCat=>({breed,x,y,pose:null,action:'sit',thinkAt:0,facing:1,seed:breed.length*7,nodes:[{x:650,y:500},{x:1000,y:650}],nodeIndex:0,noseUntil:0,noseCooldownUntil:0,bubble:null,bubbleUntil:0,startledUntil:0});
 const objects=homeObjects({flags:['greenhouse_fortified_full'],placements:{}});
 test('every functional stage and catalogue furniture has a shared action and can be used by any original breed',()=>{
@@ -36,4 +39,51 @@ test('crowded autonomous cats remain separated throughout two minutes and keep c
   for(let time=0;time<120000;time+=100){stepHomeLife(cats,objects,time,100,3);for(const c of cats)seen.add(c.pose??c.social?.kind??c.action);for(let i=0;i<cats.length;i++)for(let j=0;j<i;j++)assert.equal(catOverlap(cats[i],cats[j]),false,`${time}/${cats[i].breed}/${cats[j].breed}`);}
   assert.ok(seen.size>=5,JSON.stringify([...seen]));
   const point=freeCatPoint(cats[0],cats,objects);assert.ok(point);assert.ok(cats.every(c=>!catOverlap(point,c)));
+});
+
+test('petting has individual moods, repeated-touch boundaries and recovery; sleep and meals get gentler responses',()=>{
+  const a=cat('tuanzi',700,500),b=cat('momo',900,500);
+  assert.equal(petCat(a,0)?.mood,'happy');assert.equal(petCat(b,0)?.mood,'neutral');
+  assert.equal(petCat(a,100),undefined);assert.equal(a.petPressure,1);
+  assert.equal(petCat(a,500)?.mood,'happy');assert.equal(petCat(a,1000)?.mood,'neutral');assert.equal(petCat(a,1500)?.mood,'irritated');
+  assert.equal(currentCatMood(a,11000),'neutral');assert.equal(petCat(a,11500)?.mood,'happy');assert.equal(a.petPressure,1);
+  const seen=new Set<string>();for(let i=0;i<6;i++)seen.add(petCat(a,22000+i*10000)!.line);assert.ok(seen.size>=4);
+  for(const pose of ['hammock_sleep','bowl_eat']){const c=cat('diandian',800,500);c.pose=pose;assert.equal(petCat(c,0)?.mood,'neutral');assert.equal(petCat(c,600)?.mood,'irritated');assert.equal(c.pose,pose);}
+});
+
+test('context banks cover all moods without repeating furniture or partner dialogue on consecutive interactions',()=>{
+  for(const voice of Object.values(PET_LINES))for(const lines of Object.values(voice))assert.ok(new Set(lines).size>=4);
+  for(const [pose,moods]of Object.entries(FURNITURE_LINES))for(const mood of ['happy','neutral','irritated'] as const){
+    assert.ok(moods[mood].length>=3);const c=cat('miaomiao',700,500),seen=new Set<string>();
+    for(let i=0;i<3;i++)seen.add(furnitureLine(c,pose,mood,i*5000));assert.equal(seen.size,3);
+  }
+  for(const kind of SOCIAL_KINDS)for(const mood of ['happy','neutral','irritated'] as const){
+    const a=cat('miaomiao',700,500),b=cat('tuanzi',800,500),count=SOCIAL_LINES[kind][mood].length,seen=new Set<string>();
+    for(let i=0;i<count;i++)seen.add(socialLines(a,b,kind,mood,i*8000).join('|'));assert.equal(seen.size,count);
+  }
+  const a=cat('miaomiao',700,500),object=objects.find(o=>o.id==='cat-tower')!;setCatMood(a,'irritated',0);
+  assert.ok(useFurniture(a,object,[a],objects,200));assert.ok(FURNITURE_LINES.perch.irritated.includes(a.bubble!));
+  assert.equal(canChatter([a],300),false);assert.equal(canChatter([a],9500),true);
+});
+
+test('picking follows the painted body through lying, sleeping, turning and jumping; transparent pixels do not count',()=>{
+  const c=cat('miaomiao',700,500);
+  for(const pose of [null,'belly','hammock_sleep','knead','castle_peek','scratch','sniff'])for(const facing of [-1,1] as const)for(const time of [0,345,1300]){
+    c.pose=pose;c.facing=facing;c.scriptedHeight=25;
+    const point=residentWorldPoint(c,time,32,30),local=residentLocalPoint(c,time,point.x,point.y);
+    assert.ok(Math.abs(local.x-32)<.001&&Math.abs(local.y-30)<.001);
+    assert.equal(residentContains(c,time,point.x,point.y,()=>true),true);
+    assert.equal(residentContains(c,time,point.x,point.y,()=>false),false);
+    assert.equal(residentContains(c,time,point.x+300,point.y+300),false);
+  }
+  c.pose='belly';c.scriptedHeight=0;const head=residentWorldPoint(c,0,32,30);
+  assert.ok(Math.abs(head.x-c.x)>15,'lying cat head really moved horizontally');
+});
+
+test('furniture clicks can invite nearby free cats, never a distant preferred cat or a busy cat',()=>{
+  const distant=cat('momo',1300,650),near=cat('tuanzi',800,500);
+  assert.equal(nearbyFurnitureCat([distant],800,474,'momo',0),undefined);
+  assert.equal(nearbyFurnitureCat([distant,near],800,474,'momo',0),near);
+  near.manualUntil=1000;assert.equal(nearbyFurnitureCat([near],800,474,'tuanzi',0),undefined);
+  near.manualUntil=0;near.slot='occupied';assert.equal(nearbyFurnitureCat([near],800,474,'tuanzi',0),undefined);
 });
