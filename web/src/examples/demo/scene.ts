@@ -1,5 +1,5 @@
 import {PARCEL_ART, PARCEL_IDS} from '../../modules/lottery/furnitureArt';
-import type {BattleResult, GameState, StoryNode} from '../../contracts';
+import type {BattleResult, GameState, StoryNode, HomeRepairPart} from '../../contracts';
 import {drawPixelCat,type CatBreed} from '../../adapters/canvas/pixelCat';
 import {DemoBattle} from './battle';
 import type {Direction} from '../../adapters/platform/input';
@@ -19,6 +19,8 @@ import {nearbyFurnitureCat,petCat} from '../../modules/home/reactions';
 import {chooseLine,currentCatMood} from '../../modules/home/dialogue';
 import {CAT_NAMES,SOCIAL_KINDS,freeCatPoint,furnitureAt,furnitureActivity,useFurniture,socialize,endSocial,stepHomeLife,settleCats,type LifeCat} from '../../modules/home/life';
 import {HomeCamera} from '../../modules/home/camera';
+import {HomeRenovation} from '../../modules/home/renovation';
+import {playSound} from '../../ui/soundEffects';
 import {homePosePoint, homeInventory, type HomeAppearance} from '../../modules/home/objects';
 import {homeWalkable} from '../../modules/home/navigation';
 import {displayedCanvasRect} from '../../adapters/canvas/camera';
@@ -91,10 +93,15 @@ export class DemoScene {
   private homeAssetLoading=false;
   private homeAssetError=false;
   private homeCamera=new HomeCamera();
+  private homeRenovation=new HomeRenovation();
+  private homeVisualState?:HomeAppearance;
   private homeEditing?:{state:HomeAppearance;selection:string;valid:boolean};
   get homeCanvas(){return this.canvas;}
   get homeZoomLevel(){return this.homeCamera.zoom;}
+  get homeRenovating(){return this.homeRenovation.active;}
+  prepareHomeRepair(part:HomeRepairPart){this.homeRenovation.prepare(part);}
   setHomeEditing(draft?:{state:HomeAppearance;selection:string;valid:boolean}){
+    if(draft)this.homeRenovation.clear();
     this.homeEditing=draft;this.clearInput();this.canvas.dataset.homeEditing=String(!!draft);
     this.canvas.style.cursor=draft?'grab':'';
     if(!draft){delete this.canvas.dataset.editorView;delete this.canvas.dataset.editorItems;}
@@ -250,7 +257,7 @@ export class DemoScene {
       this.rainyAlley.click(event.clientX, event.clientY, bounds, this.viewWidth, this.viewHeight, cover);
       return;
     }
-    if (this.state?.phase === 'home' && this.state.chapterId !== 'prologue' && !this.pausedByUser) {
+    if (this.state?.phase === 'home' && this.state.chapterId !== 'prologue' && !this.pausedByUser && !this.homeRenovating) {
       const point=this.homeScreenPoint(event);
       const view=this.homeView(),world={x:(point.x-view.x)/view.scale,y:(point.y-view.y)/view.scale};
       if(point.x<view.viewport.x||point.x>view.viewport.x+view.viewport.width||point.y<view.viewport.y||point.y>view.viewport.y+view.viewport.height)return;
@@ -307,7 +314,7 @@ export class DemoScene {
   };
   private homePointerCancel=()=>{this.homeDrag=null;this.canvas.style.cursor='';delete this.canvas.dataset.homeDropTarget;};
   private homeWheel=(event:WheelEvent)=>{
-    if(this.state?.phase!=='home'||this.state.chapterId==='prologue'||(this.pausedByUser&&!this.homeEditing))return;
+    if(this.state?.phase!=='home'||this.state.chapterId==='prologue'||this.homeRenovating||(this.pausedByUser&&!this.homeEditing))return;
     event.preventDefault();this.homeZoom(event.deltaY<0?.15:-.15);
   };
   start() {
@@ -531,9 +538,13 @@ export class DemoScene {
     // the home clock also freezes for menus, pending commands and hidden tabs.
     const homeVisible = mode === 'home' || (mode === 'dialogue' && this.storyScene === 'home') || (this.state.mapId === 'greenhouse' && !this.storyScene);
     if (homeVisible && this.state.chapterId !== 'prologue') {
+      if(!this.homeEditing&&this.homeVisualState&&this.homeArtwork)this.homeRenovation.begin(this.homeVisualState,this.state,this.homeArtwork,this.homeCats,this.homeTime);
+      this.homeVisualState=this.state;
+      if(this.homeRenovating)this.homePointerCancel();
+      if(active&&this.homeRenovation.advance(delta))playSound('chime');
       this.ensureHomeCats(this.homeStage());
-      if (active) {this.homeTime += delta; this.stepHomeCats(delta, this.homeStage());}
-    }
+      if (active&&!this.homeRenovating) {this.homeTime += delta; this.stepHomeCats(delta, this.homeStage());}
+    }else {this.homeVisualState=undefined;this.homeRenovation.clear();}
     this.graphics.clear();
     // CanvasPainter.fillStyle() changes globalAlpha; clearRect() does not reset it.
     // Reset frame-wide compositing before drawing the integrated background and cat.
@@ -582,6 +593,7 @@ export class DemoScene {
       this.canvas.dataset.homeControl = this.homeBeat ? 'story' : state.phase === 'home' ? 'free' : 'held';
       this.canvas.dataset.homeBeat = this.homeBeat?.id ?? '';
       this.canvas.dataset.homeStage = String(this.homeStage());
+      this.canvas.dataset.homeRenovation=JSON.stringify(this.homeRenovation.diagnostics);
       this.canvas.dataset.homeTime = this.homeTime.toFixed(0);
       this.canvas.dataset.homeFurniture=JSON.stringify(homeObjects(this.state!).filter(o=>o.furnitureId).map(o=>{const frame=HOME_FRAMES[o.sprite];return{id:o.furnitureId,slot:o.slot,x:o.x,y:o.y,width:o.width,height:o.width*frame.height/frame.width};}));
       this.canvas.dataset.homeCats = JSON.stringify(this.homeEditing?[]:this.homeCats.map(cat => {const hit=residentWorldPoint(cat,this.homeTime);return {breed: cat.breed, x: Math.round(cat.x), y: Math.round(cat.y), hitX:hit.x,hitY:hit.y,pose: cat.pose, slot:cat.slot, action: cat.action, mood:currentCatMood(cat,this.homeTime),petPressure:cat.petPressure??0,height: Math.round(cat.scriptedHeight ?? 0), bubble:cat.bubbleUntil>this.homeTime&&this.homeTime>=(cat.bubbleAt??0)?cat.bubble:null,social:cat.social?.kind,partner:cat.social?.partner,held:this.homeDrag?.cat===cat.breed};}));
@@ -589,7 +601,7 @@ export class DemoScene {
       this.canvas.dataset.homeArtwork=this.homeArtwork?'ready':this.homeAssetError?'error':'loading';
       this.canvas.dataset.homeObjects=JSON.stringify(homeObjects(state));
     } else {
-      for (const name of ['homeLayout', 'homeControl', 'homeBeat', 'homeStage', 'homeTime', 'homeCats','homeCamera','homeArtwork','homeObjects','homeFurniture','homeInteraction']) delete this.canvas.dataset[name];
+      for (const name of ['homeLayout', 'homeControl', 'homeBeat', 'homeStage', 'homeTime', 'homeCats','homeCamera','homeArtwork','homeObjects','homeFurniture','homeInteraction','homeRenovation']) delete this.canvas.dataset[name];
     }
   }
   private rect(x:number,y:number,w:number,h:number,color:number,alpha=1){this.graphics.fillStyle(color,alpha);this.graphics.fillRect(Math.round(x),Math.round(y),w,h);}
@@ -754,8 +766,8 @@ export class DemoScene {
     const stage=this.homeStage();this.drawHomeCats(stage);
     paintHomeFrontWall(ctx,this.state,this.homeArtwork);
     for(const object of homeObjects(this.state).filter(object=>object.front))paintHomeObject(ctx,object,this.homeArtwork);
-    this.drawHomeFx(stage);this.drawHomeCarry();ctx.restore();
-    for(const cat of this.homeCats)if(cat.bubble&&cat.bubbleUntil>this.homeTime&&this.homeTime>=(cat.bubbleAt??0))this.drawSpeechBubble(view.x+cat.x*view.scale,view.y+cat.y*view.scale,cat.bubble);
+    this.drawHomeFx(stage);this.drawHomeCarry();this.homeRenovation.paint(ctx);ctx.restore();
+    if(!this.homeRenovating)for(const cat of this.homeCats)if(cat.bubble&&cat.bubbleUntil>this.homeTime&&this.homeTime>=(cat.bubbleAt??0))this.drawSpeechBubble(view.x+cat.x*view.scale,view.y+cat.y*view.scale,cat.bubble);
     if(this.homeAssetError){ctx.save();ctx.fillStyle='#f5dfbf';ctx.font='14px sans-serif';ctx.fillText('花房素材加载失败，请刷新重试',view.viewport.x+15,view.viewport.y+40);ctx.restore();}
   }
   // 序章:喵喵原本的家,午后阳光与天蓝色饭碗(静态,不参与花房修缮系统)。
