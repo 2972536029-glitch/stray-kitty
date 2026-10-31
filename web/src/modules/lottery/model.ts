@@ -13,6 +13,7 @@ export function poolStatus(state:GameState,pool:ParcelPool) {
 export function rewardStatus(state:GameState,reward:ParcelReward) {
   const claimed=(reward.kind==='daily'?state.lottery?.dailyClaims:state.lottery?.milestones)?.includes(reward.id)??false;
   const locked=!!reward.requiredFlag&&!state.flags.includes(reward.requiredFlag);
-  const wish=reward.condition==='furnished'&&Object.keys(state.placements).length===0;
+  const furnished=Object.entries(state.placements).some(([,id])=>!state.homeLayout?.['furniture:'+id]?.stored)||Object.entries(state.homeLayout??{}).some(([key,p])=>key.startsWith('furniture:')&&!p.stored);
+  const wish=reward.condition==='furnished'&&!furnished;
   return {claimed,locked,wish};
 }

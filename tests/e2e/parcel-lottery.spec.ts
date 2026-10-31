@@ -52,13 +52,16 @@ test('two real themed collections, guaranteed new item, opening, placement, dail
   await page.screenshot({path:'output/parcel-design/moss-post-office.png',fullPage:true});
   await office.getByTestId('parcel-draw').click();await expect(office.locator('.parcel-paper-box')).toBeVisible();
   await expect(office.locator('.parcel-result-copy')).toContainText('苗苗软垫凳');await expect(office.locator('.parcel-result-copy')).toContainText('暖心保底');
-  await office.getByRole('button',{name:'摆进花房',exact:true}).click();await expect(office.locator('.parcel-result-copy')).toContainText('已经摆好了');
-  await office.getByTestId('claim-daily_wish').click();await expect(office.getByTestId('claim-daily_wish')).toHaveText('已签收');
-  await office.getByTestId('claim-daily_letter').click();await expect(office.getByTestId('claim-daily_letter')).toHaveText('已签收');
-  await office.getByRole('button',{name:'回花房看看 →'}).click();
+  await office.getByRole('button',{name:'打开背包布置',exact:true}).click();const backpack=page.getByRole('region',{name:'家具背包 · 布置模式'});
+  await backpack.getByRole('button',{name:'放到场景中央'}).click();await backpack.getByRole('button',{name:/保存布置/}).click();await expect(backpack).not.toBeVisible();
+  if(await page.getByRole('button',{name:'展开顶部信息栏（可拖拽）'}).isVisible())await page.getByRole('button',{name:'展开顶部信息栏（可拖拽）'}).click();
+  await page.getByRole('button',{name:'猫国商店',exact:true}).click();let shop=page.getByRole('dialog',{name:'猫国商店',exact:true});
+  await shop.getByTestId('claim-daily_wish').click();await expect(shop.getByTestId('claim-daily_wish')).toHaveText('已签收');
+  await shop.getByTestId('claim-daily_letter').click();await expect(shop.getByTestId('claim-daily_letter')).toHaveText('已签收');
+  await shop.getByRole('button',{name:'关闭猫国商店',exact:true}).click();
   await expect.poll(async()=>JSON.parse((await page.locator('.game-viewport canvas').getAttribute('data-home-cats'))!).find((c:{breed:string})=>c.breed==='diandian')?.pose).toBe('perch');
   await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();await page.getByRole('button',{name:'猫爪邮局',exact:true}).click();
-  await expect(postOffice(page).locator('.parcel-collection')).toContainText('12 / 12');await expect(postOffice(page).getByTestId('claim-daily_letter')).toBeDisabled();
+  await expect(postOffice(page).locator('.parcel-collection')).toContainText('12 / 12');await expect(postOffice(page).getByTestId('claim-daily_letter')).toHaveCount(0);
   await postOffice(page).locator('.parcel-history summary').click();await expect(postOffice(page).locator('.parcel-history li')).toHaveCount(1);expect(errors).toEqual([]);
 });
 

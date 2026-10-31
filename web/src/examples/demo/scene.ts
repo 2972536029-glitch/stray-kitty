@@ -1,6 +1,6 @@
-import {PARCEL_ART, PARCEL_IDS, isParcelFurniture} from '../../modules/lottery/furnitureArt';
-import type {BattleResult, GameState, StoryNode} from '../../contracts';
-import {drawPixelCat, type CatBreed} from '../../adapters/canvas/pixelCat';
+import {PARCEL_ART, PARCEL_IDS} from '../../modules/lottery/furnitureArt';
+import type {BattleResult, GameState, StoryNode, HomeRepairPart} from '../../contracts';
+import {drawPixelCat,type CatBreed} from '../../adapters/canvas/pixelCat';
 import {DemoBattle} from './battle';
 import type {Direction} from '../../adapters/platform/input';
 import {CanvasPainter} from '../../adapters/canvas/painter';
@@ -11,38 +11,27 @@ import {marketArt, marketEntry, marketItems, marketPortals, marketRoadSigns, nea
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 import {HOME_LAYOUT_ID, HOME_SIZE, HOME_RESIDENTS, HOME_ROAM_NODES, HOME_SHELTER_NODES, homeStage} from '../../modules/home/layout';
-import {homeAppearanceKey, paintHomeStructure, paintHomeObject, paintHomeFurnitureFront, paintHomeFrontWall, paintHomeWeather, homeObjects} from '../../modules/home/painter';
+import {homeAppearanceKey, paintHomestead, paintHomeStructure, paintHomeObject, paintHomeFurnitureFront, paintHomeFrontWall, paintHomeWeather, homeObjects} from '../../modules/home/painter';
 import {loadHomeArtwork, HOME_FRAMES, type HomeArtwork} from '../../modules/home/assets';
+import {paintResident,residentContains,residentWorldPoint} from '../../modules/home/catPainter';
+import {homeObjectOpaqueAt} from '../../modules/home/picking';
+import {nearbyFurnitureCat,petCat} from '../../modules/home/reactions';
+import {chooseLine,currentCatMood} from '../../modules/home/dialogue';
+import {CAT_NAMES,SOCIAL_KINDS,freeCatPoint,furnitureAt,furnitureActivity,useFurniture,socialize,endSocial,stepHomeLife,settleCats,type LifeCat} from '../../modules/home/life';
 import {HomeCamera} from '../../modules/home/camera';
-import {homePosePoint} from '../../modules/home/objects';
-import {homeWalkable, homeWalkStep} from '../../modules/home/navigation';
+import {HomeRenovation} from '../../modules/home/renovation';
+import {playSound} from '../../ui/soundEffects';
+import {homePosePoint, homeInventory, type HomeAppearance} from '../../modules/home/objects';
+import {homeWalkable} from '../../modules/home/navigation';
 import {displayedCanvasRect} from '../../adapters/canvas/camera';
 import {homeStoryBeat, storyActorPosition, type HomeStoryActor, type HomeStoryBeat} from '../../modules/home/story';
 import {explorationScene} from '../../core/chapter-navigation';
 import type {WarehouseWalkMap, WarehouseReviewOptions} from '../../modules/chapter5/WarehouseWalkMap';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
-// 花房家园的猫咪轻量 AI:pose 非空表示绑定专属家具姿态,否则按 sit→walk→sit 循环漫步。
-interface HomeCatAgent {
-  breed: CatBreed;
-  pose: string | null;
-  x: number; y: number;
-  nodes: {x: number; y: number}[];
-  nodeIndex: number;
-  action: 'sit' | 'walk' | 'nose';
-  target?: {x: number; y: number};
-  thinkAt: number;
-  facing: 1 | -1;
-  seed: number;
-  noseUntil: number;
-  noseCooldownUntil: number;
-  bubble: string | null;
-  bubbleUntil: number;
-  startledUntil: number;
-  scripted?: {actor: HomeStoryActor; from: {x: number; y: number}};
-  scriptedHeight?: number;
-  slot?: string;
-  furnitureArrival?: {from:{x:number;y:number};to:{x:number;y:number};pose:string;started:number};
+// 剧情接管之外，日常由共享家具动作、伙伴互动和漫步组成。
+interface HomeCatAgent extends LifeCat {
+  scripted?: {actor:HomeStoryActor;from:{x:number;y:number}};
 }
 export class DemoScene {
   private warehousePreview: WarehouseWalkMap | null = null;
@@ -95,7 +84,6 @@ export class DemoScene {
   private homeCats: HomeCatAgent[] = [];
   private homeCatsSignature = '';
   private homeHearts: {x: number; y: number; born: number}[] = [];
-  private homePokeCooldownUntil = 0;
   private homeTime = 0;
   private homeBeat: HomeStoryBeat | null = null;
   private homeBeatStartedAt = 0;
@@ -105,7 +93,35 @@ export class DemoScene {
   private homeAssetLoading=false;
   private homeAssetError=false;
   private homeCamera=new HomeCamera();
-  private homeDrag:{id:number;start:{x:number;y:number};last:{x:number;y:number};moved:boolean}|null=null;
+  private homeRenovation=new HomeRenovation();
+  private homeVisualState?:HomeAppearance;
+  private homeEditing?:{state:HomeAppearance;selection:string;valid:boolean};
+  get homeCanvas(){return this.canvas;}
+  get homeZoomLevel(){return this.homeCamera.zoom;}
+  get homeRenovating(){return this.homeRenovation.active;}
+  prepareHomeRepair(part:HomeRepairPart){this.homeRenovation.prepare(part);}
+  setHomeEditing(draft?:{state:HomeAppearance;selection:string;valid:boolean}){
+    if(draft)this.homeRenovation.clear();
+    this.homeEditing=draft;this.clearInput();this.canvas.dataset.homeEditing=String(!!draft);
+    this.canvas.style.cursor=draft?'grab':'';
+    if(!draft){delete this.canvas.dataset.editorView;delete this.canvas.dataset.editorItems;}
+  }
+  homeClientToWorld(clientX:number,clientY:number){
+    const point=this.homeScreenPoint({clientX,clientY}),view=this.homeView(),r=this.canvas.getBoundingClientRect();
+    return{x:Math.round((point.x-view.x)/view.scale),y:Math.round((point.y-view.y)/view.scale),inside:clientX>=r.left&&clientX<=r.right&&clientY>=r.top&&clientY<=r.bottom};
+  }
+  homeWorldToClient(x:number,y:number){
+    const r=this.canvas.getBoundingClientRect(),view=this.homeView(),cover=getComputedStyle(this.canvas).objectFit==='cover',s=(cover?Math.max:Math.min)(r.width/this.viewWidth,r.height/this.viewHeight);
+    return{x:r.left+(r.width-this.viewWidth*s)/2+(view.x+x*view.scale)*s,y:r.top+(r.height-this.viewHeight*s)/2+(view.y+y*view.scale)*s};
+  }
+  panHomeEditor(from:{x:number;y:number},to:{x:number;y:number}){
+    if(!this.homeEditing)return;
+    const a=this.homeScreenPoint({clientX:from.x,clientY:from.y}),b=this.homeScreenPoint({clientX:to.x,clientY:to.y}),view=this.homeView();
+    this.homeCamera.pan(b.x-a.x,b.y-a.y,view.viewport.width,view.viewport.height);
+  }
+  private homeDrag:{id:number;start:{x:number;y:number};last:{x:number;y:number};moved:boolean;cat?:CatBreed;offset?:{x:number;y:number}}|null=null;
+  private homeSocialSerial=0;
+  private homeSocialStamp=-1;
   constructor(
     private canvas: HTMLCanvasElement,
     private onNear: (near: boolean, interactionId?: string, label?: string) => void,
@@ -163,6 +179,7 @@ export class DemoScene {
       if (key === 'r' && !event.repeat&&!this.state) this.resetWarehousePreview();
       return;
     }
+    if(this.state?.phase==='home'&&event.key==='Escape'&&this.homeDrag?.cat){event.preventDefault();this.homePointerCancel();return;}
     if (this.state?.phase !== 'explore' || this.pausedByUser) return;
     const key = event.key.toLowerCase();
     if (this.state?.mapId === 'tunnel') {
@@ -226,7 +243,7 @@ export class DemoScene {
     }
   };
   private keyup = (event: KeyboardEvent) => {this.keys.delete(event.key.toLowerCase());this.tunnelMap.keyUp(event.key.toLowerCase());};
-  private clearInput = () => {this.keys.clear();this.held.clear();};
+  private clearInput = () => {this.keys.clear();this.held.clear();this.homePointerCancel();};
   // 滚轮缩放视野（雨巷）：上滚放大、下滚缩小；仅在自由探索且未暂停时接管，不吞面板滚动。
   private wheel = (event: WheelEvent) => {
     if (this.state?.phase !== 'explore' || this.state.mapId !== 'alley' || this.pausedByUser) return;
@@ -240,9 +257,12 @@ export class DemoScene {
       this.rainyAlley.click(event.clientX, event.clientY, bounds, this.viewWidth, this.viewHeight, cover);
       return;
     }
-    if (this.state?.phase === 'home' && this.state.chapterId !== 'prologue' && !this.pausedByUser) {
+    if (this.state?.phase === 'home' && this.state.chapterId !== 'prologue' && !this.pausedByUser && !this.homeRenovating) {
       const point=this.homeScreenPoint(event);
-      this.homeDrag={id:event.pointerId,start:point,last:point,moved:false};
+      const view=this.homeView(),world={x:(point.x-view.x)/view.scale,y:(point.y-view.y)/view.scale};
+      if(point.x<view.viewport.x||point.x>view.viewport.x+view.viewport.width||point.y<view.viewport.y||point.y>view.viewport.y+view.viewport.height)return;
+      const cat=this.homeCatAt(world.x,world.y);
+      this.homeDrag={id:event.pointerId,start:point,last:point,moved:false,cat:cat?.breed,offset:cat?{x:cat.x-world.x,y:cat.y-world.y}:undefined};
       if(event.isTrusted)this.canvas.setPointerCapture(event.pointerId);
       return;
     }
@@ -266,27 +286,35 @@ export class DemoScene {
     return{...frame,x:frame.x+viewport.x,y:frame.y+viewport.y,viewport};
   }
   homeZoom(amount:number){
-    if(this.state?.phase!=='home'||this.pausedByUser)return;
+    if(this.state?.phase!=='home'||(this.pausedByUser&&!this.homeEditing))return;
+    if(this.homeDrag?.cat)return;
     if(amount===0)this.homeCamera.reset();else this.homeCamera.changeZoom(amount);
   }
   private homePointerMove=(event:PointerEvent)=>{
     const drag=this.homeDrag;if(!drag||drag.id!==event.pointerId||this.pausedByUser||this.state?.phase!=='home'){this.homeDrag=null;return;}
     const point=this.homeScreenPoint(event);
     if(Math.hypot(point.x-drag.start.x,point.y-drag.start.y)>4)drag.moved=true;
-    if(drag.moved){const view=this.homeView();this.homeCamera.pan(point.x-drag.last.x,point.y-drag.last.y,view.viewport.width,view.viewport.height);}
+    if(drag.moved&&!drag.cat){const view=this.homeView();this.homeCamera.pan(point.x-drag.last.x,point.y-drag.last.y,view.viewport.width,view.viewport.height);}
+    if(drag.moved&&drag.cat)this.canvas.style.cursor='grabbing';
     drag.last=point;
   };
   private homePointerUp=(event:PointerEvent)=>{
-    const drag=this.homeDrag;this.homeDrag=null;
-    if(!drag||drag.id!==event.pointerId||drag.moved||this.pausedByUser||this.state?.phase!=='home')return;
+    const drag=this.homeDrag;this.homeDrag=null;this.canvas.style.cursor='';
+    if(!drag||drag.id!==event.pointerId||this.pausedByUser||this.state?.phase!=='home')return;
+    if(drag.cat&&drag.moved){this.dropHomeCat(drag.cat,this.homeScreenPoint(event),drag.offset);return;}
+    if(drag.moved)return;
     const point=this.homeScreenPoint(event),view=this.homeView();
     const x=(point.x-view.x)/view.scale,y=(point.y-view.y)/view.scale;
     this.canvas.dataset.homeInteraction=JSON.stringify({kind:'point',x,y});
-    if(!this.pokeHomeCat(x,y))this.inviteFurnitureCat(x,y);
+    const cat=this.homeCatAt(x,y);
+    // A press on a cat is consumed even while its reaction is debounced. It
+    // must never fall through and summon another cat through the furniture.
+    if(drag.cat){if(cat?.breed===drag.cat)this.pokeHomeCat(cat,x,y);return;}
+    if(!cat)this.inviteFurnitureCat(x,y);
   };
-  private homePointerCancel=()=>{this.homeDrag=null;};
+  private homePointerCancel=()=>{this.homeDrag=null;this.canvas.style.cursor='';delete this.canvas.dataset.homeDropTarget;};
   private homeWheel=(event:WheelEvent)=>{
-    if(this.state?.phase!=='home'||this.state.chapterId==='prologue'||this.pausedByUser)return;
+    if(this.state?.phase!=='home'||this.state.chapterId==='prologue'||this.homeRenovating||(this.pausedByUser&&!this.homeEditing))return;
     event.preventDefault();this.homeZoom(event.deltaY<0?.15:-.15);
   };
   start() {
@@ -510,9 +538,13 @@ export class DemoScene {
     // the home clock also freezes for menus, pending commands and hidden tabs.
     const homeVisible = mode === 'home' || (mode === 'dialogue' && this.storyScene === 'home') || (this.state.mapId === 'greenhouse' && !this.storyScene);
     if (homeVisible && this.state.chapterId !== 'prologue') {
+      if(!this.homeEditing&&this.homeVisualState&&this.homeArtwork)this.homeRenovation.begin(this.homeVisualState,this.state,this.homeArtwork,this.homeCats,this.homeTime);
+      this.homeVisualState=this.state;
+      if(this.homeRenovating)this.homePointerCancel();
+      if(active&&this.homeRenovation.advance(delta))playSound('chime');
       this.ensureHomeCats(this.homeStage());
-      if (active) {this.homeTime += delta; this.stepHomeCats(delta, this.homeStage());}
-    }
+      if (active&&!this.homeRenovating) {this.homeTime += delta; this.stepHomeCats(delta, this.homeStage());}
+    }else {this.homeVisualState=undefined;this.homeRenovation.clear();}
     this.graphics.clear();
     // CanvasPainter.fillStyle() changes globalAlpha; clearRect() does not reset it.
     // Reset frame-wide compositing before drawing the integrated background and cat.
@@ -536,7 +568,7 @@ export class DemoScene {
     else if (this.state.mapId === 'greenhouse' || (this.state.qaCheckpointId?.startsWith('event:warehouse:') && mode === 'event')) this.drawHome();
     else if (this.state.mapId === 'alley') this.rainyAlley.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, {phase: mode, eventId: this.state.pendingEventId, pendingEventSource: this.state.pendingEventSource, randomEligible: this.randomEligible});
     else this.drawAlley();
-    if (this.pausedByUser) {this.graphics.fillStyle(0x18282a, .6);this.graphics.fillRect(0, 0, 800, 480);}
+    if (this.pausedByUser && !this.homeEditing) {this.graphics.fillStyle(0x18282a, .6);this.graphics.fillRect(0, 0, 800, 480);}
     if (import.meta.env.DEV || import.meta.env.MODE === 'e2e') this.publishNavigationDiagnostics();
   }
   private publishNavigationDiagnostics() {
@@ -561,14 +593,15 @@ export class DemoScene {
       this.canvas.dataset.homeControl = this.homeBeat ? 'story' : state.phase === 'home' ? 'free' : 'held';
       this.canvas.dataset.homeBeat = this.homeBeat?.id ?? '';
       this.canvas.dataset.homeStage = String(this.homeStage());
+      this.canvas.dataset.homeRenovation=JSON.stringify(this.homeRenovation.diagnostics);
       this.canvas.dataset.homeTime = this.homeTime.toFixed(0);
       this.canvas.dataset.homeFurniture=JSON.stringify(homeObjects(this.state!).filter(o=>o.furnitureId).map(o=>{const frame=HOME_FRAMES[o.sprite];return{id:o.furnitureId,slot:o.slot,x:o.x,y:o.y,width:o.width,height:o.width*frame.height/frame.width};}));
-      this.canvas.dataset.homeCats = JSON.stringify(this.homeCats.map(cat => ({breed: cat.breed, x: Math.round(cat.x), y: Math.round(cat.y), pose: cat.pose, slot:cat.slot, action: cat.action, height: Math.round(cat.scriptedHeight ?? 0), bubble:cat.bubbleUntil>this.homeTime?cat.bubble:null})));
+      this.canvas.dataset.homeCats = JSON.stringify(this.homeEditing?[]:this.homeCats.map(cat => {const hit=residentWorldPoint(cat,this.homeTime);return {breed: cat.breed, x: Math.round(cat.x), y: Math.round(cat.y), hitX:hit.x,hitY:hit.y,pose: cat.pose, slot:cat.slot, action: cat.action, mood:currentCatMood(cat,this.homeTime),petPressure:cat.petPressure??0,height: Math.round(cat.scriptedHeight ?? 0), bubble:cat.bubbleUntil>this.homeTime&&this.homeTime>=(cat.bubbleAt??0)?cat.bubble:null,social:cat.social?.kind,partner:cat.social?.partner,held:this.homeDrag?.cat===cat.breed};}));
       this.canvas.dataset.homeCamera=JSON.stringify({...this.homeView(),zoom:this.homeCamera.zoom,worldWidth:HOME_SIZE.width,worldHeight:HOME_SIZE.height});
       this.canvas.dataset.homeArtwork=this.homeArtwork?'ready':this.homeAssetError?'error':'loading';
       this.canvas.dataset.homeObjects=JSON.stringify(homeObjects(state));
     } else {
-      for (const name of ['homeLayout', 'homeControl', 'homeBeat', 'homeStage', 'homeTime', 'homeCats','homeCamera','homeArtwork','homeObjects','homeFurniture','homeInteraction']) delete this.canvas.dataset[name];
+      for (const name of ['homeLayout', 'homeControl', 'homeBeat', 'homeStage', 'homeTime', 'homeCats','homeCamera','homeArtwork','homeObjects','homeFurniture','homeInteraction','homeRenovation']) delete this.canvas.dataset[name];
     }
   }
   private rect(x:number,y:number,w:number,h:number,color:number,alpha=1){this.graphics.fillStyle(color,alpha);this.graphics.fillRect(Math.round(x),Math.round(y),w,h);}
@@ -595,8 +628,8 @@ export class DemoScene {
       return{x:view.x+cat.x*view.scale,y:view.y+(cat.y-68-(cat.scriptedHeight??0))*view.scale};
     }
     if(st.mapId==='market'||st.chapterId==='market'||this.storyScene==='market'){
-      if(breed==='tuanzi')return{x:130,y:258};
-      if(breed==='miaomiao')return{x:this.x,y:this.y-52};
+      // 午夜集市是跟随相机的 1672×941 世界地图，且场景只绘制喵喵——团子等伙伴不在渲染列表里，
+      // 头顶锚点不成立。返回 null 让 DialogueBubble 降级为屏幕底部字幕条，不再出现指向空位置的气泡。
       return null;
     }
     if(st.phase==='home'||this.storyScene==='home'||(st.flags.includes('rescue_story_done')&&st.phase!=='explore')){
@@ -690,27 +723,33 @@ export class DemoScene {
   private static readonly homeRoamNodes = HOME_ROAM_NODES;
   private static readonly homeShelterNodes = HOME_SHELTER_NODES;
   private static readonly homeCatDefaults = Object.fromEntries(Object.entries(HOME_RESIDENTS).map(([id, p]) => [id, [p.x, p.y]]));
-  // 家具专属偏好:场上摆了对应家具,这只猫就固定待在家具旁摆出专属姿态。
+  // 日常开始时优先使用偏好家具，活动结束后恢复自由行动。
   private static readonly homeAffinities: readonly {breed: CatBreed; poses: Readonly<Record<string, string>>}[] = [
     {breed: 'momo', poses: {...Object.fromEntries(PARCEL_IDS.filter(id=>PARCEL_ART[id].cat==='momo').map(id=>[id,PARCEL_ART[id].pose])),moon_hammock: 'hammock_sleep'}},
     {breed: 'tuanzi', poses: {...Object.fromEntries(PARCEL_IDS.filter(id=>PARCEL_ART[id].cat==='tuanzi').map(id=>[id,PARCEL_ART[id].pose])),snack_cushion: 'knead', blue_bowl: 'bowl_eat'}},
     {breed: 'diandian', poses: {...Object.fromEntries(PARCEL_IDS.filter(id=>PARCEL_ART[id].cat==='diandian').map(id=>[id,PARCEL_ART[id].pose])),box_castle: 'castle_peek'}},
     {breed: 'miaomiao', poses: {...Object.fromEntries(PARCEL_IDS.filter(id=>PARCEL_ART[id].cat==='miaomiao').map(id=>[id,PARCEL_ART[id].pose])),soft_blanket: 'belly', sun_lamp: 'belly'}}
   ];
-  private static readonly pokeLines: Record<CatBreed, string> = {
-    miaomiao: '（傲娇扭头）哼，本咪只是允许你碰一下下……就一下！',
-    tuanzi: '咕噜噜……两脚兽，你口袋里有藏小鱼干吗？',
-    diandian: '（小心探头）……有你在，这里好安全。',
-    momo: '（目光如炬）……四周很安全，放心休息吧。'
-  };
   // 花房阶段:1 漏雨避雨处 → 2 封窗止水(greenhouse_sealed) → 3 原木温室(greenhouse_fortified_full) → 4 王国庆典(剧情 flag)。
   private homeStage(): number {return this.state ? homeStage(this.state) : 1;}
   private drawHome(){
     if(this.state?.chapterId === 'prologue'){this.drawPrologueHome();return;}
     if(!this.state)return;
+    if(this.pausedByUser&&!this.homeEditing)this.homePointerCancel();
     if(!this.homeAssetLoading){
       this.homeAssetLoading=true;
       void loadHomeArtwork().then(art=>{if(!this.destroyed)this.homeArtwork=art;}).catch(()=>{if(!this.destroyed)this.homeAssetError=true;});
+    }
+    if(this.homeEditing){
+      const {state,selection,valid}=this.homeEditing,ctx=this.context,view=this.homeView();
+      ctx.save();ctx.fillStyle='#13262e';ctx.fillRect(0,0,this.viewWidth,this.viewHeight);
+      ctx.beginPath();ctx.rect(view.viewport.x,view.viewport.y,view.viewport.width,view.viewport.height);ctx.clip();
+      ctx.translate(view.x,view.y);ctx.scale(view.scale,view.scale);paintHomestead(ctx,state,this.homeArtwork);
+      const selected=homeInventory(state).find(i=>i.layoutKey===selection&&!i.stored);
+      if(selected){const f=HOME_FRAMES[selected.sprite],h=selected.width*f.height/f.width;ctx.strokeStyle=valid?'#ffe19a':'#ff8377';ctx.lineWidth=2/view.scale;ctx.setLineDash([7/view.scale,4/view.scale]);ctx.strokeRect(selected.x-selected.width/2-5,selected.y-h-5,selected.width+10,h+10);ctx.setLineDash([]);}
+      ctx.restore();
+      if(import.meta.env.DEV||import.meta.env.MODE==='e2e'){this.canvas.dataset.editorView=JSON.stringify(view);this.canvas.dataset.editorItems=JSON.stringify(homeInventory(state));}
+      return;
     }
     const key=homeAppearanceKey(this.state)+(this.homeArtwork?'|loaded':'|loading');
     if(!this.homeBackdrop||this.homeBackdropKey!==key){
@@ -727,8 +766,8 @@ export class DemoScene {
     const stage=this.homeStage();this.drawHomeCats(stage);
     paintHomeFrontWall(ctx,this.state,this.homeArtwork);
     for(const object of homeObjects(this.state).filter(object=>object.front))paintHomeObject(ctx,object,this.homeArtwork);
-    this.drawHomeFx(stage);ctx.restore();
-    for(const cat of this.homeCats)if(cat.bubble&&cat.bubbleUntil>this.homeTime)this.drawSpeechBubble(view.x+cat.x*view.scale,view.y+cat.y*view.scale,cat.bubble);
+    this.drawHomeFx(stage);this.drawHomeCarry();this.homeRenovation.paint(ctx);ctx.restore();
+    if(!this.homeRenovating)for(const cat of this.homeCats)if(cat.bubble&&cat.bubbleUntil>this.homeTime&&this.homeTime>=(cat.bubbleAt??0))this.drawSpeechBubble(view.x+cat.x*view.scale,view.y+cat.y*view.scale,cat.bubble);
     if(this.homeAssetError){ctx.save();ctx.fillStyle='#f5dfbf';ctx.font='14px sans-serif';ctx.fillText('花房素材加载失败，请刷新重试',view.viewport.x+15,view.viewport.y+40);ctx.restore();}
   }
   // 序章:喵喵原本的家,午后阳光与天蓝色饭碗(静态,不参与花房修缮系统)。
@@ -755,10 +794,10 @@ export class DemoScene {
     if(signature===this.homeCatsSignature)return this.homeCats;
     const previous = new Map(this.homeCats.map(cat => [cat.breed, cat]));
     if(beat&&!this.homeBeat)this.homeCamera.reset();
+    this.homePointerCancel();
     this.homeCatsSignature = signature;
     this.homeCats = [];
     this.homeHearts = [];
-    this.homePokeCooldownUntil = 0;
     this.homeBeat = beat;
     this.homeBeatStartedAt = this.homeTime;
     if(beat){
@@ -774,10 +813,11 @@ export class DemoScene {
     const claimed = new Set<string>();
     for(const affinity of DemoScene.homeAffinities){
       if(!state.cats.includes(affinity.breed))continue;
-      const entry = Object.entries(state.placements).find(([slot,id])=>affinity.poses[id]!==undefined && !claimed.has(id) && homeObjects(state).some(object=>object.slot===slot));
+      const object=homeObjects(state).find(o=>o.furnitureId&&affinity.poses[o.furnitureId]!==undefined&&!claimed.has(o.furnitureId));
+      const entry=object?.furnitureId?[object.slot??object.layoutKey,object.furnitureId]:undefined;
       if(!entry)continue;
       claimed.add(entry[1]);
-      const point=homePosePoint(entry[0],entry[1]);
+      const point=homePosePoint(entry[0],entry[1],object);
       const cat=this.createHomeCat(affinity.breed,stage,affinity.poses[entry[1]],point.x,point.y);cat.slot=entry[0];
       if(entry[1] in PARCEL_ART){
         const from=previous.get(affinity.breed)??HOME_RESIDENTS[affinity.breed];
@@ -793,6 +833,7 @@ export class DemoScene {
       if(stage>=2 && last && homeWalkable(last,homeObjects(state))){cat.x=last.x;cat.y=last.y;}
       this.homeCats.push(cat);
     }
+    settleCats(this.homeCats,homeObjects(state),this.homeTime);
     return this.homeCats;
   }
   private createHomeCat(breed:CatBreed, stage:number, pose:string|null, x:number, y:number):HomeCatAgent{
@@ -803,7 +844,7 @@ export class DemoScene {
     // 每只猫从路点池里固定取 2~3 个"自己的"安全路点,漫游范围彼此错开。
     const count = 2 + seed%2;
     const nodes = Array.from({length:count},(_,i)=>pool[(seed*3+i*5)%pool.length]);
-    return {breed, pose, x, y, nodes, nodeIndex:0, action:'sit', thinkAt:this.homeTime+2500+(seed%4)*1300, facing:seed%2?1:-1, seed, noseUntil:0, noseCooldownUntil:0, bubble:null, bubbleUntil:0, startledUntil:0};
+    return {breed, pose, x, y, poseUntil:pose?this.homeTime+12000:undefined, nodes, nodeIndex:0, action:'sit', thinkAt:this.homeTime+2500+(seed%4)*1300, facing:seed%2?1:-1, seed, noseUntil:0, noseCooldownUntil:0, bubble:null, bubbleUntil:0, startledUntil:0};
   }
   // 漫步/碰鼻礼状态机:在 update 中以真实时间步进。
   private stepHomeCats(deltaMs:number, stage:number){
@@ -821,210 +862,64 @@ export class DemoScene {
       return;
     }
     if(this.state?.phase!=='home')return;
-    const seconds = deltaMs/1000;
-    const objects=homeObjects(this.state);
-    for(const cat of cats){
-      if(cat.furnitureArrival){
-        const arrival=cat.furnitureArrival,p=Math.min(1,(this.homeTime-arrival.started)/1100),ease=p*p*(3-2*p);
-        cat.x=arrival.from.x+(arrival.to.x-arrival.from.x)*ease;cat.y=arrival.from.y+(arrival.to.y-arrival.from.y)*ease;
-        cat.scriptedHeight=Math.sin(p*Math.PI)*22;cat.action='walk';cat.facing=arrival.to.x>=arrival.from.x?1:-1;
-        if(p>=1){cat.pose=arrival.pose;cat.furnitureArrival=undefined;cat.scriptedHeight=0;cat.action='sit';}
-        continue;
-      }
-      if(cat.pose)continue;
-      if(cat.action==='nose'){if(this.homeTime>=cat.noseUntil)cat.action='sit';continue;}
-      if(cat.action==='walk' && cat.target){
-        const dx=cat.target.x-cat.x, dy=cat.target.y-cat.y, distance=Math.hypot(dx,dy);
-        if(distance<3){
-          cat.action='sit';cat.thinkAt=this.homeTime+5000+Math.random()*3000;
-          cat.facing = Math.random()<0.5 ? 1 : -1;
-        } else {
-          const step=Math.min(distance, 56*seconds);
-          const next=homeWalkStep(cat,cat.target,step,objects);
-          if(Math.hypot(next.x-cat.x,next.y-cat.y)<.01){cat.action='sit';cat.thinkAt=this.homeTime+700;}
-          cat.x=next.x;cat.y=next.y;
-          if(Math.abs(dx)>2)cat.facing = dx>0?1:-1;
-        }
-        continue;
-      }
-      if(cat.action==='sit' && this.homeTime>=cat.thinkAt){
-        cat.nodeIndex=(cat.nodeIndex+1)%cat.nodes.length;
-        cat.target={...cat.nodes[cat.nodeIndex]};
-        cat.action='walk';
-      }
-    }
-    // 碰鼻礼:两只漫步中的猫靠近时停下 1 秒,头顶冒出像素爱心。
-    for(let i=0;i<cats.length;i++)for(let j=i+1;j<cats.length;j++){
-      const a=cats[i], b=cats[j];
-      if(a.pose||b.pose)continue;
-      if(this.homeTime<a.noseCooldownUntil||this.homeTime<b.noseCooldownUntil)continue;
-      if(a.action==='nose'||b.action==='nose')continue;
-      if(Math.hypot(a.x-b.x,a.y-b.y)>=34)continue;
-      a.action='nose';b.action='nose';
-      a.noseUntil=b.noseUntil=this.homeTime+1000;
-      a.noseCooldownUntil=b.noseCooldownUntil=this.homeTime+7000;
-      this.homeHearts.push({x:(a.x+b.x)/2, y:Math.min(a.y,b.y)-58, born:this.homeTime});
-    }
-    this.homeHearts = this.homeHearts.filter(h=>this.homeTime-h.born<1100);
+    stepHomeLife(cats,homeObjects(this.state),this.homeTime,deltaMs,stage,this.homeDrag?.cat);
+    const newest=Math.max(-1,...cats.map(c=>c.social?.started??-1));
+    if(newest>this.homeSocialStamp){this.homeSocialStamp=newest;for(const c of cats)if(c.social?.started===newest)this.homeHearts.push({x:c.x,y:c.y-65,born:this.homeTime});}
+    this.homeHearts=this.homeHearts.filter(h=>this.homeTime-h.born<1100);
   }
   private drawHomeCats(stage:number){
-    const objects=homeObjects(this.state!).filter(object=>!object.front);let nextObject=0;
-    const paintUntil=(y:number)=>{while(nextObject<objects.length&&objects[nextObject].y<=y)paintHomeObject(this.context,objects[nextObject++],this.homeArtwork,this.homeTime);};
-    const depth=(cat:HomeCatAgent)=>cat.slot?objects.find(object=>object.slot===cat.slot)?.y??cat.y:cat.y;
-    for(const cat of [...this.ensureHomeCats(stage)].sort((a,b)=>depth(a)-depth(b))){
-      const furniture=cat.slot?objects.find(object=>object.slot===cat.slot):undefined;
-      paintUntil(furniture?Math.max(cat.y,furniture.y):cat.y);
-      this.context.globalAlpha = 1;
-      const jump = this.catStartleOffset(cat);
-      if(cat.pose==='hammock_sleep')this.drawHammockSleep(cat, jump);
-      else if(cat.pose==='knead')this.drawKneadCushion(cat, jump);
-      else if(cat.pose==='bowl_eat')this.drawBowlEat(cat, jump);
-      else if(cat.pose==='castle_peek')this.drawCastlePeek(cat, jump);
-      else if(cat.pose==='belly')this.drawBellyBask(cat, jump);
-      else if(cat.pose)this.drawFurniturePlay(cat,jump,stage);
-      else this.drawRoamingCat(cat, stage);
-      if(furniture)paintHomeFurnitureFront(this.context,furniture,this.homeArtwork);
-      if(this.homeBeat?.speaker===cat.breed){
-        this.rect(cat.x-13,cat.y+5,26,2,0xf4d992,.9);
-        this.rect(cat.x-2,cat.y-46-(cat.scriptedHeight??0),4,4,0xffe0a0);
-      }
-      if(cat.noseUntil>this.homeTime)this.drawPixelHeart(cat.x+cat.facing*10, cat.y-64, 2, 0.95);
+    const objects=homeObjects(this.state!).filter(o=>!o.front),cats=this.ensureHomeCats(stage).filter(c=>!(this.homeDrag?.cat===c.breed&&this.homeDrag.moved));
+    const residents=cats.filter(c=>!c.slot),seated=cats.filter(c=>c.slot);
+    const layers=[...objects.map(o=>({y:o.y,object:o,cat:undefined as HomeCatAgent|undefined})),...residents.map(c=>({y:c.y,object:undefined,cat:c}))].sort((a,b)=>a.y-b.y);
+    for(const layer of layers)if(layer.object)paintHomeObject(this.context,layer.object,this.homeArtwork,this.homeTime);else if(layer.cat)paintResident(this.context,layer.cat,this.homeTime,stage);
+    // Reserved furniture users draw after their furniture. Repainting an entire
+    // castle / shelf crop used to cover the cat with the opaque new sprites.
+    for(const cat of seated.sort((a,b)=>a.y-b.y)){
+      paintResident(this.context,cat,this.homeTime,stage);
+      const host=objects.find(o=>(o.slot??o.layoutKey)===cat.slot);
+      if(host&&!cat.furnitureArrival)paintHomeFurnitureFront(this.context,host,this.homeArtwork);
     }
-    paintUntil(Infinity);
+    for(const cat of cats)if(cat.social&&currentCatMood(cat,this.homeTime)!=='irritated'&&this.homeTime>cat.social.started+900)this.drawPixelHeart(cat.x,cat.y-70-Math.sin(this.homeTime*.003)*4,1.3,.8);
   }
-  private catStartleOffset(cat:HomeCatAgent):number{
-    if(cat.scripted||cat.furnitureArrival)return -(cat.scriptedHeight??0);
-    if(cat.startledUntil<=this.homeTime)return 0;
-    return Math.sin(Math.min(1,(cat.startledUntil-this.homeTime)/650)*Math.PI)*-6;
+  private homeCatAt(x:number,y:number,exclude?:CatBreed){
+    if(y>=733&&(x<706||x>=924))return undefined;
+    const objects=this.state?homeObjects(this.state):[];
+    return [...this.homeCats].sort((a,b)=>Number(!!b.slot)-Number(!!a.slot)||b.y-a.y).find(c=>{
+      if(c.breed===exclude||!residentContains(c,this.homeTime,x,y))return false;
+      return !objects.some(o=>{
+        const host=c.slot===(o.slot??o.layoutKey);
+        const covers=o.front||(!c.slot&&o.y>c.y)||(host&&['castle','hammock','blanket','cushion'].includes(o.kind)&&y>=o.y-5&&y<=o.y+1);
+        return covers&&homeObjectOpaqueAt(o,x,y,this.homeArtwork);
+      });
+    });
   }
-  private drawFurniturePlay(cat:HomeCatAgent,jump:number,stage:number){
-    const t=this.homeTime*.003+cat.seed,ctx=this.context;
-    ctx.save();
-    if(cat.pose==='sniff')ctx.translate(Math.sin(t)*3,Math.sin(t*1.8)*1.5);
-    if(cat.pose==='watch')ctx.translate(0,-2-Math.sin(t)*2);
-    this.drawRoamingCat(cat,stage);ctx.restore();
-    if(cat.pose==='bat_ball'){
-      const reach=Math.max(0,Math.sin(t*2))*9,bx=cat.x+36+Math.sin(t*2)*10,by=cat.y+jump-3;
-      this.rect(cat.x+16,cat.y-17,12+reach,4,this.colorOf(cat.breed));
-      this.rect(bx-5,by-7,10,9,0xc38d64);this.rect(bx-3,by-9,6,2,0xe9bc89);this.rect(bx-2,by-6,2,6,0xeee0b9);
-      this.rect(bx+5,by+1,11,1,0xc38d64);
+  private dropHomeCat(breed:CatBreed,point:{x:number;y:number},offset={x:0,y:24}){
+    if(!this.state||this.state.phase!=='home'||this.homeBeat)return;
+    const view=this.homeView(),x=(point.x-view.x)/view.scale,y=(point.y-view.y)/view.scale,cat=this.homeCats.find(c=>c.breed===breed);if(!cat)return;
+    const objects=homeObjects(this.state),partner=this.homeCatAt(x,y,breed);
+    if(partner&&socialize(cat,partner,SOCIAL_KINDS[this.homeSocialSerial++%SOCIAL_KINDS.length],this.homeCats,objects,this.homeTime)){
+      this.canvas.dataset.homeInteraction=JSON.stringify({kind:'social',breed,partner:partner.breed,activity:cat.social?.kind});return;
     }
-    if(cat.pose==='bat_chime'){
-      const lift=Math.max(0,Math.sin(t*2))*12;
-      this.rect(cat.x-8,cat.y-45-lift,5,17+lift,this.colorOf(cat.breed));
-      if(lift>8)this.drawPixelHeart(cat.x-12,cat.y-80,1,.65);
+    const object=furnitureAt(objects,x,y);
+    if(object&&useFurniture(cat,object,this.homeCats,objects,this.homeTime)){
+      this.canvas.dataset.homeInteraction=JSON.stringify({kind:'furniture',id:object.furnitureId??object.layoutKey,breed,dragged:true});return;
     }
-    if(cat.pose==='watch'&&Math.sin(t)>.8)this.rect(cat.x-2,cat.y-69,4,4,0xe5c37a,.75);
+    const desired={x:x+offset.x,y:y+offset.y};
+    if(desired.y<345||desired.y>735||desired.x<95||desired.x>1577){cat.bubble='把我放在花房里就好啦。';cat.bubbleUntil=this.homeTime+2200;return;}
+    const spot=freeCatPoint(desired,this.homeCats,objects,breed);if(!spot)return;
+    endSocial(cat,this.homeCats,this.homeTime);cat.furnitureArrival=undefined;cat.pose=null;cat.slot=undefined;cat.scriptedHeight=0;cat.target=undefined;cat.action='sit';cat.x=spot.x;cat.y=spot.y;cat.manualUntil=this.homeTime+10000;cat.thinkAt=this.homeTime+10000;
+    cat.bubble=object?'这里有人啦，我先在旁边等等。':'这个位置也很舒服，呼噜……';cat.bubbleUntil=this.homeTime+2500;
+    this.canvas.dataset.homeInteraction=JSON.stringify({kind:'cat-drop',breed,x:spot.x,y:spot.y});
   }
-  // 自由漫步的猫:标准像素猫 + 呼吸起伏、弓背懒腰、尾巴轻摇与走路颠步。
-  private drawRoamingCat(cat:HomeCatAgent, stage:number){
-    const size=64, t=this.homeTime;
-    const breathing=Math.sin(t*0.0022+cat.seed)*0.02;
-    const stretchPhase=(t*0.001+cat.seed*0.7)%9;
-    const stretching=!cat.scripted && stretchPhase<1.2?Math.sin(stretchPhase/1.2*Math.PI):0;
-    const walkBob=cat.action==='walk'?-Math.abs(Math.sin(t*0.012+cat.seed))*2.5:0;
-    const jump=this.catStartleOffset(cat);
-    const mood=stage===1||cat.startledUntil>t?'worried':'idle';
-    this.context.save();
-    this.context.translate(Math.round(cat.x),Math.round(cat.y+jump+walkBob));
-    this.context.scale(cat.facing*(size/64)*(1+stretching*0.16),(size/64)*(1-breathing-stretching*0.18));
-    this.context.translate(-32,-58);
-    drawPixelCat(this.context,cat.breed,mood);
-    this.context.restore();
-    if(!cat.scripted){
-      const wag=Math.sin(t*0.004+cat.seed)*2;
-      this.rect(cat.x-cat.facing*27-1,cat.y-24+wag+jump,3,14,this.colorOf(cat.breed),.9);
-    }
-  }
-  private colorOf(breed:CatBreed):number{return {miaomiao:0xd5bc87,diandian:0xb9a789,tuanzi:0xc38343,momo:0x2c2a30}[breed];}
-  // 墨墨 × 月亮吊床:卷成黑团子酣睡,尾巴垂在吊床边,头顶缓缓飘出像素 zZ。
-  private drawHammockSleep(cat:HomeCatAgent, jump:number){
-    const t=this.homeTime*0.001+cat.seed;
-    const breathe=Math.sin(t*1.5);
-    const x=cat.x, y=cat.y+jump;
-    this.rect(x-13,y-11+breathe*0.8,26,11,0x46434a);
-    this.rect(x-10,y-14+breathe*0.8,20,5,0x46434a);
-    this.rect(x-8,y-4+breathe*0.8,16,3,0x565360);
-    this.rect(x-8,y-19+breathe*0.8,4,5,0x2c2a30);this.rect(x+4,y-19+breathe*0.8,4,5,0x2c2a30);
-    this.rect(x-5,y-9,4,1,0x211f24);this.rect(x+2,y-9,4,1,0x211f24);
-    const sway=Math.sin(t*0.8)*2;
-    this.rect(x+13,y-6+sway,2,10,0x2c2a30,.95);this.rect(x+14,y+3+sway,3,2,0x2c2a30,.95);
-    for(let i=0;i<2;i++){
-      const rise=(t*9+i*13)%26;
-      this.drawPixelZ(x+16+i*6, y-24-rise, i?3:4, Math.max(0,1-rise/26)*0.9);
-    }
-  }
-  private drawPixelZ(x:number,y:number,s:number,alpha:number){
-    this.rect(x,y,s*3,Math.max(1,s-1),0xf4e6c0,alpha);
-    this.rect(x+s,y+s,s,s,0xf4e6c0,alpha);
-    this.rect(x,y+s*2,s*3,Math.max(1,s-1),0xf4e6c0,alpha);
-  }
-  // 团子 × 零食抱枕:趴在枕上双爪交替"踩奶"。
-  private drawKneadCushion(cat:HomeCatAgent, jump:number){
-    const t=this.homeTime*0.006+cat.seed;
-    const x=cat.x, y=cat.y+jump;
-    this.rect(x-16,y-10,32,10,0xe7ad67);
-    this.rect(x-14,y-13,28,4,0xf0bd7f);
-    this.rect(x-20,y-6,6,7,0xc38343);
-    this.rect(x+14,y-6,6,7,0xc38343);
-    this.rect(x-9,y-24,18,14,0xe7ad67);
-    this.rect(x-7,y-27,4,5,0xc38343);this.rect(x+3,y-27,4,5,0xc38343);
-    this.rect(x-6,y-18,4,1,0x523729);this.rect(x+2,y-18,4,1,0x523729);
-    this.rect(x-1,y-16,3,2,0xb5764d);
-    const lift=Math.sin(t)*2.4;
-    this.rect(x-12,y-12+Math.max(0,lift),5,6,0xf0bd7f);
-    this.rect(x+6,y-12+Math.max(0,-lift),5,6,0xf0bd7f);
-    const curl=Math.sin(t*0.5)*3;
-    this.rect(x+16,y-9+curl,2,10,0xc38343,.95);
-  }
-  // 团子 × 蓝色饭碗:探头吃饱,肚皮圆滚滚,间歇抬头回味。
-  private drawBowlEat(cat:HomeCatAgent, jump:number){
-    const t=(this.homeTime*0.001+cat.seed)%4;
-    const headUp=t>3.2;
-    const x=cat.x, y=cat.y+jump;
-    this.rect(x-18,y-14,36,16,0xe7ad67);
-    this.rect(x-20,y-12,4,14,0xe7ad67);
-    this.rect(x-14,y-17,30,4,0xf0bd7f);
-    const headY=headUp?y-30:y-22;
-    this.rect(x-24,headY-10,16,13,0xe7ad67);
-    this.rect(x-26,headY-13,4,4,0xc38343);this.rect(x-18,headY-13,4,4,0xc38343);
-    if(headUp){this.rect(x-22,headY-5,3,1,0x523729);this.rect(x-16,headY-5,3,1,0x523729);this.rect(x-21,headY-2,7,2,0xb5764d);}
-    else this.rect(x-28,headY+1,6,2,0x8d5b3a);
-    const chew=Math.sin(this.homeTime*0.01+cat.seed)>0?1:0;
-    if(!headUp)this.rect(x-18,y-4+chew,3,2,0xe7ad67);
-  }
-  // 点点 × 纸箱城堡:钻进门洞只探出头,大圆眼与尖耳朵,每隔几秒耳朵抖一下。
-  private drawCastlePeek(cat:HomeCatAgent, jump:number){
-    const t=this.homeTime*0.001+cat.seed;
-    const twitch=((t)%4)<0.32?Math.sin((t%4)*95)*2:0;
-    const x=cat.x, y=cat.y+jump;
-    // 门洞里的脸:先画头,再补门框制造"从洞里探出"的遮挡感。
-    this.rect(x-8,y+2,16,14,0xd9c7a8);
-    this.rect(x-8,y+6,16,8,0x63594d);
-    this.rect(x-7,y-2+Math.round(twitch*0.5),4,5,0x443d35);this.rect(x+3,y-2-Math.round(twitch*0.5),4,5,0x443d35);
-    this.rect(x-6,y+7,4,4,0xefeadd);this.rect(x+2,y+7,4,4,0xefeadd);
-    this.rect(x-5,y+8,2,3,0x2f2a26);this.rect(x+3,y+8,2,3,0x2f2a26);
-    this.rect(x-2,y+13,4,2,0xb58a86);
-
-  }
-  // 喵喵 × 毛毯/小太阳灯:四脚朝天瘫着晒肚皮,偶尔惬意打个大哈欠。
-  private drawBellyBask(cat:HomeCatAgent, jump:number){
-    const t=(this.homeTime*0.001+cat.seed)%5.5;
-    const yawning=t<0.6;
-    const x=cat.x, y=cat.y+jump;
-    this.rect(x-17,y-10,34,12,0xf2dfb8);
-    this.rect(x-12,y-8,24,8,0xfff4dc);
-    this.rect(x-19,y-8,3,8,0xd5bc87);this.rect(x+16,y-8,3,8,0xd5bc87);
-    const wig=Math.sin(this.homeTime*0.005+cat.seed)*1.5;
-    for(const [px,delay] of [[-13,0],[-5,1.1],[4,2.2],[12,3.3]] as const){
-      const lift=Math.sin(this.homeTime*0.006+cat.seed+delay)>0?1.5:0;
-      this.rect(x+px,y-14-lift+wig*0.4,3,5,0xf2dfb8);
-    }
-    this.rect(x-26,y-16,13,12,0xf2dfb8);
-    this.rect(x-25,y-19,3,4,0xb77b32);this.rect(x-17,y-19,3,4,0xb77b32);
-    if(yawning){this.rect(x-24,y-12,8,6,0xb54035);this.rect(x-23,y-11,6,4,0x7a2c26);}
-    else {this.rect(x-24,y-10,3,1,0x3b3131);this.rect(x-19,y-10,3,1,0x3b3131);}
-    this.rect(x-30,y-9+Math.sin(this.homeTime*0.004+cat.seed)*2,2,9,0xd5bc87,.95);
+  private drawHomeCarry(){
+    const drag=this.homeDrag;if(!drag?.cat||!drag.moved||!this.state)return;
+    const cat=this.homeCats.find(c=>c.breed===drag.cat);if(!cat)return;
+    const view=this.homeView(),x=(drag.last.x-view.x)/view.scale,y=(drag.last.y-view.y)/view.scale,objects=homeObjects(this.state),partner=this.homeCatAt(x,y,cat.breed),object=partner?undefined:furnitureAt(objects,x,y),ctx=this.context;
+    const target=partner?{kind:'cat',id:partner.breed,label:'和'+CAT_NAMES[partner.breed]+'一起玩'}:object?{kind:'furniture',id:object.layoutKey,label:'在这里玩一会儿'}:{kind:'ground',label:'放在这里'};
+    this.canvas.dataset.homeDropTarget=JSON.stringify(target);
+    ctx.save();ctx.strokeStyle='#f9d98d';ctx.lineWidth=2/view.scale;ctx.setLineDash([5/view.scale,4/view.scale]);ctx.beginPath();ctx.ellipse(partner?.x??object?.x??x,partner?.y??object?.y??y,40,12,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+    paintResident(ctx,{...cat,x,y:y+25,pose:null,social:undefined,scriptedHeight:15,action:'sit'},this.homeTime,this.homeStage(),true);
+    ctx.font='18px sans-serif';ctx.fillStyle='#fff0c0';ctx.strokeStyle='#3c3d31';ctx.lineWidth=4;ctx.strokeText(target.label,x-45,y-60);ctx.fillText(target.label,x-45,y-60);ctx.restore();
   }
   private drawPixelHeart(x:number,y:number,scale:number,alpha:number){
     const rows=['0110110','1111111','1111111','0111110','0011100','0001000'];
@@ -1048,36 +943,20 @@ export class DemoScene {
     ctx.fillStyle='#fff1d5';ctx.strokeStyle='#806b48';ctx.lineWidth=2;ctx.fillRect(bx,by,width,height);ctx.strokeRect(bx,by,width,height);
     ctx.fillStyle='#493f31';lines.forEach((value,i)=>ctx.fillText(value,bx+10,by+21+i*18));ctx.restore();
   }
-  // 点击花房里的猫:受惊小跳 + 治愈台词气泡。
-  private pokeHomeCat(x:number,y:number):boolean{
-    // Poke throttling must not swallow a click on the next piece of furniture.
-    if(this.homeTime<this.homePokeCooldownUntil)return false;
-    for(const cat of this.homeCats){
-      if(Math.hypot(cat.x-x,(cat.y-26)-y)>34)continue;
-      cat.startledUntil=this.homeTime+650;
-      this.canvas.dataset.homeInteraction=JSON.stringify({kind:'cat',breed:cat.breed,x,y});
-      cat.bubble=DemoScene.pokeLines[cat.breed];
-      cat.bubbleUntil=this.homeTime+3400;
-      this.homePokeCooldownUntil=this.homeTime+280;
-      return true;
-    }
-    return false;
+  private pokeHomeCat(cat:HomeCatAgent,x:number,y:number){
+    const reaction=petCat(cat,this.homeTime);if(!reaction)return;
+    for(const other of this.homeCats)if(other!==cat)other.bubbleUntil=this.homeTime;
+    if(reaction.mood==='happy')this.homeHearts.push({x:cat.x,y:cat.y-60,born:this.homeTime});
+    this.canvas.dataset.homeInteraction=JSON.stringify({kind:'cat',breed:cat.breed,mood:reaction.mood,x,y});
   }
   private inviteFurnitureCat(x:number,y:number){
     if(!this.state||this.state.phase!=='home'||this.homeBeat)return;
-    const objects=homeObjects(this.state).reverse();
-    const object=objects.find(o=>{
-      if(!o.furnitureId||!isParcelFurniture(o.furnitureId))return false;
-      const frame=HOME_FRAMES[o.sprite],height=o.width*frame.height/frame.width;
-      return Math.abs(x-o.x)<o.width/2&&y>=o.y-height&&y<=o.y+8;
-    });
-    if(!object?.furnitureId||!isParcelFurniture(object.furnitureId)||!object.slot)return;
-    const meta=PARCEL_ART[object.furnitureId],cat=this.homeCats.find(c=>c.breed===meta.cat);
-    this.canvas.dataset.homeInteraction=JSON.stringify({kind:'furniture',id:object.furnitureId,breed:meta.cat,x,y});
-    if(!cat){this.onInspectHint?.('等这位伙伴加入后，就能一起来玩这件家具啦。');return;}
-    cat.furnitureArrival={from:{x:cat.x,y:cat.y},to:homePosePoint(object.slot,object.furnitureId),pose:meta.pose,started:this.homeTime};
-    cat.pose=null;cat.slot=object.slot;cat.bubble='（竖起耳朵）这就过来！';cat.bubbleUntil=this.homeTime+2300;
-    this.homePokeCooldownUntil=this.homeTime+280;
+    const objects=homeObjects(this.state),object=[...objects].reverse().find(o=>!o.front&&(o.kind!=='decor'||!!o.furnitureId)&&homeObjectOpaqueAt(o,x,y,this.homeArtwork));if(!object)return;
+    const activity=furnitureActivity(object),cat=nearbyFurnitureCat(this.homeCats,x,y,activity.cat,this.homeTime);
+    if(!cat)return;
+    if(useFurniture(cat,object,this.homeCats,objects,this.homeTime)){
+      this.canvas.dataset.homeInteraction=JSON.stringify({kind:'furniture',id:object.furnitureId??object.layoutKey,breed:cat.breed,x,y});
+    }else {cat.bubble=chooseLine(cat,'furniture:waiting',['这里有伙伴啦，我先在旁边等一会儿。','先给你玩，等会儿再轮到我。','不挤不挤，旁边也能看见大家。'],this.homeTime);cat.bubbleAt=this.homeTime;cat.bubbleUntil=this.homeTime+3000;}
   }
   private marketCameraFrame() {return this.marketFrame??measureMarketCameraFrame(this.canvas,this.viewWidth,this.viewHeight);}
   private snapMarketCamera() {this.marketCamera.snap({x:this.x,y:this.y},this.marketCameraFrame(),1672,941);}

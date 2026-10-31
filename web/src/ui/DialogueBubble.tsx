@@ -50,6 +50,11 @@ export default function DialogueBubble({speaker, breed, getAnchor, avoid = [], r
       setPlacement(prev => (prev?.mode === 'caption' ? prev : {mode: 'caption', left: 0, top: 0, tailX: 0}));
       return;
     }
+    // 渲染层安全兜底：锚点坐标未定义 / 非有限 / 落在画布逻辑范围之外（说话者不在当前地图的渲染列表）→ 同样强制降级为底部字幕条。
+    if (!(Number.isFinite(anchor.x) && Number.isFinite(anchor.y) && anchor.x >= 0 && anchor.x <= canvas.width && anchor.y >= 0 && anchor.y <= canvas.height)) {
+      setPlacement(prev => (prev?.mode === 'caption' ? prev : {mode: 'caption', left: 0, top: 0, tailX: 0}));
+      return;
+    }
     // 画布逻辑坐标 → world-wrap 内的屏幕像素（letterbox + object-fit cover/contain）。
     const wrapRect = wrap.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
