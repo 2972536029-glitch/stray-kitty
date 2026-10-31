@@ -15,7 +15,7 @@ Direct locations:
 - `?focus=alley_poster`: poster after rescue.
 - `?focus=squeeze`: approved stone passage, nearby S prompt and compressed-cat animation.
 
-Squeeze release now finishes beyond the narrow mouth, leaving clearance for lateral movement at the upper exit. Existing walls, cargo, C endpoints, floor outlines and random zones are retained. Tests cover both traversal directions and lateral release, alongside the existing interaction and zone rules.
+Squeeze release finishes beyond the narrow mouth, leaving clearance for lateral movement at the upper exit. Both S signs sit to the right of the passage, away from the blanket interaction. The wall tips start below the horizontal road; an ordinary-footprint lip prevents stepping partly into the narrow mouth and losing sideways movement. The small S footprint omits that lip. Pier-only caps leave the original road and gap paving visible. The preview uses the production exit helper. Walls outside this approach, cargo, C endpoints, floor outlines and random zones are retained. Tests cover both traversal directions, lateral release, and horizontal travel after pushing down against the entrance.
 
 Chinese lettering baked into the approved background PNG remains visible. This update changes the runtime markers, without retouching that source artwork.
 

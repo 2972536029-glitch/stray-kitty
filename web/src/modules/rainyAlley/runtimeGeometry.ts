@@ -28,7 +28,7 @@ function svgSubpaths(path: string): Point[][] {
 
 const contours = svgSubpaths(rainyAlleyMapData.geometry.walkable_path_d);
 const squeeze = svgSubpaths(rainyAlleyMapData.geometry.squeeze_connector.svg_path_d)[0];
-export const SQUEEZE_BOUNDS = {left: 478, right: 507, top: 283, bottom: 352} as const;
+export const SQUEEZE_BOUNDS = {left: 478, right: 507, top: 305, bottom: 352} as const;
 export const SQUEEZE_OPENING_WIDTH = 12;
 export const SQUEEZE_FOOTPRINT_RADIUS = 4;
 export const SQUEEZE_CENTER_X = (SQUEEZE_BOUNDS.left + SQUEEZE_BOUNDS.right) / 2;
@@ -93,7 +93,7 @@ const westRailClosure = [
 ];
 const makePolygon = (id: number, name: string, points: Point[]): WorldPolygon => ({id, name, points});
 
-function geometry(): RainyAlleyGeometry {
+function geometry(normalFootprint = true): RainyAlleyGeometry {
   const solids = [
     ...contours.slice(1).map((points, index) => makePolygon(100 + index, `svg_hole_${index + 1}`, points)),
     makePolygon(200, 'pushcart-blocker', pushcart),
@@ -103,6 +103,13 @@ function geometry(): RainyAlleyGeometry {
     makePolygon(202, 'squeeze-side-left', squeezeLeftBlocker),
     makePolygon(203, 'squeeze-side-right', squeezeRightBlocker)
   ];
+  // The ordinary footprint must stop on one flush edge, not enter the tiny
+  // rounded pocket between the piers and lose sideways movement. The S field
+  // omits this lip so the smaller squeezing footprint can traverse normally.
+  if (normalFootprint) solids.push(makePolygon(207, 'squeeze-side-upper-mouth-normal-only', [
+    {x: SQUEEZE_BOUNDS.left, y: SQUEEZE_BOUNDS.top}, {x: SQUEEZE_BOUNDS.right, y: SQUEEZE_BOUNDS.top},
+    {x: SQUEEZE_BOUNDS.right, y: SQUEEZE_BOUNDS.top + 2}, {x: SQUEEZE_BOUNDS.left, y: SQUEEZE_BOUNDS.top + 2}
+  ]));
   // The eastern wooden crates remain solid before and after rescue; C is the only crossing.
   solids.push(makePolygon(201, 'crate-gate-hitbox', gate));
   return {
@@ -120,5 +127,5 @@ export const rainyAlleyGeometryClosed = geometry();
 export const rainyAlleyGeometryOpen = geometry();
 export const rainyAlleyFieldClosed = new CollisionField(rainyAlleyGeometryClosed, 2, rainyAlleyMapData.geometry.player_test_radius_graybox_pixels);
 export const rainyAlleyFieldOpen = new CollisionField(rainyAlleyGeometryOpen, 2, rainyAlleyMapData.geometry.player_test_radius_graybox_pixels);
-export const rainyAlleySqueezeFieldClosed = new CollisionField(rainyAlleyGeometryClosed, 2, SQUEEZE_FOOTPRINT_RADIUS);
-export const rainyAlleySqueezeFieldOpen = new CollisionField(rainyAlleyGeometryOpen, 2, SQUEEZE_FOOTPRINT_RADIUS);
+export const rainyAlleySqueezeFieldClosed = new CollisionField(geometry(false), 2, SQUEEZE_FOOTPRINT_RADIUS);
+export const rainyAlleySqueezeFieldOpen = new CollisionField(geometry(false), 2, SQUEEZE_FOOTPRINT_RADIUS);

@@ -32,14 +32,10 @@ export function paintSqueezePassage(context: CanvasRenderingContext2D, backgroun
   pier(bounds.right - width, false);
   context.save();
   context.imageSmoothingEnabled = false;
-  // A continuous coping joins the two jambs into the same masonry opening.
-  // It is an overhead visual; neither the opening width nor collision changes.
-  context.drawImage(background, 553, 326, 37, 8, bounds.left - 2, bounds.top - 2, bounds.right - bounds.left + 4, 4);
-  context.fillStyle = 'rgba(3,13,23,.45)';
-  context.fillRect(bounds.left + width, bounds.top + 2, openingWidth, .8);
-  const shade = context.createLinearGradient(bounds.left + width, 0, bounds.right - width, 0);
-  shade.addColorStop(0, 'rgba(3,13,23,.28)'); shade.addColorStop(.35, 'rgba(3,13,23,0)');
-  shade.addColorStop(.65, 'rgba(3,13,23,0)'); shade.addColorStop(1, 'rgba(3,13,23,.28)');
-  context.fillStyle = shade; context.fillRect(bounds.left + width, bounds.top + 3, openingWidth, height - 3);
+  // Cap only the two piers. Leave the horizontal road and the gap's original
+  // PNG paving untouched, without a copied strip or a differently shaded floor.
+  for (const x of [bounds.left - 2, bounds.right - width]) {
+    context.drawImage(background, 553, 326, 12, 8, x, bounds.top, width + 2, 3);
+  }
   context.restore();
 }

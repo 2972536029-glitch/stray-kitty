@@ -73,6 +73,20 @@ for (const gateOpen of [false, true]) for (const direction of [-1, 1] as const) 
   });
 }
 
+test('upper squeeze street permits rightward travel even after walking down against the entrance', () => {
+  for (const field of [rainyAlleyFieldClosed, rainyAlleyFieldOpen]) {
+    const approach = {x: SQUEEZE_CENTER_X, y: 275};
+    for (const y of [275, 283, 289, 291, 295]) {
+      const crossing = sweepMove(field, {x: approach.x, y}, {x: 52, y: 0});
+      assert.equal(crossing.blockedX, false, `the visible horizontal street is open at y=${y}`);
+    }
+    const atMouth = sweepMove(field, approach, {x: 0, y: 50}).position;
+    const right = sweepMove(field, atMouth, {x: 52, y: 0});
+    assert.equal(right.blockedX, false, 'pushing down must not lodge the ordinary footprint in the squeeze mouth');
+    assert.ok(right.position.x > atMouth.x + 50);
+  }
+});
+
 test('western crate and railing block direct, diagonal and shared-edge movement while keeping the lamppost passage open', () => {
   const field = rainyAlleyFieldClosed;
   assert.ok(field.isTraversable(300, 340), 'legitimate passage near the lamppost remains walkable');

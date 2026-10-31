@@ -578,7 +578,7 @@ export class IntegratedRainyAlley {
     const point = Math.hypot(this.position.x - top.x, this.position.y - top.y) < Math.hypot(this.position.x - bottom.x, this.position.y - bottom.y) ? top : bottom;
     if (Math.hypot(this.position.x - point.x, this.position.y - point.y) > 72) return;
     context.save(); context.globalAlpha = this.squeezeDirection() ? 1 : .72;
-    context.translate(SQUEEZE_BOUNDS.left - 12, point.y);
+    context.translate(SQUEEZE_BOUNDS.right + 10, point.y);
     context.fillStyle = '#9adbd4'; context.strokeStyle = '#28494b'; context.lineWidth = 1.6;
     context.beginPath(); context.arc(0, 0, 7, 0, Math.PI * 2); context.fill(); context.stroke();
     context.fillStyle = '#183638'; context.font = '700 10px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText('S', 0, .5); context.restore();

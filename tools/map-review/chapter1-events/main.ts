@@ -32,12 +32,8 @@ function squeezeDirection():-1|0|1 {
 }
 function startSqueeze(){
   const direction=squeezeDirection();if(!direction||squeezeTarget||climb)return false;
-  const authored=squeezeExitTarget(field(),squeezeField(),direction);if(!authored)return false;
-  // Finish beyond the tight mouth so the ordinary footprint can turn again.
-  // All movement still uses the unchanged production collision fields.
-  const clearance=field().colliderRadius+6;
-  const exit=field().nearestTraversable({x:SQUEEZE_CENTER_X,y:direction>0?SQUEEZE_BOUNDS.bottom+clearance:SQUEEZE_BOUNDS.top-clearance},16);
-  squeezeTarget=exit&&squeezeField().isTraversable(exit.x,exit.y)?exit:authored;keys.clear();return true;
+  const exit=squeezeExitTarget(field(),squeezeField(),direction);if(!exit)return false;
+  squeezeTarget=exit;keys.clear();return true;
 }
 const toArt=(p:Point)=>({x:reg.tx+p.x*reg.sx,y:reg.ty+p.y*reg.sy});
 const fitScale=()=>Math.min(size.width/reg.artWidth,size.height/reg.artHeight);
@@ -103,7 +99,7 @@ function drawSqueezeMarker(){
   const top={x:SQUEEZE_CENTER_X,y:SQUEEZE_BOUNDS.top-12},bottom={x:SQUEEZE_CENTER_X,y:SQUEEZE_BOUNDS.bottom+12};
   const point=Math.hypot(cat.x-top.x,cat.y-top.y)<Math.hypot(cat.x-bottom.x,cat.y-bottom.y)?top:bottom;
   if(Math.hypot(cat.x-point.x,cat.y-point.y)>72)return;
-  c.save();c.globalAlpha=squeezeDirection()?1:.72;c.translate(SQUEEZE_BOUNDS.left-12,point.y);
+  c.save();c.globalAlpha=squeezeDirection()?1:.72;c.translate(SQUEEZE_BOUNDS.right+10,point.y);
   c.fillStyle='#9adbd4';c.strokeStyle='#28494b';c.lineWidth=1.6;c.beginPath();c.arc(0,0,7,0,Math.PI*2);c.fill();c.stroke();
   c.fillStyle='#183638';c.font='700 10px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText('S',0,.5);c.restore();
 }
