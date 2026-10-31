@@ -6,7 +6,7 @@ import {paintSqueezePassage} from './squeezePainter';
 import {
   rainyAlleyFieldClosed, rainyAlleyFieldOpen, rainyAlleyGeometryClosed, rainyAlleyGeometryOpen,
   rainyAlleySqueezeFieldClosed, rainyAlleySqueezeFieldOpen, SQUEEZE_BOUNDS, SQUEEZE_CENTER_X,
-  SQUEEZE_OPENING_WIDTH, battleReturnPositionTarget, crateClimbTarget, squeezeExitTarget
+  SQUEEZE_OPENING_WIDTH, CRATE_CLIMBS, CRATE_CLIMB_RADIUS, battleReturnPositionTarget, crateClimbTarget, squeezeExitTarget
 } from './runtimeGeometry';
 import type {Point, WorldPolygon} from './types';
 
@@ -550,6 +550,7 @@ export class IntegratedRainyAlley {
   };
 
   private drawMarkers(context: CanvasRenderingContext2D, flags: readonly string[]) {
+    this.drawClimbMarkers(context);
     const completed = (object: RainyFixedObject) =>
       (object.id === 'alley_fish_dry' && flags.includes('alley_fish_collected')) ||
       (object.id === 'alley_crate' && flags.includes('alley_rescued')) ||
@@ -636,6 +637,32 @@ export class IntegratedRainyAlley {
       context.fillStyle = '#f7f2df';
       context.textAlign = 'center'; context.textBaseline = 'middle';
       context.fillText(label, 0, chipY + chipHeight / 2 + 0.5);
+      context.restore();
+    }
+  }
+
+  private drawClimbMarkers(context: CanvasRenderingContext2D) {
+    const crossing = this.climbTarget();
+    for (const climb of CRATE_CLIMBS) {
+      if (climb.rescueRequired && !this.gateOpen) continue;
+      const point = [...climb.ends].sort((a, b) =>
+        Math.hypot(this.position.x - a.x, this.position.y - a.y) - Math.hypot(this.position.x - b.x, this.position.y - b.y))[0];
+      if (Math.hypot(this.position.x - point.x, this.position.y - point.y) > CRATE_CLIMB_RADIUS + 32) continue;
+      const active = crossing?.crateId === climb.crateId && this.climbTime <= 0;
+      context.save();
+      context.globalAlpha = active ? 1 : 0.72;
+      context.translate(point.x - 23, point.y - 17);
+      context.fillStyle = '#91d8d4'; context.strokeStyle = '#243f43'; context.lineWidth = 2;
+      context.beginPath(); context.arc(0, 0, 8, 0, Math.PI * 2); context.fill(); context.stroke();
+      context.font = '700 11px system-ui, sans-serif'; context.textAlign = 'center'; context.textBaseline = 'middle';
+      context.fillStyle = '#183539'; context.fillText('C', 0, 0.5);
+      if (active) {
+        const label = 'C · 翻过木箱';
+        context.font = '700 11px system-ui, sans-serif';
+        context.fillStyle = 'rgba(13,26,30,.8)';
+        context.fillRect(-8, -29, context.measureText(label).width + 12, 17);
+        context.fillStyle = '#f7f2df'; context.textAlign = 'left'; context.fillText(label, -2, -20);
+      }
       context.restore();
     }
   }
