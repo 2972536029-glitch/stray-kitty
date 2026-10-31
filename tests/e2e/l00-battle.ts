@@ -1,3 +1,4 @@
+import {confirmBattleResult} from './battle-result';
 import {expect, type Locator, type Page} from '@playwright/test';
 const selector = 'section[aria-label="序章塔防战斗"]';
 export type L00Run = {waves:number[];guardSkills:number;casterSkills:number};
@@ -53,6 +54,6 @@ export async function playL00ThroughHost(page:Page):Promise<L00Run>{
   if(c&&c.energy>=100&&(g?.blocked??0)>0&&await cast(page,'caster'))run.casterSkills++;
   await page.waitForTimeout(300);
  }
- expect(Date.now()).toBeLessThan(deadline);await expect(battle).toHaveCount(0);await expect(page.getByRole('button',{name:/进入雨夜小巷|带伙伴回家/})).toBeVisible();
+ expect(Date.now()).toBeLessThan(deadline);await confirmBattleResult(page,'won');await expect(battle).toHaveCount(0);await expect(page.getByRole('button',{name:/进入雨夜小巷|带伙伴回家/})).toBeVisible();
  expect(run.waves).toEqual([1,2,3,4,5,6]);expect(run.guardSkills).toBeGreaterThan(0);expect(run.casterSkills).toBeGreaterThan(0);return run;
 }

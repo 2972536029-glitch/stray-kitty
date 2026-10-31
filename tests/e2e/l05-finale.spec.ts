@@ -1,3 +1,4 @@
+import {confirmBattleResult} from './battle-result';
 import {expect, test, type Page} from '@playwright/test';
 import {playFinaleVisibleControls} from './l05-battle';
 import {spawn, type ChildProcess} from 'node:child_process';
@@ -114,7 +115,7 @@ test('L05 has no bag or item loadout, preserves pause/title and retreats to retr
   await page.getByRole('button',{name:'收起聊天'}).click();
   await page.getByRole('button',{name:'返回标题',exact:true}).click();await page.getByRole('button',{name:'继续冒险'}).click();
   await expect(page.getByTestId('finale-battle')).toHaveAttribute('data-attempt-id',entered.activeBattle!.id);
-  await page.getByTestId('finale-retreat').click();await page.getByTestId('finale-confirm-retreat').click();
+  await page.getByTestId('finale-retreat').click();await page.getByTestId('finale-confirm-retreat').click();await confirmBattleResult(page,'lost');
   await expect(page.getByRole('button',{name:'调整防线，再试一次'})).toBeVisible();
   const ended=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
   expect(ended.lastResult.outcome).toBe('lost');expect('battleRewards' in ended.lastResult).toBe(false);

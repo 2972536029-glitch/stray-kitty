@@ -1,3 +1,4 @@
+import {confirmBattleResult} from './battle-result';
 import {expect, type Page, type TestInfo} from '@playwright/test';
 
 const bossFootprint=[{x:5,y:2},{x:6,y:2},{x:5,y:3},{x:6,y:3}];
@@ -13,7 +14,7 @@ async function snapshot(page:Page){
     };
   });
 }
-function winningSettlement(page:Page){return page.locator('.app-shell[data-phase="settlement"]').getByRole('button',{name:'返回家园 →',exact:true});}
+function winningSettlement(page:Page){return page.locator('[data-testid="battle-result"][data-outcome="won"]');}
 
 /** Only rendered information and player controls: no access to engine state, energy or HP writes. */
 export async function playVisibleControls(page:Page,info:TestInfo){
@@ -67,5 +68,6 @@ export async function playVisibleControls(page:Page,info:TestInfo){
   }
   expect(Date.now()).toBeLessThan(until);
   expect(observedBlackout).toBe(true);expect(restoredNightVision).toBe(true);
+  await confirmBattleResult(page,'won');
   return {skills:[...used],observedBlackout,restoredNightVision};
 }
