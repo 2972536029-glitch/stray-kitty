@@ -1,8 +1,8 @@
 import {TunnelEventMarkers,nearbyLockedTunnelEvent,type TunnelMarkerState} from './eventMarkers';
 import {drawTunnelExitBarrier,tunnelBossAt,tunnelExitBlockerPolygon} from './battleExit';
 import {drawPixelCat} from '../../adapters/canvas/pixelCat';
-import mapData from '../../../../level_design/chapter4/data/chapter4.map.json';
-import lighting from '../../../../level_design/chapter4/data/chapter4.lighting.json';
+import mapData from '../../../../level_design/chapter4/data/chapter4.map.json' with { type: 'json' };
+import lighting from '../../../../level_design/chapter4/data/chapter4.lighting.json' with { type: 'json' };
 import l0Url from '../../../../level_design/chapter4/art/chapter4_L0_approved.png?url';
 import lm1Url from '../../../../level_design/chapter4/art/chapter4_Lminus1_tunnel_v11.png?url';
 import l0MaskUrl from '../../../../level_design/chapter4/collision/chapter4_L0_walkable.png?url';

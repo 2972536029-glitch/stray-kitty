@@ -1,5 +1,5 @@
-import geometry from '../../../../level_design/chapter5/source/v07/warehouse_geometry_v07.json';
-import manifest from '../../../../level_design/chapter5/review/warehouse_L0_asset_placement_manifest.json';
+import geometry from '../../../../level_design/chapter5/source/v07/warehouse_geometry_v07.json' with { type: 'json' };
+import manifest from '../../../../level_design/chapter5/review/warehouse_L0_asset_placement_manifest.json' with { type: 'json' };
 import groundUrl from '../../../../level_design/chapter5/art/warehouse_L0_ground.png?url';
 import l1Url from '../../../../level_design/chapter5/art/warehouse_L1_surfaces.png?url';
 import l1SideUrl from '../../../../level_design/chapter5/art/warehouse_L1_undersides.png?url';

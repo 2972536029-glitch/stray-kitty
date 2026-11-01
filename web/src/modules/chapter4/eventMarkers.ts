@@ -1,4 +1,4 @@
-import mapData from '../../../../level_design/chapter4/data/chapter4.map.json';
+import mapData from '../../../../level_design/chapter4/data/chapter4.map.json' with { type: 'json' };
 import {tunnelConnections,tunnelEventCompleted,tunnelPortalDisplay,type TunnelLayer,type TunnelPoint} from './navigation';
 import {type TunnelSurface} from './surfaces';
 import {propIds,propScale,paintTunnelProp} from './eventProps';

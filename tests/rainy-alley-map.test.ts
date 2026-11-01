@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
-import contentCatalog from '../web/content/catalog.json';
+import contentCatalog from '../web/content/catalog.json' with { type: 'json' };
 import {rainyAlleyMapData} from '../web/src/modules/rainyAlley/mapData.ts';
 import {findPath, sweepMove} from '../web/src/modules/rainyAlley/collision.ts';
 import {

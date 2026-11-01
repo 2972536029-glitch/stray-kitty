@@ -1,5 +1,5 @@
-import geometrySource from '../../../../level_design/rainy_alley/source/geometry.json';
-import objectsSource from '../../../../level_design/rainy_alley/source/level_objects.json';
+import geometrySource from '../../../../level_design/rainy_alley/source/geometry.json' with { type: 'json' };
+import objectsSource from '../../../../level_design/rainy_alley/source/level_objects.json' with { type: 'json' };
 
 export interface RainyFixedObject {
   id: string; label: string; kind: 'inspection' | 'node_event' | 'pickup_proposed' | 'story';

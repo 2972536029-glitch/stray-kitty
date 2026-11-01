@@ -1,4 +1,4 @@
-import geometry from '../../../../level_design/chapter4/data/chapter4.surfaces.json';
+import geometry from '../../../../level_design/chapter4/data/chapter4.surfaces.json' with { type: 'json' };
 import {TunnelWalkableMask} from './TunnelWalkableMask';
 import type {TunnelLayer, tunnelConnections} from './navigation';
 import {tunnelExitBlockerPolygon} from './battleExit';

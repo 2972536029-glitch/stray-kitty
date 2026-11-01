@@ -1,6 +1,6 @@
-import atlas from './atlas.json';
-import stageAtlas from './stage-atlas.json';
-import parcelAtlas from '../lottery/atlas.json';
+import atlas from './atlas.json' with { type: 'json' };
+import stageAtlas from './stage-atlas.json' with { type: 'json' };
+import parcelAtlas from '../lottery/atlas.json' with { type: 'json' };
 import {PARCEL_IDS} from '../lottery/furnitureArt';
 
 export const HOME_ART_ID = 'arched-greenhouse-staged-v3';
