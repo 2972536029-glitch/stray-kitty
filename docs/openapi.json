@@ -1151,6 +1151,11 @@
               "partial",
               "fail"
             ]
+          },
+          "advisorHint": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "可选:选项级解释(如需要特定伙伴的原因);约束同卡级"
           }
         },
         "required": [
@@ -1233,6 +1238,11 @@
             "items": {
               "$ref": "#/components/schemas/EventOption"
             }
+          },
+          "advisorHint": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "可选:给阿策(advisor)的公开解释文本;不代选、不夹带结局文案、不剧透 flag 或其他事件卡"
           }
         },
         "required": [

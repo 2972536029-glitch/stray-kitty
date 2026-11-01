@@ -1,0 +1,1 @@
+{"extends":"../../../web/tsconfig.json","compilerOptions":{"types":["../../../web/node_modules/vite/client"]},"include":["main.ts"]}

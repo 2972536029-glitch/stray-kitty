@@ -61,6 +61,11 @@ export function validateContent(c) {
     if(!has('furniture',p.furnitureId)||!Number.isSafeInteger(p.price)||p.price<1||p.currencyId!=='stamp'||!['available','disabled'].includes(p.status)||sold.has(p.furnitureId)) errors.push(`product invalid: ${p.id}`);
     sold.add(p.furnitureId);
   }
+  // advisorHint(可选,给阿策/解释层的静态说明):不代选、不夹带结局文案、不剧透 flag/其他卡。
+  // 未结算档位天然进不来(它是卡级静态文本);缺字段走既有读取方式,零迁移。
+  const hintBan=/推荐|建议选|应该选|最好选/;
+  const allEventIds=c.events.map(x=>x.id);
+  const allFlags=new Set(c.events.flatMap(e=>[...(e.requiresFlags??[]), ...e.options.flatMap(o=>['crit','success','partial','fail'].flatMap(t=>o.outcomes?.[t]?.flags??[]))]));
   for(const e of c.events) {
     if(e.options.length===0||!e.triggers?.length||e.category==='story'&&e.triggers.includes('random')||new Set(e.options.map(o=>o.id)).size!==e.options.length) errors.push(`event invalid: ${e.id}`);
     if(e.triggers.includes('random')&&(!Array.isArray(e.maps)||!e.maps.length||e.maps.some(id=>!c.maps.some(m=>m.id===id)))) errors.push(`event random zone: ${e.id}`);
@@ -79,6 +84,14 @@ export function validateContent(c) {
     // 线索保底红线:fail 档必须 clue>=1——"到场即得,档位管增量"(design/events/random-events-design.md),
     // 左尾玩家的线索门槛(clue>=3)由此获得数学保证。
     for(const o of e.options) if((o.outcomes?.fail?.reward?.clue??0)<1) errors.push(`event fail clue floor: ${e.id}/${o.id} fail 档缺线索保底 clue:1`);
+    for(const [scope,hint,max] of [['card',e.advisorHint,120], ...e.options.map(o=>['option:'+o.id,o.advisorHint,60])]) {
+      if(hint===undefined) continue;
+      if(typeof hint!=='string'||!hint.trim()||hint.includes('\n')||hint.length>max) errors.push(`event advisorHint: ${e.id}/${scope} 需为 1~${max} 字单行文本`);
+      else if(hintBan.test(hint)) errors.push(`event advisorHint: ${e.id}/${scope} 不得代选(含推荐措辞)`);
+      else if(e.options.some(o=>['crit','success','partial','fail'].some(t=>o.outcomes?.[t]?.text&&hint.includes(o.outcomes[t].text)))) errors.push(`event advisorHint: ${e.id}/${scope} 不得复制结局文案`);
+      else if([...allFlags].some(f=>hint.includes(f))) errors.push(`event advisorHint: ${e.id}/${scope} 不得剧透 flag`);
+      else if(allEventIds.some(id=>hint.includes(id))) errors.push(`event advisorHint: ${e.id}/${scope} 不得点名事件卡`);
+    }
   }
   if(errors.length) throw Error(errors.join('\n'));
 }

@@ -3,9 +3,27 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {inflateSync} from 'node:zlib';
 import {fileURLToPath} from 'node:url';
-import map from '../level_design/chapter4/data/chapter4.map.json';
+import map from '../level_design/chapter4/data/chapter4.map.json' with { type: 'json' };
 import {tunnelConnections, tunnelPortalDisplay} from '../web/src/modules/chapter4/navigation';
 import {raisedRidgeMask, tankRidgeMask, tunnelClimbSurface, tunnelGroundMask, tunnelSurfaceConnections} from '../web/src/modules/chapter4/surfaces';
+import {nearbyLockedTunnelEvent,tunnelMovementChoices,type TunnelMarkerState} from '../web/src/modules/chapter4/eventMarkers';
+import {tunnelBattleExit,tunnelBossAt} from '../web/src/modules/chapter4/battleExit';
+
+test('valve E approach stays clear of C/Space activation and keeps prerequisite feedback',()=>{
+  const valve=map.events.find(e=>e.id==='tunnel_valve_three')!;
+  for(const id of ['ridge-climb','west-ridge-east-descent','south-spillway-jump']) {
+    const portal=map.portals.find(p=>p.id===id)!;
+    const point=id==='south-spillway-jump'?portal.b:portal.a;
+    assert.ok(Math.hypot(point.x-valve.x,point.y-valve.y)>56+portal.reach,`${id} must not overlap valve E`);
+  }
+  const state:TunnelMarkerState={floor:'L0',surface:'ground',position:valve,flags:[],drawnEvents:[],nearTarget:null,connections:tunnelSurfaceConnections('L0','ground',tunnelConnections('L0',valve))};
+  assert.equal(nearbyLockedTunnelEvent(state)?.id,valve.id);
+  assert.equal(tunnelMovementChoices(state).eventFocus,true);
+  assert.equal(tunnelMovementChoices(state).labeled,undefined);
+  state.flags=['tunnel_false_kitten_trap_found'];state.nearTarget={id:valve.id,label:valve.label};
+  assert.equal(nearbyLockedTunnelEvent(state),undefined);
+  assert.equal(tunnelMovementChoices(state).eventFocus,true);
+});
 
 test('tunnel movement prompts match their usable endpoint and Chapter 2 proximity/opacity',()=>{
   const flags=['tunnel_false_kitten_trap_found'];
@@ -51,6 +69,20 @@ function decodeGrayPng(path:string) {
 }
 
 const mask=(file:string)=>decodeGrayPng(fileURLToPath(new URL(`../level_design/chapter4/collision/${file}`,import.meta.url)));
+
+test('final battle approach remains reachable while the visible exit grate blocks the deck edge',()=>{
+  const ground=mask('chapter4_L0_walkable.png'),flags=['tunnel_false_kitten_trap_found','valve_three_investigated'];
+  let cursor={x:1520,y:759};
+  assert.ok(ground.isWalkable(cursor));
+  for(let frame=0;frame<100;frame++)cursor=ground.move(cursor,{x:3,y:0}).position;
+  assert.ok(cursor.x>1570,'the approach to the grate stays open');
+  assert.ok(cursor.x<tunnelBattleExit.blocker.left-9,'the cat cannot pass the grate');
+  assert.equal(tunnelBossAt('L0','ground',cursor,flags),true,'the stopped cat remains inside the boss trigger');
+  assert.equal(tunnelBossAt('L0','ground',cursor,[]),false,'the existing prerequisite still applies');
+  assert.equal(tunnelBossAt('Lm1','ground',cursor,flags),false);
+  assert.equal(tunnelBossAt('L0','south-ridge',cursor,flags),false);
+  for(const y of [730,750,775,795])assert.equal(ground.isWalkable({x:1620,y}),false,'the whole exit deck beyond the grate is blocked');
+});
 
 test('production surfaces admit the authored spawn and all C/F/Space connector landings',()=>{
   const l0=mask('chapter4_L0_walkable.png'),lm1=mask('chapter4_Lminus1_walkable.png');
@@ -119,7 +151,7 @@ test('lower bridge admits leftward movement and tank climb stays on its separate
 
 test('both requested ledge descents have valid road landings and nearby C prompts',()=>{
   const ground=mask('chapter4_L0_walkable.png');
-  for(const id of ['tank-east-descent','west-ridge-climb']) {
+  for(const id of ['tank-east-descent','west-ridge-climb','west-ridge-east-descent']) {
     const portal=map.portals.find(p=>p.id===id)!,surface=tunnelClimbSurface(id)!;
     assert.ok(raisedRidgeMask(surface,map.world.width,map.world.height).isWalkable(portal.b),`${id} stone top`);
     assert.ok(ground.isWalkable(portal.a),`${id} road landing`);

@@ -1,6 +1,7 @@
-import geometry from '../../../../level_design/chapter4/data/chapter4.surfaces.json';
+import geometry from '../../../../level_design/chapter4/data/chapter4.surfaces.json' with { type: 'json' };
 import {TunnelWalkableMask} from './TunnelWalkableMask';
 import type {TunnelLayer, tunnelConnections} from './navigation';
+import {tunnelExitBlockerPolygon} from './battleExit';
 
 export const tunnelSurfaces = geometry;
 export type RaisedTunnelSurface = 'tank-ridge' | 'south-ridge' | 'west-ridge';
@@ -8,7 +9,7 @@ export type TunnelSurface = 'ground' | RaisedTunnelSurface;
 export const raisedSurfacePolygons = {'tank-ridge': [geometry.tankRidge], 'south-ridge': geometry.southRidge, 'west-ridge': geometry.westRidge};
 export function tunnelClimbSurface(portalId: string): RaisedTunnelSurface | undefined {
   if (portalId === 'tank-climb' || portalId === 'tank-east-descent') return 'tank-ridge';
-  if (portalId === 'west-ridge-climb') return 'west-ridge';
+  if (portalId === 'west-ridge-climb' || portalId === 'west-ridge-east-descent') return 'west-ridge';
   if (portalId === 'ridge-climb' || portalId === 'niche-climb') return 'south-ridge';
   return undefined;
 }
@@ -43,6 +44,9 @@ export function tunnelGroundMask(floor: TunnelLayer, width: number, height: numb
     for (const polygon of polygons) paint(pixels, width, height, polygon, 0);
   }
   for (const polygon of geometry[floor].walkable) paint(pixels, width, height, polygon, 255);
+  const layer = geometry[floor];
+  if ('blockedAfterWalkable' in layer) for (const polygon of layer.blockedAfterWalkable) paint(pixels, width, height, polygon, 0);
+  if (floor === 'L0') paint(pixels, width, height, tunnelExitBlockerPolygon, 0);
   return new TunnelWalkableMask(width, height, pixels, radius);
 }
 

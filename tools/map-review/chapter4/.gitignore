@@ -1,0 +1,7 @@
+source-masks.json
+current.json
+candidate.json
+proof.json
+*.png
+*.log
+.vite/

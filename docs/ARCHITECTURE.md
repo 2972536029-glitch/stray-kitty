@@ -115,6 +115,13 @@ stray-kitty/
 │  ├─ advisor-sdk/
 │  ├─ battle/
 │  └─ e2e/  浏览器流程
+├─ tools/
+│  └─ map-review/
+│     ├─ chapter1-events/
+│     ├─ chapter2/
+│     ├─ chapter2-events/
+│     ├─ chapter4/
+│     └─ chapter4-events/
 ├─ web/  浏览器前端
 │  ├─ content/  独立内容数据
 │  │  ├─ assets/  素材索引
@@ -316,6 +323,8 @@ flowchart TD
 | 第四章 Tunnel | 现有叙事与独立战斗试玩 | 地图灰盒、导航/视野提示、剧情触发、正式战斗入口与返回 |
 
 ### 4.7 文档与变更约束
+
+第二章事件物件与道路 QA 集成：`nightMarket/eventProps.ts` 将五个固定事件图标绘制到共享的 220×44 缓存画布；`eventLabels.ts` 复用圆角文字缓存与接近淡入逻辑，当前主线目标常显。`DemoScene` 与 `tools/map-review/chapter2-events/` 共用图稿和浮动名称；C/F 提示仅在原有有效距离内显示文字，随机区域不绘制标记。图标不增加图片下载或 API 请求。最新走路 QA 仅扩展第二章南侧弯道、花坛尖端道路及西北屋顶连接的描边；原始 PNG、实物货箱/摊位碰撞、C/F 端点与前置、事件内容和其他章节保持原有行为。
 
 - 本节由 `docs/LEVEL-EXPLORATION-ARCHITECTURE.md` 提供给 `scripts/architecture.mjs` 生成；**勿单独手改生成的 `ARCHITECTURE.md`**。地图制作步骤、审美/灵感材料放在 map 设计文档或个人 Notion，不进入团队架构。
 - 改目录后 `npm run architecture:build && npm run architecture:check`；改内容/事件映射跑 `npm run content:sync`、`npm run content:check`，核对双端 catalog；只运行与改动相关的移动/交互/战斗返回冒烟测试。

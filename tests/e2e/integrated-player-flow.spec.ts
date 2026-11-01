@@ -11,7 +11,7 @@ import {rainyAlleyFieldClosed, rainyAlleyFieldOpen, CRATE_CLIMBS} from '../../we
 import {rainyAlleyMapData} from '../../web/src/modules/rainyAlley/mapData';
 import {isMarketTraversable, nearestMarketPosition, sweepMarketMove, marketPortals, type MarketFloor} from '../../web/src/modules/nightMarket/map';
 import {tunnelClimbSurface, tunnelGroundMask} from '../../web/src/modules/chapter4/surfaces';
-import tunnelData from '../../level_design/chapter4/data/chapter4.map.json';
+import tunnelData from '../../level_design/chapter4/data/chapter4.map.json' with { type: 'json' };
 
 const root = process.cwd(), origin = 'http://127.0.0.1:8179';
 const catalog = JSON.parse(fs.readFileSync('server/internal/platform/catalog.json', 'utf8'));
@@ -81,7 +81,7 @@ async function open(page:Page,id:number) {
   await page.goto('/');
   await expect(page.locator('.start-play')).toBeEnabled();
   await page.evaluate(id=>localStorage.setItem('stray-kitty.session.v1',JSON.stringify({playerId:`fixture-${id}`,token:`integrated-player-flow-${id}`})),id);
-  await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+  await page.reload();await page.getByRole('button',{name:/继续冒险|开始冒险/}).click();
 }
 async function state(page:Page):Promise<GameState> {
   return page.evaluate(async()=>{const session=JSON.parse(localStorage.getItem('stray-kitty.session.v1')!);return(await fetch('/api/v1/state',{signal:AbortSignal.timeout(10000),headers:{Authorization:`Bearer ${session.token}`}})).json();});
@@ -479,7 +479,7 @@ test('G: Chapter 3 shows its required defense and Chapter 4 entry without scroll
   expect((await state(page)).activeBattle?.stageId).toBe('greenhouse_boss');await click(page,'模拟胜利（QA）');await page.getByTestId('greenhouse-continue').click();
   expect((await state(page)).flags).toContain('greenhouse_fortified');await expect(page.getByTestId('chapter3-defense-start')).toHaveCount(0);
   expect(await withinPanel('chapter4-start')).toBe(true);await page.screenshot({path:'output/player-flow/chapter4-next-step.png'});
-  await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();expect(await withinPanel('chapter4-start')).toBe(true);
+  await page.reload();await page.getByRole('button',{name:/继续冒险|开始冒险/}).click();expect(await withinPanel('chapter4-start')).toBe(true);
   await page.getByTestId('chapter4-start').click();expect((await state(page)).storyNodeId).toBe('rescue_intro_1');await dialogue(page);await checkScene(page,'tunnel',true,'主线进度 / 启程：第四章');
   await flowRow(page,'Chapter 3 visible next step → Chapter 4','finish Chapter 3 dialogue, primary defense action, QA victory, top Chapter 4 entry','greenhouse_fortified; rescue_intro_1 → actual TunnelMap');
 });

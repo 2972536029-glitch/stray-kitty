@@ -2,10 +2,13 @@ import {drawPixelCat} from '../../adapters/canvas/pixelCat';
 import {followCameraPoint} from '../../adapters/canvas/camera';
 import {rainyAlleyObjectEligible, rainyAlleyRegistration, rainyAlleySource, type RainyFixedObject} from './assets';
 import {findPath, sweepMove} from './collision';
+import {paintSqueezePassage} from './squeezePainter';
+import {paintEventProp} from './eventProps';
+import {RainyEventLabels, EVENT_PROP_SCALE} from './eventLabels';
 import {
   rainyAlleyFieldClosed, rainyAlleyFieldOpen, rainyAlleyGeometryClosed, rainyAlleyGeometryOpen,
   rainyAlleySqueezeFieldClosed, rainyAlleySqueezeFieldOpen, SQUEEZE_BOUNDS, SQUEEZE_CENTER_X,
-  SQUEEZE_OPENING_WIDTH, battleReturnPositionTarget, crateClimbTarget, squeezeExitTarget
+  SQUEEZE_OPENING_WIDTH, CRATE_CLIMBS, CRATE_CLIMB_RADIUS, battleReturnPositionTarget, crateClimbTarget, squeezeExitTarget
 } from './runtimeGeometry';
 import type {Point, WorldPolygon} from './types';
 
@@ -53,6 +56,7 @@ export class IntegratedRainyAlley {
   private zoomTarget = 1;
   private zoom = 1;
   private now = 0;
+  private readonly eventLabels = new RainyEventLabels();
   // 顶栏展开时小地图下移避让的当前/目标位移（canvas 逻辑像素，每帧向目标缓动）。
   private minimapShift = 0;
   private minimapShiftTarget = 0;
@@ -74,6 +78,7 @@ export class IntegratedRainyAlley {
         : {...spawn};
     this.camera = {x: 0, y: rainyAlleyRegistration.worldHeight - cameraSize.height / this.zoom};
     this.path = []; this.destination = null; this.nearby = null;
+    this.eventLabels.reset();
     this.zonesInside.clear();
     for (const zone of rainyAlleySource.objects.zones) if (Math.hypot(this.position.x - zone.x, this.position.y - zone.y) <= zone.r) this.zonesInside.add(zone.id);
     this.zoneChecksInFlight.clear(); this.squeezeTargetY = null; this.climbTime = 0; this.climbFrom = null; this.climbTo = null; this.climbCrateId = null;
@@ -213,7 +218,11 @@ export class IntegratedRainyAlley {
     context.translate(registration.tx, registration.ty);
     context.scale(registration.sx, registration.sy);
     this.drawSqueezeOverlay(context);
+    context.save();
+    const dog = rainyAlleySource.objects.fixed.find(object => object.id === DOG_FRIEND_ID);
+    if (dog) {context.translate(dog.x, dog.y); context.scale(EVENT_PROP_SCALE, EVENT_PROP_SCALE); context.translate(-dog.x, -dog.y);}
     this.drawDogFriend(context, flags);
+    context.restore();
     this.drawMarkers(context, flags);
     context.save();
     context.translate(this.position.x, this.position.y);
@@ -238,7 +247,7 @@ export class IntegratedRainyAlley {
 
   /** 老黄像素画调色板：k 深棕轮廓（像素画的骨架，色块全靠它收边）/ l 背部受光 / m 主面 / d 腹侧暗面 / s 垂耳与爪尖 / e 眼黑 / w 口鼻与眉间白毛。 */
   private static readonly dogPalette: Readonly<Record<string, string>> = {
-    k: '#5b4426', l: '#ecc268', m: '#d7a44a', d: '#b9893b', s: '#8a6a3c', e: '#221609', w: '#f2ead6'
+    k: '#3c3038', l: '#fff2d2', m: '#ead9b4', d: '#a47e66', s: '#74534d', e: '#211f25', w: '#fffbed'
   };
   /** 部件字符画（'.' 透明）：侧视趴卧、面朝左。鼻尖/口鼻在头左端，垂耳盖在头颈交界，尾巴单独两节摇摆。 */
   private static readonly dogHeadArt = [
@@ -308,7 +317,7 @@ export class IntegratedRainyAlley {
     stamp(IntegratedRainyAlley.dogEarArt, -11 * u, -10.5 * u - headLift);
     // 黑鼻头（口鼻最前端）+ 一点湿鼻头反光
     const noseX = -18.6 * u, noseY = -7 * u - headLift;
-    context.fillStyle = '#33261a'; context.fillRect(noseX, noseY + 0.2, u * 1.8, u * 1.5);
+    context.fillStyle = '#30252e'; context.fillRect(noseX, noseY + 0.2, u * 1.8, u * 1.5);
     context.fillStyle = 'rgba(255,255,255,.4)'; context.fillRect(noseX + 0.4, noseY + 0.5, 0.8, 0.6);
     // 眼睛：平时眯眼打盹（暖棕横条），靠近/交互时睁圆黑眼 + 白高光
     const eyeX = -18.5 * u, eyeY = -8 * u - headLift;
@@ -319,7 +328,7 @@ export class IntegratedRainyAlley {
     context.translate(5 * u, -6.6 * u - breatheLift);
     context.rotate(wag * (excited ? 0.42 : 0.2));
     context.fillStyle = palette.k!; context.fillRect(0, -2.1, 5.6, 4.2);
-    context.fillStyle = '#c9963f'; context.fillRect(0.7, -1.4, 4.2, 2.8);
+    context.fillStyle = '#e2cba1'; context.fillRect(0.7, -1.4, 4.2, 2.8);
     context.fillStyle = palette.l!; context.fillRect(0.7, -1.4, 4.2, 1);
     context.translate(5.4, 0);
     context.rotate(wag * (excited ? 0.3 : 0.12));
@@ -327,6 +336,11 @@ export class IntegratedRainyAlley {
     context.fillStyle = palette.l!; context.fillRect(0.3, -1, 3.4, 2.2);
     context.restore();
     // 欢呼时从狗头顶也冒一点小心心，提示“它很开心”
+    // Mint collar separates the cream coat from the warm alley lighting.
+    context.fillStyle = '#293f3d'; context.fillRect(-13, -9 + breatheLift, 3.5, 8);
+    context.fillStyle = '#70caba'; context.fillRect(-12.2, -8.4 + breatheLift, 2.2, 6.8);
+    context.fillStyle = '#d9f5df'; context.fillRect(-11.8, -8.4 + breatheLift, .8, 4.4);
+    context.fillStyle = '#e3e4bd'; context.fillRect(-11.7, -1.5 + breatheLift, 2, 2);
     if (this.cheering()) {
       const bob = Math.sin(this.now / 260) * 1.2;
       context.font = '700 9px system-ui, sans-serif';
@@ -365,7 +379,7 @@ export class IntegratedRainyAlley {
       context.lineTo(bubbleX + 1, bubbleY + bubbleH + 6);
       context.closePath(); context.fill();
       context.shadowBlur = 0; context.shadowOffsetY = 0;
-      context.strokeStyle = '#8a6a3c'; context.lineWidth = 1.4;
+      context.strokeStyle = '#74534d'; context.lineWidth = 1.4;
       this.roundRectPath(context, bubbleX, bubbleY, bubbleW, bubbleH, 6); context.stroke();
       context.fillStyle = '#7a4a22';
       context.textAlign = 'center'; context.textBaseline = 'middle';
@@ -541,100 +555,57 @@ export class IntegratedRainyAlley {
     };
   }
 
-  /** 交互点标签的像素小图标：让“雨水倒影”“空鱼罐头”这类名字一眼可辨。 */
-  private static readonly markerEmoji: Record<string, string> = {
-    alley_puddle_reflection: '💧', alley_empty_fish_can: '🥫', alley_fish_dry: '🐟',
-    alley_crate: '📦', alley_poster: '📄', alley_scratch_marks: '🐾',
-    alley_blanket_stack: '🧺', alley_dog_friend_point: '🐕'
-  };
-
   private drawMarkers(context: CanvasRenderingContext2D, flags: readonly string[]) {
-    const completed = (object: RainyFixedObject) =>
-      (object.id === 'alley_fish_dry' && flags.includes('alley_fish_collected')) ||
-      (object.id === 'alley_crate' && flags.includes('alley_rescued')) ||
-      (object.id === 'alley_poster' && flags.includes('lost_poster_found')) ||
-      (object.id === 'alley_blanket_stack' && ['blanket_secured', 'blanket_half', 'blanket_lost'].some(flag => flags.includes(flag)));
-    // 各类交互点的辉光色（RGB）与主体色：调查=薄荷绿放大镜，其余=彩色像素四芒星。
-    const palette = {
-      inspection: {glow: '190,232,206', core: '#d9efe2'},
-      node_event: {glow: '255,209,102', core: '#ffe9a3'},
-      pickup_proposed: {glow: '237,201,121', core: '#ffdf8e'},
-      story: {glow: '238,168,209', core: '#ffd3ec'}
-    } as const;
+    this.drawClimbMarkers(context);
+    this.drawSqueezeMarker(context);
     for (const object of rainyAlleySource.objects.fixed) {
-      const kind = palette[object.kind];
-      const dimmed = completed(object) || !rainyAlleyObjectEligible(object, flags);
-      const pulse = 0.5 + 0.5 * Math.sin(this.now / 430 + object.x * 0.031);
-      const bob = Math.sin(this.now / 520 + object.x * 0.021) * 2.6;
+      if (object.id === DOG_FRIEND_ID || (object.requiresFlag && !flags.includes(object.requiresFlag))) continue;
+      const completed = !rainyAlleyObjectEligible(object, flags);
+      context.save(); context.globalAlpha = completed ? .48 : 1;
+      paintEventProp(context, object.id, object.x, object.y, EVENT_PROP_SCALE, completed);
+      context.restore();
+      if (object.id === 'alley_crate' && !completed) {
+        context.save(); context.strokeStyle = 'rgba(225,197,123,.48)'; context.lineWidth = 1;
+        context.beginPath(); context.ellipse(object.x, object.y + 3, 19 * EVENT_PROP_SCALE, 5 * EVENT_PROP_SCALE, 0, 0, Math.PI * 2); context.stroke(); context.restore();
+      }
+    }
+    this.eventLabels.draw(context, rainyAlleySource.objects.fixed, flags, this.position, this.nearby?.id, this.now);
+  }
+
+  private drawSqueezeMarker(context: CanvasRenderingContext2D) {
+    if (this.squeezeTargetY !== null) return;
+    const top = {x: SQUEEZE_CENTER_X, y: SQUEEZE_BOUNDS.top - 12}, bottom = {x: SQUEEZE_CENTER_X, y: SQUEEZE_BOUNDS.bottom + 12};
+    const point = Math.hypot(this.position.x - top.x, this.position.y - top.y) < Math.hypot(this.position.x - bottom.x, this.position.y - bottom.y) ? top : bottom;
+    if (Math.hypot(this.position.x - point.x, this.position.y - point.y) > 72) return;
+    context.save(); context.globalAlpha = this.squeezeDirection() ? 1 : .72;
+    context.translate(SQUEEZE_BOUNDS.right + 10, point.y);
+    context.fillStyle = '#9adbd4'; context.strokeStyle = '#28494b'; context.lineWidth = 1.6;
+    context.beginPath(); context.arc(0, 0, 7, 0, Math.PI * 2); context.fill(); context.stroke();
+    context.fillStyle = '#183638'; context.font = '700 10px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText('S', 0, .5); context.restore();
+  }
+
+  private drawClimbMarkers(context: CanvasRenderingContext2D) {
+    const crossing = this.climbTarget();
+    for (const climb of CRATE_CLIMBS) {
+      if (climb.rescueRequired && !this.gateOpen) continue;
+      const point = [...climb.ends].sort((a, b) =>
+        Math.hypot(this.position.x - a.x, this.position.y - a.y) - Math.hypot(this.position.x - b.x, this.position.y - b.y))[0];
+      if (Math.hypot(this.position.x - point.x, this.position.y - point.y) > CRATE_CLIMB_RADIUS + 32) continue;
+      const active = crossing?.crateId === climb.crateId && this.climbTime <= 0;
       context.save();
-      context.globalAlpha = dimmed ? 0.42 : 1;
-      context.translate(object.x, object.y + bob * 0.4);
-
-      // 主线目标物：呼吸大光晕，指明“下一步在这里”。
-      const isObjective = (object.id === 'alley_crate' && !flags.includes('alley_rescued')) ||
-        (object.id === 'alley_poster' && flags.includes('alley_rescued') && !flags.includes('lost_poster_found'));
-      if (isObjective) {
-        // 目标物光晕：更亮更大的呼吸光 + 一圈金色描边，深色地面/雨幕里也一眼可辨。
-        const halo = context.createRadialGradient(0, 0, 4, 0, 0, 26 + pulse * 9);
-        halo.addColorStop(0, `rgba(255,236,178,${0.5 + pulse * 0.28})`);
-        halo.addColorStop(1, 'rgba(248,234,192,0)');
-        context.fillStyle = halo;
-        context.beginPath(); context.arc(0, 0, 33 + pulse * 9, 0, Math.PI * 2); context.fill();
-        context.strokeStyle = `rgba(255,222,130,${0.45 + pulse * 0.3})`;
-        context.lineWidth = 2.2;
-        context.beginPath(); context.arc(0, 0, 25 + pulse * 4, 0, Math.PI * 2); context.stroke();
+      context.globalAlpha = active ? 1 : 0.72;
+      context.translate(point.x - 23, point.y - 17);
+      context.fillStyle = '#91d8d4'; context.strokeStyle = '#243f43'; context.lineWidth = 2;
+      context.beginPath(); context.arc(0, 0, 8, 0, Math.PI * 2); context.fill(); context.stroke();
+      context.font = '700 11px system-ui, sans-serif'; context.textAlign = 'center'; context.textBaseline = 'middle';
+      context.fillStyle = '#183539'; context.fillText('C', 0, 0.5);
+      if (active) {
+        const label = 'C · 翻过木箱';
+        context.font = '700 11px system-ui, sans-serif';
+        context.fillStyle = 'rgba(13,26,30,.8)';
+        context.fillRect(-8, -29, context.measureText(label).width + 12, 17);
+        context.fillStyle = '#f7f2df'; context.textAlign = 'left'; context.fillText(label, -2, -20);
       }
-
-      // 图标本体的背光，让标记在深浅地面上都醒目。
-      const glow = context.createRadialGradient(0, 0, 1, 0, 0, 14 + pulse * 5);
-      glow.addColorStop(0, `rgba(${kind.glow},${(dimmed ? 0.14 : 0.3) + pulse * 0.16})`);
-      glow.addColorStop(1, `rgba(${kind.glow},0)`);
-      context.fillStyle = glow;
-      context.beginPath(); context.arc(0, 0, 19 + pulse * 5, 0, Math.PI * 2); context.fill();
-
-      if (object.kind === 'inspection') {
-        // 可调查线索 = 微呼吸的发光放大镜。
-        const breathe = 5.9 + pulse * 0.9;
-        context.fillStyle = `rgba(${kind.glow},0.32)`;
-        context.beginPath(); context.arc(-1.5, -1.5, breathe, 0, Math.PI * 2); context.fill();
-        context.strokeStyle = kind.core; context.lineWidth = 2.3;
-        context.beginPath(); context.arc(-1.5, -1.5, breathe, 0, Math.PI * 2); context.stroke();
-        context.lineWidth = 2.6;
-        context.beginPath(); context.moveTo(3, 3); context.lineTo(7.6, 7.6); context.stroke();
-        context.strokeStyle = 'rgba(255,255,255,.85)'; context.lineWidth = 1.3;
-        context.beginPath(); context.arc(-3.3, -3.3, breathe * 0.46, Math.PI * 0.95, Math.PI * 1.45); context.stroke();
-      } else if (object.id !== DOG_FRIEND_ID) {
-        // 事件/拾取/剧情 = 闪烁的像素四芒星（纯方块拼出，保持像素气质）。
-        // 老黄例外：它有像素实体狗与呼吸/摇尾动画，四芒星叠在狗身上会杂乱，只留淡光晕示意可交互。
-        const arm = 5.5 + pulse * 4.5;
-        context.shadowColor = 'rgba(14,30,34,.85)'; context.shadowBlur = 3;
-        context.fillStyle = kind.core;
-        const px = (x: number, y: number, w: number, h: number) => context.fillRect(x, y, w, h);
-        px(-1.5, -1.5, 3, 3);
-        px(-1.5, -arm, 3, arm - 1.5);
-        px(-1.5, 2.5, 3, arm - 2.5);
-        px(-arm, -1.5, arm - 1.5, 3);
-        px(2.5, -1.5, arm - 2.5, 3);
-        context.shadowBlur = 0;
-        context.fillStyle = '#ffffff';
-        px(-0.5, -0.5, 1, 1);
-      }
-
-      // 标签：半透明深色圆角胶囊 + emoji 图标，悬浮在交互点上方轻轻浮动。
-      const label = `${IntegratedRainyAlley.markerEmoji[object.id] ?? '✦'} ${object.label}`;
-      context.font = '700 12.5px system-ui, sans-serif';
-      const chipWidth = context.measureText(label).width + 18, chipHeight = 19;
-      const chipX = -chipWidth / 2, chipY = -14 - chipHeight - 3 + bob;
-      context.fillStyle = isObjective ? 'rgba(24,38,30,.92)' : 'rgba(13,26,30,.8)';
-      this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 6);
-      context.fill();
-      context.strokeStyle = isObjective ? 'rgba(255,222,130,.95)' : `rgba(${kind.glow},.5)`; // 目标物标签压金边，其余与辉光同色系
-      context.lineWidth = 1.4;
-      this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 6);
-      context.stroke();
-      context.fillStyle = '#f7f2df';
-      context.textAlign = 'center'; context.textBaseline = 'middle';
-      context.fillText(label, 0, chipY + chipHeight / 2 + 0.5);
       context.restore();
     }
   }
@@ -650,68 +621,9 @@ export class IntegratedRainyAlley {
     context.closePath();
   }
 
-  /** 窄缝两侧的“隐形墙”：用堆叠纸箱（左）与灌木丛（右）做出真实阻挡感。覆盖区域与碰撞多边形严格一致。 */
+  /** Use the surrounding PNG's facade textures; collision and squeeze endpoints stay authored. */
   private drawSqueezeOverlay(context: CanvasRenderingContext2D) {
-    const sideWidth = (SQUEEZE_BOUNDS.right - SQUEEZE_BOUNDS.left - SQUEEZE_OPENING_WIDTH) / 2;
-    const top = SQUEEZE_BOUNDS.top, bottom = SQUEEZE_BOUNDS.bottom;
-    this.drawCrateWall(context, SQUEEZE_BOUNDS.left, top, sideWidth, bottom - top);
-    this.drawBushWall(context, SQUEEZE_BOUNDS.right - sideWidth, top, sideWidth, bottom - top);
-  }
-
-  /** 左侧阻挡：向上堆叠的废弃纸箱，箱身有胶带与明暗面。 */
-  private drawCrateWall(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
-    context.save();
-    // 视觉比碰撞条略宽（向外扩 2px），更敦实；朝窄缝一侧严格对齐，不侵占通过间隙。
-    context.beginPath(); context.rect(x - 2, y - 1, width + 2, height + 2); context.clip();
-    const boxHeight = 17.5;
-    const count = Math.ceil(height / boxHeight);
-    for (let index = 0; index < count; index++) {
-      const boxY = y + index * boxHeight;
-      const inset = (index % 2) * 1.2; // 交错半格，像随手码起来的
-      const boxX = x - 1.5 + inset, boxW = width + 1.5 - inset * 2;
-      // 箱体三段明暗：受光面 / 主面 / 背光面
-      context.fillStyle = '#c2a179'; context.fillRect(boxX, boxY, 2.6, boxHeight - 1);
-      context.fillStyle = '#a5825a'; context.fillRect(boxX + 2.6, boxY, boxW - 5.2, boxHeight - 1);
-      context.fillStyle = '#7f694e'; context.fillRect(boxX + boxW - 2.6, boxY, 2.6, boxHeight - 1);
-      // 顶部翻盖棱线 + 中央胶带
-      context.fillStyle = '#d4b48c'; context.fillRect(boxX, boxY, boxW, 1.6);
-      context.fillStyle = '#8a6a48'; context.fillRect(boxX + boxW / 2 - 1, boxY, 2, boxHeight - 1);
-      // 箱间接缝阴影
-      if (index > 0) {context.fillStyle = 'rgba(20,16,10,.4)'; context.fillRect(boxX, boxY, boxW, 1.4);}
-    }
-    // 落地投影
-    context.fillStyle = 'rgba(10,18,20,.35)';
-    context.fillRect(x - 3, y + height - 2, width + 4, 4);
-    context.restore();
-  }
-
-  /** 右侧阻挡：一丛茂密灌木，叶片分层 + 点缀小红果。 */
-  private drawBushWall(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
-    context.save();
-    context.beginPath(); context.rect(x, y - 1, width + 2, height + 2); context.clip();
-    const centerX = x + width / 2;
-    const blobs = Math.ceil(height / 13);
-    for (let index = 0; index < blobs; index++) {
-      const blobY = y + 7 + index * 13;
-      const sway = Math.sin(index * 2.1) * 1.6;
-      const radius = 6.4 + (index % 2) * 1.3;
-      context.fillStyle = '#2f5a3c';
-      context.beginPath(); context.arc(centerX + sway, blobY + 1.4, radius, 0, Math.PI * 2); context.fill();
-      context.fillStyle = '#3f7048';
-      context.beginPath(); context.arc(centerX + sway, blobY, radius - 0.8, 0, Math.PI * 2); context.fill();
-      context.fillStyle = '#5b9a5f';
-      context.beginPath(); context.arc(centerX + sway - radius * 0.28, blobY - radius * 0.34, radius * 0.5, 0, Math.PI * 2); context.fill();
-      if (index % 3 === 1) {
-        context.fillStyle = '#d9534f';
-        context.beginPath(); context.arc(centerX + sway + radius * 0.4, blobY + 1, 1.1, 0, Math.PI * 2); context.fill();
-      }
-    }
-    // 顶部受光与底部投影
-    context.fillStyle = 'rgba(120,190,125,.5)';
-    context.fillRect(x, y - 1, width, 1.6);
-    context.fillStyle = 'rgba(10,18,20,.35)';
-    context.fillRect(x - 1, y + height - 2, width + 3, 4);
-    context.restore();
+    paintSqueezePassage(context, this.background, SQUEEZE_BOUNDS, SQUEEZE_OPENING_WIDTH);
   }
 
   /** 右上角像素风小地图：整图概览 + 交互点 + 当前取景框 + 闪烁的玩家位置。画在屏幕坐标，不随世界镜头移动。 */

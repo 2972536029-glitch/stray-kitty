@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>第一章 · 事件物件预览</title><link rel="stylesheet" href="./style.css"></head><body>
+<aside><span class="tag">第一章 · 独立预览</span><h1>把标记变成物件</h1><p>在真实雨巷上检查已确认的事件物件。老黄保留原有动画，采用更醒目的奶油色与薄荷项圈。</p>
+<div class="modes"><button id="candidate" class="selected">物件预览</button><button id="baseline">游戏绘制</button></div>
+<label><input type="checkbox" id="names">对照：始终显示全部名称</label><label><input type="checkbox" id="rescued">救援完成 · 查看寻猫启事</label>
+<section><h2>逐个查看</h2><div id="locations"></div></section>
+<section><h2>图稿对照</h2><div id="gallery"></div></section>
+<div class="modes"><button id="backAway">退远查看淡出</button><button id="fit">查看全图</button></div><p class="hint">方向键 / WASD 走动，E 查看提示；滚轮缩放，右键拖动。按住 Tab 只看底图。图标一直可见，名称靠近浮现、离开淡出；当前主线目标名称保持可见。点位置按钮可回到物件旁。</p>
+<output id="status">地图加载中…</output><p class="hint">独立预览不连接游戏 API、不读写存档；随机事件区不画标记。图稿已接入本分支游戏。</p>
+</aside><main><header><strong>第一章 · 地图内事件物件</strong><span>先看风格、大小与落地位置</span></header><div id="stage"><canvas id="map" tabindex="0" aria-label="第一章事件物件试走预览"></canvas><div class="badge" id="badge">新物件 · 靠近浮现名称 · 主线常显</div><div id="movementHint" hidden></div><div id="feedback" role="status"></div></div><footer>方向键 / WASD 移动 · S 挤过窄缝 · C 翻过木箱 · E 查看提示</footer></main><script type="module" src="./main.ts"></script></body></html>
