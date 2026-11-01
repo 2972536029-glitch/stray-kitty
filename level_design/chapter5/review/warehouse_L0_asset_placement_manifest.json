@@ -3802,65 +3802,65 @@
         "w": 64,
         "h": 39
       },
-      "sourceSprite": "art/source/sprites/rubble02.png",
+      "sourceSprite": "art/source/sprites/crate_cage.png",
       "sourceNaturalSize": [
-        78,
-        49
+        95,
+        85
       ],
-      "sourceAspect": 1.5918367346938775,
+      "sourceAspect": 1.1176470588235294,
       "rotationDegrees": 0,
-      "uniformScale": 0.7551020408163265,
-      "scaleX": 0.7551020408163265,
-      "scaleY": 0.7551020408163265,
+      "uniformScale": 0.6526315789473685,
+      "scaleX": 0.6526315789473685,
+      "scaleY": 0.6526315789473685,
       "drawRect": {
-        "x": 1057.5510204081634,
-        "y": 549.0,
-        "w": 58.897959183673464,
-        "h": 37.0
+        "x": 1056,
+        "y": 531.5263157894736,
+        "w": 62.0,
+        "h": 55.473684210526315
       },
       "anchor": {
         "kind": "bottom-center",
         "world": [
           1087.0,
-          586
+          587
         ]
       },
       "transformAfterRotation": [
-        0.7551020408163265,
+        0.6526315789473685,
         0,
         0,
-        0.7551020408163265,
-        1057.5510204081634,
-        549.0
+        0.6526315789473685,
+        1056,
+        531.5263157894736
       ],
       "rasterAlphaBounds": [
-        1058,
-        549,
-        1116,
-        586
+        1056,
+        531,
+        1118,
+        587
       ],
-      "rationale": "Low broken-brick group fits the transverse obstruction.",
+      "rationale": "Approved low crate replacement: blocked objects use the existing crate art, while loose ground stones remain traversable scenery. Collision footprint and walking clearance are unchanged.",
       "zOrder": 587,
       "components": [
         {
-          "sourceSprite": "art/source/sprites/rubble02.png",
+          "sourceSprite": "art/source/sprites/crate_cage.png",
           "sourceNaturalSize": [
-            78,
-            49
+            95,
+            85
           ],
           "rotatedNaturalSize": [
-            78,
-            49
+            95,
+            85
           ],
           "rotationDegrees": 0,
-          "uniformScale": 0.7551020408163265,
-          "scaleX": 0.7551020408163265,
-          "scaleY": 0.7551020408163265,
+          "uniformScale": 0.6526315789473685,
+          "scaleX": 0.6526315789473685,
+          "scaleY": 0.6526315789473685,
           "drawRect": {
-            "x": 1057.5510204081634,
-            "y": 549.0,
-            "w": 58.897959183673464,
-            "h": 37.0
+            "x": 1056,
+            "y": 531.5263157894736,
+            "w": 62.0,
+            "h": 55.473684210526315
           }
         }
       ],
@@ -3868,11 +3868,11 @@
       "theme": "single-obstacle",
       "visualEnvelope": {
         "x": 1055,
-        "y": 548,
+        "y": 531.5263157894736,
         "w": 64,
-        "h": 39
+        "h": 55.47368421052636
       },
-      "upwardVisualOverhang": 0,
+      "upwardVisualOverhang": 16.473684210526358,
       "v02Audit": {
         "source": "rubble04",
         "scaleX": 0.4921,
@@ -4286,65 +4286,65 @@
         "w": 47,
         "h": 36
       },
-      "sourceSprite": "art/source/sprites/rubble02.png",
+      "sourceSprite": "art/source/sprites/crate_one.png",
       "sourceNaturalSize": [
-        78,
-        49
+        63,
+        68
       ],
-      "sourceAspect": 1.5918367346938775,
+      "sourceAspect": 0.9264705882352942,
       "rotationDegrees": 0,
-      "uniformScale": 0.5769230769230769,
-      "scaleX": 0.5769230769230769,
-      "scaleY": 0.5769230769230769,
+      "uniformScale": 0.7142857142857143,
+      "scaleX": 0.7142857142857143,
+      "scaleY": 0.7142857142857143,
       "drawRect": {
-        "x": 764.0,
-        "y": 756.7307692307693,
-        "w": 44.99999999999999,
-        "h": 28.269230769230766
+        "x": 764,
+        "y": 737.4285714285714,
+        "w": 45.0,
+        "h": 48.57142857142857
       },
       "anchor": {
         "kind": "bottom-center",
         "world": [
           786.5,
-          785
+          786
         ]
       },
       "transformAfterRotation": [
-        0.5769230769230769,
+        0.7142857142857143,
         0,
         0,
-        0.5769230769230769,
-        764.0,
-        756.7307692307693
+        0.7142857142857143,
+        764,
+        737.4285714285714
       ],
       "rasterAlphaBounds": [
         764,
-        757,
+        737,
         809,
-        785
+        786
       ],
-      "rationale": "Small native rubble group, not an invented obstacle.",
+      "rationale": "Approved low crate replacement: blocked objects use the existing crate art, while loose ground stones remain traversable scenery. Collision footprint and walking clearance are unchanged.",
       "zOrder": 786,
       "components": [
         {
-          "sourceSprite": "art/source/sprites/rubble02.png",
+          "sourceSprite": "art/source/sprites/crate_one.png",
           "sourceNaturalSize": [
-            78,
-            49
+            63,
+            68
           ],
           "rotatedNaturalSize": [
-            78,
-            49
+            63,
+            68
           ],
           "rotationDegrees": 0,
-          "uniformScale": 0.5769230769230769,
-          "scaleX": 0.5769230769230769,
-          "scaleY": 0.5769230769230769,
+          "uniformScale": 0.7142857142857143,
+          "scaleX": 0.7142857142857143,
+          "scaleY": 0.7142857142857143,
           "drawRect": {
-            "x": 764.0,
-            "y": 756.7307692307693,
-            "w": 44.99999999999999,
-            "h": 28.269230769230766
+            "x": 764,
+            "y": 737.4285714285714,
+            "w": 45.0,
+            "h": 48.57142857142857
           }
         }
       ],
@@ -4352,11 +4352,11 @@
       "theme": "single-obstacle",
       "visualEnvelope": {
         "x": 763,
-        "y": 750,
+        "y": 737.4285714285714,
         "w": 47,
-        "h": 36
+        "h": 48.571428571428555
       },
-      "upwardVisualOverhang": 0,
+      "upwardVisualOverhang": 12.571428571428555,
       "v02Audit": {
         "source": "rubble02",
         "scaleX": 0.5769,

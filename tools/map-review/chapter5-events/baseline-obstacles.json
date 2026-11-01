@@ -1,0 +1,178 @@
+[
+  {
+    "solidId": "east_transverse_rubble",
+    "style": "crate",
+    "collisionRect": {
+      "x": 1055,
+      "y": 548,
+      "w": 64,
+      "h": 39
+    },
+    "sourceSprite": "art/source/sprites/rubble02.png",
+    "sourceNaturalSize": [
+      78,
+      49
+    ],
+    "sourceAspect": 1.5918367346938775,
+    "rotationDegrees": 0,
+    "uniformScale": 0.7551020408163265,
+    "scaleX": 0.7551020408163265,
+    "scaleY": 0.7551020408163265,
+    "drawRect": {
+      "x": 1057.5510204081634,
+      "y": 549.0,
+      "w": 58.897959183673464,
+      "h": 37.0
+    },
+    "anchor": {
+      "kind": "bottom-center",
+      "world": [
+        1087.0,
+        586
+      ]
+    },
+    "transformAfterRotation": [
+      0.7551020408163265,
+      0,
+      0,
+      0.7551020408163265,
+      1057.5510204081634,
+      549.0
+    ],
+    "rasterAlphaBounds": [
+      1058,
+      549,
+      1116,
+      586
+    ],
+    "rationale": "Low broken-brick group fits the transverse obstruction.",
+    "zOrder": 587,
+    "components": [
+      {
+        "sourceSprite": "art/source/sprites/rubble02.png",
+        "sourceNaturalSize": [
+          78,
+          49
+        ],
+        "rotatedNaturalSize": [
+          78,
+          49
+        ],
+        "rotationDegrees": 0,
+        "uniformScale": 0.7551020408163265,
+        "scaleX": 0.7551020408163265,
+        "scaleY": 0.7551020408163265,
+        "drawRect": {
+          "x": 1057.5510204081634,
+          "y": 549.0,
+          "w": 58.897959183673464,
+          "h": 37.0
+        }
+      }
+    ],
+    "clustered": false,
+    "theme": "single-obstacle",
+    "visualEnvelope": {
+      "x": 1055,
+      "y": 548,
+      "w": 64,
+      "h": 39
+    },
+    "upwardVisualOverhang": 0,
+    "v02Audit": {
+      "source": "rubble04",
+      "scaleX": 0.4921,
+      "scaleY": 0.4353,
+      "distortionFactor": 1.1304847231794164
+    },
+    "reviewOutlier": false
+  },
+  {
+    "solidId": "south_central_scrap",
+    "style": "crate",
+    "collisionRect": {
+      "x": 763,
+      "y": 750,
+      "w": 47,
+      "h": 36
+    },
+    "sourceSprite": "art/source/sprites/rubble02.png",
+    "sourceNaturalSize": [
+      78,
+      49
+    ],
+    "sourceAspect": 1.5918367346938775,
+    "rotationDegrees": 0,
+    "uniformScale": 0.5769230769230769,
+    "scaleX": 0.5769230769230769,
+    "scaleY": 0.5769230769230769,
+    "drawRect": {
+      "x": 764.0,
+      "y": 756.7307692307693,
+      "w": 44.99999999999999,
+      "h": 28.269230769230766
+    },
+    "anchor": {
+      "kind": "bottom-center",
+      "world": [
+        786.5,
+        785
+      ]
+    },
+    "transformAfterRotation": [
+      0.5769230769230769,
+      0,
+      0,
+      0.5769230769230769,
+      764.0,
+      756.7307692307693
+    ],
+    "rasterAlphaBounds": [
+      764,
+      757,
+      809,
+      785
+    ],
+    "rationale": "Small native rubble group, not an invented obstacle.",
+    "zOrder": 786,
+    "components": [
+      {
+        "sourceSprite": "art/source/sprites/rubble02.png",
+        "sourceNaturalSize": [
+          78,
+          49
+        ],
+        "rotatedNaturalSize": [
+          78,
+          49
+        ],
+        "rotationDegrees": 0,
+        "uniformScale": 0.5769230769230769,
+        "scaleX": 0.5769230769230769,
+        "scaleY": 0.5769230769230769,
+        "drawRect": {
+          "x": 764.0,
+          "y": 756.7307692307693,
+          "w": 44.99999999999999,
+          "h": 28.269230769230766
+        }
+      }
+    ],
+    "clustered": false,
+    "theme": "single-obstacle",
+    "visualEnvelope": {
+      "x": 763,
+      "y": 750,
+      "w": 47,
+      "h": 36
+    },
+    "upwardVisualOverhang": 0,
+    "v02Audit": {
+      "source": "rubble02",
+      "scaleX": 0.5769,
+      "scaleY": 0.6939,
+      "distortionFactor": 1.202808112324493
+    },
+    "reviewOutlier": false
+  }
+]
