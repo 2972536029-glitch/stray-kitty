@@ -1,3 +1,4 @@
+import {onTracedMarketSurface} from './tracedSurface';
 import source from '../../../../specs/night-market/night_market_v016_spatial_reference.json';
 
 export type MarketFloor = 'L0' | 'L1' | 'Lm1';
@@ -120,23 +121,11 @@ function solidDistance(pts:number[][],x:number,y:number) {
 export function isMarketTraversable(floor:MarketFloor,x:number,y:number,cleared=false,radius=MARKET_CAT_RADIUS) {
   return marketMovementBlockReason(floor,x,y,cleared,radius)===null;
 }
-function isMarketStreetPoint(floor:MarketFloor,x:number,y:number) {
-  if(nightMarketSpatial.walkableSurfaces.some(surface=>surface.layer===floor&&insidePolygon(surface.points,x,y)))return true;
-  // Pavement polygons are primary. The spatial reference routes only fill the
-  // gaps in those authored areas as generous surface envelopes; they no longer
-  // act as narrow secondary boundaries that the cat footprint must fit inside.
-  // L1/L−1 have no surveyed pavement outlines, so use broader floor-specific
-  // envelopes there, with overlapping bends and landing areas.
-  const surfaceExpansion=floor==='L0'?1.65:floor==='L1'?1.55:1.65;
-  return nightMarketSpatial.R[floor].some(([width,points])=>points.slice(1).some((point,index)=>distanceToSegment(x,y,points[index],point)<=width*surfaceExpansion/2));
-}
 function isMarketFootprintOnStreet(floor:MarketFloor,x:number,y:number,radius:number) {
-  // Pavement is a ground region, not a wall around the cat's entire sprite.
-  // Keep the center anchor on the connected street surface and apply the cat
-  // radius to actual solid obstacles below; eroding every surface edge by the
-  // full radius caused false walls on painted corners and intersections.
+  // The registered mask already reserves the reviewed footprint at each curb.
+  // Authored buildings, cargo and the battle gate retain their own checks.
   void radius;
-  return isMarketStreetPoint(floor,x,y);
+  return onTracedMarketSurface(floor,x,y);
 }
 export function marketNearestBoundary(floor:MarketFloor,x:number,y:number) {
   let best={id:'map boundary',distance:Infinity};
@@ -178,7 +167,8 @@ export function sweepMarketMove(floor:MarketFloor,position:{x:number;y:number},d
   // footprint and obstacle tests as normal movement.
   if(!isMarketTraversable(floor,next.x,next.y,cleared)){
     const origin={...next};let recovered:{x:number;y:number}|null=null;
-    for(let radius=2;radius<=MARKET_CAT_RADIUS*2&&!recovered;radius+=2){
+    const recoveryLimit=marketMovementBlockReason(floor,origin.x,origin.y,cleared)?.startsWith('outside connected walkable surface')?48:MARKET_CAT_RADIUS*2;
+    for(let radius=2;radius<=recoveryLimit&&!recovered;radius+=2){
       for(let angle=0;angle<Math.PI*2;angle+=Math.PI/24){
         const candidate={x:origin.x+Math.cos(angle)*radius,y:origin.y+Math.sin(angle)*radius};
         if(isMarketTraversable(floor,candidate.x,candidate.y,cleared)){recovered=candidate;break;}
