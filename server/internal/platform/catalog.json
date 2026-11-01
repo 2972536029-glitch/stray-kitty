@@ -970,7 +970,7 @@
         {
           "id": "trade_fish",
           "label": "拿出一小份鱼干换取黑影弱点",
-          "advisorHint": "献上鱼干换取黑影的情报;无论结果如何至少能带回一条线索,顺利时还会听到墨墨的行踪。",
+          "advisorHint": "献上一小份鱼干,向老乌鸦打听黑影;能问到多少,要等这次接触的结局。",
           "outcomes": {
             "crit": {
               "text": "老乌鸦被上等干粮征服了：“看在美食的份上——黑影最怕聚光！另外，黑猫墨墨最近在老仓库周围打探！”",
@@ -2124,7 +2124,7 @@
       "triggers": [
         "random"
       ],
-      "advisorHint": "麻袋里可能是受困的伙伴,也可能是诱饵;不同选项对应不同风险,队伍里有墨墨时还多一条无声的侦查路。",
+      "advisorHint": "麻袋里可能是受困的伙伴,也可能是诱饵;不同的查探方式各有不确定性,具体情况要等行动后确认。",
       "maps": [
         "alley"
       ],
@@ -2243,7 +2243,7 @@
         {
           "id": "momo_scout",
           "label": "让墨墨贴着暗处摸过去",
-          "advisorHint": "需要墨墨:无声侦查,不惊动暗处也不惊动麻袋里的东西,看清再定。",
+          "advisorHint": "需要墨墨:让墨墨试着借暗处接近麻袋,把眼前情况看清楚;侦查也有失手的可能。",
           "requireCat": "momo",
           "outcomes": {
             "crit": {
@@ -3588,7 +3588,7 @@
         {
           "id": "momo_still_listen",
           "label": "让墨墨闭上眼,只用耳朵",
-          "advisorHint": "需要墨墨:回声在他耳朵里能拆成水声、风声和应答,队里只有他读得懂。",
+          "advisorHint": "需要墨墨:让他试着把回声拆成水声、风声和别的动静,听出管道深处的更多线索。",
           "requireCat": "momo",
           "outcomes": {
             "crit": {
@@ -3835,7 +3835,7 @@
         {
           "id": "momo_scout_ford",
           "label": "请墨墨先行探一遍水位",
-          "advisorHint": "需要墨墨:他能先探明水深与黑影动向,全队跟着他的脚印渡渠。",
+          "advisorHint": "需要墨墨:让他先蹚一趟试水深、探黑影,给全队多一分渡渠的把握。",
           "requireCat": "momo",
           "outcomes": {
             "crit": {
@@ -4093,7 +4093,7 @@
         {
           "id": "momo_tell_true_false",
           "label": "让墨墨竖起耳朵验一下声",
-          "advisorHint": "需要墨墨:真假猫叫只有他的耳朵分得出来,这是解谜的钥匙。",
+          "advisorHint": "需要墨墨:让墨墨凭听觉试着分辨真假,和回叫试探是两条不同的查探路子。",
           "requireCat": "momo",
           "outcomes": {
             "crit": {
@@ -5673,7 +5673,7 @@
       "triggers": [
         "random"
       ],
-      "advisorHint": "两段前情都齐了才会遇到:救过麻袋里的小猫,还和墙头建立了交情。这一幕是整条小猫线的收尾回访。",
+      "advisorHint": "你们和这只小猫已经是老相识了——之前救过它,后来又在墙头交上了朋友。这次它主动来找你们。",
       "requiresFlags": [
         "sack_cat_freed",
         "wall_kitten_friend"
@@ -5799,7 +5799,7 @@
       "triggers": [
         "random"
       ],
-      "advisorHint": "需要两段前情:救过巷尾的老黄,且和墙头小猫交好。两条故事线在此合流,老黄正式成为你们的盟友。",
+      "advisorHint": "你们又见到了曾经救过的老黄,它正把巷尾当成自己的巡逻岗位——这份交情是之前救它时攒下的;这次见面能有什么进展,要等相处过才知道。",
       "requiresFlags": [
         "dog_ally_met",
         "wall_kitten_friend"
@@ -6050,7 +6050,7 @@
       "triggers": [
         "random"
       ],
-      "advisorHint": "链的终幕:停战、借道两段前情齐备后,鼠王才会把最重要的事托付给你们。信任是整条链攒出来的。",
+      "advisorHint": "和鼠群的停战、借道都兑现之后,鼠王才会来找你们。它要托付的事,分量由之前攒下的信任撑着。",
       "requiresFlags": [
         "rats_truce",
         "rat_road_used"
