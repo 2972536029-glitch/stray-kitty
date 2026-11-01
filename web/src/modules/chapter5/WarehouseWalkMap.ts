@@ -1,3 +1,4 @@
+import {WarehouseEventMarkers} from './eventMarkers';
 import geometry from '../../../../level_design/chapter5/source/v07/warehouse_geometry_v07.json' with { type: 'json' };
 import manifest from '../../../../level_design/chapter5/review/warehouse_L0_asset_placement_manifest.json' with { type: 'json' };
 import groundUrl from '../../../../level_design/chapter5/art/warehouse_L0_ground.png?url';
@@ -29,6 +30,7 @@ async function image(url: string) {
 
 /** Shared warehouse map renderer/movement. Commands and outcomes stay in App/service. */
 export class WarehouseWalkMap {
+  private readonly eventMarkers=new WarehouseEventMarkers();
   private position: Point = {x: entry.x, y: entry.y};
   private camera = new FollowCamera();
   private mask: RasterWalkableMask | null = null;
@@ -84,7 +86,7 @@ export class WarehouseWalkMap {
   }
   positionNow() {return {...this.position};}
   setOptions(options: Partial<WarehouseReviewOptions>) {this.options = {...this.options, ...options}; this.snapCamera = true;}
-  reset() {this.position = this.flags.has('finale_boss_victory')?{x:1302,y:294}:{x: entry.x, y: entry.y}; this.floor='L0';this.climbing=null;this.snapCamera = true; this.moving = false;}
+  reset() {this.eventMarkers.reset();this.position = this.flags.has('finale_boss_victory')?{x:1302,y:294}:{x: entry.x, y: entry.y}; this.floor='L0';this.climbing=null;this.snapCamera = true; this.moving = false;}
   climb() {
     if(!this.mask||!this.l1Mask||this.climbing)return false;
     const anchor=geometry.climbs.find(point=>Math.hypot(point.x-this.position.x,point.y-this.position.y)<=44);
@@ -249,12 +251,7 @@ export class WarehouseWalkMap {
     ctx.restore();
   }
   private drawMarkers(ctx:CanvasRenderingContext2D){
-    const near=this.nearTarget;
-    const marker=(point:Point,key:string,color:string,label?:string)=>{ctx.save();ctx.fillStyle=color;ctx.strokeStyle='#172731';ctx.lineWidth=2;ctx.beginPath();ctx.arc(point.x,point.y-12,10,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#172731';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText(key,point.x,point.y-8);if(label){ctx.font='13px "Microsoft YaHei",sans-serif';const width=ctx.measureText(label).width+14;ctx.fillStyle='rgba(16,28,38,.93)';ctx.fillRect(point.x-width/2,point.y-47,width,23);ctx.fillStyle='#fff0c4';ctx.fillText(label,point.x,point.y-31);}ctx.restore();};
-    for(const climb of geometry.climbs)marker(climb,'C','#9cd8d7',Math.hypot(climb.x-this.position.x,climb.y-this.position.y)<=44?(this.floor==='L0'?'C · 攀上货架':'C · 返回地面'):undefined);
-    for(const point of geometry.interactions){if(point.floor!==this.floor||point.kind==='start')continue;const done=point.kind==='fixed_event'?this.drawn.has('node:'+point.id):point.id==='finale_boss'?this.flags.has('finale_boss_victory'):false;
-      const locked=point.id==='bunker_exit'&&!this.flags.has('finale_boss_victory');marker(point,done?'✓':locked?'锁':point.kind==='battle'?'!':'E',done?'#a8ba96':'#ead38b',near?.id===point.id?near.label:undefined);
-    }
+    this.eventMarkers.draw(ctx,{floor:this.floor,position:this.position,flags:this.flags,drawn:this.drawn,near:this.nearTarget},performance.now());
   }
 
   private drawCat(ctx: CanvasRenderingContext2D) {

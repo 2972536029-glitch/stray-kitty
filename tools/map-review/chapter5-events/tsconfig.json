@@ -1,0 +1,16 @@
+{
+  "extends": "../../../web/tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "../../../web/node_modules/vite/client"
+    ]
+  },
+  "include": [
+    "main.ts",
+    "markers.ts",
+    "propAtlas.ts",
+    "obstacles.ts",
+    "../chapter4/assets.d.ts",
+    "baselineMarkers.ts"
+  ]
+}

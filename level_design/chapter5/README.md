@@ -1,5 +1,13 @@
 # Chapter 5 warehouse — art and interaction review
 
+## Approved event-icon integration
+
+The Chapter 5 event-icon preview is integrated into the real warehouse renderer on `feat/chapter5-event-icons`. Seven interaction points use a cached pixel atlas and floating labels; C prompts follow the existing nearest connection. The battle approach gives a local, optional reminder about incomplete upper-shelf investigations. Random zones remain unmarked and use the existing service and card pool.
+
+The two solid rubble piles now reuse approved crate sprites, including the low single crate in the east passage. All 38 collision footprints, walking masks, lighting and progression rules are unchanged. The comparison page at `tools/map-review/chapter5-events/` shares production art and marker code and retains the original signs/rubble for comparison. Its simulated interactions are separate from the real game.
+
+Baseline verification: production and preview TypeScript, production build, content consistency, focused warehouse service tests, and real-game checks of lamp toggles, optional event cards, C traversal, boss story entry and a random-zone request. No full gameplay suite was run.
+
 **Local iteration 14: random encounters rearm on re-entry.** The approved 19/19 mix of single obstacles and varied piles, cat scale 0.75, 680 × 400 camera, earlier clearances and iteration 8 lighting are retained. The real game session uses the existing `DemoScene`, controller, event cards and battle runtime for warehouse exploration. Manual traversal and L1 visual approval remain outstanding. Commit/push/MR submission waits until Chapter 5 is finished.
 
 All four hidden random zones and all six authored random cards are connected. A missed 55% entry roll no longer permanently consumes a spot. Leaving its radius plus a 12px margin rearms it for another roll on entry; standing inside does not continuously roll. Old saved `zone:warehouse:*` attempt markers are ignored, so existing QA saves recover without a reset. Actual drawn cards, pending encounters, outcomes and rewards still use the normal persistent service state and without-replacement deck. Fixed L1 events remain one-time optional interactions.

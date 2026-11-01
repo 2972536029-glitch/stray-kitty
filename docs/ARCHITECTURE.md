@@ -119,7 +119,8 @@ stray-kitty/
 │     ├─ chapter2/
 │     ├─ chapter2-events/
 │     ├─ chapter4/
-│     └─ chapter4-events/
+│     ├─ chapter4-events/
+│     └─ chapter5-events/
 ├─ web/  浏览器前端
 │  ├─ content/  独立内容数据
 │  │  ├─ assets/  素材索引
