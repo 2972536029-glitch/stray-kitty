@@ -22,6 +22,10 @@
     "Lm1": "collision/chapter4_Lminus1_walkable.png",
     "pixelInterpretation": "white=walkable black=blocked; production collision samples the paw contact ellipse, not the upright sprite; do not use outdated embedded draft SVG geometry"
   },
+  "battleExit": {
+    "trigger": {"left": 1475, "right": 1602, "top": 721, "bottom": 798},
+    "blocker": {"left": 1608, "right": 1672, "top": 720, "bottom": 804}
+  },
   "events": [
     {
       "id": "tunnel_entry",
@@ -192,8 +196,8 @@
       "key": "C",
       "label": "C · 西侧通道 ↔ 南侧石脊",
       "a": {
-        "x": 920,
-        "y": 690,
+        "x": 910,
+        "y": 650,
         "layer": "L0"
       },
       "b": {
@@ -201,7 +205,7 @@
         "y": 626,
         "layer": "L0"
       },
-      "reach": 64,
+      "reach": 40,
       "bidirectional": true
     },
     {
@@ -299,11 +303,11 @@
         "layer": "L0"
       },
       "b": {
-        "x": 811,
-        "y": 791,
+        "x": 805,
+        "y": 817,
         "layer": "L0"
       },
-      "reach": 56,
+      "reach": 36,
       "bidirectional": true
     },
     {
@@ -329,8 +333,8 @@
       "key": "C",
       "label": "C · 西侧石沿末端 ↔ 下方道路",
       "a": {
-        "x": 780,
-        "y": 720,
+        "x": 770,
+        "y": 700,
         "layer": "L0"
       },
       "b": {

@@ -1,3 +1,5 @@
+import {TunnelEventMarkers,nearbyLockedTunnelEvent,type TunnelMarkerState} from './eventMarkers';
+import {drawTunnelExitBarrier,tunnelBossAt,tunnelExitBlockerPolygon} from './battleExit';
 import {drawPixelCat} from '../../adapters/canvas/pixelCat';
 import mapData from '../../../../level_design/chapter4/data/chapter4.map.json';
 import lighting from '../../../../level_design/chapter4/data/chapter4.lighting.json';
@@ -54,6 +56,8 @@ export class TunnelMap {
   private cameraPosition: Point = {x: 0, y: 0};
   private labelsVisible = true;
   private collisionVisible = false;
+  private readonly eventMarkers = new TunnelEventMarkers();
+  private eventHint: string | null = null;
   private nearby: {id: string; label: string} | null = null;
   private traversalHint: string | null = null;
   private traversalFeedback: string | null = null;
@@ -83,13 +87,14 @@ export class TunnelMap {
 
   get layer() {return this.floor;}
   get isReady() {return !!this.masks;}
-  get hint() {return this.movement ? null : this.traversalFeedback ?? this.nearby?.label ?? this.traversalHint;}
+  get hint() {return this.movement ? null : this.nearby?.label ?? this.eventHint ?? this.traversalFeedback ?? this.traversalHint;}
   get nearTarget() {return this.nearby;}
   positionNow() {return {...this.position};}
   setCollisionVisible(value: boolean) {this.collisionVisible = value;}
   toggleLabels() {this.labelsVisible = !this.labelsVisible;}
   toggleCollision() {this.collisionVisible = !this.collisionVisible;}
   reset() {
+    this.eventMarkers.reset(); this.eventHint = null;
     this.traversalFeedback = null; this.traversalFeedbackMs = 0;
     if (this.masks) this.position = reachableSpawn(this.masks.L0, {x: 845, y: 135});
     this.floor = 'L0'; this.surface = 'ground'; this.movement = null; this.nearby = null; this.traversalHint = null; this.keys.clear(); this.zonesInside.clear(); this.updateCamera(0);
@@ -120,7 +125,7 @@ export class TunnelMap {
     }
     if (this.movement) return;
     if (this.keys.has('e')) {this.keys.delete('e'); if (this.nearby) interact(this.nearby.id);}
-    if (flags.includes('tunnel_false_kitten_trap_found') && flags.includes('valve_three_investigated') && this.floor === 'L0' && this.position.x >= 1475 && this.position.x <= 1602 && this.position.y >= 721 && this.position.y <= 798) {
+    if (tunnelBossAt(this.floor, this.surface, this.position, flags)) {
       if (!this.bossRequested) {this.bossRequested = true; interact('tunnel_exit_boss');}
     } else this.bossRequested = false;
   }
@@ -154,7 +159,11 @@ export class TunnelMap {
     this.nearby = null; this.updateCamera(0); return true;
   }
   private connections() {return tunnelSurfaceConnections(this.floor, this.surface, tunnelConnections(this.floor, this.position));}
+  private markerState(flags: readonly string[], drawnEvents: readonly string[]): TunnelMarkerState {
+    return {floor:this.floor,surface:this.surface,position:this.position,flags,drawnEvents,nearTarget:this.nearby,connections:this.connections()};
+  }
   private updateNearby(flags: readonly string[], drawnEvents: readonly string[]) {
+    this.eventHint = nearbyLockedTunnelEvent(this.markerState(flags, drawnEvents)) ? '先调查假猫叫诱饵与绊线，再调查第三泄洪阀' : null;
     const connection = this.connections()[0];
     this.traversalHint = connection && connection.distance <= connection.portal.reach ? tunnelPortalDisplay(connection, flags).label : null;
     if (this.surface !== 'ground') {this.nearby = null; return;}
@@ -180,6 +189,7 @@ export class TunnelMap {
     const offsetX = (width - camera.width * scale) / 2, offsetY = (height - camera.height * scale) / 2;
     context.translate(offsetX, offsetY); context.scale(scale, scale); context.translate(-this.cameraPosition.x, -this.cameraPosition.y);
     const art = this.art[this.floor]; if (art.complete && art.naturalWidth) context.drawImage(art, 0, 0, WIDTH, HEIGHT);
+    if (this.floor === 'L0') drawTunnelExitBarrier(context);
     if (this.collisionVisible) {
       context.save(); context.globalAlpha = .45;
       const paint = (polygon: number[][], color: string) => {
@@ -193,12 +203,13 @@ export class TunnelMap {
         for (const polygon of tunnelSurfaces[this.floor].blocked) paint(polygon, '#000');
         if (this.floor === 'L0') for (const polygons of Object.values(raisedSurfacePolygons)) for (const polygon of polygons) paint(polygon, '#000');
         for (const polygon of tunnelSurfaces[this.floor].walkable) paint(polygon, '#fff');
+        if (this.floor === 'L0') paint(tunnelExitBlockerPolygon, '#000');
       }
       context.restore();
     }
     this.drawLighting(context);
     this.drawMarkers(context, flags, drawnEvents);
-    if (this.traversalFeedback && !this.movement) this.drawLabel(context, this.traversalFeedback, this.position, true);
+    if (this.traversalFeedback && !this.movement && !this.nearby && !this.eventHint) this.drawLabel(context, this.traversalFeedback, this.position, true);
     this.drawCat(context);
     context.restore();
   }
@@ -215,49 +226,7 @@ export class TunnelMap {
     context.restore();
   }
   private drawMarkers(context: CanvasRenderingContext2D, flags: readonly string[], drawnEvents: readonly string[]) {
-    const inView = (point: Point) => point.x >= this.cameraPosition.x - 16 && point.x <= this.cameraPosition.x + camera.width + 16 && point.y >= this.cameraPosition.y - 16 && point.y <= this.cameraPosition.y + camera.height + 16;
-    // Random encounters are invisible area triggers, as in Chapters 1 and 2.
-    // The entry is scenery, not an E interaction.
-    for (const event of mapData.events.filter(event => this.surface === 'ground' && event.layer === this.floor && inView(event) && !['layer_connector', 'random_zone', 'entry'].includes(event.type))) {
-      const completed = tunnelEventCompleted(event, flags, drawnEvents);
-      const locked = event.id === 'tunnel_valve_three' && !flags.includes('tunnel_false_kitten_trap_found')
-        || event.type === 'battle_exit' && (!flags.includes('tunnel_false_kitten_trap_found') || !flags.includes('valve_three_investigated'));
-      context.save(); context.globalAlpha = completed ? .62 : 1;
-      context.beginPath(); context.arc(event.x, event.y, 11, 0, Math.PI * 2);
-      context.fillStyle = locked ? '#a6a497' : event.type === 'battle_exit' ? '#ef906a' : '#f0cd79'; context.fill();
-      context.lineWidth = 2; context.strokeStyle = '#172630'; context.stroke();
-      context.font = 'bold 11px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillStyle = '#172630';
-      context.fillText(completed ? '✓' : event.type === 'battle_exit' || event.type === 'story_mandatory' ? '!' : 'E', event.x, event.y + .5);
-      if (this.labelsVisible) this.drawLabel(context, `${event.label}${!completed && !locked && event.type !== 'battle_exit' ? ' · E' : ''}${locked ? ' · 未解锁' : completed ? ' · 已完成' : ''}`, event, false);
-      context.restore();
-    }
-    for (const connection of this.connections()) {
-      const {from: point, portal} = connection, display = tunnelPortalDisplay(connection, flags);
-      if (!display.visible || !inView(point)) continue;
-      context.save();
-      if (portal.key === 'F') {
-        // The same compact timber sign as Chapter 2; the full key prompt appears nearby.
-        context.translate(point.x, point.y);
-        context.fillStyle = 'rgba(12,18,22,.35)'; context.fillRect(-12, 9, 24, 4);
-        context.fillStyle = '#533728'; context.fillRect(-3, 1, 6, 14); context.fillRect(-5, 13, 10, 3);
-        context.fillStyle = '#302b2a'; context.fillRect(-15, -15, 30, 17);
-        context.fillStyle = '#9a633e'; context.fillRect(-13, -13, 26, 13);
-        context.fillStyle = '#d8a85d'; context.fillRect(-12, -12, 24, 2); context.fillRect(-12, -2, 24, 1);
-        context.fillStyle = '#f5e3b2'; context.font = 'bold 10px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle';
-        context.fillText(connection.to.layer === 'Lm1' ? '↓' : '↑', 0, -6);
-        context.translate(-point.x, -point.y);
-      }
-      context.globalAlpha = display.alpha;
-      context.beginPath(); context.arc(point.x, point.y + (portal.key === 'F' ? 22 : 0), 9, 0, Math.PI * 2);
-      context.fillStyle = display.locked ? '#a6a497' : display.active ? '#73e1dd' : '#91bab8'; context.fill();
-      context.strokeStyle = '#102b38'; context.lineWidth = 2; context.stroke();
-      context.fillStyle = '#10232b'; context.font = 'bold 10px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle';
-      context.fillText(portal.key === 'Space' ? '↔' : portal.key, point.x, point.y + (portal.key === 'F' ? 22 : 0));
-      if (this.labelsVisible && (display.active || portal.key !== 'F')) {
-        this.drawLabel(context, `${display.active ? '' : '靠近后 '}${display.label}`, point, true);
-      }
-      context.restore();
-    }
+    this.eventMarkers.draw(context,this.markerState(flags,drawnEvents),performance.now(),false,this.labelsVisible);
     context.save(); context.fillStyle = 'rgba(16,28,38,.9)'; context.fillRect(this.cameraPosition.x + 12, this.cameraPosition.y + 42, 154, 25);
     context.fillStyle = '#fff0c4'; context.font = '13px "Microsoft YaHei",system-ui,sans-serif'; context.textAlign = 'left'; context.textBaseline = 'middle';
     context.fillText(this.floor === 'L0' ? 'L0 · 主暗渠' : 'L−1 · 下层排水道', this.cameraPosition.x + 20, this.cameraPosition.y + 54.5); context.restore();
