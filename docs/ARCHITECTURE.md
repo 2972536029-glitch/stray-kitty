@@ -113,6 +113,9 @@ stray-kitty/
 ├─ tests/  自动验证
 │  ├─ battle/
 │  └─ e2e/  浏览器流程
+├─ tools/
+│  └─ map-review/
+│     └─ chapter1-events/
 ├─ web/  浏览器前端
 │  ├─ content/  独立内容数据
 │  │  ├─ assets/  素材索引
