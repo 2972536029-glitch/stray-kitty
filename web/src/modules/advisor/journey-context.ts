@@ -16,6 +16,9 @@ const rosterBoundary = '已结识伙伴是旅程中认识的角色，不是当�
 const marketExitRule = '在集市不能直接回家。必须先完成集市防卫，再到北侧出口离开；是否存在某个按钮未提供，不能编造返回家园按钮。';
 const eventInventoryRule = '当前可见的普通事件选项不要求拥有库存物品，也不扣除库存物品。选项里“放鱼干”等文字是叙事行动，不是鱼干库存费用；不能因鱼干为0而判定选项不可用，也不能说会花掉现有鱼干。';
 const eventEncouragementRule = '选择伙伴鼓励时额外消耗1次鼓励次数，掷两组取总和较高的一组；普通掷骰不消耗鼓励次数。';
+const eventChoiceRule = '阿策只解释当前题面、选项字面行动和公开规则，不推荐、排名或代选具体选项；选什么由玩家决定，不预报骰点或未结算后果。';
+const eventFailureRule = '按当前公开规则，事件失败档至少保底1条线索，故事仍会推进；仍可能出现黑影压力或剧情代价，不代表失败没有任何代价。';
+const eventEncouragementRecovery = '鼓励初始1次、上限2次；当前正式主线首次救回点点成功后补1次，达到上限不再增加，重复通关不恢复，不是每场战斗都会补。';
 const carryNames: Record<string, string> = {lantern: '小灯', mirror: '镜片', bell: '铃铛', box: '纸箱', dog: '老黄', dove: '鸽子', rats: '鼠群轮巡', kitten: '获救小猫'};
 export const journeySceneKey = (state: GameState) => JSON.stringify([state.phase, state.chapterId, state.mapId, state.storyNodeId, state.pendingEventId, state.activeBattle?.id ?? '']);
 export function journeySceneLabel(state: GameState, catalog: Catalog): string {
@@ -133,7 +136,9 @@ function visibleContext(state: GameState, catalog: Catalog, scene?: JourneyScene
         ...(revealFates ? {点点已揭示的资源后果: (['crit', 'success', 'partial', 'fail'] as const).map(tier => ({档位: tier,
           资源: resourceList({...o.outcomes[tier].reward}, catalog), 黑影压力: tier === 'success' ? 0 : o.outcomes[tier].tdMod?.shadowPressure ?? 0}))} : {}),
       })), 普通选项费用: eventInventoryRule, 鼓励费用: eventEncouragementRule,
-      鼓励剩余次数: count(state.pushTokens), 公开点数档位: eventTiers.map(tier => ({点数: tier.range, 档位: tier.label})),
+      鼓励剩余次数: count(state.pushTokens), 公开点数档位: eventTiers.map(tier => ({点数: tier.range, 档位: tier.label, 基础概率: tier.probability})),
+      解释边界: eventChoiceRule, 失败规则: eventFailureRule, 鼓励恢复: eventEncouragementRecovery,
+      概率说明: '表中是普通一组2d6的基础概率，不能直接当作使用鼓励后两组取高的概率。',
       规则: `两颗六面骰点数相加决定结果；${eventEncouragementRule}档位只说明判定，不保证获得某个隐藏奖励或战斗支援。`,
       ...(state.cats.includes('tuanzi') && event.tags.includes('foraging') ? {伙伴提示: '团子同行时，觅食失败仍有资源保底，具体获得以结算为准。'} : {}),
     }} : {}),
@@ -151,7 +156,11 @@ export function buildJourneyAdvisorContext(state: GameState, catalog: Catalog, s
 function localAnswer(state: GameState, catalog: Catalog, question: string, scene?: JourneySceneObservation): {title: string; text: string} {
   const ctx = visibleContext(state, catalog, scene), q = question.trim();
   if (ctx.集市离开规则 && /回家|回.*花房|离开.*集市|集市.*离开/.test(q)) return {title: '从集市离开', text: `${ctx.集市离开规则}${state.flags.includes('market_cleared') ? '你已经守住集市防线，接下来前往北侧出口。' : '当前还没有完成集市防卫，先按当前目标守住防线。'}`};
-  if (ctx.当前事件 && /鱼干|库存|物品|背包|资源|材料|邮票|罐头|花几|花多少|要花|几份|费用|成本|消耗/.test(q)) return {title: '事件选项与费用', text: `当前鱼干库存为${count(state.inventory.food)}。${ctx.当前事件.普通选项费用}${ctx.当前事件.鼓励费用}当前鼓励剩余${ctx.当前事件.鼓励剩余次数}次。事件实际奖励以掷骰后的结算为准。`};
+  if (ctx.当前事件 && /帮.*选|替.*选|选哪个|选什么|选哪|推荐|更好|更划算|更安全|最优/.test(q)) return {title: '选择由你决定', text: `${eventChoiceRule}当前可见行动：${ctx.当前事件.可见选项.map(o => o.名称).join('；')}。${eventFailureRule}`};
+  if (ctx.当前事件 && /概率|几率|失败率|百分/.test(q)) return {title: '事件基础概率', text: `${ctx.当前事件.公开点数档位.map(t => `${t.点数}点为${t.档位}（${t.基础概率}）`).join('；')}。${ctx.当前事件.概率说明}伙伴鼓励为掷两组取较高，不保证结果。`};
+  if (ctx.当前事件 && /鼓励/.test(q) && /恢复|补|攒|初始|上限/.test(q)) return {title: '伙伴鼓励', text: `${eventEncouragementRecovery}当前剩余${ctx.当前事件.鼓励剩余次数}次。${eventEncouragementRule}`};
+  if (ctx.当前事件 && /鱼干|库存|物品|背包|资源|材料|邮票|罐头|花几|花多少|要花|几份|费用|成本|消耗/.test(q)) return {title: '事件选项与费用', text: `当前鱼干库存为${count(state.inventory.food)}。${ctx.当前事件.普通选项费用}${ctx.当前事件.鼓励费用}当前鼓励剩余${ctx.当前事件.鼓励剩余次数}次。${/失败|保底/.test(q) ? eventFailureRule : ''}事件实际奖励以掷骰后的结算为准。`};
+  if (ctx.当前事件 && /失败|保底|不亏|代价/.test(q)) return {title: '失败仍会推进', text: `${eventFailureRule}${eventChoiceRule}`};
   if (/线索/.test(q) && (state.mapId === 'warehouse' || !state.flags.includes('tunnel_explored') && !state.flags.includes('finale_started'))) return {title: '当前线索', text: `当前有${count(state.inventory.clue)}条线索。${ctx.当前目标}`};
   if (state.mapId !== 'warehouse' && /线索|第五章|终章|仓库.*(?:进|解锁|条件)|(?:进|去|开|启程).*仓库/.test(q) && (state.flags.includes('tunnel_explored') || state.flags.includes('finale_started'))) {
     const clues = count(state.inventory.clue), rescued = state.flags.includes('tunnel_explored') && state.flags.includes('cats_rescued_batch1');

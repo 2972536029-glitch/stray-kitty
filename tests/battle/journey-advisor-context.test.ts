@@ -216,10 +216,40 @@ test('invalid repair dependencies never report a misleading partial total', () =
 
 test('public dice thresholds are available without exposing hidden event outcomes', () => {
   const s = state({phase: 'event', pendingEventId: 'current_event'}), snapshot = read(s);
-  assert.deepEqual(snapshot.当前事件.公开点数档位, [{点数: '12', 档位: '大成功'}, {点数: '9–11', 档位: '成功'}, {点数: '5–8', 档位: '成功但有代价'}, {点数: '2–4', 档位: '失败，局势推进'}]);
+  assert.deepEqual(snapshot.当前事件.公开点数档位, [{点数: '12', 档位: '大成功', 基础概率: '2.78%'}, {点数: '9–11', 档位: '成功', 基础概率: '25%'}, {点数: '5–8', 档位: '成功但有代价', 基础概率: '55.56%'}, {点数: '2–4', 档位: '失败，局势推进', 基础概率: '16.67%'}]);
   const reply = answer(s, '骰子几点算成功');
   assert.match(reply, /12点为大成功.*9–11点为成功.*5–8点为成功但有代价.*2–4点为失败/);
   assert.doesNotMatch(reply, /HIDDEN_|保证.*老黄/); assert.match(reply, /不保证获得某个隐藏奖励/);
+});
+
+test('event explanations respect neutral choices, current base odds and qualified failure reassurance', () => {
+  const s = state({phase: 'event', pendingEventId: 'current_event', pushTokens: 1}), c = catalog();
+  const ctx = read(s,c);
+  assert.match(ctx.当前事件.解释边界, /不推荐、排名或代选/);
+  for (const question of ['帮我选哪个更划算', '替我推荐最优选项']) {
+    const reply = getJourneyLocalAnswer(s,c,question);
+    assert.equal(reply.title,'选择由你决定'); assert.match(reply.text,/选什么由玩家决定/);
+    assert.doesNotMatch(reply.text,/HIDDEN_|SECRET_|建议选择|推荐选择/);
+  }
+  const odds = getJourneyLocalAnswer(s,c,'失败率是多少').text;
+  assert.match(odds,/2–4点为失败，局势推进（16.67%）/); assert.doesNotMatch(odds,/27.78%/);
+  assert.match(odds,/不能直接当作使用鼓励后/);
+  const failed = getJourneyLocalAnswer(s,c,'失败是不是就没有代价').text;
+  assert.match(failed,/至少保底1条线索/); assert.match(failed,/仍可能出现黑影压力或剧情代价/);
+  const costs = getJourneyLocalAnswer(s,c,'失败会扣鱼干吗').text;
+  assert.match(costs,/不扣除库存物品/); assert.match(costs,/仍可能出现黑影压力或剧情代价/);
+  const encouragement = getJourneyLocalAnswer(s,c,'每次战斗都能补鼓励吗').text;
+  assert.match(encouragement,/首次救回点点成功后补1次/); assert.match(encouragement,/不是每场战斗都会补/);
+});
+
+test('the published current failure clue floor agrees with all actual authored options', () => {
+  const current = JSON.parse(readFileSync(new URL('../../web/content/catalog.json', import.meta.url), 'utf8')) as Catalog;
+  let checked = 0;
+  for (const event of current.events) for (const option of event.options) {
+    assert.ok((option.outcomes.fail.reward?.clue ?? 0) >= 1, `${event.id}/${option.id}: revise the public AI rule if the agreed clue floor changes`);
+    checked++;
+  }
+  assert.ok(checked > 0);
 });
 
 test('narrative food choices remain available with zero inventory and only encouragement has a separate cost', () => {
