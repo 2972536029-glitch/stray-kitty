@@ -8,7 +8,7 @@ export type TunnelSurface = 'ground' | RaisedTunnelSurface;
 export const raisedSurfacePolygons = {'tank-ridge': [geometry.tankRidge], 'south-ridge': geometry.southRidge, 'west-ridge': geometry.westRidge};
 export function tunnelClimbSurface(portalId: string): RaisedTunnelSurface | undefined {
   if (portalId === 'tank-climb' || portalId === 'tank-east-descent') return 'tank-ridge';
-  if (portalId === 'west-ridge-climb') return 'west-ridge';
+  if (portalId === 'west-ridge-climb' || portalId === 'west-ridge-east-descent') return 'west-ridge';
   if (portalId === 'ridge-climb' || portalId === 'niche-climb') return 'south-ridge';
   return undefined;
 }
@@ -43,6 +43,8 @@ export function tunnelGroundMask(floor: TunnelLayer, width: number, height: numb
     for (const polygon of polygons) paint(pixels, width, height, polygon, 0);
   }
   for (const polygon of geometry[floor].walkable) paint(pixels, width, height, polygon, 255);
+  const layer = geometry[floor];
+  if ('blockedAfterWalkable' in layer) for (const polygon of layer.blockedAfterWalkable) paint(pixels, width, height, polygon, 0);
   return new TunnelWalkableMask(width, height, pixels, radius);
 }
 

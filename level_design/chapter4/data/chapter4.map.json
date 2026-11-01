@@ -242,8 +242,16 @@
       "id": "tank-east-descent",
       "key": "C",
       "label": "C · 石脊东端 ↔ 下方道路",
-      "a": {"x": 820, "y": 525, "layer": "L0"},
-      "b": {"x": 820, "y": 464, "layer": "L0"},
+      "a": {
+        "x": 820,
+        "y": 525,
+        "layer": "L0"
+      },
+      "b": {
+        "x": 820,
+        "y": 464,
+        "layer": "L0"
+      },
       "reach": 44,
       "bidirectional": true
     },
@@ -251,8 +259,16 @@
       "id": "west-ridge-climb",
       "key": "C",
       "label": "C · 西侧石沿 ↔ 下方道路",
-      "a": {"x": 390, "y": 765, "layer": "L0"},
-      "b": {"x": 430, "y": 700, "layer": "L0"},
+      "a": {
+        "x": 390,
+        "y": 765,
+        "layer": "L0"
+      },
+      "b": {
+        "x": 430,
+        "y": 700,
+        "layer": "L0"
+      },
       "reach": 44,
       "bidirectional": true
     },
@@ -307,6 +323,23 @@
       "reach": 64,
       "bidirectional": true,
       "note": "QA correction: start/end on the painted banks, not at the waterfall center or behind the east-side props."
+    },
+    {
+      "id": "west-ridge-east-descent",
+      "key": "C",
+      "label": "C · 西侧石沿末端 ↔ 下方道路",
+      "a": {
+        "x": 780,
+        "y": 720,
+        "layer": "L0"
+      },
+      "b": {
+        "x": 730,
+        "y": 744,
+        "layer": "L0"
+      },
+      "reach": 44,
+      "bidirectional": true
     }
   ],
   "storySequence": [
