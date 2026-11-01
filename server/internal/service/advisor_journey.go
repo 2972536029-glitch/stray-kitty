@@ -25,6 +25,10 @@ func advisorContextChanged() error {
 // serialize GameState, Catalog, EventOption or EventOutcome wholesale: those
 // objects include private transactions or unrevealed branches and outcomes.
 func (g *Game) advisorJourneyProgress(s domain.GameState) map[string]any {
+	return g.advisorJourneyProgressWithTexts(s, advisorVisibleTexts)
+}
+
+func (g *Game) advisorJourneyProgressWithTexts(s domain.GameState, texts advisorDisplayTexts) map[string]any {
 	progress := map[string]any{
 		"phase": s.Phase, "chapterId": s.ChapterID, "mapId": s.MapID,
 		"knownCompanionIds": s.Cats, "knownFlags": s.Flags, "completedStages": s.CompletedStages,
@@ -47,7 +51,7 @@ func (g *Game) advisorJourneyProgress(s domain.GameState) map[string]any {
 	if s.Phase == "dialogue" {
 		for _, node := range g.Catalog.Story {
 			if node.ID == s.StoryNodeID {
-				visible := advisorVisibleTexts.Story[node.ID]
+				visible := texts.Story[node.ID]
 				progress["currentStory"] = map[string]string{"id": node.ID, "speaker": visible.Speaker, "text": visible.Text}
 				break
 			}
@@ -59,10 +63,15 @@ func (g *Game) advisorJourneyProgress(s domain.GameState) map[string]any {
 				continue
 			}
 			options := []map[string]string{}
-			visible := advisorVisibleTexts.Events[event.ID]
+			visible := texts.Events[event.ID]
+			hintsVisible := len(event.Maps) == 0 || domain.Contains(event.Maps, s.MapID)
 			for _, option := range event.Options {
 				if option.RequireCat == "" || domain.Contains(s.Cats, option.RequireCat) {
-					options = append(options, map[string]string{"id": option.ID, "label": visible.optionLabel(option.ID)})
+					display := map[string]string{"id": option.ID, "label": visible.optionLabel(option.ID)}
+					if hint := visible.optionHint(option.ID); hintsVisible && hint != "" {
+						display["advisorHint"] = hint
+					}
+					options = append(options, display)
 				}
 			}
 			progress["currentEvent"] = map[string]any{
@@ -70,6 +79,9 @@ func (g *Game) advisorJourneyProgress(s domain.GameState) map[string]any {
 				"selectionInventoryCost": map[string]int{},
 				"selectionRules":         "当前可见普通选项没有库存数量门槛，不扣除鱼干、材料等库存资源。选项中放下鱼干等叙事动作不代表库存成本，不能绑定到玩家现有库存。只有主动选择使用伙伴鼓励时，才在掷骰前单独消耗1次鼓励次数。",
 				"encouragementCost":      map[string]int{"pushTokens": 1},
+			}
+			if hint := advisorPublicHint(visible.AdvisorHint, 120); hintsVisible && hint != "" {
+				progress["currentEvent"].(map[string]any)["advisorHint"] = hint
 			}
 			break
 		}

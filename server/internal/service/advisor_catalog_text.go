@@ -3,6 +3,8 @@ package service
 import (
 	"encoding/json"
 	"stray-kitty/server/internal/platform"
+	"strings"
+	"unicode/utf16"
 )
 
 // Read display text from the same embedded catalog used to start the game.
@@ -18,12 +20,16 @@ type advisorStoryText struct {
 }
 
 type advisorEventText struct {
-	ID      string `json:"id"`
-	Text    string `json:"text"`
-	Options []struct {
-		ID    string `json:"id"`
-		Label string `json:"label"`
-	} `json:"options"`
+	ID          string              `json:"id"`
+	Text        string              `json:"text"`
+	AdvisorHint json.RawMessage     `json:"advisorHint"`
+	Options     []advisorOptionText `json:"options"`
+}
+
+type advisorOptionText struct {
+	ID          string          `json:"id"`
+	Label       string          `json:"label"`
+	AdvisorHint json.RawMessage `json:"advisorHint"`
 }
 
 type advisorDisplayTexts struct {
@@ -53,6 +59,25 @@ func (event advisorEventText) optionLabel(id string) string {
 	for _, option := range event.Options {
 		if option.ID == id {
 			return option.Label
+		}
+	}
+	return ""
+}
+
+// Invalid optional metadata must not discard the event's ordinary display text.
+// Match content lint's JS string length (UTF-16 units), not a truncated value.
+func advisorPublicHint(raw json.RawMessage, limit int) string {
+	var hint string
+	if len(raw) == 0 || json.Unmarshal(raw, &hint) != nil || strings.TrimSpace(hint) == "" || len(utf16.Encode([]rune(hint))) > limit || strings.ContainsAny(hint, "\r\n\u2028\u2029") {
+		return ""
+	}
+	return hint
+}
+
+func (event advisorEventText) optionHint(id string) string {
+	for _, option := range event.Options {
+		if option.ID == id {
+			return advisorPublicHint(option.AdvisorHint, 60)
 		}
 	}
 	return ""
