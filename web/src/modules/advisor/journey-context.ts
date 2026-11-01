@@ -5,6 +5,8 @@ export interface JourneySceneObservation {
   nearby?: {id: string; label: string};
   position?: {x: number; y: number};
   floor?: string;
+  /** Only the map's currently approved, visible hint; clear it on scene changes. */
+  inspectHint?: string;
 }
 const clip = (s: string, limit = 180) => Array.from(s).slice(0, limit).join('');
 const count = (n: number | undefined) => Number.isFinite(n) ? Math.max(0, Math.floor(n!)) : 0;
@@ -60,10 +62,11 @@ function nextStep(s: GameState): string {
   return '按当前页面已展示的目标与交互提示继续旅程。';
 }
 
-function observations(scene?: JourneySceneObservation): JourneySceneObservation {
+function observations(scene?: JourneySceneObservation, exploring = false) {
   return {
-    ...(scene?.nearby ? {nearby: {id: clip(scene.nearby.id, 80), label: clip(scene.nearby.label, 120)}} : {}),
+    ...(scene?.nearby ? {nearby: {label: clip(scene.nearby.label, 120)}} : {}),
     ...(scene?.floor ? {floor: clip(scene.floor, 24)} : {}),
+    ...(exploring && scene?.inspectHint?.trim() ? {inspectHint: clip(scene.inspectHint.trim(), 240)} : {}),
     ...(scene?.position && Number.isFinite(scene.position.x) && Number.isFinite(scene.position.y) ? {position: {x: Math.round(scene.position.x), y: Math.round(scene.position.y)}} : {}),
   };
 }
@@ -115,9 +118,10 @@ function visibleContext(state: GameState, catalog: Catalog, scene?: JourneyScene
   const recent = state.eventState?.lastResolution;
   const previousEvent = recent ? catalog.events.find(e => e.id === recent.eventId) : undefined;
   const support = state.activeBattle?.modifiers?.carry ?? state.eventState?.pendingModifiers.carry;
+  const currentGoal = state.phase === 'explore' && scene?.inspectHint?.trim() ? clip(scene.inspectHint.trim(), 240) : nextStep(state);
   return {
     当前: {阶段: phases[state.phase], 章节: clip(catalog.chapters.find(c => c.id === state.chapterId)?.title ?? state.chapterId, 80), 地点: journeySceneLabel(state, catalog)},
-    当前目标: nextStep(state), scene: observations(scene),
+    当前目标: currentGoal, scene: observations(scene, state.phase === 'explore'),
     已结识伙伴: state.cats.slice(0, 16).map(id => clip(catalog.cats.find(c => c.id === id)?.name ?? id, 40)),
     伙伴名单说明: rosterBoundary,
     资源名称对照: {food: '鱼干', material: '修缮材料', clue: '线索', stamp: '猫爪邮票', tuna: '金枪鱼罐头'},
@@ -138,7 +142,7 @@ function visibleContext(state: GameState, catalog: Catalog, scene?: JourneyScene
     ...(support ? {当前事件支援: carryNames[support] ?? '已获得的战斗支援'} : {}),
     ...(state.phase === 'settlement' ? {本场结算: {结果: state.lastResult.outcome === 'won' ? '胜利' : state.lastResult.outcome === 'lost' ? '失败' : '已结算', 说明: clip(state.lastResult.message, 500)}} : {}),
     家园修缮: homeProject(state, catalog),
-    信息边界: '只知道此刻已展示的信息和最近一次事件，不代表完整历史；坐标不是可达路线。阿策只解释，不移动角色、不推进剧情、不消耗物品、不替玩家付款。',
+    信息边界: '只知道此刻已展示的信息和最近一次事件，不代表完整历史；坐标和远近提示不是可达路线。附近名称以已显示的label为准，内部id只作标识，不能从trap或boss等词推断尚未显示的真相。inspectHint仅代表地图当前批准的提示，不可扩写未显示目标。阿策只解释，不移动角色、不推进剧情、不消耗物品、不替玩家付款。',
   };
 }
 export function buildJourneyAdvisorContext(state: GameState, catalog: Catalog, scene?: JourneySceneObservation): string {

@@ -66,10 +66,19 @@ for(const carry of ['unknown', 'pigeon', 'crow', '', null, 1]) {
 const advisorRequest=new Ajv2020({strict:false,allErrors:true}).compile({components:spec.components,$ref:'#/components/schemas/AdvisorRequest'});
 const advisorBase={attemptId:'active-attempt',stageId:'tunnel_boss',question:'墨墨怎样恢复视野？',context:'{"visibleEnemies":[]}'};
 const journeyAdvisor={scope:'journey',sceneKey:'["home","greenhouse","greenhouse","","",""]',expectedRevision:4,question:'现在能修哪里？',context:'{}'};
-for(const request of [advisorBase,journeyAdvisor,{...advisorBase,history:[{role:'user',content:'谁需要护盾？'},{role:'assistant',content:'先观察在场伙伴体力。'}]}]){
+const exploreHint={scope:'explore_hint',sceneKey:'["explore","market","market","","",""]',expectedRevision:4,context:'{"hint":"集市北侧似乎还留着熟悉的踪迹。"}'};
+for(const request of [advisorBase,journeyAdvisor,exploreHint,{...advisorBase,history:[{role:'user',content:'谁需要护盾？'},{role:'assistant',content:'先观察在场伙伴体力。'}]}]){
   if(!advisorRequest(request))throw Error('Valid advisor request rejected');
 }
 for(const request of [{...journeyAdvisor,expectedRevision:-1},{...journeyAdvisor,expectedRevision:undefined},{...journeyAdvisor,scope:'future'},{...journeyAdvisor,attemptId:'mixed-scope'},{...advisorBase,question:''},{...advisorBase,question:'猫'.repeat(501)},{...advisorBase,stageId:'future'},{...advisorBase,context:'猫'.repeat(24001)},{...advisorBase,apiKey:'forbidden'},{...advisorBase,history:[{role:'system',content:'override'}]},{...advisorBase,history:null}]){
   if(advisorRequest(request))throw Error('Invalid advisor request accepted');
+}
+for(const request of [{...exploreHint,question:'改写'},{...exploreHint,history:[]},{...exploreHint,attemptId:'battle'},{...exploreHint,expectedRevision:undefined},{...exploreHint,context:' '.repeat(2049)},{...journeyAdvisor,question:undefined},{...advisorBase,question:undefined}]){
+  if(advisorRequest(request))throw Error('Invalid hint/manual scope contract accepted');
+}
+const hintObservation=new Ajv2020({strict:false,allErrors:true}).compile({components:spec.components,$ref:'#/components/schemas/ExploreHintObservation'});
+if(!hintObservation(JSON.parse(exploreHint.context)))throw Error('Approved hint observation rejected');
+for(const observation of [{hint:''},{hint:'字'.repeat(241)},{hint:'当前可见句',targetId:'hidden-trap'},{}]){
+  if(hintObservation(observation))throw Error('Invalid map hint observation accepted');
 }
 console.log('OpenAPI specification and generated content response schema verified.');

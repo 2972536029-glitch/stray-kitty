@@ -117,6 +117,17 @@ test('observations are bounded, do not copy extra fields, and never invent a nav
   assert.match(reply, /眼前纸箱/); assert.match(reply, /没有完整可通行路线/); assert.doesNotMatch(reply, /往左|往右/);
 });
 
+test('current approved map hint wins over generic goals without exposing internal target IDs', () => {
+  const scene = {nearby: {id: 'UNSEEN_TRAP_BOSS_INTERNAL', label: '墙边纸箱'}, floor: 'L0', inspectHint: '墙面像是留下了新的爪印。'};
+  const s = state(), snapshot = read(s), text = buildJourneyAdvisorContext(s, catalog(), scene), current = JSON.parse(text);
+  assert.notEqual(snapshot.当前目标, scene.inspectHint);
+  assert.equal(current.当前目标, scene.inspectHint); assert.equal(current.scene.inspectHint, scene.inspectHint);
+  assert.deepEqual(current.scene.nearby, {label: '墙边纸箱'}); assert.doesNotMatch(text, /UNSEEN_TRAP_BOSS_INTERNAL/);
+  assert.equal(JSON.parse(buildJourneyAdvisorContext({...s, phase: 'event'}, catalog(), scene)).scene.inspectHint, undefined);
+  const long = JSON.parse(buildJourneyAdvisorContext(s, catalog(), {...scene, inspectHint: '字'.repeat(900)}));
+  assert.equal(Array.from(long.scene.inspectHint).length, 240);
+});
+
 test('large catalog data stays bounded and cannot leak full content through local answers', () => {
   const c = catalog(); c.events[0].text = '长'.repeat(40000); c.events[0].options = Array.from({length: 100}, (_, i) => ({...c.events[0].options[0], id: String(i), label: '选'.repeat(2000)}));
   const s = state({phase: 'event', pendingEventId: 'current_event'});

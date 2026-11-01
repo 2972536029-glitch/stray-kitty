@@ -37,6 +37,7 @@ const journeySystemPrompt = `你是猫猫游戏的伙伴顾问阿策，温和、
 先直接回答问题，通常80–220个中文字，简单问题可以更短；建议最多3条。不要罗列与问题无关的资源、伙伴或修缮记录。只解释当前可见内容和已经发生的经历，不臆测未来剧情、未公开事件结果、抽取结果、隐藏路线或未给出的属性；某场景未提供某项信息不等于该功能或记录不存在。
 context.serverProgress是服务端核对的当前进度；context.visibleContext仅补充屏幕当前可见信息，不能用它覆盖服务端的章节、伙伴、资源、事件选择或已完成进度。历史聊天不代表当前规则或事实；信息不足时说明还不知道，不编造目标。
 knownFlags只代表已经记录的标记，不凭名称编造剧情；lastEvent.reward是基础事件奖励，可能未包含团子等额外保底，当前资源总额必须以serverProgress.resources为准。
+地图观察只引用当前有效的inspectHint和已显示的nearby.label；内部id不是玩家可见线索，不能从trap、boss等词猜测陷阱、首领或后续真相。不得查表补出未显示的目标；距离档和坐标不是可达路线。
 资源名称严格按resourceNames对应：food是鱼干，material是修缮材料，clue是线索，stamp是猫爪邮票，tuna是金枪鱼罐头；food和tuna绝不是同一种资源。未被问到资源时不顺便报数。
 knownCompanionIds只是旅程中已结识的伙伴，不是本场出战阵容；准备阶段也不能据此报出战名单。喵喵全程不参战，是在后方指挥的保护目标；阿策是场外顾问，两者都不计为战斗主力。实际出场人数和名单只有当前战斗快照能确认。
 navigationRules中的限制是当前游戏规则：canReturnHomeDirectly为false时，明确说明不能直接回家并按已给出的出口指引行动，不能建议“找找家园按钮，有就直接回去”。
@@ -201,12 +202,17 @@ func (c *Client) Reply(ctx context.Context, session string, input domain.Advisor
 		return local("invalid_response")
 	}
 	prompt := systemPrompt
+	maxTokens := 800
 	if input.Scope == "journey" {
 		prompt = journeySystemPrompt
 	}
+	if input.Scope == "explore_hint" {
+		prompt = exploreHintSystemPrompt
+		maxTokens = 180
+	}
 	body, err := json.Marshal(map[string]any{
 		"model": c.model, "messages": []map[string]string{{"role": "system", "content": prompt}, {"role": "user", "content": string(data)}},
-		"thinking": map[string]string{"type": "disabled"}, "response_format": map[string]string{"type": "json_object"}, "max_tokens": 800, "temperature": 0.2, "stream": false,
+		"thinking": map[string]string{"type": "disabled"}, "response_format": map[string]string{"type": "json_object"}, "max_tokens": maxTokens, "temperature": 0.2, "stream": false,
 	})
 	if err != nil {
 		return local("provider_unavailable")
@@ -272,6 +278,9 @@ func (c *Client) Reply(ctx context.Context, session string, input domain.Advisor
 	}
 	output.Title, output.Text = strings.TrimSpace(output.Title), strings.TrimSpace(output.Text)
 	if output.Title == "" || output.Text == "" || utf8.RuneCountInString(output.Title) > 80 || utf8.RuneCountInString(output.Text) > 1200 || strings.Contains(output.Title, c.key) || strings.Contains(output.Text, c.key) {
+		return local("invalid_response")
+	}
+	if input.Scope == "explore_hint" && !validExploreHintText(input.Context, output.Text) {
 		return local("invalid_response")
 	}
 	return domain.AdvisorResponse{Source: "model", Title: output.Title, Text: output.Text}

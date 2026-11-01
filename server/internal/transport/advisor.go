@@ -41,6 +41,15 @@ func (a *API) advise(w http.ResponseWriter, r *http.Request) {
 	if input.Scope == "journey" {
 		required = []string{"sceneKey", "expectedRevision", "question", "context"}
 	}
+	if input.Scope == "explore_hint" {
+		required = []string{"sceneKey", "expectedRevision", "context"}
+		for _, field := range []string{"attemptId", "stageId", "question", "history"} {
+			if _, exists := fields[field]; exists {
+				a.fail(w, r, domain.Fail("INVALID_ADVISOR_REQUEST", "探索短提示不接收战斗、问题或对话历史字段", 400))
+				return
+			}
+		}
+	}
 	for _, field := range required {
 		value, exists := fields[field]
 		if !exists || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {

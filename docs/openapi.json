@@ -384,7 +384,7 @@
       "post": {
         "operationId": "askAdvisor",
         "summary": "阿策只读战斗与旅程问答",
-        "description": "有效会话必需。缺省battle核对活动场次；scope=journey核对sceneKey及请求开始的expectedRevision，并在模型返回前核对相关进度。单次12秒，无自动重试；模型不可用时source=local，客户端按当前场景回退。现有限流继续生效。问答不执行游戏命令、不改变revision。正文最多128KiB。",
+        "description": "有效会话必需。缺省battle核对活动场次；journey核对sceneKey及expectedRevision。explore_hint只改写地图当前批准的一句本地提示，限一二四五章探索，不接问题/历史/内部目标ID，context须为ExploreHintObservation的JSON字符串。返回前核对相关进度。问答最多12秒，探索短提示最多4秒，无自动重试；source=local时保留当前本地文字。现有限流、全局并发与日预算继续生效，自动提示会话槽独立于主动聊天。接口不执行命令、不改变revision。正文最多128KiB。",
         "requestBody": {
           "required": true,
           "content": {
@@ -2491,7 +2491,6 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "question",
           "context"
         ],
         "properties": {
@@ -2553,9 +2552,10 @@
             "type": "string",
             "enum": [
               "battle",
-              "journey"
+              "journey",
+              "explore_hint"
             ],
-            "description": "缺省为既有战斗问答；journey按当前旅程场景问答。"
+            "description": "缺省为既有战斗问答；journey为主动旅程问答；explore_hint为地图批准的自动短提示改写。"
           },
           "sceneKey": {
             "type": "string",
@@ -2572,7 +2572,8 @@
           {
             "required": [
               "attemptId",
-              "stageId"
+              "stageId",
+              "question"
             ],
             "properties": {
               "scope": {
@@ -2586,7 +2587,8 @@
             "required": [
               "scope",
               "sceneKey",
-              "expectedRevision"
+              "expectedRevision",
+              "question"
             ],
             "properties": {
               "scope": {
@@ -2607,8 +2609,34 @@
                 }
               ]
             }
+          },
+          {
+            "required": ["scope", "sceneKey", "expectedRevision"],
+            "properties": {
+              "scope": {"const": "explore_hint"},
+              "context": {"maxLength": 2048}
+            },
+            "not": {
+              "anyOf": [
+                {"required": ["attemptId"]},
+                {"required": ["stageId"]},
+                {"required": ["question"]},
+                {"required": ["history"]}
+              ]
+            }
           }
         ]
+      },
+      "ExploreHintObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["hint"],
+        "properties": {
+          "hint": {
+            "type": "string", "minLength": 1, "maxLength": 240,
+            "description": "地图当前批准显示的本地情境提示；目标资格/远近/完成条件由地图判定。不能发送整张表、内部目标ID、隐藏内容或据坐标猜出的路线。"
+          }
+        }
       },
       "AdvisorResponse": {
         "type": "object",

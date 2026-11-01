@@ -8,6 +8,10 @@ export interface ModelAdvisorRequest {
   sceneKey?:string;expectedRevision?:number;
   question:string;context:string;history:AdvisorHistoryEntry[];
 }
+/** Automatic map wording: no user question, history, battle ID or target table. */
+export interface ExploreHintRequest {
+  scope:'explore_hint';sceneKey:string;expectedRevision:number;context:string;
+}
 export class AdvisorContextChanged extends Error {
   constructor(){super('advisor_context_changed');}
 }
@@ -19,7 +23,7 @@ interface Dependencies {
 }
 
 /** Read-only chat request; never enters the game's command/retry or persistence queue. */
-export async function requestModelAdvisor(payload:ModelAdvisorRequest,signal:AbortSignal,dependencies:Dependencies={}):Promise<ModelAdvisorAnswer>{
+export async function requestModelAdvisor(payload:ModelAdvisorRequest|ExploreHintRequest,signal:AbortSignal,dependencies:Dependencies={}):Promise<ModelAdvisorAnswer>{
   if(signal.aborted)throw new Error('advisor_cancelled');
   const session=(dependencies.session??new BrowserSessionStore()).read();
   if(!session?.token)throw new Error('advisor_session_unavailable');

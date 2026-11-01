@@ -105,3 +105,35 @@ test('a same-tab token change rejects an old account reply before state refresh'
     assert.equal(await page.evaluate('sdk.snapshot().messages.length'),0);
   }finally{await page.close();}
 });
+
+test('optional explore hook generates quietly, reuses cache and keeps local text when disabled',async()=>{
+  const page=await fixture();
+  try{
+    assert.equal(await page.evaluate('sdk.requests().length'),0);
+    await page.evaluate('sdk.update({hintsEnabled:true,hintText:"北侧似乎留有熟悉的踪迹。"})');
+    assert.equal(await page.evaluate('sdk.hintSnapshot().text'),'北侧似乎留有熟悉的踪迹。');
+    await page.waitForFunction('sdk.requests().length === 1');
+    assert.equal(await page.evaluate('sdk.requests()[0].body.scope'),'explore_hint');
+    await page.evaluate('sdk.answer(0,"北侧似乎还有熟悉的踪迹，不妨留意。")');await tick(page);
+    assert.equal(await page.evaluate('sdk.hintSnapshot().source'),'model');
+    assert.equal(await page.evaluate('sdk.snapshot().messages.length'),0);
+    await page.evaluate('sdk.update({hintsEnabled:false})');
+    assert.equal(await page.evaluate('sdk.hintSnapshot().text'),'北侧似乎留有熟悉的踪迹。');
+    await page.evaluate('sdk.update({hintsEnabled:true})');
+    assert.equal(await page.evaluate('sdk.hintSnapshot().source'),'model');
+    assert.equal(await page.evaluate('sdk.requests().length'),1);
+  }finally{await page.close();}
+});
+
+test('optional explore hook clears a pending hint when an event opens',async()=>{
+  const page=await fixture();
+  try{
+    await page.evaluate('sdk.update({hintsEnabled:true,hintText:"北侧似乎留有熟悉的踪迹。"})');
+    await page.waitForFunction('sdk.requests().length === 1');
+    await page.evaluate('sdk.update({state:{...sdk.state(),phase:"event",pendingEventId:"current-event"}})');
+    assert.equal(await page.evaluate('sdk.requests()[0].aborted'),true);
+    await page.evaluate('sdk.answer(0,"过期的地图提示")');await tick(page);
+    assert.equal(await page.evaluate('sdk.hintSnapshot().text'),null);
+    assert.equal(await page.evaluate('sdk.snapshot().messages.length'),0);
+  }finally{await page.close();}
+});

@@ -31,7 +31,7 @@ function progressKey(state:GameState){
     state.lastResult,state.activeBattle?.status]);
 }
 function observationKey(scene?:JourneySceneObservation){
-  return JSON.stringify([scene?.nearby?.id,scene?.nearby?.label,scene?.floor,
+  return JSON.stringify([scene?.nearby?.id,scene?.nearby?.label,scene?.floor,scene?.inspectHint,
     Number.isFinite(scene?.position?.x)?scene?.position?.x:null,
     Number.isFinite(scene?.position?.y)?scene?.position?.y:null]);
 }

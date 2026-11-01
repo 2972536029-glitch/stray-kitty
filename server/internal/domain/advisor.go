@@ -7,15 +7,16 @@ type AdvisorMessage struct {
 }
 
 type AdvisorRequest struct {
-	// An omitted scope preserves the original battle-only request contract.
+	// An omitted scope preserves battle-only requests. explore_hint is an opt-in
+	// map-authored sentence rewrite, separate from manual journey conversation.
 	Scope            string           `json:"scope,omitempty"`
 	SceneKey         string           `json:"sceneKey,omitempty"`
 	ExpectedRevision *int             `json:"expectedRevision,omitempty"`
-	AttemptID        string           `json:"attemptId"`
-	StageID          string           `json:"stageId"`
-	Question         string           `json:"question"`
+	AttemptID        string           `json:"attemptId,omitempty"`
+	StageID          string           `json:"stageId,omitempty"`
+	Question         string           `json:"question,omitempty"`
 	Context          string           `json:"context"`
-	History          []AdvisorMessage `json:"history"`
+	History          []AdvisorMessage `json:"history,omitempty"`
 }
 
 type AdvisorResponse struct {

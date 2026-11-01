@@ -1,16 +1,19 @@
-import {createElement} from 'react';
+import {createElement, Fragment} from 'react';
 import {createRoot} from 'react-dom/client';
 import {flushSync} from 'react-dom';
 import {AdvisorProvider, useGlobalAdvisor, useSharedAdvisor} from '../../web/src/modules/advisor/AdvisorProvider';
 import type {Catalog, GameState} from '../../web/src/contracts';
+import {useExploreAdvisorHint} from '../../web/src/modules/advisor/useExploreAdvisorHint';
 
 const catalog: Catalog = {version:'test',chapters:[],story:[],maps:[],events:[],cats:[],stages:[],furniture:[],slots:[],items:[],pools:[],tutorials:[],assets:[],products:[],homeDecor:[]};
 const state: GameState = {schemaVersion:1,contentVersion:'test',revision:1,phase:'explore',chapterId:'alley',mapId:'alley',storyNodeId:'',pendingEventId:'',activeBattle:null,flags:[],cats:[],inventory:{},currencies:{},furniture:[],placements:{},completedStages:[],lastResult:{message:''}};
 let advisor: ReturnType<typeof useGlobalAdvisor>, shared: NonNullable<ReturnType<typeof useSharedAdvisor>>;
+let explore: ReturnType<typeof useExploreAdvisorHint>;
 const root=createRoot(document.getElementById('root')!);
-const props={state,catalog,open:true,blocked:false,resetKey:0,scene:{nearby:{id:'first',label:'第一处纸箱'}}};
+const props={state,catalog,open:true,blocked:false,resetKey:0,scene:{nearby:{id:'first',label:'第一处纸箱'}},hintsEnabled:false,hintText:null as string|null};
 function Probe(){advisor=useGlobalAdvisor();shared=useSharedAdvisor()!;return null;}
-function render(){flushSync(()=>root.render(createElement(AdvisorProvider,{...props,onOpenChange:value=>{props.open=typeof value==='function'?value(props.open):value;render();},children:createElement(Probe)})));}
+function HintProbe(){explore=useExploreAdvisorHint({state:props.state,enabled:props.hintsEnabled,inspectHint:props.hintText,resetKey:props.resetKey});return null;}
+function render(){flushSync(()=>root.render(createElement(AdvisorProvider,{...props,onOpenChange:value=>{props.open=typeof value==='function'?value(props.open):value;render();},children:createElement(Fragment,null,createElement(Probe),createElement(HintProbe))})));}
 const pending: Array<{body:Record<string,unknown>;signal:AbortSignal;resolve:(value:Response)=>void}> = [];
 window.fetch = async (_url, init) => new Promise<Response>(resolve=>pending.push({body:JSON.parse(String(init?.body)),signal:init?.signal as AbortSignal,resolve}));
 const sdk={
@@ -19,6 +22,7 @@ const sdk={
   state(){return props.state;},
   ask(question:string){let accepted=false;flushSync(()=>{accepted=advisor.ask(question);});return accepted;},
   snapshot(){return {messages:advisor.messages,pendingQuestion:advisor.pendingQuestion,notice:advisor.notice,ready:advisor.ready};},
+  hintSnapshot(){return explore;},
   requests(){return pending.map(item=>({body:item.body,aborted:item.signal.aborted}));},
   answer(index:number,text='当前回答'){pending[index].resolve(new Response(JSON.stringify({source:'model',title:'阿策建议',text})));},
   token(value:string){localStorage.setItem('stray-kitty.session.v1',JSON.stringify({playerId:value,token:value}));},
