@@ -1,0 +1,13 @@
+# Chapter 2 event-icon preview
+
+Run `node tools/map-review/chapter2-events/server.mjs` from this worktree. Open http://127.0.0.1:5197/ and use the location buttons or `?focus=crow`, `pigeon`, `momo`, `boss`, `exit`.
+
+The preview and production scene share `web/src/modules/nightMarket/eventProps.ts` and `eventLabels.ts`; approved icons and floating names are integrated into the game. This standalone page still has no API or save access. The branch includes the approved Chapter 2 walkability/stall work from !92 as its baseline. Follow-up walking QA widens the south cargo curb, the inside market bend, the planter-tip road and the northwest roof chain. Original PNGs, event definitions, cargo/C gates and other chapter branches are untouched.
+
+Walking review links: `?focus=junction-left`, `?focus=planter-right`, `?focus=roof-up`, `?focus=roof-north-down`, `?focus=cargo-road`, `?focus=roof-upper-down`, `?focus=roof-lower-down`. The first three target the lower bend, the road above the planter tip and the wider upper roof connector. Use left, right and up respectively. Use down at the last four; the south cargo road curves right at the curb. The northwest roof chain has approximately 8 native pixels of extra edge clearance, with a wider overlap at its middle connection. The sidebar reports native cat coordinates for precise walking feedback.
+
+Five pixel icons share one 220×44 canvas (38,720 RGBA bytes), shown at 1.4 scale with contrasting plum, mint, coral and cream. The crow remains a dark bird; the pigeon carries a message; Momo is represented by a trail, without spawning a story character. The battle and flower-room exit use separate equipment/door icons. No new images or API calls are needed for these icons. In this standalone preview, existing floor PNGs load only when that floor is viewed; the game's existing map-image loading is unchanged. The approved cargo painter still uses its existing sprite.
+
+Floating labels fade in before E range and out on departure. The next preview objective keeps its label. Progress controls only simulate existing clue/victory flags; they do not settle events. Random spots are unmarked. C/F range, opacity, targets, gates and animation use production helpers. Existing directional signposts remain separate from event icons.
+
+WASD/arrows move, E previews an interaction hint, C/F traverse, wheel zooms and right-drag pans. Hold Tab to see the background. Use the all-names checkbox, step-back button and original-marker comparison to inspect visibility. Type check with `node node_modules/typescript/bin/tsc -p tools/map-review/chapter2-events/tsconfig.json`.
