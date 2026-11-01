@@ -1,5 +1,5 @@
 import {onTracedMarketSurface} from './tracedSurface';
-import source from '../../../../specs/night-market/night_market_v016_spatial_reference.json';
+import source from '../../../../specs/night-market/night_market_v016_spatial_reference.json' with { type: 'json' };
 
 export type MarketFloor = 'L0' | 'L1' | 'Lm1';
 type Spatial = {R:Record<MarketFloor,[number,number[][]][]>;walkableSurfaces:{id:string;layer:MarketFloor;points:number[][]}[];solids:({type:'rect';x:number;y:number;w:number;h:number}|{type:'poly';pts:number[][]})[];items:{id:string;x:number;y:number;layer:MarketFloor;label:string;kind:string;info?:string}[];portals:{id:string;kind:'climb'|'stairs';key:'c'|'f';animation:'climb'|'jump'|'stairs';durationMs:number;arcHeight:number;label:string;requiresFlag?:string;a:{x:number;y:number;layer:MarketFloor};b:{x:number;y:number;layer:MarketFloor};radius:number}[];actionObstacles:{id:string;a:number[];b:number[];radius:number}[];battleBarrier:{layer:MarketFloor;a:number[];b:number[];radius:number}};

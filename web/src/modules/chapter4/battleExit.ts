@@ -1,4 +1,4 @@
-import map from '../../../../level_design/chapter4/data/chapter4.map.json';
+import map from '../../../../level_design/chapter4/data/chapter4.map.json' with { type: 'json' };
 import type {TunnelLayer, TunnelPoint} from './navigation';
 import type {TunnelSurface} from './surfaces';
 

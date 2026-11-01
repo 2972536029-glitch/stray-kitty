@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {inflateSync} from 'node:zlib';
 import {fileURLToPath} from 'node:url';
-import map from '../level_design/chapter4/data/chapter4.map.json';
+import map from '../level_design/chapter4/data/chapter4.map.json' with { type: 'json' };
 import {tunnelConnections, tunnelPortalDisplay} from '../web/src/modules/chapter4/navigation';
 import {raisedRidgeMask, tankRidgeMask, tunnelClimbSurface, tunnelGroundMask, tunnelSurfaceConnections} from '../web/src/modules/chapter4/surfaces';
 import {nearbyLockedTunnelEvent,tunnelMovementChoices,type TunnelMarkerState} from '../web/src/modules/chapter4/eventMarkers';

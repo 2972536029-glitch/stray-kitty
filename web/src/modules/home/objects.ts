@@ -1,4 +1,4 @@
-import decor from '../../../content/home/decor.json';
+import decor from '../../../content/home/decor.json' with { type: 'json' };
 import type {GameState} from '../../contracts';
 import type {CatBreed} from '../../adapters/canvas/pixelCat';
 import {HOME_SLOTS, homeStage, type HomePoint} from './layout';

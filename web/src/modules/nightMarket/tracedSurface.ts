@@ -1,4 +1,4 @@
-import trace from '../../../../specs/night-market/night_market_traced_mask.json';
+import trace from '../../../../specs/night-market/night_market_traced_mask.json' with { type: 'json' };
 type Floor='L0'|'L1'|'Lm1';
 const fields=Object.fromEntries(Object.entries(trace.floors).map(([floor,runs])=>{
   const values=new Uint8Array(trace.columns*trace.rows);
