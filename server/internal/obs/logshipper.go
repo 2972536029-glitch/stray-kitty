@@ -110,15 +110,24 @@ func (s *logShipper) flush(batch []map[string]any) {
 		if err != nil {
 			continue
 		}
-		payload = append(payload, map[string]any{
-			// message 为合法 JSON 时 Datadog 会自动解析出其中的属性,
-			// dd.trace_id / dd.span_id 由此与 trace 关联
+		event := map[string]any{
+			// message 为合法 JSON 时 Datadog 会自动解析出其中的属性
 			"message":  string(line),
 			"status":   levelOf(kv),
 			"service":  kv["service"],
 			"ddsource": "go",
 			"ddtags":   "env:" + envOr("DD_ENV", "dev") + ",team:" + envOr("DD_TEAM", "stray-kitty") + ",version:" + envOr("DD_VERSION", "0.1.0"),
-		})
+		}
+		// Trace↔Logs 关联字段放在 message JSON 里即可:标准管道会把它重映射到保留
+		// 字段 trace_id(检索语法 trace_id:<十进制>,不是 @dd.trace_id——排查时踩过的坑:
+		// facet 写错会误判成"关联丢失")。顶层副本一并提交,两条路径都被保留字段收编。
+		if v, ok := kv["dd.trace_id"]; ok {
+			event["dd.trace_id"] = v
+		}
+		if v, ok := kv["dd.span_id"]; ok {
+			event["dd.span_id"] = v
+		}
+		payload = append(payload, event)
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
