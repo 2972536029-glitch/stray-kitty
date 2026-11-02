@@ -1,5 +1,7 @@
 # Chapter 2 event-icon preview
 
+The November 2 QA follow-up aligns the real game's footer C/F prompt with the on-map marker's actionable range and floor-specific direction. Small inward notches on the northwest roof's west edge and the upper roof chain's east edge are joined. The east edge permits straight up/down walking through the former tile seams; the approved PNGs, other floors, obstacles and portal anchors are unchanged.
+
 Run `node tools/map-review/chapter2-events/server.mjs` from this worktree. Open http://127.0.0.1:5197/ and use the location buttons or `?focus=crow`, `pigeon`, `momo`, `boss`, `exit`.
 
 The preview and production scene share `web/src/modules/nightMarket/eventProps.ts` and `eventLabels.ts`; approved icons and floating names are integrated into the game. This standalone page still has no API or save access. The branch includes the approved Chapter 2 walkability/stall work from !92 as its baseline. Follow-up walking QA widens the south cargo curb, the inside market bend, the planter-tip road and the northwest roof chain. Original PNGs, event definitions, cargo/C gates and other chapter branches are untouched.
