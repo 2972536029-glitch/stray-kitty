@@ -41,6 +41,8 @@ if (-not (Test-Path -LiteralPath $commonPath)) {
 
 $worktree = $null
 $worktreeCreated = $false
+# Linux CI 容器无 TEMP 环境变量,统一走可写临时目录。
+if (-not $env:TEMP) { $env:TEMP = '/tmp' }
 $renderedDirectory = $null
 $archiveDirectory = $null
 $releaseRecord = $null
