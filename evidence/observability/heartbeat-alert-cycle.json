@@ -1,0 +1,26 @@
+{
+  "heartbeat_monitor_closed_loop": {
+    "real_events": [
+      {
+        "time_utc": "2026-11-02T19:19:28Z",
+        "type": "ALERT",
+        "trigger": "game 容器 19:08:42 停止;sum(last_10m) <1 + evaluation_delay 60s ≈ 预期 19:19:42,实测 19:19:28"
+      },
+      {
+        "time_utc": "2026-11-02T19:26:28Z",
+        "type": "RECOVERY",
+        "trigger": "game 重启 19:25:40,流量恢复后自动回 OK"
+      }
+    ],
+    "source": "Datadog v2 events API(@monitor.id:339853048)",
+    "method": "docker compose stop game → 等待 → docker compose start game,全程未触碰监控定义"
+  },
+  "k8s_form": {
+    "span_total_15m": 40,
+    "hosts": {
+      "kitty-obs-control-plane": 32,
+      "docker-desktop": 8
+    },
+    "conclusion": "kind 集群(DaemonSet Agent + Downward API hostIP)与 compose 形态同时独立上报;应用代码零改动"
+  }
+}

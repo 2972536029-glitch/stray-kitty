@@ -1,0 +1,10 @@
+{
+  "k8s_form": {
+    "span_total": 40,
+    "hosts": {
+      "kitty-obs-control-plane": 32,
+      "docker-desktop": 8
+    },
+    "note": "kind 集群形态:DaemonSet Agent + Downward API hostIP,应用零代码改动仅注入环境变量"
+  }
+}
