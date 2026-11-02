@@ -64,7 +64,10 @@ foreach ($name in $deployments.Keys) {
     Assert-Config ($deployment.spec.replicas -eq 1 -and $deployment.spec.strategy.type -eq 'Recreate') ("Single replica with Recreate required for " + $name)
     Assert-Config ($labels.'app.kubernetes.io/instance' -eq 'haozhe-preview' -and $labels.'app.kubernetes.io/component' -eq $components[$name]) ("Consistent component labels required for " + $name)
     Assert-Config ($deployment.spec.selector.matchLabels.'app.kubernetes.io/component' -eq $components[$name]) ("Selector must pin the component for " + $name)
-    Assert-Config (@($pod.containers).Count -eq 1) ("Only one container expected in " + $name)
+    # frontend 允许附加 cert sidecar(acme.sh,签发/续期 443 证书);game/payment 保持单容器。
+    $maxContainers = if ($name -eq 'frontend') { 2 } else { 1 }
+    Assert-Config (@($pod.containers).Count -ge 1 -and @($pod.containers).Count -le $maxContainers) ("At most " + $maxContainers + " container(s) expected in " + $name)
+    Assert-Config ($pod.containers[0].name -eq $name) ("Primary container must be named " + $name)
     Assert-Config ($pod.automountServiceAccountToken -eq $false) ("No Kubernetes API credentials for " + $name)
     Assert-Config ($pod.imagePullSecrets[0].name -eq $settings.registrySecret) ("Registry Secret reference required for " + $name)
     Assert-Config ($pod.securityContext.runAsNonRoot -eq $true) ("Non-root required for " + $name)
