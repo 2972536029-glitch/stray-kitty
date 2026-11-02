@@ -1,0 +1,154 @@
+[
+  {
+    "name": "[小猫回家记] HTTP 5xx Rate 过高",
+    "type": "query alert",
+    "query": "avg(last_5m):(sum:kitty.http.requests{env:dev,service:kitty-api,status_class:5xx}.as_count() / sum:kitty.http.requests{env:dev,service:kitty-api}.as_count()) > 0.1",
+    "message": "kitty-api 5xx 比例超过 10%。{{#is_alert}} 排障路径:Logs 搜 service:kitty-api status:error → 点开任意一条的 dd.trace_id 跳到对应 Trace;或 APM 按 duration 排序看带 error 的 span。{{/is_alert}} {{#is_recovery}} 5xx 比例已恢复。{{/is_recovery}}\n\n@slack-bj_xsolla_school-hans-team",
+    "options": {
+      "thresholds": {"critical": 0.1},
+      "notify_audit": false,
+      "require_full_window": false,
+      "new_host_delay": 300,
+      "notify_no_data": false,
+      "renotify_interval": 0,
+      "evaluation_delay": 60
+    },
+    "tags": ["team:stray-kitty", "service:kitty-api", "purpose:5xx"]
+  },
+  {
+    "name": "[小猫回家记] 命令系统错误率过高",
+    "type": "query alert",
+    "query": "avg(last_5m):(sum:kitty.command{env:dev,service:kitty-api,result:error}.as_count() / sum:kitty.command{env:dev,service:kitty-api}.as_count()) > 0.1",
+    "message": "游戏命令系统错误率超过 10%(只统计 result:error——rejected 是业务拒绝,属于正常玩法,不告警)。{{#is_alert}} 查 kitty.command{result:error} 时间分布与同窗口 game 存储错误日志;kitty.repo.save_duration_ms 同步看是否磁盘/锁压力。{{/is_alert}} {{#is_recovery}} 命令错误率已恢复。{{/is_recovery}}\n\n@slack-bj_xsolla_school-hans-team",
+    "options": {
+      "thresholds": {"critical": 0.1},
+      "notify_audit": false,
+      "require_full_window": false,
+      "notify_no_data": false,
+      "renotify_interval": 0,
+      "evaluation_delay": 60
+    },
+    "tags": ["team:stray-kitty", "service:kitty-api", "purpose:command-error"]
+  },
+  {
+    "name": "[小猫回家记] 命令处理 p95 过高",
+    "type": "query alert",
+    "query": "max(last_5m):avg:kitty.command.duration_ms.95percentile{env:dev,service:kitty-api} > 1000",
+    "message": "游戏命令处理 p95 超过 1 秒(含存档写盘)。{{#is_alert}} 先看 kitty.repo.save_duration_ms 是否同时抬升(单 JSON 文件持久化是当前架构的主要耗时点),再按 APM duration 排序定位慢命令。{{/is_alert}} {{#is_recovery}} p95 已恢复。{{/is_recovery}} 阈值依据:本机基线待 e2e 流量实测后复核(OBSERVABILITY.md §阈值)。\n\n@slack-bj_xsolla_school-hans-team",
+    "options": {
+      "thresholds": {"critical": 1000.0, "warning": 500.0},
+      "notify_audit": false,
+      "require_full_window": false,
+      "notify_no_data": false,
+      "renotify_interval": 0,
+      "evaluation_delay": 60
+    },
+    "tags": ["team:stray-kitty", "service:kitty-api", "purpose:latency"]
+  },
+  {
+    "name": "[小猫回家记] 支付系统错误",
+    "type": "query alert",
+    "query": "sum(last_5m):sum:kitty.payment.charge{env:dev,service:kitty-api,result:error}.as_count() >= 1",
+    "message": "支付链路出现系统错误(不含 declined——演示卡拒付是正常业务)。{{#is_alert}} 查 payment 服务日志与 APM payment 相关 span;拆分形态下注意 kitty-paymentd 与 Xsolla 沙箱连通性。{{/is_alert}} {{#is_recovery}} 支付链路已恢复。{{/is_recovery}}\n\n@slack-bj_xsolla_school-hans-team",
+    "options": {
+      "thresholds": {"critical": 1},
+      "notify_audit": false,
+      "require_full_window": false,
+      "notify_no_data": false,
+      "renotify_interval": 0,
+      "evaluation_delay": 60
+    },
+    "tags": ["team:stray-kitty", "service:kitty-api", "purpose:payment-error"]
+  },
+  {
+    "name": "[小猫回家记] 支付拒付率过高(演示业务异常)",
+    "type": "query alert",
+    "query": "avg(last_15m):((sum:kitty.payment.charge{env:dev,result:declined}.as_count() / (sum:kitty.payment.charge{env:dev,result:declined}.as_count() + sum:kitty.payment.charge{env:dev,result:success}.as_count())) * 100) >= 50",
+    "message": "15 分钟内超过一半的充值以 declined 结束(HTTP 全 200,属于「服务健康但业务异常」)。{{#is_alert}} 拒付是正常业务路径,但占比异常时先查演示卡使用方式(4242 成功/0000 拒付)与前端传参。{{/is_alert}} {{#is_recovery}} 拒付率已回落。{{/is_recovery}} 无支付流量时显示 No Data 属预期。\n\n@slack-bj_xsolla_school-hans-team",
+    "options": {
+      "thresholds": {"critical": 50},
+      "notify_audit": false,
+      "require_full_window": false,
+      "notify_no_data": false,
+      "renotify_interval": 0,
+      "evaluation_delay": 120
+    },
+    "tags": ["team:stray-kitty", "purpose:payment-business"]
+  },
+  {
+    "name": "[小猫回家记] Xsolla Webhook 入账失败",
+    "type": "query alert",
+    "query": "sum(last_15m):sum:kitty.payment.webhook{env:dev,result:error}.as_count() >= 1",
+    "message": "Xsolla webhook 出现入账失败(5xx,等待渠道重试)。{{#is_alert}} 这是充值到账链路(Golden Trace)的故障信号:查 paymentd 的 xsolla webhook credit failed 日志与 credit 回调 span;502 会被 Xsolla 重试兜底,但必须人工确认最终到账。{{/is_alert}} {{#is_recovery}} webhook 已恢复 200。{{/is_recovery}}\n\n@slack-bj_xsolla_school-hans-team",
+    "options": {
+      "thresholds": {"critical": 1},
+      "notify_audit": false,
+      "require_full_window": false,
+      "notify_no_data": false,
+      "renotify_interval": 0,
+      "evaluation_delay": 60
+    },
+    "tags": ["team:stray-kitty", "service:kitty-paymentd", "purpose:webhook-error"]
+  },
+  {
+    "name": "[小猫回家记] 阿策降级率过高",
+    "type": "query alert",
+    "query": "avg(last_15m):((sum:kitty.advisor.call{env:dev,service:kitty-api,result:fallback}.as_count() / sum:kitty.advisor.call{env:dev,service:kitty-api}.as_count()) * 100) >= 50",
+    "message": "15 分钟内超过一半的阿策问答走了本地兜底(未用到模型)。{{#is_alert}} 按 reason tag 细分:not_configured=环境缺 key(配置问题)、provider_rate_limited=配额打满、timeout/provider_unavailable=服务不可达、invalid_response=返回不合规范。{{/is_alert}} {{#is_recovery}} 降级率已回落。{{/is_recovery}}\n\n@slack-bj_xsolla_school-hans-team",
+    "options": {
+      "thresholds": {"critical": 50},
+      "notify_audit": false,
+      "require_full_window": false,
+      "notify_no_data": false,
+      "renotify_interval": 0,
+      "evaluation_delay": 120
+    },
+    "tags": ["team:stray-kitty", "service:kitty-api", "purpose:advisor-fallback"]
+  },
+  {
+    "name": "[小猫回家记] 登录失败突增(疑似爆破/刷接口)",
+    "type": "query alert",
+    "query": "sum(last_15m):sum:kitty.auth.login{env:dev,service:kitty-api,result:rejected,code:BAD_CREDENTIALS}.as_count() > 10",
+    "message": "15 分钟内登录失败超过 10 次({{value}} 次)。正常玩家偶尔输错密码不该到这个量级——先查 game-api 登录失败日志时间分布:集中在单一 username/来源则是爆破尝试;伴随注册激增则是批量刷接口。{{#is_alert}} 已通知。{{/is_alert}} {{#is_recovery}} 登录失败已回落。{{/is_recovery}}\n\n@slack-bj_xsolla_school-hans-team",
+    "options": {
+      "thresholds": {"critical": 10},
+      "notify_audit": false,
+      "require_full_window": true,
+      "notify_no_data": false,
+      "renotify_interval": 60,
+      "evaluation_delay": 60
+    },
+    "tags": ["team:stray-kitty", "service:kitty-api", "purpose:auth-guard"]
+  },
+  {
+    "name": "[小猫回家记] 服务心跳 / 无流量(No Traffic)",
+    "type": "query alert",
+    "query": "sum(last_10m):sum:kitty.http.requests{env:dev,service:kitty-api}.as_count() < 1",
+    "message": "10 分钟内 kitty-api 没有任何 HTTP 请求——服务可能整体下线(或没人玩)。{{#is_alert}} 若预期应有流量,检查容器状态与 /healthz。{{/is_alert}} {{#is_recovery}} 流量已恢复。{{/is_recovery}}\n\n@slack-bj_xsolla_school-hans-team",
+    "options": {
+      "thresholds": {"critical": 1},
+      "notify_audit": false,
+      "require_full_window": false,
+      "new_host_delay": 300,
+      "notify_no_data": true,
+      "no_data_timeframe": 15,
+      "renotify_interval": 0
+    },
+    "tags": ["team:stray-kitty", "service:kitty-api", "purpose:heartbeat"]
+  },
+  {
+    "name": "[小猫回家记] 存档写入耗时过高",
+    "type": "query alert",
+    "query": "max(last_10m):avg:kitty.repo.save_duration_ms.95percentile{env:dev,service:kitty-api} > 1000",
+    "message": "单 JSON 文件存档写入 p95 超过 1 秒——这是本项目架构的主要 IO 风险点(全局互斥 + 临时文件原子写)。{{#is_alert}} 检查宿主机磁盘 IO 与存档体积(kitty.repo.state_size_bytes);体积持续增长需要规划裁剪或分档。{{/is_alert}} {{#is_recovery}} 写入耗时已恢复。{{/is_recovery}} 阈值待基线实测后复核。\n\n@slack-bj_xsolla_school-hans-team",
+    "options": {
+      "thresholds": {"critical": 1000.0, "warning": 500.0},
+      "notify_audit": false,
+      "require_full_window": false,
+      "notify_no_data": false,
+      "renotify_interval": 0,
+      "evaluation_delay": 60
+    },
+    "tags": ["team:stray-kitty", "service:kitty-api", "purpose:storage"]
+  }
+]
