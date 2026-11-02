@@ -23,6 +23,7 @@ var (
 func Init(service string) {
 	defaultService = service
 	defaultMetrics = newMetrics(service)
+	initTracer(service)
 }
 
 // Shutdown 停止 tracer 并关闭指标客户端（main defer 调用）。
