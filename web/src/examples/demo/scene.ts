@@ -503,7 +503,8 @@ export class DemoScene {
         const bossReady=this.state.flags.includes('market_crow_clue_completed')&&this.state.flags.includes('market_pigeon_clue_completed');
         if(nearMomo)this.onInspectHint?.('E · 查看墨墨的踪迹');
         const portal=marketPortals.filter(value=>!value.requiresFlag||this.state!.flags.includes(value.requiresFlag)).flatMap(value=>[{portal:value,point:value.a},{portal:value,point:value.b}]).filter(value=>value.point.layer===this.marketFloor&&Math.hypot(this.x-value.point.x,this.y-value.point.y)<=value.portal.radius).sort((a,b)=>Math.hypot(this.x-a.point.x,this.y-a.point.y)-Math.hypot(this.x-b.point.x,this.y-b.point.y))[0];
-        if(portal)this.onInspectHint?.(`${portal.portal.key.toUpperCase()} · ${portal.portal.label.split(' · ')[1]}`);
+        const portalDisplay=portal&&marketPortalDisplay(portal.portal,portal.point,this.marketFloor,this.x,this.y,this.state.flags);
+        if(portalDisplay?.active)this.onInspectHint?.(portalDisplay.label);
         else if(!target&&this.marketFloor==='L0'&&Math.hypot(this.x-1310,this.y-169)<72&&!bossReady)this.onInspectHint?.('集市保卫战 · 需要先完成两条情报');
         else if(!target&&this.marketFloor==='L0'&&Math.hypot(this.x-1365,this.y-78)<48&&!this.state.flags.includes('market_cleared'))this.onInspectHint?.('北街出口 · 请先完成集市保卫战');
         const battleAction=marketEAction(this.marketFloor,this.x,this.y,this.state.flags,this.state.drawnEvents??[]);
