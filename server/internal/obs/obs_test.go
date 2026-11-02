@@ -42,7 +42,7 @@ func TestNoopWithoutInit(t *testing.T) {
 }
 
 // Init 之后 tracer 必须真正启动:span 要有非零 trace id,否则日志关联与 APM 全部静默失效
-//(首个联调版本的真实事故:Init 漏调 initTracer,一切"看起来正常"但三支柱缺 Trace)。
+// (首个联调版本的真实事故:Init 漏调 initTracer,一切"看起来正常"但三支柱缺 Trace)。
 func TestInitStartsTracer(t *testing.T) {
 	Init("kitty-test")
 	defer Shutdown()
