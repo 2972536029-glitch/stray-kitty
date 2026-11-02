@@ -337,9 +337,13 @@ try {
 
     $currentPhase = 'verify public health endpoint'
     Step 'Verify public /healthz'
-    $health = Invoke-RestMethod -Uri "http://$ip/healthz" -TimeoutSec 20 -ErrorAction Stop
-    if ($health.status -ne 'ok') {
-        throw 'Public /healthz did not return status=ok.'
+    # 公网 /healthz 由前端 nginx 直接应答纯文本 "ok"（Content-Type 非 JSON），
+    # 直连游戏端口才是 {"status":"ok"}；两种形态都接受，字节响应先解码。
+    $healthResponse = Invoke-WebRequest -Uri "http://$ip/healthz" -TimeoutSec 20 -ErrorAction Stop
+    $healthText = if ($healthResponse.Content -is [byte[]]) { [Text.Encoding]::UTF8.GetString($healthResponse.Content) } else { [string]$healthResponse.Content }
+    $healthText = $healthText.Trim()
+    if ($healthText -ne 'ok' -and $healthText -notmatch '"status"\s*:\s*"ok"') {
+        throw "Public /healthz did not return ok: $healthText"
     }
 
     $releaseRecord.status = 'deployed'
@@ -347,7 +351,7 @@ try {
     $releaseRecord.deployment.finishedAtUtc = [DateTime]::UtcNow.ToString('o')
     $releaseRecord | Add-Member -NotePropertyName publicAddress -NotePropertyValue "http://$ip" -Force
     $releaseRecord | Add-Member -NotePropertyName paymentReadiness -NotePropertyValue $paymentReady -Force
-    $releaseRecord | Add-Member -NotePropertyName healthCheck -NotePropertyValue $health -Force
+    $releaseRecord | Add-Member -NotePropertyName healthCheck -NotePropertyValue $healthText -Force
     Save-ReleaseRecord
 
     Step 'Deployment verified'
