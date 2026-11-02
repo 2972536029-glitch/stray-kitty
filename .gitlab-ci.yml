@@ -62,7 +62,7 @@ deploy_images:
         docker push "$CI_REGISTRY_IMAGE/$svc:$CI_COMMIT_SHA" > push.log 2>&1 || { cat push.log; exit 1; }
         DIGEST=$(grep -o 'digest: sha256:[a-f0-9]\{64\}' push.log | tail -1 | cut -d' ' -f2)
         echo "digest $CI_REGISTRY_IMAGE/$svc@$DIGEST"
-        echo "${svc}_digest=\"$CI_REGISTRY_IMAGE/$svc@$DIGEST\"" >> digests.env
+        echo "${svc}_digest=$CI_REGISTRY_IMAGE/$svc@$DIGEST" >> digests.env
       done
   artifacts:
     reports:

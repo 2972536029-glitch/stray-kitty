@@ -216,7 +216,8 @@ try {
         $currentPhase = 'consume CI-built image digests'
         Step 'Use image digests built by deploy_images job'
         foreach ($name in $services.Keys) {
-            $value = [Environment]::GetEnvironmentVariable($name + '_digest')
+            # dotenv artifact 个别版本会保留字面引号,统一剥掉再校验。
+            $value = ([Environment]::GetEnvironmentVariable($name + '_digest') -as [string]).Trim().Trim('"').Trim("'")
             $expected = '^' + [regex]::Escape($services[$name].Repository) + '@sha256:[a-f0-9]{64}$'
             if ([string]::IsNullOrWhiteSpace($value) -or $value -cnotmatch $expected) {
                 throw "CiMode: env var ${name}_digest missing or not the verified project image (got: $value)."
