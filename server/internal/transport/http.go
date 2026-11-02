@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"stray-kitty/server/internal/domain"
 	"stray-kitty/server/internal/integrations/payment"
+	"stray-kitty/server/internal/obs"
 	"stray-kitty/server/internal/platform"
 	"stray-kitty/server/internal/service"
 	"strings"
@@ -63,6 +63,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, err)
 			return
 		}
+		obs.Incr("kitty.session.started")
 		a.json(w, 201, map[string]string{"playerId": id, "token": token})
 	})
 	mux.HandleFunc("GET /api/v1/state", func(w http.ResponseWriter, r *http.Request) {
@@ -92,17 +93,28 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		a.json(w, 200, tools)
 	})
 	mux.HandleFunc("POST /api/v1/commands", func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		// command.type 是 validateCommand 校验过的有限枚举;校验前的非法输入
+		// 一律保持 unknown,不把用户构造的任意字符串放进 tag(低基数纪律)。
+		commandKind := "unknown"
+		emit := func(result string) {
+			obs.Incr("kitty.command", "type:"+commandKind, "result:"+result)
+			obs.Histogram("kitty.command.duration_ms", float64(time.Since(start).Microseconds())/1000, "type:"+commandKind)
+		}
 		token, err := a.token(r)
 		if err != nil {
+			emit("rejected")
 			a.fail(w, r, err)
 			return
 		}
 		if !strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/json") {
+			emit("rejected")
 			a.fail(w, r, domain.Fail("INVALID_CONTENT_TYPE", "需要 application/json", 415))
 			return
 		}
 		body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 8192))
 		if err != nil {
+			emit("rejected")
 			a.fail(w, r, domain.Fail("BODY_TOO_LARGE", "请求超过 8 KiB", 413))
 			return
 		}
@@ -110,21 +122,33 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		decoder := json.NewDecoder(strings.NewReader(string(body)))
 		decoder.DisallowUnknownFields()
 		if err = decoder.Decode(&req); err != nil {
+			emit("rejected")
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "请求格式或字段无效", 400))
 			return
 		}
 		if err = decoder.Decode(new(any)); err != io.EOF {
+			emit("rejected")
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "只接受单个 JSON 对象", 400))
 			return
 		}
 		if err = validateCommand(body, req.Command.Type); err != nil {
+			emit("rejected")
 			a.fail(w, r, err)
 			return
 		}
+		commandKind = req.Command.Type
+		obs.TagCtx(r.Context(), "command.type", commandKind)
 		result, err := game.Execute(token, r.Header.Get("Idempotency-Key"), req)
 		if err != nil {
+			emit(domain.ClassifyFault(err))
 			a.fail(w, r, err)
 			return
+		}
+		// replayed 是幂等回执命中,不是又一次成交,单列一个 result 防止重复计数。
+		if result.Replayed {
+			emit("replayed")
+		} else {
+			emit("success")
 		}
 		a.json(w, 200, result)
 	})
@@ -160,8 +184,16 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		}
 		result, err := a.pay.Charge(req.PlayerID, req.PackID, req.CardNumber)
 		if err != nil {
+			obs.Incr("kitty.payment.charge", "result:"+domain.ClassifyFault(err))
 			a.fail(w, r, err)
 			return
+		}
+		// declined 是正常业务(HTTP 200 + 治愈文案),与 success 同为支付结果,
+		// 只有 result:error(系统故障)进故障告警。
+		if result.Txn.Status == "declined" {
+			obs.Incr("kitty.payment.charge", "result:declined")
+		} else {
+			obs.Incr("kitty.payment.charge", "result:success")
 		}
 		resp := map[string]any{"txnId": result.Txn.ID, "pack": result.Pack, "status": result.Txn.Status, "tunaGranted": result.Pack.TunaGranted, "tunaBalance": result.TunaBalance}
 		if result.Txn.Status == "declined" {
@@ -218,9 +250,11 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		}
 		result, err := a.pay.Session(req.PlayerID, req.PackID)
 		if err != nil {
+			obs.Incr("kitty.payment.session", "result:"+domain.ClassifyFault(err))
 			a.fail(w, r, err)
 			return
 		}
+		obs.Incr("kitty.payment.session", "result:success")
 		a.json(w, 200, result)
 	})
 	// 支付服务 webhook 收款后的内部入账口:仅集群内调用,INTERNAL_TOKEN 未配置时整个端点关闭。
@@ -263,34 +297,45 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 	mux.HandleFunc("POST /api/v1/advisor", a.advise)
 	// 账号体系:注册把当前匿名进度绑到用户名密码;登录在任意设备取回进度。
 	mux.HandleFunc("POST /api/auth/register", func(w http.ResponseWriter, r *http.Request) {
+		emit := func(result string) { obs.Incr("kitty.auth.register", "result:"+result) }
 		token, err := a.token(r)
 		if err != nil {
+			emit(domain.ClassifyFault(err))
 			a.fail(w, r, err)
 			return
 		}
 		req, err := a.readAuthBody(w, r)
 		if err != nil {
+			emit(domain.ClassifyFault(err))
 			a.fail(w, r, err)
 			return
 		}
 		username, err := game.Register(token, req.Username, req.Password)
 		if err != nil {
+			emit(domain.ClassifyFault(err))
 			a.fail(w, r, err)
 			return
 		}
+		emit("success")
 		a.json(w, 201, map[string]string{"username": username})
 	})
 	mux.HandleFunc("POST /api/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		// code tag 携带有限错误码枚举(BAD_CREDENTIALS 等),登录爆破监控按它区分
+		// "输错密码"与"格式问题"。
+		emit := func(result, code string) { obs.Incr("kitty.auth.login", "result:"+result, "code:"+code) }
 		req, err := a.readAuthBody(w, r)
 		if err != nil {
+			emit(domain.ClassifyFault(err), domain.FaultCode(err))
 			a.fail(w, r, err)
 			return
 		}
 		playerID, token, err := game.Login(req.Username, req.Password)
 		if err != nil {
+			emit(domain.ClassifyFault(err), domain.FaultCode(err))
 			a.fail(w, r, err)
 			return
 		}
+		emit("success", "ok")
 		a.json(w, 200, map[string]string{"playerId": playerID, "token": token})
 	})
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
@@ -319,14 +364,37 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			w.Header().Set("Cache-Control", "no-store")
 		}
+		// 预匹配一次拿路由模板(mux.Handler 只匹配不执行 handler)。
+		// 未匹配路径回退固定值:原始路径是用户可任意构造的高基数来源,
+		// 直接进 metric tag 会制造无限时间序列。
+		_, pattern := mux.Handler(r)
+		if pattern == "" {
+			pattern = "unmatched"
+		}
+		route := obs.SanitizeRoute(pattern)
+		span, ctx := obs.StartWebSpan(r.Context(), r.Header, "http.request", r.Method+" "+route)
+		span.SetTag("http.method", r.Method)
+		span.SetTag("http.route", route)
+		span.SetTag("http.url", r.URL.Path)
+		sw := &obs.StatusWriter{ResponseWriter: w}
 		start := time.Now()
 		defer func() {
 			if recovered := recover(); recovered != nil {
-				a.fail(w, r, domain.Fail("INTERNAL_ERROR", "服务暂时不可用", 500))
+				span.SetTag("error", true)
+				span.SetTag("panic", fmt.Sprint(recovered))
+				a.fail(sw, r, domain.Fail("INTERNAL_ERROR", "服务暂时不可用", 500))
 			}
-			slog.Info("http request", "method", r.Method, "path", r.URL.Path, "duration_ms", time.Since(start).Milliseconds(), "request_id", id)
+			durMS := float64(time.Since(start).Microseconds()) / 1000
+			status := sw.Status
+			if status == 0 {
+				status = http.StatusOK
+			}
+			obs.FinishWeb(span, status)
+			obs.HTTPMetrics(r.Method, route, status, durMS)
+			obs.LogInfo(ctx, "http request", "method", r.Method, "path", r.URL.Path, "route", route,
+				"status", status, "duration_ms", durMS, "request_id", id)
 		}()
-		mux.ServeHTTP(w, r)
+		mux.ServeHTTP(sw, r.WithContext(ctx))
 	})
 }
 func (a *API) token(r *http.Request) (string, error) {
@@ -375,8 +443,10 @@ func (a *API) fail(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.As(err, &known) {
 		fault = known
 	}
+	obs.TagCtx(r.Context(), "error.code", fault.Code)
 	a.json(w, fault.Status, map[string]any{"error": map[string]string{"code": fault.Code, "message": fault.Message, "requestId": w.Header().Get("X-Request-Id")}})
 }
+
 func validateCommand(body []byte, kind string) error {
 	allowed := map[string][]string{
 		"ADVANCE_STORY":       {"nodeId"},

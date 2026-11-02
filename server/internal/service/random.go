@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"stray-kitty/server/internal/domain"
+	"stray-kitty/server/internal/obs"
 )
 
 // 随机事件触发协议:玩家在探索阶段行走,里程每累计一个检查段,服务端按当前
@@ -73,7 +74,9 @@ func (g *Game) reportMove(s *domain.GameState, distance int) error {
 			}
 			s.ExploreDistance = -randomGrace // 触发后的冷却保护
 			s.LastResult = domain.Result{Message: "巷子里的风停了一下——好像有什么要发生了。"}
-			// 观测埋点(README §9):不含玩家身份,后续接 Datadog 时替换 handler 即可。
+			// 观测埋点:mapId/eventId 都是内容配置里的有限集合,可进 tag;不含玩家身份。
+			// 指标口径见 docs/OBSERVABILITY.md(原 README §9 锚点已失效,以该文档为准)。
+			obs.Incr("kitty.event.random", "map:"+s.MapID, "event:"+id)
 			slog.Info("event_random_trigger", "mapId", s.MapID, "eventId", id)
 			return nil
 		}

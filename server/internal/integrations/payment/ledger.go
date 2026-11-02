@@ -7,8 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"stray-kitty/server/internal/domain"
+	"stray-kitty/server/internal/obs"
 )
 
 // Ledger 支付权威账本:由支付服务独占写入,游戏侧只经它查询。
@@ -85,6 +87,7 @@ func (l *fileLedger) History(playerID string) ([]domain.Txn, error) {
 
 // save 原子写:先写临时文件再替换,进程中断不会留下半截账本。
 func (l *fileLedger) save() error {
+	start := time.Now()
 	raw, err := json.MarshalIndent(l.data, "", "  ")
 	if err != nil {
 		return err
@@ -93,5 +96,9 @@ func (l *fileLedger) save() error {
 	if err := os.WriteFile(tmp, raw, 0o644); err != nil {
 		return err
 	}
-	return os.Rename(tmp, l.path)
+	if err := os.Rename(tmp, l.path); err != nil {
+		return err
+	}
+	obs.Histogram("kitty.payment.ledger_save_duration_ms", float64(time.Since(start).Microseconds())/1000)
+	return nil
 }

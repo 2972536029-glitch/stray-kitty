@@ -12,6 +12,7 @@ import (
 
 	"stray-kitty/server/internal/domain"
 	"stray-kitty/server/internal/integrations/payment"
+	"stray-kitty/server/internal/obs"
 	"stray-kitty/server/internal/service"
 )
 
@@ -27,7 +28,7 @@ func NewRemotePayment(baseURL string, game *service.Game) *RemotePayment {
 	return &RemotePayment{
 		base:   baseURL,
 		game:   game,
-		client: &http.Client{Timeout: 10 * time.Second},
+		client: &http.Client{Timeout: 10 * time.Second, Transport: obs.TracedRoundTripper(nil)},
 	}
 }
 

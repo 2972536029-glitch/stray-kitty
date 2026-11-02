@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"stray-kitty/server/internal/integrations/payment"
+	"stray-kitty/server/internal/obs"
 	"stray-kitty/server/internal/platform"
 )
 
@@ -28,6 +29,8 @@ func env(key, fallback string) string {
 
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	obs.Init("kitty-paymentd")
+	defer obs.Shutdown()
 	catalog, err := platform.LoadCatalog()
 	if err != nil {
 		slog.Error("invalid catalog")

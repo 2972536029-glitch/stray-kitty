@@ -8,8 +8,8 @@ package payment
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
-	"log/slog"
 	"math"
 	"net/http"
 	"strings"
@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"stray-kitty/server/internal/domain"
+	"stray-kitty/server/internal/obs"
 )
 
 // NewServiceHTTP 构建 mock 形态(演示卡号)的支付服务 http.Handler。
@@ -41,7 +42,7 @@ func newServiceHTTP(gateway *Gateway, ledger Ledger, xsolla *XsollaClient, credi
 		if errors.As(err, &fault) {
 			status, code, msg = fault.Status, fault.Code, fault.Message
 		} else {
-			slog.Error("payment service error", "error", err.Error(), "path", r.URL.Path)
+			obs.LogError(r.Context(), "payment service error", "error", err.Error(), "path", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(status)
@@ -94,10 +95,18 @@ func newServiceHTTP(gateway *Gateway, ledger Ledger, xsolla *XsollaClient, credi
 		// 成功与失败双路径都是正常业务(HTTP 200);错误仅限格式与档位问题。
 		d, err := gateway.Decide(req.PlayerID, req.PackID, req.CardNumber)
 		if err != nil {
+			obs.Incr("kitty.payment.charge", "result:"+domain.ClassifyFault(err))
 			fail(w, r, err)
 			return
 		}
+		// declined 是正常业务(演示卡拒付),只有系统故障才进 error。
+		if d.Txn.Status == "declined" {
+			obs.Incr("kitty.payment.charge", "result:declined")
+		} else {
+			obs.Incr("kitty.payment.charge", "result:success")
+		}
 		if err := ledger.Record(d.Txn); err != nil {
+			obs.Incr("kitty.payment.charge", "result:error")
 			fail(w, r, err)
 			return
 		}
@@ -194,13 +203,13 @@ func newServiceHTTP(gateway *Gateway, ledger Ledger, xsolla *XsollaClient, credi
 				packID := note.CustomParameters.PackID
 				if playerID == "" || txnID == "" || packID == "" {
 					// 缺关键字段无法发货,回 5xx 让 Xsolla 重试并留给人工排查。
-					slog.Error("xsolla payment webhook missing fields", "playerId", playerID, "txnId", txnID, "packId", packID)
+					obs.LogError(r.Context(), "xsolla payment webhook missing fields", "playerId", playerID, "txnId", txnID, "packId", packID)
 					fail(w, r, domain.Fail("WEBHOOK_INCOMPLETE", "通知缺少发货所需字段", 500))
 					return
 				}
 				pack, ok := gateway.FindPack(packID)
 				if !ok {
-					slog.Error("xsolla payment webhook unknown pack", "packId", packID)
+					obs.LogError(r.Context(), "xsolla payment webhook unknown pack", "packId", packID)
 					fail(w, r, domain.Fail("PACK_NOT_FOUND", "通知引用的档位不存在", 500))
 					return
 				}
@@ -225,16 +234,16 @@ func newServiceHTTP(gateway *Gateway, ledger Ledger, xsolla *XsollaClient, credi
 				}
 				if credit != nil {
 					if err := credit(playerID, txn, pack); err != nil {
-						slog.Error("xsolla webhook credit failed", "txnId", txnID, "error", err.Error())
+						obs.LogError(r.Context(), "xsolla webhook credit failed", "txnId", txnID, "error", err.Error())
 						fail(w, r, domain.Fail("CREDIT_FAILED", "入账未完成，等待渠道重试", 502))
 						return
 					}
 				}
 			case "refund":
 				// 演示范围:退款只留痕不动余额(金枪鱼不追回),上线前需补退款流水与扣回。
-				slog.Info("xsolla refund webhook acknowledged (no balance change in demo)", "txnId", note.webhookTxnID())
+				obs.LogInfo(r.Context(), "xsolla refund webhook acknowledged (no balance change in demo)", "txnId", note.webhookTxnID())
 			default:
-				slog.Info("xsolla webhook acknowledged", "type", note.NotificationType)
+				obs.LogInfo(r.Context(), "xsolla webhook acknowledged", "type", note.NotificationType)
 			}
 			w.WriteHeader(http.StatusOK)
 		})
@@ -243,9 +252,46 @@ func newServiceHTTP(gateway *Gateway, ledger Ledger, xsolla *XsollaClient, credi
 	wrapped := http.TimeoutHandler(mux, 10*time.Second, `{"error":{"code":"TIMEOUT","message":"支付服务响应超时"}}`)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests.Add(1)
+		// 预匹配拿路由模板;未匹配回退固定值,原始路径是用户可构造的高基数来源。
+		_, pattern := mux.Handler(r)
+		if pattern == "" {
+			pattern = "unmatched"
+		}
+		route := obs.SanitizeRoute(pattern)
+		span, ctx := obs.StartWebSpan(r.Context(), r.Header, "http.request", r.Method+" "+route)
+		span.SetTag("http.method", r.Method)
+		span.SetTag("http.route", route)
+		span.SetTag("http.url", r.URL.Path)
+		sw := &obs.StatusWriter{ResponseWriter: w}
 		start := time.Now()
-		wrapped.ServeHTTP(w, r)
-		slog.Info("payment http request", "method", r.Method, "path", r.URL.Path, "duration_ms", time.Since(start).Milliseconds(), "request_id", r.Header.Get("X-Request-ID"))
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				span.SetTag("error", true)
+				span.SetTag("panic", fmt.Sprint(recovered))
+				fail(sw, r, domain.Fail("INTERNAL", "支付服务开小差了，请稍后再试", 500))
+			}
+			durMS := float64(time.Since(start).Microseconds()) / 1000
+			status := sw.Status
+			if status == 0 {
+				status = http.StatusOK
+			}
+			obs.FinishWeb(span, status)
+			obs.HTTPMetrics(r.Method, route, status, durMS)
+			// webhook 结果按状态码分类:200=ok、4xx=rejected(如验签失败)、
+			// 5xx=error(落账/入账失败等待渠道重试)。它是充值到账链路的入口。
+			if route == "/webhook/xsolla" {
+				result := "ok"
+				if status >= 500 {
+					result = "error"
+				} else if status >= 400 {
+					result = "rejected"
+				}
+				obs.Incr("kitty.payment.webhook", "result:"+result)
+			}
+			obs.LogInfo(ctx, "payment http request", "method", r.Method, "path", r.URL.Path, "route", route,
+				"status", status, "duration_ms", durMS, "request_id", r.Header.Get("X-Request-ID"))
+		}()
+		wrapped.ServeHTTP(sw, r.WithContext(ctx))
 	})
 }
 

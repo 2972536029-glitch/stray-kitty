@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -12,6 +13,26 @@ type Fault struct {
 
 func (e *Fault) Error() string                    { return e.Message }
 func Fail(code, message string, status int) error { return &Fault{code, message, status} }
+
+// ClassifyFault 把错误落到观测四分类:已知 4xx Fault → rejected(业务/请求拒绝),
+// 5xx 与未知错误 → error(系统故障)。success/replayed 由调用点在无错时判定。
+// 只有 error 进故障告警;rejected 是正常玩法或客户端问题,告警它们就是狼来了。
+func ClassifyFault(err error) string {
+	fault := &Fault{}
+	if errors.As(err, &fault) && fault.Status < 500 {
+		return "rejected"
+	}
+	return "error"
+}
+
+// FaultCode 返回已知 Fault 的错误码(有限枚举,可进 metric tag),未知错误归 internal。
+func FaultCode(err error) string {
+	fault := &Fault{}
+	if errors.As(err, &fault) {
+		return fault.Code
+	}
+	return "internal"
+}
 
 type Attempt struct {
 	ID        string           `json:"id"`

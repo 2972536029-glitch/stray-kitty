@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"stray-kitty/server/internal/domain"
+	"stray-kitty/server/internal/obs"
 	"strconv"
 	"strings"
 	"sync"
@@ -122,7 +123,7 @@ func New(config Config) *Client {
 		}
 	}
 	return &Client{key: strings.TrimSpace(config.APIKey), endpoint: endpoint, model: config.Model,
-		http:     &http.Client{Timeout: config.Timeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }},
+		http:     &http.Client{Timeout: config.Timeout, Transport: obs.TracedRoundTripper(nil), CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }},
 		sessions: map[string]*sessionLimit{}, maxConcurrent: config.MaxConcurrent, dailyLimit: config.DailyRequestLimit, now: time.Now}
 }
 
@@ -182,7 +183,19 @@ func (c *Client) release(session string) {
 
 // Reply never returns provider errors or bodies to callers. History is quoted as
 // data in one user message, not replayed as trusted assistant/system instructions.
-func (c *Client) Reply(ctx context.Context, session string, input domain.AdvisorRequest) domain.AdvisorResponse {
+func (c *Client) Reply(ctx context.Context, session string, input domain.AdvisorRequest) (resp domain.AdvisorResponse) {
+	start := time.Now()
+	defer func() {
+		// result: success=模型回答,fallback=本地兜底。Reason 是代码内有限枚举
+		//(timeout/provider_rate_limited/invalid_response/daily_limit 等),可进 tag;
+		// reason:not_configured 持续增长说明环境缺 key,fallback 率上升先看它和 provider 状态。
+		result, reason := "success", "ok"
+		if resp.Source != "model" {
+			result, reason = "fallback", resp.Reason
+		}
+		obs.Incr("kitty.advisor.call", "result:"+result, "reason:"+reason)
+		obs.Histogram("kitty.advisor.duration_ms", float64(time.Since(start).Microseconds())/1000, "result:"+result)
+	}()
 	if c == nil || c.key == "" {
 		return local("not_configured")
 	}
