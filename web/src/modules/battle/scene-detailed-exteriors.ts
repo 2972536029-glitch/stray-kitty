@@ -9,7 +9,7 @@ const crops:Record<DetailedExteriorKind,readonly [number,number,number,number]>=
   'planted-bed':[76,686,758,262],
   'glass-frame':[1008,683,452,272],
 };
-type Asset='exteriors'|'obstacles'|'workstations'|'materials'|'accents'|'structures'|'market-banks'|'back-walls';
+type Asset='exteriors'|'obstacles'|'workstations'|'materials'|'accents'|'structures'|'market-banks'|'back-walls'|'tunnel-fixtures';
 const urls:Record<Asset,string>={
   exteriors:new URL('./assets/scene-detailed-residences-garden-v1.png',import.meta.url).href,
   obstacles:new URL('./assets/scene-detailed-obstacles-v1.png',import.meta.url).href,
@@ -19,6 +19,7 @@ const urls:Record<Asset,string>={
   structures:new URL('./assets/scene-perimeter-foreground-v1.png',import.meta.url).href,
   'market-banks':new URL('./assets/scene-market-banks-v1.png',import.meta.url).href,
   'back-walls':new URL('./assets/scene-chapter-backwalls-v1.png',import.meta.url).href,
+  'tunnel-fixtures':new URL('./assets/scene-tunnel-fixtures-v2.png',import.meta.url).href,
 };
 const atlases=new Map<Asset,HTMLImageElement>(),listeners=new Map<Asset,Set<()=>void>>();
 function source(asset:Asset='exteriors'){
@@ -122,6 +123,26 @@ export function paintDetailedAccent(ctx:CanvasRenderingContext2D,kind:string){
   const key=kind as Accent,[x,y,w,h]=accentBoxes[key],crop=accentCrops[key];
   const scale=Math.min(w/crop[2],h/crop[3]),dw=crop[2]*scale,dh=crop[3]*scale;
   const sprite=sceneryRaster(image,crop,dw,dh);if(!sprite)return false;
+  ctx.save();ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(sprite,x+(w-dw)/2,y+h-dh,dw,dh);ctx.restore();return true;
+}
+
+export type TunnelFixture='pipe'|'valve'|'cabinet'|'cage'|'service-wall'|'wire-footing';
+const tunnelFixtures:Record<TunnelFixture,{crop:readonly [number,number,number,number];box:readonly [number,number,number,number]}>={
+  pipe:{crop:[38,179,576,212],box:[5,23,70,38]},
+  valve:{crop:[690,92,516,300],box:[5,7,70,56]},
+  cabinet:{crop:[119,468,442,324],box:[15,18,50,47]},
+  cage:{crop:[751,452,423,341],box:[9,15,62,49]},
+  'service-wall':{crop:[19,852,604,330],box:[478,-17,178,94]},
+  'wire-footing':{crop:[630,1013,607,176],box:[-18,256,176,66]},
+};
+/** These are only surfaces inside the existing tunnel fixtures. The empty cage
+ * retains alpha between its bars; cats and cleared-wire states stay live. */
+export function paintDetailedTunnelFixture(ctx:CanvasRenderingContext2D,kind:TunnelFixture){
+  const image=source('tunnel-fixtures');if(!image)return false;
+  const {crop,box:[x,y,w,h]}=tunnelFixtures[kind],scale=Math.min(w/crop[2],h/crop[3]);
+  const dw=crop[2]*scale,dh=crop[3]*scale,sprite=sceneryRaster(image,crop,dw,dh,'pixel');
+  if(!sprite)return false;
   ctx.save();ctx.imageSmoothingEnabled=false;
   ctx.drawImage(sprite,x+(w-dw)/2,y+h-dh,dw,dh);ctx.restore();return true;
 }

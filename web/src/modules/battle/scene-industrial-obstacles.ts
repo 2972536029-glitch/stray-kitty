@@ -1,6 +1,6 @@
 import {CELLS as TUNNEL_CELLS, MAP as TUNNEL_MAP} from './tunnel/config';
 import {CELLS as FINALE_CELLS, MAP as FINALE_MAP} from './finale/config';
-import {paintRefinedMaterial} from './scene-detailed-exteriors';
+import {paintDetailedTunnelFixture,paintRefinedMaterial} from './scene-detailed-exteriors';
 
 type Cell = Readonly<{x:number;y:number}>;
 type Context = CanvasRenderingContext2D;
@@ -70,6 +70,7 @@ function clipScenery(ctx:Context,cells:readonly Cell[],joined:ReadonlySet<string
 
 /** A continuous service wall: the old rubble bay and locked grate share one frame. */
 function tunnelMachineWall(ctx:Context){
+  if(paintDetailedTunnelFixture(ctx,'service-wall'))return;
   ctx.save();ctx.translate(480,0);
   blocks(ctx,'#162c3370',[[3,63,173,10],[9,73,166,3]]);
   blocks(ctx,'#253e45',[[-2,-14,175,78],[1,60,175,10]]);
@@ -114,6 +115,7 @@ function tunnelMachineWall(ctx:Context){
 
 /** Broken masonry and the disabled wire station share a low, continuous footing. */
 function tunnelWireFooting(ctx:Context){
+  if(paintDetailedTunnelFixture(ctx,'wire-footing'))return;
   ctx.save();ctx.translate(0,240);
   blocks(ctx,'#152b3270',[[-19,67,177,14],[-11,81,163,4]]);
   blocks(ctx,'#3b514e',[[-18,55,176,23],[-14,77,168,5]]);
