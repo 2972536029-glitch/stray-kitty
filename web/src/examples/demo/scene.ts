@@ -204,8 +204,8 @@ export class DemoScene {
       if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','c','f'].includes(key)) event.preventDefault();
       return;
     }
-    if (key === 's' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartSqueeze()) {
-      event.preventDefault(); this.keys.delete('s'); return;
+    if (key === 'q' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartSqueeze()) {
+      event.preventDefault(); this.keys.delete('q'); return;
     }
     if (!event.repeat && this.state?.mapId === 'market' && (key==='c'||key==='f')) {
       const request=marketTransitionAt(this.marketFloor,key,this.x,this.y,this.state.flags,this.state.flags.includes('market_cleared'));
@@ -227,7 +227,7 @@ export class DemoScene {
     if ((key === '=' || key === '+') && this.state?.mapId === 'alley') {event.preventDefault();this.rainyAlley.adjustZoom(0.12);return;}
     if ((key === '-' || key === '_') && this.state?.mapId === 'alley') {event.preventDefault();this.rainyAlley.adjustZoom(-0.12);return;}
     this.keys.add(key);
-    if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','g','c'].includes(key)) event.preventDefault();
+    if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','g','c','q'].includes(key)) event.preventDefault();
     if (key === 'g' && !event.repeat && this.state?.mapId === 'alley') this.rainyAlley.toggleDebug();
     if (key === 'e' && !event.repeat) {
       if (this.state?.mapId === 'market') {
@@ -424,9 +424,8 @@ export class DemoScene {
         this.onNear(!!interaction, interaction?.id, interaction ? `${interaction.label} · E` : undefined);
         this.onInspectHint?.(null);
       }
-      const squeezePrompt = this.rainyAlley.squeezePromptActive();
       const climbPrompt = this.rainyAlley.climbPromptActive();
-      const hint = climbPrompt ? 'C · 爬过木箱' : squeezePrompt ? 'S · 挤过去' : null;
+      const hint = climbPrompt ? 'C · 爬过木箱' : this.rainyAlley.squeezeHint();
       const showPrompt = !!hint;
       if (showPrompt !== this.squeezePromptVisible || hint !== this.movementHint) {
         this.squeezePromptVisible = showPrompt;
@@ -503,7 +502,8 @@ export class DemoScene {
         const bossReady=this.state.flags.includes('market_crow_clue_completed')&&this.state.flags.includes('market_pigeon_clue_completed');
         if(nearMomo)this.onInspectHint?.('E · 查看墨墨的踪迹');
         const portal=marketPortals.filter(value=>!value.requiresFlag||this.state!.flags.includes(value.requiresFlag)).flatMap(value=>[{portal:value,point:value.a},{portal:value,point:value.b}]).filter(value=>value.point.layer===this.marketFloor&&Math.hypot(this.x-value.point.x,this.y-value.point.y)<=value.portal.radius).sort((a,b)=>Math.hypot(this.x-a.point.x,this.y-a.point.y)-Math.hypot(this.x-b.point.x,this.y-b.point.y))[0];
-        if(portal)this.onInspectHint?.(`${portal.portal.key.toUpperCase()} · ${portal.portal.label.split(' · ')[1]}`);
+        const portalDisplay=portal&&marketPortalDisplay(portal.portal,portal.point,this.marketFloor,this.x,this.y,this.state.flags);
+        if(portalDisplay?.active)this.onInspectHint?.(portalDisplay.label);
         else if(!target&&this.marketFloor==='L0'&&Math.hypot(this.x-1310,this.y-169)<72&&!bossReady)this.onInspectHint?.('集市保卫战 · 需要先完成两条情报');
         else if(!target&&this.marketFloor==='L0'&&Math.hypot(this.x-1365,this.y-78)<48&&!this.state.flags.includes('market_cleared'))this.onInspectHint?.('北街出口 · 请先完成集市保卫战');
         const battleAction=marketEAction(this.marketFloor,this.x,this.y,this.state.flags,this.state.drawnEvents??[]);

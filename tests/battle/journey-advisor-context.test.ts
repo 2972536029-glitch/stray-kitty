@@ -53,6 +53,19 @@ test('home partner abilities stay locked before an actual chapter experience',()
   assert.doesNotMatch(getJourneyLocalAnswer(greenhouse,c,'墨墨夜视技能怎么用？').text,/恢复全场视野/);
 });
 
+test('home offline Momo answers honor the requested experienced chapter and never substitute another one',()=>{
+  const s=state({phase:'home',cats:['momo'],completedStages:['greenhouse_boss','tunnel_boss','finale_boss']}), c=catalog();
+  const ask=(question:string)=>getJourneyLocalAnswer(s,c,question).text;
+  assert.match(ask('第五章墨墨夜视护盾怎么用？'),/已体验的终章仓库.*照破首领影幕.*援军/);
+  assert.doesNotMatch(ask('第五章墨墨夜视护盾怎么用？'),/恢复全场视野/);
+  assert.match(ask('第四章墨墨夜视护盾怎么用？'),/已体验的地下通道.*恢复全场视野/);
+  assert.match(ask('第三章墨墨护盾怎么用？'),/已体验的花房.*荆棘/);
+  assert.match(ask('墨墨夜视技能怎么用？'),/已体验的终章仓库.*照破首领影幕/);
+  assert.match(ask('第二章墨墨护盾怎么用？'),/记录不足.*不会套用另一章/);
+  const notYet={...s,completedStages:['greenhouse_boss','tunnel_boss'],flags:['finale_started']};
+  assert.match(getJourneyLocalAnswer(notYet,c,'第五章墨墨夜视护盾怎么用？').text,/记录不足/);
+});
+
 test('journey context sends only current visible story and owned information, without mutating inputs', () => {
   const c = catalog(), s = state({phase: 'dialogue', storyNodeId: 'now', txns: [{id: 'PRIVATE_PAYMENT', playerId: 'PRIVATE_PLAYER', packId: '', amount: 1, status: 'confirmed', reason: '', cardSuffix: 'SECRET_CARD', createdAt: ''}]});
   const before = structuredClone({c, s});

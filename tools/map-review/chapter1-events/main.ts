@@ -75,12 +75,12 @@ for(const o of objects){
   const label=document.createElement('span');label.textContent=o.id===dogId?'老黄 · 新配色':o.label.replace('点点 · ','');item.append(thumb,label);get('gallery').append(item);
 }
 function showFeedback(o:RainyFixedObject|undefined){const box=get('feedback');box.textContent=o?`${o.label} · E 提示预览（不结算事件）`:'靠近一个物件后再按 E';box.style.display='block';feedbackUntil=performance.now()+2500;}
-const squeezeButton=document.createElement('button');squeezeButton.textContent='S 窄缝通道';squeezeButton.onclick=()=>focus('squeeze');get('locations').append(squeezeButton);
+const squeezeButton=document.createElement('button');squeezeButton.textContent='Q 窄缝通道';squeezeButton.onclick=()=>focus('squeeze');get('locations').append(squeezeButton);
 window.addEventListener('keydown',e=>{
   if((e.target as HTMLElement).matches('input,select,textarea'))return;const k=e.key.toLowerCase();
-  if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','c','tab'].includes(k))e.preventDefault();
+  if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','c','q','tab'].includes(k))e.preventDefault();
   if(k==='tab'){artOnly=true;return;}if(k==='e'&&!e.repeat){showFeedback(nearby());return;}
-  if(k==='s'&&!e.repeat&&startSqueeze())return;
+  if(k==='q'&&!e.repeat&&startSqueeze())return;
   if(squeezeTarget)return;
   if(k==='c'&&!e.repeat&&!climb){const target=crateClimbTarget(cat,field(),checked('rescued'));if(target)climb={from:{...cat},to:target.to,elapsed:0};return;}
   keys.add(k);
@@ -101,7 +101,7 @@ function drawSqueezeMarker(){
   if(Math.hypot(cat.x-point.x,cat.y-point.y)>72)return;
   c.save();c.globalAlpha=squeezeDirection()?1:.72;c.translate(SQUEEZE_BOUNDS.right+10,point.y);
   c.fillStyle='#9adbd4';c.strokeStyle='#28494b';c.lineWidth=1.6;c.beginPath();c.arc(0,0,7,0,Math.PI*2);c.fill();c.stroke();
-  c.fillStyle='#183638';c.font='700 10px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText('S',0,.5);c.restore();
+  c.fillStyle='#183638';c.font='700 10px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText('Q',0,.5);c.restore();
 }
 function prop(o:RainyFixedObject){
   if(o.requiresFlag&&!flags().includes(o.requiresFlag))return;
@@ -175,7 +175,7 @@ function frame(now:number){const dt=Math.min((now-previous)/1000,.05);previous=n
   else {const x=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),y=Number(keys.has('s')||keys.has('arrowdown'))-Number(keys.has('w')||keys.has('arrowup')),n=Math.hypot(x,y);if(n)cat=sweepMove(field(),cat,{x:x/n*96*dt,y:y/n*96*dt}).position;}
   draw(now,dt);if(feedbackUntil&&now>feedbackUntil){get('feedback').style.display='none';feedbackUntil=0;}
   get('status').textContent=`${selected.label}\n${nearby()?'靠近可交互物 · E 查看提示':checked('names')?'全部浮动名称对照':'靠近浮现，离开淡出 · 主线目标常显'}\n新图像下载：0 · 新 API 请求：0`;
-  const movement=get('movementHint');movement.textContent=squeezeTarget?'正在挤过窄缝…':squeezeDirection()?'S · 挤过去':crateClimbTarget(cat,field(),checked('rescued'))?'C · 翻过木箱':'';movement.hidden=!movement.textContent;
+  const movement=get('movementHint');movement.textContent=squeezeTarget?'正在挤过窄缝…':squeezeDirection()?'松开移动键，再轻按 Q 挤过狭缝':crateClimbTarget(cat,field(),checked('rescued'))?'C · 翻过木箱':'';movement.hidden=!movement.textContent;
   canvas.dataset.ready=String(ready);requestAnimationFrame(frame);
 }
 background.onload=()=>{ready=true;focus(new URLSearchParams(location.search).get('focus')??'alley_puddle_reflection');};

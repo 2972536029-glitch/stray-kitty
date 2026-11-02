@@ -48,6 +48,7 @@ export class IntegratedRainyAlley {
   private zoneChecksInFlight = new Set<string>();
   private zoneCheckStatus = new Map<string, ZoneCheckResult>();
   private squeezeTargetY: number | null = null;
+  private squeezeFeedbackUntil = 0;
   private climbTime = 0;
   private climbFrom: Point | null = null;
   private climbTo: Point | null = null;
@@ -81,7 +82,7 @@ export class IntegratedRainyAlley {
     this.eventLabels.reset();
     this.zonesInside.clear();
     for (const zone of rainyAlleySource.objects.zones) if (Math.hypot(this.position.x - zone.x, this.position.y - zone.y) <= zone.r) this.zonesInside.add(zone.id);
-    this.zoneChecksInFlight.clear(); this.squeezeTargetY = null; this.climbTime = 0; this.climbFrom = null; this.climbTo = null; this.climbCrateId = null;
+    this.zoneChecksInFlight.clear(); this.squeezeTargetY = null; this.squeezeFeedbackUntil = 0; this.climbTime = 0; this.climbFrom = null; this.climbTo = null; this.climbCrateId = null;
   }
 
   toggleDebug() {this.debug = !this.debug;}
@@ -99,6 +100,11 @@ export class IntegratedRainyAlley {
   private cheering() {return performance.now() < this.cheerUntil;}
   pauseForEvent() {this.path = []; this.destination = null;}
   squeezePromptActive() {return this.squeezeTargetY === null && this.squeezeDirection() !== 0;}
+  squeezeHint() {
+    if (this.squeezeTargetY !== null) return '正在侧身挤过狭缝…';
+    if (performance.now() < this.squeezeFeedbackUntil) return '已穿过狭缝，可以继续移动。';
+    return this.squeezePromptActive() ? '松开移动键，再轻按 Q 挤过狭缝' : null;
+  }
   tryStartSqueeze() {
     const direction = this.squeezeDirection();
     if (!direction || this.squeezeTargetY !== null) return false;
@@ -107,6 +113,7 @@ export class IntegratedRainyAlley {
     const squeezeField = this.gateOpen ? rainyAlleySqueezeFieldOpen : rainyAlleySqueezeFieldClosed;
     const exit = squeezeExitTarget(normalField, squeezeField, direction);
     if (!exit) return false;
+    this.squeezeFeedbackUntil = 0;
     this.squeezeTargetY = exit.y;
     return true;
   }
@@ -143,7 +150,7 @@ export class IntegratedRainyAlley {
       const squeezeField = gateOpen ? rainyAlleySqueezeFieldOpen : rainyAlleySqueezeFieldClosed;
       const dx = SQUEEZE_CENTER_X - this.position.x, dy = this.squeezeTargetY - this.position.y;
       const distance = Math.hypot(dx, dy);
-      if (distance <= 1) {this.position = {x: SQUEEZE_CENTER_X, y: this.squeezeTargetY}; this.squeezeTargetY = null;}
+      if (distance <= 1) {this.position = {x: SQUEEZE_CENTER_X, y: this.squeezeTargetY}; this.squeezeTargetY = null; this.squeezeFeedbackUntil = performance.now() + 1800;}
       else {
         const amount = Math.min(distance, squeezeSpeed * deltaSeconds);
         this.position = sweepMove(squeezeField, this.position, {x: dx / distance * amount, y: dy / distance * amount}, 2).position;
@@ -581,7 +588,7 @@ export class IntegratedRainyAlley {
     context.translate(SQUEEZE_BOUNDS.right + 10, point.y);
     context.fillStyle = '#9adbd4'; context.strokeStyle = '#28494b'; context.lineWidth = 1.6;
     context.beginPath(); context.arc(0, 0, 7, 0, Math.PI * 2); context.fill(); context.stroke();
-    context.fillStyle = '#183638'; context.font = '700 10px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText('S', 0, .5); context.restore();
+    context.fillStyle = '#183638'; context.font = '700 10px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText('Q', 0, .5); context.restore();
   }
 
   private drawClimbMarkers(context: CanvasRenderingContext2D) {

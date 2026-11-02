@@ -1,6 +1,5 @@
 import type {Catalog, GameState} from '../../contracts';
-import {SKILLS as tunnelSkills} from '../battle/tunnel/config';
-import {SKILLS as greenhouseSkills} from '../battle/greenhouse/config';
+import battleReference from '../../../../server/internal/service/advisor_battle_reference.json';
 
 /** Small offline answers for home questions. No full catalog or imagined history. */
 export function getHomePublicAnswer(state: GameState, catalog: Catalog, question: string): {title: string; text: string} | null {
@@ -18,15 +17,22 @@ export function getHomePublicAnswer(state: GameState, catalog: Catalog, question
     const known = state.cats.includes('momo');
     const experienced = (id: string) => state.completedStages.includes(id) ||
       state.lastResult.stageId === id && (state.lastResult.outcome === 'won' || state.lastResult.outcome === 'lost');
-    const tunnel = experienced('tunnel_boss') || state.flags.includes('tunnel_explored');
-    const greenhouse = experienced('greenhouse_boss') || state.flags.includes('greenhouse_fortified');
-    const wantsGreenhouse = /花房|第三章/.test(q), wantsTunnel = /夜视|地下|第四章/.test(q);
-    const skill = wantsGreenhouse ? greenhouse ? greenhouseSkills.momo : null
-      : tunnel ? tunnelSkills.momo : !wantsTunnel && greenhouse ? greenhouseSkills.momo : null;
-    const chapter = skill === tunnelSkills.momo ? '地下通道' : '花房';
-    return {title: '伙伴能力说明', text: known && skill
-      ? `已体验的${chapter}战斗中，墨墨技能「${skill.name}」：${skill.description}这是该关卡的机制说明，不表示现在能施放，也不代表其他关卡的技能数值相同。`
-      : '当前记录不足以确认这项已解锁的战斗能力，我不会提前介绍后续觉醒。具体技能以已经进入的关卡技能说明为准；家园里无法判断此刻能否施放。'};
+    const versions = [
+      {id: 'finale_boss', label: '终章仓库', pattern: /第五章|第5章|终章|仓库/, flag: 'finale_completed'},
+      {id: 'tunnel_boss', label: '地下通道', pattern: /第四章|第4章|地下通道|暗道/, flag: 'tunnel_explored'},
+      {id: 'greenhouse_boss', label: '花房', pattern: /第三章|第3章|花房/, flag: 'greenhouse_fortified'},
+    ];
+    const explicit = versions.filter(version => version.pattern.test(q));
+    const available = (version: typeof versions[number]) => experienced(version.id) || state.flags.includes(version.flag);
+    // Explicit chapter requests must never silently borrow another chapter's skill.
+    const requestedChapter = /第[一二三四五六七八九十0-9]+章|序章|小巷|集市/.test(q);
+    const selected = explicit.length === 1 ? explicit[0] : explicit.length > 1 || requestedChapter ? undefined
+      : versions.find(version => available(version) && (!/夜视/.test(q) || version.id !== 'greenhouse_boss'));
+    const skill = selected && available(selected) ? battleReference.find(stage => stage.stageId === selected.id)?.cats.find(cat => cat.id === 'momo')?.skill : undefined;
+    const description = skill && 'description' in skill ? skill.description : undefined;
+    return {title: '伙伴能力说明', text: known && selected && skill && typeof description === 'string'
+      ? `已体验的${selected.label}战斗中，墨墨技能「${skill.name}」：${description}这是该关卡的机制说明，不表示现在能施放，也不代表其他关卡的技能数值相同。`
+      : '当前记录不足以确认所问章节的这项战斗能力；请明确要问哪个已体验的关卡，我不会套用另一章技能或提前介绍后续觉醒。家园里也无法判断此刻能否施放。'};
   }
   if (/技能|蓄能|能量|战斗.*(?:规则|怎么)|阻挡|突破|退场|复活|护盾|治疗/.test(q)) {
     return {title: '战斗机制', text: '战斗猫会自动攻击并按阻挡容量拦住接触的普通敌人，超出容量的敌人继续前进。技能需要蓄能后由玩家手动释放，暂停会停止战斗和蓄能。体力归零后本场退场，不能复活或重新部署；护盾不等于治疗。具体数值、技能效果与胜负阈值以已解锁关卡规则为准。喵喵是保护目标，阿策不参战。'};

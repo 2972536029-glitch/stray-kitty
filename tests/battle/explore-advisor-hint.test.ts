@@ -113,7 +113,7 @@ test('failure, context conflicts and invalid output keep original text and are n
 });
 
 test('unsupported phases, hub, hidden page, locked rules and missing session never call a model', async () => {
-  for (const change of ['phase', 'hub', 'disabled', 'hidden', 'locked', 'key', 'auth', 'empty', 'blocked', 'missing-floor']) {
+  for (const change of ['phase', 'hub', 'disabled', 'hidden', 'locked', 'key', 'squeeze-key', 'auth', 'empty', 'blocked', 'missing-floor']) {
     const f = fixture();
     if (change === 'phase') f.update({state: {...f.input().state, phase: 'home'}});
     if (change === 'hub') f.update({state: {...f.input().state, mapId: 'greenhouse'}});
@@ -121,6 +121,7 @@ test('unsupported phases, hub, hidden page, locked rules and missing session nev
     if (change === 'hidden') {f.visible(false); f.update();}
     if (change === 'locked') f.update({inspectHint: '需要先解锁机关。'});
     if (change === 'key') f.update({inspectHint: '按 F 切换楼层。'});
+    if (change === 'squeeze-key') f.update({inspectHint: 'Q 穿过窄缝。'});
     if (change === 'auth') {f.token(undefined); f.update();}
     if (change === 'empty') f.update({inspectHint: null});
     if (change === 'blocked') f.update({blocked: true});

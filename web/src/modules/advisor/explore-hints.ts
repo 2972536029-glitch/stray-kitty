@@ -30,7 +30,7 @@ const debounceMs = 800, intervalMs = 15000, cacheLimit = 64;
 const local = (text: string | null, loading = false): ExploreHintSnapshot => ({text, source: 'local', loading});
 const hintText = (input: ExploreHintInput) => input.inspectHint?.trim() || null;
 const ordinaryHint = (text: string | null) => !!text && Array.from(text).length <= 240 &&
-  !/\b(?:E|C|F|S|Space)\b|锁定|解锁|按键|无法|不能|必须|前置/.test(text);
+  !/\b(?:E|C|Q|F|S|Space)\b|锁定|解锁|按键|无法|不能|必须|前置/i.test(text);
 const progressKey = (s: GameState, floor?: string) => JSON.stringify([journeySceneKey(s), floor,
   s.flags, s.drawnEvents, s.cats, s.inventory, s.currencies, s.completedStages, s.lastResult]);
 const validAnswer = (answer: ModelAdvisorAnswer) => answer.source === 'model' && !!answer.text.trim() &&
