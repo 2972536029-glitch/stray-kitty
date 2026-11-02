@@ -49,6 +49,12 @@ func main() {
 		PaystationURL: env("XSOLLA_PAYSTATION_BASE_URL", ""),
 		ReturnURL:     env("XSOLLA_RETURN_URL", ""),
 	}
+	// 团队阶段铁律:所有环境只允许沙盒支付。XSOLLA_SANDBOX=false 直接拒绝启动,
+	// 把"误配真实支付"从运行时事故变成部署失败——签署正式协议前不得移除此闸。
+	if !xsollaCfg.Sandbox {
+		slog.Error("XSOLLA_SANDBOX=false is forbidden in this project stage; sandbox-only policy is in effect")
+		os.Exit(1)
+	}
 	var handler http.Handler
 	if xsollaCfg.Enabled() {
 		client := payment.NewXsollaClient(xsollaCfg)
