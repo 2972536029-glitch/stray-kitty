@@ -1,6 +1,7 @@
 import {paintCarryAnchor} from '../carry-painter';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
 import {paintFinaleObstacleScenery, FINALE_JOINED_OBSTACLE_CELLS} from '../scene-industrial-obstacles';
+import {paintDetailedWarehouseFixture} from '../scene-detailed-exteriors';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP} from './config';
@@ -35,17 +36,18 @@ function drawObstacle(ctx:CanvasRenderingContext2D,p:Position,state:FinaleState)
   if(key.endsWith('12')){
     // The shared holding room stays behind the partners; a win still removes every bar.
     if(state.phase!=='won'){smallCat(ctx,15,25,'#be9872','#896b51',.9);smallCat(ctx,42,30,'#ccc9ba','#8e9d8b',.8);}
-    if(state.phase!=='won')for(const x of [22,39,55]){
+    if(state.phase!=='won'&&!paintDetailedWarehouseFixture(ctx,'cage'))for(const x of [22,39,55]){
       rect(ctx,x+3,24,2,36,'#414b45');rect(ctx,x,22,3,38,'#c6c4b9');rect(ctx,x,26,1,26,'#e2dcc3');
       blocks(ctx,'#8c8f80',[[x-1,23,5,2],[x-1,56,5,2]]);
-    }else text(ctx,'已撤离',40,48,SCENE_INK.selected,11);
+    }
+    if(state.phase==='won')text(ctx,'已撤离',40,48,SCENE_INK.selected,11);
   }else if(key==='B3'||key==='F3'){
     // The posts belong to the cargo deck; cut ends, tool and check remain on top.
     ctx.strokeStyle='#c2aa83';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();
     ctx.moveTo(18,42);ctx.lineTo(33,47);ctx.moveTo(47,47);ctx.lineTo(62,41);ctx.stroke();ctx.setLineDash([]);
     rect(ctx,36,39,8,12,'#3d3832');
     ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(28,32);ctx.lineTo(36,40);ctx.lineTo(52,24);ctx.stroke();
-  }else if(!joinedObstacles.has(`${p.x},${p.y}`))paintSceneProp(ctx,'finale','storage-rack',0,0,CELL,p.x+p.y);
+  }else if(!joinedObstacles.has(`${p.x},${p.y}`)&&!paintDetailedWarehouseFixture(ctx,'rack'))paintSceneProp(ctx,'finale','storage-rack',0,0,CELL,p.x+p.y);
   ctx.restore();
 }
 /** One nine-cell silhouette and one health pool, with a changed crown in phase two. */
