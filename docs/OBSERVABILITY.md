@@ -105,14 +105,14 @@ compose 单机形态支付在进程内(mock),该链路在拆分形态(team-previ
 |---------|----------|------|------|
 | HTTP 5xx Rate | `kitty.http.requests` 5xx 占比 | >10%(5m) | 正常 e2e 流量 0%;注入式故障可复现 |
 | 命令系统错误率 | `kitty.command{result:error}` 占比 | >10%(5m) | rejected 已被分类排除,只统计系统错误 |
-| 命令处理 p95 | `kitty.command.duration_ms.95percentile` | >1000ms(warn 500) | 待 e2e 基线复核;含存档写盘 |
+| 命令处理 p95 | `kitty.command.duration_ms.95percentile` | >5000ms(warn 2000) | 2026-11-03 本机 4h e2e 基线:p95 中位 592ms、冷启动突发 13.2s;警告留 3 倍余量 |
 | 支付系统错误 | `kitty.payment.charge{result:error}` | ≥1 次(5m) | 支付错误应零容忍;declined 不算 |
 | 支付拒付率 | declined/(success+declined) | ≥50%(15m) | 正常玩法不应连续拒付;演示可复现 |
 | Webhook 入账失败 | `kitty.payment.webhook{result:error}` | ≥1 次(15m) | 5xx 会等渠道重试,必须人工确认最终到账 |
 | 阿策降级率 | `kitty.advisor.call{result:fallback}` 占比 | ≥50%(15m) | reason tag 可细分:not_configured/timeout/限流等 |
 | 登录失败突增 | `kitty.auth.login{code:BAD_CREDENTIALS}` | >10 次(15m) | 正常玩家不应连续输错;疑似爆破 |
 | 服务心跳 | `kitty.http.requests` 总量 | <1(10m)+ no-data 15m | 前端开着就有流量;全停即告警 |
-| 存档写入耗时 | `kitty.repo.save_duration_ms.95percentile` | >1000ms(warn 500) | 单 JSON 文件是本架构主要 IO 风险;待基线复核 |
+| 存档写入耗时 | `kitty.repo.save_duration_ms.95percentile` | >5000ms(warn 2000) | 基线实测:写盘 p95 中位 275ms、冷启动最大 6.6s;单 JSON 文件仍是主要 IO 风险 |
 
 阈值方法论(与旅行牛牛一致):**不是拍脑袋**——先跑 30 分钟真实流量(e2e 套件就是现成的
 流量发生器:`KITTY_TEST_PORT=8080 KITTY_TEST_EXTERNAL_SERVER=1 npx playwright test`),

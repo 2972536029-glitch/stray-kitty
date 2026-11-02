@@ -1,0 +1,67 @@
+{
+  "captured_at_utc": "2026-11-02T17:30Z",
+  "window": "2h(compose e2e+smoke+host paymentd)",
+  "queries": {
+    "command_by_result": [
+      {
+        "latest": 0.0
+      },
+      {
+        "latest": 0.0
+      },
+      {
+        "latest": 0.0
+      }
+    ],
+    "command_by_type": [
+      {
+        "latest": 0.0
+      },
+      {
+        "latest": 0.0
+      },
+      {
+        "latest": 0.0
+      },
+      {
+        "latest": 0.0
+      },
+      {
+        "latest": 0.0
+      }
+    ],
+    "http_by_status": [
+      {
+        "latest": 1.0
+      },
+      {
+        "latest": 0.0
+      },
+      {
+        "latest": 0.0
+      }
+    ],
+    "charge_by_result": [
+      {
+        "latest": 0.0
+      },
+      {
+        "latest": 0.0
+      },
+      {
+        "latest": 0.0
+      }
+    ],
+    "session_started": [
+      {
+        "latest": 0.0
+      }
+    ],
+    "advisor_by_result": [],
+    "repo_save_p95_max": [
+      {
+        "latest": 791.989
+      }
+    ]
+  }
+}
