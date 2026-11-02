@@ -204,8 +204,8 @@ export class DemoScene {
       if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','c','f'].includes(key)) event.preventDefault();
       return;
     }
-    if (key === 's' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartSqueeze()) {
-      event.preventDefault(); this.keys.delete('s'); return;
+    if (key === 'q' && !event.repeat && this.state?.mapId === 'alley' && this.rainyAlley.tryStartSqueeze()) {
+      event.preventDefault(); this.keys.delete('q'); return;
     }
     if (!event.repeat && this.state?.mapId === 'market' && (key==='c'||key==='f')) {
       const request=marketTransitionAt(this.marketFloor,key,this.x,this.y,this.state.flags,this.state.flags.includes('market_cleared'));
@@ -227,7 +227,7 @@ export class DemoScene {
     if ((key === '=' || key === '+') && this.state?.mapId === 'alley') {event.preventDefault();this.rainyAlley.adjustZoom(0.12);return;}
     if ((key === '-' || key === '_') && this.state?.mapId === 'alley') {event.preventDefault();this.rainyAlley.adjustZoom(-0.12);return;}
     this.keys.add(key);
-    if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','g','c'].includes(key)) event.preventDefault();
+    if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','g','c','q'].includes(key)) event.preventDefault();
     if (key === 'g' && !event.repeat && this.state?.mapId === 'alley') this.rainyAlley.toggleDebug();
     if (key === 'e' && !event.repeat) {
       if (this.state?.mapId === 'market') {
@@ -424,9 +424,8 @@ export class DemoScene {
         this.onNear(!!interaction, interaction?.id, interaction ? `${interaction.label} · E` : undefined);
         this.onInspectHint?.(null);
       }
-      const squeezePrompt = this.rainyAlley.squeezePromptActive();
       const climbPrompt = this.rainyAlley.climbPromptActive();
-      const hint = climbPrompt ? 'C · 爬过木箱' : squeezePrompt ? 'S · 挤过去' : null;
+      const hint = climbPrompt ? 'C · 爬过木箱' : this.rainyAlley.squeezeHint();
       const showPrompt = !!hint;
       if (showPrompt !== this.squeezePromptVisible || hint !== this.movementHint) {
         this.squeezePromptVisible = showPrompt;
