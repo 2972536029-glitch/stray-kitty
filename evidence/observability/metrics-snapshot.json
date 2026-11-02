@@ -1,67 +1,63 @@
 {
-  "captured_at_utc": "2026-11-02T17:30Z",
-  "window": "2h(compose e2e+smoke+host paymentd)",
+  "captured_at_utc": "2026-11-02T18:40Z",
+  "window": "5h(e2e 27/27 passed 1.9h + smoke + host paymentd)",
+  "note": "counter 类指标这里取窗口内各 10s 上报点的总和,代表观测到的业务总量",
   "queries": {
     "command_by_result": [
       {
-        "latest": 0.0
+        "observed_total": 7
       },
       {
-        "latest": 0.0
+        "observed_total": 6
       },
       {
-        "latest": 0.0
+        "observed_total": 332
       }
     ],
     "command_by_type": [
       {
-        "latest": 0.0
+        "observed_total": 8
       },
       {
-        "latest": 0.0
+        "observed_total": 10
       },
       {
-        "latest": 0.0
+        "observed_total": 1
       },
       {
-        "latest": 0.0
+        "observed_total": 308
       },
       {
-        "latest": 0.0
+        "observed_total": 18
       }
     ],
     "http_by_status": [
       {
-        "latest": 1.0
+        "observed_total": 24
       },
       {
-        "latest": 0.0
+        "observed_total": 2326
       },
       {
-        "latest": 0.0
+        "observed_total": 18
       }
     ],
     "charge_by_result": [
       {
-        "latest": 0.0
+        "observed_total": 1
       },
       {
-        "latest": 0.0
+        "observed_total": 3
       },
       {
-        "latest": 0.0
+        "observed_total": 1
       }
     ],
     "session_started": [
       {
-        "latest": 0.0
+        "observed_total": 77
       }
     ],
-    "advisor_by_result": [],
-    "repo_save_p95_max": [
-      {
-        "latest": 791.989
-      }
-    ]
+    "advisor_by_result": []
   }
 }
