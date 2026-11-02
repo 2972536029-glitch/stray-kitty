@@ -12,17 +12,36 @@ func validateAdvisor(input domain.AdvisorRequest) error {
 	validText := func(text string, limit int) bool {
 		return utf8.ValidString(text) && strings.TrimSpace(text) != "" && utf8.RuneCountInString(text) <= limit
 	}
-	if !validText(input.AttemptID, 128) || !validText(input.Question, 500) || !validText(input.Context, 24000) || len(input.History) > 6 {
+	if (input.Scope != "explore_hint" && !validText(input.Question, 500)) || !validText(input.Context, 24000) || len(input.History) > 6 {
 		return domain.Fail("INVALID_ADVISOR_REQUEST", "军师请求内容为空或超过长度限制", 400)
 	}
-	switch input.StageID {
-	case "l00_tutorial", "alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss", "finale_boss":
+	switch input.Scope {
+	case "", "battle":
+		if !validText(input.AttemptID, 128) {
+			return domain.Fail("INVALID_ADVISOR_REQUEST", "军师请求缺少有效战斗场次", 400)
+		}
+		switch input.StageID {
+		case "l00_tutorial", "alley_rescue", "alley_boss", "market_boss", "greenhouse_boss", "tunnel_boss", "finale_boss":
+		default:
+			return domain.Fail("INVALID_ADVISOR_REQUEST", "军师不支持这个关卡", 400)
+		}
+	case "journey":
+		if !validText(input.SceneKey, 1024) || input.ExpectedRevision == nil || *input.ExpectedRevision < 0 || input.AttemptID != "" || input.StageID != "" {
+			return domain.Fail("INVALID_ADVISOR_REQUEST", "旅程问答需要有效的当前场景和进度版本", 400)
+		}
+	case "explore_hint":
+		if !validText(input.SceneKey, 1024) || input.ExpectedRevision == nil || *input.ExpectedRevision < 0 || input.AttemptID != "" || input.StageID != "" || input.Question != "" || len(input.History) != 0 {
+			return domain.Fail("INVALID_ADVISOR_REQUEST", "探索短提示只接收当前场景、版本和已核实的本地提示", 400)
+		}
+		if _, err := readExploreHint(input.Context); err != nil {
+			return err
+		}
 	default:
-		return domain.Fail("INVALID_ADVISOR_REQUEST", "军师不支持这个关卡", 400)
+		return domain.Fail("INVALID_ADVISOR_REQUEST", "军师请求场景无效", 400)
 	}
 	var snapshot map[string]json.RawMessage
 	if json.Unmarshal([]byte(input.Context), &snapshot) != nil || snapshot == nil {
-		return domain.Fail("INVALID_ADVISOR_REQUEST", "可见战况必须为 JSON 对象", 400)
+		return domain.Fail("INVALID_ADVISOR_REQUEST", "当前可见信息必须为 JSON 对象", 400)
 	}
 	for _, message := range input.History {
 		if (message.Role != "user" && message.Role != "assistant") || !validText(message.Content, 1200) {
@@ -49,6 +68,12 @@ func (g *Game) advisorAttempt(token string, input domain.AdvisorRequest) error {
 func (g *Game) Advise(ctx context.Context, token string, input domain.AdvisorRequest) (domain.AdvisorResponse, error) {
 	if err := validateAdvisor(input); err != nil {
 		return domain.AdvisorResponse{}, err
+	}
+	if input.Scope == "journey" {
+		return g.adviseJourney(ctx, token, input)
+	}
+	if input.Scope == "explore_hint" {
+		return g.adviseExploreHint(ctx, token, input)
 	}
 	if err := g.advisorAttempt(token, input); err != nil {
 		return domain.AdvisorResponse{}, err

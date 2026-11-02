@@ -4,7 +4,16 @@ import {BrowserSessionStore} from '../../adapters/storage/BrowserSessionStore';
 export interface ModelAdvisorAnswer {source:'model'|'local';title:string;text:string;reason?:string}
 export interface AdvisorHistoryEntry {role:'user'|'assistant';content:string}
 export interface ModelAdvisorRequest {
-  attemptId:string;stageId:string;question:string;context:string;history:AdvisorHistoryEntry[];
+  scope?:'battle'|'journey';attemptId?:string;stageId?:string;
+  sceneKey?:string;expectedRevision?:number;
+  question:string;context:string;history:AdvisorHistoryEntry[];
+}
+/** Automatic map wording: no user question, history, battle ID or target table. */
+export interface ExploreHintRequest {
+  scope:'explore_hint';sceneKey:string;expectedRevision:number;context:string;
+}
+export class AdvisorContextChanged extends Error {
+  constructor(){super('advisor_context_changed');}
 }
 interface Dependencies {
   fetch?:typeof fetch;
@@ -14,7 +23,7 @@ interface Dependencies {
 }
 
 /** Read-only chat request; never enters the game's command/retry or persistence queue. */
-export async function requestModelAdvisor(payload:ModelAdvisorRequest,signal:AbortSignal,dependencies:Dependencies={}):Promise<ModelAdvisorAnswer>{
+export async function requestModelAdvisor(payload:ModelAdvisorRequest|ExploreHintRequest,signal:AbortSignal,dependencies:Dependencies={}):Promise<ModelAdvisorAnswer>{
   if(signal.aborted)throw new Error('advisor_cancelled');
   const session=(dependencies.session??new BrowserSessionStore()).read();
   if(!session?.token)throw new Error('advisor_session_unavailable');
@@ -28,7 +37,10 @@ export async function requestModelAdvisor(payload:ModelAdvisorRequest,signal:Abo
       headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.token},
       body:JSON.stringify(payload),
     });
-    if(!response.ok)throw new Error('advisor_request_unavailable');
+    if(!response.ok){
+      if(response.status===409)throw new AdvisorContextChanged();
+      throw new Error('advisor_request_unavailable');
+    }
     const answer:unknown=await response.json();
     if(!answer||typeof answer!=='object')throw new Error('advisor_invalid_response');
     const value=answer as Record<string,unknown>;
