@@ -1,0 +1,616 @@
+[
+  {
+    "stageId": "l00_tutorial",
+    "name": "窗外的第一道防线",
+    "referenceOnly": true,
+    "ruleSummary": "这是本关公开的静态定义，不是实时战况；maxHp是体力上限，damage是未加成定义伤害，不代表当前体力或实际伤害。技能效果和数值只适用于这一关，不能跨章套用。暂停停止战斗计时与蓄能；蓄满后仍由玩家手动施放。序章蓄能和施法还须按教学步骤解锁，不能把正式守线规则套到尚未完成的教学阶段。喵喵是保护目标，不攻击、不阻挡、不施放战斗技能。",
+    "publicRules": {
+      "energyPerSecond": 5,
+      "maxEnergy": 100,
+      "maxLeaks": 3,
+      "maxCats": 2
+    },
+    "cats": [
+      {
+        "id": "caster",
+        "name": "绒绒",
+        "role": "星绒术士",
+        "maxHp": 80,
+        "damage": 20,
+        "block": 1,
+        "attackInterval": 0.8,
+        "skill": {
+          "name": "星绒绽放",
+          "targeting": "area",
+          "cost": 100,
+          "damage": 45
+        }
+      },
+      {
+        "id": "guard",
+        "name": "斑斑",
+        "role": "罐盾卫士",
+        "maxHp": 240,
+        "damage": 8,
+        "block": 2,
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "罐盖护盾",
+          "targeting": "self",
+          "cost": 100,
+          "shield": 60,
+          "duration": 8
+        }
+      }
+    ]
+  },
+  {
+    "stageId": "alley_boss",
+    "name": "第一章 · 深巷首领",
+    "referenceOnly": true,
+    "ruleSummary": "这是本关公开的静态定义，不是实时战况；maxHp是体力上限，damage是未加成定义伤害，不代表当前体力或实际伤害。技能效果和数值只适用于这一关，不能跨章套用。暂停停止战斗计时与蓄能；蓄满后仍由玩家手动施放。",
+    "publicRules": {
+      "energyPerSecond": 5,
+      "maxEnergy": 100,
+      "maxLeaks": 3,
+      "maxCats": 4
+    },
+    "cats": [
+      {
+        "id": "caster",
+        "name": "绒绒",
+        "role": "星绒术士",
+        "maxHp": 80,
+        "damage": 20,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 0.8,
+        "skill": {
+          "name": "星绒绽放",
+          "description": "任意可用格为中心的五格十字，每名敌人受到 45 点伤害。",
+          "targeting": "area",
+          "cost": 100,
+          "damage": 45
+        }
+      },
+      {
+        "id": "guard",
+        "name": "斑斑",
+        "role": "罐盾卫士",
+        "maxHp": 240,
+        "damage": 8,
+        "block": 2,
+        "range": "melee",
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "罐盖护盾",
+          "description": "自身获得 60 护盾，持续 8 秒，不叠加、不治疗。",
+          "targeting": "self",
+          "cost": 100,
+          "shield": 60,
+          "duration": 8
+        }
+      },
+      {
+        "id": "tuanzi",
+        "name": "团子",
+        "role": "橘影先锋",
+        "maxHp": 220,
+        "damage": 28,
+        "block": 1,
+        "range": "claws",
+        "attackInterval": 1.2,
+        "skill": {
+          "name": "橘影连爪",
+          "description": "挥爪攻击自身至前两列、上下各一行的可用格，每名敌人受到 120 点伤害。",
+          "targeting": "forward",
+          "cost": 100,
+          "damage": 120
+        }
+      },
+      {
+        "id": "diandian",
+        "name": "点点",
+        "role": "暖心伙伴",
+        "maxHp": 140,
+        "damage": 10,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "安心呼噜",
+          "description": "为全部仍在场的战斗猫恢复 80 体力，不超过上限；不能复活已经退场的伙伴。",
+          "targeting": "team",
+          "cost": 100,
+          "heal": 80
+        }
+      }
+    ]
+  },
+  {
+    "stageId": "market_boss",
+    "name": "第二章 · 午夜集市试玩",
+    "referenceOnly": true,
+    "ruleSummary": "这是本关公开的静态定义，不是实时战况；maxHp是体力上限，damage是未加成定义伤害，不代表当前体力或实际伤害。技能效果和数值只适用于这一关，不能跨章套用。暂停停止战斗计时与蓄能；蓄满后仍由玩家手动施放。",
+    "publicRules": {
+      "energyPerSecond": 5,
+      "maxEnergy": 100,
+      "maxLeaks": 3,
+      "maxCats": 6
+    },
+    "cats": [
+      {
+        "id": "caster",
+        "name": "绒绒",
+        "role": "星绒术士",
+        "maxHp": 80,
+        "damage": 20,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 0.8,
+        "skill": {
+          "name": "星绒绽放",
+          "description": "以任意通路格为中心的五格十字，每名敌人受到 45 点伤害。",
+          "targeting": "area",
+          "cost": 100,
+          "damage": 45
+        }
+      },
+      {
+        "id": "guard",
+        "name": "斑斑",
+        "role": "罐盾卫士",
+        "maxHp": 240,
+        "damage": 8,
+        "block": 2,
+        "range": "melee",
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "罐盖护盾",
+          "description": "自身获得 60 护盾，持续 8 秒，不叠加、不治疗。",
+          "targeting": "self",
+          "cost": 100,
+          "shield": 60,
+          "duration": 8
+        }
+      },
+      {
+        "id": "tuanzi",
+        "name": "团子",
+        "role": "橘影先锋",
+        "maxHp": 220,
+        "damage": 28,
+        "block": 1,
+        "range": "claws",
+        "attackInterval": 1.2,
+        "skill": {
+          "name": "橘影连爪",
+          "description": "自身至前两列、上下各一行的通路格，每名敌人受到 120 点伤害。",
+          "targeting": "forward",
+          "cost": 100,
+          "damage": 120
+        }
+      },
+      {
+        "id": "diandian",
+        "name": "点点",
+        "role": "暖心伙伴",
+        "maxHp": 140,
+        "damage": 10,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "安心呼噜",
+          "description": "为仍在场的全部伙伴恢复 80 体力，不能复活退场伙伴。",
+          "targeting": "team",
+          "cost": 100,
+          "heal": 80
+        }
+      },
+      {
+        "id": "bruiser",
+        "name": "栗栗",
+        "role": "栗盾斗士",
+        "maxHp": 240,
+        "damage": 16,
+        "block": 2,
+        "range": "melee",
+        "attackInterval": 1,
+        "skill": {
+          "name": "栗盾奋击",
+          "description": "自身获得 35 护盾，普攻伤害提升 50%，持续 8 秒。",
+          "targeting": "self",
+          "cost": 100,
+          "shield": 35,
+          "duration": 8,
+          "attackMultiplier": 1.5
+        }
+      },
+      {
+        "id": "controller",
+        "name": "铃铃",
+        "role": "银铃术士",
+        "maxHp": 110,
+        "damage": 14,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 1,
+        "skill": {
+          "name": "银铃缓行",
+          "description": "五格十字内敌人受到 25 点伤害，小怪移动速度降低 40%，持续 4 秒。",
+          "targeting": "area",
+          "cost": 100,
+          "damage": 25,
+          "slowMultiplier": 0.6,
+          "slowDuration": 4
+        }
+      }
+    ]
+  },
+  {
+    "stageId": "greenhouse_boss",
+    "name": "第三章 · 废弃花房试玩",
+    "referenceOnly": true,
+    "ruleSummary": "这是本关公开的静态定义，不是实时战况；maxHp是体力上限，damage是未加成定义伤害，不代表当前体力或实际伤害。技能效果和数值只适用于这一关，不能跨章套用。暂停停止战斗计时与蓄能；蓄满后仍由玩家手动施放。",
+    "publicRules": {
+      "energyPerSecond": 5,
+      "maxEnergy": 100,
+      "maxLeaks": 3,
+      "maxCats": 6
+    },
+    "cats": [
+      {
+        "id": "caster",
+        "name": "绒绒",
+        "role": "星绒术士",
+        "maxHp": 80,
+        "damage": 20,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 0.8,
+        "skill": {
+          "name": "星绒绽放",
+          "description": "以任意通路格为中心的五格十字，每名敌人受到 45 点伤害。",
+          "targeting": "area",
+          "cost": 100,
+          "damage": 45
+        }
+      },
+      {
+        "id": "guard",
+        "name": "斑斑",
+        "role": "罐盾卫士",
+        "maxHp": 240,
+        "damage": 8,
+        "block": 2,
+        "range": "melee",
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "罐盖护盾",
+          "description": "自身获得 60 护盾，持续 8 秒；与既有护盾取较大盾值与较长时长，不叠加、不治疗。",
+          "targeting": "self",
+          "cost": 100,
+          "shield": 60,
+          "duration": 8
+        }
+      },
+      {
+        "id": "tuanzi",
+        "name": "团子",
+        "role": "橘影先锋",
+        "maxHp": 220,
+        "damage": 28,
+        "block": 1,
+        "range": "claws",
+        "attackInterval": 1.2,
+        "skill": {
+          "name": "橘影连爪",
+          "description": "自身至前两列、上下各一行的通路格，每名敌人受到 120 点伤害。",
+          "targeting": "forward",
+          "cost": 100,
+          "damage": 120
+        }
+      },
+      {
+        "id": "bruiser",
+        "name": "栗栗",
+        "role": "栗盾斗士",
+        "maxHp": 240,
+        "damage": 16,
+        "block": 2,
+        "range": "melee",
+        "attackInterval": 1,
+        "skill": {
+          "name": "栗盾奋击",
+          "description": "自身获得 35 护盾，普攻伤害提升 50%，持续 8 秒；护盾不叠加，保留既有较高盾值与较长时长。",
+          "targeting": "self",
+          "cost": 100,
+          "shield": 35,
+          "duration": 8,
+          "attackMultiplier": 1.5
+        }
+      },
+      {
+        "id": "controller",
+        "name": "铃铃",
+        "role": "银铃术士",
+        "maxHp": 110,
+        "damage": 14,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 1,
+        "skill": {
+          "name": "银铃缓行",
+          "description": "五格十字内敌人受到 25 点伤害，小怪移动速度降低 40%，持续 4 秒。",
+          "targeting": "area",
+          "cost": 100,
+          "damage": 25,
+          "slowMultiplier": 0.6,
+          "slowDuration": 4
+        }
+      },
+      {
+        "id": "momo",
+        "name": "墨墨",
+        "role": "巡光护卫",
+        "maxHp": 150,
+        "damage": 12,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "巡光护行",
+          "description": "为全部在场伙伴提供 45 护盾，持续 8 秒；与既有护盾取较大值与较长时长，并清除所有已生成荆棘，不取消尚未落地的预告。",
+          "targeting": "team",
+          "cost": 100,
+          "shield": 45,
+          "duration": 8,
+          "clearHazards": true
+        }
+      }
+    ]
+  },
+  {
+    "stageId": "tunnel_boss",
+    "name": "第四章 · 地下通道试玩",
+    "referenceOnly": true,
+    "ruleSummary": "这是本关公开的静态定义，不是实时战况；maxHp是体力上限，damage是未加成定义伤害，不代表当前体力或实际伤害。技能效果和数值只适用于这一关，不能跨章套用。暂停停止战斗计时与蓄能；蓄满后仍由玩家手动施放。",
+    "publicRules": {
+      "energyPerSecond": 5,
+      "maxEnergy": 100,
+      "maxLeaks": 3,
+      "maxCats": 6
+    },
+    "cats": [
+      {
+        "id": "caster",
+        "name": "绒绒",
+        "role": "星绒术士",
+        "maxHp": 80,
+        "damage": 20,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 0.8,
+        "skill": {
+          "name": "星绒绽放",
+          "description": "以任意通路格为中心的五格十字，每名敌人受到 45 点伤害。",
+          "targeting": "area",
+          "cost": 100,
+          "damage": 45
+        }
+      },
+      {
+        "id": "guard",
+        "name": "斑斑",
+        "role": "罐盾卫士",
+        "maxHp": 240,
+        "damage": 8,
+        "block": 2,
+        "range": "melee",
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "罐盖护盾",
+          "description": "自身获得 60 护盾，持续 8 秒；与既有护盾取较大盾值与较长时长，不叠加、不治疗。",
+          "targeting": "self",
+          "cost": 100,
+          "shield": 60,
+          "duration": 8
+        }
+      },
+      {
+        "id": "tuanzi",
+        "name": "团子",
+        "role": "橘影先锋",
+        "maxHp": 220,
+        "damage": 28,
+        "block": 1,
+        "range": "claws",
+        "attackInterval": 1.2,
+        "skill": {
+          "name": "橘影连爪",
+          "description": "自身至前两列、上下各一行的通路格，每名敌人受到 120 点伤害。",
+          "targeting": "forward",
+          "cost": 100,
+          "damage": 120
+        }
+      },
+      {
+        "id": "bruiser",
+        "name": "栗栗",
+        "role": "栗盾斗士",
+        "maxHp": 240,
+        "damage": 16,
+        "block": 2,
+        "range": "melee",
+        "attackInterval": 1,
+        "skill": {
+          "name": "栗盾奋击",
+          "description": "自身获得 35 护盾，普攻伤害提升 50%，持续 8 秒；护盾不叠加，保留既有较高盾值与较长时长。",
+          "targeting": "self",
+          "cost": 100,
+          "shield": 35,
+          "duration": 8,
+          "attackMultiplier": 1.5
+        }
+      },
+      {
+        "id": "diandian",
+        "name": "点点",
+        "role": "暖心伙伴",
+        "maxHp": 140,
+        "damage": 10,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "安心呼噜",
+          "description": "为全部仍在场伙伴恢复 80 体力，不超过体力上限，不能复活已经退场的伙伴。",
+          "targeting": "team",
+          "cost": 100,
+          "heal": 80
+        }
+      },
+      {
+        "id": "momo",
+        "name": "墨墨",
+        "role": "巡光护卫",
+        "maxHp": 150,
+        "damage": 12,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "夜视护行",
+          "description": "恢复全场视野 10 秒，为全部在场伙伴提供 45 护盾，持续 8 秒。与既有护盾取较大值与较长时长，不叠加、不治疗。",
+          "targeting": "team",
+          "cost": 100,
+          "shield": 45,
+          "duration": 8,
+          "nightVision": 10
+        }
+      }
+    ]
+  },
+  {
+    "stageId": "finale_boss",
+    "name": "第五章 · 点亮流浪猫王国试玩",
+    "referenceOnly": true,
+    "ruleSummary": "这是本关公开的静态定义，不是实时战况；maxHp是体力上限，damage是未加成定义伤害，不代表当前体力或实际伤害。技能效果和数值只适用于这一关，不能跨章套用。暂停停止战斗计时与蓄能；蓄满后仍由玩家手动施放。",
+    "publicRules": {
+      "energyPerSecond": 5,
+      "maxEnergy": 100,
+      "maxLeaks": 3,
+      "maxCats": 6
+    },
+    "cats": [
+      {
+        "id": "caster",
+        "name": "绒绒",
+        "role": "星绒术士",
+        "maxHp": 80,
+        "damage": 20,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 0.8,
+        "skill": {
+          "name": "星绒绽放",
+          "description": "以任意通路格为中心的五格十字，每名敌人受到 45 点伤害。",
+          "targeting": "area",
+          "cost": 100,
+          "damage": 45
+        }
+      },
+      {
+        "id": "guard",
+        "name": "斑斑",
+        "role": "罐盾卫士",
+        "maxHp": 240,
+        "damage": 8,
+        "block": 2,
+        "range": "melee",
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "罐盖护盾",
+          "description": "自身获得 60 护盾，持续 8 秒；与既有护盾取较大盾值与较长时长，不叠加、不治疗。",
+          "targeting": "self",
+          "cost": 100,
+          "shield": 60,
+          "duration": 8
+        }
+      },
+      {
+        "id": "tuanzi",
+        "name": "团子",
+        "role": "橘影先锋",
+        "maxHp": 220,
+        "damage": 28,
+        "block": 1,
+        "range": "claws",
+        "attackInterval": 1.2,
+        "skill": {
+          "name": "橘影连爪",
+          "description": "自身至前两列、上下各一行的通路格，每名敌人受到 120 点伤害。",
+          "targeting": "forward",
+          "cost": 100,
+          "damage": 120
+        }
+      },
+      {
+        "id": "bruiser",
+        "name": "栗栗",
+        "role": "栗盾斗士",
+        "maxHp": 240,
+        "damage": 16,
+        "block": 2,
+        "range": "melee",
+        "attackInterval": 1,
+        "skill": {
+          "name": "栗盾奋击",
+          "description": "自身获得 35 护盾，普攻伤害提升 50%，持续 8 秒；护盾不叠加，保留既有较高盾值与较长时长。",
+          "targeting": "self",
+          "cost": 100,
+          "shield": 35,
+          "duration": 8,
+          "attackMultiplier": 1.5
+        }
+      },
+      {
+        "id": "diandian",
+        "name": "点点",
+        "role": "暖心伙伴",
+        "maxHp": 140,
+        "damage": 10,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "安心呼噜",
+          "description": "为全部仍在场伙伴恢复 80 体力，不超过体力上限，不能复活已经退场的伙伴。",
+          "targeting": "team",
+          "cost": 100,
+          "heal": 80
+        }
+      },
+      {
+        "id": "momo",
+        "name": "墨墨",
+        "role": "巡光护卫",
+        "maxHp": 150,
+        "damage": 12,
+        "block": 1,
+        "range": "ranged",
+        "attackInterval": 1.1,
+        "skill": {
+          "name": "夜视护行",
+          "description": "以夜视照破首领影幕 10 秒，为全部在场主力和援军提供 45 护盾，持续 8 秒。与既有护盾取较大值与较长时长，不叠加、不治疗。",
+          "targeting": "team",
+          "cost": 100,
+          "shield": 45,
+          "duration": 8,
+          "nightVision": 10
+        }
+      }
+    ]
+  }
+]

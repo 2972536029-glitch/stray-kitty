@@ -11,6 +11,28 @@ const session={read:()=>({playerId:'test-player',token:'test-session'})};
 const flush=()=>new Promise<void>(resolve=>setImmediate(resolve));
 function deferred<T>(){let resolve!:(value:T)=>void;let reject!:(reason:unknown)=>void;const promise=new Promise<T>((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 
+test('battle redirects clear home questions without a model call while home and mixed combat stay available', async()=>{
+  const inputs:ModelAdvisorRequest[]=[];
+  const chat=new ModelAdvisorChat(async body=>{inputs.push(body);return model;});
+  chat.setScope('battle',true);
+  for(const question of ['家园怎么修床？','家具怎么摆放？','事件骰子失败概率是多少？','剧情讲到哪里了？']){
+    assert.equal(chat.ask({...request,question},fallback),true);
+    assert.equal(chat.getSnapshot().messages.at(-1)?.answer.source,'local');
+    assert.match(chat.getSnapshot().messages.at(-1)!.answer.text,/回到家园/);
+    assert.equal(chat.getSnapshot().pendingQuestion,null);
+  }
+  await flush(); assert.equal(inputs.length,0);
+  chat.ask({...request,question:'事件支援老黄在战斗里怎么减速？'},fallback);await flush();
+  assert.equal(inputs.length,1);
+  for(const question of ['家园等会儿再修，这一波怎么过？','剧情以后再说，这一关怎么打？']){
+    chat.ask({...request,question},fallback);await flush();
+    assert.equal(inputs.at(-1)?.question,question);
+  }
+  chat.setScope('home',true);
+  chat.ask({scope:'journey',sceneKey:'home',expectedRevision:1,question:'家园怎么修床？',context:'{}'},fallback);await flush();
+  assert.equal(inputs.length,4);assert.equal(inputs[3].scope,'journey');
+});
+
 test('manual request is single flight; idle and scope resume never call the provider',async()=>{
   const pending=deferred<ModelAdvisorAnswer>();const calls:ModelAdvisorRequest[]=[];
   const chat=new ModelAdvisorChat(async body=>{calls.push(body);return pending.promise;});

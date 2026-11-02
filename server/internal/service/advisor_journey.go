@@ -113,6 +113,7 @@ func (g *Game) advisorJourneyProgressWithTexts(s domain.GameState, texts advisor
 	progress["placements"] = s.Placements
 	progress["completedHomeRepairs"] = s.HomeRepairs
 	if s.Phase == "home" {
+		progress["homeKnowledge"] = g.advisorHomeKnowledge(s, texts)
 		layout := map[string]any{}
 		for key, placement := range s.HomeLayout {
 			layout[key] = map[string]any{"x": placement.X, "y": placement.Y, "stored": placement.Stored}

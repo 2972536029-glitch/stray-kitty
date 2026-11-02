@@ -32,16 +32,32 @@ type advisorOptionText struct {
 	AdvisorHint json.RawMessage `json:"advisorHint"`
 }
 
+type advisorCompanionText struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Skill       string `json:"skill"`
+}
+
+type advisorStageText struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 type advisorDisplayTexts struct {
-	Story  map[string]advisorStoryText
-	Events map[string]advisorEventText
+	Story      map[string]advisorStoryText
+	Events     map[string]advisorEventText
+	Companions map[string]advisorCompanionText
+	Stages     map[string]advisorStageText
 }
 
 func readAdvisorVisibleTexts(raw []byte) advisorDisplayTexts {
-	result := advisorDisplayTexts{Story: map[string]advisorStoryText{}, Events: map[string]advisorEventText{}}
+	result := advisorDisplayTexts{Story: map[string]advisorStoryText{}, Events: map[string]advisorEventText{}, Companions: map[string]advisorCompanionText{}, Stages: map[string]advisorStageText{}}
 	var display struct {
-		Story  []advisorStoryText `json:"story"`
-		Events []advisorEventText `json:"events"`
+		Story      []advisorStoryText     `json:"story"`
+		Events     []advisorEventText     `json:"events"`
+		Companions []advisorCompanionText `json:"cats"`
+		Stages     []advisorStageText     `json:"stages"`
 	}
 	if json.Unmarshal(raw, &display) != nil {
 		return result
@@ -51,6 +67,12 @@ func readAdvisorVisibleTexts(raw []byte) advisorDisplayTexts {
 	}
 	for _, event := range display.Events {
 		result.Events[event.ID] = event
+	}
+	for _, companion := range display.Companions {
+		result.Companions[companion.ID] = companion
+	}
+	for _, stage := range display.Stages {
+		result.Stages[stage.ID] = stage
 	}
 	return result
 }

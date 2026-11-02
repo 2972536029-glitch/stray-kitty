@@ -100,3 +100,16 @@ test('closing chat discards a delayed response and opening it does not resubmit'
   await expect(dialog).not.toContainText('模型战况建议');
   expect(providerRequests.length).toBe(count+1);
 });
+
+test('battle chat redirects home questions locally without consuming a provider request',async({page})=>{
+  await page.addInitScript(session=>localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session)),sessions.get('cancel')!);
+  await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();
+  await page.getByTestId('tunnel-advisor').click();
+  const dialog=page.getByRole('region',{name:'军师阿策聊天'});
+  const before=providerRequests.length;
+  await dialog.getByLabel('询问军师').fill('家园家具怎么摆放？');
+  await dialog.getByRole('button',{name:'询问',exact:true}).click();
+  await expect(dialog).toContainText('回家园再聊');
+  await expect(dialog).toContainText('回到家园问我');
+  expect(providerRequests.length).toBe(before);
+});

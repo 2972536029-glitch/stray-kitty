@@ -1,4 +1,5 @@
 import {AdvisorContextChanged,type AdvisorHistoryEntry,type ModelAdvisorAnswer,type ModelAdvisorRequest} from './model-advisor-client';
+import {battleScopeRedirect} from './advisor-question-scope';
 
 export interface LocalAdvisorAnswer {title:string;text:string}
 export interface AdvisorChatMessage {id:number;question:string;answer:ModelAdvisorAnswer}
@@ -40,6 +41,8 @@ export class ModelAdvisorChat {
   ask(input:Omit<ModelAdvisorRequest,'history'>,fallback:LocalAdvisorAnswer):boolean{
     const question=cleanAdvisorQuestion(input.question);
     if(!question||!this.usable())return false;
+    const redirect = (!input.scope || input.scope === 'battle') ? battleScopeRedirect(question) : null;
+    if (redirect) { this.append(question, {...redirect, source: 'local'}, ''); return true; }
     const history:AdvisorHistoryEntry[]=this.state.messages.flatMap(message=>[
       {role:'user' as const,content:short(message.question,1200)},
       {role:'assistant' as const,content:short(message.answer.text,1200)},

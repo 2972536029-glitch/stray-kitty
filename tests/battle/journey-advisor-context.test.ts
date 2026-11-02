@@ -27,6 +27,32 @@ function state(changes: Partial<GameState> = {}): GameState {
 const read = (s: GameState, c = catalog()) => JSON.parse(buildJourneyAdvisorContext(s, c));
 const answer = (s: GameState, question = '下一步做什么') => getJourneyLocalAnswer(s, catalog(), question).text;
 
+test('home offline answers cover public battle and event rules without fabricating live battle or history',()=>{
+  const s=state({phase:'home',mapId:'greenhouse',pushTokens:1}), before=structuredClone(s);
+  assert.match(answer(s,'战斗技能怎么蓄能？'),/手动释放.*暂停/);
+  assert.match(answer(s,'事件失败概率是多少？'),/16.67%.*不能.*鼓励/);
+  assert.match(answer(s,'我鱼干为0要先买才能选事件吗，失败率是多少？'),/不要求也不扣库存鱼干.*12点.*16.67%/);
+  assert.match(answer(s,'事件选项要花库存鱼干吗？'),/不要求也不扣库存/);
+  assert.match(answer(s,'鼓励在结果后使用吗？'),/掷骰前.*不是结算后/);
+  assert.match(answer(s,'现在墨墨还有多少血、站在哪一格？'),/没有当前战斗快照/);
+  assert.match(answer(s,'你记得我每次选择和完整历史吗？'),/不是完整/);
+  assert.deepEqual(s,before);
+  const remembered={...s,eventState:{lastResolution:{eventId:'current_event',optionId:'look',dice:[2,3],tier:'partial' as const,outcome:{text:'这是实际记录的结果。'}},pendingModifiers:{shadowPressure:0 as const}}};
+  assert.match(answer(remembered,'上次事件发生了什么？'),/这是实际记录的结果/);
+});
+
+test('home partner abilities stay locked before an actual chapter experience',()=>{
+  const home=state({phase:'home',cats:['momo'],flags:['chapter_4_started']}), c=catalog();
+  assert.doesNotMatch(getJourneyLocalAnswer(home,c,'墨墨夜视技能什么效果？').text,/恢复全场视野.*10/);
+  const experienced={...home,lastResult:{stageId:'tunnel_boss',outcome:'lost' as const,message:''}};
+  assert.match(getJourneyLocalAnswer(experienced,c,'墨墨夜视技能什么效果？').text,/恢复全场视野.*10.*不是.*相同|恢复全场视野.*10.*不代表/);
+  const unknown={...experienced,cats:[]};
+  assert.match(getJourneyLocalAnswer(unknown,c,'墨墨夜视技能什么效果？').text,/记录不足/);
+  const greenhouse={...home,completedStages:['greenhouse_boss']};
+  assert.match(getJourneyLocalAnswer(greenhouse,c,'墨墨护盾技能怎么用？').text,/已体验的花房.*荆棘/);
+  assert.doesNotMatch(getJourneyLocalAnswer(greenhouse,c,'墨墨夜视技能怎么用？').text,/恢复全场视野/);
+});
+
 test('journey context sends only current visible story and owned information, without mutating inputs', () => {
   const c = catalog(), s = state({phase: 'dialogue', storyNodeId: 'now', txns: [{id: 'PRIVATE_PAYMENT', playerId: 'PRIVATE_PLAYER', packId: '', amount: 1, status: 'confirmed', reason: '', cardSuffix: 'SECRET_CARD', createdAt: ''}]});
   const before = structuredClone({c, s});
