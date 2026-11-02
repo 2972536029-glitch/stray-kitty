@@ -656,8 +656,6 @@
                 ],
                 "securityContext": {
                   "allowPrivilegeEscalation": false,
-                  "runAsNonRoot": false,
-                  "runAsUser": 0,
                   "readOnlyRootFilesystem": true,
                   "capabilities": {
                     "drop": [
@@ -678,7 +676,7 @@
                 "command": [
                   "sh",
                   "-c",
-                  "mkdir -p /acme /certs; if [ ! -f /certs/fullchain.pem -o ! -f /certs/privkey.pem ]; then openssl req -x509 -newkey rsa:2048 -nodes -keyout /certs/privkey.pem -out /certs/fullchain.pem -days 1 -subj '/CN=placeholder' 2>/dev/null; fi; chown 101:101 /certs/fullchain.pem /certs/privkey.pem 2>/dev/null || true; if [ -z \"$DuckDNS_Token\" ]; then echo 'DuckDNS token absent; TLS placeholder stays, staying HTTP-only.'; while :; do sleep 3600; done; fi; acme.sh --home /acme --set-default-ca --server letsencrypt; acme.sh --home /acme --issue --dns dns_duckdns -d starry-kitty.duckdns.org --keylength ec-256 && acme.sh --home /acme --install-cert -d starry-kitty.duckdns.org --ecc --fullchain-file /certs/fullchain.pem --key-file /certs/privkey.pem --reloadcmd 'chown 101:101 /certs/fullchain.pem /certs/privkey.pem 2>/dev/null; pgrep -o nginx | xargs -r kill -HUP'; while :; do sleep 12h; acme.sh --home /acme --cron; done"
+                  "mkdir -p /acme /certs; if [ ! -f /certs/fullchain.pem -o ! -f /certs/privkey.pem ]; then openssl req -x509 -newkey rsa:2048 -nodes -keyout /certs/privkey.pem -out /certs/fullchain.pem -days 1 -subj '/CN=placeholder' 2>/dev/null; fi; if [ -z \"$DuckDNS_Token\" ]; then echo 'DuckDNS token absent; TLS placeholder stays, staying HTTP-only.'; while :; do sleep 3600; done; fi; acme.sh --home /acme --set-default-ca --server letsencrypt; acme.sh --home /acme --issue --dns dns_duckdns -d starry-kitty.duckdns.org --keylength ec-256 && acme.sh --home /acme --install-cert -d starry-kitty.duckdns.org --ecc --fullchain-file /certs/fullchain.pem --key-file /certs/privkey.pem --reloadcmd 'pgrep -o nginx | xargs -r kill -HUP'; while :; do sleep 12h; acme.sh --home /acme --cron; done"
                 ],
                 "volumeMounts": [
                   {
