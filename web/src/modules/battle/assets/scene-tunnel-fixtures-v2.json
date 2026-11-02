@@ -1,0 +1,32 @@
+{
+  "size": [1254, 1254],
+  "alpha": true,
+  "cropThreshold": 5,
+  "source": "built-in image_gen; original generated PNG, no pixel editing",
+  "layout": {"columns": 2, "rows": 3},
+  "sceneryTexelsPerCell": 56,
+  "worldCellSize": 80,
+  "sampling": "pixel",
+  "crops": {
+    "pipe": [38, 179, 576, 212],
+    "valve": [690, 92, 516, 300],
+    "cabinet": [119, 468, 442, 324],
+    "cage": [751, 452, 423, 341],
+    "service-wall": [19, 852, 604, 330],
+    "wire-footing": [630, 1013, 607, 176]
+  },
+  "worldBoxes": {
+    "pipe": [5, 23, 70, 38],
+    "valve": [5, 7, 70, 56],
+    "cabinet": [15, 18, 50, 47],
+    "cage": [9, 15, 62, 49],
+    "service-wall": [478, -17, 178, 94],
+    "wire-footing": [-18, 256, 176, 66]
+  },
+  "notes": [
+    "Fit complete silhouettes within these unchanged local fixture boxes; do not stretch source crops.",
+    "The cage has alpha between bars; live rescued-cat artwork draws behind it.",
+    "The two joined structures retain the existing real-cell exclusion mask and world placement on both canvas layers.",
+    "Source PNG edges, holes and alpha are retained. Native state overlays and the code-painter fallback remain separate."
+  ]
+}

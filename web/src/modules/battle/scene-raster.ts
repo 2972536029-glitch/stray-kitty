@@ -18,10 +18,15 @@ export function createSceneryRaster(width:number,height:number,paint:(ctx:Canvas
 }
 
 /** Cache by source crop AND world size, not the responsive CSS size. */
-export function sceneryRaster(image:CanvasImageSource,crop:Crop,width:number,height:number){
-  const key=[...crop,Math.round(width*SCENERY_TEXELS_PER_CELL/SCENERY_CELL_SIZE),Math.round(height*SCENERY_TEXELS_PER_CELL/SCENERY_CELL_SIZE)].join(':');
+export function sceneryRaster(image:CanvasImageSource,crop:Crop,width:number,height:number,sampling:'average'|'pixel'='average'){
+  const key=[...crop,Math.round(width*SCENERY_TEXELS_PER_CELL/SCENERY_CELL_SIZE),Math.round(height*SCENERY_TEXELS_PER_CELL/SCENERY_CELL_SIZE),sampling].join(':');
   let cache=rasters.get(image);const ready=cache?.get(key);if(ready)return ready;
-  const raster=createSceneryRaster(width,height,ink=>ink.drawImage(image,...crop,0,0,width,height));
+  const raster=createSceneryRaster(width,height,ink=>{
+    // Authored pixel clusters retain their palette; dense painted sources still
+    // average tiny texture once through the default path.
+    ink.imageSmoothingEnabled=sampling==='average';
+    ink.drawImage(image,...crop,0,0,width,height);
+  });
   if(!raster)return undefined;
   if(!cache){cache=new Map();rasters.set(image,cache);}
   cache.set(key,raster);
