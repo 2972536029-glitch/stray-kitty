@@ -3,6 +3,7 @@ import type {Catalog, GameCommand, GameState} from '../contracts';
 import type {CatBreed} from '../adapters/canvas/pixelCat';
 import type {SceneAnchor} from './DialogueBubble';
 import {currentStory, objective} from '../core/story';
+import {warehouseOptionalInvestigationHint} from '../modules/chapter5/eventHints';
 import PixelCat from './PixelCat';
 import DialoguePanel from './DialoguePanel';
 import DiceEvent, {Dice} from './DiceEvent';
@@ -86,6 +87,7 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
   const nearHint = state.phase === 'explore' && near && nearTarget
     ? `靠近「${nearTarget.label.replace(/\s*·\s*E$/, '')}」了，按 E 互动`
     : null;
+  const warehouseOptionalHint=warehouseOptionalInvestigationHint(state,near&&nearTarget?nearTarget.id:undefined);
   const hintHidden = state.phase === 'explore' && introHintDone && !nearHint && !inspectHint;
   // 沉浸化：底部提示只保留真正有用的引导（战斗说明/章节目标/操作教学），删除“每次相遇，都可能成为回家路上的一点光。”常驻兜底。
   const footerGuideText = finaleBattle && state.phase === 'battle' ? '躲开预告的横扫与坠击，选择护卫与首领的攻击顺序。十波清完、两精英与九格首领全部击败后获胜；援军固定支援，主力仍需你的指挥。' : tunnelBattle && state.phase === 'battle' ? '保护 C2 的喵喵；断灯时可用墨墨夜视恢复视野并为全队加盾。守完八波并击败首领；打开地图、商店或返回标题会暂停战斗。' : greenhouseBattle && state.phase === 'battle' ? '沿花房的不规则通路布阵，守住 B1；守完八波并击败四格首领。打开地图、商店或返回标题会暂停战斗。' : marketBattle && state.phase === 'battle' ? '点选伙伴查看与释放技能；守完八波并击败集市首领。打开地图、商店或返回标题会暂停战斗。' : chapterBattle && state.phase === 'battle' ? '点场上的猫查看和释放技能，守住 A4 与右侧两处巷口；守完八波并击败首领。打开地图、商店或返回标题会暂停战斗。' : (explorationFooterText(state.phase, state.mapId, catalog.tutorials.find(t => t.phase === state.phase)?.text, objective(state)) ?? '');
@@ -220,7 +222,7 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
           {showExploreResult && resolution && <section className="event-card explore-result-card"><span className="eyebrow">一次相遇的结果</span><EventResult resolution={resolution}/><button disabled={disabled} onClick={() => {setDismissedResult(resolutionKey);arrivedFromEvent.current = false;}}>继续赶路 →</button></section>}
           {paused && <div className="pause-label"><span>旅程已暂停</span><button onClick={onPause}>继续旅程</button></div>}
         </div>
-        {footerVisible && <div className={`world-footer${hintHidden ? ' hint-idle' : ''}`}>{footerTextVisible && <p key={nearHint ?? inspectHint ?? footerGuideText ?? 'hint'} className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{nearHint ? <><span className="hint-paw">🐾</span>{nearHint}</> : inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : footerGuideText}</p>}
+        {footerVisible && <div className={`world-footer${hintHidden ? ' hint-idle' : ''}`}>{footerTextVisible && <p key={nearHint ?? inspectHint ?? footerGuideText ?? 'hint'} className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{nearHint ? <><span className="hint-paw">🐾</span>{nearHint}{warehouseOptionalHint&&<small className="optional-investigation-hint">{warehouseOptionalHint}</small>}</> : inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : footerGuideText}</p>}
           {state.phase === 'explore' && <>{near && nearTarget && <button disabled={disabled} onClick={() => onInteract(nearTarget.id)}>{nearTarget.label}</button>}{state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued') && state.mapId !== 'market' && <button disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>回到花房</button>}</>}
         </div>}
       </section></div>

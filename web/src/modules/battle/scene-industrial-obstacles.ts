@@ -1,6 +1,6 @@
 import {CELLS as TUNNEL_CELLS, MAP as TUNNEL_MAP} from './tunnel/config';
 import {CELLS as FINALE_CELLS, MAP as FINALE_MAP} from './finale/config';
-import {paintRefinedMaterial} from './scene-detailed-exteriors';
+import {paintDetailedTunnelFixture,paintDetailedWarehouseFixture,paintRefinedMaterial} from './scene-detailed-exteriors';
 
 type Cell = Readonly<{x:number;y:number}>;
 type Context = CanvasRenderingContext2D;
@@ -70,6 +70,7 @@ function clipScenery(ctx:Context,cells:readonly Cell[],joined:ReadonlySet<string
 
 /** A continuous service wall: the old rubble bay and locked grate share one frame. */
 function tunnelMachineWall(ctx:Context){
+  if(paintDetailedTunnelFixture(ctx,'service-wall'))return;
   ctx.save();ctx.translate(480,0);
   blocks(ctx,'#162c3370',[[3,63,173,10],[9,73,166,3]]);
   blocks(ctx,'#253e45',[[-2,-14,175,78],[1,60,175,10]]);
@@ -114,6 +115,7 @@ function tunnelMachineWall(ctx:Context){
 
 /** Broken masonry and the disabled wire station share a low, continuous footing. */
 function tunnelWireFooting(ctx:Context){
+  if(paintDetailedTunnelFixture(ctx,'wire-footing'))return;
   ctx.save();ctx.translate(0,240);
   blocks(ctx,'#152b3270',[[-19,67,177,14],[-11,81,163,4]]);
   blocks(ctx,'#3b514e',[[-18,55,176,23],[-14,77,168,5]]);
@@ -150,6 +152,7 @@ export function paintTunnelObstacleScenery(ctx:Context){
 
 function warehouseBeam(ctx:Context,y:number,lower:boolean){
   ctx.save();ctx.translate(240,y);
+  if(paintDetailedWarehouseFixture(ctx,lower?'beam-lower':'beam-upper')){ctx.restore();return;}
   const top=lower?15:-18,bottom=lower?94:67;
   blocks(ctx,'#192e3370',[[-16,bottom-4,176,11],[-11,bottom+7,165,3]]);
   blocks(ctx,'#414e4d',[[-18,top,176,bottom-top],[0,top+6,154,bottom-top-4]]);
@@ -180,6 +183,7 @@ function warehouseBeam(ctx:Context,y:number,lower:boolean){
 }
 
 function warehouseSideWall(ctx:Context){
+  if(paintDetailedWarehouseFixture(ctx,'side-wall'))return;
   // One long wall with staggered joints, rather than three repeated square props.
   blocks(ctx,'#192e3470',[[-20,157,95,251],[-15,408,86,5]]);
   blocks(ctx,'#414e48',[[-20,152,91,252],[65,158,8,242]]);
@@ -213,6 +217,7 @@ function warehouseSideWall(ctx:Context){
 
 function cargoWireDeck(ctx:Context,y:number){
   ctx.save();ctx.translate(80,y);
+  if(paintDetailedWarehouseFixture(ctx,y===80?'cargo-upper':'cargo-lower')){ctx.restore();return;}
   blocks(ctx,'#1a2f3570',[[-16,61,172,12],[-10,73,163,4]]);
   blocks(ctx,'#49594f',[[-18,48,174,22],[-14,69,169,5]]);
   paintRefinedMaterial(ctx,'metal',-18,48,174,22,.23);
@@ -240,6 +245,7 @@ function cargoWireDeck(ctx:Context,y:number){
 
 function holdingRoom(ctx:Context,y:number){
   ctx.save();ctx.translate(800,y);
+  if(paintDetailedWarehouseFixture(ctx,'holding-room')){ctx.restore();return;}
   blocks(ctx,'#152a3277',[[6,60,171,11],[12,71,159,4]]);
   blocks(ctx,'#414d49',[[8,14,168,49],[10,61,166,7]]);
   blocks(ctx,'#827e6a',[[8,16,163,44],[12,8,162,8],[10,60,165,4]]);

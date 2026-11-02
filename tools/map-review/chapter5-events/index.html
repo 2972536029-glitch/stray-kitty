@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>第五章 · 物件与名称预览</title><link rel="stylesheet" href="./style.css"></head>
+<body><aside>
+<span class="tag">第五章 · 独立预览</span><h1>仓库里的物件与线索</h1><p>对照灯光开关、两处调查、仓库防线与隔间出口。沿用原地图、暗度与通路，先预览再接入。</p>
+<div class="modes"><button id="candidate" class="selected">新图标</button><button id="baseline">原有标记</button></div>
+<label><input id="names" type="checkbox">对照：始终显示全部名称</label>
+<label for="progress">剧情状态（仅预览）</label><select id="progress"><option value="arrival">仓库防线尚未完成</option><option value="victory">战斗胜利 · 隔间出口解锁</option></select>
+<label><input id="optionalDone" type="checkbox">两处可选调查已完成</label>
+<div class="modes"><button id="lights">全部开灯</button><button id="fit">全图对照</button></div>
+<label><input id="collision" type="checkbox">对照原通行边界</label>
+<section><h2>逐个查看</h2><div id="locations"></div></section>
+<section><h2>图稿对照</h2><div id="gallery"></div></section>
+<div class="modes"><button id="backAway">退远看淡出</button></div>
+<p class="hint">WASD / 方向键行走，E 试用开关或模拟调查，C 攀爬。滚轮缩放，按住 Tab 对照原标记。</p>
+<output id="status">加载中…</output><p class="hint">未完成主线名称常显，可选名称靠近浮现。随机区域不画图标。本页不连接 API、不读写存档；随机遭遇不会触发，E 只模拟固定调查。随机卡池仍保留在游戏数据中。</p>
+</aside><main><header><strong>第五章 · 物件与浮动名称</strong><span>像素风格 · 对比配色 · 预览候选</span></header><div id="stage"><canvas id="map" tabindex="0" aria-label="第五章物件图标与原通路试走"></canvas><div class="badge" id="badge">新图标 · 浮动名称</div><div id="movementHint" hidden></div><div id="optionalHint" hidden></div><div id="feedback" role="status"></div></div><footer>保持原有灯光、碰撞与层级 · E/C 使用原位置和接近范围 · 预览进度不写入游戏</footer></main><script type="module" src="./main.ts"></script></body></html>

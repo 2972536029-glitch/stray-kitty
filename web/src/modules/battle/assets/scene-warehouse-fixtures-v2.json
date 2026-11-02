@@ -1,0 +1,36 @@
+{
+  "size": [1086, 1448],
+  "alpha": true,
+  "source": "built-in image_gen; original selected PNG, no pixel editing",
+  "cropThreshold": 32,
+  "cropPadding": 2,
+  "sceneryTexelsPerCell": 56,
+  "worldCellSize": 80,
+  "sampling": "pixel",
+  "crops": {
+    "beam-upper": [27, 74, 488, 242],
+    "beam-lower": [547, 93, 512, 223],
+    "cargo-upper": [18, 373, 523, 302],
+    "cargo-lower": [567, 409, 502, 266],
+    "holding-room": [42, 719, 635, 293],
+    "cage": [721, 732, 304, 276],
+    "side-wall": [190, 1030, 201, 391],
+    "rack": [584, 1112, 329, 275]
+  },
+  "localBoxes": {
+    "beam-upper": [-20, -18, 178, 96],
+    "beam-lower": [-20, 15, 178, 89],
+    "cargo-upper": [-18, 2, 174, 75],
+    "cargo-lower": [-18, 2, 174, 75],
+    "holding-room": [8, 7, 168, 68],
+    "cage": [9, 21, 62, 42],
+    "side-wall": [-21, 150, 94, 258],
+    "rack": [8, 8, 64, 59]
+  },
+  "notes": [
+    "Crops are measured complete connected alpha silhouettes with a two-pixel gutter, not assumed equal atlas cells.",
+    "Architecture is registered to the original fixture boxes before uniform world-pixel sampling.",
+    "The holding room contains no cats or bars; the cage has full alpha between bars and is removed on victory.",
+    "Joined scenery continues through the existing exclusion mask; gameplay cells and reservations do not change."
+  ]
+}

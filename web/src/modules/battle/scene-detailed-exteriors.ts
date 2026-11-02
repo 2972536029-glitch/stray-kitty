@@ -9,7 +9,7 @@ const crops:Record<DetailedExteriorKind,readonly [number,number,number,number]>=
   'planted-bed':[76,686,758,262],
   'glass-frame':[1008,683,452,272],
 };
-type Asset='exteriors'|'obstacles'|'workstations'|'materials'|'accents'|'structures'|'market-banks'|'back-walls';
+type Asset='exteriors'|'obstacles'|'workstations'|'materials'|'accents'|'structures'|'market-banks'|'back-walls'|'tunnel-fixtures'|'warehouse-fixtures';
 const urls:Record<Asset,string>={
   exteriors:new URL('./assets/scene-detailed-residences-garden-v1.png',import.meta.url).href,
   obstacles:new URL('./assets/scene-detailed-obstacles-v1.png',import.meta.url).href,
@@ -19,6 +19,8 @@ const urls:Record<Asset,string>={
   structures:new URL('./assets/scene-perimeter-foreground-v1.png',import.meta.url).href,
   'market-banks':new URL('./assets/scene-market-banks-v1.png',import.meta.url).href,
   'back-walls':new URL('./assets/scene-chapter-backwalls-v1.png',import.meta.url).href,
+  'tunnel-fixtures':new URL('./assets/scene-tunnel-fixtures-v2.png',import.meta.url).href,
+  'warehouse-fixtures':new URL('./assets/scene-warehouse-fixtures-v2.png',import.meta.url).href,
 };
 const atlases=new Map<Asset,HTMLImageElement>(),listeners=new Map<Asset,Set<()=>void>>();
 function source(asset:Asset='exteriors'){
@@ -124,6 +126,46 @@ export function paintDetailedAccent(ctx:CanvasRenderingContext2D,kind:string){
   const sprite=sceneryRaster(image,crop,dw,dh);if(!sprite)return false;
   ctx.save();ctx.imageSmoothingEnabled=false;
   ctx.drawImage(sprite,x+(w-dw)/2,y+h-dh,dw,dh);ctx.restore();return true;
+}
+
+export type TunnelFixture='pipe'|'valve'|'cabinet'|'cage'|'service-wall'|'wire-footing';
+const tunnelFixtures:Record<TunnelFixture,{crop:readonly [number,number,number,number];box:readonly [number,number,number,number]}>={
+  pipe:{crop:[38,179,576,212],box:[5,23,70,38]},
+  valve:{crop:[690,92,516,300],box:[5,7,70,56]},
+  cabinet:{crop:[119,468,442,324],box:[15,18,50,47]},
+  cage:{crop:[751,452,423,341],box:[9,15,62,49]},
+  'service-wall':{crop:[19,852,604,330],box:[478,-17,178,94]},
+  'wire-footing':{crop:[630,1013,607,176],box:[-18,256,176,66]},
+};
+/** These are only surfaces inside the existing tunnel fixtures. The empty cage
+ * retains alpha between its bars; cats and cleared-wire states stay live. */
+export function paintDetailedTunnelFixture(ctx:CanvasRenderingContext2D,kind:TunnelFixture){
+  const image=source('tunnel-fixtures');if(!image)return false;
+  const {crop,box:[x,y,w,h]}=tunnelFixtures[kind],scale=Math.min(w/crop[2],h/crop[3]);
+  const dw=crop[2]*scale,dh=crop[3]*scale,sprite=sceneryRaster(image,crop,dw,dh,'pixel');
+  if(!sprite)return false;
+  ctx.save();ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(sprite,x+(w-dw)/2,y+h-dh,dw,dh);ctx.restore();return true;
+}
+
+export type WarehouseFixture='beam-upper'|'beam-lower'|'cargo-upper'|'cargo-lower'|'holding-room'|'cage'|'side-wall'|'rack';
+const warehouseFixtures:Record<WarehouseFixture,{crop:readonly [number,number,number,number];box:readonly [number,number,number,number]}>={
+  'beam-upper':{crop:[27,74,488,242],box:[-20,-18,178,96]},
+  'beam-lower':{crop:[547,93,512,223],box:[-20,15,178,89]},
+  'cargo-upper':{crop:[18,373,523,302],box:[-18,2,174,75]},
+  'cargo-lower':{crop:[567,409,502,266],box:[-18,2,174,75]},
+  'holding-room':{crop:[42,719,635,293],box:[8,7,168,68]},
+  cage:{crop:[721,732,304,276],box:[9,21,62,42]},
+  'side-wall':{crop:[190,1030,201,391],box:[-21,150,94,258]},
+  rack:{crop:[584,1112,329,275],box:[8,8,64,59]},
+};
+/** Register the architecture to its existing fixture box before sampling at the
+ * shared world density. The cage is separate so winning can remove every bar. */
+export function paintDetailedWarehouseFixture(ctx:CanvasRenderingContext2D,kind:WarehouseFixture){
+  const image=source('warehouse-fixtures');if(!image)return false;
+  const {crop,box:[x,y,w,h]}=warehouseFixtures[kind],sprite=sceneryRaster(image,crop,w,h,'pixel');
+  if(!sprite)return false;
+  ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(sprite,x,y,w,h);ctx.restore();return true;
 }
 
 export type DetailedStructureKind='loading-dock'|'vent'|'market-counter'|'market-counter-cloth'

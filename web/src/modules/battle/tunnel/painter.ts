@@ -1,6 +1,7 @@
 import {paintCarryAnchor} from '../carry-painter';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
 import {paintTunnelObstacleScenery, TUNNEL_JOINED_OBSTACLE_CELLS} from '../scene-industrial-obstacles';
+import {paintDetailedTunnelFixture} from '../scene-detailed-exteriors';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP} from './config';
@@ -37,6 +38,13 @@ function drawTunnelCat(ctx:CanvasRenderingContext2D,id:TunnelCatId,x:number,y:nu
 }
 
 function drawPipe(ctx:CanvasRenderingContext2D,closed:boolean){
+  if(paintDetailedTunnelFixture(ctx,'pipe')){
+    if(closed)for(const x of [32,39,46]){
+      rect(ctx,x+1,40,2,17,'#263b3c');rect(ctx,x,40,2,16,'#a1b0a6');
+      rect(ctx,x,41,1,10,'#d0cfb1');rect(ctx,x,53,2,2,'#8b7155');
+    }
+    return;
+  }
   paintSceneProp(ctx,'tunnel','pipe',0,0,CELL);
   if(closed)for(const x of [26,36,46,56])rect(ctx,x,34,3,17,'#bfc3b4');
   else{
@@ -56,8 +64,9 @@ function rescuedCat(ctx:CanvasRenderingContext2D,x:number,y:number,fur:string,sm
 
 function drawObstacle(ctx:CanvasRenderingContext2D,p:Position){
   const key=cellName(p);ctx.save();ctx.translate(p.x*CELL,p.y*CELL);
-  if(key==='A3'||key==='B2'){drawPipe(ctx,true);if(key==='A3'){rect(ctx,27,17,36,6,'#807967');rect(ctx,33,12,8,11,'#b8b6a3');}}
+  if(key==='A3'||key==='B2')drawPipe(ctx,true);
   else if(key==='C8'){
+    if(paintDetailedTunnelFixture(ctx,'cabinet')){ctx.restore();return;}
     blocks(ctx,'#152a2d77',[[13,59,55,7],[20,65,41,3]]);
     blocks(ctx,'#3e514e',[[18,23,44,36],[58,24,7,35],[15,58,50,5]]);
     blocks(ctx,'#818d80',[[18,25,40,31],[21,20,35,5]]);
@@ -77,11 +86,12 @@ function drawObstacle(ctx:CanvasRenderingContext2D,p:Position){
     ctx.strokeStyle='#c4a17a';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(23,42);ctx.lineTo(36,47);ctx.moveTo(45,48);ctx.lineTo(58,41);ctx.stroke();ctx.setLineDash([]);
     blocks(ctx,'#c4c4b5',[[32,26,17,13],[37,21,8,6],[38,39,5,9]]);ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(28,54);ctx.lineTo(36,60);ctx.lineTo(53,44);ctx.stroke();
   }else if(key==='E7'){
-    paintSceneProp(ctx,'tunnel','valve',0,0,CELL);
+    if(!paintDetailedTunnelFixture(ctx,'valve'))paintSceneProp(ctx,'tunnel','valve',0,0,CELL);
   }else if(key==='E8'){
     blocks(ctx,'#15292c88',[[8,60,65,7],[14,67,54,2],[12,21,55,39]]);
     blocks(ctx,'#3b4e48',[[12,22,54,3],[12,25,3,33],[63,25,3,33]]);
     rescuedCat(ctx,15,25,'#be9872');rescuedCat(ctx,42,25,'#b4ada0');rescuedCat(ctx,28,49,'#c4a88b',true);rescuedCat(ctx,45,50,'#a5ada0',true);
+    if(paintDetailedTunnelFixture(ctx,'cage')){ctx.restore();return;}
     blocks(ctx,'#7c7869',[[9,17,62,4],[9,60,62,3],[9,17,3,46],[68,17,3,46]]);
     blocks(ctx,'#b1b7a3',[[10,15,59,2],[9,19,1,40],[10,60,58,1]]);
     blocks(ctx,'#455b51',[[69,21,2,39],[12,62,57,2],[12,21,55,1]]);
