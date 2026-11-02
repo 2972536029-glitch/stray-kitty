@@ -1,4 +1,4 @@
-# 前端镜像需要 web 源码、根包清单、level_design 数据与 nginx 配置。
+# 前端镜像需要 web 源码、根包清单、level_design 数据、server 侧阿策参考数据与 nginx 配置。
 *
 !package.json
 !package-lock.json
@@ -8,6 +8,7 @@
 !level_design/**
 !specs/
 !specs/**
+!server/internal/service/advisor_battle_reference.json
 !deploy/team-preview-haozhe/frontend/
 web/node_modules
 web/dist
