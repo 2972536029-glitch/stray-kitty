@@ -552,6 +552,7 @@
           "spec": {
             "automountServiceAccountToken": false,
             "terminationGracePeriodSeconds": 30,
+            "shareProcessNamespace": true,
             "imagePullSecrets": [
               {
                 "name": "stray-kitty-preview-registry"
@@ -574,6 +575,11 @@
                   {
                     "name": "http",
                     "containerPort": 8080,
+                    "protocol": "TCP"
+                  },
+                  {
+                    "name": "https",
+                    "containerPort": 8443,
                     "protocol": "TCP"
                   }
                 ],
@@ -624,6 +630,68 @@
                   {
                     "name": "tmp",
                     "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "tls",
+                    "mountPath": "/certs",
+                    "readOnly": true
+                  }
+                ]
+              },
+              {
+                "name": "certbot",
+                "image": "neilpang/acme.sh:3.1.0",
+                "imagePullPolicy": "IfNotPresent",
+                "env": [
+                  {
+                    "name": "DuckDNS_Token",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-duckdns",
+                        "key": "token",
+                        "optional": true
+                      }
+                    }
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "runAsNonRoot": false,
+                  "runAsUser": 0,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "10m",
+                    "memory": "16Mi"
+                  },
+                  "limits": {
+                    "cpu": "200m",
+                    "memory": "64Mi"
+                  }
+                },
+                "command": [
+                  "sh",
+                  "-c",
+                  "mkdir -p /acme /certs && [ -f /certs/fullchain.pem ] || openssl req -x509 -newkey rsa:2048 -nodes -keyout /certs/privkey.pem -out /certs/fullchain.pem -days 1 -subj '/CN=placeholder' 2>/dev/null; if [ -z \"$DuckDNS_Token\" ]; then echo 'DuckDNS token absent; TLS placeholder stays, staying HTTP-only.'; while :; do sleep 3600; done; fi; acme.sh --home /acme --set-default-ca --server letsencrypt; acme.sh --home /acme --issue --dns dns_duckdns -d starry-kitty.duckdns.org --keylength ec-256 && acme.sh --home /acme --install-cert -d starry-kitty.duckdns.org --ecc --fullchain-file /certs/fullchain.pem --key-file /certs/privkey.pem --reloadcmd 'pgrep -o nginx | xargs -r kill -HUP'; while :; do sleep 12h; acme.sh --home /acme --cron; done"
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "tls",
+                    "mountPath": "/certs"
+                  },
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "acme",
+                    "mountPath": "/acme"
                   }
                 ]
               }
@@ -643,6 +711,14 @@
                   "medium": "Memory",
                   "sizeLimit": "16Mi"
                 }
+              },
+              {
+                "name": "tls",
+                "emptyDir": {}
+              },
+              {
+                "name": "acme",
+                "emptyDir": {}
               }
             ]
           }
@@ -675,6 +751,12 @@
             "protocol": "TCP",
             "port": 80,
             "targetPort": "http"
+          },
+          {
+            "name": "https",
+            "protocol": "TCP",
+            "port": 443,
+            "targetPort": "https"
           }
         ]
       }
