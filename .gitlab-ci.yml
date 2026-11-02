@@ -74,7 +74,7 @@ deploy_images:
 # 变量 KUBECONFIG_FILE,机制上不可能触碰线上。
 deploy_apply:
   stage: deploy
-  image: mcr.microsoft.com/powershell:7.6-alpine-3.22
+  image: mcr.microsoft.com/powershell:7.5-alpine-3.20
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: manual
