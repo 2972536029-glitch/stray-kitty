@@ -1,0 +1,17 @@
+{
+  "golden_trace_split_form": {
+    "conclusion": "修复 PaymentGateway ctx 透传后,api→paymentd 跨进程 trace 延续成立:同一条 trace 的 paymentd 服务端 span 与 api 访问日志共享同一 trace id",
+    "proof": {
+      "paymentd_span_trace_hex": "6ae8df3a0000000069149cc3053af14b",
+      "paymentd_span_trace_low64_decimal": "7571849234936951115",
+      "api_access_log_dd_trace_id": "7571849234936951115",
+      "match": true
+    },
+    "second_charge_declined": {
+      "paymentd_span_trace_low64": "231309983940423715",
+      "api_access_log_dd_trace_id": "231309983940423715",
+      "match": true
+    },
+    "note": "paymentd 宿主机直跑未配 DD_LOGS_INTAKE_KEY,其自身日志仅在本地 stdout;span↔api 日志的 id 等价已构成跨进程同一 trace 的证明。k8s/preview 形态请为 paymentd 注入 DD_LOGS_INTAKE_KEY。"
+  }
+}

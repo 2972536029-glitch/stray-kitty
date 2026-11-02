@@ -1,6 +1,7 @@
 package transport_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http/httptest"
@@ -107,7 +108,7 @@ func TestRemotePaymentChargeFlow(t *testing.T) {
 
 	// 支付服务不可达时:明确 503,不碰余额。
 	dead := transport.NewRemotePayment("http://127.0.0.1:1", game)
-	if _, err := dead.Charge(session.PlayerID, "pack_small", "4242424242424242"); err == nil {
+	if _, err := dead.Charge(context.Background(), session.PlayerID, "pack_small", "4242424242424242"); err == nil {
 		t.Fatal("expected error when payment service unreachable")
 	} else {
 		var fault *domain.Fault

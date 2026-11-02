@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
@@ -23,11 +24,13 @@ import (
 // 充值/流水 HTTP 契约对前端保持不变。Session/Provider 是 Xsolla 跳转形态的能力:
 // mock 形态下 Session 返回 409,Provider 恒报 mock,前端据此保持卡号 UI。
 type PaymentGateway interface {
-	Charge(playerID, packID, cardNumber string) (payment.ChargeResult, error)
-	History(playerID string) ([]domain.Txn, error)
+	// ctx-first:拆分形态下这些方法会发出站 HTTP,必须携带请求上下文,
+	// trace 才能跨进程延续(否则每个出站请求都会另起新 trace,链路断裂)。
+	Charge(ctx context.Context, playerID, packID, cardNumber string) (payment.ChargeResult, error)
+	History(ctx context.Context, playerID string) ([]domain.Txn, error)
 	HealingMessage() string
-	Session(playerID, packID string) (payment.SessionResult, error)
-	Provider() payment.ProviderInfo
+	Session(ctx context.Context, playerID, packID string) (payment.SessionResult, error)
+	Provider(ctx context.Context) payment.ProviderInfo
 }
 
 type API struct {
@@ -182,7 +185,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 或 packId", 400))
 			return
 		}
-		result, err := a.pay.Charge(req.PlayerID, req.PackID, req.CardNumber)
+		result, err := a.pay.Charge(r.Context(), req.PlayerID, req.PackID, req.CardNumber)
 		if err != nil {
 			obs.Incr("kitty.payment.charge", "result:"+domain.ClassifyFault(err))
 			a.fail(w, r, err)
@@ -208,7 +211,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 查询参数", 400))
 			return
 		}
-		txns, err := a.pay.History(playerID)
+		txns, err := a.pay.History(r.Context(), playerID)
 		if err != nil {
 			a.fail(w, r, err)
 			return
@@ -218,7 +221,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 	// Xsolla 沙盒:前端先问形态(mock=卡号 UI / xsolla=跳转 UI),再换跳转链接;
 	// 发货只发生在 webhook → 支付服务 → /internal/credit 链路上,前端返回页不发货。
 	mux.HandleFunc("GET /api/payment/config", func(w http.ResponseWriter, r *http.Request) {
-		a.json(w, 200, a.pay.Provider())
+		a.json(w, 200, a.pay.Provider(r.Context()))
 	})
 	mux.HandleFunc("POST /api/payment/session", func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "application/json") {
@@ -248,7 +251,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 或 packId", 400))
 			return
 		}
-		result, err := a.pay.Session(req.PlayerID, req.PackID)
+		result, err := a.pay.Session(r.Context(), req.PlayerID, req.PackID)
 		if err != nil {
 			obs.Incr("kitty.payment.session", "result:"+domain.ClassifyFault(err))
 			a.fail(w, r, err)
