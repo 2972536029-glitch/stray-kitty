@@ -83,7 +83,7 @@ deploy_apply:
   variables:
     PAYMENT_PROBE_URL: "https://starry-kitty.duckdns.org/healthz"
   script:
-    - curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/v1.34.9/bin/linux/amd64/kubectl" && chmod +x /usr/local/bin/kubectl
+    - pwsh -NoProfile -Command "Invoke-WebRequest -Uri 'https://dl.k8s.io/release/v1.34.9/bin/linux/amd64/kubectl' -OutFile /usr/local/bin/kubectl; chmod +x /usr/local/bin/kubectl; kubectl version --client=true --output=yaml | Select-Object -First 3"
     - pwsh -NoProfile -File deploy/team-preview-haozhe/Deploy-Preview.ps1 -CiMode
   artifacts:
     when: always

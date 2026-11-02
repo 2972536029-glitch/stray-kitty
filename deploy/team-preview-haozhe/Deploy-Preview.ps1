@@ -86,7 +86,10 @@ try {
         throw 'PowerShell 7 or later is required.'
     }
 
-    $requiredTools = if ($ValidateOnly) { @('git') } else { @('git', 'docker', 'kubectl') }
+    # CiMode 的 pwsh 容器不带 git/docker;源码与镜像均由 CI 前置 job 提供,只需 kubectl。
+    $requiredTools = if ($CiMode) { @('kubectl') }
+                     elseif ($ValidateOnly) { @('git') }
+                     else { @('git', 'docker', 'kubectl') }
     foreach ($tool in $requiredTools) {
         $null = Get-Command -Name $tool -CommandType Application -ErrorAction Stop
     }
@@ -151,9 +154,12 @@ try {
         }
     }
 
-    $worktreeHead = Invoke-NativeChecked -FilePath 'git' -Arguments @('-C', $worktree, 'rev-parse', 'HEAD') -Step 'Verify worktree commit' -Quiet
-    if ($worktreeHead.StdOut.Trim() -ne $Commit) {
-        throw 'Detached worktree HEAD does not match the selected release commit.'
+    # CiMode:CI 已按 CI_COMMIT_SHA 检出且容器无 git,跳过 HEAD 复核。
+    if (-not $CiMode) {
+        $worktreeHead = Invoke-NativeChecked -FilePath 'git' -Arguments @('-C', $worktree, 'rev-parse', 'HEAD') -Step 'Verify worktree commit' -Quiet
+        if ($worktreeHead.StdOut.Trim() -ne $Commit) {
+            throw 'Detached worktree HEAD does not match the selected release commit.'
+        }
     }
 
     if ($ValidateOnly) {
