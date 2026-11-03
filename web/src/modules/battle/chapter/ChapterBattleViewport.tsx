@@ -5,7 +5,7 @@ import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES} from 
 import {advanceChapter, createChapterBattle, dispatchChapter, getAttackCells, getBossCells, getChapterAdvice, getChapterSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintChapter} from './painter';
 import {drawCat} from '../l00/painter';
-import {isFinalWaveDefeat, triggerBattleShake, triggerBossSkillShake, triggerSkillGlow} from '../battleFx';
+import {triggerBossSkillShake} from '../battleFx';
 import {getChapterAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
@@ -111,13 +111,13 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
     if(paused||hidden||chatOpen)return;
     setMoving(null);setSelected(id);
     const next=act({type:'SELECT_SKILL',catId:id});
-    if(!next.aim&&next.lastAction?.ok){setSelected(null);act({type:'CLOSE_INSPECTION'});triggerSkillGlow(boardRef.current);} // 即时技能施放成功：金色泛光（与序章教学战同一套 battleFx）
+    if(!next.aim&&next.lastAction?.ok){setSelected(null);act({type:'CLOSE_INSPECTION'});}
     else if(next.aim)requestAnimationFrame(()=>boardRef.current?.focus({preventScroll:true}));
   }
   function confirmAim(position:Position){
     const aim=gameRef.current.aim;if(!aim)return;
     const next=act({type:'CAST_SKILL',catId:aim.catId,target:position});
-    if(next.lastAction?.ok){setSelected(null);setHover(null);triggerSkillGlow(boardRef.current);} // 瞄准施放成功：金色泛光
+    if(next.lastAction?.ok){setSelected(null);setHover(null);}
   }
   function showMapArea(area:'goal'|'branch'|'boss'){
     setOverview(false);
@@ -171,16 +171,6 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
     handle=requestAnimationFrame(frame);
     return()=>{stopped=true;cancelAnimationFrame(handle);document.removeEventListener('visibilitychange',visibility);};
   },[]);
-  // 震动降噪·终波收敛（防眩晕）：与序章六波教学战同一套 battleFx 策略——命中不震、普通小怪死亡不震、
-  // 中间波次清场也不震；只有最后一波的高光时刻才强震（终波 Boss 登场 / 终波清场、Boss 倒下）。
-  const prevFxRef=useRef<{defeated:number;bossAlive:boolean}|null>(null);
-  useEffect(()=>{
-    const previous=prevFxRef.current,bossAlive=game.boss.phase!=='defeated';
-    prevFxRef.current={defeated:game.defeated,bossAlive};
-    if(!previous)return;
-    const bossJustDied=previous.bossAlive&&!bossAlive,bossJustAppeared=!previous.bossAlive&&bossAlive;
-    if(isFinalWaveDefeat(game.defeated>previous.defeated,game.enemies.length,game.wave,game.totalWaves,bossJustDied,bossJustAppeared))triggerBattleShake(boardRef.current,'strong');
-  },[game]);
 
   useEffect(()=>{
     if((game.phase==='won'||game.phase==='lost')&&!paused&&!game.externallyPaused&&!emitted.current){
