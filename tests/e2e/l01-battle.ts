@@ -86,7 +86,8 @@ export async function playVisibleControls(page:Page){
     } catch (error) {
       // A final kill can replace the board during any pending player interaction.
       // Only an actual winning settlement permits exit; missing boards, losses and other errors still fail.
-      if(await winningSettlement(page).isVisible())break;
+      // 结算卡可能在棋盘卸载后的下一帧才挂载,给一个短等待再判定,避免 isVisible 瞬时采样撞上换帧间隙。
+      if(await winningSettlement(page).waitFor({state:'visible',timeout:1500}).then(()=>true,()=>false))break;
       throw error;
     }
   }

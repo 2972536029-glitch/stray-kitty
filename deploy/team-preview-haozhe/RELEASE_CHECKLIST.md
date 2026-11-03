@@ -1,18 +1,18 @@
 # Stray Kitty 发布检查清单
 
-每次发布（`pwsh -File deploy/team-preview-haozhe/Deploy-Preview.ps1`）前后逐项勾选。
+每次通过 GitLab `deploy_apply` 或本地 `pwsh -File deploy/team-preview-haozhe/Deploy-Preview.ps1` 发布前后逐项勾选。常规流程为：MR 合入 main → 自动检查和构建镜像 → 手动点击 `deploy_apply` → 线上验收；合入 main 本身不会更新线上。
 命令里的集群参数：`-n cn-haozhe-wang --context haozhe-wang@gcp-k8s-xsolla-school-experiments`。
 
 ## 一、发布前
 
-- [ ] 本机 Docker Desktop 已启动、kubectl 可用、git 凭据助手存有 school-gitlab 凭据
+- [ ] CI 发布：选中目标 `main` 合并提交的流水线，确认受保护的 `KUBECONFIG_FILE` 可供部署 job 使用；本地发布：Docker Desktop 已启动、kubectl 可用、git 凭据助手存有 school-gitlab 凭据
 - [ ] 没有其他终端/CI 在向同一个集群命名空间发布（新版临时 worktree 已随机隔离，但线上资源仍会相互覆盖）
 - [ ] 确认发布目标：默认为最新 `origin/main`；先刷新远端引用并记录发布 commit
   ```powershell
   git fetch origin; git log -1 --oneline origin/main
   ```
   （用全量 `git fetch origin` 而非 `git fetch origin main`：后者在 Git ≥1.8.4 也会顺带更新 `origin/main`，但全量 fetch 按配置 refspec 刷新、语义无歧义）
-- [ ] 该 commit 在 GitLab 上流水线为 **success**（web_checks / server_checks / server_build 全绿）
+- [ ] 该 commit 的 `web_checks` / `server_checks` / `server_build` 全绿；CI 发布还需 `deploy_images` 成功。等待手动 `deploy_apply` 时流水线可显示 `manual` / `blocked`，此时尚未发布
 - [ ] 已查看线上当前版本，并 diff 了「线上 → 本次发布」的变更，重点过一遍 `server/internal/domain`（存档格式）与 `server/internal/transport`（API）：
   ```powershell
   $online = kubectl -n cn-haozhe-wang --context haozhe-wang@gcp-k8s-xsolla-school-experiments get deployment stray-kitty-game -o jsonpath='{.metadata.annotations.stray-kitty/source-commit}'
@@ -37,6 +37,7 @@
 
 ## 三、部署阶段
 
+- [ ] CI 发布：在目标提交的同一条流水线点击 **▶ `deploy_apply`**，等待 job 成功；不要误触旧流水线发布旧版本
 - [ ] `kubectl apply` 输出中两个 PVC 的状态**与部署类型匹配**：
   - **日常更新**：两个 PVC 应为 `unchanged`（若出现 `configured` 需立即停手排查——PVC 规格不应被改动）；
   - **首次部署（`-Init`）**：两个 PVC 应为 `created`（属预期；若已存在则为 `unchanged`，也正常）；
@@ -48,6 +49,7 @@
 
 ## 四、部署后
 
+- [ ] 打开 [线上试玩](https://starry-kitty.duckdns.org/)，确认 [/healthz](https://starry-kitty.duckdns.org/healthz) 返回 `ok`，并验收本次修改涉及的玩家流程；如仍显示旧 UI，强制刷新后重试
 - [ ] `kubectl get pods`：三个 Pod 全部 `1/1 Running`，无 Pending/ImagePullBackOff/CrashLoopBackOff
 - [ ] source-commit 注解 == 本次发布 commit，且三个 Deployment 一致：
   ```powershell
@@ -62,7 +64,7 @@
   $ip = kubectl -n cn-haozhe-wang --context haozhe-wang@gcp-k8s-xsolla-school-experiments get svc stray-kitty-preview -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
   Invoke-RestMethod "http://$ip/healthz"
   ```
-- [ ] **payment 三层可用性检查**（公网 healthz 只穿透 nginx→game，覆盖不到 payment）：
+- [ ] **payment 三层可用性检查**（公网 healthz 仅由 frontend nginx 应答，不检查 game 或 payment）：
   - **第 1 层 · 就绪**（Pod 已含 `/readyz` readinessProbe，`1/1` 即代表探针通过）：
     ```powershell
     kubectl -n cn-haozhe-wang --context haozhe-wang@gcp-k8s-xsolla-school-experiments rollout status deployment/stray-kitty-payment --timeout=30s
@@ -79,6 +81,9 @@
   发布时间（本地）：
   操作人：
   commit：<40 位 sha>（一句话说明主要内容）
+  部署 job 链接：<GitLab deploy_apply URL，本地发布则注明>
+  试玩地址：https://starry-kitty.duckdns.org/
+  线上验收：<本次修改涉及的玩家流程与结果>
   镜像 digest：game @sha256:… / payment @sha256:… / frontend @sha256:…
   结果：成功 / 部分成功（注明）/ 失败（注明现象与处理）
   备注：（如 payment Pending 等已知集群容量问题的现场记录）

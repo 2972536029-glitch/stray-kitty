@@ -28,7 +28,9 @@ import {homeWalkable} from '../../modules/home/navigation';
 import {displayedCanvasRect} from '../../adapters/canvas/camera';
 import {homeStoryBeat, storyActorPosition, type HomeStoryActor, type HomeStoryBeat} from '../../modules/home/story';
 import {explorationScene} from '../../core/chapter-navigation';
-import type {WarehouseWalkMap, WarehouseReviewOptions} from '../../modules/chapter5/WarehouseWalkMap';
+// Keep warehouse code in the entry bundle: an open tab must not request a
+// retired JavaScript chunk when story progression or QA first enters this map.
+import {WarehouseWalkMap, type WarehouseReviewOptions} from '../../modules/chapter5/WarehouseWalkMap';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 剧情接管之外，日常由共享家具动作、伙伴互动和漫步组成。
@@ -160,7 +162,6 @@ export class DemoScene {
     this.warehouseLoading=this.loadWarehouse();return this.warehouseLoading;
   }
   private async loadWarehouse() {
-    const {WarehouseWalkMap} = await import('../../modules/chapter5/WarehouseWalkMap');
     if (this.destroyed) return;
     this.warehousePreview = new WarehouseWalkMap();
     await this.warehousePreview.ready();
