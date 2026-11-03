@@ -1,7 +1,8 @@
 import {WarehouseEventMarkers} from './eventMarkers';
 import geometry from '../../../../level_design/chapter5/source/v07/warehouse_geometry_v07.json' with { type: 'json' };
 import manifest from '../../../../level_design/chapter5/review/warehouse_L0_asset_placement_manifest.json' with { type: 'json' };
-import groundUrl from '../../../../level_design/chapter5/art/warehouse_L0_ground.png?url';
+import groundUrl from './assets/warehouse_L0_ground.lossless.webp?url';
+import legacyGroundUrl from '../../../../level_design/chapter5/art/warehouse_L0_ground.png?url';
 import l1Url from '../../../../level_design/chapter5/art/warehouse_L1_surfaces.png?url';
 import l1SideUrl from '../../../../level_design/chapter5/art/warehouse_L1_undersides.png?url';
 import l1MaskUrl from '../../../../level_design/chapter5/art/warehouse_L1_walkable_mask.png?url';
@@ -50,6 +51,8 @@ export class WarehouseWalkMap {
   private floor: Floor = 'L0';
   private flags = new Set<string>();
   private drawn = new Set<string>();
+  private revision = 0;
+  private lightPreview: {id:string;lit:boolean;revision:number} | null = null;
   private gateKey = '';
   private climbing: {from: Point; to: Point; floor: Floor; elapsed: number} | null = null;
   private seenZones = new Set<string>();
@@ -88,11 +91,21 @@ export class WarehouseWalkMap {
     return this.climbing ? null : targets.sort((a,b)=>a.distance-b.distance)[0] ?? null;
   }
   get hint() {return this.nearTarget?.label ?? null;}
-  syncState(state: Pick<GameState,'flags'|'drawnEvents'>) {
+  syncState(state: Pick<GameState,'flags'|'drawnEvents'> & {revision?:number}) {
+    if(state.revision!==undefined){
+      if(this.lightPreview&&state.revision>this.lightPreview.revision)this.lightPreview=null;
+      this.revision=state.revision;
+    }
     this.flags=new Set(state.flags); this.drawn=new Set(state.drawnEvents??[]);
     const key=['entry_lamp','secondary_lamp','finale_boss_victory'].map(flag=>Number(this.flags.has(flag))).join('');
     if(key!==this.gateKey&&this.basePixels){this.gateKey=key;this.rebuildGroundMask();}
   }
+  previewLight(id:string) {
+    if(!geometry.interactions.some(p=>p.id===id&&p.kind==='light'))return;
+    this.lightPreview={id,lit:!this.flags.has(id),revision:this.revision};
+  }
+  cancelLightPreview() {this.lightPreview=null;}
+  private lightIsOn(id:string) {return this.lightPreview?.id===id?this.lightPreview.lit:this.flags.has(id);}
   positionNow() {return {...this.position};}
   setOptions(options: Partial<WarehouseReviewOptions>) {this.options = {...this.options, ...options}; this.snapCamera = true;}
   reset() {this.eventMarkers.reset();this.position = this.flags.has('finale_boss_victory')?{x:1302,y:294}:{x: entry.x, y: entry.y}; this.floor='L0';this.climbing=null;this.snapCamera = true; this.moving = false;}
@@ -112,7 +125,8 @@ export class WarehouseWalkMap {
   private async load() {
     // Start props alongside the floor images instead of a second network wave.
     const [[ground, floor, graybox, l1, l1Side, upperMask], originalEntries] = await Promise.all([
-      Promise.all([groundUrl, floorMaskUrl, grayboxUrl,l1Url,l1SideUrl,l1MaskUrl].map(image)),
+      // Keep the old PNG emitted for open tabs and use it if WebP decoding fails.
+      Promise.all([image(groundUrl).catch(()=>image(legacyGroundUrl)),...[floorMaskUrl, grayboxUrl,l1Url,l1SideUrl,l1MaskUrl].map(image)]),
       Promise.all(Object.entries(spriteUrls).map(async ([path,url]) => ['art/'+path.split('/art/')[1],await image(url)] as const))
     ]);
     const scratch = document.createElement('canvas'); scratch.width = W; scratch.height = H;
@@ -238,9 +252,9 @@ export class WarehouseWalkMap {
     const tint:Record<string,string>={entry_lamp:'147,193,120',central_spotlight:'174,190,119',secondary_lamp:'232,139,78'};
     const lights=[
       ...geometry.ambientLamps.filter(p=>p.floor===this.floor).map((p,i)=>({...p,r:p.r*1.25,strength:.72,color:i%2?'201,139,89':'132,177,137'})),
-      ...geometry.interactions.filter(p=>p.kind==='light'&&p.floor===this.floor&&this.flags.has(p.id)).map(p=>({...p,r:285,strength:1,color:tint[p.id]})),
+      ...geometry.interactions.filter(p=>p.kind==='light'&&p.floor===this.floor&&this.lightIsOn(p.id)).map(p=>({...p,r:285,strength:1,color:tint[p.id]})),
     ];
-    const key=this.floor+geometry.interactions.filter(p=>p.kind==='light').map(p=>Number(this.flags.has(p.id))).join('');
+    const key=this.floor+geometry.interactions.filter(p=>p.kind==='light').map(p=>Number(this.lightIsOn(p.id))).join('');
     const darknessKey=`${key}:${this.position.x}:${this.position.y}`;
     // Reuse the existing mask while stationary; movement and light/floor
     // changes still paint the same authored pools, without another canvas.
@@ -271,7 +285,9 @@ export class WarehouseWalkMap {
     ctx.restore();
   }
   private drawMarkers(ctx:CanvasRenderingContext2D){
-    this.eventMarkers.draw(ctx,{floor:this.floor,position:this.position,flags:this.flags,drawn:this.drawn,near:this.nearTarget},performance.now());
+    const flags=this.lightPreview?new Set(this.flags):this.flags;
+    if(this.lightPreview){if(this.lightPreview.lit)flags.add(this.lightPreview.id);else flags.delete(this.lightPreview.id);}
+    this.eventMarkers.draw(ctx,{floor:this.floor,position:this.position,flags,drawn:this.drawn,near:this.nearTarget},performance.now());
   }
 
   private drawCat(ctx: CanvasRenderingContext2D) {

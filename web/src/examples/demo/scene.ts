@@ -174,6 +174,8 @@ export class DemoScene {
     await this.warehousePreview.ready();
   }
   climbWarehouse() {if(this.warehousePreview?.climb())this.clearInput();}
+  previewWarehouseLight(id:string) {this.warehousePreview?.previewLight(id);}
+  cancelWarehouseLightPreview() {this.warehousePreview?.cancelLightPreview();}
   setWarehouseReviewOptions(options: Partial<WarehouseReviewOptions>) {this.warehousePreview?.setOptions(options);}
   resetWarehousePreview() {this.clearInput(); this.warehousePreview?.reset();}
   private keydown = (event: KeyboardEvent) => {
