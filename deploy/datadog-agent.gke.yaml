@@ -1,0 +1,78 @@
+# 线上 Datadog Agent(一次性部署的基础设施,不随应用发版重建)。
+#
+# 形态选型(2026-11-03 判定):Deployment 单副本 + ClusterIP(8126 APM / 8125 DogStatsD)。
+# 与旅行牛牛在 cn-yao-yu 运行 38 天的形态完全同款——学校共享 GKE 上 namespace 隔离,
+# hostPort 类 DaemonSet 会跨 namespace 撞端口,且 namespace 级权限采不到 kubelet 指标,
+# 因此昨晚的 DaemonSet 版已删除(取舍记录见 docs/OBSERVABILITY.md §部署形态)。
+#
+# 目标环境:学校 GKE 的目标 namespace(试玩 preview / 个人 namespace 均适用)。
+# 一次性前置(建 Secret):
+#   kubectl -n <NAMESPACE> create secret generic stray-kitty-preview-datadog \
+#     --from-literal=api-key=<DD_API_KEY>
+# 一次性部署(先把下面两处 CHANGE_ME_NAMESPACE 改成目标 namespace):
+#   kubectl apply -f deploy/datadog-agent.gke.yaml
+#
+# 日志支柱:Agent 不做文件采集(不挂 /var/log/pods,最小权限);
+# 应用侧 HTTP Intake 旁路(server/internal/obs/logshipper.go)负责日志,
+# DD_LOGS_INTAKE_KEY 经同一 Secret(optional)注入应用容器。
+apiVersion: v1
+kind: Service
+metadata:
+  name: datadog-agent
+  namespace: CHANGE_ME_NAMESPACE
+  labels:
+    app: datadog-agent
+spec:
+  type: ClusterIP
+  selector:
+    app: datadog-agent
+  ports:
+    - { name: apm, port: 8126, protocol: TCP, targetPort: 8126 }
+    - { name: dogstatsd, port: 8125, protocol: UDP, targetPort: 8125 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datadog-agent
+  namespace: CHANGE_ME_NAMESPACE
+  labels:
+    app: datadog-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datadog-agent
+  template:
+    metadata:
+      labels:
+        app: datadog-agent
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: agent
+          image: gcr.io/datadoghq/agent:7.66.0
+          env:
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef: { name: stray-kitty-preview-datadog, key: api-key }
+            - name: DD_SITE
+              value: "datadoghq.com"
+            - name: DD_ENV
+              value: "preview"
+            - name: DD_TAGS
+              value: "team:stray-kitty"
+            - name: DD_APM_ENABLED
+              value: "true"
+            - name: DD_APM_NON_LOCAL_TRAFFIC
+              value: "true"
+            - name: DD_DOGSTATSD_NON_LOCAL_TRAFFIC
+              value: "true"
+            - name: DD_LOGS_ENABLED
+              value: "false"
+            - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+              value: "false"
+            - name: DD_CONTAINER_EXCLUDE
+              value: "name:datadog-agent"
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }

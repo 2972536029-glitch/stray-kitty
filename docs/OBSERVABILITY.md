@@ -15,9 +15,9 @@ kitty-api(Go, cmd/api)──TracedRoundTripper──► DeepSeek(阿策问答)
    │                    └────TracedRoundTripper──► kitty-paymentd(cmd/paymentd)──► Xsolla 沙箱
    │                                                    │
 slog JSON + dd.trace_id        DogStatsD(UDP 8125)      APM(8126)
-   └──────────── Datadog Agent(compose profile / K8s DaemonSet)────────────┘
+   └──────────── Datadog Agent(compose profile / GKE namespace 内 Deployment)────┘
                           ↓
-                  Monitor(10 条,monitors/monitors.json)──► Slack(告警 / 恢复)
+                  Monitor(11 条,monitors/monitors.json)──► Slack(告警 / 恢复)
 ```
 
 ## 1. 服务与统一标签
@@ -98,7 +98,7 @@ compose 单机形态支付在进程内(mock),该链路在拆分形态(team-previ
 
 ## 5. Monitors 与阈值依据
 
-定义在 `monitors/monitors.json`(10 条),`python monitors/apply-monitors.py` 按名称幂等
+定义在 `monitors/monitors.json`(11 条,查询覆盖 env:(dev OR preview)),`python monitors/apply-monitors.py` 按名称幂等
 创建/更新(读进程环境变量 `DD_API_KEY/DD_APP_KEY/DD_SITE`,不自动加载 .env)。
 
 | Monitor | 查询对象 | 阈值(初版) | 依据 |
@@ -150,10 +150,16 @@ docker compose -f deploy/compose.yaml --profile observability up --build -d
 
 ## 8. 部署形态对照
 
+> 2026-11-03 形态判定:曾经交付过 DaemonSet+hostPort 形态(k8s/datadog-agent.yaml,已在 kind 上实测),
+> 但判定其不适合学校共享 GKE:DaemonSet 的 hostPort 每节点只能绑定一次,跨 namespace 会撞端口
+> (cn-yao-yu 已有 Agent 长期运行),且 namespace 级权限采不到 kubelet/k8s 指标。
+> 最终形态改为 namespace 自包含的 Deployment+ClusterIP(旅行牛牛 38 天稳定运行的同款),
+> manifest 见 deploy/datadog-agent.gke.yaml;kind 实测取证保留于 evidence/observability/。
+
 | 项 | compose(单机) | K8s(kind / 预览) |
 |---|---|---|
 | 运行单元 | game 容器(支付进程内 mock) | Deployment + ClusterIP(拆分形态含 paymentd) |
-| Datadog Agent | compose 服务(profile observability) | DaemonSet + hostPort 8125/8126(`k8s/datadog-agent.yaml`) |
+| Datadog Agent | compose 服务(profile observability) | namespace 内 Deployment + ClusterIP 8125/8126(`deploy/datadog-agent.gke.yaml`,旅行牛牛同款;DaemonSet 已判定不适合共享集群,见下) |
 | 应用找 Agent | `DD_AGENT_HOST=datadog-agent`(compose 服务名) | `DD_AGENT_HOST=status.hostIP`(Downward API 取节点 IP) |
 | 统一标签 | 环境变量直填 | pod labels `tags.datadoghq.com/*` + fieldRef 注入 |
 | 日志采集 | 容器 label + stdout;Intake 旁路兜底 | Agent 自动收集 stdout;Intake 旁路兜底 |
