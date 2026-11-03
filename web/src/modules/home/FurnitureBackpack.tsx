@@ -49,6 +49,11 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
   useEffect(()=>{let active=true;void loadHomeArtwork().then(value=>{if(active)setArt(value);}).catch(e=>{if(active)setArtError(String(e.message));});return()=>{active=false;};},[]);
   // An idempotent Retry may finish after the original Save response was lost.
   useEffect(()=>{if(pending||busy||state.revision===base.revision||!changes.length)return;if(changes.every(c=>{const p=state.homeLayout?.[c.key];return p&&p.x===c.x&&p.y===c.y&&p.stored===c.stored;}))onClose();},[state,pending,busy]);
+  // A background revision bump (e.g. a parcel draw resolving after this dialog
+  // mounted) must not lock the whole editor behind the conflict banner while
+  // the player has touched nothing: rebase silently and keep editing. Drafts
+  // with real changes still get the explicit conflict notice.
+  useEffect(()=>{if(!conflict||pending||busy||changes.length||dragRef.current)return;setBase(structuredClone(state));setDraft(structuredClone(state.homeLayout??{}));setUndo([]);setRedo([]);},[conflict,pending,busy,changes.length,state]);
   useEffect(()=>{
     const move=(event:PointerEvent)=>{
       if(panDrag.current?.pointer===event.pointerId){const d=panDrag.current;scene.panHomeEditor(d,{x:event.clientX,y:event.clientY});panDrag.current={pointer:event.pointerId,x:event.clientX,y:event.clientY};return;}
