@@ -167,6 +167,40 @@
                   {
                     "name": "GAME_QA_ENABLED",
                     "value": "true"
+                  },
+                  {
+                    "name": "DD_AGENT_HOST",
+                    "value": "datadog-agent"
+                  },
+                  {
+                    "name": "DD_DOGSTATSD_PORT_8125_ADDR",
+                    "value": "$(DD_AGENT_HOST):8125"
+                  },
+                  {
+                    "name": "DD_ENV",
+                    "value": "preview"
+                  },
+                  {
+                    "name": "DD_VERSION",
+                    "value": "0.1.0"
+                  },
+                  {
+                    "name": "DD_TAGS",
+                    "value": "team:stray-kitty"
+                  },
+                  {
+                    "name": "DD_TRACE_PROPAGATION_STYLE",
+                    "value": "tracecontext,datadog"
+                  },
+                  {
+                    "name": "DD_LOGS_INTAKE_KEY",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-datadog",
+                        "key": "api-key",
+                        "optional": true
+                      }
+                    }
                   }
                 ],
                 "securityContext": {
@@ -408,6 +442,40 @@
                       "secretKeyRef": {
                         "name": "stray-kitty-preview-xsolla",
                         "key": "internal-token",
+                        "optional": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "DD_AGENT_HOST",
+                    "value": "datadog-agent"
+                  },
+                  {
+                    "name": "DD_DOGSTATSD_PORT_8125_ADDR",
+                    "value": "$(DD_AGENT_HOST):8125"
+                  },
+                  {
+                    "name": "DD_ENV",
+                    "value": "preview"
+                  },
+                  {
+                    "name": "DD_VERSION",
+                    "value": "0.1.0"
+                  },
+                  {
+                    "name": "DD_TAGS",
+                    "value": "team:stray-kitty"
+                  },
+                  {
+                    "name": "DD_TRACE_PROPAGATION_STYLE",
+                    "value": "tracecontext,datadog"
+                  },
+                  {
+                    "name": "DD_LOGS_INTAKE_KEY",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-datadog",
+                        "key": "api-key",
                         "optional": true
                       }
                     }

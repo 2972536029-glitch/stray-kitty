@@ -165,6 +165,24 @@ docker compose -f deploy/compose.yaml --profile observability up --build -d
 | 日志采集 | 容器 label + stdout;Intake 旁路兜底 | Agent 自动收集 stdout;Intake 旁路兜底 |
 | Golden Trace | 单进程链路 | 充值到账跨进程链路完整可见 |
 
+
+## 线上接线清单(一次性步骤,目标:试玩 preview 环境)
+
+> 2026-11-03 已完成:org 11 条监控同步(env 过滤已移除——monitor query 不支持多值 env 括号语法,
+> 按 `service:kitty-api` / `kitty.*` 前缀聚合,双环境数据汇入同一监控);
+> Synthetics 公网拨测 2 条已创建(Seoul+Tokyo 双探测点,5 分钟周期,public_id `4ju-vjx-jqt` /healthz、
+> `gqk-tb8-daq` /api/payment/config)。
+> 待办为下表三步,全部是一次性基础设施动作:
+
+| 步骤 | 动作 | 谁/哪侧 |
+|---|---|---|
+| 1 | `kubectl -n cn-haozhe-wang create secret generic stray-kitty-preview-datadog --from-literal=api-key=<DD_API_KEY>` | haozhe(他的 namespace 权限) |
+| 2 | `deploy/datadog-agent.gke.yaml` 的 CHANGE_ME_NAMESPACE 改为 cn-haozhe-wang 后 `kubectl apply -f ...`(Agent 一次性部署,不随发版重建) | haozhe 执行,manifest 已就绪 |
+| 3 | 观测代码合入 main → CD 自动构建带埋点镜像 → 重新发布(preview.template.json 已注入 DD_* env) | MR 流程 + deploy job |
+
+验证:发布后 Datadog APM 出现 `service:kitty-api env:preview` 的 span、拨测保持绿色;
+RUM 激活见 §RUM(两步:UI 建 RUM 应用 → index.html 填 token,随下次发布生效)。
+
 ## 9. 接入责任与边界
 
 - 埋点/字段/分类维护由服务端负责;`kitty.command` 的 type 枚举扩展时同步本文档与 monitors。
