@@ -214,7 +214,7 @@ export class IntegratedRainyAlley {
   draw(context: CanvasRenderingContext2D, width: number, height: number, flags: readonly string[], debugState: DebugState) {
     this.now = performance.now();
     context.save();
-    context.imageSmoothingEnabled = true;
+    context.imageSmoothingEnabled = false;
     context.fillStyle = '#061525'; context.fillRect(0, 0, width, height);
     const view = this.imageView(width, height);
     context.translate(view.padX, view.padY);
