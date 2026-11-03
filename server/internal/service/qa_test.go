@@ -82,6 +82,23 @@ func TestQACheckpointsAreGatedAndEveryPublishedNodeWorks(t *testing.T) {
 	rejectUnchanged(t, g, token, domain.Command{Type: "QA_RESTORE"})
 }
 
+func TestFinaleStoryCheckpointMatchesNormalStoryDestination(t *testing.T) {
+	g, token, _ := setup(t)
+	g.QAVictoryEnabled = true
+	execute(t, g, token, domain.Command{Type: "QA_CHECKPOINT", CheckpointID: "finale.home"})
+	normal := execute(t, g, token, domain.Command{Type: "START_STORY", NodeID: "finale_intro_1"})
+	checkpoint := execute(t, g, token, domain.Command{Type: "QA_CHECKPOINT", CheckpointID: "finale.story"})
+	if checkpoint.MapID != normal.MapID || checkpoint.Phase != normal.Phase || checkpoint.StoryNodeID != normal.StoryNodeID || checkpoint.ChapterID != normal.ChapterID {
+		t.Fatalf("QA finale story diverged from normal entry: QA=%s/%s/%s normal=%s/%s/%s", checkpoint.MapID, checkpoint.Phase, checkpoint.StoryNodeID, normal.MapID, normal.Phase, normal.StoryNodeID)
+	}
+	for _, id := range []string{"finale.celebration", "finale.home"} {
+		s := execute(t, g, token, domain.Command{Type: "QA_CHECKPOINT", CheckpointID: id})
+		if s.MapID != "greenhouse" {
+			t.Fatalf("%s must keep the hub destination, got %s", id, s.MapID)
+		}
+	}
+}
+
 func TestQARestoreSurvivesRestartAndReplaysWithoutOverwritingOriginal(t *testing.T) {
 	g, token, path := setup(t)
 	g.QAVictoryEnabled = true

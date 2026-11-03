@@ -58,7 +58,7 @@ func (g *Game) qaCheckpoints() []QACheckpoint {
 		{"rescue.battle", "rescue", "暗道出口守护", "battle", "tunnel", "battle", "已调查诱饵与第三阀，从真实出口位置启动主线场次。"},
 		{"rescue.after", "rescue", "营救后护送回家", "dialogue", "tunnel", "story", "暗道战已完成，验收第十段对白及护送回家。"},
 		{"finale.clue", "finale", "线索不足分支", "dialogue", "market", "story", "只有零条线索，听阿策分析后继续集市探索。"},
-		{"finale.story", "finale", "终章剧情", "dialogue", "greenhouse", "story", "暗道救援结束且线索齐备，开始终章叙事。"},
+		{"finale.story", "finale", "终章剧情", "dialogue", "warehouse", "story", "暗道救援结束且线索齐备，从仓库入口开始终章叙事，读完后继续探索。"},
 		{"finale.explore", "finale", "仓库探索与灯光", "explore", "warehouse", "explore", "从仓库入口测试 L0/L1、灯光、事件与首领；固定事件可选。"},
 		{"finale.exit", "finale", "仓库胜利后出口", "explore", "warehouse", "explore", "首领已击败，测试北侧闸门、隔间出口与花房结局。"},
 		{"finale.battle", "finale", "总仓库决战试玩", "battle", "greenhouse", "battle", "进入已接入的独立终局战斗；仓库自由探索尚未开放。"},
