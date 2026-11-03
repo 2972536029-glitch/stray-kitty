@@ -184,6 +184,7 @@ stray-kitty/
 │     │  ├─ nightMarket/  Chapter 2 Night Market spatial map and progression
 │     │  ├─ qa/  按游戏流程组织的验收操作与服务端能力检查
 │     │  ├─ rainyAlley/
+│     │  │  └─ assets/
 │     │  └─ shop/  商品与购买
 │     ├─ shared/  通用工具 · 预留
 │     └─ ui/  界面与样式 · 轩扬
