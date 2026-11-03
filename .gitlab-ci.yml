@@ -11,9 +11,8 @@ web_checks:
     - npm run typecheck
     - npm test
     - npm run build --workspace web
-  artifacts:
-    paths: [web/dist/]
-    expire_in: 1 week
+  # The frontend image builds web/dist from source; no downstream job needs this copy.
+  # Uploading the full asset bundle here can exceed GitLab's artifact upload limit.
 
 server_checks:
   stage: verify
