@@ -5,6 +5,7 @@ import {findPath, sweepMove} from './collision';
 import {paintSqueezePassage} from './squeezePainter';
 import {paintEventProp} from './eventProps';
 import {RainyEventLabels, EVENT_PROP_SCALE} from './eventLabels';
+import {chapterBackground} from '../map/artwork';
 import {
   rainyAlleyFieldClosed, rainyAlleyFieldOpen, rainyAlleyGeometryClosed, rainyAlleyGeometryOpen,
   rainyAlleySqueezeFieldClosed, rainyAlleySqueezeFieldOpen, SQUEEZE_BOUNDS, SQUEEZE_CENTER_X,
@@ -28,14 +29,13 @@ const DOG_FRIEND_STORY_TEXT = '老黄趴在巷尾，看了你一眼……尾巴�
 type ZoneCheckResult = 'checking' | 'accepted' | 'failed';
 interface DebugState {phase: string; eventId?: string; pendingEventSource?: string; randomEligible?: boolean}
 
-function image(source: string) {const result = new Image(); result.src = source; return result;}
 function polygonPath(context: CanvasRenderingContext2D, polygon: WorldPolygon) {
   polygon.points.forEach((point, index) => index ? context.lineTo(point.x, point.y) : context.moveTo(point.x, point.y));
   context.closePath();
 }
 
 export class IntegratedRainyAlley {
-  private readonly background = image(rainyAlleySource.backgroundUrl);
+  private readonly background = chapterBackground('alley');
   private position: Point = {...spawn};
   private camera: Point = {x: 0, y: rainyAlleyRegistration.worldHeight - cameraSize.height};
   private path: Point[] = [];
