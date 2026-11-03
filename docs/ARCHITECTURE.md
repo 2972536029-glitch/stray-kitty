@@ -187,6 +187,7 @@ stray-kitty/
 │     │  ├─ inventory/  道具与家具持有
 │     │  ├─ lottery/  两套主题家具、扭蛋柜台、图鉴与收据
 │     │  ├─ map/  地图 · Jenny
+│     │  │  └─ assets/
 │     │  ├─ nightMarket/  Chapter 2 Night Market spatial map and progression
 │     │  ├─ qa/  按游戏流程组织的验收操作与服务端能力检查
 │     │  ├─ rainyAlley/
