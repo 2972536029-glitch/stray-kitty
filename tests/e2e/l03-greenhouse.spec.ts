@@ -75,7 +75,9 @@ for(const entry of cases.filter(value=>value.id!=='retreat')){
     const state=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
     expect(state.lastResult.outcome).toBe('won');expect('battleRewards' in state.lastResult).toBe(false);
     expect(state.inventory).toEqual(before.inventory);expect(state.currencies).toEqual(before.currencies);
-    expect(state.cats).toEqual(before.cats);expect(state.furniture).toEqual(before.furniture);expect(state.flags).toEqual(before.flags);
+    expect(state.cats).toEqual(before.cats);expect(state.furniture).toEqual(before.furniture);
+    // 花房胜利沿用主流程既有行为：保留原标记并解锁后续剧情。
+    expect(state.flags).toEqual([...before.flags,'greenhouse_fortified']);
     expect(state.pushTokens).toEqual(before.pushTokens);expect(state.eventState?.pendingModifiers).toEqual(before.eventState?.pendingModifiers);
     expect(state.completedStages).toContain('greenhouse_boss');
     expect(commands.filter(type=>type==='START_BATTLE')).toHaveLength(1);
