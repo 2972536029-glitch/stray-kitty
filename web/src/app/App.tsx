@@ -120,8 +120,11 @@ export default function App() {
     if(state?.mapId==='warehouse'){
       if(busy||pending||togglingWarehouseLight)return;
       const light=['entry_lamp','central_spotlight','secondary_lamp'].includes(id);
-      if(light)setTogglingWarehouseLight(true);
-      void send({type:'INTERACT',interactionId:id,layer:warehousePosition.current?.floor,position:warehousePosition.current?.point}).finally(()=>{if(light)setTogglingWarehouseLight(false);});return;
+      const preview=light?sceneRef.current:null;
+      if(light){preview?.previewWarehouseLight(id);setTogglingWarehouseLight(true);}
+      void send({type:'INTERACT',interactionId:id,layer:warehousePosition.current?.floor,position:warehousePosition.current?.point})
+        .then(success=>{if(!success)preview?.cancelWarehouseLightPreview();})
+        .finally(()=>{if(light)setTogglingWarehouseLight(false);});return;
     }
     if (id === 'tunnel_exit_boss') {
       void send({type: 'START_BATTLE', stageId: 'tunnel_boss', ...(tunnelPosition.current ? {returnPosition:tunnelPosition.current} : {})});

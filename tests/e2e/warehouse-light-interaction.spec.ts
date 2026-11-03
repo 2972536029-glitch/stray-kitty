@@ -25,6 +25,12 @@ test('warehouse light acknowledgements do not freeze walking, bypass pause, or d
   const open = page.getByRole('button', {name: '打开聚光灯 · E', exact: true});
   const close = page.getByRole('button', {name: '关闭聚光灯 · E', exact: true});
   await expect(open).toBeEnabled();
+  const brightness = () => canvas.evaluate(element => {
+    const pixels = (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, element.width, element.height).data;
+    let sum = 0;for (let i = 0; i < pixels.length; i += 16) sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+    return sum / (pixels.length / 16 * 3);
+  });
+  const unlit = await brightness();
 
   let release!: () => void, commands = 0;
   const acknowledgement = new Promise<void>(resolve => {release = resolve;});
@@ -41,6 +47,8 @@ test('warehouse light acknowledgements do not freeze walking, bypass pause, or d
     await page.keyboard.press('e');
     await expect.poll(() => commands).toBe(1);
     await expect(open).toBeDisabled();
+    // The visible light responds before the server command is even sent.
+    await expect.poll(brightness).toBeGreaterThan(unlit + 3);
     const before = Number(await canvas.getAttribute('data-player-y'));
     await page.keyboard.down('ArrowUp');
     await page.waitForTimeout(250);
@@ -67,11 +75,6 @@ test('warehouse light acknowledgements do not freeze walking, bypass pause, or d
   expect(actual.flags).toContain('central_spotlight');
   expect(commands).toBe(1);
 
-  const brightness = () => canvas.evaluate(element => {
-    const pixels = (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, element.width, element.height).data;
-    let sum = 0;for (let i = 0; i < pixels.length; i += 16) sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
-    return sum / (pixels.length / 16 * 3);
-  });
   const lit = await brightness();
   await canvas.focus();await page.keyboard.press('e');
   await expect(open).toBeEnabled();
@@ -81,6 +84,7 @@ test('warehouse light acknowledgements do not freeze walking, bypass pause, or d
   await expect(close).toBeEnabled();
   await expect.poll(brightness).toBeGreaterThan(dark + 3);
   expect(commands).toBe(3);
+  const beforeFailure = await brightness();
 
   // An unknown network result still locks the ordinary pending-command flow;
   // retry must confirm the same toggle, rather than create another command.
@@ -96,6 +100,7 @@ test('warehouse light acknowledgements do not freeze walking, bypass pause, or d
   });
   await canvas.focus();await page.keyboard.press('e');
   await expect(page.getByRole('alert')).toContainText('无法连接游戏服务');
+  await expect.poll(brightness).toBeGreaterThan(beforeFailure - 2);
   const pendingY = await canvas.getAttribute('data-player-y');
   await canvas.focus();await page.keyboard.down('ArrowUp');
   await page.waitForTimeout(250);await page.keyboard.up('ArrowUp');

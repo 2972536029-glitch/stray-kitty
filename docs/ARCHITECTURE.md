@@ -180,6 +180,7 @@ stray-kitty/
 │     │  ├─ cats/  猫咪档案、救援与成长
 │     │  ├─ chapter4/
 │     │  ├─ chapter5/
+│     │  │  └─ assets/
 │     │  ├─ economy/  货币、扣费与奖励
 │     │  ├─ events/  随机事件 · 余尧
 │     │  ├─ home/  家园建设、摆放与互动

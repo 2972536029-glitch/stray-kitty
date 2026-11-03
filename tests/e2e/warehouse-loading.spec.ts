@@ -1,5 +1,6 @@
 import {expect, test, type APIRequestContext, type Page} from '@playwright/test';
 import type {GameState, Session} from '../../web/src/contracts';
+import {readFileSync} from 'node:fs';
 
 async function prepareCheckpoint(page: Page, request: APIRequestContext, checkpointId: string) {
   const session = await (await request.post('/api/v1/sessions')).json() as Session;
@@ -20,7 +21,7 @@ test('warehouse loads props alongside the floor, skips unrelated chapters, and r
   page.on('pageerror', error => errors.push(error.message));
   let releaseGround!: () => void;
   const groundGate = new Promise<void>(resolve => {releaseGround = resolve;});
-  await page.route(/warehouse_L0_ground.*\.png/, async route => {await groundGate;await route.continue();});
+  await page.route(/warehouse_L0_ground.*\.(?:png|webp)/, async route => {await groundGate;await route.continue();});
   try {
     await page.goto('/');
     await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
@@ -30,6 +31,16 @@ test('warehouse loads props alongside the floor, skips unrelated chapters, and r
   } finally {releaseGround();}
   const canvas = page.locator('canvas[data-map-id="warehouse"]');
   await expect(canvas).toHaveAttribute('data-ready', 'true');
+  const ground = images.find(url => url.includes('warehouse_L0_ground'))!;
+  expect(new URL(ground).pathname).toMatch(/\.webp$/);
+  const original = readFileSync(new URL('../../level_design/chapter5/art/warehouse_L0_ground.png', import.meta.url)).toString('base64');
+  const identical = await page.evaluate(async ({ground, original}) => {
+    const load = async (url: string) => {const image = new Image();image.src = url;await image.decode();return image;};
+    const images = await Promise.all([load(ground), load('data:image/png;base64,' + original)]);
+    const pixels = images.map(image => {const canvas = document.createElement('canvas');canvas.width = image.width;canvas.height = image.height;const ctx = canvas.getContext('2d')!;ctx.drawImage(image, 0, 0);return ctx.getImageData(0, 0, image.width, image.height).data;});
+    return images[0].width === images[1].width && images[0].height === images[1].height && pixels[0].every((value, i) => value === pixels[1][i]);
+  }, {ground, original});
+  expect(identical).toBe(true);
   await canvas.focus();
   const y = await canvas.getAttribute('data-player-y');
   await page.keyboard.down('ArrowUp');
@@ -49,6 +60,17 @@ test('warehouse loads props alongside the floor, skips unrelated chapters, and r
   await expect(canvas).toHaveAttribute('data-ready', 'true');
   expect(images).toEqual([]);
   expect(errors).toEqual([]);
+});
+
+test('warehouse retains a working PNG fallback if the lossless ground fails', async ({page, request}) => {
+  await prepareCheckpoint(page, request, 'finale.explore');
+  const fallback: string[] = [];
+  await page.route(/warehouse_L0_ground.*\.webp/, route => route.abort('failed'));
+  page.on('response', response => {if (/warehouse_L0_ground.*\.png/.test(response.url()) && response.ok()) fallback.push(response.url());});
+  await page.goto('/');
+  await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+  await expect(page.locator('canvas[data-map-id="warehouse"]')).toHaveAttribute('data-ready', 'true');
+  expect(fallback).toHaveLength(1);
 });
 
 for (const [checkpoint, scene, artwork] of [
