@@ -5,6 +5,7 @@ Keep everything in this package **read-only** until visually reviewed against th
 - `source/rainy_alley_v09.svg` / `source/geometry.json`: locked SVG/graybox route, gate, navigation geometry in 1188 × 726 coordinates.
 - `source/level_objects.json`: fixed interactions, fish pickup proposal, 3 event zones and contextual exit placeholder.
 - `art/rainy_alley_background.png`: the unchanged user-provided high-resolution 1672 × 941 render from the accepted v1.2.1 registration package.
+- Production uses the [user-approved cleaned runtime derivative](../../web/src/modules/rainyAlley/assets/README.md), which removes the six signboards and the small entrance cat figure. The original art and this package's source hashes remain unchanged.
 - `reference/events_alley_branch_v13.json` and `reference/story_alley_branch.json`: **read-only reference** for IDs/text; the real game catalog and latest teammate branches must remain authoritative.
 - `reference/preview_v09.js`: standalone simulation logic for spatial semantics; do not copy its mock state, dice, rewards or battle simulation into production.
 
