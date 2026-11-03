@@ -4,6 +4,7 @@
 package payment
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"math/big"
@@ -92,7 +93,7 @@ func (g *Gateway) Decide(playerID, packID, cardNumber string) (Decision, error) 
 
 // Charge 执行一笔模拟支付:4242 开头必成功、0000 开头必失败、其余卡一律温和拒绝(便于演示)。
 // 成功时在同一事务里入账金枪鱼并落流水;失败只落流水,不动余额。
-func (g *Gateway) Charge(playerID, packID, cardNumber string) (ChargeResult, error) {
+func (g *Gateway) Charge(_ context.Context, playerID, packID, cardNumber string) (ChargeResult, error) {
 	d, err := g.Decide(playerID, packID, cardNumber)
 	if err != nil {
 		return ChargeResult{}, err
@@ -124,15 +125,15 @@ func (g *Gateway) HealingMessage() string {
 }
 
 // Provider mock 形态:演示卡号直付,前端不跳转。
-func (g *Gateway) Provider() ProviderInfo { return ProviderInfo{Provider: "mock"} }
+func (g *Gateway) Provider(_ context.Context) ProviderInfo { return ProviderInfo{Provider: "mock"} }
 
 // Session 演示卡号形态没有跳转会话;Xsolla 只在拆分部署形态(独立支付服务)提供。
-func (g *Gateway) Session(playerID, packID string) (SessionResult, error) {
+func (g *Gateway) Session(_ context.Context, playerID, packID string) (SessionResult, error) {
 	return SessionResult{}, domain.Fail("SESSION_UNAVAILABLE", "当前是演示卡号支付，直接输入卡号就好啦。", 409)
 }
 
 // History 玩家的充值与消费流水(最新在前)。消费流水落账时不带 playerId,这里统一补齐。
-func (g *Gateway) History(playerID string) ([]domain.Txn, error) {
+func (g *Gateway) History(_ context.Context, playerID string) ([]domain.Txn, error) {
 	p, err := g.store.GetByPlayerID(playerID)
 	if err != nil {
 		return nil, err

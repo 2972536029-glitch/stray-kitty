@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"stray-kitty/server/internal/advisor"
 	"stray-kitty/server/internal/integrations/payment"
+	"stray-kitty/server/internal/obs"
 	"stray-kitty/server/internal/platform"
 	"stray-kitty/server/internal/repository"
 	"stray-kitty/server/internal/service"
@@ -24,6 +25,8 @@ func env(key, fallback string) string {
 }
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	obs.Init("kitty-api")
+	defer obs.Shutdown()
 	store, err := repository.Open(env("GAME_DATA_FILE", "../data/game.json"))
 	if err != nil {
 		slog.Error("cannot open progress storage", "error", err.Error())

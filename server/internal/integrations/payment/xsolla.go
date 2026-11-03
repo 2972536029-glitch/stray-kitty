@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"stray-kitty/server/internal/domain"
+	"stray-kitty/server/internal/obs"
 )
 
 // XsollaConfig 环境注入的凭据与端点;三项凭据齐备即启用 xsolla 形态,否则维持 mock。
@@ -72,7 +73,7 @@ func NewXsollaClient(cfg XsollaConfig) *XsollaClient {
 			cfg.PaystationURL = "https://secure.xsolla.com/paystation4/"
 		}
 	}
-	return &XsollaClient{cfg: cfg, http: &http.Client{Timeout: 10 * time.Second}}
+	return &XsollaClient{cfg: cfg, http: &http.Client{Timeout: 10 * time.Second, Transport: obs.TracedRoundTripper(nil)}}
 }
 
 // ProviderInfo 当前形态:xsolla + 沙盒标记。
@@ -239,7 +240,7 @@ type CreditCaller func(playerID string, txn domain.Txn, pack domain.RechargePack
 
 // NewGameCreditCaller 调游戏服务 POST /internal/credit;internalToken 为集群内部共享密钥。
 func NewGameCreditCaller(baseURL, internalToken string) CreditCaller {
-	client := &http.Client{Timeout: 5 * time.Second}
+	client := &http.Client{Timeout: 5 * time.Second, Transport: obs.TracedRoundTripper(nil)}
 	return func(playerID string, txn domain.Txn, pack domain.RechargePack) error {
 		body, err := json.Marshal(map[string]any{"playerId": playerID, "txn": txn, "pack": pack})
 		if err != nil {

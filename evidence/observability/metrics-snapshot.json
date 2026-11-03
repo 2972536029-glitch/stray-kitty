@@ -1,0 +1,63 @@
+{
+  "captured_at_utc": "2026-11-02T18:40Z",
+  "window": "5h(e2e 27/27 passed 1.9h + smoke + host paymentd)",
+  "note": "counter 类指标这里取窗口内各 10s 上报点的总和,代表观测到的业务总量",
+  "queries": {
+    "command_by_result": [
+      {
+        "observed_total": 7
+      },
+      {
+        "observed_total": 6
+      },
+      {
+        "observed_total": 332
+      }
+    ],
+    "command_by_type": [
+      {
+        "observed_total": 8
+      },
+      {
+        "observed_total": 10
+      },
+      {
+        "observed_total": 1
+      },
+      {
+        "observed_total": 308
+      },
+      {
+        "observed_total": 18
+      }
+    ],
+    "http_by_status": [
+      {
+        "observed_total": 24
+      },
+      {
+        "observed_total": 2326
+      },
+      {
+        "observed_total": 18
+      }
+    ],
+    "charge_by_result": [
+      {
+        "observed_total": 1
+      },
+      {
+        "observed_total": 3
+      },
+      {
+        "observed_total": 1
+      }
+    ],
+    "session_started": [
+      {
+        "observed_total": 77
+      }
+    ],
+    "advisor_by_result": []
+  }
+}

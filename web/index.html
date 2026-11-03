@@ -1,2 +1,7 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#e9e4d8"/><title>小猫回家记 · 流浪猫王国</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+<html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#e9e4d8"/><title>小猫回家记 · 流浪猫王国</title></head><body><div id="root"></div><script>
+  // RUM 可插拔注入点:取消注释并填入 Datadog UI(RUM → New Application)的值后刷新生效;
+  // 未配置时 web/src/observability/rum.ts 整体 no-op(见文件头说明)。
+  // window.KITTY_RUM = { applicationId: "<RUM Application ID>", clientToken: "<RUM Client Token>",
+  //   site: "datadoghq.com", env: "dev", version: "0.1.0" };
+</script><script type="module" src="/src/main.tsx"></script></body></html>

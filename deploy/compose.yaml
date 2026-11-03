@@ -5,6 +5,20 @@ services:
       dockerfile: deploy/Dockerfile
     ports:
       - "127.0.0.1:8080:8080"
+    environment:
+      # 可观测性:Agent 不在场时应用侧全部 no-op,游戏照常(server/internal/obs 纪律)。
+      DD_AGENT_HOST: ${DD_AGENT_HOST:-datadog-agent}
+      DD_DOGSTATSD_PORT_8125_ADDR: ${DD_AGENT_HOST:-datadog-agent}:8125
+      DD_ENV: ${DD_ENV:-dev}
+      DD_VERSION: ${DD_VERSION:-0.1.0}
+      DD_TEAM: ${DD_TEAM:-stray-kitty}
+      # 接住前端 RUM 的 traceparent,同时兼容 datadog 头
+      DD_TRACE_PROPAGATION_STYLE: tracecontext,datadog
+      # kind/containerd 下 Agent 文件采集不可靠时的日志旁路(未配置即 no-op)
+      DD_LOGS_INTAKE_KEY: ${DD_API_KEY:-}
+      # QA 工作台开关(e2e/演示用);设置 PAYMENT_URL 指向独立 paymentd 即切换拆分支付形态
+      GAME_QA_ENABLED: ${GAME_QA_ENABLED:-false}
+      PAYMENT_URL: ${PAYMENT_URL:-}
     volumes:
       - kitty-data:/data
     restart: unless-stopped
@@ -13,5 +27,35 @@ services:
       interval: 15s
       timeout: 3s
       retries: 3
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "go", "service": "kitty-api"}]'
+
+  # ---- Datadog Agent(可选 profile:没有 DD_API_KEY 时不启动)----
+  # 带观测闭环启动:docker compose --profile observability up --build
+  datadog-agent:
+    # 注意:本机网络拉不了 gcr.io 指定版本 tag(实测 dial timeout),用本地已有的 :7
+    #(即 7.66 系);受限网络下先 docker pull 到本地再启动,CI/云环境可改回精确版本。
+    image: gcr.io/datadoghq/agent:7
+    profiles: ["observability"]
+    environment:
+      DD_API_KEY: ${DD_API_KEY:?请在 deploy/.env 配置 DD_API_KEY 后再用 --profile observability 启动}
+      DD_SITE: ${DD_SITE:-datadoghq.com}
+      DD_ENV: ${DD_ENV:-dev}
+      DD_TAGS: "team:${DD_TEAM:-stray-kitty}"
+      DD_APM_ENABLED: "true"
+      DD_APM_NON_LOCAL_TRAFFIC: "true"             # 接收容器网络里的 trace
+      DD_LOGS_ENABLED: "true"
+      DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: "true" # 采集全部容器 stdout(JSON 行日志)
+      DD_DOGSTATSD_NON_LOCAL_TRAFFIC: "true"       # 接收容器网络里的 DogStatsD
+      DD_CONTAINER_EXCLUDE: "name:datadog-agent"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    ports:
+      - "127.0.0.1:8126:8126"     # APM:宿主机直跑的进程(如 paymentd 联调)也能上报
+      - "127.0.0.1:8125:8125/udp" # DogStatsD:同上
+    restart: unless-stopped
+
 volumes:
   kitty-data:

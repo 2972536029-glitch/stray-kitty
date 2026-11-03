@@ -41,6 +41,22 @@ spec:
               value: /data/game.json
             - name: GAME_WEB_DIR
               value: /app/web
+            # ---- 可观测性:Agent 以 DaemonSet hostPort 落在每节点,应用用 Downward API 找节点 IP ----
+            - name: DD_AGENT_HOST
+              valueFrom: { fieldRef: { fieldPath: status.hostIP } }
+            - name: DD_DOGSTATSD_PORT_8125_ADDR
+              value: "$(DD_AGENT_HOST):8125"
+            - name: DD_ENV
+              value: "dev"
+            - name: DD_VERSION
+              value: "0.1.0"
+            - name: DD_TEAM
+              value: "stray-kitty"
+            - name: DD_TRACE_PROPAGATION_STYLE
+              value: "tracecontext,datadog"
+            - name: DD_LOGS_INTAKE_KEY
+              valueFrom:
+                secretKeyRef: { name: kitty-dd-secret, key: api-key, optional: true }
           resources:
             requests: {cpu: 100m, memory: 128Mi}
             limits: {cpu: "1", memory: 512Mi}

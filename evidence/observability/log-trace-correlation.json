@@ -1,0 +1,26 @@
+{
+  "correlation": "OK (Trace ↔ Logs 双向关联成立)",
+  "facet_note": "Logs 侧保留字段检索语法是 trace_id:<十进制>,不是 @dd.trace_id(踩坑)",
+  "span": {
+    "trace_id_hex": "6ae8c734000000001316010ea67554be",
+    "service": "kitty-api",
+    "resource": "GET /api/v1/content",
+    "status": "ok"
+  },
+  "same_trace_logs": [
+    {
+      "ts": "2026-11-02T17:24:04.716Z",
+      "msg": "http request",
+      "route": "/api/v1/content",
+      "status": 200,
+      "duration_ms": 1.435
+    },
+    {
+      "ts": "2026-11-02T17:24:03.206Z",
+      "msg": "http request",
+      "route": "/api/v1/content",
+      "status": 200,
+      "duration_ms": 1.435
+    }
+  ]
+}

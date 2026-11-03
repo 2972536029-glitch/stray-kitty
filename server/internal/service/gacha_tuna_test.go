@@ -1,6 +1,7 @@
 package service_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"path/filepath"
@@ -38,7 +39,7 @@ func setupWithPlayer(t *testing.T) (*service.Game, *payment.Gateway, string, str
 
 func recharge(t *testing.T, gateway *payment.Gateway, playerID string, packID string) {
 	t.Helper()
-	if _, err := gateway.Charge(playerID, packID, "4242424242424242"); err != nil {
+	if _, err := gateway.Charge(context.Background(), playerID, packID, "4242424242424242"); err != nil {
 		t.Fatal(err)
 	}
 }

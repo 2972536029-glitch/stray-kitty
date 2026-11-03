@@ -1,6 +1,7 @@
 package payment_test
 
 import (
+	"context"
 	"errors"
 	"path/filepath"
 	"reflect"
@@ -71,7 +72,7 @@ func TestCatalogHasTunaPacks(t *testing.T) {
 func TestCharge4242AlwaysConfirmsAndGrantsTuna(t *testing.T) {
 	gateway, _, path, playerID := setup(t)
 	// 卡号带空格与横线也应被清洗后接受。
-	result, err := gateway.Charge(playerID, "pack_small", "4242 4242-4242 4242")
+	result, err := gateway.Charge(context.Background(), playerID, "pack_small", "4242 4242-4242 4242")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +82,7 @@ func TestCharge4242AlwaysConfirmsAndGrantsTuna(t *testing.T) {
 	if result.TunaBalance != 60 {
 		t.Fatalf("expected tuna balance 60, got %d", result.TunaBalance)
 	}
-	result, err = gateway.Charge(playerID, "pack_medium", "4242424242424242")
+	result, err = gateway.Charge(context.Background(), playerID, "pack_medium", "4242424242424242")
 	if err != nil || result.TunaBalance != 210 {
 		t.Fatalf("second charge did not stack: %+v err=%v", result, err)
 	}
@@ -101,7 +102,7 @@ func TestCharge4242AlwaysConfirmsAndGrantsTuna(t *testing.T) {
 
 func TestCharge0000AlwaysDeclinesWithHealingCopy(t *testing.T) {
 	gateway, _, _, playerID := setup(t)
-	result, err := gateway.Charge(playerID, "pack_large", "0000123412341234")
+	result, err := gateway.Charge(context.Background(), playerID, "pack_large", "0000123412341234")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +122,7 @@ func TestCharge0000AlwaysDeclinesWithHealingCopy(t *testing.T) {
 
 func TestChargeOtherCardsAreGentlyDeclined(t *testing.T) {
 	gateway, _, _, playerID := setup(t)
-	result, err := gateway.Charge(playerID, "pack_small", "1234567812345678")
+	result, err := gateway.Charge(context.Background(), playerID, "pack_small", "1234567812345678")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,25 +133,25 @@ func TestChargeOtherCardsAreGentlyDeclined(t *testing.T) {
 
 func TestChargeValidation(t *testing.T) {
 	gateway, _, _, playerID := setup(t)
-	if _, err := gateway.Charge(playerID, "pack_huge", "4242424242424242"); codeOf(t, err) != "PACK_NOT_FOUND" {
+	if _, err := gateway.Charge(context.Background(), playerID, "pack_huge", "4242424242424242"); codeOf(t, err) != "PACK_NOT_FOUND" {
 		t.Fatal("unknown pack should be rejected")
 	}
 	for _, card := range []string{"424", "abcd4242424242", "4242424242424242424242", ""} {
-		if _, err := gateway.Charge(playerID, "pack_small", card); codeOf(t, err) != "INVALID_CARD" {
+		if _, err := gateway.Charge(context.Background(), playerID, "pack_small", card); codeOf(t, err) != "INVALID_CARD" {
 			t.Fatalf("card %q should be rejected", card)
 		}
 	}
-	if _, err := gateway.Charge("ghost-player", "pack_small", "4242424242424242"); codeOf(t, err) != "PLAYER_NOT_FOUND" {
+	if _, err := gateway.Charge(context.Background(), "ghost-player", "pack_small", "4242424242424242"); codeOf(t, err) != "PLAYER_NOT_FOUND" {
 		t.Fatal("unknown player should be rejected")
 	}
 }
 
 func TestHistoryNewestFirstAndIncludesConsumption(t *testing.T) {
 	gateway, store, _, playerID := setup(t)
-	if _, err := gateway.Charge(playerID, "pack_small", "4242424242424242"); err != nil {
+	if _, err := gateway.Charge(context.Background(), playerID, "pack_small", "4242424242424242"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := gateway.Charge(playerID, "pack_small", "0000123412341234"); err != nil {
+	if _, err := gateway.Charge(context.Background(), playerID, "pack_small", "0000123412341234"); err != nil {
 		t.Fatal(err)
 	}
 	// 直接落一笔消费流水,模拟抽卡扣费的历史展示。
@@ -161,7 +162,7 @@ func TestHistoryNewestFirstAndIncludesConsumption(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	txns, err := gateway.History(playerID)
+	txns, err := gateway.History(context.Background(), playerID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +175,7 @@ func TestHistoryNewestFirstAndIncludesConsumption(t *testing.T) {
 	if !reflect.DeepEqual(txns[0].PlayerID, playerID) {
 		t.Fatalf("spend txn should be stamped with playerId, got %q", txns[0].PlayerID)
 	}
-	if _, err := gateway.History("ghost-player"); codeOf(t, err) != "PLAYER_NOT_FOUND" {
+	if _, err := gateway.History(context.Background(), "ghost-player"); codeOf(t, err) != "PLAYER_NOT_FOUND" {
 		t.Fatal("history for unknown player should 404")
 	}
 }

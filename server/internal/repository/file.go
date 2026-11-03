@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"stray-kitty/server/internal/domain"
+	"stray-kitty/server/internal/obs"
 	"sync"
 	"time"
 )
@@ -68,6 +69,7 @@ func Open(path string) (*Store, error) {
 	return s, nil
 }
 func (s *Store) persist() error {
+	start := time.Now()
 	if err := os.MkdirAll(filepath.Dir(s.path), 0700); err != nil {
 		return err
 	}
@@ -94,7 +96,14 @@ func (s *Store) persist() error {
 	if err != nil {
 		return err
 	}
-	return os.Rename(name, s.path)
+	if err = os.Rename(name, s.path); err != nil {
+		return err
+	}
+	// 单 JSON 文件是这个架构最大的运行时风险点:写入耗时反映磁盘/锁压力,
+	// 状态体积只增不减,持续增长是存档膨胀的早期信号。
+	obs.Histogram("kitty.repo.save_duration_ms", float64(time.Since(start).Microseconds())/1000)
+	obs.Gauge("kitty.repo.state_size_bytes", float64(len(data)))
+	return nil
 }
 func clone(p *Player) (*Player, error) {
 	data, err := json.Marshal(p)

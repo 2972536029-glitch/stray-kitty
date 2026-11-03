@@ -18,6 +18,9 @@ web_checks:
 server_checks:
   stage: verify
   image: golang:1.26
+  variables:
+    # server 引入 Datadog SDK 后需要拉取模块;默认 proxy.golang.org 在受限网络不可达
+    GOPROXY: https://goproxy.cn,direct
   script:
     - gofmt_check=$(gofmt -l ./server) && test -z "$gofmt_check" || (echo "gofmt required:"; echo "$gofmt_check"; exit 1)
     - go -C server vet ./...
@@ -26,6 +29,8 @@ server_checks:
 server_build:
   stage: build
   image: golang:1.26
+  variables:
+    GOPROXY: https://goproxy.cn,direct
   script:
     - mkdir -p artifacts
     - CGO_ENABLED=0 go -C server build -trimpath -o ../artifacts/kitty-api ./cmd/api

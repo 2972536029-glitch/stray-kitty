@@ -64,11 +64,14 @@ stray-kitty/
 │  ├─ L05-INTEGRATION.md  第五章光路援军与独立试玩边界
 │  ├─ LEVEL-EXPLORATION-ARCHITECTURE.md
 │  ├─ MAP-QA-FOLLOWUP.md
+│  ├─ OBSERVABILITY.md
 │  ├─ openapi.json  API 规范
 │  ├─ PAYMENT-XSOLLA-SANDBOX.md
 │  ├─ PRD.md  需求与分工
 │  ├─ STORY-SCRIPT.md
 │  └─ STORY-SCRIPT.txt
+├─ evidence/
+│  └─ observability/
 ├─ level_design/
 │  ├─ chapter4/
 │  │  ├─ art/
@@ -94,6 +97,7 @@ stray-kitty/
 │     ├─ art/
 │     ├─ reference/
 │     └─ source/
+├─ monitors/
 ├─ scripts/  启动、生成与检查
 ├─ server/  Go 服务端
 │  ├─ cmd/  服务入口
@@ -104,6 +108,7 @@ stray-kitty/
 │  │  ├─ domain/  状态、命令与错误
 │  │  ├─ integrations/  外部集成
 │  │  │  └─ payment/  独立模拟支付与账本
+│  │  ├─ obs/
 │  │  ├─ platform/  嵌入内容配置
 │  │  ├─ repository/  单进程 JSON 文件事务
 │  │  ├─ service/  长期规则、判定、奖励与结算
@@ -186,6 +191,7 @@ stray-kitty/
 │     │  ├─ rainyAlley/
 │     │  │  └─ assets/
 │     │  └─ shop/  商品与购买
+│     ├─ observability/
 │     ├─ shared/  通用工具 · 预留
 │     └─ ui/  界面与样式 · 轩扬
 ├─ .dockerignore  容器构建排除

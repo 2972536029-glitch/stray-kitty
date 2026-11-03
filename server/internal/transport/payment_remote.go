@@ -4,6 +4,7 @@ package transport
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 
 	"stray-kitty/server/internal/domain"
 	"stray-kitty/server/internal/integrations/payment"
+	"stray-kitty/server/internal/obs"
 	"stray-kitty/server/internal/service"
 )
 
@@ -27,7 +29,7 @@ func NewRemotePayment(baseURL string, game *service.Game) *RemotePayment {
 	return &RemotePayment{
 		base:   baseURL,
 		game:   game,
-		client: &http.Client{Timeout: 10 * time.Second},
+		client: &http.Client{Timeout: 10 * time.Second, Transport: obs.TracedRoundTripper(nil)},
 	}
 }
 
@@ -37,12 +39,12 @@ type chargeResponse struct {
 	Pack domain.RechargePack `json:"pack"`
 }
 
-func (p *RemotePayment) Charge(playerID, packID, cardNumber string) (payment.ChargeResult, error) {
+func (p *RemotePayment) Charge(ctx context.Context, playerID, packID, cardNumber string) (payment.ChargeResult, error) {
 	body, err := json.Marshal(map[string]string{"playerId": playerID, "packId": packID, "cardNumber": cardNumber})
 	if err != nil {
 		return payment.ChargeResult{}, err
 	}
-	req, err := http.NewRequest(http.MethodPost, p.base+"/internal/charge", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.base+"/internal/charge", bytes.NewReader(body))
 	if err != nil {
 		return payment.ChargeResult{}, err
 	}
@@ -78,7 +80,7 @@ func (p *RemotePayment) Charge(playerID, packID, cardNumber string) (payment.Cha
 }
 
 // History 展示流水读游戏存档(充值+消费的展示副本都在这里);权威充值账本在支付服务。
-func (p *RemotePayment) History(playerID string) ([]domain.Txn, error) {
+func (p *RemotePayment) History(ctx context.Context, playerID string) ([]domain.Txn, error) {
 	player, err := p.game.Store.GetByPlayerID(playerID)
 	if err != nil {
 		return nil, err
@@ -96,12 +98,12 @@ func (p *RemotePayment) History(playerID string) ([]domain.Txn, error) {
 func (p *RemotePayment) HealingMessage() string { return payment.PickHealingMessage() }
 
 // Session 向支付服务申请 Xsolla 跳转会话;金额档位都在支付侧定,这里只带 playerId/packId。
-func (p *RemotePayment) Session(playerID, packID string) (payment.SessionResult, error) {
+func (p *RemotePayment) Session(ctx context.Context, playerID, packID string) (payment.SessionResult, error) {
 	body, err := json.Marshal(map[string]string{"playerId": playerID, "packId": packID})
 	if err != nil {
 		return payment.SessionResult{}, err
 	}
-	req, err := http.NewRequest(http.MethodPost, p.base+"/internal/session", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.base+"/internal/session", bytes.NewReader(body))
 	if err != nil {
 		return payment.SessionResult{}, err
 	}
@@ -132,8 +134,8 @@ func (p *RemotePayment) Session(playerID, packID string) (payment.SessionResult,
 }
 
 // Provider 查询支付服务当前网关形态;查询失败时降级成 mock(卡号 UI 不被卡死)。
-func (p *RemotePayment) Provider() payment.ProviderInfo {
-	req, err := http.NewRequest(http.MethodGet, p.base+"/internal/provider", nil)
+func (p *RemotePayment) Provider(ctx context.Context) payment.ProviderInfo {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.base+"/internal/provider", nil)
 	if err != nil {
 		return payment.ProviderInfo{Provider: "mock"}
 	}

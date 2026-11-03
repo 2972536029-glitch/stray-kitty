@@ -1,0 +1,17 @@
+{
+  "service": "kitty-paymentd(宿主机直跑指向 compose Agent 8126)",
+  "spans": [
+    {
+      "resource": "POST /internal/charge",
+      "status": "ok"
+    },
+    {
+      "resource": "POST /internal/charge",
+      "status": "ok"
+    },
+    {
+      "resource": "GET /healthz",
+      "status": "ok"
+    }
+  ]
+}
