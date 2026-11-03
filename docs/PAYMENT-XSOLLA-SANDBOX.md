@@ -71,7 +71,7 @@ kubectl -n cn-haozhe-wang create secret generic stray-kitty-preview-xsolla \
 ## 沙盒演示脚本(汇报用)
 
 1. 游戏内打开"金枪鱼补给小站",确认显示 Xsolla 沙盒文案与"前往沙盒收银台"按钮;
-2. 选一档,跳转 PayStation 沙盒页,用任意测试卡(如 4242 0000 0000 0008,未来日期,CVV 任意;US 卡填 ZIP 12345)完成支付;
+2. 选一档,跳转 PayStation 沙盒页,用任意测试卡(如 4242 4242 4242 4242,未来日期,CVV 任意;US 卡填 ZIP 12345)完成支付;
 3. 自动跳回游戏,返回页轮询数秒后展示"到账啦";钱包余额与流水(来源 `Xsolla 沙盒收款`)同步更新;
 4. 刷新页面,余额仍在(webhook 已落存档)。
 欺诈拦截场景演示:测试卡 `5159 0848 2552 8450`(Mastercard,12/40)触发 AFS 拒绝。
