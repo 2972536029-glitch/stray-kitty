@@ -35,6 +35,7 @@ export default function App() {
   const [nearTarget, setNearTarget] = useState<{id: string; label: string} | null>(null);
   const [inspectHint, setInspectHint] = useState<string | null>(null);
   const [checkingRandomZone, setCheckingRandomZone] = useState(false);
+  const [togglingWarehouseLight, setTogglingWarehouseLight] = useState(false);
   const [inspection, setInspection] = useState<{label: string; text: string} | null>(null);
   const [overlay, setOverlay] = useState<'home' | 'decorate' | 'map' | 'parcels' | 'shop' | 'journal' | 'recharge' | 'warehouse' | 'settings' | 'auth' | 'qa' | null>(null);
   const [homeTab,setHomeTab]=useState<HomeHubTab>('overview');
@@ -116,7 +117,12 @@ export default function App() {
     const id = targetId || nearTarget?.id;
     if (!id) return;
     if(id==='warehouse_climb'){warehouseClimb.current();return;}
-    if(state?.mapId==='warehouse'){void send({type:'INTERACT',interactionId:id,layer:warehousePosition.current?.floor,position:warehousePosition.current?.point});return;}
+    if(state?.mapId==='warehouse'){
+      if(busy||pending||togglingWarehouseLight)return;
+      const light=['entry_lamp','central_spotlight','secondary_lamp'].includes(id);
+      if(light)setTogglingWarehouseLight(true);
+      void send({type:'INTERACT',interactionId:id,layer:warehousePosition.current?.floor,position:warehousePosition.current?.point}).finally(()=>{if(light)setTogglingWarehouseLight(false);});return;
+    }
     if (id === 'tunnel_exit_boss') {
       void send({type: 'START_BATTLE', stageId: 'tunnel_boss', ...(tunnelPosition.current ? {returnPosition:tunnelPosition.current} : {})});
       return;
@@ -127,7 +133,7 @@ export default function App() {
       return;
     }
     void send({type: 'INTERACT', interactionId: id, ...(id==='market_crow_stall'||id==='market_momo_trace'?{layer:'L0',position:rainyPosition.current}:id==='market_pigeon_perch'?{layer:'L1',position:rainyPosition.current}:{})});
-  }, [send, nearTarget, state?.mapId, checkingRandomZone]);
+  }, [send, nearTarget, state?.mapId, checkingRandomZone, busy, pending, togglingWarehouseLight]);
   const checkRandomZone = useCallback(async (zoneId: string, layer?:string,position?:{x:number;y:number}) => {
     if (busy || pending || checkingRandomZone) return false;
     setCheckingRandomZone(true);
@@ -154,7 +160,10 @@ export default function App() {
   // A zone check can return no encounter: keep exploration moving without a pause flash.
   // A real event, explicit pause, modal or failed request still uses the normal freeze.
   const backgroundZoneCheck = checkingRandomZone && state?.phase === 'explore' && !error;
-  const frozen = paused || ((busy || pending) && !backgroundZoneCheck) || !!overlay || !!inspection || !entered;
+  // Lamp toggles keep walking responsive while the server confirms the light
+  // and any gate change. Commands remain serialized; other interactions pause.
+  const backgroundWarehouseLight=togglingWarehouseLight&&state?.mapId==='warehouse'&&state.phase==='explore';
+  const frozen = paused || ((busy || pending) && !backgroundZoneCheck && !backgroundWarehouseLight) || !!overlay || !!inspection || !entered;
   const randomEligible = !!state && !!catalog?.events.some(event => event.triggers.includes('random') && event.maps?.includes('alley') && (event.requiresFlags ?? []).every(flag => state.flags.includes(flag)) && (event.repeatable || !state.drawnEvents?.includes(`alley:${event.id}`)));
   return <>
     {error && overlay !== 'shop' && overlay !== 'parcels' && overlay !== 'qa' && overlay !== 'decorate' && overlay !== 'home' && <div className="error-banner" role="alert">{error}<button disabled={busy} onClick={() => void retry()}>重试上次操作</button>{sessionUnavailable && state && <button disabled={busy} onClick={() => void startNewJourney()}>开始新旅程（保留旧会话记录）</button>}</div>}

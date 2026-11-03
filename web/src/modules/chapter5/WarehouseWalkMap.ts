@@ -55,6 +55,7 @@ export class WarehouseWalkMap {
   private seenZones = new Set<string>();
   private zonePending = false;
   private darkness = document.createElement('canvas');
+  private darknessKey = '';
   private graybox: HTMLImageElement | null = null;
   private sprites = new Map<string, HTMLCanvasElement>();
   private facing = 1;
@@ -239,17 +240,24 @@ export class WarehouseWalkMap {
       ...geometry.ambientLamps.filter(p=>p.floor===this.floor).map((p,i)=>({...p,r:p.r*1.25,strength:.72,color:i%2?'201,139,89':'132,177,137'})),
       ...geometry.interactions.filter(p=>p.kind==='light'&&p.floor===this.floor&&this.flags.has(p.id)).map(p=>({...p,r:285,strength:1,color:tint[p.id]})),
     ];
-    const shade=this.darkness.getContext('2d')!;
-    shade.clearRect(0,0,W,H);shade.globalCompositeOperation='source-over';
-    shade.fillStyle='rgba(2,5,9,.96)';shade.fillRect(0,0,W,H);shade.globalCompositeOperation='destination-out';
-    // A faint, short paw-level pool keeps the cat readable without lighting the aisle.
-    const pools=[{...this.position,r:68,strength:.38},...lights];
-    for(const pool of pools){
-      const glow=shade.createRadialGradient(pool.x,pool.y,8,pool.x,pool.y,pool.r);
-      glow.addColorStop(0,`rgba(0,0,0,${pool.strength})`);
-      glow.addColorStop(.42,`rgba(0,0,0,${pool.strength*.88})`);
-      glow.addColorStop(1,'rgba(0,0,0,0)');
-      shade.fillStyle=glow;shade.beginPath();shade.arc(pool.x,pool.y,pool.r,0,Math.PI*2);shade.fill();
+    const key=this.floor+geometry.interactions.filter(p=>p.kind==='light').map(p=>Number(this.flags.has(p.id))).join('');
+    const darknessKey=`${key}:${this.position.x}:${this.position.y}`;
+    // Reuse the existing mask while stationary; movement and light/floor
+    // changes still paint the same authored pools, without another canvas.
+    if(this.darknessKey!==darknessKey){
+      this.darknessKey=darknessKey;
+      const shade=this.darkness.getContext('2d')!;
+      shade.clearRect(0,0,W,H);shade.globalCompositeOperation='source-over';
+      shade.fillStyle='rgba(2,5,9,.96)';shade.fillRect(0,0,W,H);shade.globalCompositeOperation='destination-out';
+      // A faint, short paw-level pool keeps the cat readable without lighting the aisle.
+      const pools=[{...this.position,r:68,strength:.38},...lights];
+      for(const pool of pools){
+        const glow=shade.createRadialGradient(pool.x,pool.y,8,pool.x,pool.y,pool.r);
+        glow.addColorStop(0,`rgba(0,0,0,${pool.strength})`);
+        glow.addColorStop(.42,`rgba(0,0,0,${pool.strength*.88})`);
+        glow.addColorStop(1,'rgba(0,0,0,0)');
+        shade.fillStyle=glow;shade.beginPath();shade.arc(pool.x,pool.y,pool.r,0,Math.PI*2);shade.fill();
+      }
     }
     ctx.drawImage(this.darkness,0,0);
     ctx.save();ctx.globalCompositeOperation='screen';
