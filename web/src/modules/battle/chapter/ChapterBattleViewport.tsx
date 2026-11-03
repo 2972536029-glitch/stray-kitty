@@ -1,17 +1,17 @@
-import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import type {KeyboardEvent, PointerEvent} from 'react';
 import type {BattleDifficulty, ChapterAction, ChapterCat, ChapterCatId, ChapterState, Position} from './types';
 import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES} from './config';
 import {advanceChapter, createChapterBattle, dispatchChapter, getAttackCells, getBossCells, getChapterAdvice, getChapterSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintChapter} from './painter';
-import {drawCat} from '../l00/painter';
-import {triggerBossSkillShake} from '../battleFx';
+import {AdvisorPortrait} from '../shared/AdvisorPortrait';
+import {useBattleLoop} from '../shared/useBattleLoop';
 import {getChapterAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
 import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
 import {useBattleBoardFit} from '../useBattleBoardFit';
-import {getSkillTooltipPosition} from '../skillTooltipPosition';
+import {useBattleInspectionLayout} from '../shared/useBattleInspectionLayout';
 import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
 import {UnitMeters} from '../UnitMeters';
@@ -35,12 +35,6 @@ const ICONS:Record<ChapterCatId,string>={caster:'✧',guard:'◈',tuanzi:'✦',d
 function RoleBadge({id}:{id:ChapterCatId}){
   return <span className="chapter-role-badge" data-role={CAT_PRESENTATION[id].label}>{CAT_PRESENTATION[id].label}</span>;
 }
-function AdvisorPortrait(){
-  const ref=useRef<HTMLCanvasElement>(null);
-  useEffect(()=>{const context=ref.current?.getContext('2d');if(context)drawCat(context,'advisor',0,0,96);},[]);
-  return <canvas ref={ref} width={96} height={96} className="btl-portrait" aria-hidden="true"/>;
-}
-
 /** A single local simulation owns the attempt. Host state updates do not recreate its board. */
 export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty,carry,paused,onResult}:ChapterBattleViewportProps){
   const [game,setGame]=useState(()=>createChapterBattle({difficulty,carry}));
@@ -56,8 +50,6 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
   const [notice,setNotice]=useState('');
   const [submitted,setSubmitted]=useState(false);
   const [overview,setOverview]=useState(()=>window.innerWidth>=700);
-  const [menuPosition,setMenuPosition]=useState({left:0,top:0});
-  const [tooltipPosition,setTooltipPosition]=useState({left:0,top:0,maxHeight:240});
   const [skillTooltipOpen,setSkillTooltipOpen]=useState(false);
   const [question,setQuestion]=useState('');
   const advisorChat=useModelAdvisor({
@@ -74,10 +66,6 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
   const attemptRef=useRef(attemptId),gesture=useRef<DragGesture|null>(null),suppressClick=useRef(false);
   const aimPointer=useRef<number|null>(null);
   const emitted=useRef(false),callbackRef=useRef(onResult);callbackRef.current=onResult;
-  const hostPauseRef=useRef(paused);hostPauseRef.current=paused;
-  const selectedRef=useRef(selected);selectedRef.current=selected;
-  const hoverRef=useRef(hover);hoverRef.current=hover;
-  const uiPauseRef=useRef(false);uiPauseRef.current=chatOpen||retreatOpen||!!dragging;
 
   function publish(next:ChapterState){gameRef.current=next;setGame(next);return next;}
   function act(action:ChapterAction){
@@ -147,30 +135,10 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
   },[paused]);
   useEffect(()=>{publish(dispatchChapter(gameRef.current,{type:'SET_UI_PAUSE',paused:chatOpen||retreatOpen||!!dragging}));},[chatOpen,retreatOpen,dragging]);
 
-  useEffect(()=>{
-    let stopped=false,handle=0,last=performance.now(),lastRender=0;
-    const visibility=()=>{
-      last=performance.now();setHidden(document.hidden);
-      publish(dispatchChapter(gameRef.current,{type:'SET_EXTERNAL_PAUSE',paused:hostPauseRef.current||document.hidden}));
-    };
-    document.addEventListener('visibilitychange',visibility);
-    const frame=(time:number)=>{
-      if(stopped)return;
-      const dt=Math.max(0,Math.min(1,(time-last)/1000));last=time;
-      let current=gameRef.current;
-      const frozen=hostPauseRef.current||document.hidden;
-      if(current.externallyPaused!==frozen)current=dispatchChapter(current,{type:'SET_EXTERNAL_PAUSE',paused:frozen});
-      if(current.uiPaused!==uiPauseRef.current)current=dispatchChapter(current,{type:'SET_UI_PAUSE',paused:uiPauseRef.current});
-      const previousBossSkills=current.boss.slams;
-      current=advanceChapter(current,dt);gameRef.current=current;
-      triggerBossSkillShake(boardRef.current,previousBossSkills,current.boss.slams);
-      const context=canvasRef.current?.getContext('2d');if(context)paintChapter(context,current,selectedRef.current,hoverRef.current);
-      if(time-lastRender>=50){setGame(current);lastRender=time;}
-      handle=requestAnimationFrame(frame);
-    };
-    handle=requestAnimationFrame(frame);
-    return()=>{stopped=true;cancelAnimationFrame(handle);document.removeEventListener('visibilitychange',visibility);};
-  },[]);
+  useBattleLoop({
+    gameRef,canvasRef,boardRef,paused,uiPaused:chatOpen||retreatOpen||!!dragging,
+    selected,hover,dispatch:dispatchChapter,advance:advanceChapter,paint:paintChapter,setGame,setHidden,
+  });
 
   useEffect(()=>{
     if((game.phase==='won'||game.phase==='lost')&&!paused&&!game.externallyPaused&&!emitted.current){
@@ -277,43 +245,10 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
   const skillCells=aimCat&&game.aim?.target?getSkillCells(aimCat,game.aim.target):[];
   const canCast=!!inspected&&game.phase==='battle'&&!game.paused&&inspected.energy>=100;
 
-  // Place the menu beside the visible cat, outside the scroll clipping boundary.
-  // On a small overview it may sit above the map, but never below the roster.
-  useLayoutEffect(()=>{
-    if(!inspected)return;
-    const update=()=>{
-      const field=battlefieldRef.current,board=boardRef.current,scroll=scrollRef.current,menu=menuRef.current;
-      if(!field||!board||!scroll||!menu)return;
-      const box=field.getBoundingClientRect(),map=board.getBoundingClientRect(),view=scroll.getBoundingClientRect();
-      const width=menu.offsetWidth,height=menu.offsetHeight;
-      let visibleTop=8,visibleBottom=window.innerHeight-8;
-      for(let ancestor=field.parentElement;ancestor;ancestor=ancestor.parentElement){
-        if(/auto|scroll|hidden|clip/.test(getComputedStyle(ancestor).overflowY)){
-          const clipped=ancestor.getBoundingClientRect();visibleTop=Math.max(visibleTop,clipped.top+6);visibleBottom=Math.min(visibleBottom,clipped.bottom-6);
-        }
-      }
-      const cellWidth=map.width/MAP.columns,cellHeight=map.height/MAP.rows;
-      const catLeft=map.left+inspected.x*cellWidth,catTop=map.top+inspected.y*cellHeight;
-      const minLeft=Math.max(view.left+5,6),maxLeft=Math.max(minLeft,Math.min(view.right-5,window.innerWidth-6)-width);
-      const right=catLeft+cellWidth+8,left=catLeft-width-8;
-      const preferred=right<=maxLeft?right:left>=minLeft?left:catLeft+cellWidth/2-width/2;
-      const placedLeft=Math.min(maxLeft,Math.max(minLeft,preferred));
-      const overlapsCat=placedLeft<catLeft+cellWidth&&placedLeft+width>catLeft;
-      const preferredTop=overlapsCat?catTop-height-8:catTop+cellHeight/2-height/2;
-      const maxTop=Math.min(view.bottom-5,visibleBottom)-height;
-      const placedTop=Math.max(visibleTop,Math.min(maxTop,preferredTop));
-      setMenuPosition(previous=>Math.abs(previous.left-(placedLeft-box.left))<.5&&Math.abs(previous.top-(placedTop-box.top))<.5?previous:{left:placedLeft-box.left,top:placedTop-box.top});
-      const tooltip=tooltipRef.current;
-      if(tooltip){
-        const next=getSkillTooltipPosition(field,view,{left:placedLeft,top:placedTop,right:placedLeft+width,bottom:placedTop+height},tooltip);
-        setTooltipPosition(previous=>Math.abs(previous.left-next.left)<.5&&Math.abs(previous.top-next.top)<.5&&Math.abs(previous.maxHeight-next.maxHeight)<.5?previous:next);
-      }
-    };
-    update();
-    const observer=new ResizeObserver(update);if(menuRef.current)observer.observe(menuRef.current);if(scrollRef.current)observer.observe(scrollRef.current);if(tooltipRef.current)observer.observe(tooltipRef.current);
-    window.addEventListener('resize',update);window.addEventListener('scroll',update,true);
-    return()=>{observer.disconnect();window.removeEventListener('resize',update);window.removeEventListener('scroll',update,true);};
-  },[inspected?.id,inspected?.x,inspected?.y,overview,skillTooltipOpen]);
+  const {menuPosition,tooltipPosition}=useBattleInspectionLayout({
+    inspected,columns:MAP.columns,rows:MAP.rows,overview,skillTooltipOpen,
+    battlefieldRef,boardRef,scrollRef,menuRef,tooltipRef,
+  });
 
   return <section className="battle-l00 battle-chapter battle-immersive" data-scene="alley" data-testid="chapter-battle" data-phase={game.phase} data-attempt-id={attemptId} data-elapsed={game.elapsed.toFixed(2)} data-effective-speed={speed} onKeyDown={keyDown} onPointerDownCapture={()=>{suppressClick.current=false;}} onPointerDown={event=>{if(inspected&&!(event.target as HTMLElement).closest('.chapter-cell,.btl-cat-menu,.btl-skill-tooltip,.btl-playback'))closeInspection();}}>
     <BattleSceneBackdrop scene="alley" boardRef={boardRef} columns={MAP.columns} rows={MAP.rows} cells={CELLS} spawns={MAP.spawns} goal={MAP.goal}/>

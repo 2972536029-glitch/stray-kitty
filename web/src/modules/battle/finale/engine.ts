@@ -1,22 +1,21 @@
-import {createBattleCarry, finishCarryWave, getCarrySpeedMultiplier, startBattleCarry, startCarryWave, tickBattleCarry, useBattleCarry} from '../carry';
+import {createRouteMovement} from '../shared/pathing';
+import {advanceBattle, getBattleSpeed} from '../shared/clock';
+import {cellName, createBattleGeometry, footprintCells, footprintDistance, inCells, sameCell as same} from '../shared/geometry';
+import {createBattleCarry, finishCarryWave, startBattleCarry, startCarryWave, tickBattleCarry, useBattleCarry} from '../carry';
 import {ALLY_DEFINITIONS, CAT_DEFINITIONS, CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, normalizeDifficulty, ROUTES, RULES, SKILLS, TOTAL_MINIONS, WAVES} from './config';
 import type {FinaleAction, FinaleAlly, FinaleBoss, FinaleElite, FinaleCat, FinaleCatId, FinaleEnemy, FinaleOptions, FinaleState, Position} from './types';
 
 const EPS = 1e-8;
-const same = (a: Position, b: Position) => a.x === b.x && a.y === b.y;
-const positionOf = (entity: Position): Position => ({x: Math.round(entity.x), y: Math.round(entity.y)});
-const cross = (origin: Position): Position[] => [{x: 0, y: 0}, {x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}]
-  .map(offset => ({x: origin.x + offset.x, y: origin.y + offset.y})).filter(isPlayableCell);
-const inCells = (entity: Position, cells: readonly Position[]) => cells.some(cell => same(cell, positionOf(entity)));
+const {releaseBlocks, moveEnemies} = createRouteMovement<FinaleCatId, FinaleEnemy['route']>(ROUTES, RULES.contactGap);
+const geometry = createBattleGeometry(CELLS, MAP.obstacles);
+const cross = geometry.cross;
 const catById = (state: FinaleState, id: FinaleCatId) => state.cats.find(cat => cat.id === id);
 const terminal = (state: FinaleState) => state.phase === 'won' || state.phase === 'lost';
-export const cellName = ({x, y}: Position) => `${String.fromCharCode(65 + y)}${x + 1}`;
+export {cellName};
 
-export function isFinaleCell(position: Position): boolean {
-  return Number.isInteger(position.x) && Number.isInteger(position.y) && CELLS.some(cell => same(cell, position));
-}
-export function isObstacle(position: Position): boolean {return MAP.obstacles.some(cell => same(cell, position));}
-export function isPlayableCell(position: Position): boolean {return isFinaleCell(position) && !isObstacle(position);}
+export function isFinaleCell(position: Position): boolean {return geometry.isCell(position);}
+export function isObstacle(position: Position): boolean {return geometry.isObstacle(position);}
+export function isPlayableCell(position: Position): boolean {return geometry.isPlayableCell(position);}
 /** All combatants remain visible; night vision reveals the King's protective veil. */
 export function isEnemyVisible(_state: FinaleState, _enemy: Position): boolean {return true;}
 export function getEliteCells(elite: Position): Position[] {return [{x: elite.x, y: elite.y}];}
@@ -25,30 +24,16 @@ export function getBossDamageMultiplier(state: FinaleState): number {
   return Math.min(1, RULES.armorMultiplier + state.lightStage * RULES.lightArmorStep);
 }
 /** Nine boss cells share one target and one HP pool; minions may cross the footprint. */
-export function getBossCells(boss: Pick<FinaleBoss, 'x' | 'y' | 'width' | 'height'>): Position[] {
-  return Array.from({length: boss.width * boss.height}, (_, index) => ({x: boss.x + index % boss.width, y: boss.y + Math.floor(index / boss.width)}));
-}
-export function getBossDistance(boss: FinaleBoss, target: Position): number {
-  return Math.min(...getBossCells(boss).map(cell => Math.abs(cell.x - target.x) + Math.abs(cell.y - target.y)));
-}
+export function getBossCells(boss: Pick<FinaleBoss, 'x' | 'y' | 'width' | 'height'>): Position[] {return footprintCells(boss);}
+export function getBossDistance(boss: FinaleBoss, target: Position): number {return footprintDistance(boss, target);}
 export function isDeployableCell(position: Position): boolean {
   return isPlayableCell(position) && !same(position, MAP.goal) && !MAP.bossCells.some(cell => same(cell, position)) && !MAP.spawns.some(cell => same(cell, position))
     && !MAP.eliteCells.some(cell => same(cell, position)) && !ALLY_DEFINITIONS.some(ally => same(ally, position));
 }
-export function getAttackCells(cat: FinaleCat): Position[] {
-  if (cat.status !== 'active') return [];
-  const offsets = cat.range === 'melee' ? [{x: 0, y: 0}, {x: 1, y: 0}, {x: 0, y: -1}, {x: 0, y: 1}]
-    : Array.from({length: (cat.range === 'claws' ? 3 : 4) * 3}, (_, i) => ({x: Math.floor(i / 3), y: i % 3 - 1}));
-  return offsets.map(offset => ({x: cat.x + offset.x, y: cat.y + offset.y})).filter(isPlayableCell);
-}
+export function getAttackCells(cat: FinaleCat): Position[] {return geometry.attackCells(cat);}
 export function getSkillCells(cat: FinaleCat, target?: Position | null): Position[] {
   if (cat.status !== 'active') return [];
-  switch (SKILLS[cat.id].targeting) {
-    case 'area': return target && isPlayableCell(target) ? cross(target) : [];
-    case 'forward': return Array.from({length: 9}, (_, i) => ({x: cat.x + Math.floor(i / 3), y: cat.y + i % 3 - 1})).filter(isPlayableCell);
-    case 'team': return CELLS.filter(isPlayableCell);
-    default: return [{x: cat.x, y: cat.y}];
-  }
+  return geometry.skillCells(cat, SKILLS[cat.id].targeting, target);
 }
 
 export function getDeployError(state: FinaleState, catId: FinaleCatId, target: Position): string | null {
@@ -68,12 +53,7 @@ export function getDeployError(state: FinaleState, catId: FinaleCatId, target: P
   if (occupant && state.enemies.some(enemy => inCells(enemy, [cat]))) return '原位置有黑影，不能让伙伴交换到危险格。';
   return null;
 }
-export function getFinaleSpeed(state: FinaleState): number {
-  if (state.phase !== 'battle' || state.paused || state.externallyPaused || state.uiPaused) return 0;
-  if (state.aim) return 1;
-  if (state.inspectedCatId) return 0.5;
-  return state.baseSpeed;
-}
+export function getFinaleSpeed(state: FinaleState): number {return getBattleSpeed(state);}
 export function getFinaleAdvice(state: FinaleState): string {
   if (state.phase === 'ready') return '六猫先遣队守住 D2；永夜之王与两名精英必须全部击败。第 3、5、7 波将有固定援军接应，聚光车随防线推进。';
   if (state.phase === 'won') return '十波黑影、两名精英与永夜之王全部击退，伙伴沿光之走廊撤离！';
@@ -98,33 +78,7 @@ function completePhase(state: FinaleState, phase: 'won' | 'lost', reason?: strin
   state.nightVisionRemaining = 0;
   log(state, phase === 'won' ? `十波黑影已处理，巨型首领与两名精英已击败。${state.leaks === 0 ? '零突破守护完成！' : `本场突破 ${state.leaks} 次。`}` : reason ?? '突破达到三次，守护失败。猫咪们已经安全撤离。');
 }
-function segment(enemy: FinaleEnemy): {dx: number; dy: number; target: Position} | null {
-  const path = ROUTES[enemy.route];
-  if (enemy.pathIndex >= path.length) return null;
-  const from = path[enemy.pathIndex - 1], target = path[enemy.pathIndex];
-  return {dx: Math.sign(target.x - from.x), dy: Math.sign(target.y - from.y), target};
-}
-function distanceRemaining(enemy: FinaleEnemy): number {
-  const path = ROUTES[enemy.route];
-  let position: Position = enemy, remaining = 0;
-  for (let i = enemy.pathIndex; i < path.length; i++) {
-    remaining += Math.abs(path[i].x - position.x) + Math.abs(path[i].y - position.y); position = path[i];
-  }
-  return remaining;
-}
-function releaseBlocks(state: FinaleState): void {
-  const counts = new Map<FinaleCatId, number>();
-  for (const enemy of state.enemies) {
-    const cat = enemy.blockedBy && catById(state, enemy.blockedBy), direction = segment(enemy);
-    // Contact is directed: a cat moved behind a shadow cannot retain that block.
-    const ahead = cat && direction ? (cat.x - enemy.x) * direction.dx + (cat.y - enemy.y) * direction.dy : -1;
-    const aligned = cat && direction && (direction.dx ? Math.abs(cat.y - enemy.y) < EPS : Math.abs(cat.x - enemy.x) < EPS);
-    if (!cat || !direction || cat.status !== 'active' || enemy.hp <= 0 || !aligned || ahead < -EPS || ahead > RULES.contactGap + EPS
-        || (counts.get(cat.id) ?? 0) >= cat.block) enemy.blockedBy = null;
-    else counts.set(cat.id, (counts.get(cat.id) ?? 0) + 1);
-  }
-  for (const cat of state.cats) cat.blockedCount = counts.get(cat.id) ?? 0;
-}
+
 function activeFriends(state: FinaleState): (FinaleCat | FinaleAlly)[] {
   return [...state.cats.filter(cat => cat.status === 'active'), ...state.allies.filter(ally => ally.status === 'active')];
 }
@@ -192,43 +146,7 @@ export function createFinaleBattle(options: FinaleOptions = {}): FinaleState {
     stats: {skills: 0, damageTaken: 0, dodgedSlams: 0},
   };
 }
-function moveEnemies(state: FinaleState, dt: number, enemySeconds: ReadonlyMap<string, number>): void {
-  releaseBlocks(state);
-  const counts = new Map<FinaleCatId, number>(state.cats.map(cat => [cat.id, cat.blockedCount]));
-  for (const enemy of [...state.enemies].sort((a, b) => distanceRemaining(a) - distanceRemaining(b) || a.id.localeCompare(b.id))) {
-    if (enemy.blockedBy) continue;
-    const activeSeconds = enemySeconds.get(enemy.id) ?? dt;
-    if (activeSeconds <= EPS) continue;
-    const slowed = Math.min(activeSeconds, enemy.slowRemaining);
-    const routeMultiplier = getCarrySpeedMultiplier(state.carry, enemy.route);
-    let distance = routeMultiplier === 1
-      ? enemy.speed * (slowed * enemy.slowMultiplier + activeSeconds - slowed)
-      : enemy.speed * (slowed * Math.min(enemy.slowMultiplier, routeMultiplier) + (activeSeconds - slowed) * routeMultiplier);
-    while (distance > EPS) {
-      const direction = segment(enemy); if (!direction) break;
-      const {dx, dy, target} = direction;
-      const toCorner = Math.abs(target.x - enemy.x) + Math.abs(target.y - enemy.y);
-      if (toCorner <= EPS) {enemy.pathIndex++; continue;}
-      const step = Math.min(distance, toCorner);
-      const contacts = state.cats.flatMap(cat => {
-        if (cat.status !== 'active' || (counts.get(cat.id) ?? 0) >= cat.block) return [];
-        if (dx ? Math.abs(cat.y - enemy.y) >= EPS : Math.abs(cat.x - enemy.x) >= EPS) return [];
-        const ahead = (cat.x - enemy.x) * dx + (cat.y - enemy.y) * dy;
-        const contact = ahead - RULES.contactGap;
-        return ahead >= -EPS && ahead <= toCorner + EPS && contact <= step + EPS && contact >= -EPS ? [{cat, contact}] : [];
-      }).sort((a, b) => a.contact - b.contact || a.cat.id.localeCompare(b.cat.id));
-      if (contacts.length) {
-        const {cat, contact} = contacts[0]; enemy.x += dx * Math.max(0, contact); enemy.y += dy * Math.max(0, contact);
-        enemy.blockedBy = cat.id; counts.set(cat.id, (counts.get(cat.id) ?? 0) + 1); break;
-      }
-      enemy.x += dx * step; enemy.y += dy * step; distance -= step;
-      if (Math.abs(enemy.x - target.x) < EPS && Math.abs(enemy.y - target.y) < EPS) {
-        enemy.x = target.x; enemy.y = target.y; enemy.pathIndex++;
-      }
-    }
-  }
-  for (const cat of state.cats) cat.blockedCount = counts.get(cat.id) ?? 0;
-}
+
 function attackTargets(state: FinaleState, cells: Position[]): (FinaleEnemy | FinaleBoss | FinaleElite)[] {
   return [...state.enemies.filter(enemy => inCells(enemy, cells)), ...state.elites.filter(elite => elite.status === 'active' && inCells(elite, cells)),
     ...(state.boss.phase !== 'defeated' && getBossCells(state.boss).some(part => cells.some(cell => same(cell, part))) ? [state.boss] : [])]
@@ -360,11 +278,7 @@ function tick(state: FinaleState, dt: number): void {
 }
 /** Receives real seconds; a single fixed-step clock applies the effective speed exactly once. */
 export function advanceFinale(state: FinaleState, seconds: number): FinaleState {
-  if (!Number.isFinite(seconds) || seconds <= 0 || getFinaleSpeed(state) === 0) return state;
-  const next = structuredClone(state);
-  next.accumulator += Math.min(RULES.maxFrameSeconds, seconds) * getFinaleSpeed(state);
-  while (next.accumulator + EPS >= RULES.step && next.phase === 'battle') {next.accumulator = Math.max(0, next.accumulator - RULES.step); tick(next, RULES.step);}
-  return next;
+  return advanceBattle(state, seconds, RULES, tick);
 }
 function actionResult(state: FinaleState, ok: boolean, message: string): FinaleState {state.lastAction = {ok, message}; return state;}
 function castSkill(state: FinaleState, cat: FinaleCat, target?: Position | null): string | null {

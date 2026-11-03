@@ -1,3 +1,4 @@
+import {openHomeBattleTrials} from './home-battle-trials';
 import {confirmBattleResult} from './battle-result';
 import {expect, test, type Page} from '@playwright/test';
 import {playVisibleControls} from './l03-battle';
@@ -20,11 +21,11 @@ test.beforeAll(async({request})=>{
   const players:Record<string,unknown>={};
   for(const entry of cases){
     const session={playerId:`l03-${entry.id}`,token:`l03-browser-fixture-${entry.id}`};sessions.set(entry.id,session);
-    const state:GameState={schemaVersion:1,contentVersion:catalog.version,revision:1,phase:'home',chapterId:'alley',storyNodeId:'',mapId:'greenhouse',flags:['l00_completed','alley_rescued','rescue_story_done'],cats:['miaomiao','tuanzi','diandian'],inventory:{material:3,food:0,'warm-can':4,'bouncy-treat':2},currencies:{stamp:2},furniture:['cardboard_nest'],placements:{},completedStages:['l00_tutorial','alley_rescue'],pendingEventId:'',activeBattle:null,eventState:{pendingModifiers:{shadowPressure:entry.pressure}},lastResult:{message:'独立持久化浏览器夹具：序章已完成。'}};
+    const state:GameState={schemaVersion:1,contentVersion:catalog.version,revision:1,phase:'home',chapterId:'alley',storyNodeId:'',mapId:'greenhouse',flags:['l00_completed','alley_rescued','rescue_story_done','chapter_3_started','momo_joined'],cats:['miaomiao','tuanzi','diandian','momo'],inventory:{material:3,food:0,'warm-can':4,'bouncy-treat':2},currencies:{stamp:2},furniture:['cardboard_nest'],placements:{},completedStages:['l00_tutorial','alley_rescue'],pendingEventId:'',activeBattle:null,eventState:{pendingModifiers:{shadowPressure:entry.pressure}},lastResult:{message:'独立持久化浏览器夹具：序章已完成。'}};
     players[createHash('sha256').update(session.token).digest('hex')]={id:session.playerId,state,receipts:{},receiptOrder:[]};
   }
   const save=path.join(directory,'save.json');fs.writeFileSync(save,JSON.stringify({schemaVersion:1,players}));
-  child=spawn(process.env.KITTY_FIXTURE_BINARY ?? path.join(process.cwd(),'.runtime',process.platform==='win32'?'kitty-preview.exe':'kitty-preview'),[],{cwd:path.join(process.cwd(),'server'),windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,GAME_ADDR:`127.0.0.1:${port}`,GAME_DATA_FILE:save,GAME_WEB_DIR:path.join(process.cwd(),'web/dist')}});
+  child=spawn(process.env.KITTY_FIXTURE_BINARY ?? path.join(process.cwd(),'.runtime',process.platform==='win32'?'kitty-preview.exe':'kitty-preview'),[],{cwd:path.join(process.cwd(),'server'),windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,GAME_QA_ENABLED:'true',GAME_ADDR:`127.0.0.1:${port}`,GAME_DATA_FILE:save,GAME_WEB_DIR:path.join(process.cwd(),'web/dist')}});
   closed=new Promise(resolve=>child!.once('close',()=>resolve()));
   let output='';child.stdout?.on('data',chunk=>output+=chunk);child.stderr?.on('data',chunk=>output+=chunk);
   await expect.poll(async()=>{if(child!.exitCode!==null)throw new Error(output);try{return(await request.get(origin+'/healthz',{timeout:500})).ok();}catch{return false;}},{timeout:10000}).toBe(true);
@@ -39,7 +40,7 @@ for(const entry of cases.filter(value=>value.id!=='retreat')){
   test(`L03 ${entry.id}: real six-cat controls finish eight waves and a boss without changing item inventory`,async({page,request},info)=>{
     // 全量套件串行跑到这里时浏览器累积负载会拖慢战斗快照查询,6s 会饿死 evaluate;放宽一倍防抖。
     test.setTimeout(240000);page.setDefaultTimeout(12000);
-    await openFixture(page,entry.id);
+    await openFixture(page,entry.id);await openHomeBattleTrials(page);
     const commands:string[]=[];page.on('request',req=>{if(req.url()===origin+'/api/v1/commands'&&req.method()==='POST')commands.push(req.postDataJSON().command.type);});
     await page.getByTestId('greenhouse-enter').click();
     await expect(page.getByTestId('greenhouse-battle')).toHaveAttribute('data-phase','ready');
@@ -81,7 +82,7 @@ for(const entry of cases.filter(value=>value.id!=='retreat')){
     expect(commands.filter(type=>type==='COMPLETE_BATTLE')).toHaveLength(1);
     expect(actions.skills.length).toBeGreaterThanOrEqual(6);expect(actions.dodges).toBeGreaterThan(0);
     await page.screenshot({path:info.outputPath(`l03-${entry.id}-won.png`),fullPage:true});
-    await page.getByRole('button',{name:'返回家园 →'}).click();
+    await page.getByRole('button',{name:'返回家园 →'}).click();await openHomeBattleTrials(page);
     await expect(page.getByTestId('greenhouse-enter')).toBeVisible();
     await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
     expect((await(await request.get(origin+'/api/v1/state',{headers})).json()).inventory).toEqual(state.inventory);
@@ -90,11 +91,13 @@ for(const entry of cases.filter(value=>value.id!=='retreat')){
 }
 
 test('L03 has no bag or item loadout, preserves pause/title and retreats to retry on a narrow screen',async({page,request},info)=>{
-  test.setTimeout(90000);await openFixture(page,'retreat');
+  test.setTimeout(90000);await openFixture(page,'retreat');await openHomeBattleTrials(page);
   await expect(page.getByRole('button',{name:'增加暖心罐罐'})).toHaveCount(0);
   await page.getByTestId('greenhouse-enter').click();
+  await expect(page.getByTestId('greenhouse-battle')).toHaveAttribute('data-phase','ready');
   const headers={Authorization:`Bearer ${sessions.get('retreat')!.token}`};
   const entered=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
+  expect(entered.activeBattle?.stageId).toBe('greenhouse_boss');
   expect(entered.inventory['warm-can']).toBe(4);expect(entered.inventory['bouncy-treat']).toBe(2);
   await expect(page.getByTestId('greenhouse-bag')).toHaveCount(0);
   await expect(page.getByRole('button',{name:/重新上阵/})).toHaveCount(0);
@@ -125,7 +128,9 @@ test('L03 has no bag or item loadout, preserves pause/title and retreats to retr
   expect(restarted.activeBattle.modifiers).toEqual(entered.activeBattle!.modifiers);
   expect(restarted.activeBattle.stageId).toBe('greenhouse_boss');
   await page.setViewportSize({width:390,height:844});
-  await page.getByRole('button',{name:'查看全图',exact:true}).click();
+  const overview=page.getByRole('button',{name:'查看全图',exact:true});
+  if(await overview.isVisible())await overview.click();
+  await expect(page.getByTestId('greenhouse-board')).toHaveAttribute('data-overview','true');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await expect(page.locator('.greenhouse-cell')).toHaveCount(34);
   await page.getByTestId('greenhouse-board').scrollIntoViewIfNeeded();

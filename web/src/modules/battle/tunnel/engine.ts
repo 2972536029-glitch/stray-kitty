@@ -1,22 +1,20 @@
-import {createBattleCarry, finishCarryWave, getCarrySpeedMultiplier, startBattleCarry, startCarryWave, tickBattleCarry, useBattleCarry} from '../carry';
+import {createRouteMovement} from '../shared/pathing';
+import {advanceBattle, getBattleSpeed} from '../shared/clock';
+import {cellName, createBattleGeometry, footprintCells, footprintDistance, inCells, sameCell as same} from '../shared/geometry';
+import {createBattleCarry, finishCarryWave, startBattleCarry, startCarryWave, tickBattleCarry, useBattleCarry} from '../carry';
 import {CAT_DEFINITIONS, CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, normalizeDifficulty, ROUTES, RULES, SKILLS, TOTAL_MINIONS, WAVES} from './config';
 import type {TunnelAction, TunnelBoss, TunnelCat, TunnelCatId, TunnelEnemy, TunnelOptions, TunnelState, Position} from './types';
 
 const EPS = 1e-8;
-const same = (a: Position, b: Position) => a.x === b.x && a.y === b.y;
-const positionOf = (entity: Position): Position => ({x: Math.round(entity.x), y: Math.round(entity.y)});
-const cross = (origin: Position): Position[] => [{x: 0, y: 0}, {x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}]
-  .map(offset => ({x: origin.x + offset.x, y: origin.y + offset.y})).filter(isPlayableCell);
-const inCells = (entity: Position, cells: readonly Position[]) => cells.some(cell => same(cell, positionOf(entity)));
+const {releaseBlocks, moveEnemies} = createRouteMovement<TunnelCatId, TunnelEnemy['route']>(ROUTES, RULES.contactGap);
+const geometry = createBattleGeometry(CELLS, MAP.obstacles);
 const catById = (state: TunnelState, id: TunnelCatId) => state.cats.find(cat => cat.id === id);
 const terminal = (state: TunnelState) => state.phase === 'won' || state.phase === 'lost';
-export const cellName = ({x, y}: Position) => `${String.fromCharCode(65 + y)}${x + 1}`;
+export {cellName};
 
-export function isTunnelCell(position: Position): boolean {
-  return Number.isInteger(position.x) && Number.isInteger(position.y) && CELLS.some(cell => same(cell, position));
-}
-export function isObstacle(position: Position): boolean {return MAP.obstacles.some(cell => same(cell, position));}
-export function isPlayableCell(position: Position): boolean {return isTunnelCell(position) && !isObstacle(position);}
+export function isTunnelCell(position: Position): boolean {return geometry.isCell(position);}
+export function isObstacle(position: Position): boolean {return geometry.isObstacle(position);}
+export function isPlayableCell(position: Position): boolean {return geometry.isPlayableCell(position);}
 export function isDarkened(state: TunnelState): boolean {
   return state.darknessRemaining > EPS && state.nightVisionRemaining <= EPS;
 }
@@ -27,29 +25,15 @@ export function isEnemyVisible(state: TunnelState, enemy: Position): boolean {
   return sources.some(source => Math.abs(source.x - enemy.x) + Math.abs(source.y - enemy.y) <= 1 + EPS);
 }
 /** Four boss cells share one target and one HP pool; minions may cross the footprint. */
-export function getBossCells(boss: Pick<TunnelBoss, 'x' | 'y' | 'width' | 'height'>): Position[] {
-  return Array.from({length: boss.width * boss.height}, (_, index) => ({x: boss.x + index % boss.width, y: boss.y + Math.floor(index / boss.width)}));
-}
-export function getBossDistance(boss: TunnelBoss, target: Position): number {
-  return Math.min(...getBossCells(boss).map(cell => Math.abs(cell.x - target.x) + Math.abs(cell.y - target.y)));
-}
+export function getBossCells(boss: Pick<TunnelBoss, 'x' | 'y' | 'width' | 'height'>): Position[] {return footprintCells(boss);}
+export function getBossDistance(boss: TunnelBoss, target: Position): number {return footprintDistance(boss, target);}
 export function isDeployableCell(position: Position): boolean {
   return isPlayableCell(position) && !same(position, MAP.goal) && !MAP.bossCells.some(cell => same(cell, position)) && !MAP.spawns.some(cell => same(cell, position));
 }
-export function getAttackCells(cat: TunnelCat): Position[] {
-  if (cat.status !== 'active') return [];
-  const offsets = cat.range === 'melee' ? [{x: 0, y: 0}, {x: 1, y: 0}, {x: 0, y: -1}, {x: 0, y: 1}]
-    : Array.from({length: (cat.range === 'claws' ? 3 : 4) * 3}, (_, i) => ({x: Math.floor(i / 3), y: i % 3 - 1}));
-  return offsets.map(offset => ({x: cat.x + offset.x, y: cat.y + offset.y})).filter(isPlayableCell);
-}
+export function getAttackCells(cat: TunnelCat): Position[] {return geometry.attackCells(cat);}
 export function getSkillCells(cat: TunnelCat, target?: Position | null): Position[] {
   if (cat.status !== 'active') return [];
-  switch (SKILLS[cat.id].targeting) {
-    case 'area': return target && isPlayableCell(target) ? cross(target) : [];
-    case 'forward': return Array.from({length: 9}, (_, i) => ({x: cat.x + Math.floor(i / 3), y: cat.y + i % 3 - 1})).filter(isPlayableCell);
-    case 'team': return CELLS.filter(isPlayableCell);
-    default: return [{x: cat.x, y: cat.y}];
-  }
+  return geometry.skillCells(cat, SKILLS[cat.id].targeting, target);
 }
 
 export function getDeployError(state: TunnelState, catId: TunnelCatId, target: Position): string | null {
@@ -69,12 +53,7 @@ export function getDeployError(state: TunnelState, catId: TunnelCatId, target: P
   if (occupant && state.enemies.some(enemy => inCells(enemy, [cat]))) return '原位置有黑影，不能让伙伴交换到危险格。';
   return null;
 }
-export function getTunnelSpeed(state: TunnelState): number {
-  if (state.phase !== 'battle' || state.paused || state.externallyPaused || state.uiPaused) return 0;
-  if (state.aim) return 1;
-  if (state.inspectedCatId) return 0.5;
-  return state.baseSpeed;
-}
+export function getTunnelSpeed(state: TunnelState): number {return getBattleSpeed(state);}
 export function getTunnelAdvice(state: TunnelState): string {
   if (state.phase === 'ready') return '六位伙伴守护地下通道。点点归队，墨墨以夜视与全队护盾支援；A2 暗管绕经 A1、B1，留意 B8、D8 两路，守住 C2。';
   if (state.phase === 'won') return state.leaks === 0 ? '八波黑影与断灯监守都已处理，零突破守护完成！' : '小怪与首领都已处理，可以返回主流程。';
@@ -101,33 +80,7 @@ function completePhase(state: TunnelState, phase: 'won' | 'lost', reason?: strin
   state.darknessRemaining = 0; state.nightVisionRemaining = 0;
   log(state, phase === 'won' ? `八波黑影已处理，固定首领被击败。${state.leaks === 0 ? '零突破守护完成！' : `本场突破 ${state.leaks} 次。`}` : reason ?? '突破达到三次，守护失败。猫咪们已经安全撤离。');
 }
-function segment(enemy: TunnelEnemy): {dx: number; dy: number; target: Position} | null {
-  const path = ROUTES[enemy.route];
-  if (enemy.pathIndex >= path.length) return null;
-  const from = path[enemy.pathIndex - 1], target = path[enemy.pathIndex];
-  return {dx: Math.sign(target.x - from.x), dy: Math.sign(target.y - from.y), target};
-}
-function distanceRemaining(enemy: TunnelEnemy): number {
-  const path = ROUTES[enemy.route];
-  let position: Position = enemy, remaining = 0;
-  for (let i = enemy.pathIndex; i < path.length; i++) {
-    remaining += Math.abs(path[i].x - position.x) + Math.abs(path[i].y - position.y); position = path[i];
-  }
-  return remaining;
-}
-function releaseBlocks(state: TunnelState): void {
-  const counts = new Map<TunnelCatId, number>();
-  for (const enemy of state.enemies) {
-    const cat = enemy.blockedBy && catById(state, enemy.blockedBy), direction = segment(enemy);
-    // Contact is directed: a cat moved behind a shadow cannot retain that block.
-    const ahead = cat && direction ? (cat.x - enemy.x) * direction.dx + (cat.y - enemy.y) * direction.dy : -1;
-    const aligned = cat && direction && (direction.dx ? Math.abs(cat.y - enemy.y) < EPS : Math.abs(cat.x - enemy.x) < EPS);
-    if (!cat || !direction || cat.status !== 'active' || enemy.hp <= 0 || !aligned || ahead < -EPS || ahead > RULES.contactGap + EPS
-        || (counts.get(cat.id) ?? 0) >= cat.block) enemy.blockedBy = null;
-    else counts.set(cat.id, (counts.get(cat.id) ?? 0) + 1);
-  }
-  for (const cat of state.cats) cat.blockedCount = counts.get(cat.id) ?? 0;
-}
+
 function hurtCat(state: TunnelState, cat: TunnelCat, damage: number): void {
   if (cat.status !== 'active') return;
   const absorbed = Math.min(cat.shield, damage);
@@ -172,43 +125,7 @@ export function createTunnelBattle(options: TunnelOptions = {}): TunnelState {
     stats: {skills: 0, damageTaken: 0},
   };
 }
-function moveEnemies(state: TunnelState, dt: number, enemySeconds: ReadonlyMap<string, number>): void {
-  releaseBlocks(state);
-  const counts = new Map<TunnelCatId, number>(state.cats.map(cat => [cat.id, cat.blockedCount]));
-  for (const enemy of [...state.enemies].sort((a, b) => distanceRemaining(a) - distanceRemaining(b) || a.id.localeCompare(b.id))) {
-    if (enemy.blockedBy) continue;
-    const activeSeconds = enemySeconds.get(enemy.id) ?? dt;
-    if (activeSeconds <= EPS) continue;
-    const slowed = Math.min(activeSeconds, enemy.slowRemaining);
-    const routeMultiplier = getCarrySpeedMultiplier(state.carry, enemy.route);
-    let distance = routeMultiplier === 1
-      ? enemy.speed * (slowed * enemy.slowMultiplier + activeSeconds - slowed)
-      : enemy.speed * (slowed * Math.min(enemy.slowMultiplier, routeMultiplier) + (activeSeconds - slowed) * routeMultiplier);
-    while (distance > EPS) {
-      const direction = segment(enemy); if (!direction) break;
-      const {dx, dy, target} = direction;
-      const toCorner = Math.abs(target.x - enemy.x) + Math.abs(target.y - enemy.y);
-      if (toCorner <= EPS) {enemy.pathIndex++; continue;}
-      const step = Math.min(distance, toCorner);
-      const contacts = state.cats.flatMap(cat => {
-        if (cat.status !== 'active' || (counts.get(cat.id) ?? 0) >= cat.block) return [];
-        if (dx ? Math.abs(cat.y - enemy.y) >= EPS : Math.abs(cat.x - enemy.x) >= EPS) return [];
-        const ahead = (cat.x - enemy.x) * dx + (cat.y - enemy.y) * dy;
-        const contact = ahead - RULES.contactGap;
-        return ahead >= -EPS && ahead <= toCorner + EPS && contact <= step + EPS && contact >= -EPS ? [{cat, contact}] : [];
-      }).sort((a, b) => a.contact - b.contact || a.cat.id.localeCompare(b.cat.id));
-      if (contacts.length) {
-        const {cat, contact} = contacts[0]; enemy.x += dx * Math.max(0, contact); enemy.y += dy * Math.max(0, contact);
-        enemy.blockedBy = cat.id; counts.set(cat.id, (counts.get(cat.id) ?? 0) + 1); break;
-      }
-      enemy.x += dx * step; enemy.y += dy * step; distance -= step;
-      if (Math.abs(enemy.x - target.x) < EPS && Math.abs(enemy.y - target.y) < EPS) {
-        enemy.x = target.x; enemy.y = target.y; enemy.pathIndex++;
-      }
-    }
-  }
-  for (const cat of state.cats) cat.blockedCount = counts.get(cat.id) ?? 0;
-}
+
 function attackTargets(state: TunnelState, cells: Position[]): (TunnelEnemy | TunnelState['boss'])[] {
   return [...state.enemies.filter(enemy => inCells(enemy, cells)), ...(state.boss.phase !== 'defeated' && getBossCells(state.boss).some(footprint => cells.some(cell => same(cell, footprint))) ? [state.boss] : [])]
     .sort((a, b) => a.x - b.x || (a.id === 'tunnel-warden' ? 1 : -1));
@@ -312,11 +229,7 @@ function tick(state: TunnelState, dt: number): void {
 }
 /** Receives real seconds; a single fixed-step clock applies the effective speed exactly once. */
 export function advanceTunnel(state: TunnelState, seconds: number): TunnelState {
-  if (!Number.isFinite(seconds) || seconds <= 0 || getTunnelSpeed(state) === 0) return state;
-  const next = structuredClone(state);
-  next.accumulator += Math.min(RULES.maxFrameSeconds, seconds) * getTunnelSpeed(state);
-  while (next.accumulator + EPS >= RULES.step && next.phase === 'battle') {next.accumulator = Math.max(0, next.accumulator - RULES.step); tick(next, RULES.step);}
-  return next;
+  return advanceBattle(state, seconds, RULES, tick);
 }
 function actionResult(state: TunnelState, ok: boolean, message: string): TunnelState {state.lastAction = {ok, message}; return state;}
 function castSkill(state: TunnelState, cat: TunnelCat, target?: Position | null): string | null {

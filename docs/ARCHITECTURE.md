@@ -168,7 +168,7 @@ stray-kitty/
 │     ├─ examples/  参考实现
 │     │  └─ demo/  可替换的贯通 Demo
 │     ├─ modules/  正式模块接入口
-│     │  ├─ advisor/
+│     │  ├─ advisor/  阿策入口、公开规则说明与白名单请求准备
 │     │  ├─ battle/  塔防 · 闫琦雯
 │     │  │  ├─ assets/
 │     │  │  ├─ chapter/  第一章紧凑棋盘、四猫与固定首领
@@ -176,6 +176,7 @@ stray-kitty/
 │     │  │  ├─ greenhouse/  第三章34格不规则棋盘、墨墨与四格荆冠首领
 │     │  │  ├─ l00/  固定 L00 局内实现
 │     │  │  ├─ market/  第二章六猫、七入口与单格横扫首领
+│     │  │  ├─ shared/  第一至第五章共享的时钟、几何、路线、视口循环与接入校验
 │     │  │  └─ tunnel/  第四章37格不规则暗道、断灯脉冲与墨墨夜视
 │     │  ├─ cats/  猫咪档案、救援与成长
 │     │  ├─ chapter4/
@@ -433,3 +434,21 @@ L05 的 finale_boss 使用 74 格不规则仓库、十波 44 小怪、九格永�
 所有已实现章节无库存补给、休整或同场复活，主力技能使用自然蓄能；第一章起额外接收事件来源的单个 carry，六枚举、第一版效果与生命周期见 [事件战斗对接](BATTLE-EVENT-CARRY.md)。旧 active 预留在新版结算时全额返还且只执行一次。公共规则和各章设计见 [塔防索引](../design/tower-defense/README.md)。
 
 目录变化后运行 npm run architecture:build；npm run architecture:check 会检查本文件与实际文件夹是否一致。需求见 [PRD](PRD.md)。
+
+## 10. 战斗与阿策共享代码的维护位置
+
+第一至第五章保留各自配置、地图、技能、Boss、波次和绘图。相同的基础算法集中在 modules/battle/shared，原引擎的导出接口保持兼容。序章教程使用自己的状态机；第一章特殊支巷路径也继续由本章处理。
+
+| 要修改的内容 | 维护位置 | 保留在调用方的差异 |
+| --- | --- | --- |
+| 暂停、倍速与固定步进 | battle/shared/clock.ts | 各章 tick 和终局规则 |
+| 实际地格、攻击范围、Boss 占格距离 | battle/shared/geometry.ts | 各章地格、技能目标模式和部署限制 |
+| 第二至第五章路径与阻挡 | battle/shared/pathing.ts | 路线表、接触距离、事件携带物倍率；援军不进入主力阻挡列表 |
+| 页面可见性、绘图循环、Boss 施法震动 | battle/shared/useBattleLoop.ts | 各章绘图、场次重置与结果报告 |
+| 猫咪菜单、技能说明定位与阿策头像 | battle/shared/useBattleInspectionLayout.ts、AdvisorPortrait.tsx | 各章 JSX、样式与教程 |
+| 已保存场次的入口与配置校验 | battle/shared/stage-context.ts、battle/BattleHost.tsx | 关卡 ID、名称、尺寸、波数和终章精英报告 |
+| 家园与旅程的公开事件说明 | advisor/public-event-rules.ts | 问题匹配顺序与当前场景；概率读取 events/presentation.ts 的公开表 |
+| 战斗 AI 请求白名单 | advisor/prepare-battle-request.ts | 独立入口与 Provider 的会话、回退和取消生命周期 |
+| 模型调用前后的只读场景校验 | server/internal/service/advisor_scene.go | 各范围的语义进度指纹、超时和实际模型载荷 |
+
+新增章节优先接入上述公共能力，章节机制通过原本的配置和函数传入。不要把不同的护盾、暂停判定、隐藏信息、援军或教程规则合并成隐含默认值。修改公共实现需运行受影响各章测试，并检查暂停、换位、技能、结算和窄屏菜单；AI 修改同时检查可见信息、迟到响应及服务端状态变化。

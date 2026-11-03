@@ -3,7 +3,7 @@ import type {Catalog,GameState} from '../../contracts';
 import {BrowserSessionStore} from '../../adapters/storage/BrowserSessionStore';
 import {ModelAdvisorChat,type LocalAdvisorAnswer} from '../battle/model-advisor-chat';
 import {requestModelAdvisor,type ModelAdvisorRequest} from '../battle/model-advisor-client';
-import {buildModelAdvisorContext} from '../battle/advisor-context';
+import {prepareBattleAdvisorRequest,type BattleAdvisorSnapshot} from './prepare-battle-request';
 import {buildJourneyAdvisorContext,getJourneyLocalAnswer,journeySceneKey,journeySceneLabel,type JourneySceneObservation} from './journey-context';
 
 export interface BattleAdvisorAdapter {
@@ -106,7 +106,7 @@ export function AdvisorProvider(props:Props){
 export function useSharedAdvisor(){return useContext(AdvisorContext);}
 /** Opt-in adapter: the battle owner chooses whether to use the shared session.
  * It neither opens a panel nor changes simulation/pause state. */
-export function useBattleAdvisorBridge<T extends Parameters<typeof buildModelAdvisorContext>[1]>(options:{
+export function useBattleAdvisorBridge<T extends BattleAdvisorSnapshot>(options:{
   attemptId:string;stageId:string;blocked:boolean;getSnapshot:()=>T|null;
   localAnswer:(state:T,question:string)=>LocalAdvisorAnswer;
 }){
@@ -118,7 +118,7 @@ export function useBattleAdvisorBridge<T extends Parameters<typeof buildModelAdv
     return register({attemptId:options.attemptId,stageId:options.stageId,blocked:()=>latest.current.blocked,
       prepare:question=>{
         const current=latest.current;const state=current.getSnapshot();if(!state)return null;
-        return {request:{attemptId:current.attemptId,stageId:current.stageId,question,context:buildModelAdvisorContext(current.stageId,state)},
+        return {request:prepareBattleAdvisorRequest(current,state,question),
           fallback:current.localAnswer(state,question)};
       }});
   },[register,options.attemptId,options.stageId,options.blocked]);

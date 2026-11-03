@@ -59,6 +59,8 @@ const labels = {
   'web/src/modules/battle/greenhouse': '第三章34格不规则棋盘、墨墨与四格荆冠首领', 'design/tower-defense/levels/L03-abandoned-greenhouse': '第三章废弃花房设计', 'docs/L03-INTEGRATION.md': '第三章不规则棋盘与独立试玩边界',
   'web/src/modules/battle/market': '第二章六猫、七入口与单格横扫首领', 'design/tower-defense/levels/L02-midnight-market': '第二章午夜集市设计', 'docs/L02-INTEGRATION.md': '第二章独立试玩与参数边界',
   'web/src/modules/battle/chapter': '第一章紧凑棋盘、四猫与固定首领', 'web/src/modules/battle/l00': '固定 L00 局内实现', 'docs/L01-INTEGRATION.md': '第一章四猫与当前接入', 'docs/L00-INTEGRATION.md': 'L00 六波新手教学与接入',
+  'web/src/modules/battle/shared': '第一至第五章共享的时钟、几何、路线、视口循环与接入校验',
+  'web/src/modules/advisor': '阿策入口、公开规则说明与白名单请求准备',
   tests: '自动验证', 'tests/e2e': '浏览器流程', scripts: '启动、生成与检查', deploy: '部署模板',
   'server/internal/advisor': '阿策服务端模型客户端与限流',
   'docs/BATTLE-ADVISOR-MODEL.md': '阿策模型配置、可见战况与回退边界',
@@ -226,6 +228,24 @@ npm run dev 在当前 worktree 使用忽略的 .runtime/game.json；直接运行
 当前入口、workspace 工程命令、JSON 存档、服务端定价与发货、双骰后果包均保留。王浩哲新增的序章、对话态度、环境观察及 protect 事件选项继续运行。外部库不增加 Zustand 或 Framer Motion。MR 的旧状态机、临时结算、根目录工程配置与旧剧情数据未纳入本次移植。
 
 ## 9. 当前战斗集成\n\n当前已有 L00–L05 六套战斗地图、七个服务入口。正式序章 l00_tutorial 使用五步教学与六波实战；第一章首次救援 alley_rescue 与家园 alley_boss 共用四猫首领战。家园 market_boss、greenhouse_boss、tunnel_boss 和 finale_boss 分别提供第二至第五章独立试玩，不插入正式主线，不清理主线待用压力。L03 保留原图 34 格不规则边界，点点本章留守，墨墨以护盾与清棘补位；本关名单不改长期招募或其他模块故事。L04 的 tunnel_boss 另提供地下通道独立试玩：37 格不规则边界，六猫含点点与墨墨，A2 暗管绕 A1/B1/C1 接近 C2。四格首领断灯脉冲暂时限制远处小怪可见性，所有猫保持可见且照常作战；墨墨本章以夜视加全员护盾应对。第三章技能不变。\n\nL05 的 finale_boss 使用 74 格不规则仓库、十波 44 小怪、九格永夜之王和两名各自计血的精英护卫。团子、点点、墨墨与绒绒、斑斑、栗栗构成六名主力；铃铃、桃桃、音音于第 3／5／7 波从固定位置支援，不能移动、复活或代替主力全退场判负。灯车同期推进光路，墨墨夜视识破首领护幕并提供全队护盾，不复用第四章断灯。结算除了 Boss 本体还必须报告 elitesDefeated，胜利要求两精英均败；十波普通敌人仍须全部生成处理。终章正式接点仅列为 finale_intro_5 → 战斗 → finale_intro_6 的候选，不写 finale_started／finale_completed／kingdom_founded。\n\n所有已实现章节无库存补给、休整或同场复活，主力技能使用自然蓄能；第一章起额外接收事件来源的单个 carry，六枚举、第一版效果与生命周期见 [事件战斗对接](BATTLE-EVENT-CARRY.md)。旧 active 预留在新版结算时全额返还且只执行一次。公共规则和各章设计见 [塔防索引](../design/tower-defense/README.md)。\n\n目录变化后运行 npm run architecture:build；npm run architecture:check 会检查本文件与实际文件夹是否一致。需求见 [PRD](PRD.md)。
+
+## 10. 战斗与阿策共享代码的维护位置
+
+第一至第五章保留各自配置、地图、技能、Boss、波次和绘图。相同的基础算法集中在 modules/battle/shared，原引擎的导出接口保持兼容。序章教程使用自己的状态机；第一章特殊支巷路径也继续由本章处理。
+
+| 要修改的内容 | 维护位置 | 保留在调用方的差异 |
+| --- | --- | --- |
+| 暂停、倍速与固定步进 | battle/shared/clock.ts | 各章 tick 和终局规则 |
+| 实际地格、攻击范围、Boss 占格距离 | battle/shared/geometry.ts | 各章地格、技能目标模式和部署限制 |
+| 第二至第五章路径与阻挡 | battle/shared/pathing.ts | 路线表、接触距离、事件携带物倍率；援军不进入主力阻挡列表 |
+| 页面可见性、绘图循环、Boss 施法震动 | battle/shared/useBattleLoop.ts | 各章绘图、场次重置与结果报告 |
+| 猫咪菜单、技能说明定位与阿策头像 | battle/shared/useBattleInspectionLayout.ts、AdvisorPortrait.tsx | 各章 JSX、样式与教程 |
+| 已保存场次的入口与配置校验 | battle/shared/stage-context.ts、battle/BattleHost.tsx | 关卡 ID、名称、尺寸、波数和终章精英报告 |
+| 家园与旅程的公开事件说明 | advisor/public-event-rules.ts | 问题匹配顺序与当前场景；概率读取 events/presentation.ts 的公开表 |
+| 战斗 AI 请求白名单 | advisor/prepare-battle-request.ts | 独立入口与 Provider 的会话、回退和取消生命周期 |
+| 模型调用前后的只读场景校验 | server/internal/service/advisor_scene.go | 各范围的语义进度指纹、超时和实际模型载荷 |
+
+新增章节优先接入上述公共能力，章节机制通过原本的配置和函数传入。不要把不同的护盾、暂停判定、隐藏信息、援军或教程规则合并成隐含默认值。修改公共实现需运行受影响各章测试，并检查暂停、换位、技能、结算和窄屏菜单；AI 修改同时检查可见信息、迟到响应及服务端状态变化。
 `;
 const finalDocument = document.replace('## 5. 启动与检查', explorationArchitecture + '\n\n## 5. 启动与检查');
 if (process.argv.includes('--check')) {

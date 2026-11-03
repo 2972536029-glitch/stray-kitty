@@ -1,3 +1,4 @@
+import {openHomeBattleTrials} from './home-battle-trials';
 import {confirmBattleResult} from './battle-result';
 import {expect, test, type Page} from '@playwright/test';
 import {playVisibleControls} from './l02-battle';
@@ -98,7 +99,7 @@ test('L02 story entry: the normal Chapter 2 action begins its authored introduct
 
 test('L02 battle trial: the standalone battle button enters only the market_boss battle',async({page,request})=>{
   const headers={Authorization:`Bearer ${sessions.get('battle-route')!.token}`};
-  await openFixture(page,'battle-route');
+  await openFixture(page,'battle-route');await openHomeBattleTrials(page);
   await page.getByTestId('market-battle-trial-enter').click();
   await expect.poll(async()=>((await request.get(origin+'/api/v1/state',{headers})).json() as Promise<GameState>).then(current=>({chapterId:current.chapterId,phase:current.phase,mapId:current.mapId,stageId:current.activeBattle?.stageId}))).toEqual({chapterId:'market',phase:'battle',mapId:'alley',stageId:'market_boss'});
   await expect(page.getByTestId('market-battle')).toHaveAttribute('data-scene','market');
@@ -108,7 +109,7 @@ for(const entry of cases.filter(value=>!['retreat','navigation','home-route','qa
   test(`L02 ${entry.id}: real six-cat controls finish eight waves and a boss without changing item inventory`,async({page,request},info)=>{
     // 全量套件串行跑到这里时浏览器累积负载会拖慢战斗快照查询,6s 会饿死 evaluate;放宽一倍防抖。
     test.setTimeout(240000);page.setDefaultTimeout(12000);
-    await openFixture(page,entry.id);
+    await openFixture(page,entry.id);await openHomeBattleTrials(page);
     const commands:string[]=[];page.on('request',req=>{if(req.url()===origin+'/api/v1/commands'&&req.method()==='POST')commands.push(req.postDataJSON().command.type);});
     await page.getByTestId('market-battle-trial-enter').click();
     await expect(page.getByTestId('market-battle')).toHaveAttribute('data-phase','ready');
@@ -143,7 +144,7 @@ for(const entry of cases.filter(value=>!['retreat','navigation','home-route','qa
     expect(commands.filter(type=>type==='COMPLETE_BATTLE')).toHaveLength(1);
     expect(actions.skills.length).toBeGreaterThanOrEqual(6);expect(actions.dodges).toBeGreaterThan(0);
     await page.screenshot({path:info.outputPath(`l02-${entry.id}-won.png`),fullPage:true});
-    await page.getByRole('button',{name:'返回家园 →'}).click();
+    await page.getByRole('button',{name:'返回家园 →'}).click();await openHomeBattleTrials(page);
     await expect(page.getByTestId('market-battle-trial-enter')).toBeVisible();
     await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
     expect((await(await request.get(origin+'/api/v1/state',{headers})).json()).inventory).toEqual(state.inventory);
@@ -152,7 +153,7 @@ for(const entry of cases.filter(value=>!['retreat','navigation','home-route','qa
 }
 
 test('L02 has no bag or item loadout, preserves pause/title and retreats to retry on a narrow screen',async({page,request},info)=>{
-  test.setTimeout(90000);await openFixture(page,'retreat');
+  test.setTimeout(90000);await openFixture(page,'retreat');await openHomeBattleTrials(page);
   await expect(page.getByRole('button',{name:'增加暖心罐罐'})).toHaveCount(0);
   await page.getByTestId('market-battle-trial-enter').click();
   const headers={Authorization:`Bearer ${sessions.get('retreat')!.token}`};

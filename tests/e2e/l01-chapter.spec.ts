@@ -1,3 +1,4 @@
+import {openHomeBattleTrials} from './home-battle-trials';
 import {confirmBattleResult} from './battle-result';
 import {expect, test, type Page} from '@playwright/test';
 import {playVisibleControls} from './l01-battle';
@@ -24,7 +25,7 @@ test.beforeAll(async({request})=>{
     players[createHash('sha256').update(session.token).digest('hex')]={id:session.playerId,state,receipts:{},receiptOrder:[]};
   }
   const save=path.join(directory,'save.json');fs.writeFileSync(save,JSON.stringify({schemaVersion:1,players}));
-  child=spawn(process.env.KITTY_FIXTURE_BINARY ?? path.join(process.cwd(),'.runtime',process.platform==='win32'?'kitty-preview.exe':'kitty-preview'),[],{cwd:path.join(process.cwd(),'server'),windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,GAME_ADDR:`127.0.0.1:${port}`,GAME_DATA_FILE:save,GAME_WEB_DIR:path.join(process.cwd(),'web/dist')}});
+  child=spawn(process.env.KITTY_FIXTURE_BINARY ?? path.join(process.cwd(),'.runtime',process.platform==='win32'?'kitty-preview.exe':'kitty-preview'),[],{cwd:path.join(process.cwd(),'server'),windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,GAME_QA_ENABLED:'true',GAME_ADDR:`127.0.0.1:${port}`,GAME_DATA_FILE:save,GAME_WEB_DIR:path.join(process.cwd(),'web/dist')}});
   closed=new Promise(resolve=>child!.once('close',()=>resolve()));
   let output='';child.stdout?.on('data',chunk=>output+=chunk);child.stderr?.on('data',chunk=>output+=chunk);
   await expect.poll(async()=>{if(child!.exitCode!==null)throw new Error(output);try{return(await request.get(origin+'/healthz',{timeout:500})).ok();}catch{return false;}},{timeout:10000}).toBe(true);
@@ -39,7 +40,7 @@ for(const entry of cases.filter(value=>value.id!=='retreat')){
   test(`L01 ${entry.id}: real four-cat controls finish eight waves and a boss without changing item inventory`,async({page,request},info)=>{
     // 全量套件串行跑到这里时浏览器累积负载会拖慢战斗快照查询,6s 会饿死 evaluate;放宽一倍防抖。
     test.setTimeout(240000);page.setDefaultTimeout(12000);
-    await openFixture(page,entry.id);
+    await openFixture(page,entry.id);await openHomeBattleTrials(page);
     const commands:string[]=[];page.on('request',req=>{if(req.url()===origin+'/api/v1/commands'&&req.method()==='POST')commands.push(req.postDataJSON().command.type);});
     await page.getByTestId('chapter-enter').click();
     await expect(page.getByTestId('chapter-battle')).toHaveAttribute('data-phase','ready');
@@ -71,7 +72,7 @@ for(const entry of cases.filter(value=>value.id!=='retreat')){
     expect(commands.filter(type=>type==='COMPLETE_BATTLE')).toHaveLength(1);
     expect(actions.skills.length).toBeGreaterThanOrEqual(4);expect(actions.dodges).toBeGreaterThan(0);
     await page.screenshot({path:info.outputPath(`l01-${entry.id}-won.png`),fullPage:true});
-    await page.getByRole('button',{name:'带伙伴回家 →'}).click();
+    await page.getByRole('button',{name:'带伙伴回家 →'}).click();await openHomeBattleTrials(page);
     await expect(page.getByTestId('chapter-enter')).toBeVisible();
     await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
     expect((await(await request.get(origin+'/api/v1/state',{headers})).json()).inventory).toEqual(state.inventory);
@@ -80,7 +81,7 @@ for(const entry of cases.filter(value=>value.id!=='retreat')){
 }
 
 test('L01 has no bag or item loadout, preserves pause/title and retreats to retry on a narrow screen',async({page,request},info)=>{
-  test.setTimeout(90000);await openFixture(page,'retreat');
+  test.setTimeout(90000);await openFixture(page,'retreat');await openHomeBattleTrials(page);
   await expect(page.getByRole('button',{name:'增加暖心罐罐'})).toHaveCount(0);
   await page.getByTestId('chapter-enter').click();
   const headers={Authorization:`Bearer ${sessions.get('retreat')!.token}`};
