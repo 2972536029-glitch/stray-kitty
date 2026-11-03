@@ -2,6 +2,8 @@
 # 构建上下文:仓库根目录。
 FROM golang:1.26-alpine AS api
 WORKDIR /app/server
+# server 合入 Datadog SDK 后构建需拉外部模块;默认 proxy.golang.org 在受限网络不可达,与 .gitlab-ci.yml 的 server job 保持一致
+ENV GOPROXY=https://goproxy.cn,direct
 COPY server ./
 RUN CGO_ENABLED=0 go build -trimpath -o /kitty-api ./cmd/api
 
