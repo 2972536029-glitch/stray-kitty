@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode} from 'react';
-import type {Catalog, GameCommand, GameState} from '../contracts';
+import type {Catalog, EventResolution, GameCommand, GameState} from '../contracts';
 import type {CatBreed} from '../adapters/canvas/pixelCat';
 import type {SceneAnchor} from './DialogueBubble';
 import {currentStory, objective} from '../core/story';
@@ -7,6 +7,7 @@ import {warehouseOptionalInvestigationHint} from '../modules/chapter5/eventHints
 import PixelCat from './PixelCat';
 import DialoguePanel from './DialoguePanel';
 import DiceEvent, {Dice} from './DiceEvent';
+import DiceRollOverlay from './DiceRollOverlay';
 import JourneyRecord from './JourneyRecord';
 import EventResult from './EventResult';
 import Modal from './Modal';
@@ -67,6 +68,16 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
   // 随机事件结算后直接回到探索,这里补一个结果卡让玩家看清骰点与收获,再继续赶路。
   const resolutionKey = resolution ? `${resolution.eventId}:${resolution.optionId}:${resolution.dice[0]}${resolution.dice[1]}` : '';
   const [dismissedResult, setDismissedResult] = useState('');
+  // 掷骰仪式：点击“掷出骰子”即接管全屏，结算归来后揭晓骰点与四档专属像素特效。
+  // prior 记下点击前的旧结算，靠引用变化识别“这次掷骰”的新结果（随机事件会同 ID 复现）。
+  const [ceremony, setCeremony] = useState<{eventId: string; prior: EventResolution | undefined; startedAt: number} | null>(null);
+  const ceremonyResolution = ceremony && resolution && resolution.eventId === ceremony.eventId && resolution !== ceremony.prior ? resolution : undefined;
+  // 服务端驳回/网络失败（busy 结束却没有新结算）时收起仪式，把画面还给错误提示。
+  useEffect(() => {
+    if (!ceremony || ceremonyResolution || busy) return;
+    const timer = setTimeout(() => setCeremony(null), 150);
+    return () => clearTimeout(timer);
+  }, [ceremony, ceremonyResolution, busy]);
   // 首次通关奖励卡出现时来一声“拾取”叮咚（按 revision 记忆，避免重复播）。
   const rewardMoment = state.phase === 'settlement' && state.lastResult.firstClear ? state.revision : null;
   useEffect(() => {if (rewardMoment !== null) playSound('pickup');}, [rewardMoment]);
@@ -206,7 +217,7 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
           {isHomeScene && <aside className="home-life-status"><span>{state.phase === 'dialogue' ? '故事进行中' : '花房日常'}</span><strong>{state.phase === 'dialogue' ? '伙伴们正跟随故事行动' : '拖动猫咪到家具或伙伴身边，一起玩一会儿'}</strong></aside>}
 
           {state.phase === 'dialogue' && node && <DialoguePanel node={node} disabled={disabled} onNext={() => onCommand({type: 'ADVANCE_STORY', nodeId: node.id})} onSkip={onSkip} getSpeakerAnchor={speakerAnchor} eventResult={resolution?.outcome.situation?.storyNodeId === node.id ? <EventResult resolution={resolution} compact/> : undefined}/>}
-          {state.phase === 'event' && event && <DiceEvent key={event.id} event={event} disabled={disabled} rolling={busy} random={state.pendingEventSource === 'random'} teaser={state.pendingEventSource === 'random' ? state.lastResult.message : undefined} partyCats={state.cats} pushTokens={state.pushTokens ?? 0} onChoose={(optionId, usePush) => onCommand({type: 'CHOOSE_EVENT', eventId: event.id, optionId, usePush})}/>}
+          {state.phase === 'event' && event && <DiceEvent key={event.id} event={event} disabled={disabled} rolling={busy} random={state.pendingEventSource === 'random'} teaser={state.pendingEventSource === 'random' ? state.lastResult.message : undefined} partyCats={state.cats} pushTokens={state.pushTokens ?? 0} onChoose={(optionId, usePush) => {setCeremony({eventId: event.id, prior: resolution, startedAt: performance.now()});onCommand({type: 'CHOOSE_EVENT', eventId: event.id, optionId, usePush});}}/>}
           {state.phase === 'preparation' && finaleBattle && <section className="event-card preparation-card"><p>{state.lastResult.message}</p><FinaleLoadout disabled={disabled} onCommand={onCommand}/><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回家园</button></section>}
           {state.phase === 'preparation' && tunnelBattle && <section className="event-card preparation-card"><p>{state.lastResult.message}</p><TunnelLoadout disabled={disabled} onCommand={onCommand}/><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回家园</button></section>}
           {state.phase === 'preparation' && greenhouseBattle && <section className="event-card preparation-card"><p>{state.lastResult.message}</p><GreenhouseLoadout disabled={disabled} onCommand={onCommand}/><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回家园</button></section>}
@@ -228,5 +239,6 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
       </section></div>
     </main>
     {journalOpen && <Modal title="旅程记录" onClose={onJournal} className="journey-modal"><header><span className="eyebrow">OUR LITTLE JOURNEY</span><h2>旅程记录</h2></header><JourneyRecord state={state} busy={busy} pending={pending}/></Modal>}
+    {ceremony && <DiceRollOverlay resolution={ceremonyResolution} startedAt={ceremony.startedAt} onClose={() => setCeremony(null)}/>}
   </div>;
 }
