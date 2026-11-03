@@ -15,7 +15,8 @@ const groups:Record<BattleSceneId,readonly GroupPlan[]>={
   alley:[{kind:'alley-supplies',side:1,across:.28,depth:.65,width:245}],
   market:[{kind:'market-goods',side:0,across:.25,depth:.32,width:270}],
   greenhouse:[{kind:'garden-bench',side:0,across:.92,depth:.4,width:280},{kind:'potting-corner',side:1,across:.08,depth:.74,width:220}],
-  tunnel:[{kind:'pump-station',side:1,across:.35,depth:.67,width:255}],
+  // Tunnel tools are attached to the map's lower service corner, not a floating group.
+  tunnel:[],
   finale:[{kind:'warehouse-workbench',side:0,across:.5,depth:.42,width:270}],
 };
 

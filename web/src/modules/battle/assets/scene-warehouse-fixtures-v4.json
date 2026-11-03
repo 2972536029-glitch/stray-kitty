@@ -1,0 +1,21 @@
+{
+  "size": [1086, 1448],
+  "alpha": true,
+  "source": "Built-in image_gen edit of v3; greenhouse and workstations used only as style references. Original selected PNG retained.",
+  "sampling": "average once to the shared pixel grid, then unsmoothed enlargement",
+  "sceneryTexelsPerCell": 56,
+  "worldCellSize": 80,
+  "cropThreshold": 32,
+  "cropPadding": 2,
+  "crops": {
+    "beam-upper": [31, 70, 481, 244],
+    "beam-lower": [551, 97, 506, 219],
+    "cargo-upper": [22, 370, 514, 305],
+    "cargo-lower": [570, 408, 495, 267],
+    "holding-room": [45, 722, 632, 288],
+    "cage": [726, 736, 299, 273],
+    "side-wall": [191, 1037, 194, 384],
+    "rack": [587, 1113, 326, 277]
+  },
+  "notes": ["Existing placement boxes and walkable-cell exclusions are preserved.", "Cage openings retain alpha; live cats and victory removal are not baked into this atlas."]
+}

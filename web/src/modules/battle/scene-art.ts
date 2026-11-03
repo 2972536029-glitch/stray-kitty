@@ -1,5 +1,6 @@
 import {paintDetailedSceneProp} from './scene-props';
 import {hasIllustratedRoom,whenIllustratedRoomReady} from './illustrated-room';
+import {paintTunnelShallowWater} from './scene-tunnel-water';
 
 /** Battle-owned, deterministic pixel scenery. Geometry and simulation remain in chapter configs. */
 export type BattleSceneId = 'prologue' | 'alley' | 'market' | 'greenhouse' | 'tunnel' | 'finale';
@@ -167,6 +168,7 @@ function paintGround(ctx:CanvasRenderingContext2D,scene:BattleSceneId,x:number,y
     ctx.restore();
   }
   if(accents)paintMaterialAccents(ctx,scene,p,x,y,n);
+  if(scene==='tunnel'&&accents)paintTunnelShallowWater(ctx,x,y);
   paintGroundLight(ctx,scene,x,y);
 }
 

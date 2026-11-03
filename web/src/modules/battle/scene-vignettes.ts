@@ -1,7 +1,7 @@
 import {paintSceneProp,type BattleSceneId} from './scene-art';
 import {paintDetailedWorkstation} from './scene-detailed-exteriors';
 
-export type SceneVignetteKind='garden-bench'|'potting-corner'|'alley-supplies'|'market-goods'|'pump-station'|'warehouse-workbench';
+export type SceneVignetteKind='garden-bench'|'potting-corner'|'alley-supplies'|'market-goods'|'tunnel-tools'|'warehouse-workbench';
 export const SCENE_VIGNETTE_ASPECT=1.7;
 
 type Context=CanvasRenderingContext2D;
@@ -167,7 +167,7 @@ function groundTraces(ctx:Context,kind:SceneVignetteKind){
       blocks(ctx,'#b29a6930',[[100,93,3,1],[106,95,2,1],[115,91,2,2]]);
       blocks(ctx,'#6c805437',[[151,93,3,1],[154,92,2,1]]);
       break;
-    case 'pump-station':
+    case 'tunnel-tools':
       blocks(ctx,'#254c5d38',[[26,88,27,3],[35,91,40,2],[46,93,19,2]]);
       blocks(ctx,'#83aaa42b',[[39,91,15,1],[64,92,7,1]]);
       blocks(ctx,'#71867629',[[78,89,3,1],[84,93,2,1]]);
@@ -226,19 +226,24 @@ function marketGoods(ctx:Context,scene:BattleSceneId,p:Materials,index:number){
   for(const x of [79,93]){smallPot(ctx,x,70,12,false);r(ctx,'#827657',x+2,75,8,1);}
   r(ctx,p.woodLight,61,51,3,22);r(ctx,WOOD_SHADE,61,70,9,3);
 }
-function pumpStation(ctx:Context,scene:BattleSceneId,p:Materials,index:number){
-  contact(ctx,13,85,145);
-  // A short framed pipe wall, one valve, and a compact repair surface.
-  blocks(ctx,EDGE,[[15,12,5,68],[69,12,5,68],[15,15,59,5],[15,74,59,5]]);
-  blocks(ctx,p.metal,[[17,14,2,64],[71,14,2,64],[19,16,52,2]]);
-  paintSceneProp(ctx,scene,'valve',10,14,70,index);
-  bench(ctx,p,81,52,74,30,true);
-  paintSceneProp(ctx,scene,'cable',102,50,45,index);
-  toolBucket(ctx,p,82,67);
-  r(ctx,'#344c50',94,40,31,12);r(ctx,p.metal,96,41,27,9);r(ctx,p.metalLight,97,41,23,2);
-  blocks(ctx,'#8b9e94',[[102,37,15,3],[102,40,2,2],[115,40,2,2]]);
-  r(ctx,p.woodLight,135,45,14,2);r(ctx,p.metalLight,132,43,5,5);
-  r(ctx,'#31525a',21,86,45,2);r(ctx,'#91aaa14d',29,86,18,1);
+function tunnelTools(ctx:Context,p:Materials){
+  contact(ctx,15,88,137);
+  // Hand-portable storage only, including the loading fallback.
+  blocks(ctx,EDGE,[[83,16,37,59],[14,52,73,37],[91,62,64,27]]);
+  blocks(ctx,p.wood,[[85,18,33,55]]);
+  blocks(ctx,p.woodLight,[[87,19,2,52],[115,21,1,49]]);
+  blocks(ctx,p.metal,[[17,55,67,31],[94,65,58,20]]);
+  blocks(ctx,p.metalLight,[[17,55,67,3],[18,58,2,25],[94,65,58,2]]);
+  blocks(ctx,EDGE,[[32,45,34,11],[97,68,51,11]]);
+  blocks(ctx,p.metal,[[35,47,28,3],[35,49,3,5],[60,49,3,5]]);
+  blocks(ctx,'#d0bd8c',[[46,65,8,11],[48,68,4,5]]);
+  for(const [inset,y] of [[0,69],[4,72],[8,75]]){
+    r(ctx,'#737c78',101+inset,y,41-inset*2,1);
+    r(ctx,'#323d40',102+inset,y+1,39-inset*2,1);
+  }
+  blocks(ctx,p.metalLight,[[94,27,3,25],[91,27,9,4],[92,24,2,6],[98,24,2,6],[108,37,2,17]]);
+  blocks(ctx,'#8c6d4b',[[106,25,6,13]]);
+  foldedCloth(ctx,18,55,27,'#7c8a75');
 }
 function warehouseWorkbench(ctx:Context,scene:BattleSceneId,p:Materials,index:number){
   toolRack(ctx,p,91,9,62,43);
@@ -266,7 +271,7 @@ export function paintSceneVignette(ctx:Context,scene:BattleSceneId,kind:SceneVig
     case 'potting-corner':pottingCorner(ctx,scene,p,index);break;
     case 'alley-supplies':alleySupplies(ctx,scene,p,index);break;
     case 'market-goods':marketGoods(ctx,scene,p,index);break;
-    case 'pump-station':pumpStation(ctx,scene,p,index);break;
+    case 'tunnel-tools':tunnelTools(ctx,p);break;
     case 'warehouse-workbench':warehouseWorkbench(ctx,scene,p,index);break;
   }
   ctx.restore();

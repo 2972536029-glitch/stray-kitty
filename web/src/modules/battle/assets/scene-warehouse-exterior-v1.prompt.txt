@@ -1,0 +1,19 @@
+Generated with the built-in image_gen tool. Style reference: scene-warehouse-fixtures-v3.png.
+
+PALLET JACK
+Use case: stylized-concept.
+Asset type: one transparent pixel-art scenery sprite for an existing top-down cat tower-defense warehouse map.
+Input image: visual STYLE REFERENCE ONLY; do not copy the multi-sprite sheet or its subjects.
+Primary request: a SINGLE low, wide parked manual pallet jack, worn muted terracotta paint, short forks beneath a thin timber pallet carrying a neatly folded gray-green canvas bundle. A small curved black pull handle leans diagonally low, the whole object has a recognisable asymmetric pallet-jack silhouette. No walls, masonry or crates.
+Composition: single fully visible coherent prop, centered, occupying most of an extra-wide transparent canvas, overall silhouette about 3.0:1 width to height. View from slightly above, near-front with only a shallow top surface, matching the reference orthographic pixel game camera. No isometric diamond base. Small tight contact shadow under feet only; no floor.
+Style: authored medium-fine pixel art with crisp clustered pixels, same level of detail as the reference at roughly 140x50 game pixels. Restrained texture and soft dark desaturated outline, limited cool blue-gray, old timber, and subdued rusty-red accent colors, upper-left cool light, no glossy highlights, no black ink border, no photorealistic microtexture, no smooth gradients or blurry edges.
+Constraints: ONE prop ONLY, genuine transparent alpha background, no text, no labels, no UI, no cats, no people, no grid, no scenery background, no duplicated props, no cut off handle or forks.
+
+PIPE CRADLE
+Use case: stylized-concept.
+Asset type: one transparent pixel-art scenery sprite for an existing top-down cat tower-defense warehouse map.
+Input image: visual STYLE REFERENCE ONLY; do not copy the multi-sprite sheet or its subjects.
+Primary request: a SINGLE low horizontal steel pipe storage cradle: five to seven stacked weathered blue-gray hollow steel pipes of different diameters, seen as a long horizontal bundled load resting on two squat dark timber saddles, with one faded ochre retaining strap. Hollow pipe ends visible at one side, lengths extend horizontally. A small displaced timber chock beside one foot gives an irregular grounded silhouette. No walls, bricks, stone blocks, crates or pallet jack.
+Composition: single fully visible coherent prop, centered, filling most of an extra-wide transparent canvas, overall silhouette about 3.0:1 width to height. View from slightly above, near-front with shallow top surfaces, matching the reference orthographic pixel game camera. No isometric diamond base. Small tight contact shadow directly below only; no floor.
+Style: authored medium-fine pixel art with crisp clustered pixels, same detail level as the reference at roughly 135x45 game pixels. Restrained texture, soft dark desaturated outlines, cool blue-gray metal, muted brown timber, tiny dull ochre accent, upper-left cool light. No orange corrosion, black ink border, glossy highlights, photorealistic microtexture, smooth gradients or blur.
+Constraints: ONE prop ONLY, genuine transparent alpha background, no text, no labels, no UI, no cats or people, no grid or scenery background, no repeated mirrored variants, no cut off pipe ends.

@@ -58,6 +58,10 @@
 .battle-l00.battle-immersive[data-scene=prologue] .btl-board-intro h2{color:#fff0bc;font-size:25px;line-height:1.35;margin:0 0 12px}
 .battle-l00.battle-immersive[data-scene=prologue] .btl-board-intro p{color:#fffdf0;font-size:18px;line-height:1.6;margin:0 0 18px}
 .battle-l00.battle-immersive[data-scene=prologue] .btl-board-intro button{font-size:18px;min-height:46px;padding:10px 20px;background:#e7d39b;color:#263e3e;border:1px solid #f6eac5;text-shadow:none}
+/* Match the later chapters' compact cat card and separate role/skill description. */
+.battle-l00[data-scene=prologue] .prologue-menu-cat-name{display:flex;flex-wrap:wrap;gap:2px 4px;min-width:0}
+.battle-l00[data-scene=prologue] .prologue-role-badge{display:inline-block;flex-shrink:0;padding:0 3px;border:1px solid #c7d2ba;border-radius:3px;background:#eef0e1;color:#647b55;font-size:8px;font-weight:400;line-height:1.4;white-space:nowrap;vertical-align:middle}
+.battle-l00[data-scene=prologue] .btl-skill-tooltip>p.prologue-positioning{padding-bottom:7px;margin-bottom:7px;border-bottom:1px solid #dbddcd;color:#34472d}
 @keyframes btl-tutorial-breathe{0%,100%{stroke-opacity:.75}50%{stroke-opacity:1}}
 @keyframes btl-tutorial-drag{0%,12%{transform:translate(0,0);opacity:0}18%{opacity:1}68%,82%{transform:translate(var(--tutorial-dx),var(--tutorial-dy));opacity:1}96%,100%{transform:translate(var(--tutorial-dx),var(--tutorial-dy));opacity:0}}
 @keyframes btl-tutorial-tap{0%,100%{transform:translate(5px,7px);opacity:.75}45%,65%{transform:translate(0,0);opacity:1}}

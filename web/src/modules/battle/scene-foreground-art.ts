@@ -40,26 +40,6 @@ function crate(ctx:Context,x:number,y:number,w:number,h:number){
   r(ctx,'#ddc99b4d',x+3,y+3,w-7,.5);r(ctx,'#393f3270',x+w-5,y+8,.5,h-11);
 }
 
-function prologueCorner(ctx:Context){
-  softContact(ctx,8,35,125,12);softContact(ctx,16,39,110,8);
-  // One broken low wall with a folded work cloth, not another row of crates.
-  blocks(ctx,'#2a4247',[[8,15,61,27],[8,9,25,8],[65,29,61,13]]);
-  blocks(ctx,'#536b69',[[10,17,56,22],[10,11,20,6],[67,31,56,9]]);
-  blocks(ctx,'#89988a',[[10,16,54,2],[10,10,20,2],[67,30,55,2]]);
-  blocks(ctx,'#354e4d',[[34,18,1,19],[12,28,51,1],[76,33,1,6],[101,33,1,6]]);
-  blocks(ctx,'#6a7e73',[[70,20,35,14],[74,17,27,5],[86,33,15,6]]);
-  blocks(ctx,'#a3aa8970',[[75,18,25,2],[73,22,3,10],[91,34,7,2]]);
-  blocks(ctx,'#3b514a',[[80,25,20,2],[94,22,2,10],[19,36,14,3]]);
-  blocks(ctx,'#657951',[[22,34,3,7],[18,33,4,3],[25,30,4,5]]);
-  // Weathered mortar, tiny aggregate and stitched cloth keep their own surfaces.
-  blocks(ctx,'#b9c0a65c',[[12,18,8,.5],[40,18,13,.5],[15,30,9,.5],[48,31,4,1],[79,33,12,.5],[108,34,5,.5]]);
-  blocks(ctx,'#314b4859',[[25,22,7,.5],[44,24,3,1],[56,35,5,.5],[88,36,8,.5],[116,35,3,1]]);
-  blocks(ctx,'#a5af8059',[[20,34,1,.5],[23,37,.5,2],[26,32,1,.5]]);
-  for(let x=76;x<100;x+=5)r(ctx,'#c1c7a35c',x,19,1.5,.5);
-  blocks(ctx,'#3e5a5066',[[77,23,12,.5],[82,28,9,.5],[95,31,.5,5]]);
-  blocks(ctx,'#c4ccb060',[[74,23,.5,6],[88,34,7,.5],[80,24,9,.5]]);
-}
-
 function alleyCart(ctx:Context){
   softContact(ctx,9,41,133,12);softContact(ctx,159,38,62,9);
   // A worn handcart leans against an offset masonry corner.
@@ -179,8 +159,7 @@ function warehouseBeam(ctx:Context){
 }
 
 // Authored anchors stay outside real cells and entrance lanes; no per-frame randomness.
-const plans:Record<BattleSceneId,ForegroundPlan>={
-  prologue:{x:.35,y:3.02,width:1.75,height:.6,art:'prologue-corner',paint:prologueCorner},
+const plans:Partial<Record<BattleSceneId,ForegroundPlan>>={
   alley:{x:.15,y:5.02,width:2.85,height:.675,art:'alley-cart',paint:alleyCart},
   market:{x:-1.38,y:4.05,width:1.12,height:.675,art:'market-handcart',paint:marketHandcart},
   greenhouse:{x:4.7,y:5.6,width:1.1,height:.675,art:'garden-cart',paint:gardenCart},
@@ -193,6 +172,7 @@ const plans:Record<BattleSceneId,ForegroundPlan>={
 export function paintForegroundScenery(ctx:Context,scene:BattleSceneId,cellWidth:number,cellHeight:number):ForegroundSceneryBounds[]{
   if(!Number.isFinite(cellWidth)||!Number.isFinite(cellHeight)||cellWidth<=0||cellHeight<=0)return [];
   const plan=plans[scene];
+  if(!plan)return [];
   ctx.save();ctx.scale(cellWidth/80,cellHeight/80);ctx.translate(plan.x*80,plan.y*80);
   ctx.imageSmoothingEnabled=false;
   if(!paintDetailedStructure(ctx,plan.art,plan.width*80,plan.height*80))plan.paint(ctx);

@@ -75,8 +75,11 @@ for(const chapter of [
   test(`${chapter.id} 正式战斗失败停留在结算页，点击后进入主流程`,async({page,request})=>{
     const {headers,state}=await openAttempt(page,request,chapter.checkpoint);
     if(chapter.id==='tunnel'){
-      await page.getByTestId('tunnel-newcat-intro').getByRole('button',{name:'下一位',exact:true}).click();
-      await page.getByTestId('tunnel-newcat-intro').getByRole('button',{name:'知道了',exact:true}).click();
+      const intro=page.getByTestId('tunnel-newcat-intro');
+      await expect(intro).toContainText('墨墨');
+      await expect(intro).not.toContainText('点点');
+      await expect(intro.getByRole('button',{name:'下一位',exact:true})).toHaveCount(0);
+      await intro.getByRole('button',{name:'知道了',exact:true}).click();
     }
     await page.getByTestId(chapter.start).click();
     await page.getByTestId(`${chapter.id}-retreat`).click();await page.getByTestId(`${chapter.id}-confirm-retreat`).click();
