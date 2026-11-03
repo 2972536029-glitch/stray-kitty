@@ -1,4 +1,17 @@
-# Local development and worktrees
+# Development and release workflow
+
+## Merge, deploy, and verify online
+
+For changes intended for the shared preview, follow the complete release flow:
+
+1. Work on a feature or fix branch, run the checks appropriate to the change, and merge through a merge request into `main`.
+2. Open the [GitLab pipelines](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/pipelines) and select the pipeline for the intended `main` merge commit. Wait for `web_checks`, `server_checks`, `server_build`, and `deploy_images` to succeed. The images for frontend, game, and payment are built automatically.
+3. Click **▶ `deploy_apply`** in that same pipeline. This is a required manual step: merging to `main` prepares the release but does not update the live site. A pipeline waiting at this step may show `manual` or `blocked`. Coordinate with the team so only one deployment runs against the shared preview at a time.
+4. Wait for `deploy_apply` to succeed. Its log must confirm all three service rollouts, payment readiness, and the public health check. Release records are available in the job's artifacts for one month.
+5. Open [Stray Kitty online](https://starry-kitty.duckdns.org/), confirm the [health check](https://starry-kitty.duckdns.org/healthz) returns `ok`, and smoke-test the changed player flow. The public health check covers frontend nginx only; it does not replace API, payment, or gameplay verification. Hard-refresh if the browser still shows the previous UI.
+6. Report the deployed commit, deployment job link, live-site link, and verification result. Treat the change as released only after deployment and online verification finish; report a pending or failed deployment explicitly.
+
+See the [deployment guide](../deploy/team-preview-haozhe/README.md) and [release checklist](../deploy/team-preview-haozhe/RELEASE_CHECKLIST.md) for detailed checks and recovery instructions.
 
 ## Worktree layout
 

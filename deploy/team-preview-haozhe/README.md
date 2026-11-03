@@ -4,8 +4,21 @@
 
 ## 0. 快速开始
 
+### 常规发布：GitLab CI/CD
+
+1. 通过 MR 合入 `main` 后，在 [GitLab 流水线](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/pipelines) 中打开对应合并提交的流水线。
+2. 等待 `web_checks`、`server_checks`、`server_build`、`deploy_images` 全部成功；三个服务镜像会自动构建并推送。
+3. 在同一条流水线点击 **▶ `deploy_apply`**。这是必需的手动发布步骤：**合入 main 不会自动更新线上**，等待点击时流水线可能显示 `manual` / `blocked`。发布前确认没有其他人或 CI 正在向同一命名空间发布。
+4. 等待 `deploy_apply` 成功，核对日志中的三个服务 rollout、payment readiness 和公网健康检查。发布归档可在该 job 的 artifacts 下载，保留一个月。
+5. 打开 [线上试玩](https://starry-kitty.duckdns.org/)，确认 [/healthz](https://starry-kitty.duckdns.org/healthz) 返回 `ok`，再验收本次修改涉及的玩家流程；必要时强制刷新页面。公网 `/healthz` 仅验证 frontend nginx，不能替代游戏 API、支付或玩法验收。
+6. 记录发布 commit、部署 job 链接、试玩地址和验收结果；部署与线上验收完成后才算发布完成。
+
+完整开发约定见 [DEVELOPMENT.md](../../docs/DEVELOPMENT.md)。
+
+### 本地发布与离线预检
+
 ```powershell
-# 常规更新：部署最新 origin/main（要求代码已通过 MR 合入）
+# 本地发布：部署最新 origin/main（要求代码已通过 MR 合入）
 pwsh -File deploy/team-preview-haozhe/Deploy-Preview.ps1
 # 部署指定提交（完整 40 位 sha）
 pwsh -File deploy/team-preview-haozhe/Deploy-Preview.ps1 -Commit <完整sha>
@@ -127,7 +140,7 @@ game 容器关键环境变量：`GAME_ADDR=0.0.0.0:8080`、`GAME_DATA_FILE=/data
 3. **阿策模型 key（可选）**：集群 Secret `stray-kitty-preview-advisor`（字段 `api-key`），不存在时游戏回退本地逻辑。
 4. **Xsolla 沙盒（可选）**：集群 Secret `stray-kitty-preview-xsolla`（merchant-id / project-id / api-key / webhook-secret / return-url / internal-token），不存在时 payment 以 mock 演示卡形态运行。
 
-## 7. 完整部署操作步骤
+## 7. 本地脚本的完整部署操作步骤
 
 脚本流程（`Deploy-Preview.ps1`）：
 
@@ -169,7 +182,7 @@ kubectl @k exec deployment/stray-kitty-payment -- wget -qO- http://127.0.0.1:808
 
 ### 支付健康检查（三层，按序执行）
 
-公网 `/healthz` 只穿透 nginx→game，**覆盖不到 payment**（payment 是 ClusterIP，不经公网暴露）。payment 服务自身提供三个只读无副作用端点（代码确认：`server/internal/integrations/payment/httpapi.go`）：
+公网 `/healthz` 由 frontend nginx 直接应答，**不检查 game 或 payment**（payment 是 ClusterIP，不经公网暴露）。payment 服务自身提供三个只读无副作用端点（代码确认：`server/internal/integrations/payment/httpapi.go`）：
 
 | 端点 | 响应 | 副作用 |
 | --- | --- | --- |
@@ -210,11 +223,11 @@ kubectl -n cn-haozhe-wang --context haozhe-wang@gcp-k8s-xsolla-school-experiment
 
 ## 10. 当前部署方式的局限性
 
-1. **依赖个人电脑**：Docker、kubeconfig、GitLab 凭据都在本机，换机器无法发布，也无发布审计；
+1. **本地发布依赖个人电脑**：直接运行脚本需要本机 Docker、kubeconfig 与 GitLab 凭据；常规发布可通过 GitLab CI/CD 完成，部署 job 使用受保护的 `KUBECONFIG_FILE`；
 2. **尚未完成端到端故障注入测试**：`Invoke-NativeChecked` 已检测原生命令非零退出码；但完整镜像构建、Registry、K8s 依赖的多阶段发布尚未经过实际演练；
-3. **healthz 不覆盖 payment**：公网探活只证明 nginx+game 存活；
+3. **healthz 仅覆盖 frontend nginx**：公网探活不能证明 game 或 payment 可用；部署 job 另行检查三个服务 rollout 和 payment readiness，业务流程仍需验收；
 4. **回滚尚无一键入口**（详见 RELEASE_CHECKLIST.md「回滚注意事项」）：`-Commit <旧sha>` 会重建镜像，并非恢复原 digest；`rollout undo` 依赖保留的 ReplicaSet；现在已按 commit/时间归档当次 manifest 和 digest，日后可用于精确恢复，但恢复动作仍需人工审查执行；
-5. **发布记录仍存于操作者本机**：`releases/<commit>/<UTC时间>/` 自动保留 manifest、digest、状态和时间（已被 Git 忽略）；没有统一的 GitLab Release / CI Artifact 审计与跨机器归档，迁移时需要设计留存策略；
+5. **发布归档有保留期限**：CI 将 `releases/<commit>/<UTC时间>/` 中的 manifest、digest、状态和时间上传为部署 job artifacts，保留一个月；本地发布的记录仍只在操作者本机。长期留存需另行转存；
 6. **Recreate 停机窗口**：单副本策略每次更新三个服务各有数秒到数十秒不可用（换 PVC 数据安全，属有意取舍）。
 
 ---
