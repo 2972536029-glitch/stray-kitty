@@ -1,7 +1,7 @@
 import {expect, test} from '@playwright/test';
 import type {GameState, Session} from '../../web/src/contracts';
 
-for (const entry of ['qa', 'story'] as const) {
+for (const entry of ['qa', 'story', 'qa-story'] as const) {
   test(`warehouse ${entry} entry works in an open tab after late JavaScript assets become unavailable`, async ({page, request}, info) => {
     const errors: string[] = [], lateScripts: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -33,15 +33,23 @@ for (const entry of ['qa', 'story'] as const) {
     });
     let reloads = 0;
     page.on('framenavigated', frame => {if (frame === page.mainFrame()) reloads++;});
-    if (entry === 'qa') {
+    if (entry === 'qa' || entry === 'qa-story') {
       const qa = page.getByRole('button', {name: '验收工具', exact: true});
       if (!await qa.isVisible()) await page.getByRole('button', {name: '展开顶部信息栏（可拖拽）'}).click();
       await qa.click();
       const panel = page.getByRole('dialog', {name: '流程验收'});
       await panel.getByTestId('qa-chapter-finale').click();
-      await panel.getByTestId('qa-load-finale.explore').click();
+      await panel.getByTestId(entry === 'qa-story' ? 'qa-load-finale.story' : 'qa-load-finale.explore').click();
       await expect(panel).not.toBeVisible();
-    } else {
+    }
+    if (entry === 'qa-story') {
+      const dialogueCanvas = page.locator('canvas[data-map-id="warehouse"]');
+      await expect(dialogueCanvas).toHaveAttribute('data-ready', 'true');
+      await expect(dialogueCanvas).toHaveAttribute('data-phase', 'dialogue');
+      await expect(dialogueCanvas).toHaveAttribute('data-rendered-scene', 'chapter5-warehouse');
+      await page.screenshot({path: info.outputPath('warehouse-qa-story-dialogue.png')});
+    }
+    if (entry !== 'qa') {
       for (let i = 0; i < 4; i++) {
         const [response] = await Promise.all([
           page.waitForResponse(value => value.url().endsWith('/api/v1/commands') && value.request().method() === 'POST'),
