@@ -24,8 +24,16 @@ const spriteUrls = import.meta.glob<string>([
   '../../../../level_design/chapter5/art/source/stateful/*.png',
 ], {eager: true, query: '?url', import: 'default'});
 
-async function image(url: string) {
-  const result = new Image(); result.src = url; await result.decode(); return result;
+// Reuse immutable artwork across scene reentries; masks and gameplay stay per instance.
+const decodedImages = new Map<string, Promise<HTMLImageElement>>();
+function image(url: string) {
+  let cached = decodedImages.get(url);
+  if (!cached) {
+    const result = new Image(); result.src = url;
+    cached = result.decode().then(() => result).catch(error => {decodedImages.delete(url);throw error;});
+    decodedImages.set(url, cached);
+  }
+  return cached;
 }
 
 /** Shared warehouse map renderer/movement. Commands and outcomes stay in App/service. */
@@ -101,7 +109,11 @@ export class WarehouseWalkMap {
   }
 
   private async load() {
-    const [ground, floor, graybox, l1, l1Side, upperMask] = await Promise.all([groundUrl, floorMaskUrl, grayboxUrl,l1Url,l1SideUrl,l1MaskUrl].map(image));
+    // Start props alongside the floor images instead of a second network wave.
+    const [[ground, floor, graybox, l1, l1Side, upperMask], originalEntries] = await Promise.all([
+      Promise.all([groundUrl, floorMaskUrl, grayboxUrl,l1Url,l1SideUrl,l1MaskUrl].map(image)),
+      Promise.all(Object.entries(spriteUrls).map(async ([path,url]) => ['art/'+path.split('/art/')[1],await image(url)] as const))
+    ]);
     const scratch = document.createElement('canvas'); scratch.width = W; scratch.height = H;
     const context = scratch.getContext('2d', {willReadFrequently: true})!;
     context.drawImage(floor, 0, 0);
@@ -123,7 +135,7 @@ export class WarehouseWalkMap {
     this.reset();
     if (!this.mask!.isWalkable(this.position)) throw new Error('仓库入口不在原始可行走区域内');
     for(const anchor of geometry.climbs)if(!this.mask!.isWalkable(anchor)||!this.l1Mask.isWalkable(anchor))throw new Error('攀爬锚点不在原始双层通路内：'+anchor.id);
-    const originals = new Map(await Promise.all(Object.entries(spriteUrls).map(async ([path,url]) => ['art/'+path.split('/art/')[1],await image(url)] as const)));
+    const originals = new Map(originalEntries);
     for(const [path,original] of originals){const canvas=document.createElement('canvas');canvas.width=original.width;canvas.height=original.height;canvas.getContext('2d')!.drawImage(original,0,0);this.sprites.set(path+':0',canvas);}
     for (const record of this.records) for (const component of record.components) {
       const key = component.sourceSprite + ':' + component.rotationDegrees;
