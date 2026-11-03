@@ -1,7 +1,7 @@
 import {rainyAlleyMapData} from './mapData';
 import type {RainyFixedObject} from './mapData';
 export type {RainyFixedObject, RainyZone} from './mapData';
-import backgroundUrl from '../../../../level_design/rainy_alley/art/rainy_alley_background.png';
+import backgroundUrl from './assets/rainy-alley-background-clean.png';
 import doorwayUrl from '../../../../level_design/rainy_alley/art/doorway_foreground.svg';
 
 export const rainyAlleySource = {
