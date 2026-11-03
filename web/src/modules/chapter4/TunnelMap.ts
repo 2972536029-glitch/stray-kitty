@@ -3,8 +3,7 @@ import {drawTunnelExitBarrier,tunnelBossAt,tunnelExitBlockerPolygon} from './bat
 import {drawPixelCat} from '../../adapters/canvas/pixelCat';
 import mapData from '../../../../level_design/chapter4/data/chapter4.map.json' with { type: 'json' };
 import lighting from '../../../../level_design/chapter4/data/chapter4.lighting.json' with { type: 'json' };
-import l0Url from '../../../../level_design/chapter4/art/chapter4_L0_approved.png?url';
-import lm1Url from '../../../../level_design/chapter4/art/chapter4_Lminus1_tunnel_v11.png?url';
+import {chapterBackground, preloadChapterArtwork} from '../map/artwork';
 import l0MaskUrl from '../../../../level_design/chapter4/collision/chapter4_L0_walkable.png?url';
 import lm1MaskUrl from '../../../../level_design/chapter4/collision/chapter4_Lminus1_walkable.png?url';
 import {TunnelWalkableMask} from './TunnelWalkableMask';
@@ -15,7 +14,6 @@ type Layer = 'L0' | 'Lm1';
 type Point = {x: number; y: number};
 const WIDTH = mapData.world.width, HEIGHT = mapData.world.height, RADIUS = mapData.world.catRadiusFromPreview;
 const layers: Layer[] = ['L0', 'Lm1'];
-const backgrounds: Record<Layer, string> = {L0: l0Url, Lm1: lm1Url};
 const masks: Record<Layer, string> = {L0: l0MaskUrl, Lm1: lm1MaskUrl};
 const camera = {width: 1066, height: 640};
 const speed = 142;
@@ -45,7 +43,6 @@ function reachableSpawn(mask: TunnelWalkableMask, point: Point) {
 }
 
 export class TunnelMap {
-  private readonly art: Record<Layer, HTMLImageElement> = {L0: loadImage(backgrounds.L0), Lm1: loadImage(backgrounds.Lm1)};
   private readonly maskImages: Record<Layer, HTMLImageElement> = {L0: loadImage(masks.L0), Lm1: loadImage(masks.Lm1)};
   private readonly maskReady: Promise<Record<Layer, TunnelWalkableMask>>;
   private masks: Record<Layer, TunnelWalkableMask> | null = null;
@@ -66,6 +63,7 @@ export class TunnelMap {
   private zonesInside = new Set<string>();
 
   constructor() {
+    preloadChapterArtwork('tunnel');
     this.maskReady = Promise.all(layers.map(async floor => {
       const image = this.maskImages[floor];
       if (!image.complete) await new Promise<void>((resolve, reject) => {image.onload = () => resolve(); image.onerror = () => reject(new Error(`Unable to load ${floor} collision mask`));});
@@ -188,7 +186,7 @@ export class TunnelMap {
     const scale = Math.min(width / camera.width, height / camera.height);
     const offsetX = (width - camera.width * scale) / 2, offsetY = (height - camera.height * scale) / 2;
     context.translate(offsetX, offsetY); context.scale(scale, scale); context.translate(-this.cameraPosition.x, -this.cameraPosition.y);
-    const art = this.art[this.floor]; if (art.complete && art.naturalWidth) context.drawImage(art, 0, 0, WIDTH, HEIGHT);
+    const art = chapterBackground('tunnel', this.floor); if (art.complete && art.naturalWidth) context.drawImage(art, 0, 0, WIDTH, HEIGHT);
     if (this.floor === 'L0') drawTunnelExitBarrier(context);
     if (this.collisionVisible) {
       context.save(); context.globalAlpha = .45;
