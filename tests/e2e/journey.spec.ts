@@ -33,9 +33,15 @@ async function finishDialogue(page:Page) {
  }
  throw Error('剧情未到达出口');
 }
+// 自隐 HUD：非战斗阶段顶栏默认收起，先展开再点验收工具（战斗阶段顶栏常驻展开）。
+async function openQaTools(page:Page) {
+ const qa=page.getByRole('button',{name:'验收工具'});
+ if(!await qa.isVisible())await page.getByRole('button',{name:'展开顶部信息栏（可拖拽）'}).click();
+ await qa.click();
+}
 // 当前流程快捷操作使用真实 INTERACT，不创建或覆盖验收进度。
 async function triggerCrateFromDevTools(page:Page) {
- await page.getByRole('button',{name:'验收工具'}).click();
+ await openQaTools(page);
  await page.getByRole('button',{name:/触发纸箱事件/}).click();
 }
 
@@ -87,7 +93,7 @@ test('真实浏览器贯通序章救援与家园闭环、集市事件验收和�
  await testInfo.attach('l01-first-rescue-boss-run',{body:JSON.stringify(battleRun,null,2),contentType:'application/json'});
  await page.screenshot({path:'output/preview/rescue.png',fullPage:true});
  await page.getByRole('button',{name:'带伙伴回家 →',exact:true}).click();await page.getByRole('button',{name:'继续故事'}).click();
- await page.getByRole('button',{name:'验收工具'}).click();await page.getByTestId('qa-inspect-poster').click();
+ await openQaTools(page);await page.getByTestId('qa-inspect-poster').click();
  await expect(page.getByLabel('寻猫启事')).toBeVisible();await page.screenshot({path:'output/preview/poster.png',fullPage:true});await finishDialogue(page);
  await expect(page.getByRole('heading',{name:'整理我们的家'})).toBeVisible();await expect(page.getByTestId('stamps')).toHaveText('2');
  await page.getByRole('button',{name:'避雨角落'}).click();
@@ -110,7 +116,7 @@ test('真实浏览器贯通序章救援与家园闭环、集市事件验收和�
  const headers={Authorization:`Bearer ${session.token}`};
  const beforeCards=(await(await request.get('/api/v1/state',{headers})).json()) as GameState;
  for(const eventId of ['crow_intel_event','pigeon_rumor_event']){
-   await page.getByRole('button',{name:'验收工具'}).click();
+   await openQaTools(page);
    await page.getByTestId('qa-chapter-market').click();
    await page.getByLabel('选择事件').selectOption(`event:market:${eventId}`);
    await page.getByTestId('qa-load-event').click();
@@ -124,7 +130,7 @@ test('真实浏览器贯通序章救援与家园闭环、集市事件验收和�
    await page.screenshot({path:`output/preview/${eventId}.png`,fullPage:true});
  }
  await page.reload();await enterGame(page);
- await page.getByRole('button',{name:'验收工具'}).click();await page.getByTestId('qa-restore').click();
+ await openQaTools(page);await page.getByTestId('qa-restore').click();
  const restored=(await(await request.get('/api/v1/state',{headers})).json()) as GameState;
  expect({...restored,revision:beforeCards.revision}).toEqual(beforeCards);
  await expect(page.locator('.qa-active-badge')).toHaveCount(0);
@@ -155,7 +161,10 @@ test('窄屏首屏没有水平溢出且故事可操作',async({page})=>{
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await page.screenshot({path:'output/preview/mobile-start.png',fullPage:true});
  await enterGame(page);await expect(page.getByRole('button',{name:'继续故事'})).toBeVisible();await page.getByRole('button',{name:'继续故事'}).click();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await page.screenshot({path:'output/preview/mobile.png',fullPage:true});
- await page.getByRole('button',{name:'猫国商店',exact:true}).click();const shop=page.getByRole('dialog',{name:'猫国商店'});await expect(shop).toBeVisible();
+ // 自隐 HUD 在窄屏默认收起,先展开顶栏才能点到猫国商店;溢出断言在此之前已完成,不受影响。
+ const shopButton=page.getByRole('button',{name:'猫国商店',exact:true});
+ if(!await shopButton.isVisible())await page.getByRole('button',{name:'展开顶部信息栏（可拖拽）'}).click();
+ await shopButton.click();const shop=page.getByRole('dialog',{name:'猫国商店'});await expect(shop).toBeVisible();
  expect(await shop.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);await page.screenshot({path:'output/preview/mobile-shop.png',fullPage:true});
 });
 
