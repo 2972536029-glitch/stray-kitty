@@ -1,8 +1,8 @@
 import type {BattleSceneId} from './scene-art';
-import {paintDetailedExterior,paintDetailedGardenWall,paintDetailedStructure,paintRefinedMaterial} from './scene-detailed-exteriors';
+import {paintDetailedExterior,paintDetailedGardenWall,paintDetailedStructure,paintDetailedWarehousePerimeter,paintDetailedWorkstation,paintRefinedMaterial} from './scene-detailed-exteriors';
 
 export interface PerimeterPropBounds {x:number;y:number;width:number;height:number}
-type StructureKind='house'|'soil-bed'|'garden-wall'|'flower-frame'|'counter'|'vent'|'loading-dock';
+type StructureKind='house'|'soil-bed'|'garden-wall'|'flower-frame'|'counter'|'vent'|'tunnel-service-corner'|'pallet-jack'|'pipe-cradle';
 interface Structure {kind:StructureKind;x:number;y:number;width:number;height:number;variant?:number}
 interface Material {edge:string;face:string;top:string;light:string;wood:string;leaf:string}
 const material:Record<BattleSceneId,Material>={
@@ -17,9 +17,7 @@ const material:Record<BattleSceneId,Material>={
 /** Entire silhouettes, including shadows, fit these authored exterior boxes.
  * Coordinates are logical cells, never inferred from the viewport or CELLS mask. */
 const structures:Record<BattleSceneId,readonly Structure[]>={
-  prologue:[
-    {kind:'loading-dock',x:3.8,y:3.3,width:2.7,height:.65},
-  ],
+  prologue:[],
   alley:[
     {kind:'house',x:.55,y:-.35,width:2.15,height:3.05},
     {kind:'house',x:5.6,y:.15,width:3.9,height:2.55,variant:1},
@@ -35,11 +33,12 @@ const structures:Record<BattleSceneId,readonly Structure[]>={
     {kind:'soil-bed',x:.2,y:5.05,width:4.6,height:1.5,variant:1},
   ],
   tunnel:[
-    {kind:'vent',x:.2,y:4.25,width:2.45,height:.8},
+    // The entire corner lives in the missing E1–E3 notch, including on narrow screens.
+    {kind:'tunnel-service-corner',x:0,y:4,width:2.9,height:1.1},
   ],
   finale:[
-    {kind:'loading-dock',x:.2,y:-.1,width:2.45,height:.8},
-    {kind:'loading-dock',x:.25,y:6.3,width:2.35,height:.85,variant:1},
+    {kind:'pallet-jack',x:.2,y:-.1,width:2.45,height:.8},
+    {kind:'pipe-cradle',x:.45,y:6.35,width:2.35,height:.8},
   ],
 };
 type Context=CanvasRenderingContext2D;
@@ -191,17 +190,31 @@ function vent(ctx:Context,p:Material,w:number,h:number){
   for(let yy=faceY+2;yy<faceY+faceH-1;yy+=5){r(ctx,p.top,24,yy,w-52,2);r(ctx,p.light+'35',25,yy,w-54,1);}
   for(const xx of [12,w-18]){r(ctx,'#a3a78b',xx,16,2,2);r(ctx,'#2d4548',xx,31,2,2);}
 }
-function loadingDock(ctx:Context,p:Material,w:number,h:number,variant:number){
-  if(paintDetailedStructure(ctx,'loading-dock',w,h,variant===1))return;
-  shadow(ctx,w,h);brickFace(ctx,p,8,20,w-18,h-34);ledge(ctx,p,5,12,w-12,12);
-  for(let xx=14;xx<w-20;xx+=18){r(ctx,p.edge+'75',xx,15,1,5);r(ctx,p.light+'35',xx+2,14,11,1);}
-  const pileX=variant?w*.55:18,pileW=Math.min(57,w*.32);
-  r(ctx,p.edge,pileX,4,pileW,17);r(ctx,p.wood,pileX+2,5,pileW-4,14);
-  paintRefinedMaterial(ctx,'wood',pileX+2,5,pileW-4,14,.35);
-  for(let yy=7;yy<18;yy+=5){r(ctx,'#baa4775a',pileX+3,yy,pileW-7,1);r(ctx,'#383e35',pileX+6,yy+1,pileW-13,2);}
-  r(ctx,p.face,w-27,27,10,h-43);r(ctx,p.light+'55',w-27,27,2,h-45);
-}
 
+/** World-anchored L corner: a low sill links the wire footing to the drain.
+ * Low portable storage collects below that base, leaving the service floor open.
+ * The caller's actual-cell clip protects the nearby route, goal and entrances. */
+function tunnelServiceCorner(ctx:Context,p:Material){
+  // This eight-unit toe continues the existing footing's bottom at world y322.
+  r(ctx,'#0d252c4d',2,9,228,4);
+  brickFace(ctx,p,4,4,224,6);
+  r(ctx,p.top,4,2,224,2);r(ctx,p.light+'65',6,2,220,1);
+  r(ctx,p.edge+'b0',4,9,224,1);
+  // Both storage and drain sit below the footing, entirely inside the missing cells.
+  ctx.save();ctx.translate(8,6);
+  if(!paintDetailedWorkstation(ctx,'tunnel-tools',104,44)){
+    // The loading fallback remains portable storage, with no detached machine.
+    r(ctx,p.edge,3,14,51,28);r(ctx,p.face,5,16,47,24);
+    r(ctx,p.top,7,14,43,3);r(ctx,p.light,22,8,18,3);
+    r(ctx,p.edge,60,21,40,20);r(ctx,p.face,62,23,36,16);
+    for(let y=26;y<34;y+=3)r(ctx,p.light+'80',66,y,25,1);
+  }
+  ctx.restore();
+  ctx.save();ctx.translate(120,30);vent(ctx,p,108,48);ctx.restore();
+  // Sparse grit sits against the sill; the surrounding wet paving stays open.
+  r(ctx,p.face+'a0',8,13,4,2);r(ctx,p.top+'90',19,11,3,1);
+  r(ctx,p.light+'50',31,15,2,1);r(ctx,p.edge+'70',111,57,5,1);
+}
 /** The caller has translated to the board origin. Returned boxes are CSS pixels
  * relative to that same origin, including shadows; use them to reserve scenery space. */
 export function paintPerimeterProps(ctx:Context,scene:BattleSceneId,cellWidth:number,cellHeight:number):PerimeterPropBounds[]{
@@ -218,7 +231,8 @@ export function paintPerimeterProps(ctx:Context,scene:BattleSceneId,cellWidth:nu
       case 'flower-frame':flowerFrame(ctx,p,w,h);break;
       case 'counter':counter(ctx,p,w,h,plan.variant??0);break;
       case 'vent':vent(ctx,p,w,h);break;
-      case 'loading-dock':loadingDock(ctx,p,w,h,plan.variant??0);break;
+      case 'tunnel-service-corner':tunnelServiceCorner(ctx,p);break;
+      case 'pallet-jack':case 'pipe-cradle':paintDetailedWarehousePerimeter(ctx,plan.kind,w,h);break;
     }
     ctx.restore();result.push({x:plan.x*cellWidth,y:plan.y*cellHeight,width:plan.width*cellWidth,height:plan.height*cellHeight});
   }

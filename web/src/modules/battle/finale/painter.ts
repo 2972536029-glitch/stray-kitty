@@ -1,4 +1,5 @@
 import {paintCarryAnchor} from '../carry-painter';
+import {paintBossRetreatLabel} from '../boss-retreat-label';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
 import {paintFinaleObstacleScenery, FINALE_JOINED_OBSTACLE_CELLS} from '../scene-industrial-obstacles';
 import {paintDetailedWarehouseFixture} from '../scene-detailed-exteriors';
@@ -52,7 +53,7 @@ function drawObstacle(ctx:CanvasRenderingContext2D,p:Position,state:FinaleState)
 }
 /** One nine-cell silhouette and one health pool, with a changed crown in phase two. */
 function drawBoss(ctx:CanvasRenderingContext2D,state:FinaleState){
-  const boss=state.boss;if(boss.phase==='defeated'){text(ctx,'长夜已破',(boss.x+1.5)*CELL,(boss.y+1.5)*CELL,SCENE_INK.gold,18);return;}
+  const boss=state.boss;if(boss.phase==='defeated'){paintBossRetreatLabel(ctx,'长夜已破',boss.x*CELL,boss.y*CELL,3*CELL,3*CELL);return;}
   const raging=boss.tierPhase===2,windup=boss.phase==='windup';ctx.save();ctx.translate(boss.x*CELL+12,boss.y*CELL+8);ctx.scale(2.7,2.7);
   blocks(ctx,'#263b3533',[[6,74,68,6],[15,80,50,3]]);blocks(ctx,SCENE_INK.enemy,[[24,15,33,21],[17,30,48,34],[10,60,61,15],[5,41,14,30],[64,41,13,30],[18,74,19,7],[48,74,19,7]]);
   blocks(ctx,SCENE_INK.enemyLight,[[20,36,9,28],[54,36,9,28],[27,17,28,6],[8,43,7,19],[68,43,6,19]]);blocks(ctx,'#1a2e3e',[[30,39,22,33],[22,66,8,8],[53,66,8,8]]);
@@ -72,7 +73,42 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:FinaleState){
 function drawLights(ctx:CanvasRenderingContext2D,state:FinaleState){
   const point=MAP.lightWaypoints[state.lightStage],x=(point.x+.5)*CELL,y=(point.y+.5)*CELL;
   if(state.lightStage>0){ctx.save();ctx.fillStyle='#edcf7838';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo((MAP.boss.x+3)*CELL,(MAP.boss.y+.1)*CELL);ctx.lineTo((MAP.boss.x+3)*CELL,(MAP.boss.y+2.9)*CELL);ctx.closePath();ctx.fill();ctx.strokeStyle='#d8bc78';ctx.lineWidth=3;ctx.setLineDash([6,8]);ctx.beginPath();ctx.moveTo((MAP.goal.x+1)*CELL,y);ctx.lineTo(x,y);ctx.stroke();ctx.restore();}
-  ctx.save();ctx.globalAlpha=.85;blocks(ctx,'#8d9a7a',[[x-13,y+13,26,12],[x-18,y+24,8,5],[x+10,y+24,8,5]]);blocks(ctx,'#d5bd77',[[x-6,y+1,16,14],[x+10,y+3,5,10]]);rect(ctx,x-2,y+4,12,8,'#fff1b8');ctx.restore();
+  // A wheeled work light, with a push handle, battery deck and a right-facing
+  // lamp in its own yoke. The silhouette stays inside the existing waypoint
+  // tile; only its artwork changes as the same lightStage advances the cart.
+  const lit=state.lightStage>0;
+  ctx.save();ctx.translate(x-40,y-40);ctx.globalAlpha=.94;
+  blocks(ctx,'#1d323338',[[12,66,54,5],[20,71,39,2]]);
+  // Distinct rubber wheels and hubs make the base read as a trolley, not legs.
+  for(const wx of [17,49]){
+    blocks(ctx,'#283c40',[[wx+2,59,9,2],[wx,61,13,8],[wx+2,69,9,2]]);
+    blocks(ctx,'#516361',[[wx+2,61,9,1],[wx+1,63,1,4],[wx+9,63,2,4]]);
+    blocks(ctx,'#99a797',[[wx+5,63,4,4]]);rect(ctx,wx+6,64,2,2,'#4b6060');
+  }
+  // Low horizontal frame, rear push handle and a compact power box.
+  blocks(ctx,'#354c4c',[[13,55,51,6],[10,36,3,21],[10,33,16,4]]);
+  blocks(ctx,'#798b7c',[[14,52,49,5],[11,37,1,16],[14,34,10,1]]);
+  blocks(ctx,'#b1b59a',[[16,52,45,1],[16,56,43,1]]);
+  blocks(ctx,'#4d5f59',[[9,32,17,3],[27,42,27,11],[29,40,22,3]]);
+  blocks(ctx,'#879581',[[29,43,22,1],[29,45,2,6],[34,40,12,1]]);
+  blocks(ctx,'#283f43',[[42,46,9,1],[42,49,9,1],[35,45,4,3]]);
+  rect(ctx,36,45,2,1,'#b7b497');
+  // The upright mast and U-shaped yoke sit behind the cylindrical lamp head.
+  blocks(ctx,'#344b4e',[[35,30,7,12],[24,27,4,14],[26,39,25,4],[49,29,4,12]]);
+  blocks(ctx,'#8d9b8b',[[36,31,2,10],[25,29,1,9],[28,39,20,1],[50,32,1,6]]);
+  blocks(ctx,'#31494e',[[26,15,23,21],[29,12,19,4],[24,19,3,13]]);
+  blocks(ctx,'#617b7a',[[29,15,17,3],[27,18,3,13],[30,32,14,3]]);
+  blocks(ctx,'#a2afa0',[[31,15,13,1],[28,19,1,10]]);
+  blocks(ctx,'#263f47',[[32,20,2,10],[36,19,2,12],[40,19,2,12]]);
+  // Stepped circular reflector: a modest brass rim and one readable pale lens.
+  blocks(ctx,'#344a4d',[[48,12,11,2],[45,14,17,4],[43,18,21,11],[45,29,17,5],[48,34,11,2]]);
+  blocks(ctx,'#a69b75',[[49,14,9,2],[46,16,15,4],[45,20,17,8],[47,28,13,4],[50,32,7,2]]);
+  blocks(ctx,lit?'#e9d699':'#c8bf93',[[50,17,7,2],[48,19,11,9],[50,28,7,3]]);
+  blocks(ctx,lit?'#fff0bc':'#ece3b6',[[51,20,5,7],[49,22,9,2]]);
+  blocks(ctx,'#b7b99c',[[24,29,3,3],[50,30,3,3]]);
+  blocks(ctx,'#425b5b',[[25,30,1,1],[51,31,1,1]]);
+  if(lit)blocks(ctx,'#edda9c36',[[58,39,7,1],[61,42,5,1]]);
+  ctx.restore();
 }
 function drawEffects(ctx:CanvasRenderingContext2D,state:FinaleState){
   for(const effect of state.effects){ctx.save();ctx.globalAlpha=Math.min(1,effect.remaining*3);

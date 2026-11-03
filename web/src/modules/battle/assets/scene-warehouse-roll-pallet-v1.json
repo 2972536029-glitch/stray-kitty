@@ -1,0 +1,14 @@
+{
+  "tool": "built-in image_gen",
+  "transparentBackground": true,
+  "source": "C:/Users/YAN/.codex/generated_images/01a18bba-e50c-7211-b97b-f47b7a5cc8bc/exec-08afb2b1-152a-43e5-ba21-c74181dc6af0.png",
+  "crop": [
+    25,
+    61,
+    1713,
+    788
+  ],
+  "rendering": "Shared scenery grid 56 texels per 80 world units, average once, nearest final scaling",
+  "replaces": "warehouse beam-lower",
+  "originalRetained": "scene-warehouse-fixtures-v4.png"
+}

@@ -1,4 +1,5 @@
 import {paintCarryAnchor} from '../carry-painter';
+import {paintBossRetreatLabel} from '../boss-retreat-label';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
 import {paintTunnelObstacleScenery, TUNNEL_JOINED_OBSTACLE_CELLS} from '../scene-industrial-obstacles';
 import {paintDetailedTunnelFixture} from '../scene-detailed-exteriors';
@@ -191,7 +192,7 @@ export function paintTunnel(ctx:CanvasRenderingContext2D,state:TunnelState,selec
   if(chosen&&!state.aim){ctx.fillStyle=dark?'#8ee2cb30':'#8ee2cb28';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;for(const p of getAttackCells(chosen)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);}}
   if(state.aim){ctx.fillStyle='#7ccbd12d';for(const p of CELLS)if(!obstacleCell(p.x,p.y))ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);const cat=state.cats.find(value=>value.id===state.aim?.catId);if(cat&&state.aim.target){ctx.fillStyle='#f4ce8366';ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;for(const p of getSkillCells(cat,state.aim.target)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+5,p.y*CELL+5,CELL-10,CELL-10);}}}
   if(moveTarget&&mapCell(moveTarget.x,moveTarget.y)){ctx.strokeStyle=dark?'#e6f5d7':SCENE_INK.selected;ctx.lineWidth=2;ctx.strokeRect(moveTarget.x*CELL+5,moveTarget.y*CELL+5,CELL-10,CELL-10);}
-  if(state.boss.phase==='defeated'){ctx.fillStyle=SCENE_INK.label;ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText('监守已退去',(MAP.boss.x+1)*CELL,(MAP.boss.y+1)*CELL);}
+  if(state.boss.phase==='defeated')paintBossRetreatLabel(ctx,'监守已退去',MAP.boss.x*CELL,MAP.boss.y*CELL,2*CELL,2*CELL);
   drawBoss(ctx,state);
   for(const enemy of state.enemies.filter(enemy=>isEnemyVisible(state,enemy))){
     ctx.save();ctx.translate((enemy.x+.5)*CELL-19,(enemy.y+.5)*CELL-24+Math.sin(state.elapsed*6+enemy.x)*2);

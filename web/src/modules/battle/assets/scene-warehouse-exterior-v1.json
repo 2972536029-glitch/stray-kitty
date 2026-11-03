@@ -1,0 +1,12 @@
+{
+  "generator": "Built-in image_gen",
+  "styleReference": "scene-warehouse-fixtures-v3.png",
+  "transparent": true,
+  "sampling": "average once to the shared pixel grid, then unsmoothed enlargement",
+  "texelsPer80WorldUnits": 56,
+  "sprites": {
+    "pallet-jack": {"file": "scene-warehouse-pallet-jack-v1.png", "size": [2172, 724], "crop": [202, 92, 1672, 575]},
+    "pipe-cradle": {"file": "scene-warehouse-pipe-cradle-v1.png", "size": [2172, 724], "crop": [74, 98, 2001, 567]}
+  },
+  "notes": "Separate original transparent sprites, never mirrored copies. Fit with preserved proportions inside authored exterior bounds. Does not change walkable cells, enemies or UI."
+}

@@ -1,4 +1,5 @@
 import {paintCarryAnchor} from '../carry-painter';
+import {paintBossRetreatLabel} from '../boss-retreat-label';
 import {drawCat} from '../l00/painter';
 import type {ChapterState, ChapterCat, ChapterCatId as CatId, Position} from './types';
 import {getAttackCells, getBossCells, getSkillCells} from './engine';
@@ -109,8 +110,7 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
   for(const cell of getBossCells(state.boss))ctx.fillRect(cell.x*CELL+3,cell.y*CELL+3,CELL-6,CELL-6);
   ctx.strokeRect(state.boss.x*CELL+4,state.boss.y*CELL+4,state.boss.width*CELL-8,state.boss.height*CELL-8);
   if(state.boss.phase==='defeated'){
-    ctx.fillStyle=SCENE_INK.label;ctx.font='bold 12px sans-serif';ctx.textAlign='center';
-    ctx.fillText('首领已退去',(state.boss.x+state.boss.width/2)*CELL,(state.boss.y+state.boss.height/2)*CELL);ctx.textAlign='start';
+    paintBossRetreatLabel(ctx,'首领已退去',state.boss.x*CELL,state.boss.y*CELL,state.boss.width*CELL,state.boss.height*CELL);
   }
   ctx.restore();
   drawCat(ctx,'hero',10,3*CELL+13,58);

@@ -1,4 +1,5 @@
 import {paintCarryAnchor} from '../carry-painter';
+import {paintBossRetreatLabel} from '../boss-retreat-label';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP} from './config';
@@ -94,7 +95,7 @@ export function paintMarket(ctx:CanvasRenderingContext2D,state:MarketState,selec
     blocks(ctx,SCENE_INK.danger,points);
   }
   rect(ctx,MAP.boss.x*CELL+3,MAP.boss.y*CELL+3,CELL-6,CELL-6,'#66546f38');
-  if(state.boss.phase==='defeated'){ctx.fillStyle=SCENE_INK.label;ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('首领已退去',(MAP.boss.x+.5)*CELL,(MAP.boss.y+.5)*CELL);}
+  if(state.boss.phase==='defeated')paintBossRetreatLabel(ctx,'首领已退去',MAP.boss.x*CELL,MAP.boss.y*CELL,CELL,CELL);
   drawCat(ctx,'hero',8,MAP.goal.y*CELL+11,62);
   paintCarryAnchor(ctx,state.carry,CELL,mapCell);
   const selectedCat=state.cats.find(cat=>cat.id===selected&&cat.status==='active');

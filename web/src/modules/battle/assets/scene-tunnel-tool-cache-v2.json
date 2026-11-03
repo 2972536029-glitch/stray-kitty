@@ -1,0 +1,11 @@
+{
+  "size": [1902, 827],
+  "source": "Built-in image_gen edit of v1; original transparent output retained",
+  "crop": [325, 181, 1257, 474],
+  "cropThreshold": 32,
+  "cropPadding": 2,
+  "sceneryTexelsPerCell": 56,
+  "worldCellSize": 80,
+  "sampling": "average once to the shared pixel grid, then unsmoothed enlargement",
+  "notes": "Low toolbox and offset cable case only. Upright board and hanging tools removed. World-anchored storage in the missing lower-left tunnel notch, next to the drain and below the masonry footing."
+}

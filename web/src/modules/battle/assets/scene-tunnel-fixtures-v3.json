@@ -1,0 +1,19 @@
+{
+  "size": [1254, 1254],
+  "alpha": true,
+  "source": "Built-in image_gen edit of v2; greenhouse and workstations used only as style references. Original selected PNG retained.",
+  "sampling": "average once to the shared pixel grid, then unsmoothed enlargement",
+  "sceneryTexelsPerCell": 56,
+  "worldCellSize": 80,
+  "cropThreshold": 32,
+  "cropPadding": 2,
+  "crops": {
+    "pipe": [41, 184, 557, 204],
+    "valve": [687, 95, 509, 291],
+    "cabinet": [117, 464, 438, 325],
+    "cage": [745, 451, 429, 340],
+    "service-wall": [18, 848, 601, 338],
+    "wire-footing": [639, 1005, 601, 181]
+  },
+  "notes": ["Existing placement boxes and walkable-cell exclusions are preserved.", "Cage bar openings retain alpha; cats, tools and cleared-wire marks are separate live overlays."]
+}

@@ -9,18 +9,23 @@ const crops:Record<DetailedExteriorKind,readonly [number,number,number,number]>=
   'planted-bed':[76,686,758,262],
   'glass-frame':[1008,683,452,272],
 };
-type Asset='exteriors'|'obstacles'|'workstations'|'materials'|'accents'|'structures'|'market-banks'|'back-walls'|'tunnel-fixtures'|'warehouse-fixtures';
+type Asset='exteriors'|'obstacles'|'workstations'|'materials'|'accents'|'structures'|'market-banks'|'back-walls'|'tunnel-fixtures'|'warehouse-fixtures'|'warehouse-pallet-jack'|'warehouse-pipe-cradle'|'warehouse-roll-pallet'|'warehouse-storage-rack'|'tunnel-tools';
 const urls:Record<Asset,string>={
   exteriors:new URL('./assets/scene-detailed-residences-garden-v1.png',import.meta.url).href,
   obstacles:new URL('./assets/scene-detailed-obstacles-v1.png',import.meta.url).href,
   workstations:new URL('./assets/scene-detailed-workstations-v1.png',import.meta.url).href,
+  'tunnel-tools':new URL('./assets/scene-tunnel-tool-cache-v2.png',import.meta.url).href,
   materials:new URL('./assets/scene-refined-materials-v1.png',import.meta.url).href,
   accents:new URL('./assets/scene-small-accents-v1.png',import.meta.url).href,
   structures:new URL('./assets/scene-perimeter-foreground-v1.png',import.meta.url).href,
   'market-banks':new URL('./assets/scene-market-banks-v1.png',import.meta.url).href,
   'back-walls':new URL('./assets/scene-chapter-backwalls-v1.png',import.meta.url).href,
-  'tunnel-fixtures':new URL('./assets/scene-tunnel-fixtures-v2.png',import.meta.url).href,
-  'warehouse-fixtures':new URL('./assets/scene-warehouse-fixtures-v2.png',import.meta.url).href,
+  'tunnel-fixtures':new URL('./assets/scene-tunnel-fixtures-v3.png',import.meta.url).href,
+  'warehouse-fixtures':new URL('./assets/scene-warehouse-fixtures-v4.png',import.meta.url).href,
+  'warehouse-pallet-jack':new URL('./assets/scene-warehouse-pallet-jack-v1.png',import.meta.url).href,
+  'warehouse-pipe-cradle':new URL('./assets/scene-warehouse-pipe-cradle-v1.png',import.meta.url).href,
+  'warehouse-roll-pallet':new URL('./assets/scene-warehouse-roll-pallet-v1.png',import.meta.url).href,
+  'warehouse-storage-rack':new URL('./assets/scene-warehouse-storage-rack-v1.png',import.meta.url).href,
 };
 const atlases=new Map<Asset,HTMLImageElement>(),listeners=new Map<Asset,Set<()=>void>>();
 function source(asset:Asset='exteriors'){
@@ -89,18 +94,19 @@ export function paintDetailedGardenWall(ctx:CanvasRenderingContext2D,width:numbe
   ctx.restore();return true;
 }
 
-type Workstation='garden-bench'|'potting-corner'|'alley-supplies'|'market-goods'|'pump-station'|'warehouse-workbench';
-const workstations:Record<Workstation,readonly [number,number,number,number]>={
+type AtlasWorkstation='garden-bench'|'potting-corner'|'alley-supplies'|'market-goods'|'warehouse-workbench';
+type Workstation=AtlasWorkstation|'tunnel-tools';
+const workstations:Record<AtlasWorkstation,readonly [number,number,number,number]>={
   'garden-bench':[20,60,515,470],
   'potting-corner':[552,84,480,444],
   'alley-supplies':[1058,150,474,384],
   'market-goods':[20,570,517,374],
-  'pump-station':[540,562,508,378],
   'warehouse-workbench':[1054,554,472,386],
 };
 export function paintDetailedWorkstation(ctx:CanvasRenderingContext2D,kind:Workstation,width:number,height:number){
-  const image=source('workstations');if(!image)return false;
-  const [sx,sy,sw,sh]=workstations[kind],scale=Math.min(width/sw,height/sh),dw=sw*scale,dh=sh*scale;
+  const image=source(kind==='tunnel-tools'?'tunnel-tools':'workstations');if(!image)return false;
+  const [sx,sy,sw,sh]=kind==='tunnel-tools'?[325,181,1257,474]:workstations[kind];
+  const scale=Math.min(width/sw,height/sh),dw=sw*scale,dh=sh*scale;
   const sprite=sceneryRaster(image,[sx,sy,sw,sh],dw,dh);if(!sprite)return false;
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(sprite,(width-dw)/2,height-dh,dw,dh);ctx.restore();return true;
 }
@@ -130,19 +136,19 @@ export function paintDetailedAccent(ctx:CanvasRenderingContext2D,kind:string){
 
 export type TunnelFixture='pipe'|'valve'|'cabinet'|'cage'|'service-wall'|'wire-footing';
 const tunnelFixtures:Record<TunnelFixture,{crop:readonly [number,number,number,number];box:readonly [number,number,number,number]}>={
-  pipe:{crop:[38,179,576,212],box:[5,23,70,38]},
-  valve:{crop:[690,92,516,300],box:[5,7,70,56]},
-  cabinet:{crop:[119,468,442,324],box:[15,18,50,47]},
-  cage:{crop:[751,452,423,341],box:[9,15,62,49]},
-  'service-wall':{crop:[19,852,604,330],box:[478,-17,178,94]},
-  'wire-footing':{crop:[630,1013,607,176],box:[-18,256,176,66]},
+  pipe:{crop:[41,184,557,204],box:[5,23,70,38]},
+  valve:{crop:[687,95,509,291],box:[5,7,70,56]},
+  cabinet:{crop:[117,464,438,325],box:[15,18,50,47]},
+  cage:{crop:[745,451,429,340],box:[9,15,62,49]},
+  'service-wall':{crop:[18,848,601,338],box:[478,-17,178,94]},
+  'wire-footing':{crop:[639,1005,601,181],box:[-18,256,176,66]},
 };
 /** These are only surfaces inside the existing tunnel fixtures. The empty cage
  * retains alpha between its bars; cats and cleared-wire states stay live. */
 export function paintDetailedTunnelFixture(ctx:CanvasRenderingContext2D,kind:TunnelFixture){
   const image=source('tunnel-fixtures');if(!image)return false;
   const {crop,box:[x,y,w,h]}=tunnelFixtures[kind],scale=Math.min(w/crop[2],h/crop[3]);
-  const dw=crop[2]*scale,dh=crop[3]*scale,sprite=sceneryRaster(image,crop,dw,dh,'pixel');
+  const dw=crop[2]*scale,dh=crop[3]*scale,sprite=sceneryRaster(image,crop,dw,dh,'average');
   if(!sprite)return false;
   ctx.save();ctx.imageSmoothingEnabled=false;
   ctx.drawImage(sprite,x+(w-dw)/2,y+h-dh,dw,dh);ctx.restore();return true;
@@ -150,22 +156,47 @@ export function paintDetailedTunnelFixture(ctx:CanvasRenderingContext2D,kind:Tun
 
 export type WarehouseFixture='beam-upper'|'beam-lower'|'cargo-upper'|'cargo-lower'|'holding-room'|'cage'|'side-wall'|'rack';
 const warehouseFixtures:Record<WarehouseFixture,{crop:readonly [number,number,number,number];box:readonly [number,number,number,number]}>={
-  'beam-upper':{crop:[27,74,488,242],box:[-20,-18,178,96]},
-  'beam-lower':{crop:[547,93,512,223],box:[-20,15,178,89]},
-  'cargo-upper':{crop:[18,373,523,302],box:[-18,2,174,75]},
-  'cargo-lower':{crop:[567,409,502,266],box:[-18,2,174,75]},
-  'holding-room':{crop:[42,719,635,293],box:[8,7,168,68]},
-  cage:{crop:[721,732,304,276],box:[9,21,62,42]},
-  'side-wall':{crop:[190,1030,201,391],box:[-21,150,94,258]},
-  rack:{crop:[584,1112,329,275],box:[8,8,64,59]},
+  'beam-upper':{crop:[31,70,481,244],box:[-20,-18,178,96]},
+  'beam-lower':{crop:[551,97,506,219],box:[-20,15,178,89]},
+  'cargo-upper':{crop:[22,370,514,305],box:[-18,2,174,75]},
+  'cargo-lower':{crop:[570,408,495,267],box:[-18,2,174,75]},
+  'holding-room':{crop:[45,722,632,288],box:[8,7,168,68]},
+  cage:{crop:[726,736,299,273],box:[9,21,62,42]},
+  'side-wall':{crop:[191,1037,194,384],box:[-21,150,94,258]},
+  rack:{crop:[587,1113,326,277],box:[8,8,64,59]},
+};
+// Trial replacements keep the original atlas and registration available for review.
+const warehouseFixtureAlternates:Partial<Record<WarehouseFixture,{asset:Asset;crop:readonly [number,number,number,number]}>>={
+  'beam-lower':{asset:'warehouse-roll-pallet',crop:[25,61,1713,788]},
+  'side-wall':{asset:'warehouse-storage-rack',crop:[179,34,594,1586]},
 };
 /** Register the architecture to its existing fixture box before sampling at the
  * shared world density. The cage is separate so winning can remove every bar. */
 export function paintDetailedWarehouseFixture(ctx:CanvasRenderingContext2D,kind:WarehouseFixture){
-  const image=source('warehouse-fixtures');if(!image)return false;
-  const {crop,box:[x,y,w,h]}=warehouseFixtures[kind],sprite=sceneryRaster(image,crop,w,h,'pixel');
+  const alternate=warehouseFixtureAlternates[kind];
+  const image=source(alternate?.asset??'warehouse-fixtures');if(!image)return false;
+  // Match the greenhouse's one-time detail sampling before crisp pixel scaling.
+  const {box:[x,y,w,h]}=warehouseFixtures[kind],crop=alternate?.crop??warehouseFixtures[kind].crop;
+  const sprite=sceneryRaster(image,crop,w,h,'average');
   if(!sprite)return false;
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(sprite,x,y,w,h);ctx.restore();return true;
+}
+
+export type WarehousePerimeterProp='pallet-jack'|'pipe-cradle';
+const warehousePerimeterCrops:Record<WarehousePerimeterProp,readonly [number,number,number,number]>={
+  'pallet-jack':[202,92,1672,575],
+  'pipe-cradle':[74,98,2001,567],
+};
+/** Distinct exterior activities share the scene's raster density and keep their
+ * proportions. The transparent original assets include their contact shadows. */
+export function paintDetailedWarehousePerimeter(ctx:CanvasRenderingContext2D,kind:WarehousePerimeterProp,width:number,height:number){
+  const image=source(kind==='pallet-jack'?'warehouse-pallet-jack':'warehouse-pipe-cradle');
+  if(!image||width<=4||height<=4)return false;
+  const crop=warehousePerimeterCrops[kind],scale=Math.min((width-4)/crop[2],(height-4)/crop[3]);
+  const dw=crop[2]*scale,dh=crop[3]*scale,sprite=sceneryRaster(image,crop,dw,dh,'average');
+  if(!sprite)return false;
+  ctx.save();ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(sprite,(width-dw)/2,height-dh-2,dw,dh);ctx.restore();return true;
 }
 
 export type DetailedStructureKind='loading-dock'|'vent'|'market-counter'|'market-counter-cloth'
