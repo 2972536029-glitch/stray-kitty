@@ -47,8 +47,18 @@ export class DemoScene {
   storyNode?: StoryNode;
   private graphics: CanvasPainter;
   private context: CanvasRenderingContext2D;
-  private rainyAlley: IntegratedRainyAlley;
-  private tunnelMap: TunnelMap;
+  // Keep other chapters' image downloads out of the active map's loading path.
+  private rainyAlleyInstance?: IntegratedRainyAlley;
+  private tunnelMapInstance?: TunnelMap;
+  private topbarExpanded = false;
+  private get rainyAlley() {
+    if (!this.rainyAlleyInstance) {
+      this.rainyAlleyInstance = new IntegratedRainyAlley();
+      this.rainyAlleyInstance.setMinimapShift(this.topbarExpanded ? 62 : 0);
+    }
+    return this.rainyAlleyInstance;
+  }
+  private get tunnelMap() {return this.tunnelMapInstance ??= new TunnelMap();}
   private cityBackdrop: HTMLImageElement;
   private marketImages: Record<MarketFloor, HTMLImageElement> = {L0:new Image(),L1:new Image(),Lm1:new Image()};
   private marketFloor: MarketFloor = 'L0';
@@ -150,11 +160,8 @@ export class DemoScene {
     context.imageSmoothingEnabled = false;
     this.context = context;
     this.graphics = new CanvasPainter(context);
-    this.rainyAlley = new IntegratedRainyAlley();
-    this.tunnelMap = new TunnelMap();
     this.cityBackdrop = new Image();
     this.cityBackdrop.src = '/assets/city-backdrop.svg';
-    for(const floor of Object.keys(marketArt) as MarketFloor[]) this.marketImages[floor].src=marketArt[floor];
   }
   setDirection(direction: Direction, held: boolean) {if(this.marketTransition.active)return;if (held) this.held.add(direction);else this.held.delete(direction);}
   async enableWarehousePreview() {
@@ -246,7 +253,7 @@ export class DemoScene {
       }
     }
   };
-  private keyup = (event: KeyboardEvent) => {this.keys.delete(event.key.toLowerCase());this.tunnelMap.keyUp(event.key.toLowerCase());};
+  private keyup = (event: KeyboardEvent) => {this.keys.delete(event.key.toLowerCase());this.tunnelMapInstance?.keyUp(event.key.toLowerCase());};
   private clearInput = () => {this.keys.clear();this.held.clear();this.homePointerCancel();};
   // 滚轮缩放视野（雨巷）：上滚放大、下滚缩小；仅在自由探索且未暂停时接管，不吞面板滚动。
   private wheel = (event: WheelEvent) => {
@@ -401,7 +408,7 @@ export class DemoScene {
       this.movementHint = null;
       this.onInspectHint?.(null);
       this.onNear(false);
-      if (mode === 'event') this.rainyAlley.pauseForEvent();
+      if (mode === 'event') this.rainyAlleyInstance?.pauseForEvent();
       this.lastMode = mode;
       this.lastMapId = this.state.mapId;
     }
@@ -622,7 +629,8 @@ export class DemoScene {
   // 对话气泡锚点：返回说话猫头顶在画布中的位置（不在场返回 null，走旁白字幕条）。
   // 顶栏展开态通知（雨巷）：小地图下移避让，收起时归位。
   setTopbarExpanded(expanded:boolean){
-    this.rainyAlley.setMinimapShift(expanded?62:0);
+    this.topbarExpanded = expanded;
+    this.rainyAlleyInstance?.setMinimapShift(expanded?62:0);
   }
   speakerAnchor(breed:CatBreed):{x:number;y:number}|null{
     const st=this.state;if(!st||st.phase==='battle')return null;
@@ -965,6 +973,7 @@ export class DemoScene {
   private marketCameraFrame() {return this.marketFrame??measureMarketCameraFrame(this.canvas,this.viewWidth,this.viewHeight);}
   private snapMarketCamera() {this.marketCamera.snap({x:this.x,y:this.y},this.marketCameraFrame(),1672,941);}
   private drawMarket() {
+    if (!this.marketImages.L0.src) for (const floor of Object.keys(marketArt) as MarketFloor[]) this.marketImages[floor].src = marketArt[floor];
     const image=this.marketImages[this.marketFloor];
     const frame=this.marketCameraFrame(),camera=this.marketCamera;
     this.context.save();
