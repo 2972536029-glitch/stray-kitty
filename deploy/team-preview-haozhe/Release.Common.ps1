@@ -1,5 +1,35 @@
 Set-StrictMode -Version Latest
 
+function Wait-PublicHealth {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][uri]$Uri,
+        [ValidateRange(1, 24)][int]$Attempts = 12,
+        [ValidateRange(0, 10)][int]$DelaySeconds = 5
+    )
+    $lastError = 'No response received.'
+    for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+        try {
+            $response = Invoke-WebRequest -Uri $Uri -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+            $body = if ($response.Content -is [byte[]]) { [Text.Encoding]::UTF8.GetString($response.Content) } else { [string]$response.Content }
+            $body = $body.Trim()
+            if ($response.StatusCode -ne 200) { throw "Unexpected HTTP status: $($response.StatusCode)" }
+            if ($body -ne 'ok') {
+                $json = $body | ConvertFrom-Json -ErrorAction Stop
+                if (-not $json.PSObject.Properties['status'] -or $json.status -ne 'ok') { throw 'Health response did not report ok.' }
+            }
+            return [pscustomobject]@{ Uri = $Uri.AbsoluteUri; Content = $body; Attempts = $attempt }
+        } catch {
+            $lastError = $_.Exception.Message
+            if ($attempt -lt $Attempts) {
+                Write-Host "Public health not ready ($attempt/$Attempts): $lastError; retrying in $DelaySeconds seconds."
+                if ($DelaySeconds -gt 0) { Start-Sleep -Seconds $DelaySeconds }
+            }
+        }
+    }
+    throw "Public health verification failed after $Attempts attempts for ${Uri}: $lastError"
+}
+
 function Invoke-NativeChecked {
     [CmdletBinding()]
     param(
