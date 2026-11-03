@@ -30,8 +30,65 @@ async function prepare(page: Page, request: APIRequestContext, checkpointId: str
   }, {session, artwork});
 }
 
+for (const [checkpoint, scene, artwork] of chapters.slice(0, 3)) {
+  test(`${scene} holds characters, movement and interaction until a slow map is decoded`, async ({page, request}, info) => {
+    await prepare(page, request, checkpoint, artwork);
+    const commands: string[] = [], errors: string[] = [];
+    page.on('request', req => {if (req.url().endsWith('/api/v1/commands') && req.method() === 'POST') commands.push(req.postData() ?? '');});
+    page.on('pageerror', error => errors.push(error.message));
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => {release = resolve;});
+    await page.route(new RegExp(artwork + '.*\\.(?:webp|png)'), async route => {await gate;await route.continue();});
+    const canvas = page.locator('.game-viewport canvas');
+    try {
+      await page.goto('/', {waitUntil: 'domcontentloaded'});
+      await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+      await expect(canvas).toHaveAttribute('data-background-state', 'loading');
+      await expect(page.getByRole('status').filter({hasText: '正在打开地图'})).toBeVisible();
+      const position = [await canvas.getAttribute('data-player-x'), await canvas.getAttribute('data-player-y')];
+      await canvas.focus();
+      await page.keyboard.down('ArrowRight');await page.waitForTimeout(600);await page.keyboard.up('ArrowRight');
+      await page.keyboard.press('e');await page.keyboard.press('c');await page.keyboard.press('f');
+      expect([await canvas.getAttribute('data-player-x'), await canvas.getAttribute('data-player-y')]).toEqual(position);
+      expect(await canvas.getAttribute('data-painted-background')).toBeNull();
+      expect(commands).toEqual([]);
+      await page.screenshot({path: info.outputPath(scene + '-slow-loading.png')});
+    } finally {release();}
+    await expect(canvas).toHaveAttribute('data-background-state', 'ready');
+    await expect(canvas).toHaveAttribute('data-painted-background', /\.webp$/);
+    await expect(page.locator('.map-loading-panel')).toHaveCount(0);
+    const before = [await canvas.getAttribute('data-player-x'), await canvas.getAttribute('data-player-y')];
+    await expect(async () => {
+      await page.keyboard.down('ArrowRight');await page.waitForTimeout(300);await page.keyboard.up('ArrowRight');
+      expect([await canvas.getAttribute('data-player-x'), await canvas.getAttribute('data-player-y')]).not.toEqual(before);
+    }).toPass({timeout: 10000});
+    expect(errors).toEqual([]);
+    await page.screenshot({path: info.outputPath(scene + '-slow-ready.png')});
+  });
+}
+
+test('failed classic-map downloads show retry and recover without refreshing or losing position', async ({page, request}) => {
+  await prepare(page, request, 'alley.explore', 'rainy-alley-background-clean');
+  let failing = true;
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.route(/rainy-alley-background-clean.*\.(?:webp|png)/, route => failing ? route.abort('failed') : route.continue());
+  await page.goto('/');
+  await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+  const canvas = page.locator('.game-viewport canvas');
+  await expect(canvas).toHaveAttribute('data-background-state', 'error');
+  await expect(page.getByRole('alert').filter({hasText: '地图暂时没打开'})).toBeVisible();
+  const before = [await canvas.getAttribute('data-player-x'), await canvas.getAttribute('data-player-y')];
+  failing = false;
+  await page.getByRole('button', {name: '重新加载地图', exact: true}).click();
+  await expect(canvas).toHaveAttribute('data-background-state', 'ready');
+  await expect(canvas).toHaveAttribute('data-painted-background', /\.webp$/);
+  expect([await canvas.getAttribute('data-player-x'), await canvas.getAttribute('data-player-y')]).toEqual(before);
+  expect(errors).toEqual([]);
+});
+
 for (const [checkpoint, scene, artwork, source, floorCount] of chapters) {
-  test(`${scene} warms its entry background before play, then other floors, and reuses it on reentry`, async ({page, request}, info) => {
+  test(`${scene} restores early classic-map warming and reuses decoded artwork on reentry`, async ({page, request}, info) => {
     await prepare(page, request, checkpoint, artwork);
     const requests: string[] = [], errors: string[] = [];
     page.on('request', request => {if (/lossless.*\.webp/.test(request.url())) requests.push(request.url());});
@@ -43,10 +100,13 @@ for (const [checkpoint, scene, artwork, source, floorCount] of chapters) {
       await page.goto('/', {waitUntil: 'domcontentloaded'});
       await expect(page.getByRole('button', {name: /^(开始冒险|继续冒险)/})).toBeVisible();
       await expect.poll(() => requests.length).toBe(1);
-      expect(requests[0]).toContain(artwork);
+      expect(requests.filter(url => url.includes(artwork))).toHaveLength(1);
+      expect(requests.some(url => url.includes('warehouse'))).toBe(false);
       expect(await page.locator('.game-viewport canvas').count()).toBe(0);
     } finally {release();}
-    await expect.poll(() => requests.length).toBe(floorCount);
+    await expect.poll(() => requests.length).toBe(scene === 'home' ? 7 : 6);
+    const chapterPrefix = scene === 'night-market' ? 'night_market_' : scene === 'chapter4-tunnel' ? 'chapter4_' : artwork;
+    await expect.poll(() => requests.filter(url => url.includes(chapterPrefix)).length).toBe(floorCount);
     await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
     const canvas = page.locator('.game-viewport canvas');
     await expect(canvas).toHaveAttribute('data-rendered-scene', scene);

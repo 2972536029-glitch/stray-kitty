@@ -28,7 +28,7 @@ import {homeWalkable} from '../../modules/home/navigation';
 import {displayedCanvasRect} from '../../adapters/canvas/camera';
 import {homeStoryBeat, storyActorPosition, type HomeStoryActor, type HomeStoryBeat} from '../../modules/home/story';
 import {explorationScene} from '../../core/chapter-navigation';
-import {chapterBackground, preloadChapterArtwork} from '../../modules/map/artwork';
+import {chapterBackground, chapterBackgroundState, preloadChapterArtwork, retryChapterBackground, type ChapterBackgroundStatus} from '../../modules/map/artwork';
 // Keep warehouse code in the entry bundle: an open tab must not request a
 // retired JavaScript chunk when story progression or QA first enters this map.
 import {WarehouseWalkMap, type WarehouseReviewOptions} from '../../modules/chapter5/WarehouseWalkMap';
@@ -85,6 +85,7 @@ export class DemoScene {
   private previousTime = 0;
   private now = 0;
   private destroyed = false;
+  private backgroundStamp = '';
   private readonly viewWidth: number;
   private readonly viewHeight: number;
   // 随机事件:按真实位移累计里程,每满一段上报服务端判定;贴近交互点时暂停上报。
@@ -149,7 +150,8 @@ export class DemoScene {
     private onMarketBattle?: (floor:MarketFloor,point:{x:number;y:number}) => void,
     private onMarketExit?: (floor: MarketFloor, point:{x:number;y:number}) => void,
     private onMarketZone?: (zoneId:string,floor:MarketFloor,point:{x:number;y:number}) => Promise<boolean>,
-    private onWarehousePosition?: (floor:'L0'|'L1',point:{x:number;y:number})=>void
+    private onWarehousePosition?: (floor:'L0'|'L1',point:{x:number;y:number})=>void,
+    private onBackgroundState?: (status: ChapterBackgroundStatus | null)=>void
   ) {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('浏览器无法创建二维画布');
@@ -163,7 +165,38 @@ export class DemoScene {
     this.cityBackdrop = new Image();
     this.cityBackdrop.src = '/assets/city-backdrop.svg';
   }
-  setDirection(direction: Direction, held: boolean) {if(this.marketTransition.active)return;if (held) this.held.add(direction);else this.held.delete(direction);}
+  setDirection(direction: Direction, held: boolean) {if(this.marketTransition.active||this.backgroundBlocked())return;if (held) this.held.add(direction);else this.held.delete(direction);}
+  private backgroundStatus(): ChapterBackgroundStatus | null {
+    const state = this.state;
+    if (!state || state.mapId === 'warehouse' || state.phase === 'battle' || state.phase === 'home' || (state.phase === 'dialogue' && this.storyScene === 'home')) return null;
+    let mapId: string, floor = 'L0';
+    if (state.mapId === 'tunnel') {mapId = 'tunnel';floor = this.tunnelMap.layer;}
+    else if (state.mapId === 'market' || this.storyScene === 'market') {mapId = 'market';floor = this.marketFloor;}
+    else if (state.mapId === 'alley') mapId = 'alley';
+    else return null;
+    preloadChapterArtwork(mapId);
+    return {mapId, floor, state: chapterBackgroundState(mapId, floor)};
+  }
+  private backgroundBlocked() {
+    const status = this.backgroundStatus();
+    return status?.state === 'loading' || status?.state === 'error';
+  }
+  retryBackground() {
+    const status = this.backgroundStatus();
+    if (status) {this.clearInput();retryChapterBackground(status.mapId, status.floor);}
+  }
+  private holdForBackground() {
+    const status = this.backgroundStatus(), stamp = status ? `${status.mapId}:${status.floor}:${status.state}` : '';
+    if (stamp !== this.backgroundStamp) {this.backgroundStamp = stamp;this.onBackgroundState?.(status);}
+    if (status) this.canvas.dataset.backgroundState = status.state;
+    else delete this.canvas.dataset.backgroundState;
+    if (status?.state !== 'loading' && status?.state !== 'error') return false;
+    this.clearInput();this.onNear(false);this.onInspectHint?.(null);
+    this.context.save();this.context.globalAlpha = 1;this.context.fillStyle = '#15282d';
+    this.context.fillRect(0, 0, this.viewWidth, this.viewHeight);this.context.restore();
+    if (import.meta.env.DEV || import.meta.env.MODE === 'e2e') this.publishNavigationDiagnostics();
+    return true;
+  }
   async enableWarehousePreview() {
     if(this.warehouseLoading)return this.warehouseLoading;
     this.warehouseLoading=this.loadWarehouse();return this.warehouseLoading;
@@ -181,6 +214,10 @@ export class DemoScene {
   private keydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null;
     if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
+    if (this.backgroundBlocked()) {
+      if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','c','f','q',' '].includes(event.key.toLowerCase())) event.preventDefault();
+      return;
+    }
     if (this.warehousePreview && (!this.state || this.state.mapId==='warehouse')) {
       if(this.pausedByUser||(this.state&&this.state.phase!=='explore'))return;
       const key = event.key.toLowerCase();
@@ -264,6 +301,7 @@ export class DemoScene {
     this.rainyAlley.adjustZoom(-event.deltaY * 0.0016);
   };
   private pointerdown = (event: PointerEvent) => {
+    if (this.backgroundBlocked()) return;
     if (this.state?.phase === 'explore' && this.state.mapId === 'alley' && !this.pausedByUser) {
       const bounds = this.canvas.getBoundingClientRect();
       const cover = getComputedStyle(this.canvas).objectFit === 'cover';
@@ -364,6 +402,7 @@ export class DemoScene {
   private update(delta: number) {
     if(this.state?.mapId==='warehouse'&&!this.warehouseLoading)void this.enableWarehousePreview().catch(error=>{this.onInspectHint?.(String(error));});
     if (this.warehousePreview && (!this.state || this.state.mapId==='warehouse')) {
+      this.holdForBackground();
       if(this.state)this.warehousePreview.syncState(this.state);
       const active = !this.pausedByUser && document.visibilityState !== 'hidden' && (!this.state||this.state.phase==='explore');
       if (!active) this.clearInput();
@@ -418,6 +457,7 @@ export class DemoScene {
       const modifiers = this.state.activeBattle.modifiers;
       this.attemptId = this.state.activeBattle.id;this.simulation = new DemoBattle(3, 2, !modifiers && this.state.flags.includes('event_success'), modifiers?.shadowPressure ?? 0);this.reported = false;
     }
+    if (this.holdForBackground()) return;
     const active = !this.pausedByUser && document.visibilityState !== 'hidden';
     if (!active) this.clearInput();
     if (mode === 'explore' && active && this.state.mapId==='market'&&this.marketTransition.active) {
@@ -564,6 +604,9 @@ export class DemoScene {
     this.context.globalAlpha = 1;
     this.context.globalCompositeOperation = 'source-over';
     this.context.imageSmoothingEnabled = false;
+    // A stair/climb can switch floors during this update. Gate that destination
+    // too, before drawing any character, event prop or interaction marker.
+    if (this.holdForBackground()) return;
     const exploreScene = mode === 'explore' ? explorationScene(this.state.mapId) : null;
     if (mode === 'explore') {
       if (exploreScene === 'alley') this.rainyAlley.draw(this.context, this.viewWidth, this.viewHeight, this.state.flags, {phase: mode, randomEligible: this.randomEligible});

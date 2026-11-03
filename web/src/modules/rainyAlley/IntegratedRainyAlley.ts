@@ -35,7 +35,7 @@ function polygonPath(context: CanvasRenderingContext2D, polygon: WorldPolygon) {
 }
 
 export class IntegratedRainyAlley {
-  private readonly background = chapterBackground('alley');
+  private get background() {return chapterBackground('alley');}
   private position: Point = {...spawn};
   private camera: Point = {x: 0, y: rainyAlleyRegistration.worldHeight - cameraSize.height};
   private path: Point[] = [];
@@ -543,7 +543,7 @@ export class IntegratedRainyAlley {
   }
 
   private drawBackground(context: CanvasRenderingContext2D) {
-    if (!this.background.complete) return;
+    if (!this.background.complete || !this.background.naturalWidth) return;
     const registration = rainyAlleyRegistration;
     context.drawImage(this.background, 0, 0, registration.artWidth, registration.artHeight);
   }
