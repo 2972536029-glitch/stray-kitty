@@ -183,6 +183,30 @@ docker compose -f deploy/compose.yaml --profile observability up --build -d
 验证:发布后 Datadog APM 出现 `service:kitty-api env:preview` 的 span、拨测保持绿色;
 RUM 激活见 §RUM(两步:UI 建 RUM 应用 → index.html 填 token,随下次发布生效)。
 
+## 站点纪律(DD_SITE)与双 org 现状(2026-11-04)
+
+**教训先行**:接手任何 Datadog org,第一件事 `curl -H "DD-API-KEY: ..." https://api.<site>/api/v1/validate` 实证 key 属于哪个站点——不要沿用文件名、先例或记忆里的假设。本项目已为此付过学费:仓库默认 `datadoghq.com`(US1)沿用了密钥文件名与旧项目先例,线上首次部署时才被实测推翻(见 !136)。
+
+**当前事实(2026-11-04)**:
+- **US1 org**(`datadoghq.com`,余尧的 key 所属):skin-shop / 旅行牛牛历史监控所在;**本仓库 11 条监控 + 2 条拨测定义目前在这里**,但 preview 数据不流入这个 org;
+- **US5 org**(`us5.datadoghq.com`,共享采集 key `bj-collector-key` 所属):线上 preview 的 Agent 与日志旁路实际上报到这里(浩哲已在 !136 修正并重新发布,APM `env:preview` 每分钟 40+ span);
+- `deploy/compose.yaml` 本地仿真默认 US1 是**故意的**(本地用的是 US1 的 key);`deploy/.env.example` 与 preview 模板默认 US5(线上用共享采集 key)。
+
+**待决**:监控与拨测应与数据流同 org。两条路径二选一(需团队确认"哪个 org 是课程官方的"):
+- A. 数据流迁 US1:团队改用余尧的 API key 作采集 key,回滚 !136 的 DD_SITE,重新部署 Agent;
+- B. 监控迁 US5:向 org 管理员申请 US5 的 APP key,`DD_SITE=us5.datadoghq.com python monitors/apply-monitors.py` + `apply-synthetics.py` 30 分钟重建全部 13 条。
+
+## 线上接线清单(实际执行记录,2026-11-03 完成)
+
+> 实际执行与验收由浩哲完成(见 issue #6 回复),过程与原计划有两处偏差,均已修正并记录:
+
+1. ✅ Secret `stray-kitty-preview-datadog` 已建(cn-haozhe-wang,key 为共享采集 key);
+2. ✅ Agent 已部署——**站点坑**:首用 US1 默认值时 key 校验失败,换 `us5.datadoghq.com` 后通过(!136 已固化);
+3. ✅ 重新发布完成(CI 的 deploy_apply 手动触发 + rollout restart)。**Rollout 经验**(留给后来人):Secret 是在 Pod 已运行后创建的话,声明式 `apply` 不会自动滚动 Pod——需要 `kubectl rollout restart deployment/stray-kitty-game` 等一次,让容器重新挂载新 Secret。
+
+验证标准不变:APM 出现 `service:kitty-api env:preview` 的 span(已达成);公网拨测保持绿。
+
+
 ## 9. 接入责任与边界
 
 - 埋点/字段/分类维护由服务端负责;`kitty.command` 的 type 枚举扩展时同步本文档与 monitors。
