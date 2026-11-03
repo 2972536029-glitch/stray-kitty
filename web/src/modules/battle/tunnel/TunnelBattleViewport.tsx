@@ -33,11 +33,10 @@ export interface TunnelBattleViewportProps {
 }
 interface DragGesture {catId:TunnelCatId;pointerId:number;startX:number;startY:number;moved:boolean}
 const ICONS:Record<TunnelCatId,string>={caster:'✧',guard:'◈',tuanzi:'✦',momo:'☼',bruiser:'◆',diandian:'✚'};
-// 第四章新伙伴说明：点点（本章随队出战）与墨墨（本章解锁夜视）此前没有像序章那样介绍过技能，
-// 这里用序章同款教程卡在 ready 阶段各介绍一次；开战即收起，不参与任何战斗逻辑。
+// 第四章只介绍墨墨本章解锁的夜视能力，不重复展示点点的技能说明。
+// 教程卡在 ready 阶段展示，开战即收起，不参与任何战斗逻辑。
 const NEW_CAT_INTROS:readonly {id:TunnelCatId;title:string;text:string}[]=[
-  {id:'diandian',title:'新伙伴 · 点点（暖心伙伴）',text:'暹罗猫辅助，本章随队出战。技能「安心呼噜」：为全部仍在场伙伴恢复 80 体力，不超过体力上限，不能复活退场伙伴。能量满 100 时点点周围会亮起金色光环，点击它就能释放。'},
-  {id:'momo',title:'新伙伴 · 墨墨（巡光护卫）',text:'黑猫辅助，本章解锁夜视。技能「夜视护行」：恢复全场视野 10 秒，并为全部在场伙伴提供 45 护盾，持续 8 秒。通道断灯、远处黑影隐身时的关键对策。'},
+  {id:'momo',title:'墨墨的新能力 · 夜视护行',text:'黑猫辅助，本章解锁夜视。技能「夜视护行」：恢复全场视野 10 秒，并为全部在场伙伴提供 45 护盾，持续 8 秒。通道断灯、远处黑影隐身时的关键对策。'},
 ];
 
 function RoleBadge({id}:{id:TunnelCatId}){
