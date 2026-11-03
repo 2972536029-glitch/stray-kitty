@@ -14,6 +14,7 @@ import {GoalLabel} from '../GoalLabel';
 import {COMMANDER_POSITION, CONFIG, DIFFICULTY_CONFIG, SKILLS, SPAWN_POINTS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, isSkillTargetAllowed} from './ranges';
 import {drawCat, paintBattle} from './painter';
+import {isFinalWaveDefeat, triggerBattleShake, triggerSkillGlow} from '../battleFx';
 import {TutorialSpotlight} from './TutorialSpotlight';
 import {whenSceneArtReady} from '../scene-art';
 import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
@@ -126,6 +127,15 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const inspectedStatus=game?.cats.find(cat=>cat.id===inspectedCat)?.status;
   useEffect(()=>{if(inspectedCat&&inspectedStatus!=='active')closeInspection();},[inspectedCat,inspectedStatus]);
   useEffect(()=>{setSkillTooltipOpen(false);},[inspectedCat]);
+  // 终波高光强震（防眩晕收敛策略）：前面波次一律不震，只在最后一波清场瞬间强震（battleFx.isFinalWaveDefeat）。
+  const prevFxRef=useRef<{defeated:number}|null>(null);
+  useEffect(()=>{
+    if(!game)return;
+    const previous=prevFxRef.current;
+    prevFxRef.current={defeated:game.defeated};
+    if(!previous)return;
+    if(isFinalWaveDefeat(game.defeated>previous.defeated,game.enemies.length,game.wave,game.totalWaves))triggerBattleShake(boardRef.current,'strong');
+  },[game]);
   // Keep the description outside the scrolling board and leave the skill button unobstructed.
   const inspectedPosition=game?.cats.find(cat=>cat.id===inspectedCat);
   useLayoutEffect(()=>{
@@ -177,6 +187,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     runtime.dispatch(action);
     const next=runtime.getSnapshot();
     if(action.type==='CAST_SKILL'&&next?.lastAction?.ok){
+      triggerSkillGlow(boardRef.current); // 施法成功：金色泛光（瞄准/即时两条施法路径都在这个包装里）
       const cat=previous?.cats.find(candidate=>candidate.id===action.catId);
       const cast=next.cats.find(candidate=>candidate.id===action.catId);
       if(cat&&cat.id!=='hero'&&cast&&cast.energy<cat.energy){
