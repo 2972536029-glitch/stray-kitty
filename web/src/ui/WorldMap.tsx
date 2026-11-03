@@ -2,6 +2,7 @@ import type {Catalog, GameCommand, GameState} from '../contracts';
 import {chapterMapCommand, chapterMapIsUnlocked, chapterMapStatus} from '../core/chapter-navigation';
 import Modal from './Modal';
 import PixelCat from './PixelCat';
+import {preloadChapterArtwork} from '../modules/map/artwork';
 
 // 沿用 react-demo 的猫爪路线；当前区域与解锁状态读取实际存档。
 export default function WorldMap({state, catalog, disabled, onNavigate, onClose}: {state: GameState; catalog: Catalog; disabled: boolean; onNavigate: (command: GameCommand) => void; onClose: () => void}) {
@@ -17,7 +18,7 @@ export default function WorldMap({state, catalog, disabled, onNavigate, onClose}
         <div className="map-dot" aria-hidden="true">{['▦', '★', '❀', '☾', '⌂'][index] ?? '◇'}</div>
         <div><h3>{map.name}</h3><p>{status}</p></div>
         {current && <PixelCat size={56}/>}<span>{current ? '当前' : available ? ['greenhouse', 'warehouse'].includes(map.id) ? '剧情' : '可探索' : '未开放'}</span>
-        {command && <button disabled={disabled} onClick={() => onNavigate(command)}>前往{map.name}{['greenhouse', 'warehouse'].includes(map.id) ? '剧情' : ''}</button>}
+        {command && <button disabled={disabled} onPointerEnter={()=>preloadChapterArtwork(map.id)} onFocus={()=>preloadChapterArtwork(map.id)} onPointerDown={()=>preloadChapterArtwork(map.id)} onClick={() => onNavigate(command)}>前往{map.name}{['greenhouse', 'warehouse'].includes(map.id) ? '剧情' : ''}</button>}
       </li>;
     })}</ol>
     <footer>找回自己的家 <b>→</b> 帮伙伴找到家 <b>→</b> 一起创造家</footer>

@@ -26,7 +26,7 @@ import {rainyAlleyObject} from '../modules/rainyAlley/assets';
 import AcceptancePanel from '../ui/AcceptancePanel';
 import Modal from '../ui/Modal';
 import type {GameCommand} from '../contracts';
-import {preloadChapterArtwork} from '../modules/map/artwork';
+import {preloadChapterArtwork, preloadClassicChapterArtwork} from '../modules/map/artwork';
 
 export default function App() {
   const warehouseReview = import.meta.env.DEV && new URLSearchParams(window.location.search).has('warehouseQA');
@@ -34,11 +34,12 @@ export default function App() {
   const {state, catalog, send, reportMove, busy, pending, error, disabled, retry, skipDialogue, resetSession, sessionUnavailable, startNewJourney, refresh, port} = game;
   const storyScene = state && catalog ? currentStory(catalog, state)?.scene : undefined;
   const artworkMap = state?.phase === 'home' || (state?.phase === 'dialogue' && storyScene === 'home') ? 'greenhouse' : state?.mapId;
-  // Start the selected background on the title screen, before mounting its
-  // renderer. Do not download other chapters to prepare the current one.
+  // Chapters 1/2/4 use their original early warming, even during the prologue.
+  // A warehouse save/review keeps Chapter 5's isolated image-loading policy.
   useEffect(() => {
     if (artworkMap && state?.chapterId !== 'prologue' && state?.phase !== 'battle' && state?.phase !== 'preparation') preloadChapterArtwork(artworkMap);
-  }, [artworkMap, state?.chapterId, state?.phase]);
+    if (state && !warehouseReview) preloadClassicChapterArtwork(state.mapId);
+  }, [artworkMap, state?.mapId, state?.chapterId, state?.phase, warehouseReview]);
   const [entered, setEntered] = useState(warehouseReview), [paused, setPaused] = useState(false), [near, setNear] = useState(false);
   const [nearTarget, setNearTarget] = useState<{id: string; label: string} | null>(null);
   const [inspectHint, setInspectHint] = useState<string | null>(null);

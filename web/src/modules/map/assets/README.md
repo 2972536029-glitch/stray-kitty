@@ -17,8 +17,15 @@ The script verifies every decoded pixel, including transparent pixels.
 | Tunnel lower floor | 2,029,120 | 1,517,700 |
 | Greenhouse | 2,749,227 | 2,221,228 |
 
-`map/artwork.ts` caches decoded images for the lifetime of the page. App warms
-only the selected background as soon as its saved state is known, including on
-the title screen. Alternate floors warm after the entry floor is decoded, and
-can also load immediately when requested by traversal. No chapter image is
-downloaded merely by importing the module.
+`map/artwork.ts` caches decoded images for the lifetime of the page. Chapters
+1, 2 and 4 restore early warming of all their backgrounds and floors, including
+while the title/prologue is visible. The selected entry floor loads first;
+the remaining classic maps warm at low priority after it is decoded, avoiding
+competition on a slow connection. Direct warehouse entry/review
+keeps Chapter 5's isolated loading path and starts none of those downloads.
+
+Classic scenes hold movement, interactions and foreground rendering until the
+current floor is decoded. A failed PNG fallback shows a retry action. No chapter
+image is downloaded merely by importing the module. The shared preview caches
+the content-hashed delivery images across visits; unhashed PNG sources keep
+their existing validation policy.

@@ -1,8 +1,9 @@
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import type {BattleResult, GameState, StoryNode} from '../../contracts';
 import type {Point} from '../../modules/rainyAlley/types';
 import {CanvasViewport} from '../../adapters/canvas/CanvasViewport';
 import {DemoScene} from './scene';
+import type {ChapterBackgroundStatus} from '../../modules/map/artwork';
 
 interface Props {
   state: GameState;
@@ -26,6 +27,7 @@ interface Props {
 
 export function Viewport(props: Props) {
   const scene = useRef<DemoScene | null>(null);
+  const [background, setBackground] = useState<ChapterBackgroundStatus | null>(null);
   const latest = useRef(props);latest.current = props;
   useEffect(() => {
     if (scene.current) {scene.current.state = props.state;scene.current.pausedByUser = props.paused;scene.current.storyScene = props.storyNode?.scene;scene.current.storyNode = props.storyNode;scene.current.randomEligible = props.randomEligible ?? true;}
@@ -44,7 +46,8 @@ export function Viewport(props: Props) {
       (floor,point) => latest.current.onMarketBattle?.(floor,point),
       (floor,point) => latest.current.onMarketExit?.(floor,point),
       (zoneId,floor,point) => latest.current.onRandomZone?.(zoneId,floor,point) ?? Promise.resolve(false),
-      (floor,point)=>latest.current.onWarehousePosition?.(floor,point)
+      (floor,point)=>latest.current.onWarehousePosition?.(floor,point),
+      setBackground
     );
     runtime.state = latest.current.state;runtime.pausedByUser = latest.current.paused;runtime.storyScene = latest.current.storyNode?.scene;runtime.storyNode = latest.current.storyNode;runtime.randomEligible = latest.current.randomEligible ?? true;scene.current = runtime;
     runtime.start();
@@ -52,5 +55,9 @@ export function Viewport(props: Props) {
     latest.current.onSceneReady?.(runtime);
     // CanvasViewport 只认 destroy；在这里补一次 onSceneReady(null) 的通知。
     return {destroy() {runtime.destroy();scene.current = null;latest.current.onSceneReady?.(null);}};
-  }}/>{home && <div className="home-camera-controls" aria-label="花房视角"><button disabled={props.paused} aria-label="放大花房" onClick={()=>scene.current?.homeZoom(.35)}>＋</button><button disabled={props.paused} aria-label="缩小花房" onClick={()=>scene.current?.homeZoom(-.35)}>－</button><button disabled={props.paused} onClick={()=>scene.current?.homeZoom(0)}>花房全景</button><span>拖空地看场景 · 拖猫咪去互动</span></div>}</>;
+  }}/>{background && (background.state === 'loading' || background.state === 'error') && <div className="map-loading-panel" role={background.state === 'error' ? 'alert' : 'status'}>
+    <div><span aria-hidden="true">ฅ</span><p>{background.state === 'error' ? '地图暂时没打开' : '正在打开地图……'}</p>
+      {background.state === 'error' ? <button onClick={()=>scene.current?.retryBackground()}>重新加载地图</button> : <small>路铺好后，小猫就可以出发了。</small>}
+    </div>
+  </div>}{home && <div className="home-camera-controls" aria-label="花房视角"><button disabled={props.paused} aria-label="放大花房" onClick={()=>scene.current?.homeZoom(.35)}>＋</button><button disabled={props.paused} aria-label="缩小花房" onClick={()=>scene.current?.homeZoom(-.35)}>－</button><button disabled={props.paused} onClick={()=>scene.current?.homeZoom(0)}>花房全景</button><span>拖空地看场景 · 拖猫咪去互动</span></div>}</>;
 }
