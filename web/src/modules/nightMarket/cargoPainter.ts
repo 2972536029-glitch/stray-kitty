@@ -1,3 +1,5 @@
+import {queueImage} from '../../core/image-loading';
+
 const crateUrl=new URL('../../../../level_design/chapter5/art/source/sprites/crate_one.png',import.meta.url).href;
 
 // Reuse approved pixel artwork; these placements depict the existing capsule,
@@ -16,7 +18,7 @@ const placements=[
   {x:1385,y:126,w:20},
 ];
 export function paintMarketCargo(ctx:CanvasRenderingContext2D){
-  if(!crate){crate=new Image();crate.src=crateUrl;}
+  if(!crate){crate=new Image();void queueImage(crate,crateUrl);}
   if(!crate.complete||!crate.naturalWidth)return;
   if(!nativeCrate){
     // Match the map's native pixel density rather than magnifying sprite outlines.

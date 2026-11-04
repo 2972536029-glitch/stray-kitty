@@ -4,9 +4,10 @@ import {useState} from 'react';
 import {paintParcelFurniture,loadParcelArtwork,parcelWidth,type ParcelArtwork} from './furnitureArt';
 import {loadHomeArtwork,type HomeArtwork} from '../home/assets';
 import {HOME_SIZE} from '../home/layout';
+import QueuedImage from './QueuedImage';
 
 export function FurnitureArt({id,name,className='',detail=false,scale=.45}:{id:string;name:string;className?:string;detail?:boolean;scale?:number}) {
-  return <div className={`parcel-art-stage ${detail?'detail':''} ${className}`}><img src={`/assets/home/parcels/${id}.png`} alt={name} style={detail?undefined:{width:`${parcelWidth(id)*scale}px`}} className="parcel-furniture-art"/></div>;
+  return <div className={`parcel-art-stage ${detail?'detail':''} ${className}`}><QueuedImage url={`/assets/home/parcels/${id}.png`} alt={name} style={detail?undefined:{width:`${parcelWidth(id)*scale}px`}} className="parcel-furniture-art"/></div>;
 }
 export function ThemePreview({pool}:{pool:ParcelPool}) {
   const ref=useRef<HTMLCanvasElement>(null);

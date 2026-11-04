@@ -17,16 +17,19 @@ async function fresh(name:string){
 
 function browser(){
   const images:ImageStub[]=[];
-  class ImageStub {
-    complete=false;
+  class ImageStub extends EventTarget {
+    complete=true;
     naturalWidth=0;
     naturalHeight=0;
-    src='';
+    private source='';
+    fetchPriority='auto';
     onload:(()=>void)|null=null;
     onerror:(()=>void)|null=null;
-    constructor(){images.push(this);}
-    load(){this.complete=true;this.naturalWidth=2048;this.naturalHeight=2048;this.onload?.();}
-    fail(){this.complete=true;this.onerror?.();}
+    constructor(){super();images.push(this);}
+    get src(){return this.source;}
+    set src(value:string){this.source=value;this.complete=false;}
+    load(){assert.ok(this.src,'the queue must start the request before load');this.complete=true;this.naturalWidth=2048;this.naturalHeight=2048;this.dispatchEvent(new Event('load'));this.onload?.();}
+    fail(){assert.ok(this.src,'the queue must start the request before error');this.complete=true;this.dispatchEvent(new Event('error'));this.onerror?.();}
   }
   const draws:unknown[][]=[];
   const ink=new Proxy({
@@ -69,6 +72,7 @@ test('detailed art loads only painted atlases and keeps subscribers for later ch
     stops.push(art.whenDetailedExteriorsReady(()=>{paints++;}));
     const stopCancelled=art.whenDetailedExteriorsReady(()=>{cancelled++;});stops.push(stopCancelled);
     assert.equal(art.paintDetailedJoinedObstacle(env.ink,'cold-frame'),false);
+    await Promise.resolve();
     assert.deepEqual(env.names(),['scene-detailed-obstacles-v1.png']);
     art.paintDetailedJoinedObstacle(env.ink,'cold-frame');
     assert.equal(env.images.length,1);
@@ -80,17 +84,20 @@ test('detailed art loads only painted atlases and keeps subscribers for later ch
 
     // A later frame can request a different atlas after the first has finished.
     art.paintDetailedWorkstation(env.ink,'garden-bench',170,100);
+    await Promise.resolve();
     env.images[1].fail();
     assert.equal(paints,1);
     art.paintDetailedWorkstation(env.ink,'garden-bench',170,100);
     assert.equal(env.images.length,2,'a failed atlas keeps its cached fallback instead of retrying every frame');
     assert.equal(art.hasRefinedMaterials(),false);
+    await Promise.resolve();
     env.images[2].load();
     assert.equal(paints,2,'a different atlas failure does not remove the active subscriber');
     assert.equal(art.hasRefinedMaterials(),true);
     assert.deepEqual(env.names(),['scene-detailed-obstacles-v1.png','scene-detailed-workstations-v1.png','scene-refined-materials-v1.png']);
 
     art.paintDetailedExterior(env.ink,'planted-bed',200,100);
+    await Promise.resolve();
     stops[0]();env.images[3].load();
     assert.equal(paints,2,'an unmounted backdrop must not repaint when a pending image completes');
   }finally{for(const stop of stops)stop();env.restore();}
@@ -102,11 +109,13 @@ test('scene painting loads the floor first and the illustrated room only for fin
     const art=await fresh('scene-art');
     let paints=0;stop=art.whenSceneArtReady(()=>{paints++;});
     art.paintSceneTile(env.ink,'greenhouse',0,0,80);
+    await Promise.resolve();
     assert.deepEqual(env.names(),['floor-material-atlas.png']);
     env.images[0].load();assert.equal(paints,1);
     art.paintSceneTile(env.ink,'greenhouse',0,0,80);
     assert.equal(env.images.length,1);assert.ok(env.draws.length>0);
     art.paintSceneTile(env.ink,'finale',0,0,80);
+    await Promise.resolve();
     assert.deepEqual(env.names(),['floor-material-atlas.png','finale-room-scene-v1.png']);
     env.images[1].load();assert.equal(paints,2,'the floor load must not discard the room subscription');
   }finally{stop();env.restore();}
@@ -127,6 +136,7 @@ for(const entry of singleAtlases){
       entry.paint(art,env.ink);
       stops.push(art[entry.subscribe](()=>{paints++;}));
       const cancel=art[entry.subscribe](()=>{cancelled++;});stops.push(cancel);cancel();
+      await Promise.resolve();
       assert.deepEqual(env.names(),[entry.name]);
       env.images[0].load();assert.equal(paints,1);assert.equal(cancelled,0);
       entry.paint(art,env.ink);entry.paint(art,env.ink);
@@ -142,7 +152,7 @@ for(const entry of singleAtlases){
     try{
       const art=await fresh(entry.module);let paints=0;
       stops.push(art[entry.subscribe](()=>{paints++;}));
-      entry.paint(art,env.ink);env.images[0].fail();
+      entry.paint(art,env.ink);await Promise.resolve();env.images[0].fail();
       assert.equal(paints,0);
       entry.paint(art,env.ink);assert.equal(env.images.length,1);
       // A spurious late load must not revive the failed request's listeners.

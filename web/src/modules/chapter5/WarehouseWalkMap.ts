@@ -13,6 +13,7 @@ import {FollowCamera, cameraFrameFor} from '../../adapters/canvas/camera';
 // Reuse the existing swept, circular-footprint raster movement implementation.
 import {TunnelWalkableMask as RasterWalkableMask} from '../chapter4/TunnelWalkableMask';
 import type {GameState} from '../../contracts';
+import {queueImage} from '../../core/image-loading';
 
 type Point = {x: number; y: number};
 type Floor = 'L0' | 'L1';
@@ -30,8 +31,8 @@ const decodedImages = new Map<string, Promise<HTMLImageElement>>();
 function image(url: string) {
   let cached = decodedImages.get(url);
   if (!cached) {
-    const result = new Image(); result.src = url;
-    cached = result.decode().then(() => result).catch(error => {decodedImages.delete(url);throw error;});
+    const result = new Image();
+    cached = queueImage(result,url).then(() => result.decode()).then(() => result).catch(error => {decodedImages.delete(url);throw error;});
     decodedImages.set(url, cached);
   }
   return cached;

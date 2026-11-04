@@ -3,6 +3,7 @@ import stageAtlas from './stage-atlas.json' with { type: 'json' };
 import parcelAtlas from '../lottery/atlas.json' with { type: 'json' };
 import {PARCEL_IDS} from '../lottery/furnitureArt';
 import {chapterBackgroundReady} from '../map/artwork';
+import {queueImage} from '../../core/image-loading';
 
 export const HOME_ART_ID = 'arched-greenhouse-staged-v3';
 const legacySprites = ['window.broken','window.patched','window.restored','window.festive','roof.broken','roof.patched','roof.restored','roof.festive','nest','blanket','bowls','chest','tower','planter','workbench','hammock','lantern','string','cushion','floor'] as const;
@@ -30,7 +31,7 @@ export function loadHomeArtwork(): Promise<HomeArtwork> {
   if (!loading) {
     const load = (url:string) => new Promise<HTMLImageElement>((resolve,reject) => {
       const image = new Image();image.onload = () => resolve(image);image.onerror = () => reject(new Error('花房素材加载失败，请刷新重试'));
-      image.src = url;
+      void queueImage(image,url);
     });
     loading = Promise.all([chapterBackgroundReady('greenhouse'),...Object.values(HOME_ATLASES).map(load)])
       .then(([base,...sheets]) => ({base,...Object.fromEntries(Object.keys(HOME_ATLASES).map((sheet,i)=>[sheet,sheets[i]]))} as HomeArtwork)).catch(error => {loading=undefined;throw error;});
