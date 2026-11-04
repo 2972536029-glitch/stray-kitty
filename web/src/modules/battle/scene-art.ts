@@ -45,7 +45,7 @@ function sceneAtlas(){
 /** L00 can wait on a teaching step: repaint on asset load without advancing its simulation. */
 export function whenSceneArtReady(paint:()=>void){
   const stopRoom=whenIllustratedRoomReady(paint);
-  if(sceneAtlas())return stopRoom;
+  if(floorAtlas?.complete&&floorAtlas.naturalWidth>0)return stopRoom;
   atlasListeners.add(paint);return()=>{atlasListeners.delete(paint);stopRoom();};
 }
 

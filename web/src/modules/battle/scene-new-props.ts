@@ -28,7 +28,7 @@ function image(){
   return atlas?.complete&&atlas.naturalWidth>0?atlas:undefined;
 }
 export function whenNewScenePropsReady(paint:()=>void){
-  if(image())return()=>{};
+  if(atlas?.complete&&atlas.naturalWidth>0)return()=>{};
   listeners.add(paint);return()=>{listeners.delete(paint);};
 }
 

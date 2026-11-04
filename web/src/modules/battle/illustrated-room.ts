@@ -15,7 +15,7 @@ function readyImage(){
 }
 export function hasIllustratedRoom(){return !!readyImage();}
 export function whenIllustratedRoomReady(paint:()=>void){
-  if(readyImage())return()=>{};
+  if(roomImage?.complete&&roomImage.naturalWidth>0)return()=>{};
   listeners.add(paint);return()=>{listeners.delete(paint);};
 }
 
