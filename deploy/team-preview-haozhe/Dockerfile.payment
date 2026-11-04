@@ -2,6 +2,8 @@
 # 构建上下文:仓库根目录。
 FROM golang:1.26-alpine AS api
 WORKDIR /app/server
+# Match the game image and server CI jobs in networks where proxy.golang.org fails.
+ENV GOPROXY=https://goproxy.cn,direct
 COPY server ./
 RUN CGO_ENABLED=0 go build -trimpath -o /paymentd ./cmd/paymentd
 
