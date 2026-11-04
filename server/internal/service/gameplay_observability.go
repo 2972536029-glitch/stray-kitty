@@ -60,7 +60,9 @@ func (g *Game) observeGameplay(before, after domain.GameState, command domain.Co
 	}
 	// Diff the durable state, rather than individual reward branches, so each
 	// newly attained flag is counted once even when several branches add it.
-	knownFlags := g.observedFlags()
+	// Most commands (including movement reports) add no flag. Build the
+	// catalog allowlist only when there is an actual new value to observe.
+	var knownFlags map[string]bool
 	seen := make(map[string]bool, len(before.Flags)+len(after.Flags))
 	for _, flag := range before.Flags {
 		seen[flag] = true
@@ -70,6 +72,9 @@ func (g *Game) observeGameplay(before, after domain.GameState, command domain.Co
 			continue
 		}
 		seen[flag] = true
+		if knownFlags == nil {
+			knownFlags = g.observedFlags()
+		}
 		value := "unknown"
 		if knownFlags[flag] {
 			value = flag

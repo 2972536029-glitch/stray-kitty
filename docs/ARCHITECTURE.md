@@ -52,6 +52,7 @@ stray-kitty/
 │  ├─ BATTLE-ADVISOR-MODEL.md  阿策模型配置、可见战况与回退边界
 │  ├─ BATTLE-EVENT-ALLIES.md
 │  ├─ BATTLE-EVENT-CARRY.md  事件携带物与协助者六枚举对接
+│  ├─ biz-obs-delivery.md
 │  ├─ biz-obs-module1-plan.md
 │  ├─ biz-obs-module2-plan.md
 │  ├─ biz-obs-module3-plan.md
@@ -123,7 +124,8 @@ stray-kitty/
 ├─ tests/  自动验证
 │  ├─ advisor-sdk/
 │  ├─ battle/
-│  └─ e2e/  浏览器流程
+│  ├─ e2e/  浏览器流程
+│  └─ ui/
 ├─ tools/
 │  └─ map-review/
 │     ├─ chapter1-events/
