@@ -13,7 +13,7 @@ test.beforeAll(async({request})=>{
   catalog=await(await request.get('/api/v1/content')).json();
   const directory=fs.mkdtempSync(path.join(os.tmpdir(),'kitty-parcel-browser-')),players:Record<string,unknown>={};
   for(const id of ['free','paid','ten','moss-room','moon-room','mobile','locked']){
-    const session={playerId:`parcel-${id}`,token:`parcel-test-${id}`};sessions.set(id,session);
+    const session={playerId:`parcel-${id}`,token:`parcel-browser-test-${id}`};sessions.set(id,session);
     const state:GameState={schemaVersion:1,contentVersion:catalog.version,revision:1,phase:'home',chapterId:'greenhouse',storyNodeId:'',mapId:'greenhouse',flags:['l00_completed','alley_rescued','rescue_story_done','market_unlocked','chapter_2_started','market_cleared','market_exit_crossed','greenhouse_sealed','greenhouse_fortified_full','momo_joined'],cats:['miaomiao','tuanzi','diandian','momo'],inventory:{material:40,clue:3},currencies:{stamp:8,tuna:0},furniture:['cardboard_nest','soft_blanket','tin_lamp'],placements:{},completedStages:['l00_tutorial','alley_rescue'],pendingEventId:'',activeBattle:null,lastResult:{message:'主题包裹验收。'}};
     if(id==='ten')state.currencies.stamp=20;
     if(id==='free'){
@@ -38,7 +38,9 @@ async function open(page:Page,id:string){
   await page.addInitScript(({origin,session})=>{if(location.origin===origin){localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));localStorage.setItem('stray-kitty.tutorial.home','done');}},{origin,session:sessions.get(id)!});
   await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();
   await expect(page.locator('.game-viewport canvas')).toHaveAttribute('data-home-artwork','ready');
+  await openToolbar(page);
 }
+async function openToolbar(page:Page){await page.locator('.topbar-sensor').hover({position:{x:10,y:5}});await expect(page.locator('.topbar')).not.toHaveClass(/topbar-collapsed/);}
 const postOffice=(page:Page)=>page.getByRole('dialog',{name:'猫爪邮局'});
 async function counterFits(page:Page){const office=postOffice(page),box=(await office.boundingBox())!,size=page.viewportSize()!,rail=(await office.getByRole('tablist',{name:'家具卡池'}).boundingBox())!,paper=(await office.locator('.postal-paper').boundingBox())!,actions=(await office.locator('.postal-actions').boundingBox())!;expect(box.x).toBeGreaterThanOrEqual(0);expect(box.y).toBeGreaterThanOrEqual(0);expect(box.y+box.height).toBeLessThanOrEqual(size.height+1);expect(actions.y+actions.height).toBeLessThanOrEqual(box.y+box.height);expect(rail.x+rail.width).toBeLessThan(paper.x);expect(paper.height).toBeGreaterThan(280);expect(await office.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);}
 
@@ -47,10 +49,14 @@ async function drawOnPostcard(page:Page){
   await expect(office.locator('.postal-layout')).toHaveAttribute('data-stage','drawing');
   // Wait for the postcard to settle before starting the continuous pointer gesture.
   await expect(canvas).toBeVisible();await page.waitForTimeout(650);
+  await expect(office.getByTestId('postcard-pen')).toBeVisible();
   const r=(await canvas.boundingBox())!;
   await page.mouse.move(r.x+r.width*.3,r.y+r.height*.45);await page.mouse.down();
+  await expect(office.locator('.postal-draw-surface')).toHaveClass(/pen-drawing/);
   await page.mouse.move(r.x+r.width*.5,r.y+r.height*.7,{steps:10});
-  await page.mouse.move(r.x+r.width*.7,r.y+r.height*.3,{steps:10});await page.mouse.up();
+  await page.mouse.move(r.x+r.width*.7,r.y+r.height*.3,{steps:10});
+  const pen=office.getByTestId('postcard-pen');expect(parseFloat(await pen.evaluate(el=>(el as HTMLElement).style.left))).toBeCloseTo(70,0);
+  await page.screenshot({path:'output/parcel-design/postcard-drawing-pen.png'});await page.mouse.up();
   await expect(office.locator('.postal-layout')).toHaveAttribute('data-stage','parcels');
 }
 
@@ -70,13 +76,13 @@ test('postal journal fits one window; drawing auto-sends, unopened furniture sta
   await office.getByTestId('delivered-parcel').click();await expect(office.locator('.parcel-result-copy')).toContainText('苗苗软垫凳');await expect(office.locator('.postal-result-label')).toContainText('暖心保底');
   await counterFits(page);await page.screenshot({path:'output/parcel-design/capsule-result.png'});await office.getByRole('button',{name:'布置这件家具 ›',exact:true}).click();const backpack=page.getByRole('region',{name:'家具背包 · 布置模式'});
   await backpack.getByRole('button',{name:'放到场景中央'}).click();await backpack.getByRole('button',{name:/保存布置/}).click();await expect(backpack).not.toBeVisible();
-  if(await page.getByRole('button',{name:'展开顶部信息栏（可拖拽）'}).isVisible())await page.getByRole('button',{name:'展开顶部信息栏（可拖拽）'}).click();
+  await openToolbar(page);
   await page.getByRole('button',{name:'猫国商店',exact:true}).click();let shop=page.getByRole('dialog',{name:'猫国商店',exact:true});
   await shop.getByTestId('claim-daily_wish').click();await expect(shop.getByTestId('claim-daily_wish')).toHaveText('已签收');
   await shop.getByTestId('claim-daily_letter').click();await expect(shop.getByTestId('claim-daily_letter')).toHaveText('已签收');
   await shop.getByRole('button',{name:'关闭猫国商店',exact:true}).click();
   await expect.poll(async()=>JSON.parse((await page.locator('.game-viewport canvas').getAttribute('data-home-cats'))!).find((c:{breed:string})=>c.breed==='diandian')?.pose).toBe('perch');
-  await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();await page.getByRole('button',{name:'猫爪邮局',exact:true}).click();
+  await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();await openToolbar(page);await page.getByRole('button',{name:'猫爪邮局',exact:true}).click();
   await expect(postOffice(page).getByRole('button',{name:/家具图鉴/})).toContainText('12/12');await expect(postOffice(page).getByTestId('claim-daily_letter')).toHaveCount(0);
   await page.setViewportSize({width:1366,height:768});await counterFits(page);await page.screenshot({path:'output/parcel-design/capsule-desktop-1366.png'});
   const headers={Authorization:`Bearer ${sessions.get('free')!.token}`},before=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
@@ -138,16 +144,20 @@ test('phone landscape fits twelve cards and locked pools show a reason without s
 test('ten parcels open in place, resume without charging again and leave no postcard or box under furniture',async({page,request})=>{
   await open(page,'ten');await page.getByRole('button',{name:'猫爪邮局',exact:true}).click();let office=postOffice(page);
   const headers={Authorization:`Bearer ${sessions.get('ten')!.token}`};
+  await expect(office.locator('.parcel-theme-preview canvas')).toHaveAttribute('data-artwork','ready');await page.screenshot({path:'output/parcel-design/moss-post-office.png'});
+  await office.getByRole('tab',{name:/月海观星/}).click();await page.screenshot({path:'output/parcel-design/moon-post-office.png'});await office.getByRole('tab',{name:/苔叶来信/}).click();
   await office.getByTestId('parcel-draw-ten').click();
   expect((await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState).currencies.stamp).toBe(20);
-  await office.getByTestId('postcard-skip').click();await expect(office.locator('.postal-layout')).toHaveAttribute('data-stage','parcels');
+  await drawOnPostcard(page);await expect(office.locator('.postal-layout')).toHaveAttribute('data-stage','parcels');
   const parcels=office.getByTestId('delivered-parcel');await expect(parcels).toHaveCount(10);await expect(office.locator('.postal-parcel.opened')).toHaveCount(0);
-  for(const index of [1,6]){await parcels.nth(index).click();await expect(office.locator('.postal-layout')).toHaveAttribute('data-stage','parcels');}
+  for(const index of [1,6]){await parcels.nth(index).click();await expect(parcels.nth(index)).toHaveClass(/unwrapping/);await expect(office.locator('.postal-layout')).toHaveAttribute('data-stage','parcels');}
+  await page.waitForTimeout(420);await page.screenshot({path:'output/parcel-design/postal-ten-unwrapping.png'});
   await expect(office.locator('.postal-parcel.opened')).toHaveCount(2);await expect(office.locator('.postal-parcel.opened .postal-parcel-sprite')).toHaveCount(0);await expect(office.locator('.postal-reward')).toHaveCount(0);await expect(office.locator('.postal-postcard')).not.toBeVisible();
   await expect(office.locator('.postal-preview-note img')).toHaveCount(1);
-  await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();await page.getByRole('button',{name:'猫爪邮局',exact:true}).click();office=postOffice(page);
+  await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();await openToolbar(page);await page.getByRole('button',{name:'猫爪邮局',exact:true}).click();office=postOffice(page);
   await expect(office.getByTestId('delivered-parcel')).toHaveCount(10);await expect(office.locator('.postal-parcel.opened')).toHaveCount(2);
   await office.getByRole('button',{name:/全部拆开/}).click();await expect(office.locator('.postal-parcel.opened')).toHaveCount(10);
+  await expect(office.locator('.postal-parcel.unwrapping')).toHaveCount(0);
   const after=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;expect(after.currencies.stamp).toBe(10);expect(after.lottery!.history).toHaveLength(10);expect(after.lastResult.draws).toHaveLength(10);
   await page.screenshot({path:'output/parcel-design/postal-ten-opened.png',fullPage:true});
 });
