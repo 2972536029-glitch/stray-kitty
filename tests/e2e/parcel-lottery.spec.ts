@@ -144,7 +144,7 @@ test('ten parcels open in place, resume without charging again and leave no post
   const parcels=office.getByTestId('delivered-parcel');await expect(parcels).toHaveCount(10);await expect(office.locator('.postal-parcel.opened')).toHaveCount(0);
   for(const index of [1,6]){await parcels.nth(index).click();await expect(office.locator('.postal-layout')).toHaveAttribute('data-stage','parcels');}
   await expect(office.locator('.postal-parcel.opened')).toHaveCount(2);await expect(office.locator('.postal-parcel.opened .postal-parcel-sprite')).toHaveCount(0);await expect(office.locator('.postal-reward')).toHaveCount(0);await expect(office.locator('.postal-postcard')).not.toBeVisible();
-  await expect(office.locator('.postal-polaroid img')).toHaveCount(1);
+  await expect(office.locator('.postal-preview-note img')).toHaveCount(1);
   await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();await page.getByRole('button',{name:'猫爪邮局',exact:true}).click();office=postOffice(page);
   await expect(office.getByTestId('delivered-parcel')).toHaveCount(10);await expect(office.locator('.postal-parcel.opened')).toHaveCount(2);
   await office.getByRole('button',{name:/全部拆开/}).click();await expect(office.locator('.postal-parcel.opened')).toHaveCount(10);
