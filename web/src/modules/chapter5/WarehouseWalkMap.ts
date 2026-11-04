@@ -252,8 +252,8 @@ export class WarehouseWalkMap {
   private drawLighting(ctx:CanvasRenderingContext2D){
     const tint:Record<string,string>={entry_lamp:'147,193,120',central_spotlight:'174,190,119',secondary_lamp:'232,139,78'};
     const lights=[
-      ...geometry.ambientLamps.filter(p=>p.floor===this.floor).map((p,i)=>({...p,r:p.r*1.25,strength:.72,color:i%2?'201,139,89':'132,177,137'})),
-      ...geometry.interactions.filter(p=>p.kind==='light'&&p.floor===this.floor&&this.lightIsOn(p.id)).map(p=>({...p,r:285,strength:1,color:tint[p.id]})),
+      ...geometry.ambientLamps.filter(p=>p.floor===this.floor).map((p,i)=>({...p,r:p.r*1.25,strength:.32,color:i%2?'201,139,89':'132,177,137'})),
+      ...geometry.interactions.filter(p=>p.kind==='light'&&p.floor===this.floor&&this.lightIsOn(p.id)).map(p=>({...p,r:380,strength:1,color:tint[p.id]})),
     ];
     const key=this.floor+geometry.interactions.filter(p=>p.kind==='light').map(p=>Number(this.lightIsOn(p.id))).join('');
     const darknessKey=`${key}:${this.position.x}:${this.position.y}`;
