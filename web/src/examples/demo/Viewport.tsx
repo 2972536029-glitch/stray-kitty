@@ -4,6 +4,7 @@ import type {Point} from '../../modules/rainyAlley/types';
 import {CanvasViewport} from '../../adapters/canvas/CanvasViewport';
 import {DemoScene} from './scene';
 import type {ChapterBackgroundStatus} from '../../modules/map/artwork';
+import TouchControls from '../../ui/TouchControls';
 
 interface Props {
   state: GameState;
@@ -55,7 +56,9 @@ export function Viewport(props: Props) {
     latest.current.onSceneReady?.(runtime);
     // CanvasViewport 只认 destroy；在这里补一次 onSceneReady(null) 的通知。
     return {destroy() {runtime.destroy();scene.current = null;latest.current.onSceneReady?.(null);}};
-  }}/>{background && (background.state === 'loading' || background.state === 'error') && <div className="map-loading-panel" role={background.state === 'error' ? 'alert' : 'status'}>
+  }}/>{props.state.phase === 'explore' && <TouchControls disabled={props.paused || background?.state === 'loading' || background?.state === 'error'} mapId={props.state.mapId}
+    onDirection={(direction, held) => scene.current?.setDirection(direction, held)} onAction={action => scene.current?.performAction(action)}/>}
+  {background && (background.state === 'loading' || background.state === 'error') && <div className="map-loading-panel" role={background.state === 'error' ? 'alert' : 'status'}>
     <div><span aria-hidden="true">ฅ</span><p>{background.state === 'error' ? '地图暂时没打开' : '正在打开地图……'}</p>
       {background.state === 'error' ? <button onClick={()=>scene.current?.retryBackground()}>重新加载地图</button> : <small>路铺好后，小猫就可以出发了。</small>}
     </div>

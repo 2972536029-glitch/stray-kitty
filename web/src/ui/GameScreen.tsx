@@ -19,6 +19,7 @@ import {GreenhouseLoadout} from '../modules/battle/GreenhouseLoadout';
 import {TunnelLoadout} from '../modules/battle/TunnelLoadout';
 import {FinaleLoadout} from '../modules/battle/FinaleLoadout';
 import {explorationFooterText} from './explorationFooter';
+import {useTouchDevice} from './MobileViewport';
 
 const phases: Record<string, string> = {dialogue: '猫咪物语', explore: '小巷探索', event: '一次相遇', preparation: '守护准备', battle: '序章守护', settlement: '救援结果', home: '我们的花房'};
 interface Props {
@@ -38,6 +39,7 @@ interface Props {
   onPause: () => void; onMap: () => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onSettings: () => void; onWarehouse: () => void; onDecorate: () => void; onTitle: () => void; children: ReactNode;
 }
 export default function GameScreen({homeEditing,onHomeManual,state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, topExpanded, onToggleTopbar, speakerAnchor, onJournal, onSkip, qaOpen, onQA, onCommand, onInteract, onPause, onMap, onShop, onParcels, onRecharge, onSettings, onWarehouse, onDecorate, onTitle, children}: Props) {
+  const touchDevice = useTouchDevice();
   // 首次进入守护准备时的教学高亮；完成后记在本地，不再打扰。
   const [battleTutorialDone, setBattleTutorialDone] = useState(() => {try {return localStorage.getItem('stray-kitty.tutorial.battle') === 'done';} catch {return true;}});
   const [homeTutorialDone, setHomeTutorialDone] = useState(() => {try {return localStorage.getItem('stray-kitty.tutorial.home') === 'done';} catch {return true;}});
@@ -96,7 +98,7 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
     return () => window.clearTimeout(timer);
   }, [state.phase, state.mapId]);
   const nearHint = state.phase === 'explore' && near && nearTarget
-    ? `靠近「${nearTarget.label.replace(/\s*·\s*E$/, '')}」了，按 E 互动`
+    ? `靠近「${nearTarget.label.replace(/\s*·\s*E$/, '')}」了，${touchDevice ? '点击右下角「互动」' : '按 E 互动'}`
     : null;
   const warehouseOptionalHint=warehouseOptionalInvestigationHint(state,near&&nearTarget?nearTarget.id:undefined);
   const hintHidden = state.phase === 'explore' && introHintDone && !nearHint && !inspectHint;
@@ -108,6 +110,8 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
   // 教学期（进场 3 秒）结束后，探索阶段不再回落到“方向键 / WASD”类兜底教学文案：
   // 否则离开交互物时 <p key> 变化重挂、把兜底字重新点亮 6 秒，看起来像提示“变成”了移动教学（所有地图一致修掉）。
   const footerTextVisible = !!nearHint || (!!inspectHint && state.phase === 'explore') || (!!footerGuideText && (state.phase !== 'explore' || !introHintDone));
+  const displayedGuide = touchDevice && state.phase === 'explore' ? '左手拖动摇杆移动 · 右手点击互动，攀爬或穿过障碍' : footerGuideText;
+  const displayedInspectHint = touchDevice ? inspectHint?.replace(/C\s*·\s*/g, '点击「攀爬」· ').replace(/Q\s*·\s*/g, '点击「钻缝」· ').replace('松开移动键，再轻按 Q', '松开摇杆，再点「钻缝」').replace(/按\s*E/g, '点击「互动」') : inspectHint;
   // 探索顶栏点击外部可收起；战斗顶栏常显，暂停和旅程工具始终可见。
   const topbarOpen = state.phase === 'battle' || topExpanded;
   useEffect(() => {
@@ -236,8 +240,8 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
           {showExploreResult && resolution && <section className="event-card explore-result-card"><span className="eyebrow">一次相遇的结果</span><EventResult resolution={resolution}/><button disabled={disabled} onClick={() => {setDismissedResult(resolutionKey);arrivedFromEvent.current = false;}}>继续赶路 →</button></section>}
           {paused && <div className="pause-label"><span>旅程已暂停</span><button onClick={onPause}>继续旅程</button></div>}
         </div>
-        {footerVisible && <div className={`world-footer${hintHidden ? ' hint-idle' : ''}`}>{footerTextVisible && <p key={nearHint ?? inspectHint ?? footerGuideText ?? 'hint'} className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{nearHint ? <><span className="hint-paw">🐾</span>{nearHint}{warehouseOptionalHint&&<small className="optional-investigation-hint">{warehouseOptionalHint}</small>}</> : inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : footerGuideText}</p>}
-          {state.phase === 'explore' && <>{near && nearTarget && <button disabled={disabled} onClick={() => onInteract(nearTarget.id)}>{nearTarget.label}</button>}{state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued') && state.mapId !== 'market' && <button disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>回到花房</button>}</>}
+        {footerVisible && <div className={`world-footer${hintHidden ? ' hint-idle' : ''}`}>{footerTextVisible && <p key={nearHint ?? inspectHint ?? footerGuideText ?? 'hint'} className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{nearHint ? <><span className="hint-paw">🐾</span>{nearHint}{warehouseOptionalHint&&<small className="optional-investigation-hint">{warehouseOptionalHint}</small>}</> : inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{displayedInspectHint}</> : displayedGuide}</p>}
+          {state.phase === 'explore' && <>{near && nearTarget && <button disabled={disabled} onClick={() => onInteract(nearTarget.id)}>{nearTarget.label}</button>}{state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued') && state.mapId !== 'market' && <button className="home-return-button" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>回到花房</button>}</>}
         </div>}
       </section></div>
     </main>

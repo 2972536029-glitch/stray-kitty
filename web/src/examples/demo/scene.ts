@@ -167,7 +167,15 @@ export class DemoScene {
     this.cityBackdrop = new Image();
     this.cityBackdrop.src = '/assets/city-backdrop.svg';
   }
-  setDirection(direction: Direction, held: boolean) {if(this.marketTransition.active||this.backgroundBlocked())return;if (held) this.held.add(direction);else this.held.delete(direction);}
+  setDirection(direction: Direction, held: boolean) {
+    if (!held) {this.held.delete(direction);return;}
+    if (this.pausedByUser || this.marketTransition.active || this.backgroundBlocked()) return;
+    this.held.add(direction);
+  }
+  performAction(key: 'e' | 'c' | 'f' | 'q' | ' ') {
+    this.handleKeydown({key, repeat: false, preventDefault() {}});
+    this.keys.delete(key);this.tunnelMapInstance?.keyUp(key);
+  }
   private backgroundStatus(): ChapterBackgroundStatus | null {
     const state = this.state;
     if (!state || state.mapId === 'warehouse' || state.phase === 'battle' || state.phase === 'home' || (state.phase === 'dialogue' && this.storyScene === 'home')) return null;
@@ -216,6 +224,9 @@ export class DemoScene {
   private keydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null;
     if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
+    this.handleKeydown(event);
+  };
+  private handleKeydown(event: Pick<KeyboardEvent, 'key' | 'repeat' | 'preventDefault'>) {
     if (this.backgroundBlocked()) {
       if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','c','f','q',' '].includes(event.key.toLowerCase())) event.preventDefault();
       return;
