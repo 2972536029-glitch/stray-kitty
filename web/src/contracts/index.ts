@@ -25,7 +25,7 @@ export interface GameState {
   homeLayout?: Record<string, HomePlacement>;
   homeRepairs?: string[];
   alleyBattleReturn?: {x: number; y: number};
-  lastResult: {draw?: ParcelDraw; message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string};
+  lastResult: {draw?: ParcelDraw; draws?: ParcelDraw[]; message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string};
   qaCheckpointId?: string;
 }
 export interface HomePlacement {x:number;y:number;stored:boolean}
@@ -50,7 +50,7 @@ export type GameCommand =
   | {type: 'EXIT_MARKET'; layer: string; position: {x:number;y:number}}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
   | {type: 'SAVE_HOME_LAYOUT'; changes: HomeLayoutChange[]}
-  | {type: 'DRAW_FURNITURE'; poolId: string}
+  | {type: 'DRAW_FURNITURE'; poolId: string; count?: 1 | 10}
   | {type: 'CLAIM_PARCEL_REWARD'; rewardId: string}
   | {type: 'BUY_FURNITURE'; productId: string}
   | {type: 'REPAIR_HOME'; repairId?:string};

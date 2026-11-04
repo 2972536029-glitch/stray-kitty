@@ -758,6 +758,13 @@
           },
           "draw": {
             "$ref": "#/components/schemas/ParcelDraw"
+          },
+          "draws": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "items": {"$ref": "#/components/schemas/ParcelDraw"},
+            "description": "本次一份或十份包裹的有序收据；前端拆包后才呈现对应家具。"
           }
         },
         "required": [
@@ -1900,13 +1907,19 @@
           },
           "poolId": {
             "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "enum": [1, 10],
+            "default": 1,
+            "description": "可选；一次寄出一份或十份，默认保持单抽。十份在同一事务内结算，任一抽失败全部回滚。"
           }
         },
         "required": [
           "type",
           "poolId"
         ],
-        "description": "仅家园可抽取 moss_letters（1 邮票）或 moonsea_observatory（60 罐头）。十二件新主题家具/池；未集齐时最多三抽得一件新家具，重复补偿2材料，两池独立累计。服务端持久化保底、收据和扣费，重试不重复结算。"
+        "description": "仅家园可抽取 moss_letters（每份1邮票）或 moonsea_observatory（每份60罐头）。count 可选1或10，默认1；每份沿用原权重、独立累计保底与重复补偿，十份原子结算。lastResult.draws 返回本批收据，draw 保留最后一份兼容旧客户端。涂画内容不上传、不影响结果。重试不重复结算。"
       },
       "GameCommand": {
         "oneOf": [

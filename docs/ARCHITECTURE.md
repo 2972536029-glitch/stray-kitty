@@ -147,6 +147,7 @@ stray-kitty/
 │  │     ├─ home/  无猫建筑、四阶修缮与主题家具透明图集
 │  │     │  ├─ parcels/  两套主题的二十四件独立透明家具组件
 │  │     │  └─ stages/  四阶段四十八件正向透明家具组件
+│  │     ├─ lottery/  通用邮寄拼贴手账底图与透明包裹开合图集
 │  │     └─ night-market/
 │  └─ src/  运行代码
 │     ├─ adapters/  具体运行能力
@@ -186,7 +187,7 @@ stray-kitty/
 │     │  ├─ events/  随机事件 · 余尧
 │     │  ├─ home/  家园建设、摆放与互动
 │     │  ├─ inventory/  道具与家具持有
-│     │  ├─ lottery/  两套主题家具、扭蛋柜台、图鉴与收据
+│     │  ├─ lottery/  通用邮寄手账、明信片涂画、家具包裹、图鉴与收据
 │     │  ├─ map/  地图 · Jenny
 │     │  │  └─ assets/
 │     │  ├─ nightMarket/  Chapter 2 Night Market spatial map and progression
@@ -223,7 +224,7 @@ stray-kitty/
 
 home 管自由布置、场景修缮与原猫咪互动，保留十二个旧槽位的兼容入口；lottery 管苔叶来信与月海观星两个主题池（各十二件新家具）、概率、开箱和收据。Go 的 service/lottery.go 在原命令事务内扣费、计保底、补偿重复和签收日常／里程碑奖励；旧家具由剧情确定性赠送。旧存档的 lottery 字段惰性初始化，家具与摆放不重命名。免费池每抽 1 邮票，付费池每抽 60 罐头，最多三抽得未拥有家具；两个池独立累计，历史保留 50 次。模拟支付已有进程内和独立服务两种形态，真实支付尚未接入。
 
-ParcelDialog 在一个电脑端窗口中从左到右提供普通／限定竖排卡池、大尺寸 CapsuleMachine 和 ThemePreview；结果覆盖机器区域，保留底部抽取按钮。主题搭配图使用真实花房建筑与十二件家具，CapsuleCollection 在独立原生 dialog 展示图鉴与单件详情。扭蛋动画依次经过 turning、dropping、opening、result；服务端收据到达后才落蛋和展示家具，减少动态偏好使用短过渡。失败继续使用原重试键，收据回看只显示历史，不提交抽取。抽取、保底与支付接口不变。
+ParcelDialog 装配 PostalJournal，使用通用邮寄拼贴手账；ThemePreview 先展示真实花房与十二件套装家具，选择一份或十份后翻出 PostcardCanvas，以归一化点记录本地连续一笔，笔迹不上传。preview → drawing → sending → arriving → parcels → opening → result 连续过渡，松开笔迹即寄出，盖戳后明信片收起；ParcelDelivery 十连在原位立即换成 FurnitureArt，不进入单件展示和动画，已拆家具不保留纸箱底座。CollectionPolaroid 在当前卡池内每次随机轮播一件家具。未拆包收据与笔迹按玩家保存在本地，重新打开继续，已拆完清除；服务端仍是家具、货币与保底的唯一所有者。DRAW_FURNITURE 增加可选 count=1|10，同一事务内逐份调用原抽奖规则；任一失败全部回滚，lastResult.draws 返回本批收据，draw 兼容旧客户端。CapsuleCollection 保留独立家具图鉴；历史回看不提交抽奖，网络重试沿用原幂等键，减少动态偏好使用短过渡。
 
 花房使用 modules/home 的 assets、layout、objects、painter 共用 1672×941 室内布局：建筑底图与透明组件不含猫咪，HomeMap 和场景使用同一装配；四套阶段家具和独立植物图集的裁切坐标放在模块内的 atlas.json／stage-atlas.json，每种购买家具有独立图稿，默认陈设让位于已保存的摆放。camera 管缩放、拖动与点击坐标转换，navigation 按对象地面占位阻挡，原有像素猫按家具脚点排序，前墙藤蔓和家具前缘独立遮挡。story 在对白期间接管角色和站位，空闲 home 阶段才运行日常行为；四阶外观从既有修缮与终章标记推导，图集仅在需要花房时加载。FurnitureBackpack 通过 DemoScene 的投影与编辑接口在同一张 Canvas 预览本地草稿，底部背包覆盖在原场景上，不重建场景或相机；编辑时暂停并隐藏猫咪，退出后恢复。可选 homeLayout 记录默认及收藏家具的位置与收纳状态，SAVE_HOME_LAYOUT 校验后整批提交。HomeRepairOverlay 将目录 parts 的坐标投影为破损处标记，REPAIR_HOME 的可选 repairId 在服务端校验工程、前置部位与库存，单处扣费并保存到可选 homeRepairs；全部部位修完才写入原阶段 flag。省略 repairId 的旧命令只结算本阶段剩余成本，已完成的阶段 flag 对旧存档继续有效。HomeMap 与现场共享局部修缮后的绘制。
 

@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {homeInventory,homeObjects,homeObjectInteraction,type HomeAppearance} from '../web/src/modules/home/objects';
-import {homeLayoutChanges,validHomePosition} from '../web/src/modules/home/editor';
+import {homeHit,homeLayoutChanges,validHomePosition} from '../web/src/modules/home/editor';
 import {homeAppearanceKey} from '../web/src/modules/home/painter';
+import {HOME_FRAMES} from '../web/src/modules/home/assets';
 import {homeWalkable} from '../web/src/modules/home/navigation';
 
 test('every default stage furnishing is editable, including hanging and front wall pieces',()=>{
@@ -29,4 +30,19 @@ test('stored legacy furniture stays stored and stage-specific overrides do not h
   assert.ok(!homeObjects(state).some(i=>i.furnitureId==='cardboard_nest'));
   assert.ok(!homeObjects(state).some(i=>i.id==='old-rag'));
   assert.ok(homeObjects({...state,flags:['greenhouse_sealed']}).some(i=>i.id==='straw'));
+});
+test('newly collected furniture placed once stays visible, hittable and editable after save and re-enter (#1 QA)',()=>{
+  const before:HomeAppearance={flags:['greenhouse_fortified_full'],placements:{},furniture:['clover_rug','star_glass']};
+  assert.equal(homeInventory(before).find(i=>i.layoutKey==='furniture:clover_rug')!.stored,true);
+  const after:HomeAppearance={...before,homeLayout:{'furniture:clover_rug':{x:900,y:640,stored:false}}};
+  const items=homeInventory(after),rug=items.find(i=>i.layoutKey==='furniture:clover_rug')!;
+  assert.equal(rug.stored,false);assert.equal(rug.x,900);assert.equal(rug.y,640);
+  assert.ok(validHomePosition(rug,rug.x,rug.y));
+  const frame=HOME_FRAMES[rug.sprite],h=rug.width*frame.height/frame.width;
+  assert.equal(homeHit(items,900,644)?.layoutKey,'furniture:clover_rug');
+  assert.equal(homeHit(items,900,640-Math.min(h-1,40))?.layoutKey,'furniture:clover_rug');
+  assert.equal(homeHit(items,900+rug.width/2+30,640),undefined);
+  const moved={...after,homeLayout:{'furniture:clover_rug':{x:960,y:600,stored:false}}};
+  assert.deepEqual(homeLayoutChanges(after,moved),[{key:'furniture:clover_rug',x:960,y:600,stored:false}]);
+  assert.equal(homeLayoutChanges(after,after).length,0);
 });
