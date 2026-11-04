@@ -1,0 +1,10 @@
+Generated with the built-in image_gen tool, 2026-11-04.
+Approved reference: output/journal-gacha-refined-20261104/D3-postal-collage.png.
+
+postal-journal-base.png
+Edit the approved postal scrapbook into a reusable production background layer. Keep the blue-grey woven mat, hand-torn ivory graph paper, left indigo thread binding, blank cloth label and restrained kraft/red/navy edge collage. Remove all interface text, postcard, doodle, photos, furniture and buttons. Leave the center as continuous blank paper for live UI. Landscape 16:9; rich tactile craft, neutral across every furniture collection.
+
+postal-parcels.png
+Generate a transparent two-state sprite sheet from the approved kraft parcel style: closed box in the left half; same box with four open flaps and tissue in the right half. Same elevated three-quarter view, ivory cotton tie, small blank cream/red shipping label, detailed fibrous kraft. No furniture, background, characters or text. Both objects stay in their respective equal cells. Native transparent alpha.
+
+All text, pool choices, previews, handwriting and results are live UI. The images contain no interactive UI text. Postcard strokes remain local and are never submitted to the draw endpoint.

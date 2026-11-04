@@ -469,7 +469,7 @@ func validateCommand(body []byte, kind string) error {
 		"EXIT_MARKET":         {"layer", "position"},
 		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
 		"SAVE_HOME_LAYOUT":    {"changes"},
-		"DRAW_FURNITURE":      {"poolId"},
+		"DRAW_FURNITURE":      {"poolId", "count"},
 		"CLAIM_PARCEL_REWARD": {"rewardId"},
 		"CHECK_RANDOM_ZONE":   {"zoneId", "layer", "position"},
 		"BUY_FURNITURE":       {"productId"},
@@ -506,6 +506,12 @@ func validateCommand(body []byte, kind string) error {
 	}
 	if err := json.Unmarshal(body, &raw); err != nil {
 		return err
+	}
+	if value, exists := raw.Command["count"]; exists {
+		var count int
+		if json.Unmarshal(value, &count) != nil || (count != 1 && count != 10) {
+			return domain.Fail("INVALID_REQUEST", "count 只接受 1 或 10", 400)
+		}
 	}
 	for key := range raw.Command {
 		if key != "type" && !domain.Contains(allowedKeys, key) {
