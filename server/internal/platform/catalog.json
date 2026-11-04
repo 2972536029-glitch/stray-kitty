@@ -6296,67 +6296,89 @@
       "id": "cardboard_nest",
       "name": "纸箱猫窝",
       "theme": "基础",
-      "source": "story"
+      "source": "story",
+      "widthCm": 70,
+      "category": "bed"
     },
     {
       "id": "soft_blanket",
       "name": "柔软毛毯",
       "theme": "雨夜纸箱",
-      "source": "story"
+      "source": "story",
+      "widthCm": 78,
+      "category": "bed"
     },
     {
       "id": "tin_lamp",
       "name": "罐头小灯",
       "theme": "雨夜纸箱",
-      "source": "story"
+      "source": "story",
+      "widthCm": 28,
+      "category": "lighting"
     },
     {
       "id": "snack_cushion",
       "name": "零食抱枕",
       "theme": "午夜集市",
-      "source": "story"
+      "source": "story",
+      "widthCm": 44,
+      "category": "bed"
     },
     {
       "id": "moon_hammock",
       "name": "月亮吊床",
       "theme": "地下月光",
-      "source": "story"
+      "source": "story",
+      "widthCm": 100,
+      "category": "bed"
     },
     {
       "id": "blue_bowl",
       "name": "蓝色饭碗",
       "theme": "家的回忆",
-      "source": "story"
+      "source": "story",
+      "widthCm": 44,
+      "category": "decor"
     },
     {
       "id": "red_cushion",
       "name": "蝴蝶结软垫",
       "theme": "花房开张",
-      "source": "story"
+      "source": "story",
+      "widthCm": 46,
+      "category": "bed"
     },
     {
       "id": "sun_lamp",
       "name": "小太阳灯",
       "theme": "花房开张",
-      "source": "story"
+      "source": "story",
+      "widthCm": 32,
+      "category": "lighting"
     },
     {
       "id": "box_castle",
       "name": "纸箱小城堡",
       "theme": "点点最爱",
-      "source": "story"
+      "source": "story",
+      "widthCm": 95,
+      "category": "bed"
     },
     {
       "id": "star_glass",
       "name": "星彩玻璃吊灯",
       "theme": "星空温室",
-      "source": "story"
+      "source": "story",
+      "widthCm": 38,
+      "category": "wall"
     },
     {
       "id": "cloud_nest",
       "name": "云朵绒窝",
       "theme": "星空温室",
-      "source": "story"
+      "source": "story",
+      "widthCm": 66,
+      "category": "bed"
     },
     {
       "id": "moss_cottage",
@@ -6367,7 +6389,8 @@
       "preferredSlot": "corner",
       "interactionCat": "diandian",
       "interaction": "castle_peek",
-      "widthCm": 85
+      "widthCm": 72,
+      "category": "bed"
     },
     {
       "id": "fern_lantern",
@@ -6378,7 +6401,8 @@
       "preferredSlot": "window",
       "interactionCat": "miaomiao",
       "interaction": "belly",
-      "widthCm": 34
+      "widthCm": 30,
+      "category": "lighting"
     },
     {
       "id": "acorn_library",
@@ -6388,8 +6412,9 @@
       "description": "橡果形的原木小书架，底层留了猫咪的阅读洞。",
       "preferredSlot": "courtyard",
       "interactionCat": "diandian",
-      "interaction": "castle_peek",
-      "widthCm": 110
+      "interaction": "investigate",
+      "widthCm": 88,
+      "category": "storage"
     },
     {
       "id": "leaf_swing",
@@ -6400,7 +6425,8 @@
       "preferredSlot": "beam",
       "interactionCat": "momo",
       "interaction": "hammock_sleep",
-      "widthCm": 100
+      "widthCm": 92,
+      "category": "bed"
     },
     {
       "id": "clover_rug",
@@ -6411,7 +6437,8 @@
       "preferredSlot": "sun_spot",
       "interactionCat": "tuanzi",
       "interaction": "knead",
-      "widthCm": 185
+      "widthCm": 128,
+      "category": "rug"
     },
     {
       "id": "luna_boat",
@@ -6422,7 +6449,8 @@
       "preferredSlot": "corner",
       "interactionCat": "miaomiao",
       "interaction": "belly",
-      "widthCm": 90
+      "widthCm": 76,
+      "category": "bed"
     },
     {
       "id": "orrery_lamp",
@@ -6433,7 +6461,8 @@
       "preferredSlot": "window",
       "interactionCat": "miaomiao",
       "interaction": "belly",
-      "widthCm": 38
+      "widthCm": 34,
+      "category": "lighting"
     },
     {
       "id": "tide_observatory",
@@ -6444,7 +6473,8 @@
       "preferredSlot": "courtyard",
       "interactionCat": "diandian",
       "interaction": "castle_peek",
-      "widthCm": 122
+      "widthCm": 96,
+      "category": "bed"
     },
     {
       "id": "orbit_hammock",
@@ -6455,7 +6485,8 @@
       "preferredSlot": "beam",
       "interactionCat": "momo",
       "interaction": "hammock_sleep",
-      "widthCm": 118
+      "widthCm": 108,
+      "category": "bed"
     },
     {
       "id": "starmap_carpet",
@@ -6466,7 +6497,8 @@
       "preferredSlot": "sun_spot",
       "interactionCat": "tuanzi",
       "interaction": "knead",
-      "widthCm": 190
+      "widthCm": 138,
+      "category": "rug"
     },
     {
       "id": "willow_sofa",
@@ -6477,7 +6509,8 @@
       "preferredSlot": "lounge",
       "interactionCat": "tuanzi",
       "interaction": "belly",
-      "widthCm": 175
+      "widthCm": 128,
+      "category": "seat"
     },
     {
       "id": "herb_desk",
@@ -6488,7 +6521,8 @@
       "preferredSlot": "desk",
       "interactionCat": "miaomiao",
       "interaction": "sniff",
-      "widthCm": 150
+      "widthCm": 112,
+      "category": "table"
     },
     {
       "id": "letter_cabinet",
@@ -6499,7 +6533,8 @@
       "preferredSlot": "cabinet",
       "interactionCat": "diandian",
       "interaction": "sniff",
-      "widthCm": 125
+      "widthCm": 82,
+      "category": "storage"
     },
     {
       "id": "sprout_planter",
@@ -6510,7 +6545,8 @@
       "preferredSlot": "planter",
       "interactionCat": "miaomiao",
       "interaction": "sniff",
-      "widthCm": 120
+      "widthCm": 82,
+      "category": "plant"
     },
     {
       "id": "postmark_clock",
@@ -6521,7 +6557,8 @@
       "preferredSlot": "wall_clock",
       "interactionCat": "momo",
       "interaction": "watch",
-      "widthCm": 28
+      "widthCm": 25,
+      "category": "wall"
     },
     {
       "id": "wicker_basket",
@@ -6532,7 +6569,8 @@
       "preferredSlot": "toy_corner",
       "interactionCat": "tuanzi",
       "interaction": "bat_ball",
-      "widthCm": 40
+      "widthCm": 40,
+      "category": "toy"
     },
     {
       "id": "seedling_stool",
@@ -6543,7 +6581,8 @@
       "preferredSlot": "reading_stool",
       "interactionCat": "diandian",
       "interaction": "perch",
-      "widthCm": 38
+      "widthCm": 40,
+      "category": "seat"
     },
     {
       "id": "crescent_sofa",
@@ -6554,7 +6593,8 @@
       "preferredSlot": "lounge",
       "interactionCat": "tuanzi",
       "interaction": "belly",
-      "widthCm": 185
+      "widthCm": 135,
+      "category": "seat"
     },
     {
       "id": "astral_desk",
@@ -6565,7 +6605,8 @@
       "preferredSlot": "desk",
       "interactionCat": "miaomiao",
       "interaction": "sniff",
-      "widthCm": 155
+      "widthCm": 116,
+      "category": "table"
     },
     {
       "id": "pearl_cabinet",
@@ -6576,7 +6617,8 @@
       "preferredSlot": "cabinet",
       "interactionCat": "diandian",
       "interaction": "sniff",
-      "widthCm": 128
+      "widthCm": 88,
+      "category": "storage"
     },
     {
       "id": "nebula_planter",
@@ -6587,7 +6629,8 @@
       "preferredSlot": "planter",
       "interactionCat": "miaomiao",
       "interaction": "sniff",
-      "widthCm": 120
+      "widthCm": 85,
+      "category": "plant"
     },
     {
       "id": "lunar_clock",
@@ -6598,7 +6641,8 @@
       "preferredSlot": "wall_clock",
       "interactionCat": "momo",
       "interaction": "watch",
-      "widthCm": 30
+      "widthCm": 26,
+      "category": "wall"
     },
     {
       "id": "comet_mobile",
@@ -6609,7 +6653,8 @@
       "preferredSlot": "toy_corner",
       "interactionCat": "tuanzi",
       "interaction": "bat_chime",
-      "widthCm": 33
+      "widthCm": 32,
+      "category": "wall"
     },
     {
       "id": "star_stool",
@@ -6620,7 +6665,8 @@
       "preferredSlot": "reading_stool",
       "interactionCat": "diandian",
       "interaction": "perch",
-      "widthCm": 40
+      "widthCm": 42,
+      "category": "seat"
     }
   ],
   "slots": [
@@ -7236,8 +7282,9 @@
       "sprite": "s1.rag",
       "x": 292,
       "y": 427,
-      "width": 120,
-      "kind": "blanket"
+      "width": 110,
+      "kind": "blanket",
+      "category": "rug"
     },
     {
       "id": "stage:1:rain-bucket",
@@ -7247,8 +7294,9 @@
       "sprite": "s1.bucket",
       "x": 575,
       "y": 490,
-      "width": 48,
-      "kind": "decor"
+      "width": 51,
+      "kind": "decor",
+      "category": "decor"
     },
     {
       "id": "stage:1:rain-basin",
@@ -7258,8 +7306,9 @@
       "sprite": "s1.basin",
       "x": 965,
       "y": 604,
-      "width": 74,
-      "kind": "decor"
+      "width": 71,
+      "kind": "decor",
+      "category": "decor"
     },
     {
       "id": "stage:1:dead-pots",
@@ -7269,8 +7318,9 @@
       "sprite": "s1.deadpots",
       "x": 1435,
       "y": 414,
-      "width": 163,
-      "kind": "plant"
+      "width": 144,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:1:broken-rack",
@@ -7280,8 +7330,9 @@
       "sprite": "s1.brokenrack",
       "x": 144,
       "y": 453,
-      "width": 112,
-      "kind": "storage"
+      "width": 122,
+      "kind": "storage",
+      "category": "storage"
     },
     {
       "id": "stage:1:loose-boards",
@@ -7291,8 +7342,9 @@
       "sprite": "s1.boards",
       "x": 570,
       "y": 360,
-      "width": 124,
-      "kind": "decor"
+      "width": 119,
+      "kind": "decor",
+      "category": "decor"
     },
     {
       "id": "stage:1:rusty-tools",
@@ -7302,8 +7354,9 @@
       "sprite": "s1.tools",
       "x": 1095,
       "y": 358,
-      "width": 112,
-      "kind": "storage"
+      "width": 88,
+      "kind": "storage",
+      "category": "storage"
     },
     {
       "id": "stage:1:dry-vine",
@@ -7313,9 +7366,10 @@
       "sprite": "botany.dryvine",
       "x": 770,
       "y": 315,
-      "width": 52,
+      "width": 54,
       "kind": "decor",
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:1:damaged-bench",
@@ -7325,9 +7379,10 @@
       "sprite": "s1.bench",
       "x": 1300,
       "y": 373,
-      "width": 184,
+      "width": 187,
       "kind": "workbench",
-      "replacementSlot": "desk"
+      "replacementSlot": "desk",
+      "category": "table"
     },
     {
       "id": "stage:1:wet-sacks",
@@ -7337,8 +7392,9 @@
       "sprite": "s1.sack",
       "x": 1180,
       "y": 372,
-      "width": 85,
-      "kind": "decor"
+      "width": 82,
+      "kind": "decor",
+      "category": "storage"
     },
     {
       "id": "stage:1:rusty-can",
@@ -7348,8 +7404,9 @@
       "sprite": "s1.can",
       "x": 1486,
       "y": 544,
-      "width": 55,
-      "kind": "decor"
+      "width": 51,
+      "kind": "decor",
+      "category": "decor"
     },
     {
       "id": "stage:1:shelter",
@@ -7359,9 +7416,10 @@
       "sprite": "s1.box",
       "x": 254,
       "y": 382,
-      "width": 186,
+      "width": 119,
       "kind": "nest",
-      "replacementSlot": "corner"
+      "replacementSlot": "corner",
+      "category": "bed"
     },
     {
       "id": "stage:2:workbench",
@@ -7371,9 +7429,10 @@
       "sprite": "s2.workbench",
       "x": 820,
       "y": 370,
-      "width": 210,
+      "width": 190,
       "kind": "workbench",
-      "replacementSlot": "desk"
+      "replacementSlot": "desk",
+      "category": "table"
     },
     {
       "id": "stage:2:straw",
@@ -7383,8 +7442,9 @@
       "sprite": "s2.straw",
       "x": 327,
       "y": 425,
-      "width": 158,
-      "kind": "blanket"
+      "width": 122,
+      "kind": "blanket",
+      "category": "bed"
     },
     {
       "id": "stage:2:work-lantern",
@@ -7394,8 +7454,9 @@
       "sprite": "s2.tinlamp",
       "x": 998,
       "y": 365,
-      "width": 44,
-      "kind": "decor"
+      "width": 48,
+      "kind": "decor",
+      "category": "lighting"
     },
     {
       "id": "stage:2:crate-shelf",
@@ -7405,8 +7466,9 @@
       "sprite": "s2.shelf",
       "x": 1080,
       "y": 370,
-      "width": 126,
-      "kind": "storage"
+      "width": 119,
+      "kind": "storage",
+      "category": "storage"
     },
     {
       "id": "stage:2:young-plants",
@@ -7416,8 +7478,9 @@
       "sprite": "s2.seedlings",
       "x": 1415,
       "y": 410,
-      "width": 165,
-      "kind": "plant"
+      "width": 136,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:2:supply-crate",
@@ -7427,9 +7490,10 @@
       "sprite": "s2.storage",
       "x": 560,
       "y": 370,
-      "width": 143,
+      "width": 119,
       "kind": "storage",
-      "replacementSlot": "cabinet"
+      "replacementSlot": "cabinet",
+      "category": "storage"
     },
     {
       "id": "stage:2:scratching-ramp",
@@ -7439,8 +7503,9 @@
       "sprite": "s2.scratcher",
       "x": 1270,
       "y": 405,
-      "width": 126,
-      "kind": "decor"
+      "width": 109,
+      "kind": "decor",
+      "category": "toy"
     },
     {
       "id": "stage:2:stool-seedling",
@@ -7450,8 +7515,9 @@
       "sprite": "s2.plantstool",
       "x": 154,
       "y": 480,
-      "width": 87,
-      "kind": "plant"
+      "width": 82,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:2:shelter",
@@ -7461,9 +7527,10 @@
       "sprite": "s2.nest",
       "x": 254,
       "y": 382,
-      "width": 186,
+      "width": 119,
       "kind": "nest",
-      "replacementSlot": "corner"
+      "replacementSlot": "corner",
+      "category": "bed"
     },
     {
       "id": "stage:2:feeding-corner",
@@ -7473,9 +7540,10 @@
       "sprite": "s2.bowls",
       "x": 1400,
       "y": 618,
-      "width": 114,
+      "width": 75,
       "kind": "bowls",
-      "replacementSlot": "window"
+      "replacementSlot": "window",
+      "category": "decor"
     },
     {
       "id": "stage:3:workbench",
@@ -7485,9 +7553,10 @@
       "sprite": "s3.bench",
       "x": 820,
       "y": 375,
-      "width": 236,
+      "width": 212,
       "kind": "workbench",
-      "replacementSlot": "desk"
+      "replacementSlot": "desk",
+      "category": "table"
     },
     {
       "id": "stage:3:food-storage",
@@ -7497,9 +7566,10 @@
       "sprite": "s3.chest",
       "x": 555,
       "y": 369,
-      "width": 168,
+      "width": 139,
       "kind": "storage",
-      "replacementSlot": "cabinet"
+      "replacementSlot": "cabinet",
+      "category": "storage"
     },
     {
       "id": "stage:3:cat-tower",
@@ -7509,8 +7579,9 @@
       "sprite": "s3.tower",
       "x": 1470,
       "y": 455,
-      "width": 160,
-      "kind": "tower"
+      "width": 136,
+      "kind": "tower",
+      "category": "toy"
     },
     {
       "id": "stage:3:north-herbs",
@@ -7520,9 +7591,10 @@
       "sprite": "s3.herbs",
       "x": 1120,
       "y": 375,
-      "width": 208,
+      "width": 167,
       "kind": "plant",
-      "replacementSlot": "wall_clock"
+      "replacementSlot": "wall_clock",
+      "category": "plant"
     },
     {
       "id": "stage:3:citrus-tree",
@@ -7532,9 +7604,10 @@
       "sprite": "s3.citrus",
       "x": 1320,
       "y": 379,
-      "width": 142,
+      "width": 116,
       "kind": "plant",
-      "replacementSlot": "planter"
+      "replacementSlot": "planter",
+      "category": "plant"
     },
     {
       "id": "stage:3:south-flowers",
@@ -7544,8 +7617,9 @@
       "sprite": "s3.flowerpots",
       "x": 470,
       "y": 716,
-      "width": 203,
-      "kind": "plant"
+      "width": 167,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:3:west-plant-stand",
@@ -7555,8 +7629,9 @@
       "sprite": "s3.seedlingrack",
       "x": 147,
       "y": 478,
-      "width": 119,
-      "kind": "plant"
+      "width": 109,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:3:north-vines",
@@ -7566,9 +7641,10 @@
       "sprite": "botany.ivy",
       "x": 775,
       "y": 315,
-      "width": 63,
+      "width": 65,
       "kind": "decor",
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:3:west-vines",
@@ -7578,9 +7654,10 @@
       "sprite": "botany.flowering",
       "x": 440,
       "y": 315,
-      "width": 64,
+      "width": 68,
       "kind": "decor",
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:3:east-vines",
@@ -7590,9 +7667,10 @@
       "sprite": "botany.ivy",
       "x": 1256,
       "y": 316,
-      "width": 48,
+      "width": 65,
       "kind": "decor",
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:3:hanging-fern",
@@ -7604,7 +7682,8 @@
       "y": 256,
       "width": 71,
       "kind": "decor",
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:3:garden-handcart",
@@ -7614,9 +7693,10 @@
       "sprite": "s3.supplies",
       "x": 1200,
       "y": 710,
-      "width": 154,
+      "width": 133,
       "kind": "storage",
-      "replacementSlot": "courtyard"
+      "replacementSlot": "courtyard",
+      "category": "storage"
     },
     {
       "id": "stage:3:crate-shelf",
@@ -7626,8 +7706,9 @@
       "sprite": "s2.shelf",
       "x": 405,
       "y": 379,
-      "width": 106,
-      "kind": "storage"
+      "width": 119,
+      "kind": "storage",
+      "category": "storage"
     },
     {
       "id": "stage:3:stool-seedling",
@@ -7637,8 +7718,9 @@
       "sprite": "s2.plantstool",
       "x": 1523,
       "y": 553,
-      "width": 87,
-      "kind": "plant"
+      "width": 82,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:3:work-lantern",
@@ -7648,8 +7730,9 @@
       "sprite": "s2.tinlamp",
       "x": 994,
       "y": 365,
-      "width": 42,
-      "kind": "decor"
+      "width": 48,
+      "kind": "decor",
+      "category": "lighting"
     },
     {
       "id": "stage:3:round-bed",
@@ -7659,8 +7742,9 @@
       "sprite": "s3.cloudnest",
       "x": 1300,
       "y": 505,
-      "width": 149,
-      "kind": "blanket"
+      "width": 112,
+      "kind": "blanket",
+      "category": "bed"
     },
     {
       "id": "stage:3:west-leaf-tub",
@@ -7670,8 +7754,9 @@
       "sprite": "botany.tropical",
       "x": 166,
       "y": 701,
-      "width": 153,
-      "kind": "plant"
+      "width": 105,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:3:red-geraniums",
@@ -7681,9 +7766,10 @@
       "sprite": "botany.geranium",
       "x": 1330,
       "y": 725,
-      "width": 112,
+      "width": 82,
       "kind": "plant",
-      "replacementSlot": "courtyard"
+      "replacementSlot": "courtyard",
+      "category": "plant"
     },
     {
       "id": "stage:3:herb-tub",
@@ -7693,8 +7779,9 @@
       "sprite": "botany.herbtub",
       "x": 1440,
       "y": 552,
-      "width": 94,
-      "kind": "plant"
+      "width": 78,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:3:wall-ivy",
@@ -7704,10 +7791,11 @@
       "sprite": "botany.spill",
       "x": 438,
       "y": 866,
-      "width": 192,
+      "width": 144,
       "kind": "decor",
       "front": true,
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:3:south-east-ivy",
@@ -7717,10 +7805,11 @@
       "sprite": "botany.spill",
       "x": 1193,
       "y": 860,
-      "width": 154,
+      "width": 144,
       "kind": "decor",
       "front": true,
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:3:shelter",
@@ -7730,9 +7819,10 @@
       "sprite": "s3.castle",
       "x": 254,
       "y": 382,
-      "width": 186,
+      "width": 162,
       "kind": "castle",
-      "replacementSlot": "corner"
+      "replacementSlot": "corner",
+      "category": "bed"
     },
     {
       "id": "stage:3:feeding-corner",
@@ -7742,9 +7832,10 @@
       "sprite": "s2.bowls",
       "x": 1400,
       "y": 618,
-      "width": 114,
+      "width": 75,
       "kind": "bowls",
-      "replacementSlot": "window"
+      "replacementSlot": "window",
+      "category": "decor"
     },
     {
       "id": "stage:3:reading-hammock",
@@ -7754,9 +7845,10 @@
       "sprite": "s3.hammock",
       "x": 280,
       "y": 640,
-      "width": 194,
+      "width": 170,
       "kind": "hammock",
-      "replacementSlot": "beam"
+      "replacementSlot": "beam",
+      "category": "bed"
     },
     {
       "id": "stage:3:sun-bedding",
@@ -7766,9 +7858,10 @@
       "sprite": "s2.blanket",
       "x": 1050,
       "y": 585,
-      "width": 150,
+      "width": 133,
       "kind": "blanket",
-      "replacementSlot": "sun_spot"
+      "replacementSlot": "sun_spot",
+      "category": "bed"
     },
     {
       "id": "stage:4:food-storage",
@@ -7778,9 +7871,10 @@
       "sprite": "s3.chest",
       "x": 555,
       "y": 369,
-      "width": 168,
+      "width": 139,
       "kind": "storage",
-      "replacementSlot": "cabinet"
+      "replacementSlot": "cabinet",
+      "category": "storage"
     },
     {
       "id": "stage:4:cat-tower",
@@ -7790,8 +7884,9 @@
       "sprite": "s3.tower",
       "x": 1470,
       "y": 455,
-      "width": 160,
-      "kind": "tower"
+      "width": 136,
+      "kind": "tower",
+      "category": "toy"
     },
     {
       "id": "stage:4:north-herbs",
@@ -7801,9 +7896,10 @@
       "sprite": "s3.herbs",
       "x": 1120,
       "y": 375,
-      "width": 208,
+      "width": 167,
       "kind": "plant",
-      "replacementSlot": "wall_clock"
+      "replacementSlot": "wall_clock",
+      "category": "plant"
     },
     {
       "id": "stage:4:citrus-tree",
@@ -7813,9 +7909,10 @@
       "sprite": "s3.citrus",
       "x": 1320,
       "y": 379,
-      "width": 142,
+      "width": 116,
       "kind": "plant",
-      "replacementSlot": "planter"
+      "replacementSlot": "planter",
+      "category": "plant"
     },
     {
       "id": "stage:4:south-flowers",
@@ -7825,8 +7922,9 @@
       "sprite": "s3.flowerpots",
       "x": 470,
       "y": 716,
-      "width": 203,
-      "kind": "plant"
+      "width": 167,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:4:west-plant-stand",
@@ -7836,8 +7934,9 @@
       "sprite": "s3.seedlingrack",
       "x": 147,
       "y": 478,
-      "width": 119,
-      "kind": "plant"
+      "width": 109,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:4:north-vines",
@@ -7847,9 +7946,10 @@
       "sprite": "botany.ivy",
       "x": 775,
       "y": 315,
-      "width": 63,
+      "width": 65,
       "kind": "decor",
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:4:west-vines",
@@ -7859,9 +7959,10 @@
       "sprite": "botany.flowering",
       "x": 440,
       "y": 315,
-      "width": 64,
+      "width": 68,
       "kind": "decor",
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:4:east-vines",
@@ -7871,9 +7972,10 @@
       "sprite": "botany.ivy",
       "x": 1256,
       "y": 316,
-      "width": 48,
+      "width": 65,
       "kind": "decor",
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:4:hanging-fern",
@@ -7885,7 +7987,8 @@
       "y": 256,
       "width": 71,
       "kind": "decor",
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:4:garden-handcart",
@@ -7895,9 +7998,10 @@
       "sprite": "s3.supplies",
       "x": 1200,
       "y": 710,
-      "width": 154,
+      "width": 133,
       "kind": "storage",
-      "replacementSlot": "courtyard"
+      "replacementSlot": "courtyard",
+      "category": "storage"
     },
     {
       "id": "stage:4:crate-shelf",
@@ -7907,8 +8011,9 @@
       "sprite": "s2.shelf",
       "x": 405,
       "y": 379,
-      "width": 106,
-      "kind": "storage"
+      "width": 119,
+      "kind": "storage",
+      "category": "storage"
     },
     {
       "id": "stage:4:stool-seedling",
@@ -7918,8 +8023,9 @@
       "sprite": "s2.plantstool",
       "x": 1523,
       "y": 553,
-      "width": 87,
-      "kind": "plant"
+      "width": 82,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:4:work-lantern",
@@ -7929,8 +8035,9 @@
       "sprite": "s2.tinlamp",
       "x": 994,
       "y": 365,
-      "width": 42,
-      "kind": "decor"
+      "width": 48,
+      "kind": "decor",
+      "category": "lighting"
     },
     {
       "id": "stage:4:round-bed",
@@ -7940,8 +8047,9 @@
       "sprite": "s3.cloudnest",
       "x": 1300,
       "y": 505,
-      "width": 149,
-      "kind": "blanket"
+      "width": 112,
+      "kind": "blanket",
+      "category": "bed"
     },
     {
       "id": "stage:4:west-leaf-tub",
@@ -7951,8 +8059,9 @@
       "sprite": "botany.tropical",
       "x": 166,
       "y": 701,
-      "width": 153,
-      "kind": "plant"
+      "width": 105,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:4:red-geraniums",
@@ -7962,9 +8071,10 @@
       "sprite": "botany.geranium",
       "x": 1330,
       "y": 725,
-      "width": 112,
+      "width": 82,
       "kind": "plant",
-      "replacementSlot": "courtyard"
+      "replacementSlot": "courtyard",
+      "category": "plant"
     },
     {
       "id": "stage:4:herb-tub",
@@ -7974,8 +8084,9 @@
       "sprite": "botany.herbtub",
       "x": 1440,
       "y": 552,
-      "width": 94,
-      "kind": "plant"
+      "width": 78,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:4:wall-ivy",
@@ -7985,10 +8096,11 @@
       "sprite": "botany.spill",
       "x": 438,
       "y": 866,
-      "width": 192,
+      "width": 144,
       "kind": "decor",
       "front": true,
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:4:south-east-ivy",
@@ -7998,10 +8110,11 @@
       "sprite": "botany.spill",
       "x": 1193,
       "y": 860,
-      "width": 154,
+      "width": 144,
       "kind": "decor",
       "front": true,
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:4:workbench",
@@ -8011,9 +8124,10 @@
       "sprite": "s4.banquet",
       "x": 815,
       "y": 385,
-      "width": 250,
+      "width": 246,
       "kind": "workbench",
-      "replacementSlot": "desk"
+      "replacementSlot": "desk",
+      "category": "table"
     },
     {
       "id": "stage:4:welcome-left",
@@ -8023,8 +8137,9 @@
       "sprite": "s4.entryleft",
       "x": 643,
       "y": 726,
-      "width": 132,
-      "kind": "decor"
+      "width": 119,
+      "kind": "decor",
+      "category": "plant"
     },
     {
       "id": "stage:4:welcome-right",
@@ -8034,8 +8149,9 @@
       "sprite": "s4.entryright",
       "x": 1005,
       "y": 725,
-      "width": 147,
-      "kind": "plant"
+      "width": 128,
+      "kind": "plant",
+      "category": "plant"
     },
     {
       "id": "stage:4:entry-rug",
@@ -8045,8 +8161,9 @@
       "sprite": "s4.rug",
       "x": 824,
       "y": 723,
-      "width": 191,
-      "kind": "decor"
+      "width": 201,
+      "kind": "blanket",
+      "category": "rug"
     },
     {
       "id": "stage:4:gifts",
@@ -8056,9 +8173,10 @@
       "sprite": "s4.gifts",
       "x": 530,
       "y": 420,
-      "width": 142,
+      "width": 128,
       "kind": "storage",
-      "replacementSlot": "cabinet"
+      "replacementSlot": "cabinet",
+      "category": "storage"
     },
     {
       "id": "stage:4:celebration-flowers",
@@ -8068,9 +8186,10 @@
       "sprite": "s4.flowers",
       "x": 1230,
       "y": 411,
-      "width": 163,
+      "width": 139,
       "kind": "plant",
-      "replacementSlot": "planter"
+      "replacementSlot": "planter",
+      "category": "plant"
     },
     {
       "id": "stage:4:celebration-banner",
@@ -8080,8 +8199,9 @@
       "sprite": "s4.pennant",
       "x": 180,
       "y": 564,
-      "width": 78,
-      "kind": "decor"
+      "width": 68,
+      "kind": "decor",
+      "category": "decor"
     },
     {
       "id": "stage:4:entry-wreath",
@@ -8091,10 +8211,11 @@
       "sprite": "s4.wreath",
       "x": 821,
       "y": 805,
-      "width": 72,
+      "width": 68,
       "kind": "decor",
       "front": true,
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:4:ceiling-bunting",
@@ -8104,9 +8225,10 @@
       "sprite": "s4.flags",
       "x": 824,
       "y": 265,
-      "width": 390,
+      "width": 374,
       "kind": "decor",
-      "wall": true
+      "wall": true,
+      "category": "wall"
     },
     {
       "id": "stage:4:shelter",
@@ -8116,9 +8238,10 @@
       "sprite": "s3.castle",
       "x": 254,
       "y": 382,
-      "width": 186,
+      "width": 162,
       "kind": "castle",
-      "replacementSlot": "corner"
+      "replacementSlot": "corner",
+      "category": "bed"
     },
     {
       "id": "stage:4:feeding-corner",
@@ -8128,9 +8251,10 @@
       "sprite": "s2.bowls",
       "x": 1400,
       "y": 618,
-      "width": 114,
+      "width": 75,
       "kind": "bowls",
-      "replacementSlot": "window"
+      "replacementSlot": "window",
+      "category": "decor"
     },
     {
       "id": "stage:4:reading-hammock",
@@ -8140,9 +8264,10 @@
       "sprite": "s3.hammock",
       "x": 280,
       "y": 640,
-      "width": 194,
+      "width": 170,
       "kind": "hammock",
-      "replacementSlot": "beam"
+      "replacementSlot": "beam",
+      "category": "bed"
     },
     {
       "id": "stage:4:sun-bedding",
@@ -8152,9 +8277,10 @@
       "sprite": "s2.blanket",
       "x": 1050,
       "y": 585,
-      "width": 150,
+      "width": 133,
       "kind": "blanket",
-      "replacementSlot": "sun_spot"
+      "replacementSlot": "sun_spot",
+      "category": "bed"
     }
   ]
 }

@@ -1,10 +1,10 @@
+import {paintHomeResidents} from './resident-layers';
 import type {HomeRepairPart} from '../../contracts';
 import {HOME_SIZE,homeStage} from './layout';
 import type {HomeAppearance} from './objects';
 import type {HomeArtwork} from './assets';
 import type {LifeCat} from './life';
-import {paintResident} from './catPainter';
-import {homeObjects,paintHomeStructure,paintHomeObject,paintHomeFurnitureFront,paintHomeFrontWall,paintHomeWeather} from './painter';
+import {homeObjects,paintHomeStructure,paintHomeObject,paintHomeFrontWall,paintHomeWeather} from './painter';
 
 const names=['漏雨避雨处','简易庇护所','原木温室','王国庆典'];
 const clamp=(n:number)=>Math.max(0,Math.min(1,n));
@@ -22,12 +22,7 @@ function snapshot(state:HomeAppearance,art:HomeArtwork,cats:LifeCat[],time:numbe
   const canvas=document.createElement('canvas');canvas.width=HOME_SIZE.width;canvas.height=HOME_SIZE.height;
   const ctx=canvas.getContext('2d')!,objects=homeObjects(state),stage=homeStage(state);
   paintHomeStructure(ctx,state,art);
-  const layers=[...objects.filter(o=>!o.front).map(object=>({y:object.y,object,cat:undefined as LifeCat|undefined})),...cats.filter(c=>!c.slot).map(cat=>({y:cat.y,object:undefined,cat}))].sort((a,b)=>a.y-b.y);
-  for(const layer of layers)if(layer.object)paintHomeObject(ctx,layer.object,art,time);else if(layer.cat)paintResident(ctx,layer.cat,time,stage);
-  for(const cat of cats.filter(c=>c.slot).sort((a,b)=>a.y-b.y)){
-    paintResident(ctx,cat,time,stage);const host=objects.find(o=>(o.slot??o.layoutKey)===cat.slot);
-    if(host&&!cat.furnitureArrival)paintHomeFurnitureFront(ctx,host,art);
-  }
+  paintHomeResidents(ctx,objects,cats,art,time,stage);
   paintHomeFrontWall(ctx,state,art);for(const object of objects.filter(o=>o.front))paintHomeObject(ctx,object,art,time);
   paintHomeWeather(ctx,state,time);return canvas;
 }

@@ -118,7 +118,7 @@ for(const fixture of ['moss-room','moon-room'])test(fixture+': twelve themed fur
   await expect.poll(async()=>{
     const cats=JSON.parse((await canvas.getAttribute('data-home-cats'))??'[]') as {breed:string}[];
     return cats.map(c=>c.breed).sort();
-  }).toEqual(['diandian','miaomiao','momo','tuanzi']);
+  }).toEqual(['advisor','diandian','miaomiao','momo','tuanzi']);
   // Cat interactions depend on proximity; distant furniture cannot summon cats across the room.
   await expect.poll(async()=>{
     const cats=JSON.parse((await canvas.getAttribute('data-home-cats'))??'[]') as {pose:string|null;slot?:string}[];

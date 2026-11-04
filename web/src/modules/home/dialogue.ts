@@ -1,8 +1,8 @@
-import type {CatBreed} from '../../adapters/canvas/pixelCat';
+import type {HomeCatBreed} from './layout';
 
 export type HomeMood='happy'|'neutral'|'irritated';
 type MoodLines=Record<HomeMood,readonly string[]>;
-interface Speaker {breed:CatBreed;seed:number;dialogueTurns?:Record<string,number>;lastDialogue?:string;lastSpokenAt?:number;mood?:HomeMood;moodUntil?:number}
+interface Speaker {breed:HomeCatBreed;seed:number;dialogueTurns?:Record<string,number>;lastDialogue?:string;lastSpokenAt?:number;mood?:HomeMood;moodUntil?:number}
 
 // Small context banks keep an action's words relevant; each cat remembers its
 // own place in a bank, so the same action cannot immediately repeat a line.
@@ -18,7 +18,12 @@ export function activityMood(cat:Speaker,now:number):HomeMood {
 }
 export function setCatMood(cat:Speaker,mood:HomeMood,now:number,duration=8500){cat.mood=mood;cat.moodUntil=now+duration;}
 
-export const PET_LINES:Record<CatBreed,MoodLines>={
+export const PET_LINES:Record<HomeCatBreed,MoodLines>={
+  advisor:{
+    happy:['折扇先放一旁，陪你歇一会儿。','嗯，耳后那里很舒服。','花房的事不急，我们慢慢聊。','有你在，这个角落也暖和了。'],
+    neutral:['我在这儿。想聊什么，慢慢说。','轻一点就好，折扇别弄皱啦。','先陪我看看窗外吧。','修缮和伙伴的事，都可以来问我。'],
+    irritated:['先停一下，给我一点空隙。','毛都乱了，让我整理片刻。','摸摸先歇一会儿，想聊的事我还在听。','折扇也该收好了，我们稍后再聊。']
+  },
   miaomiao:{
     happy:['就、就再摸一下耳朵后面好了。','呼噜……这是本咪特许的，不许告诉别人。','你今天的手法，勉强能得一条小鱼干。','哼，手怎么停了？本咪还没说结束呢。'],
     neutral:['嗯？本咪正在想事情呢。','可以摸头，蝴蝶结要留在原来的地方。','我看见你啦，坐在旁边就好。','先让本咪把这条尾巴理顺。'],
@@ -78,4 +83,4 @@ export function socialLines(a:Speaker,b:Speaker,kind:SocialKind,mood:HomeMood,no
   const pair=pairs[(turn+a.seed+b.seed)%pairs.length];a.lastSpokenAt=now;b.lastSpokenAt=now;
   return [pair[0].replace('好朋友',CAT_VOCATIVES[b.breed]),pair[1].replace('好朋友',CAT_VOCATIVES[a.breed])];
 }
-const CAT_VOCATIVES:Record<CatBreed,string>={miaomiao:'喵喵',tuanzi:'团子',diandian:'点点',momo:'墨墨'};
+const CAT_VOCATIVES:Record<HomeCatBreed,string>={miaomiao:'喵喵',tuanzi:'团子',diandian:'点点',momo:'墨墨',advisor:'阿策'};
