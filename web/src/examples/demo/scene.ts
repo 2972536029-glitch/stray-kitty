@@ -1,3 +1,6 @@
+import {paintHomeResidents} from '../../modules/home/resident-layers';
+import {groundCover,homeObjectDepth} from '../../modules/home/spatial';
+import type {HomeCatBreed} from '../../modules/home/layout';
 import {MarketEventMarkers} from '../../modules/nightMarket/eventLabels';
 import {paintMarketCargo} from '../../modules/nightMarket/cargoPainter';
 import {PARCEL_ART, PARCEL_IDS} from '../../modules/lottery/furnitureArt';
@@ -13,7 +16,7 @@ import {marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketR
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 import {HOME_LAYOUT_ID, HOME_SIZE, HOME_RESIDENTS, HOME_ROAM_NODES, HOME_SHELTER_NODES, homeStage} from '../../modules/home/layout';
-import {homeAppearanceKey, paintHomestead, paintHomeStructure, paintHomeObject, paintHomeFurnitureFront, paintHomeFrontWall, paintHomeWeather, homeObjects} from '../../modules/home/painter';
+import {homeAppearanceKey, paintHomestead, paintHomeStructure, paintHomeObject, paintHomeFrontWall, paintHomeWeather, homeObjects} from '../../modules/home/painter';
 import {loadHomeArtwork, HOME_FRAMES, type HomeArtwork} from '../../modules/home/assets';
 import {paintResident,residentContains,residentWorldPoint} from '../../modules/home/catPainter';
 import {homeObjectOpaqueAt} from '../../modules/home/picking';
@@ -23,7 +26,7 @@ import {CAT_NAMES,SOCIAL_KINDS,freeCatPoint,furnitureAt,furnitureActivity,useFur
 import {HomeCamera} from '../../modules/home/camera';
 import {HomeRenovation} from '../../modules/home/renovation';
 import {playSound} from '../../ui/soundEffects';
-import {homePosePoint, homeInventory, type HomeAppearance} from '../../modules/home/objects';
+import {homeInventory, type HomeAppearance} from '../../modules/home/objects';
 import {homeWalkable} from '../../modules/home/navigation';
 import {displayedCanvasRect} from '../../adapters/canvas/camera';
 import {homeStoryBeat, storyActorPosition, type HomeStoryActor, type HomeStoryBeat} from '../../modules/home/story';
@@ -137,7 +140,8 @@ export class DemoScene {
     const a=this.homeScreenPoint({clientX:from.x,clientY:from.y}),b=this.homeScreenPoint({clientX:to.x,clientY:to.y}),view=this.homeView();
     this.homeCamera.pan(b.x-a.x,b.y-a.y,view.viewport.width,view.viewport.height);
   }
-  private homeDrag:{id:number;start:{x:number;y:number};last:{x:number;y:number};moved:boolean;cat?:CatBreed;offset?:{x:number;y:number}}|null=null;
+  onHomeAdvisor?:()=>void;
+  private homeDrag:{id:number;start:{x:number;y:number};last:{x:number;y:number};moved:boolean;cat?:HomeCatBreed;offset?:{x:number;y:number}}|null=null;
   private homeSocialSerial=0;
   private homeSocialStamp=-1;
   constructor(
@@ -387,7 +391,7 @@ export class DemoScene {
     const cat=this.homeCatAt(x,y);
     // A press on a cat is consumed even while its reaction is debounced. It
     // must never fall through and summon another cat through the furniture.
-    if(drag.cat){if(cat?.breed===drag.cat)this.pokeHomeCat(cat,x,y);return;}
+    if(drag.cat){if(cat?.breed===drag.cat){this.pokeHomeCat(cat,x,y);if(cat.breed==='advisor')this.onHomeAdvisor?.();}return;}
     if(!cat)this.inviteFurnitureCat(x,y);
   };
   // 拖拽取消只清拖拽痕迹；布置模式的光标（move/grab/grabbing）归 FurnitureBackpack 管——
@@ -913,15 +917,12 @@ export class DemoScene {
       const entry=object?.furnitureId?[object.slot??object.layoutKey,object.furnitureId]:undefined;
       if(!entry)continue;
       claimed.add(entry[1]);
-      const point=homePosePoint(entry[0],entry[1],object);
-      const cat=this.createHomeCat(affinity.breed,stage,affinity.poses[entry[1]],point.x,point.y);cat.slot=entry[0];
-      if(entry[1] in PARCEL_ART){
-        const from=previous.get(affinity.breed)??HOME_RESIDENTS[affinity.breed];
-        cat.furnitureArrival={from:{x:from.x,y:from.y},to:point,pose:cat.pose!,started:this.homeTime};cat.pose=null;cat.x=from.x;cat.y=from.y;
-      }
+      const from=previous.get(affinity.breed)??HOME_RESIDENTS[affinity.breed];
+      const cat=this.createHomeCat(affinity.breed,stage,null,from.x,from.y);
+      useFurniture(cat,object!,[...this.homeCats,cat],homeObjects(state),this.homeTime,false);
       this.homeCats.push(cat);
     }
-    for(const breed of state.cats as CatBreed[]){
+    for(const breed of [...state.cats.filter((id):id is CatBreed=>id in HOME_RESIDENTS),'advisor'] as HomeCatBreed[]){
       if(!(breed in HOME_RESIDENTS) || this.homeCats.some(cat=>cat.breed===breed))continue;
       const [dx,dy]=DemoScene.homeCatDefaults[breed];
       const cat = this.createHomeCat(breed, stage, null, dx, dy);
@@ -932,7 +933,7 @@ export class DemoScene {
     settleCats(this.homeCats,homeObjects(state),this.homeTime);
     return this.homeCats;
   }
-  private createHomeCat(breed:CatBreed, stage:number, pose:string|null, x:number, y:number):HomeCatAgent{
+  private createHomeCat(breed:HomeCatBreed, stage:number, pose:string|null, x:number, y:number):HomeCatAgent{
     const pool = stage>=2?DemoScene.homeRoamNodes:DemoScene.homeShelterNodes;
     const seed = breed.length*7 + breed.charCodeAt(0);
     // 阶段 1:从第一步就紧靠角落纸箱;之后回到各自的默认驻点。
@@ -965,31 +966,22 @@ export class DemoScene {
   }
   private drawHomeCats(stage:number){
     const objects=homeObjects(this.state!).filter(o=>!o.front),cats=this.ensureHomeCats(stage).filter(c=>!(this.homeDrag?.cat===c.breed&&this.homeDrag.moved));
-    const residents=cats.filter(c=>!c.slot),seated=cats.filter(c=>c.slot);
-    const layers=[...objects.map(o=>({y:o.y,object:o,cat:undefined as HomeCatAgent|undefined})),...residents.map(c=>({y:c.y,object:undefined,cat:c}))].sort((a,b)=>a.y-b.y);
-    for(const layer of layers)if(layer.object)paintHomeObject(this.context,layer.object,this.homeArtwork,this.homeTime);else if(layer.cat)paintResident(this.context,layer.cat,this.homeTime,stage);
-    // Reserved furniture users draw after their furniture. Repainting an entire
-    // castle / shelf crop used to cover the cat with the opaque new sprites.
-    for(const cat of seated.sort((a,b)=>a.y-b.y)){
-      paintResident(this.context,cat,this.homeTime,stage);
-      const host=objects.find(o=>(o.slot??o.layoutKey)===cat.slot);
-      if(host&&!cat.furnitureArrival)paintHomeFurnitureFront(this.context,host,this.homeArtwork);
-    }
+    paintHomeResidents(this.context,objects,cats,this.homeArtwork,this.homeTime,stage);
     for(const cat of cats)if(cat.social&&currentCatMood(cat,this.homeTime)!=='irritated'&&this.homeTime>cat.social.started+900)this.drawPixelHeart(cat.x,cat.y-70-Math.sin(this.homeTime*.003)*4,1.3,.8);
   }
-  private homeCatAt(x:number,y:number,exclude?:CatBreed){
+  private homeCatAt(x:number,y:number,exclude?:HomeCatBreed){
     if(y>=733&&(x<706||x>=924))return undefined;
     const objects=this.state?homeObjects(this.state):[];
     return [...this.homeCats].sort((a,b)=>Number(!!b.slot)-Number(!!a.slot)||b.y-a.y).find(c=>{
       if(c.breed===exclude||!residentContains(c,this.homeTime,x,y))return false;
       return !objects.some(o=>{
         const host=c.slot===(o.slot??o.layoutKey);
-        const covers=o.front||(!c.slot&&o.y>c.y)||(host&&['castle','hammock','blanket','cushion'].includes(o.kind)&&y>=o.y-5&&y<=o.y+1);
+        const covers=!groundCover(o)&&(o.front||(!c.slot&&homeObjectDepth(o)>c.y)||(host&&['castle','hammock','blanket','cushion'].includes(o.kind)&&y>=o.y-5&&y<=o.y+1));
         return covers&&homeObjectOpaqueAt(o,x,y,this.homeArtwork);
       });
     });
   }
-  private dropHomeCat(breed:CatBreed,point:{x:number;y:number},offset={x:0,y:24}){
+  private dropHomeCat(breed:HomeCatBreed,point:{x:number;y:number},offset={x:0,y:24}){
     if(!this.state||this.state.phase!=='home'||this.homeBeat)return;
     const view=this.homeView(),x=(point.x-view.x)/view.scale,y=(point.y-view.y)/view.scale,cat=this.homeCats.find(c=>c.breed===breed);if(!cat)return;
     const objects=homeObjects(this.state),partner=this.homeCatAt(x,y,breed);

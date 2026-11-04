@@ -202,7 +202,9 @@ const {messages, pendingQuestion, notice, loading, ready, sceneLabel, ask}
 
 ### 5.1 浩哲侧的家园表现与公开剧情交付（2026-11-04）
 
-对应 [剧情 #6 的家园分工](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/work_items/6#note_9398) 与 [UI #5 的接入分工](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/work_items/5#note_9396)。表现与文案在 `web/src/modules/advisor/home-presentation.ts`；公开剧情摘要及可见条件见 `web/content/story/advisor-home.json`。`App` 已挂载 `HomeAdvisor`，顶栏「问阿策」打开原生 dialog，支持快捷话题、键盘发送、等待和来源标识；小屏横屏布局保留可滚动对话及输入区。聊天仅作为 `advisor` 弹层暂停日常场景，其自身暂停不传成外部阻断。修缮卡／演出与家园教学分别回传实际活动状态，阻断期间不能打开新聊天。
+对应 [剧情 #6 的家园分工](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/work_items/6#note_9398) 与 [UI #5 的接入分工](https://school-gitlab.xsolla.dev/haozhe_wang/stray-kitty/-/work_items/5#note_9396)。表现与文案在 `web/src/modules/advisor/home-presentation.ts`；公开剧情摘要及可见条件见 `web/content/story/advisor-home.json`。`App` 已挂载 `HomeAdvisor`，顶栏「问阿策」或点击场景中的阿策打开原生 dialog，支持快捷话题、键盘发送、等待和来源标识；小屏横屏布局保留可滚动对话及输入区。聊天仅作为 `advisor` 弹层暂停日常场景，其自身暂停不传成外部阻断。修缮卡／演出与家园教学分别回传实际活动状态，阻断期间不能打开新聊天。
+
+2026-11-04 家园阿策也作为场景住客参与日常：沿用已有像素形象，可拖动、摸摸、使用家具并与伙伴互动；点击后打开同一家园聊天面板。阿策属于场景顾问，不进入 `state.cats`，不新增永久伙伴或战斗单位；剧情仍按原导演逻辑接管。
 
 已解锁的短摘要在面板的「已经走过的旅程片段」中供玩家主动展开查看。新的摘要数据尚未扩展服务端模型知识，AI 仍使用已有的可信进度与公开资料；AI 负责人后续可按同一条件接入模型。六章战斗入口与会话继续原实现。
 

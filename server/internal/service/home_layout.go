@@ -56,7 +56,7 @@ func (g *Game) saveHomeLayout(s *domain.GameState, changes []domain.HomeLayoutCh
 			}
 			for _, f := range g.Catalog.Furniture {
 				if f.ID == id {
-					width = f.WidthCm * 1.7
+					width = math.Round(f.WidthCm * 1.7)
 					found = true
 				}
 			}

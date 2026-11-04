@@ -143,9 +143,9 @@ ParcelDialog 装配 PostalJournal，使用通用邮寄拼贴手账；ThemePrevie
 
 GameScreen 在原顶栏分别提供家园手册、邮局、商店、章节地图、仓库与布置按钮，沿用设置按钮样式，家园顶栏移除资源与充值常驻展示。modules/home/HomeHub 复用居中原生 dialog 容器，每次直接打开对应模块，不再提供统一功能导航；设置保持独立 SettingsPanel。家园手册合并 HomeMap 和共享 JourneyRecord，分类按钮放左、文案放右，伙伴资料集中在猫咪伙伴分类；章节路线使用移除花房图片后的 WorldMap。HomePanel 只处理主线下一步与已解锁故事回顾，关卡试玩由 AcceptancePanel 承接。Modal 的 EmbeddedModalContext 仅消耗一层，供邮局、商店、仓库与补给在各自窗口内复用，家具详情等子弹窗仍为独立原生 dialog。ShopPanel 移除旧家具陈列，使用 lottery/ParcelRewards 签收来信、猫咪心愿与里程碑；该组件沿用原服务端命令与北京时间刷新，ParcelDialog 专注主题池和开箱。货币余额只在使用场景展示；顶栏布置按钮直接使用原 FurnitureBackpack，不修改其画布、相机与保存流程。HomeRepairOverlay 的场景标记保留自身定位变换，不受全局按钮悬停、按下或禁用变换影响。home/renovation 在服务端快照新增修缮部位或提升阶段后，缓存一次旧画面并绘制施工、渐显与暖光；场景在过渡期间暂停猫咪与点击，标记隐藏，完成后恢复。首次加载和家具布置不触发修缮动画，后台或菜单暂停，减少动态偏好使用短淡入。
 
-home/dialogue 按性格、动作和情绪维护台词轮换，reactions 管逐猫摸摸间隔、短时情绪恢复、闲聊节流及家具邀请距离。catPainter 共享正向／逆向身体变换与原猫图稿的透明度命中，picking 检查家具纹理遮挡；点击、拖起和放到伙伴身边共用可见猫判定。鼠标按下命中猫后，松开只处理该猫，防抖期间也不会落到家具邀请。日常状态仅在 Canvas 场景内存中，剧情接管与暂停逻辑保持优先。
+home/dialogue 按性格、动作和情绪维护台词轮换，reactions 管逐猫摸摸间隔、短时情绪恢复、闲聊节流及家具邀请距离。catPainter 共享正向／逆向身体变换与原猫图稿的透明度命中，picking 检查家具纹理遮挡；点击、拖起和放到伙伴身边共用可见猫判定。鼠标按下命中猫后，松开只处理该猫，防抖期间也不会落到家具邀请。日常状态仅在 Canvas 场景内存中，剧情接管与暂停逻辑保持优先。家园住客类型单独包含 advisor，沿用战斗头像图稿和原猫咪交互，不写入拥有伙伴或战斗名册。furnishings 从 home/furniture 与 home/decor 读取尺寸和十种布置分类；parcelWidth、旧家具与服务端布局边界采用相同的 1.7 比例。spatial 维护可见体积避让和地毯／墙饰深度，resident-layers 由日常与修缮快照共同使用，布置命中也沿用相同层级。
 
-家园顶栏「问阿策」由 App 的 advisor 弹层挂载 advisor/HomeAdvisor，复用 AdvisorProvider、旅程上下文和原只读问答，不登记战斗快照。聊天弹层暂停家园日常，其自身暂停不作为 Provider 的 blocked。HomeRepairOverlay 回传修缮卡与演出状态，GameScreen 回传家园教学状态，home-presentation 统一决定能否打开和当前外观文案；外部操作、关闭、切场景与后台取消等待。story/advisor-home.json 提供经剧情核对的短摘要和全部可见条件，由 knownHomeStorySummaries 筛选后供面板展开查看；试玩记录和 QA 进度不解锁亲历摘要。数据不扩展存档或 API，服务端 AI 仍读取现有公开知识，六章战斗会话保持独立。
+家园顶栏「问阿策」与场景阿策点击共用 App 的 advisor 弹层，挂载 advisor/HomeAdvisor，复用 AdvisorProvider、旅程上下文和原只读问答，不登记战斗快照。聊天弹层暂停家园日常，其自身暂停不作为 Provider 的 blocked。HomeRepairOverlay 回传修缮卡与演出状态，GameScreen 回传家园教学状态，home-presentation 统一决定能否打开和当前外观文案；外部操作、关闭、切场景与后台取消等待。story/advisor-home.json 提供经剧情核对的短摘要和全部可见条件，由 knownHomeStorySummaries 筛选后供面板展开查看；试玩记录和 QA 进度不解锁亲历摘要。数据不扩展存档或 API，服务端 AI 仍读取现有公开知识，六章战斗会话保持独立。
 
 ## 4. 接入与分工
 

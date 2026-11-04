@@ -14,6 +14,9 @@ export function validateContent(c) {
     if (ids.some(id=>!id) || new Set(ids).size!==ids.length) errors.push(`${key}: missing/duplicate ID`);
   }
   const has=(key,id)=>c[key].some(x=>x.id===id);
+  const furnishingCategories=['wall','decor','table','bed','seat','storage','plant','rug','lighting','toy'];
+  for(const item of c.furniture)if(!furnishingCategories.includes(item.category)||!Number.isSafeInteger(item.widthCm)||item.widthCm<10||item.widthCm>250)errors.push(`furniture size/category invalid: ${item.id}`);
+  for(const item of c.homeDecor)if(!furnishingCategories.includes(item.category))errors.push(`stage furniture category invalid: ${item.id}`);
   const repairIds=new Set();
   for(const r of c.renovations){
     const earlier=new Set(),total={};
