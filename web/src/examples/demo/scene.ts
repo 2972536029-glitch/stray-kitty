@@ -310,7 +310,7 @@ export class DemoScene {
       this.rainyAlley.click(event.clientX, event.clientY, bounds, this.viewWidth, this.viewHeight, cover);
       return;
     }
-    if (this.state?.phase === 'home' && this.state.chapterId !== 'prologue' && !this.pausedByUser && !this.homeRenovating) {
+    if (this.state?.phase === 'home' && this.state.chapterId !== 'prologue' && !this.pausedByUser && !this.homeRenovating && !this.homeEditing) {
       const point=this.homeScreenPoint(event);
       const view=this.homeView(),world={x:(point.x-view.x)/view.scale,y:(point.y-view.y)/view.scale};
       if(point.x<view.viewport.x||point.x>view.viewport.x+view.viewport.width||point.y<view.viewport.y||point.y>view.viewport.y+view.viewport.height)return;
