@@ -41,6 +41,29 @@ func (g *Game) prepareLottery(s *domain.GameState) {
 	}
 }
 
+// The existing command transaction commits all receipts together or none of them.
+// Each draw still uses the original pool weights, duplicate rewards and pity.
+func (g *Game) drawParcels(s *domain.GameState, poolID string, requested *int) error {
+	count := 1
+	if requested != nil {
+		count = *requested
+	}
+	if count != 1 && count != 10 {
+		return domain.Fail("INVALID_COMMAND", "请选择寄出一份或十份。", 400)
+	}
+	draws := make([]domain.ParcelDraw, 0, count)
+	for i := 0; i < count; i++ {
+		if err := g.drawParcel(s, poolID); err != nil {
+			return err
+		}
+		draws = append(draws, *s.LastResult.Draw)
+	}
+	s.LastResult.Draws = draws
+	// Reward names belong to the individual receipts, revealed only when opened.
+	s.LastResult.Message = fmt.Sprintf("%d 份包裹已送达，点击包裹拆开看看。", count)
+	return nil
+}
+
 func (g *Game) drawParcel(s *domain.GameState, poolID string) error {
 	if err := domain.RequirePhase(*s, "home"); err != nil {
 		return err

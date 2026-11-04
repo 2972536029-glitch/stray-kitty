@@ -51,12 +51,13 @@ type BattleReport struct {
 	ElitesDefeated *int  `json:"elitesDefeated,omitempty"`
 }
 type Result struct {
-	Message    string      `json:"message"`
-	Roll       int         `json:"roll,omitempty"`
-	Outcome    string      `json:"outcome,omitempty"`
-	FirstClear bool        `json:"firstClear,omitempty"`
-	StageID    string      `json:"stageId,omitempty"`
-	Draw       *ParcelDraw `json:"draw,omitempty"`
+	Message    string       `json:"message"`
+	Roll       int          `json:"roll,omitempty"`
+	Outcome    string       `json:"outcome,omitempty"`
+	FirstClear bool         `json:"firstClear,omitempty"`
+	StageID    string       `json:"stageId,omitempty"`
+	Draw       *ParcelDraw  `json:"draw,omitempty"`
+	Draws      []ParcelDraw `json:"draws,omitempty"`
 }
 type WorldPoint struct {
 	X float64 `json:"x"`
@@ -126,6 +127,7 @@ type Command struct {
 	FurnitureID   string             `json:"furnitureId,omitempty"`
 	SlotID        string             `json:"slotId,omitempty"`
 	PoolID        string             `json:"poolId,omitempty"`
+	Count         *int               `json:"count,omitempty"`
 	ProductID     string             `json:"productId,omitempty"`
 	MapID         string             `json:"mapId,omitempty"`
 	ZoneID        string             `json:"zoneId,omitempty"`
