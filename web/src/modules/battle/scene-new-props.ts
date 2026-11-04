@@ -2,7 +2,6 @@ import atlasUrl from './assets/scene-new-props-atlas.png';
 import type {BattleSceneId} from './scene-art';
 import type {SceneryRect} from './scene-composition';
 import {sceneryRaster} from './scene-raster';
-import {queueImage} from '../../core/image-loading';
 
 type NewProp='bicycle'|'hydrant'|'tea-cart'|'bundles'|'wheelbarrow'|'water-barrel'|'maintenance'|'pallet-jack';
 const crops:Record<NewProp,readonly [number,number,number,number]>={
@@ -23,8 +22,8 @@ let atlas:HTMLImageElement|undefined;
 const listeners=new Set<()=>void>();
 function image(){
   if(!atlas&&typeof Image!=='undefined'){
-    atlas=new Image();atlas.onload=()=>{for(const ready of listeners)ready();listeners.clear();};
-    atlas.onerror=()=>listeners.clear();void queueImage(atlas,atlasUrl);
+    atlas=new Image();atlas.fetchPriority='high';atlas.onload=()=>{for(const ready of listeners)ready();listeners.clear();};
+    atlas.onerror=()=>listeners.clear();atlas.src=atlasUrl;
   }
   return atlas?.complete&&atlas.naturalWidth>0?atlas:undefined;
 }
