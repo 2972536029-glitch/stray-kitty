@@ -1,5 +1,6 @@
 import {openHomeBattleTrials} from './home-battle-trials';
 import {confirmBattleResult} from './battle-result';
+import {battleRecording} from './battle-recording';
 import {expect, test, type Page} from '@playwright/test';
 import {playVisibleControls} from './l02-battle';
 import {spawn, type ChildProcess} from 'node:child_process';
@@ -9,6 +10,8 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import type {GameState, Session} from '../../web/src/contracts';
+
+test.use(battleRecording);
 
 const port = 8158, origin = `http://127.0.0.1:${port}`;
 const cases = [{id:'low',pressure:-1},{id:'medium',pressure:0},{id:'high',pressure:1},{id:'retreat',pressure:0},{id:'navigation',pressure:0},{id:'home-route',pressure:0},{id:'qa-route',pressure:0},{id:'story-entry',pressure:0},{id:'battle-route',pressure:0}] as const;

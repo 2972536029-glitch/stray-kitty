@@ -1,5 +1,6 @@
 import {openHomeBattleTrials} from './home-battle-trials';
 import {confirmBattleResult} from './battle-result';
+import {battleRecording} from './battle-recording';
 import {expect, test, type Page} from '@playwright/test';
 import {playVisibleControls} from './l03-battle';
 import {spawn, type ChildProcess} from 'node:child_process';
@@ -10,11 +11,15 @@ import os from 'node:os';
 import path from 'node:path';
 import type {GameState, Session} from '../../web/src/contracts';
 
-const port = 8159, origin = `http://127.0.0.1:${port}`;
+test.use(battleRecording);
+
+let origin = '';
 const cases = [{id:'low',pressure:-1},{id:'medium',pressure:0},{id:'high',pressure:1},{id:'retreat',pressure:0}] as const;
 const sessions = new Map<string,Session>();
 let child:ChildProcess|undefined, closed:Promise<void>|undefined, directory='';
-test.beforeAll(async({request})=>{
+test.beforeAll(async({request},info)=>{
+  // Each parallel/repeated worker owns a separate server and persisted fixture.
+  const port=18159+info.workerIndex;origin=`http://127.0.0.1:${port}`;
   await new Promise<void>((resolve,reject)=>{const probe=net.createServer();probe.once('error',reject);probe.listen(port,'127.0.0.1',()=>probe.close(error=>error?reject(error):resolve()));});
   const catalog=await (await request.get('/api/v1/content')).json();
   directory=fs.mkdtempSync(path.join(os.tmpdir(),'kitty-l03-browser-'));
