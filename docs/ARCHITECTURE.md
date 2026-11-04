@@ -202,6 +202,8 @@ stray-kitty/
 │     ├─ observability/
 │     ├─ shared/  通用工具 · 预留
 │     └─ ui/  界面与样式 · 轩扬
+│        └─ assets/
+│           └─ opening/
 ├─ .dockerignore  容器构建排除
 ├─ .env.example  非秘密环境变量示例
 ├─ .gitattributes  换行与二进制规则
