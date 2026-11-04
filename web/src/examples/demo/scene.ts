@@ -111,7 +111,7 @@ export class DemoScene {
   private homeCamera=new HomeCamera();
   private homeRenovation=new HomeRenovation();
   private homeVisualState?:HomeAppearance;
-  private homeEditing?:{state:HomeAppearance;selection:string;valid:boolean};
+  private homeEditing?:{state:HomeAppearance;selection:string;valid:boolean;hover?:string};
   get homeCanvas(){return this.canvas;}
   get homeZoomLevel(){return this.homeCamera.zoom;}
   get homeRenovating(){return this.homeRenovation.active;}
@@ -119,9 +119,11 @@ export class DemoScene {
   setHomeEditing(draft?:{state:HomeAppearance;selection:string;valid:boolean}){
     if(draft)this.homeRenovation.clear();
     this.homeEditing=draft;this.clearInput();this.canvas.dataset.homeEditing=String(!!draft);
-    this.canvas.style.cursor=draft?'grab':'';
-    if(!draft){delete this.canvas.dataset.editorView;delete this.canvas.dataset.editorItems;}
+    // 布置模式的光标改由 FurnitureBackpack 按命中态驱动（家具 move / 空白 grab / 拖动 grabbing），
+    // 不在这里整体压成 grab——那会让整块画布都像“什么都能拖”。
+    if(!draft){this.canvas.style.cursor='';delete this.canvas.dataset.editorView;delete this.canvas.dataset.editorItems;}
   }
+  setHomeHover(layoutKey?:string){if(this.homeEditing&&this.homeEditing.hover!==layoutKey)this.homeEditing={...this.homeEditing,hover:layoutKey};}
   homeClientToWorld(clientX:number,clientY:number){
     const point=this.homeScreenPoint({clientX,clientY}),view=this.homeView(),r=this.canvas.getBoundingClientRect();
     return{x:Math.round((point.x-view.x)/view.scale),y:Math.round((point.y-view.y)/view.scale),inside:clientX>=r.left&&clientX<=r.right&&clientY>=r.top&&clientY<=r.bottom};
@@ -342,13 +344,27 @@ export class DemoScene {
     if(amount===0)this.homeCamera.reset();else this.homeCamera.changeZoom(amount);
   }
   private homePointerMove=(event:PointerEvent)=>{
-    const drag=this.homeDrag;if(!drag||drag.id!==event.pointerId||this.pausedByUser||this.state?.phase!=='home'){this.homeDrag=null;return;}
+    const drag=this.homeDrag;
+    if(!drag||drag.id!==event.pointerId||this.pausedByUser||this.state?.phase!=='home'){this.homeDrag=null;this.updateHomeHoverCursor(event);return;}
     const point=this.homeScreenPoint(event);
     if(Math.hypot(point.x-drag.start.x,point.y-drag.start.y)>4)drag.moved=true;
     if(drag.moved&&!drag.cat){const view=this.homeView();this.homeCamera.pan(point.x-drag.last.x,point.y-drag.last.y,view.viewport.width,view.viewport.height);}
     if(drag.moved&&drag.cat)this.canvas.style.cursor='grabbing';
     drag.last=point;
   };
+  // 日常（非布置）模式下的悬浮光标：点击可召唤伙伴来玩的家具给 pointer，
+  // 猫和空白维持 CSS 的 grab（拖猫 / 按住空白拖动画面），避免“抓手=什么都能拖”的误导。
+  private updateHomeHoverCursor(event:{clientX:number;clientY:number}){
+    // 布置模式的光标（家具 move / 空白 grab / 拖动 grabbing）由 FurnitureBackpack 独占管理，
+    // 这里绝不写 cursor——两个监听器挂同一画布、顺序不保证，一旦在此清空就会盖掉 move。
+    if(this.homeEditing)return;
+    if(this.state?.phase!=='home'||this.state.chapterId==='prologue'||this.pausedByUser||this.homeRenovating||this.homeDrag){if(!this.homeDrag)this.canvas.style.cursor='';return;}
+    const point=this.homeScreenPoint(event),view=this.homeView(),x=(point.x-view.x)/view.scale,y=(point.y-view.y)/view.scale;
+    if(x<view.viewport.x||x>view.viewport.x+view.viewport.width||y<view.viewport.y||y>view.viewport.y+view.viewport.height){this.canvas.style.cursor='';return;}
+    const interactive=[...homeObjects(this.state)].reverse().find(o=>!o.front&&(o.kind!=='decor'||!!o.furnitureId)&&homeObjectOpaqueAt(o,x,y,this.homeArtwork));
+    this.canvas.style.cursor=interactive?'pointer':'';
+  }
+  private homePointerLeave=()=>{if(!this.homeDrag)this.canvas.style.cursor='';};
   private homePointerUp=(event:PointerEvent)=>{
     const drag=this.homeDrag;this.homeDrag=null;this.canvas.style.cursor='';
     if(!drag||drag.id!==event.pointerId||this.pausedByUser||this.state?.phase!=='home')return;
@@ -363,7 +379,9 @@ export class DemoScene {
     if(drag.cat){if(cat?.breed===drag.cat)this.pokeHomeCat(cat,x,y);return;}
     if(!cat)this.inviteFurnitureCat(x,y);
   };
-  private homePointerCancel=()=>{this.homeDrag=null;this.canvas.style.cursor='';delete this.canvas.dataset.homeDropTarget;};
+  // 拖拽取消只清拖拽痕迹；布置模式的光标（move/grab/grabbing）归 FurnitureBackpack 管——
+  // 冻结期间 update() 每帧都会走 clearInput()→这里，无条件写 '' 会把 hover 的 move 抹掉。
+  private homePointerCancel=()=>{this.homeDrag=null;if(!this.homeEditing)this.canvas.style.cursor='';delete this.canvas.dataset.homeDropTarget;};
   private homeWheel=(event:WheelEvent)=>{
     if(this.state?.phase!=='home'||this.state.chapterId==='prologue'||this.homeRenovating||(this.pausedByUser&&!this.homeEditing))return;
     event.preventDefault();this.homeZoom(event.deltaY<0?.15:-.15);
@@ -376,6 +394,7 @@ export class DemoScene {
     this.canvas.addEventListener('pointermove',this.homePointerMove);
     this.canvas.addEventListener('pointerup',this.homePointerUp);
     this.canvas.addEventListener('pointercancel',this.homePointerCancel);
+    this.canvas.addEventListener('pointerleave',this.homePointerLeave);
     this.canvas.addEventListener('wheel',this.homeWheel,{passive:false});
     this.canvas.addEventListener('wheel', this.wheel, {passive: false});
     this.previousTime = performance.now();
@@ -390,6 +409,7 @@ export class DemoScene {
     this.canvas.removeEventListener('pointermove',this.homePointerMove);
     this.canvas.removeEventListener('pointerup',this.homePointerUp);
     this.canvas.removeEventListener('pointercancel',this.homePointerCancel);
+    this.canvas.removeEventListener('pointerleave',this.homePointerLeave);
     this.canvas.removeEventListener('wheel',this.homeWheel);
     this.canvas.removeEventListener('wheel', this.wheel);
     this.clearInput();
@@ -428,18 +448,24 @@ export class DemoScene {
       const mapChanged = this.state.mapId !== this.lastMapId;
       if (mapChanged && this.state.mapId === 'market') {this.marketInitialized = false;this.marketExitRequested = false;this.marketMarkers.reset();}
       this.clearInput();
+      // 第二章以旁白开场：market_intro 载入时服务端已把 mapId 切到 market 且
+      // phase=dialogue，集市地图立刻开始绘制。落位不能等到 explore——否则旁白
+      // 期间猫停留在上一张图的旧坐标，旁白结束才"闪现"到入口。地图出现的当下
+      // 就放到入口（或已通关的北街结算点）并框好相机。
+      if (this.state.mapId === 'market' && !this.marketInitialized) {
+        const cleared = this.state.flags.includes('market_cleared');
+        this.marketFloor = cleared ? 'L0' : marketEntry.floor;
+        this.x = cleared ? 1310 : marketEntry.x;
+        this.y = cleared ? 169 : marketEntry.y;
+        this.marketInitialized = true;
+        this.snapMarketCamera();
+      }
       if (mode === 'explore') {
         if (this.state.mapId === 'alley') {
           if (mapChanged || (this.lastMode === 'dialogue' && this.state.flags.includes('alley_rescued'))) this.rainyAlley.reset(this.state.flags, this.state.alleyBattleReturn);
         } else if (this.state.mapId === 'tunnel') {
           if (mapChanged) this.tunnelMap.reset();
         } else {
-          if (!this.marketInitialized) {
-            this.marketFloor=this.state.flags.includes('market_cleared')?'L0':marketEntry.floor;
-            this.x = this.state.flags.includes('market_cleared') ? 1310 : marketEntry.x;
-            this.y = this.state.flags.includes('market_cleared') ? 169 : marketEntry.y;
-            this.marketInitialized=true;
-          }
           this.snapMarketCamera();
         }
       }
@@ -798,10 +824,12 @@ export class DemoScene {
       void loadHomeArtwork().then(art=>{if(!this.destroyed)this.homeArtwork=art;}).catch(()=>{if(!this.destroyed)this.homeAssetError=true;});
     }
     if(this.homeEditing){
-      const {state,selection,valid}=this.homeEditing,ctx=this.context,view=this.homeView();
+      const {state,selection,valid,hover}=this.homeEditing,ctx=this.context,view=this.homeView();
       ctx.save();ctx.fillStyle='#13262e';ctx.fillRect(0,0,this.viewWidth,this.viewHeight);
       ctx.beginPath();ctx.rect(view.viewport.x,view.viewport.y,view.viewport.width,view.viewport.height);ctx.clip();
       ctx.translate(view.x,view.y);ctx.scale(view.scale,view.scale);paintHomestead(ctx,state,this.homeArtwork);
+      // 悬浮（细描边）与选中（虚线金框）分开画：悬浮提示“这件可抓取”，选中承载有效/无效状态。
+      if(hover&&hover!==selection){const hovered=homeInventory(state).find(i=>i.layoutKey===hover&&!i.stored);if(hovered){const f=HOME_FRAMES[hovered.sprite],h=hovered.width*f.height/f.width;ctx.strokeStyle='rgba(255,225,154,.55)';ctx.lineWidth=1.5/view.scale;ctx.strokeRect(hovered.x-hovered.width/2-4,hovered.y-h-4,hovered.width+8,h+8);}}
       const selected=homeInventory(state).find(i=>i.layoutKey===selection&&!i.stored);
       if(selected){const f=HOME_FRAMES[selected.sprite],h=selected.width*f.height/f.width;ctx.strokeStyle=valid?'#ffe19a':'#ff8377';ctx.lineWidth=2/view.scale;ctx.setLineDash([7/view.scale,4/view.scale]);ctx.strokeRect(selected.x-selected.width/2-5,selected.y-h-5,selected.width+10,h+10);ctx.setLineDash([]);}
       ctx.restore();

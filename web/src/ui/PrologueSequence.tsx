@@ -152,7 +152,10 @@ export function TutorialHighlight({selector, kicker, text, storageKey, onDone}: 
     <div className="tutorial-card" style={{left: Math.min(box.left, window.innerWidth - 300), top: Math.max(12, box.top - 118)}}>
       <b>✦ {kicker}</b>
       <p>{text}</p>
-      <button data-sound="close" onClick={finish}>知道了</button>
+      {/* 「知道了」必须同时拦下 pointerdown 与 click 的冒泡：GameScreen 的“点击外部收起顶栏”
+          监听在 window pointerdown（时序早于 click），一旦放进顶栏折叠、本组件随 topbarOpen
+          变 false 在 click 前卸载，finish() 就再也不会执行（done 写不进 localStorage）。 */}
+      <button data-sound="close" onPointerDown={event => event.stopPropagation()} onClick={event => {event.stopPropagation();finish();}}>知道了</button>
     </div>
   </div>;
 }
