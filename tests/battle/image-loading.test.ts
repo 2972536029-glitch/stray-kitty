@@ -10,7 +10,7 @@ async function fresh():Promise<Queue>{
 }
 async function flush(){await new Promise<void>(resolve=>queueMicrotask(resolve));}
 
-function browser(){
+function browser(maximum=2){
   const started:string[]=[];
   const active=new Set<ImageStub>();
   let peak=0;
@@ -29,7 +29,7 @@ function browser(){
       assert.equal(active.has(this),false,'one Image must not overlap its own requests');
       this.source=url;this.complete=false;this.naturalWidth=0;
       started.push(`${this.name}:${url}`);active.add(this);peak=Math.max(peak,active.size);
-      assert.ok(active.size<=2,'at most two src-assigned requests may be unfinished');
+      assert.ok(active.size<=maximum,'unfinished requests must stay within the expected lane limits');
       this.onSource?.(url);
     }
     finish(type:'load'|'error'){
@@ -61,6 +61,26 @@ test('empty complete Images wait for real events and the global queue never exce
   images[3].finish('load');images[4].finish('load');
   await Promise.all([promises[2],promises[3],promises[4]]);
   assert.equal(env.peak(),2);assert.equal(env.active.size,0);
+});
+
+test('battle downloads progress in two independent slots while both background slots remain occupied',async()=>{
+  const {queueImage,queueBattleImage}=await fresh();const env=browser(4);
+  const background=['background-a','background-b'].map(env.image);
+  const waiting=background.map(image=>queueImage(image.element,image.name));
+  await flush();
+  const battle=['floor','residences','obstacles','props'].map(env.image);
+  const ready=battle.map(image=>queueBattleImage(image.element,image.name));
+  await flush();
+  assert.deepEqual(env.started,['background-a:background-a','background-b:background-b','floor:floor','residences:residences']);
+  for(let index=0;index<battle.length;index++){
+    assert.ok(battle[index].src,'visible art starts without waiting for background completion');
+    assert.ok(background.every(image=>!image.complete));
+    battle[index].finish('load');await ready[index];await flush();
+  }
+  assert.equal(env.peak(),4);
+  assert.equal(env.active.size,2,'only the original background transfers remain');
+  background.forEach(image=>image.finish('load'));await Promise.all(waiting);
+  assert.equal(env.active.size,0);
 });
 
 test('priority is read when a slot opens and equal priorities retain FIFO after promotion',async()=>{

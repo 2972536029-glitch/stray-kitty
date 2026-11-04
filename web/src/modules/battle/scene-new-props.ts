@@ -1,3 +1,4 @@
+import {queueBattleImage} from '../../core/image-loading';
 import atlasUrl from './assets/scene-new-props-atlas.png';
 import type {BattleSceneId} from './scene-art';
 import type {SceneryRect} from './scene-composition';
@@ -23,7 +24,7 @@ const listeners=new Set<()=>void>();
 function image(){
   if(!atlas&&typeof Image!=='undefined'){
     atlas=new Image();atlas.fetchPriority='high';atlas.onload=()=>{for(const ready of listeners)ready();listeners.clear();};
-    atlas.onerror=()=>listeners.clear();atlas.src=atlasUrl;
+    atlas.onerror=()=>listeners.clear();void queueBattleImage(atlas,atlasUrl);
   }
   return atlas?.complete&&atlas.naturalWidth>0?atlas:undefined;
 }

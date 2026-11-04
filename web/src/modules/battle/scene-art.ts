@@ -1,3 +1,4 @@
+import {queueBattleImage} from '../../core/image-loading';
 import {paintDetailedSceneProp} from './scene-props';
 import {hasIllustratedRoom,whenIllustratedRoomReady} from './illustrated-room';
 import {paintTunnelShallowWater} from './scene-tunnel-water';
@@ -38,7 +39,7 @@ function sceneAtlas(){
     floorAtlas=new Image();floorAtlas.fetchPriority='high';
     floorAtlas.onload=()=>{groundTileCache.clear();for(const listener of atlasListeners)listener();atlasListeners.clear();};
     floorAtlas.onerror=()=>atlasListeners.clear();
-    floorAtlas.src=new URL('./assets/floor-material-atlas.png',import.meta.url).href;
+    void queueBattleImage(floorAtlas,new URL('./assets/floor-material-atlas.png',import.meta.url).href);
   }
   return floorAtlas?.complete&&floorAtlas.naturalWidth>0?floorAtlas:undefined;
 }

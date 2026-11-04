@@ -1,3 +1,4 @@
+import {queueBattleImage} from '../../core/image-loading';
 /** Original transparent scenery atlas. Crops are alpha-tight, not tile footprints.
  * At placement time the renderer preserves the silhouette and fits inside the
  * authored exterior box, so the new art cannot enlarge the collision footprint. */
@@ -33,8 +34,8 @@ function source(asset:Asset='exteriors'){
   if(!atlas&&typeof Image!=='undefined'){
     atlas=new Image();atlas.fetchPriority='high';atlases.set(asset,atlas);
     atlas.onload=()=>{for(const ready of listeners)ready();};
-    // Visible battle art must not wait behind another scene's queued downloads.
-    atlas.src=urls[asset];
+    // Battle art has its own bounded queue, independent of other scene preloads.
+    void queueBattleImage(atlas,urls[asset]);
   }
   return atlas?.complete&&atlas.naturalWidth>0?atlas:undefined;
 }

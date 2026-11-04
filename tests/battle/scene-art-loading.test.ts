@@ -189,15 +189,22 @@ test('visible battle artwork starts and repaints while two old-scene downloads r
     paint();await Promise.resolve();
     const visible=env.images.slice(2);
     assert.equal(visible.length,4);
-    assert.ok(visible.every(image=>image.src),
-      'all four battle loaders must start even when old-scene requests never finish');
+    const activeBattle=()=>visible.filter(image=>image.src&&!image.complete);
+    assert.equal(activeBattle().length,2,'two battle requests start while both old-scene slots stay occupied');
+    assert.ok(visible.slice(2).every(image=>image.src===''),'the remaining battle images wait for their own slots');
+    assert.ok(visible.every(image=>image.fetchPriority==='high'));
+    assert.ok(env.images.slice(0,2).every(image=>!image.complete),'old-scene transfers have not released either slot');
+    visible[0].load();await Promise.resolve();
+    assert.ok(visible[2].src,'a completed battle image releases a battle slot');
+    assert.equal(activeBattle().length,2);
+    visible[1].load();await Promise.resolve();
+    assert.ok(visible[3].src,'the fourth loader starts without needing either old-scene request to finish');
+    assert.equal(activeBattle().length,2);
     assert.deepEqual(visible.map(image=>new URL(image.src).pathname.split('/').at(-1)),[
       'floor-material-atlas.png','scene-detailed-residences-garden-v1.png',
       'scene-new-props-atlas.png','finale-room-scene-v1.png',
     ]);
-    assert.ok(visible.every(image=>image.fetchPriority==='high'));
-    assert.ok(env.images.slice(0,2).every(image=>!image.complete),'old-scene transfers have not released either slot');
-    for(const image of visible)image.load();
+    visible[2].load();visible[3].load();
     assert.deepEqual(repaints,{floor:1,exterior:1,props:1,room:1},'completion requests a real scenery repaint');
     const draws=env.draws.length;
     paint();

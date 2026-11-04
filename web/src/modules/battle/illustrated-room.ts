@@ -1,3 +1,4 @@
+import {queueBattleImage} from '../../core/image-loading';
 import {getIllustratedRoomBounds} from './scene-room-layout';
 
 const roomUrl=new URL('./assets/finale-room-scene-v1.png',import.meta.url).href;
@@ -9,7 +10,7 @@ function readyImage(){
     roomImage=new Image();roomImage.fetchPriority='high';
     roomImage.onload=()=>{for(const notify of listeners)notify();listeners.clear();};
     roomImage.onerror=()=>listeners.clear();
-    roomImage.src=roomUrl;
+    void queueBattleImage(roomImage,roomUrl);
   }
   return roomImage?.complete&&roomImage.naturalWidth>0?roomImage:undefined;
 }
