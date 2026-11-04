@@ -12,7 +12,8 @@ export default function PostcardCanvas({stroke,onChange,onComplete,disabled=fals
   };
   useEffect(()=>{points.current=stroke;paint();},[stroke]);
   useEffect(()=>{const el=canvas.current!;const resize=()=>{const r=el.getBoundingClientRect(),ratio=Math.min(2,window.devicePixelRatio||1);el.width=Math.max(1,Math.round(r.width*ratio));el.height=Math.max(1,Math.round(r.height*ratio));paint();};const observer=new ResizeObserver(resize);observer.observe(el);resize();return()=>observer.disconnect();},[]);
-  const point=(e:PointerEvent<HTMLCanvasElement>):StrokePoint=>{const r=e.currentTarget.getBoundingClientRect();return[Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))];};
+  // Native offsets stay in the canvas's local space when the paper is rotated or scaled.
+  const point=(e:PointerEvent<HTMLCanvasElement>):StrokePoint=>[Math.max(0,Math.min(1,e.nativeEvent.offsetX/e.currentTarget.clientWidth)),Math.max(0,Math.min(1,e.nativeEvent.offsetY/e.currentTarget.clientHeight))];
   const movePen=(e:PointerEvent<HTMLCanvasElement>)=>{if(!pen.current||disabled)return;const [x,y]=point(e);pen.current.style.left=`${x*100}%`;pen.current.style.top=`${y*100}%`;surface.current?.classList.add('pen-following');};
   const finish=(e:PointerEvent<HTMLCanvasElement>,complete=false)=>{if(pointer.current!==e.pointerId)return;pointer.current=null;surface.current?.classList.remove('pen-drawing');onChange([...points.current]);if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);if(complete&&points.current.length)onComplete();};
   return <div ref={surface} className={`postal-draw-surface ${disabled?'is-disabled':''}`}>
