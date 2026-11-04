@@ -1,8 +1,8 @@
+import {queueBattleImage} from '../../core/image-loading';
 /** Original transparent scenery atlas. Crops are alpha-tight, not tile footprints.
  * At placement time the renderer preserves the silhouette and fits inside the
  * authored exterior box, so the new art cannot enlarge the collision footprint. */
 import {createSceneryRaster,sceneryRaster,SCENERY_CELL_SIZE} from './scene-raster';
-import {queueImage} from '../../core/image-loading';
 export type DetailedExteriorKind='narrow-home'|'wide-home'|'planted-bed'|'glass-frame';
 const crops:Record<DetailedExteriorKind,readonly [number,number,number,number]>={
   'narrow-home':[210,30,378,533],
@@ -32,9 +32,10 @@ const atlases=new Map<Asset,HTMLImageElement>(),listeners=new Set<()=>void>();
 function source(asset:Asset='exteriors'){
   let atlas=atlases.get(asset);
   if(!atlas&&typeof Image!=='undefined'){
-    atlas=new Image();atlases.set(asset,atlas);
+    atlas=new Image();atlas.fetchPriority='high';atlases.set(asset,atlas);
     atlas.onload=()=>{for(const ready of listeners)ready();};
-    void queueImage(atlas,urls[asset]);
+    // Battle art has its own bounded queue, independent of other scene preloads.
+    void queueBattleImage(atlas,urls[asset]);
   }
   return atlas?.complete&&atlas.naturalWidth>0?atlas:undefined;
 }
