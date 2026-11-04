@@ -1,46 +1,29 @@
+import {advanceBattle, getBattleSpeed} from '../shared/clock';
+import {cellName, createBattleGeometry, footprintCells, footprintDistance, inCells, sameCell as same} from '../shared/geometry';
 import {createBattleCarry, finishCarryWave, getCarrySpeedMultiplier, startBattleCarry, startCarryWave, tickBattleCarry, useBattleCarry} from '../carry';
 import {CAT_DEFINITIONS, CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, normalizeDifficulty, RULES, SKILLS, TOTAL_MINIONS, WAVES} from './config';
 import type {ChapterAction, ChapterBoss, ChapterCat, ChapterCatId, ChapterEnemy, ChapterOptions, ChapterState, Position} from './types';
 
 const EPS = 1e-8;
-const same = (a: Position, b: Position) => a.x === b.x && a.y === b.y;
-const positionOf = (entity: Position): Position => ({x: Math.round(entity.x), y: Math.round(entity.y)});
-const cross = (origin: Position): Position[] => [{x: 0, y: 0}, {x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}]
-  .map(offset => ({x: origin.x + offset.x, y: origin.y + offset.y})).filter(isPlayableCell);
-const inCells = (entity: Position, cells: readonly Position[]) => cells.some(cell => same(cell, positionOf(entity)));
+const geometry = createBattleGeometry(CELLS, MAP.obstacles);
+const cross = geometry.cross;
 const catById = (state: ChapterState, id: ChapterCatId) => state.cats.find(cat => cat.id === id);
 const terminal = (state: ChapterState) => state.phase === 'won' || state.phase === 'lost';
-export const cellName = ({x, y}: Position) => `${String.fromCharCode(65 + y)}${x + 1}`;
+export {cellName};
 
-export function isChapterCell(position: Position): boolean {
-  return Number.isInteger(position.x) && Number.isInteger(position.y) && CELLS.some(cell => same(cell, position));
-}
-export function isObstacle(position: Position): boolean {return MAP.obstacles.some(cell => same(cell, position));}
-export function isPlayableCell(position: Position): boolean {return isChapterCell(position) && !isObstacle(position);}
+export function isChapterCell(position: Position): boolean {return geometry.isCell(position);}
+export function isObstacle(position: Position): boolean {return geometry.isObstacle(position);}
+export function isPlayableCell(position: Position): boolean {return geometry.isPlayableCell(position);}
 /** A boss is one combat entity with four targetable, non-deployable cells. */
-export function getBossCells(boss: Pick<ChapterBoss, 'x' | 'y' | 'width' | 'height'>): Position[] {
-  return Array.from({length: boss.width * boss.height}, (_, index) => ({x: boss.x + index % boss.width, y: boss.y + Math.floor(index / boss.width)}));
-}
-export function getBossDistance(boss: ChapterBoss, target: Position): number {
-  return Math.min(...getBossCells(boss).map(cell => Math.abs(cell.x - target.x) + Math.abs(cell.y - target.y)));
-}
+export function getBossCells(boss: Pick<ChapterBoss, 'x' | 'y' | 'width' | 'height'>): Position[] {return footprintCells(boss);}
+export function getBossDistance(boss: ChapterBoss, target: Position): number {return footprintDistance(boss, target);}
 export function isDeployableCell(position: Position): boolean {
   return isPlayableCell(position) && !same(position, MAP.goal) && !MAP.bossCells.some(cell => same(cell, position)) && !MAP.spawns.some(cell => same(cell, position));
 }
-export function getAttackCells(cat: ChapterCat): Position[] {
-  if (cat.status !== 'active') return [];
-  const offsets = cat.range === 'melee' ? [{x: 0, y: 0}, {x: 1, y: 0}, {x: 0, y: -1}, {x: 0, y: 1}]
-    : Array.from({length: (cat.range === 'claws' ? 3 : 4) * 3}, (_, i) => ({x: Math.floor(i / 3), y: i % 3 - 1}));
-  return offsets.map(offset => ({x: cat.x + offset.x, y: cat.y + offset.y})).filter(isPlayableCell);
-}
+export function getAttackCells(cat: ChapterCat): Position[] {return geometry.attackCells(cat);}
 export function getSkillCells(cat: ChapterCat, target?: Position | null): Position[] {
   if (cat.status !== 'active') return [];
-  switch (SKILLS[cat.id].targeting) {
-    case 'area': return target && isPlayableCell(target) ? cross(target) : [];
-    case 'forward': return Array.from({length: 9}, (_, i) => ({x: cat.x + Math.floor(i / 3), y: cat.y + i % 3 - 1})).filter(isPlayableCell);
-    case 'team': return CELLS.filter(isPlayableCell);
-    default: return [{x: cat.x, y: cat.y}];
-  }
+  return geometry.skillCells(cat, SKILLS[cat.id].targeting, target);
 }
 
 export function getDeployError(state: ChapterState, catId: ChapterCatId, target: Position): string | null {
@@ -59,12 +42,7 @@ export function getDeployError(state: ChapterState, catId: ChapterCatId, target:
   if (occupant && state.enemies.some(enemy => inCells(enemy, [cat]))) return '原位置有黑影，不能让伙伴交换到危险格。';
   return null;
 }
-export function getChapterSpeed(state: ChapterState): number {
-  if (state.phase !== 'battle' || state.paused || state.externallyPaused || state.uiPaused) return 0;
-  if (state.aim) return 1;
-  if (state.inspectedCatId) return 0.5;
-  return state.baseSpeed;
-}
+export function getChapterSpeed(state: ChapterState): number {return getBattleSpeed(state);}
 export function getChapterAdvice(state: ChapterState): string {
   if (state.phase === 'ready') return '四位伙伴已就位。绒绒照看 A4 支巷，斑斑与团子守住右侧两路；点点蓄满能量后可治疗仍在场的队友。';
   if (state.phase === 'won') return state.leaks === 0 ? '零突破守护成功！八波敌人已处理，首领也被击败。' : '小怪已处理，首领已被击败，可以返回主流程。';
@@ -272,11 +250,7 @@ function tick(state: ChapterState, dt: number): void {
 }
 /** Receives real seconds; a single fixed-step clock applies the effective speed exactly once. */
 export function advanceChapter(state: ChapterState, seconds: number): ChapterState {
-  if (!Number.isFinite(seconds) || seconds <= 0 || getChapterSpeed(state) === 0) return state;
-  const next = structuredClone(state);
-  next.accumulator += Math.min(RULES.maxFrameSeconds, seconds) * getChapterSpeed(state);
-  while (next.accumulator + EPS >= RULES.step && next.phase === 'battle') {next.accumulator = Math.max(0, next.accumulator - RULES.step); tick(next, RULES.step);}
-  return next;
+  return advanceBattle(state, seconds, RULES, tick);
 }
 function actionResult(state: ChapterState, ok: boolean, message: string): ChapterState {state.lastAction = {ok, message}; return state;}
 function castSkill(state: ChapterState, cat: ChapterCat, target?: Position | null): string | null {

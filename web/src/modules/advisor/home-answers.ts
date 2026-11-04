@@ -1,5 +1,7 @@
 import type {Catalog, GameState} from '../../contracts';
 import battleReference from '../../../../server/internal/service/advisor_battle_reference.json';
+import {eventInventoryRule, eventEncouragementRule, eventChoiceRule, eventFailureRule,
+  eventEncouragementRecovery, eventProbabilityMeaning, publicEventProbabilityText} from './public-event-rules';
 
 /** Small offline answers for home questions. No full catalog or imagined history. */
 export function getHomePublicAnswer(state: GameState, catalog: Catalog, question: string): {title: string; text: string} | null {
@@ -9,9 +11,9 @@ export function getHomePublicAnswer(state: GameState, catalog: Catalog, question
     return {title: '家园没有实时战况', text: '家园里没有当前战斗快照，不能确认此刻的血量、能量、站位、敌人或出战名单。可以在战斗页询问当前战况；在这里我能解释已经公开的战斗机制。历史聊天中的数值也不能当作实时状态。'};
   }
   if (/事件|掷骰|骰子|鼓励|判定/.test(q) && !/上次|刚才|最近/.test(q)) {
-    if (/概率|几率|失败率|百分/.test(q)) return {title: '事件基础概率', text: `${/鱼干|库存|购买|先买/.test(q) ? '普通事件选项不要求也不扣库存鱼干，不需要先购买。' : ''}普通一组两颗六面骰按总点数判定：12点为2.78%，9–11点为25%，5–8点为55.56%，2–4点为16.67%。伙伴鼓励会掷两组并取较高总和，这些基础概率不能直接当作鼓励后的概率，也不能预报某次结果。`};
-    if (/鼓励/.test(q)) return {title: '伙伴鼓励', text: `鼓励要在掷骰前主动声明，消耗1次鼓励，掷两组两颗六面骰并取总和较高的一组，不是结算后重掷。当前记录有${state.pushTokens ?? 0}次鼓励；初始1次、上限2次，可恢复鼓励的非教学、非独立守护关卡首次成功补1次（如首次救回点点），同关重复和独立试玩不恢复，不保证每赢一场都补。`};
-    return {title: '事件公开规则', text: '事件由两颗六面骰的总点数判定。普通选项不要求也不扣库存物品，题面里“放下鱼干”等叙事不等于库存费用；主动使用伙伴鼓励另扣鼓励次数。失败档至少保底1条线索，但仍可能有压力或剧情代价。我可以解释规则和有记录的已发生结果，不推荐或代选具体选项，也不预告隐藏结果。'};
+    if (/概率|几率|失败率|百分/.test(q)) return {title: '事件基础概率', text: `${/鱼干|库存|购买|先买/.test(q) ? '普通事件选项不要求也不扣库存鱼干，不需要先购买。' : ''}普通一组两颗六面骰按总点数判定：${publicEventProbabilityText()}。${eventProbabilityMeaning}伙伴鼓励会掷两组并取较高总和，也不能预报某次结果。`};
+    if (/鼓励/.test(q)) return {title: '伙伴鼓励', text: `鼓励要在掷骰前主动声明，不是结算后重掷。${eventEncouragementRule}当前记录有${state.pushTokens ?? 0}次鼓励。${eventEncouragementRecovery}`};
+    return {title: '事件公开规则', text: `事件由两颗六面骰的总点数判定。${eventInventoryRule}${eventEncouragementRule}${eventFailureRule}${eventChoiceRule}`};
   }
   if (/墨墨|夜视/.test(q) && /技能|护盾|夜视|效果|怎么用/.test(q)) {
     const known = state.cats.includes('momo');

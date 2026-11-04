@@ -34,12 +34,9 @@ func (g *Game) exploreHintFingerprint(s domain.GameState) string {
 }
 
 func (g *Game) adviseExploreHint(ctx context.Context, token string, input domain.AdvisorRequest) (domain.AdvisorResponse, error) {
-	before, err := g.State(token)
+	before, err := g.advisorSceneSnapshot(token, input)
 	if err != nil {
 		return domain.AdvisorResponse{}, err
-	}
-	if input.SceneKey != advisorSceneKey(before) || input.ExpectedRevision == nil || *input.ExpectedRevision != before.Revision {
-		return domain.AdvisorResponse{}, advisorContextChanged()
 	}
 	if before.Phase != "explore" || !exploreHintMap(before.MapID) {
 		return domain.AdvisorResponse{}, domain.Fail("INVALID_ADVISOR_REQUEST", "当前不是第一、二、四或五章的地图探索", 400)
@@ -60,12 +57,10 @@ func (g *Game) adviseExploreHint(ctx context.Context, token string, input domain
 	// Separate automatic-hint and manual-chat session slots; global concurrency
 	// and daily budgets still apply to both. No retry or game command is issued.
 	result := g.Advisor.Reply(bounded, Hash(token)+":explore_hint", input)
-	after, err := g.State(token)
-	if err != nil {
+	if err := g.advisorSceneUnchanged(token, input.SceneKey, func(after domain.GameState) bool {
+		return g.exploreHintFingerprint(after) == fingerprint
+	}); err != nil {
 		return domain.AdvisorResponse{}, err
-	}
-	if advisorSceneKey(after) != input.SceneKey || g.exploreHintFingerprint(after) != fingerprint {
-		return domain.AdvisorResponse{}, advisorContextChanged()
 	}
 	return result, nil
 }

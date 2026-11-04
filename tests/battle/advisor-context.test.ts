@@ -15,6 +15,7 @@ import {SKILLS as FINALE_SKILLS, CELLS as FINALE_CELLS, ALLY_DEFINITIONS} from '
 import {ENEMY_TYPES} from '../../web/src/modules/battle/l00/config.ts';
 import type {TunnelEnemy} from '../../web/src/modules/battle/tunnel/types.ts';
 import {beginBattle} from './helpers.ts';
+import {prepareBattleAdvisorRequest} from '../../web/src/modules/advisor/prepare-battle-request.ts';
 
 const read = (id: string, state: ModelAdvisorState) => JSON.parse(buildModelAdvisorContext(id, state));
 const enemy = (id: string, x = 7, y = 1): TunnelEnemy => ({
@@ -28,6 +29,22 @@ const cases = () => [
   {id: 'tunnel_boss', state: createTunnelBattle(), cells: TUNNEL_CELLS, skills: TUNNEL_SKILLS},
   {id: 'finale_boss', state: createFinaleBattle(), cells: FINALE_CELLS, skills: FINALE_SKILLS},
 ];
+
+test('shared request preparation keeps the explicit attempt and excludes hidden snapshot and adapter fields', () => {
+  const state = createTunnelBattle(); state.phase = 'battle'; state.darknessRemaining = 8;
+  state.enemies = [enemy('visible-near-guard', 0, 2), enemy('secret-distant-enemy')];
+  Object.assign(state, {token: 'PRIVATE_SESSION', futureWave: 'UNREVEALED_WAVE'});
+  const scope = {attemptId: 'current-attempt', stageId: 'tunnel_boss', token: 'PRIVATE_ADAPTER'};
+  const before = structuredClone(state);
+  const request = prepareBattleAdvisorRequest(scope, state, '现在能看到哪些敌人？');
+  assert.deepEqual(Object.keys(request).sort(), ['attemptId', 'context', 'question', 'stageId']);
+  assert.equal(request.attemptId, 'current-attempt');
+  assert.equal(request.stageId, 'tunnel_boss');
+  assert.equal(request.question, '现在能看到哪些敌人？');
+  assert.match(request.context, /visible-near-guard/);
+  assert.doesNotMatch(JSON.stringify(request), /secret-distant-enemy|PRIVATE_SESSION|PRIVATE_ADAPTER|UNREVEALED_WAVE/);
+  assert.deepEqual(state, before);
+});
 
 test('six chapters expose their real board and current exact skills without mutating the battle', () => {
   for (const {id, state, cells, skills} of cases()) {

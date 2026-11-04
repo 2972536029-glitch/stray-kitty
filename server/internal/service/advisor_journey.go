@@ -233,12 +233,9 @@ func (g *Game) advisorRepairPlan(s domain.GameState, parts []domain.HomeRepairPa
 }
 
 func (g *Game) adviseJourney(ctx context.Context, token string, input domain.AdvisorRequest) (domain.AdvisorResponse, error) {
-	before, err := g.State(token)
+	before, err := g.advisorSceneSnapshot(token, input)
 	if err != nil {
 		return domain.AdvisorResponse{}, err
-	}
-	if input.SceneKey != advisorSceneKey(before) || input.ExpectedRevision == nil || *input.ExpectedRevision != before.Revision {
-		return domain.AdvisorResponse{}, advisorContextChanged()
 	}
 	progress := g.advisorJourneyProgress(before)
 	fingerprint, err := json.Marshal(progress)
@@ -255,15 +252,11 @@ func (g *Game) adviseJourney(ctx context.Context, token string, input domain.Adv
 	}
 	input.Context = string(combined)
 	result := g.Advisor.Reply(ctx, Hash(token), input)
-	after, err := g.State(token)
-	if err != nil {
+	if err := g.advisorSceneUnchanged(token, input.SceneKey, func(after domain.GameState) bool {
+		afterFingerprint, err := json.Marshal(g.advisorJourneyProgress(after))
+		return err == nil && string(afterFingerprint) == string(fingerprint)
+	}); err != nil {
 		return domain.AdvisorResponse{}, err
-	}
-	afterFingerprint, err := json.Marshal(g.advisorJourneyProgress(after))
-	// A harmless REPORT_MOVE can increment revision while an answer is pending.
-	// Actual scene changes, selected events and changed resources still invalidate it.
-	if err != nil || advisorSceneKey(after) != input.SceneKey || string(afterFingerprint) != string(fingerprint) {
-		return domain.AdvisorResponse{}, advisorContextChanged()
 	}
 	return result, nil
 }

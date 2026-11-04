@@ -22,6 +22,7 @@ function winningSettlement(page:Page){
 async function inspectOnBoard(page:Page,id:string){
   await page.getByTestId(`greenhouse-cat-${id}`).click({timeout:1500});
   await expect(page.getByTestId('greenhouse-cat-menu')).toBeVisible();
+  await expect(page.getByTestId('greenhouse-cat-menu')).toHaveAttribute('data-cat-id',id);
 }
 async function move(page:Page,id:string,x:number,y:number){
   await page.keyboard.press('Escape');
