@@ -3,67 +3,89 @@
     "id": "cardboard_nest",
     "name": "纸箱猫窝",
     "theme": "基础",
-    "source": "story"
+    "source": "story",
+    "widthCm": 70,
+    "category": "bed"
   },
   {
     "id": "soft_blanket",
     "name": "柔软毛毯",
     "theme": "雨夜纸箱",
-    "source": "story"
+    "source": "story",
+    "widthCm": 78,
+    "category": "bed"
   },
   {
     "id": "tin_lamp",
     "name": "罐头小灯",
     "theme": "雨夜纸箱",
-    "source": "story"
+    "source": "story",
+    "widthCm": 28,
+    "category": "lighting"
   },
   {
     "id": "snack_cushion",
     "name": "零食抱枕",
     "theme": "午夜集市",
-    "source": "story"
+    "source": "story",
+    "widthCm": 44,
+    "category": "bed"
   },
   {
     "id": "moon_hammock",
     "name": "月亮吊床",
     "theme": "地下月光",
-    "source": "story"
+    "source": "story",
+    "widthCm": 100,
+    "category": "bed"
   },
   {
     "id": "blue_bowl",
     "name": "蓝色饭碗",
     "theme": "家的回忆",
-    "source": "story"
+    "source": "story",
+    "widthCm": 44,
+    "category": "decor"
   },
   {
     "id": "red_cushion",
     "name": "蝴蝶结软垫",
     "theme": "花房开张",
-    "source": "story"
+    "source": "story",
+    "widthCm": 46,
+    "category": "bed"
   },
   {
     "id": "sun_lamp",
     "name": "小太阳灯",
     "theme": "花房开张",
-    "source": "story"
+    "source": "story",
+    "widthCm": 32,
+    "category": "lighting"
   },
   {
     "id": "box_castle",
     "name": "纸箱小城堡",
     "theme": "点点最爱",
-    "source": "story"
+    "source": "story",
+    "widthCm": 95,
+    "category": "bed"
   },
   {
     "id": "star_glass",
     "name": "星彩玻璃吊灯",
     "theme": "星空温室",
-    "source": "story"
+    "source": "story",
+    "widthCm": 38,
+    "category": "wall"
   },
   {
     "id": "cloud_nest",
     "name": "云朵绒窝",
     "theme": "星空温室",
-    "source": "story"
+    "source": "story",
+    "widthCm": 66,
+    "category": "bed"
   },
   {
     "id": "moss_cottage",
@@ -74,7 +96,8 @@
     "preferredSlot": "corner",
     "interactionCat": "diandian",
     "interaction": "castle_peek",
-    "widthCm": 85
+    "widthCm": 72,
+    "category": "bed"
   },
   {
     "id": "fern_lantern",
@@ -85,7 +108,8 @@
     "preferredSlot": "window",
     "interactionCat": "miaomiao",
     "interaction": "belly",
-    "widthCm": 34
+    "widthCm": 30,
+    "category": "lighting"
   },
   {
     "id": "acorn_library",
@@ -95,8 +119,9 @@
     "description": "橡果形的原木小书架，底层留了猫咪的阅读洞。",
     "preferredSlot": "courtyard",
     "interactionCat": "diandian",
-    "interaction": "castle_peek",
-    "widthCm": 110
+    "interaction": "investigate",
+    "widthCm": 88,
+    "category": "storage"
   },
   {
     "id": "leaf_swing",
@@ -107,7 +132,8 @@
     "preferredSlot": "beam",
     "interactionCat": "momo",
     "interaction": "hammock_sleep",
-    "widthCm": 100
+    "widthCm": 92,
+    "category": "bed"
   },
   {
     "id": "clover_rug",
@@ -118,7 +144,8 @@
     "preferredSlot": "sun_spot",
     "interactionCat": "tuanzi",
     "interaction": "knead",
-    "widthCm": 185
+    "widthCm": 128,
+    "category": "rug"
   },
   {
     "id": "luna_boat",
@@ -129,7 +156,8 @@
     "preferredSlot": "corner",
     "interactionCat": "miaomiao",
     "interaction": "belly",
-    "widthCm": 90
+    "widthCm": 76,
+    "category": "bed"
   },
   {
     "id": "orrery_lamp",
@@ -140,7 +168,8 @@
     "preferredSlot": "window",
     "interactionCat": "miaomiao",
     "interaction": "belly",
-    "widthCm": 38
+    "widthCm": 34,
+    "category": "lighting"
   },
   {
     "id": "tide_observatory",
@@ -151,7 +180,8 @@
     "preferredSlot": "courtyard",
     "interactionCat": "diandian",
     "interaction": "castle_peek",
-    "widthCm": 122
+    "widthCm": 96,
+    "category": "bed"
   },
   {
     "id": "orbit_hammock",
@@ -162,7 +192,8 @@
     "preferredSlot": "beam",
     "interactionCat": "momo",
     "interaction": "hammock_sleep",
-    "widthCm": 118
+    "widthCm": 108,
+    "category": "bed"
   },
   {
     "id": "starmap_carpet",
@@ -173,7 +204,8 @@
     "preferredSlot": "sun_spot",
     "interactionCat": "tuanzi",
     "interaction": "knead",
-    "widthCm": 190
+    "widthCm": 138,
+    "category": "rug"
   },
   {
     "id": "willow_sofa",
@@ -184,7 +216,8 @@
     "preferredSlot": "lounge",
     "interactionCat": "tuanzi",
     "interaction": "belly",
-    "widthCm": 175
+    "widthCm": 128,
+    "category": "seat"
   },
   {
     "id": "herb_desk",
@@ -195,7 +228,8 @@
     "preferredSlot": "desk",
     "interactionCat": "miaomiao",
     "interaction": "sniff",
-    "widthCm": 150
+    "widthCm": 112,
+    "category": "table"
   },
   {
     "id": "letter_cabinet",
@@ -206,7 +240,8 @@
     "preferredSlot": "cabinet",
     "interactionCat": "diandian",
     "interaction": "sniff",
-    "widthCm": 125
+    "widthCm": 82,
+    "category": "storage"
   },
   {
     "id": "sprout_planter",
@@ -217,7 +252,8 @@
     "preferredSlot": "planter",
     "interactionCat": "miaomiao",
     "interaction": "sniff",
-    "widthCm": 120
+    "widthCm": 82,
+    "category": "plant"
   },
   {
     "id": "postmark_clock",
@@ -228,7 +264,8 @@
     "preferredSlot": "wall_clock",
     "interactionCat": "momo",
     "interaction": "watch",
-    "widthCm": 28
+    "widthCm": 25,
+    "category": "wall"
   },
   {
     "id": "wicker_basket",
@@ -239,7 +276,8 @@
     "preferredSlot": "toy_corner",
     "interactionCat": "tuanzi",
     "interaction": "bat_ball",
-    "widthCm": 40
+    "widthCm": 40,
+    "category": "toy"
   },
   {
     "id": "seedling_stool",
@@ -250,7 +288,8 @@
     "preferredSlot": "reading_stool",
     "interactionCat": "diandian",
     "interaction": "perch",
-    "widthCm": 38
+    "widthCm": 40,
+    "category": "seat"
   },
   {
     "id": "crescent_sofa",
@@ -261,7 +300,8 @@
     "preferredSlot": "lounge",
     "interactionCat": "tuanzi",
     "interaction": "belly",
-    "widthCm": 185
+    "widthCm": 135,
+    "category": "seat"
   },
   {
     "id": "astral_desk",
@@ -272,7 +312,8 @@
     "preferredSlot": "desk",
     "interactionCat": "miaomiao",
     "interaction": "sniff",
-    "widthCm": 155
+    "widthCm": 116,
+    "category": "table"
   },
   {
     "id": "pearl_cabinet",
@@ -283,7 +324,8 @@
     "preferredSlot": "cabinet",
     "interactionCat": "diandian",
     "interaction": "sniff",
-    "widthCm": 128
+    "widthCm": 88,
+    "category": "storage"
   },
   {
     "id": "nebula_planter",
@@ -294,7 +336,8 @@
     "preferredSlot": "planter",
     "interactionCat": "miaomiao",
     "interaction": "sniff",
-    "widthCm": 120
+    "widthCm": 85,
+    "category": "plant"
   },
   {
     "id": "lunar_clock",
@@ -305,7 +348,8 @@
     "preferredSlot": "wall_clock",
     "interactionCat": "momo",
     "interaction": "watch",
-    "widthCm": 30
+    "widthCm": 26,
+    "category": "wall"
   },
   {
     "id": "comet_mobile",
@@ -316,7 +360,8 @@
     "preferredSlot": "toy_corner",
     "interactionCat": "tuanzi",
     "interaction": "bat_chime",
-    "widthCm": 33
+    "widthCm": 32,
+    "category": "wall"
   },
   {
     "id": "star_stool",
@@ -327,6 +372,7 @@
     "preferredSlot": "reading_stool",
     "interactionCat": "diandian",
     "interaction": "perch",
-    "widthCm": 40
+    "widthCm": 42,
+    "category": "seat"
   }
 ]

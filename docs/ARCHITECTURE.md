@@ -147,6 +147,7 @@ stray-kitty/
 │  │     ├─ home/  无猫建筑、四阶修缮与主题家具透明图集
 │  │     │  ├─ parcels/  两套主题的二十四件独立透明家具组件
 │  │     │  └─ stages/  四阶段四十八件正向透明家具组件
+│  │     ├─ lottery/  通用邮寄拼贴手账底图与透明包裹开合图集
 │  │     └─ night-market/
 │  └─ src/  运行代码
 │     ├─ adapters/  具体运行能力
@@ -168,7 +169,7 @@ stray-kitty/
 │     ├─ examples/  参考实现
 │     │  └─ demo/  可替换的贯通 Demo
 │     ├─ modules/  正式模块接入口
-│     │  ├─ advisor/
+│     │  ├─ advisor/  阿策入口、公开规则说明与白名单请求准备
 │     │  ├─ battle/  塔防 · 闫琦雯
 │     │  │  ├─ assets/
 │     │  │  ├─ chapter/  第一章紧凑棋盘、四猫与固定首领
@@ -176,6 +177,7 @@ stray-kitty/
 │     │  │  ├─ greenhouse/  第三章34格不规则棋盘、墨墨与四格荆冠首领
 │     │  │  ├─ l00/  固定 L00 局内实现
 │     │  │  ├─ market/  第二章六猫、七入口与单格横扫首领
+│     │  │  ├─ shared/  第一至第五章共享的时钟、几何、路线、视口循环与接入校验
 │     │  │  └─ tunnel/  第四章37格不规则暗道、断灯脉冲与墨墨夜视
 │     │  ├─ cats/  猫咪档案、救援与成长
 │     │  ├─ chapter4/
@@ -185,7 +187,7 @@ stray-kitty/
 │     │  ├─ events/  随机事件 · 余尧
 │     │  ├─ home/  家园建设、摆放与互动
 │     │  ├─ inventory/  道具与家具持有
-│     │  ├─ lottery/  两套主题家具、扭蛋柜台、图鉴与收据
+│     │  ├─ lottery/  通用邮寄手账、明信片涂画、家具包裹、图鉴与收据
 │     │  ├─ map/  地图 · Jenny
 │     │  │  └─ assets/
 │     │  ├─ nightMarket/  Chapter 2 Night Market spatial map and progression
@@ -222,13 +224,15 @@ stray-kitty/
 
 home 管自由布置、场景修缮与原猫咪互动，保留十二个旧槽位的兼容入口；lottery 管苔叶来信与月海观星两个主题池（各十二件新家具）、概率、开箱和收据。Go 的 service/lottery.go 在原命令事务内扣费、计保底、补偿重复和签收日常／里程碑奖励；旧家具由剧情确定性赠送。旧存档的 lottery 字段惰性初始化，家具与摆放不重命名。免费池每抽 1 邮票，付费池每抽 60 罐头，最多三抽得未拥有家具；两个池独立累计，历史保留 50 次。模拟支付已有进程内和独立服务两种形态，真实支付尚未接入。
 
-ParcelDialog 在一个电脑端窗口中从左到右提供普通／限定竖排卡池、大尺寸 CapsuleMachine 和 ThemePreview；结果覆盖机器区域，保留底部抽取按钮。主题搭配图使用真实花房建筑与十二件家具，CapsuleCollection 在独立原生 dialog 展示图鉴与单件详情。扭蛋动画依次经过 turning、dropping、opening、result；服务端收据到达后才落蛋和展示家具，减少动态偏好使用短过渡。失败继续使用原重试键，收据回看只显示历史，不提交抽取。抽取、保底与支付接口不变。
+ParcelDialog 装配 PostalJournal，使用通用邮寄拼贴手账；ThemePreview 先展示真实花房与十二件套装家具，选择一份或十份后翻出 PostcardCanvas，以归一化点记录本地连续一笔，笔迹不上传。preview → drawing → sending → arriving → parcels → opening → result 连续过渡，松开笔迹即寄出，盖戳后明信片收起；ParcelDelivery 十连在原位立即换成 FurnitureArt，不进入单件展示和动画，已拆家具不保留纸箱底座。CollectionPolaroid 在当前卡池内每次随机轮播一件家具。未拆包收据与笔迹按玩家保存在本地，重新打开继续，已拆完清除；服务端仍是家具、货币与保底的唯一所有者。DRAW_FURNITURE 增加可选 count=1|10，同一事务内逐份调用原抽奖规则；任一失败全部回滚，lastResult.draws 返回本批收据，draw 兼容旧客户端。CapsuleCollection 保留独立家具图鉴；历史回看不提交抽奖，网络重试沿用原幂等键，减少动态偏好使用短过渡。
 
 花房使用 modules/home 的 assets、layout、objects、painter 共用 1672×941 室内布局：建筑底图与透明组件不含猫咪，HomeMap 和场景使用同一装配；四套阶段家具和独立植物图集的裁切坐标放在模块内的 atlas.json／stage-atlas.json，每种购买家具有独立图稿，默认陈设让位于已保存的摆放。camera 管缩放、拖动与点击坐标转换，navigation 按对象地面占位阻挡，原有像素猫按家具脚点排序，前墙藤蔓和家具前缘独立遮挡。story 在对白期间接管角色和站位，空闲 home 阶段才运行日常行为；四阶外观从既有修缮与终章标记推导，图集仅在需要花房时加载。FurnitureBackpack 通过 DemoScene 的投影与编辑接口在同一张 Canvas 预览本地草稿，底部背包覆盖在原场景上，不重建场景或相机；编辑时暂停并隐藏猫咪，退出后恢复。可选 homeLayout 记录默认及收藏家具的位置与收纳状态，SAVE_HOME_LAYOUT 校验后整批提交。HomeRepairOverlay 将目录 parts 的坐标投影为破损处标记，REPAIR_HOME 的可选 repairId 在服务端校验工程、前置部位与库存，单处扣费并保存到可选 homeRepairs；全部部位修完才写入原阶段 flag。省略 repairId 的旧命令只结算本阶段剩余成本，已完成的阶段 flag 对旧存档继续有效。HomeMap 与现场共享局部修缮后的绘制。
 
 GameScreen 在原顶栏分别提供家园手册、邮局、商店、章节地图、仓库与布置按钮，沿用设置按钮样式，家园顶栏移除资源与充值常驻展示。modules/home/HomeHub 复用居中原生 dialog 容器，每次直接打开对应模块，不再提供统一功能导航；设置保持独立 SettingsPanel。家园手册合并 HomeMap 和共享 JourneyRecord，分类按钮放左、文案放右，伙伴资料集中在猫咪伙伴分类；章节路线使用移除花房图片后的 WorldMap。HomePanel 只处理主线下一步与已解锁故事回顾，关卡试玩由 AcceptancePanel 承接。Modal 的 EmbeddedModalContext 仅消耗一层，供邮局、商店、仓库与补给在各自窗口内复用，家具详情等子弹窗仍为独立原生 dialog。ShopPanel 移除旧家具陈列，使用 lottery/ParcelRewards 签收来信、猫咪心愿与里程碑；该组件沿用原服务端命令与北京时间刷新，ParcelDialog 专注主题池和开箱。货币余额只在使用场景展示；顶栏布置按钮直接使用原 FurnitureBackpack，不修改其画布、相机与保存流程。HomeRepairOverlay 的场景标记保留自身定位变换，不受全局按钮悬停、按下或禁用变换影响。home/renovation 在服务端快照新增修缮部位或提升阶段后，缓存一次旧画面并绘制施工、渐显与暖光；场景在过渡期间暂停猫咪与点击，标记隐藏，完成后恢复。首次加载和家具布置不触发修缮动画，后台或菜单暂停，减少动态偏好使用短淡入。
 
-home/dialogue 按性格、动作和情绪维护台词轮换，reactions 管逐猫摸摸间隔、短时情绪恢复、闲聊节流及家具邀请距离。catPainter 共享正向／逆向身体变换与原猫图稿的透明度命中，picking 检查家具纹理遮挡；点击、拖起和放到伙伴身边共用可见猫判定。鼠标按下命中猫后，松开只处理该猫，防抖期间也不会落到家具邀请。日常状态仅在 Canvas 场景内存中，剧情接管与暂停逻辑保持优先。
+home/dialogue 按性格、动作和情绪维护台词轮换，reactions 管逐猫摸摸间隔、短时情绪恢复、闲聊节流及家具邀请距离。catPainter 共享正向／逆向身体变换与原猫图稿的透明度命中，picking 检查家具纹理遮挡；点击、拖起和放到伙伴身边共用可见猫判定。鼠标按下命中猫后，松开只处理该猫，防抖期间也不会落到家具邀请。日常状态仅在 Canvas 场景内存中，剧情接管与暂停逻辑保持优先。家园住客类型单独包含 advisor，沿用战斗头像图稿和原猫咪交互，不写入拥有伙伴或战斗名册。furnishings 从 home/furniture 与 home/decor 读取尺寸和十种布置分类；parcelWidth、旧家具与服务端布局边界采用相同的 1.7 比例。spatial 维护可见体积避让和地毯／墙饰深度，resident-layers 由日常与修缮快照共同使用，布置命中也沿用相同层级。
+
+家园顶栏「问阿策」与场景阿策点击共用 App 的 advisor 弹层，挂载 advisor/HomeAdvisor，复用 AdvisorProvider、旅程上下文和原只读问答，不登记战斗快照。聊天弹层暂停家园日常，其自身暂停不作为 Provider 的 blocked。HomeRepairOverlay 回传修缮卡与演出状态，GameScreen 回传家园教学状态，home-presentation 统一决定能否打开和当前外观文案；外部操作、关闭、切场景与后台取消等待。story/advisor-home.json 提供经剧情核对的短摘要和全部可见条件，由 knownHomeStorySummaries 筛选后供面板展开查看；试玩记录和 QA 进度不解锁亲历摘要。数据不扩展存档或 API，服务端 AI 仍读取现有公开知识，六章战斗会话保持独立。
 
 ## 4. 接入与分工
 
@@ -433,3 +437,21 @@ L05 的 finale_boss 使用 74 格不规则仓库、十波 44 小怪、九格永�
 所有已实现章节无库存补给、休整或同场复活，主力技能使用自然蓄能；第一章起额外接收事件来源的单个 carry，六枚举、第一版效果与生命周期见 [事件战斗对接](BATTLE-EVENT-CARRY.md)。旧 active 预留在新版结算时全额返还且只执行一次。公共规则和各章设计见 [塔防索引](../design/tower-defense/README.md)。
 
 目录变化后运行 npm run architecture:build；npm run architecture:check 会检查本文件与实际文件夹是否一致。需求见 [PRD](PRD.md)。
+
+## 10. 战斗与阿策共享代码的维护位置
+
+第一至第五章保留各自配置、地图、技能、Boss、波次和绘图。相同的基础算法集中在 modules/battle/shared，原引擎的导出接口保持兼容。序章教程使用自己的状态机；第一章特殊支巷路径也继续由本章处理。
+
+| 要修改的内容 | 维护位置 | 保留在调用方的差异 |
+| --- | --- | --- |
+| 暂停、倍速与固定步进 | battle/shared/clock.ts | 各章 tick 和终局规则 |
+| 实际地格、攻击范围、Boss 占格距离 | battle/shared/geometry.ts | 各章地格、技能目标模式和部署限制 |
+| 第二至第五章路径与阻挡 | battle/shared/pathing.ts | 路线表、接触距离、事件携带物倍率；援军不进入主力阻挡列表 |
+| 页面可见性、绘图循环、Boss 施法震动 | battle/shared/useBattleLoop.ts | 各章绘图、场次重置与结果报告 |
+| 猫咪菜单、技能说明定位与阿策头像 | battle/shared/useBattleInspectionLayout.ts、AdvisorPortrait.tsx | 各章 JSX、样式与教程 |
+| 已保存场次的入口与配置校验 | battle/shared/stage-context.ts、battle/BattleHost.tsx | 关卡 ID、名称、尺寸、波数和终章精英报告 |
+| 家园与旅程的公开事件说明 | advisor/public-event-rules.ts | 问题匹配顺序与当前场景；概率读取 events/presentation.ts 的公开表 |
+| 战斗 AI 请求白名单 | advisor/prepare-battle-request.ts | 独立入口与 Provider 的会话、回退和取消生命周期 |
+| 模型调用前后的只读场景校验 | server/internal/service/advisor_scene.go | 各范围的语义进度指纹、超时和实际模型载荷 |
+
+新增章节优先接入上述公共能力，章节机制通过原本的配置和函数传入。不要把不同的护盾、暂停判定、隐藏信息、援军或教程规则合并成隐含默认值。修改公共实现需运行受影响各章测试，并检查暂停、换位、技能、结算和窄屏菜单；AI 修改同时检查可见信息、迟到响应及服务端状态变化。

@@ -27,6 +27,13 @@ func TestHTTPBoundaries(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, r)
+		wantPriority := ""
+		if strings.HasPrefix(path, "/api/") {
+			wantPriority = "u=0"
+		}
+		if got := w.Header().Get("Priority"); got != wantPriority {
+			t.Fatalf("%s %s status %d: response priority = %q, want %q", method, path, w.Code, got, wantPriority)
+		}
 		return w
 	}
 	if w := request("GET", "/api/v1/state", "", ""); w.Code != 401 {

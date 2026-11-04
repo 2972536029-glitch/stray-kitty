@@ -31,8 +31,9 @@ test('home offline answers cover public battle and event rules without fabricati
   const s=state({phase:'home',mapId:'greenhouse',pushTokens:1}), before=structuredClone(s);
   assert.match(answer(s,'战斗技能怎么蓄能？'),/手动释放.*暂停/);
   assert.match(answer(s,'事件失败概率是多少？'),/16.67%.*不能.*鼓励/);
+  assert.match(answer(s,'事件基础概率？'),/12点为2\.78%，9–11点为25%，5–8点为55\.56%，2–4点为16\.67%/);
   assert.match(answer(s,'我鱼干为0要先买才能选事件吗，失败率是多少？'),/不要求也不扣库存鱼干.*12点.*16.67%/);
-  assert.match(answer(s,'事件选项要花库存鱼干吗？'),/不要求也不扣库存/);
+  assert.match(answer(s,'事件选项要花库存鱼干吗？'),/不要求拥有库存物品.*不扣除库存物品/);
   assert.match(answer(s,'鼓励在结果后使用吗？'),/掷骰前.*不是结算后/);
   assert.match(answer(s,'现在墨墨还有多少血、站在哪一格？'),/没有当前战斗快照/);
   assert.match(answer(s,'你记得我每次选择和完整历史吗？'),/不是完整/);

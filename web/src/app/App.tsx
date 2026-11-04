@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
+import MobileViewport, {usePortraitPhone} from '../ui/MobileViewport';
 import {useGame} from './useGame';
 import {Viewport} from '../examples/demo/Viewport';
 import type {DemoScene} from '../examples/demo/scene';
@@ -26,9 +27,12 @@ import {rainyAlleyObject} from '../modules/rainyAlley/assets';
 import AcceptancePanel from '../ui/AcceptancePanel';
 import Modal from '../ui/Modal';
 import type {GameCommand} from '../contracts';
+import HomeAdvisor from '../modules/advisor/HomeAdvisor';
+import {homeAdvisorBlock, type HomeAdvisorActivity} from '../modules/advisor/home-presentation';
 import {preloadChapterArtwork, preloadClassicChapterArtwork} from '../modules/map/artwork';
 
 export default function App() {
+  const portraitPhone = usePortraitPhone();
   const warehouseReview = import.meta.env.DEV && new URLSearchParams(window.location.search).has('warehouseQA');
   const game = useGame();
   const {state, catalog, send, reportMove, busy, pending, error, disabled, retry, skipDialogue, resetSession, sessionUnavailable, startNewJourney, refresh, port} = game;
@@ -46,7 +50,14 @@ export default function App() {
   const [checkingRandomZone, setCheckingRandomZone] = useState(false);
   const [togglingWarehouseLight, setTogglingWarehouseLight] = useState(false);
   const [inspection, setInspection] = useState<{label: string; text: string} | null>(null);
-  const [overlay, setOverlay] = useState<'home' | 'decorate' | 'map' | 'parcels' | 'shop' | 'journal' | 'recharge' | 'warehouse' | 'settings' | 'auth' | 'qa' | null>(null);
+  const [overlay, setOverlay] = useState<'home' | 'advisor' | 'decorate' | 'map' | 'parcels' | 'shop' | 'journal' | 'recharge' | 'warehouse' | 'settings' | 'auth' | 'qa' | null>(null);
+  const [homeRepairActivity,setHomeRepairActivity]=useState({renovating:false,repairCardOpen:false});
+  const [homeTutorialOpen,setHomeTutorialOpen]=useState(false);
+  const setHomeAdvisorOpen=useCallback<React.Dispatch<React.SetStateAction<boolean>>>(value=>setOverlay(current=>{
+    const next=typeof value==='function'?value(current==='advisor'):value;
+    return next?'advisor':current==='advisor'?null:current;
+  }),[]);
+  useEffect(()=>{if(!entered||state?.phase!=='home')setOverlay(current=>current==='advisor'?null:current);},[entered,state?.phase]);
   const [homeTab,setHomeTab]=useState<HomeHubTab>('overview');
   const openHome=(tab:HomeHubTab='overview')=>{setHomeTab(tab);setOverlay('home');};
   const homeNavigate=async(command:GameCommand)=>{if(await send(command))setOverlay(null);};
@@ -175,7 +186,11 @@ export default function App() {
   // Lamp toggles keep walking responsive while the server confirms the light
   // and any gate change. Commands remain serialized; other interactions pause.
   const backgroundWarehouseLight=togglingWarehouseLight&&state?.mapId==='warehouse'&&state.phase==='explore';
-  const frozen = paused || ((busy || pending) && !backgroundZoneCheck && !backgroundWarehouseLight) || !!overlay || !!inspection || !entered;
+  const homeAdvisorActivity:HomeAdvisorActivity={entered,externalPaused:paused||portraitPhone,overlayOpen:!!overlay&&overlay!=='advisor',
+    busy,pending,renovating:!homeScene||homeRepairActivity.renovating||!!homeScene.homeRenovating,
+    repairCardOpen:homeRepairActivity.repairCardOpen,tutorialOpen:homeTutorialOpen,pageHidden:document.hidden};
+  const homeAdvisorBlocked=state?homeAdvisorBlock(state,homeAdvisorActivity):'outside-home';
+  const frozen = paused || portraitPhone || ((busy || pending) && !backgroundZoneCheck && !backgroundWarehouseLight) || !!overlay || !!inspection || !entered;
   const randomEligible = !!state && !!catalog?.events.some(event => event.triggers.includes('random') && event.maps?.includes('alley') && (event.requiresFlags ?? []).every(flag => state.flags.includes(flag)) && (event.repeatable || !state.drawnEvents?.includes(`alley:${event.id}`)));
   return <>
     {error && overlay !== 'shop' && overlay !== 'parcels' && overlay !== 'qa' && overlay !== 'decorate' && overlay !== 'home' && <div className="error-banner" role="alert">{error}<button disabled={busy} onClick={() => void retry()}>重试上次操作</button>{sessionUnavailable && state && <button disabled={busy} onClick={() => void startNewJourney()}>开始新旅程（保留旧会话记录）</button>}</div>}
@@ -184,16 +199,17 @@ export default function App() {
         {!entered && <StartScreen hasProgress={state.revision > 0} disabled={disabled} onStart={() => setEntered(true)} onShop={() => setOverlay('shop')} onReset={resetSession} onAuth={() => setOverlay('auth')}/>}
         {/* Keep an active battle mounted and paused behind the title, so returning does not restart its attempt. */}
         {(entered || state.phase === 'battle') && <div hidden={!entered}>
-          <GameScreen onHomeManual={()=>openHome()} homeEditing={overlay==='decorate'} state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay || !!inspection} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} topExpanded={topExpanded} onToggleTopbar={toggleTopbar} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} qaOpen={overlay === 'qa'} onQA={() => setOverlay('qa')} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onPause={() => setPaused(!paused)} onMap={() => state.phase==='home'?openHome('depart'):setOverlay('map')} onShop={() => state.phase==='home'?openHome('shop'):setOverlay('shop')} onParcels={() => state.phase==='home'?openHome('parcels'):setOverlay('parcels')} onRecharge={() => openRecharge()} onSettings={() => setOverlay('settings')} onWarehouse={()=>openHome('warehouse')} onDecorate={()=>openDecorate()} onTitle={() => {setEntered(false);setPaused(false);}} speakerAnchor={getSpeakerAnchor}>
+          <GameScreen onHomeAdvisor={()=>{if(!homeAdvisorBlocked&&!homeScene?.homeRenovating)setHomeAdvisorOpen(true);}} homeAdvisorDisabled={!!homeAdvisorBlocked} onHomeTutorialChange={setHomeTutorialOpen} onHomeManual={()=>openHome()} homeEditing={overlay==='decorate'} state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay || !!inspection} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} topExpanded={topExpanded} onToggleTopbar={toggleTopbar} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} qaOpen={overlay === 'qa'} onQA={() => setOverlay('qa')} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onPause={() => setPaused(!paused)} onMap={() => state.phase==='home'?openHome('depart'):setOverlay('map')} onShop={() => state.phase==='home'?openHome('shop'):setOverlay('shop')} onParcels={() => state.phase==='home'?openHome('parcels'):setOverlay('parcels')} onRecharge={() => openRecharge()} onSettings={() => setOverlay('settings')} onWarehouse={()=>openHome('warehouse')} onDecorate={()=>openDecorate()} onTitle={() => {setEntered(false);setPaused(false);}} speakerAnchor={getSpeakerAnchor}>
             {state.phase === 'battle'
               ? <BattleHost key={qaVisit} state={state} catalog={catalog} paused={frozen} onResult={result => send({type: 'COMPLETE_BATTLE', ...result})} settlement={{busy,pending,error,retry}}/>
-              : <Viewport key={`${state.qaCheckpointId ?? 'journey'}:${qaVisit}`} state={state} storyNode={currentStory(catalog, state)} paused={frozen} onSceneReady={scene => {sceneRef.current = scene;setHomeScene(scene);scene?.setTopbarExpanded(topExpandedRef.current);}} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone} onMarketBattle={(floor,position)=>void send({type:'START_BATTLE',stageId:'market_boss',layer:floor,returnPosition:position})} onMarketExit={(floor,position)=>void send({type:'EXIT_MARKET',layer:floor,position})} onWorldPosition={point => {rainyPosition.current = point;if(state.mapId==='tunnel')tunnelPosition.current=point;}} onWarehousePosition={(floor,point)=>{warehousePosition.current={floor,point};}} onWarehouseClimbReady={fn=>{warehouseClimb.current=fn;}} randomEligible={randomEligible}/>}
+              : <Viewport onHomeAdvisor={()=>{if(!homeAdvisorBlocked&&!homeScene?.homeRenovating)setHomeAdvisorOpen(true);}} key={`${state.qaCheckpointId ?? 'journey'}:${qaVisit}`} state={state} storyNode={currentStory(catalog, state)} paused={frozen} onSceneReady={scene => {sceneRef.current = scene;setHomeScene(scene);scene?.setTopbarExpanded(topExpandedRef.current);}} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone} onMarketBattle={(floor,position)=>void send({type:'START_BATTLE',stageId:'market_boss',layer:floor,returnPosition:position})} onMarketExit={(floor,position)=>void send({type:'EXIT_MARKET',layer:floor,position})} onWorldPosition={point => {rainyPosition.current = point;if(state.mapId==='tunnel')tunnelPosition.current=point;}} onWarehousePosition={(floor,point)=>{warehousePosition.current={floor,point};}} onWarehouseClimbReady={fn=>{warehouseClimb.current=fn;}} randomEligible={randomEligible}/>}
           </GameScreen>
         </div>}
       </>}
     {/* 序章开场引导只在每个存档的第一次进入时播放,且仅对话相位挂载——教学战中刷新页面不能让动画盖住战斗 UI。 */}
     {entered && state?.chapterId === 'prologue' && state.phase === 'dialogue' && !introDone && <PrologueSequence onComplete={() => {setIntroDone(true);try {localStorage.setItem('stray-kitty.prologue.intro', 'done');} catch {/* 隐私模式下跳过记忆，不影响本次游玩 */}}}/>}
-    {entered && state?.phase==='home' && state.chapterId!=='prologue' && catalog && homeScene && !overlay && !paused && <HomeRepairOverlay scene={homeScene} state={state} catalog={catalog} busy={busy} pending={pending} error={error} onRepair={send} onRetry={()=>void retry()}/>}
+    {entered && state?.phase==='home' && state.chapterId!=='prologue' && catalog && homeScene && !overlay && !paused && <HomeRepairOverlay scene={homeScene} state={state} catalog={catalog} busy={busy} pending={pending} error={error} onRepair={send} onRetry={()=>void retry()} onActivityChange={setHomeRepairActivity}/>}
+    {entered && state?.phase==='home' && catalog && <HomeAdvisor state={state} catalog={catalog} open={overlay==='advisor'} blocked={!!homeAdvisorBlocked} resetKey={qaVisit} onOpenChange={setHomeAdvisorOpen}/>}
     {inspection && state?.phase === 'explore' && state.mapId === 'alley' && <Modal title={inspection.label} className="inspection-dialog" onClose={() => setInspection(null)}>
       <header><span className="eyebrow">小巷见闻</span><h2>{inspection.label}</h2></header>
       <p>{inspection.text}</p>
@@ -216,5 +232,6 @@ export default function App() {
     {overlay === 'settings' && <SettingsPanel musicVolume={musicVolume} sfxVolume={sfxVolume} onMusicVolume={value => {setMusicVolume(value);localStorage.setItem('stray-kitty.audio.music', String(value));}} onSfxVolume={value => {setSfxVolume(value);localStorage.setItem('stray-kitty.audio.sfx', String(value));}} onClose={() => setOverlay(null)} onPause={entered&&state?.phase==='home'?()=>{setOverlay(null);setPaused(true);}:undefined}/>}
     {loadout && <div className="visually-hidden" aria-live="polite">已确认暖心罐罐 {loadout.inventoryItems.warmCan} 份，蹦蹦冻干 {loadout.inventoryItems.freezeDry} 份；尚未锁定或扣除库存。</div>}
     {state && overlay === 'auth' && <AuthDialog mode={state.revision > 0 ? 'register' : 'login'} hasProgress={state.revision > 0} api={port} onLoggedIn={async () => {await refresh();setEntered(false);}} onClose={() => setOverlay(null)}/>}
+    <MobileViewport portrait={portraitPhone}/>
   </>;
 }

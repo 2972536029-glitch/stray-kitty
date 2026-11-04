@@ -15,6 +15,8 @@
 .qa-active-badge:hover,.qa-active-badge:focus-within{background:rgba(0,0,0,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .qa-active-badge button{font-size:14px;padding:5px 8px;background:transparent;color:#ffe9a8;border:0;box-shadow:none}
 .qa-active-badge button:hover{background:transparent;color:#ffd76e;transform:none;box-shadow:none}
+/* 家园（花房）阶段专属：左下角的花房视角控制条（墨绿面板）就停在 bottom:112，角标默认 bottom:82+44 高会压住它的底边。家园阶段把角标再往下挪到绿框之下（此时底部引导栏已隐藏，不挡内容）；其余界面维持原位。 */
+.app-shell[data-phase=home] .qa-active-badge{bottom:58px}
 /* 战斗页专属（先在第一章试用）：角标挪到顶部横栏居中——左下原位会压到战场指挥栏（阿策问答区）；
    战斗页整底是米色纸张，奶油描边字看不清，改墨色文字，悬停浮现米色轻纱。其余界面维持左下角标不变。 */
 .app-shell[data-phase=battle] .qa-active-badge{position:fixed;left:50%;right:auto;bottom:auto;top:3px;transform:translateX(-50%);z-index:60;padding:5px 12px;color:#59431f;text-shadow:none}

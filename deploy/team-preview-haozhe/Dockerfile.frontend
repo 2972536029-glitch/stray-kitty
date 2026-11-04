@@ -15,7 +15,8 @@ ENV VITE_QA_TOOLS=${QA_TOOLS}
 RUN npm run build --workspace web
 
 # unprivileged 变体:默认以 uid 101 运行,配合 8080 监听无需 root。
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+# Pin the non-root frontend runtime used by the deployment.
+FROM nginx/nginx-unprivileged:1.31.8-alpine@sha256:16de44aff58d6a3906f4eb1499d930378b7f0fa96fdebc7d10962d2b2a4e794b
 ARG BUILD_REVISION=unverified
 LABEL org.opencontainers.image.revision="${BUILD_REVISION}"
 COPY --from=web /app/web/dist /usr/share/nginx/html

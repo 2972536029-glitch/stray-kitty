@@ -4,6 +4,7 @@ import {drawPixelCat} from '../../adapters/canvas/pixelCat';
 import mapData from '../../../../level_design/chapter4/data/chapter4.map.json' with { type: 'json' };
 import lighting from '../../../../level_design/chapter4/data/chapter4.lighting.json' with { type: 'json' };
 import {chapterBackground, preloadChapterArtwork} from '../map/artwork';
+import {queueImage} from '../../core/image-loading';
 import l0MaskUrl from '../../../../level_design/chapter4/collision/chapter4_L0_walkable.png?url';
 import lm1MaskUrl from '../../../../level_design/chapter4/collision/chapter4_Lminus1_walkable.png?url';
 import {TunnelWalkableMask} from './TunnelWalkableMask';
@@ -17,10 +18,6 @@ const layers: Layer[] = ['L0', 'Lm1'];
 const masks: Record<Layer, string> = {L0: l0MaskUrl, Lm1: lm1MaskUrl};
 const camera = {width: 1066, height: 640};
 const speed = 142;
-
-function loadImage(url: string) {
-  const image = new Image(); image.src = url; return image;
-}
 
 function imageMask(image: HTMLImageElement, floor: Layer) {
   const canvas = document.createElement('canvas'); canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
@@ -43,7 +40,7 @@ function reachableSpawn(mask: TunnelWalkableMask, point: Point) {
 }
 
 export class TunnelMap {
-  private readonly maskImages: Record<Layer, HTMLImageElement> = {L0: loadImage(masks.L0), Lm1: loadImage(masks.Lm1)};
+  private readonly maskImages: Record<Layer, HTMLImageElement> = {L0: new Image(), Lm1: new Image()};
   private readonly maskReady: Promise<Record<Layer, TunnelWalkableMask>>;
   private masks: Record<Layer, TunnelWalkableMask> | null = null;
   private readonly raisedMasks = {'tank-ridge': raisedRidgeMask('tank-ridge', WIDTH, HEIGHT), 'south-ridge': raisedRidgeMask('south-ridge', WIDTH, HEIGHT), 'west-ridge': raisedRidgeMask('west-ridge', WIDTH, HEIGHT)};
@@ -63,10 +60,12 @@ export class TunnelMap {
   private zonesInside = new Set<string>();
 
   constructor() {
+    const imageLoads=layers.map(floor=>queueImage(this.maskImages[floor],masks[floor]));
     preloadChapterArtwork('tunnel');
-    this.maskReady = Promise.all(layers.map(async floor => {
+    this.maskReady = Promise.all(layers.map(async (floor,index) => {
       const image = this.maskImages[floor];
-      if (!image.complete) await new Promise<void>((resolve, reject) => {image.onload = () => resolve(); image.onerror = () => reject(new Error(`Unable to load ${floor} collision mask`));});
+      // An Image without a src can already be complete while it waits in the queue.
+      await imageLoads[index].catch(()=>{throw new Error(`Unable to load ${floor} collision mask`);});
       if (image.naturalWidth !== WIDTH || image.naturalHeight !== HEIGHT) throw new Error(`Chapter 4 ${floor} collision dimensions mismatch`);
       return [floor, imageMask(image, floor)] as const;
     })).then(entries => {

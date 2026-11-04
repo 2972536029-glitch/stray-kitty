@@ -1,3 +1,6 @@
+import {paintHomeResidents} from '../../modules/home/resident-layers';
+import {groundCover,homeObjectDepth} from '../../modules/home/spatial';
+import type {HomeCatBreed} from '../../modules/home/layout';
 import {MarketEventMarkers} from '../../modules/nightMarket/eventLabels';
 import {paintMarketCargo} from '../../modules/nightMarket/cargoPainter';
 import {PARCEL_ART, PARCEL_IDS} from '../../modules/lottery/furnitureArt';
@@ -13,7 +16,7 @@ import {marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketR
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 import {HOME_LAYOUT_ID, HOME_SIZE, HOME_RESIDENTS, HOME_ROAM_NODES, HOME_SHELTER_NODES, homeStage} from '../../modules/home/layout';
-import {homeAppearanceKey, paintHomestead, paintHomeStructure, paintHomeObject, paintHomeFurnitureFront, paintHomeFrontWall, paintHomeWeather, homeObjects} from '../../modules/home/painter';
+import {homeAppearanceKey, paintHomestead, paintHomeStructure, paintHomeObject, paintHomeFrontWall, paintHomeWeather, homeObjects} from '../../modules/home/painter';
 import {loadHomeArtwork, HOME_FRAMES, type HomeArtwork} from '../../modules/home/assets';
 import {paintResident,residentContains,residentWorldPoint} from '../../modules/home/catPainter';
 import {homeObjectOpaqueAt} from '../../modules/home/picking';
@@ -23,7 +26,7 @@ import {CAT_NAMES,SOCIAL_KINDS,freeCatPoint,furnitureAt,furnitureActivity,useFur
 import {HomeCamera} from '../../modules/home/camera';
 import {HomeRenovation} from '../../modules/home/renovation';
 import {playSound} from '../../ui/soundEffects';
-import {homePosePoint, homeInventory, type HomeAppearance} from '../../modules/home/objects';
+import {homeInventory, type HomeAppearance} from '../../modules/home/objects';
 import {homeWalkable} from '../../modules/home/navigation';
 import {displayedCanvasRect} from '../../adapters/canvas/camera';
 import {homeStoryBeat, storyActorPosition, type HomeStoryActor, type HomeStoryBeat} from '../../modules/home/story';
@@ -111,7 +114,7 @@ export class DemoScene {
   private homeCamera=new HomeCamera();
   private homeRenovation=new HomeRenovation();
   private homeVisualState?:HomeAppearance;
-  private homeEditing?:{state:HomeAppearance;selection:string;valid:boolean};
+  private homeEditing?:{state:HomeAppearance;selection:string;valid:boolean;hover?:string};
   get homeCanvas(){return this.canvas;}
   get homeZoomLevel(){return this.homeCamera.zoom;}
   get homeRenovating(){return this.homeRenovation.active;}
@@ -119,9 +122,11 @@ export class DemoScene {
   setHomeEditing(draft?:{state:HomeAppearance;selection:string;valid:boolean}){
     if(draft)this.homeRenovation.clear();
     this.homeEditing=draft;this.clearInput();this.canvas.dataset.homeEditing=String(!!draft);
-    this.canvas.style.cursor=draft?'grab':'';
-    if(!draft){delete this.canvas.dataset.editorView;delete this.canvas.dataset.editorItems;}
+    // 布置模式的光标改由 FurnitureBackpack 按命中态驱动（家具 move / 空白 grab / 拖动 grabbing），
+    // 不在这里整体压成 grab——那会让整块画布都像“什么都能拖”。
+    if(!draft){this.canvas.style.cursor='';delete this.canvas.dataset.editorView;delete this.canvas.dataset.editorItems;}
   }
+  setHomeHover(layoutKey?:string){if(this.homeEditing&&this.homeEditing.hover!==layoutKey)this.homeEditing={...this.homeEditing,hover:layoutKey};}
   homeClientToWorld(clientX:number,clientY:number){
     const point=this.homeScreenPoint({clientX,clientY}),view=this.homeView(),r=this.canvas.getBoundingClientRect();
     return{x:Math.round((point.x-view.x)/view.scale),y:Math.round((point.y-view.y)/view.scale),inside:clientX>=r.left&&clientX<=r.right&&clientY>=r.top&&clientY<=r.bottom};
@@ -135,7 +140,8 @@ export class DemoScene {
     const a=this.homeScreenPoint({clientX:from.x,clientY:from.y}),b=this.homeScreenPoint({clientX:to.x,clientY:to.y}),view=this.homeView();
     this.homeCamera.pan(b.x-a.x,b.y-a.y,view.viewport.width,view.viewport.height);
   }
-  private homeDrag:{id:number;start:{x:number;y:number};last:{x:number;y:number};moved:boolean;cat?:CatBreed;offset?:{x:number;y:number}}|null=null;
+  onHomeAdvisor?:()=>void;
+  private homeDrag:{id:number;start:{x:number;y:number};last:{x:number;y:number};moved:boolean;cat?:HomeCatBreed;offset?:{x:number;y:number}}|null=null;
   private homeSocialSerial=0;
   private homeSocialStamp=-1;
   constructor(
@@ -165,7 +171,15 @@ export class DemoScene {
     this.cityBackdrop = new Image();
     this.cityBackdrop.src = '/assets/city-backdrop.svg';
   }
-  setDirection(direction: Direction, held: boolean) {if(this.marketTransition.active||this.backgroundBlocked())return;if (held) this.held.add(direction);else this.held.delete(direction);}
+  setDirection(direction: Direction, held: boolean) {
+    if (!held) {this.held.delete(direction);return;}
+    if (this.pausedByUser || this.marketTransition.active || this.backgroundBlocked()) return;
+    this.held.add(direction);
+  }
+  performAction(key: 'e' | 'c' | 'f' | 'q' | ' ') {
+    this.handleKeydown({key, repeat: false, preventDefault() {}});
+    this.keys.delete(key);this.tunnelMapInstance?.keyUp(key);
+  }
   private backgroundStatus(): ChapterBackgroundStatus | null {
     const state = this.state;
     if (!state || state.mapId === 'warehouse' || state.phase === 'battle' || state.phase === 'home' || (state.phase === 'dialogue' && this.storyScene === 'home')) return null;
@@ -214,6 +228,9 @@ export class DemoScene {
   private keydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null;
     if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
+    this.handleKeydown(event);
+  };
+  private handleKeydown(event: Pick<KeyboardEvent, 'key' | 'repeat' | 'preventDefault'>) {
     if (this.backgroundBlocked()) {
       if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e','c','f','q',' '].includes(event.key.toLowerCase())) event.preventDefault();
       return;
@@ -308,7 +325,7 @@ export class DemoScene {
       this.rainyAlley.click(event.clientX, event.clientY, bounds, this.viewWidth, this.viewHeight, cover);
       return;
     }
-    if (this.state?.phase === 'home' && this.state.chapterId !== 'prologue' && !this.pausedByUser && !this.homeRenovating) {
+    if (this.state?.phase === 'home' && this.state.chapterId !== 'prologue' && !this.pausedByUser && !this.homeRenovating && !this.homeEditing) {
       const point=this.homeScreenPoint(event);
       const view=this.homeView(),world={x:(point.x-view.x)/view.scale,y:(point.y-view.y)/view.scale};
       if(point.x<view.viewport.x||point.x>view.viewport.x+view.viewport.width||point.y<view.viewport.y||point.y>view.viewport.y+view.viewport.height)return;
@@ -342,13 +359,27 @@ export class DemoScene {
     if(amount===0)this.homeCamera.reset();else this.homeCamera.changeZoom(amount);
   }
   private homePointerMove=(event:PointerEvent)=>{
-    const drag=this.homeDrag;if(!drag||drag.id!==event.pointerId||this.pausedByUser||this.state?.phase!=='home'){this.homeDrag=null;return;}
+    const drag=this.homeDrag;
+    if(!drag||drag.id!==event.pointerId||this.pausedByUser||this.state?.phase!=='home'){this.homeDrag=null;this.updateHomeHoverCursor(event);return;}
     const point=this.homeScreenPoint(event);
     if(Math.hypot(point.x-drag.start.x,point.y-drag.start.y)>4)drag.moved=true;
     if(drag.moved&&!drag.cat){const view=this.homeView();this.homeCamera.pan(point.x-drag.last.x,point.y-drag.last.y,view.viewport.width,view.viewport.height);}
     if(drag.moved&&drag.cat)this.canvas.style.cursor='grabbing';
     drag.last=point;
   };
+  // 日常（非布置）模式下的悬浮光标：点击可召唤伙伴来玩的家具给 pointer，
+  // 猫和空白维持 CSS 的 grab（拖猫 / 按住空白拖动画面），避免“抓手=什么都能拖”的误导。
+  private updateHomeHoverCursor(event:{clientX:number;clientY:number}){
+    // 布置模式的光标（家具 move / 空白 grab / 拖动 grabbing）由 FurnitureBackpack 独占管理，
+    // 这里绝不写 cursor——两个监听器挂同一画布、顺序不保证，一旦在此清空就会盖掉 move。
+    if(this.homeEditing)return;
+    if(this.state?.phase!=='home'||this.state.chapterId==='prologue'||this.pausedByUser||this.homeRenovating||this.homeDrag){if(!this.homeDrag)this.canvas.style.cursor='';return;}
+    const point=this.homeScreenPoint(event),view=this.homeView(),x=(point.x-view.x)/view.scale,y=(point.y-view.y)/view.scale;
+    if(x<view.viewport.x||x>view.viewport.x+view.viewport.width||y<view.viewport.y||y>view.viewport.y+view.viewport.height){this.canvas.style.cursor='';return;}
+    const interactive=[...homeObjects(this.state)].reverse().find(o=>!o.front&&(o.kind!=='decor'||!!o.furnitureId)&&homeObjectOpaqueAt(o,x,y,this.homeArtwork));
+    this.canvas.style.cursor=interactive?'pointer':'';
+  }
+  private homePointerLeave=()=>{if(!this.homeDrag)this.canvas.style.cursor='';};
   private homePointerUp=(event:PointerEvent)=>{
     const drag=this.homeDrag;this.homeDrag=null;this.canvas.style.cursor='';
     if(!drag||drag.id!==event.pointerId||this.pausedByUser||this.state?.phase!=='home')return;
@@ -360,10 +391,12 @@ export class DemoScene {
     const cat=this.homeCatAt(x,y);
     // A press on a cat is consumed even while its reaction is debounced. It
     // must never fall through and summon another cat through the furniture.
-    if(drag.cat){if(cat?.breed===drag.cat)this.pokeHomeCat(cat,x,y);return;}
+    if(drag.cat){if(cat?.breed===drag.cat){this.pokeHomeCat(cat,x,y);if(cat.breed==='advisor')this.onHomeAdvisor?.();}return;}
     if(!cat)this.inviteFurnitureCat(x,y);
   };
-  private homePointerCancel=()=>{this.homeDrag=null;this.canvas.style.cursor='';delete this.canvas.dataset.homeDropTarget;};
+  // 拖拽取消只清拖拽痕迹；布置模式的光标（move/grab/grabbing）归 FurnitureBackpack 管——
+  // 冻结期间 update() 每帧都会走 clearInput()→这里，无条件写 '' 会把 hover 的 move 抹掉。
+  private homePointerCancel=()=>{this.homeDrag=null;if(!this.homeEditing)this.canvas.style.cursor='';delete this.canvas.dataset.homeDropTarget;};
   private homeWheel=(event:WheelEvent)=>{
     if(this.state?.phase!=='home'||this.state.chapterId==='prologue'||this.homeRenovating||(this.pausedByUser&&!this.homeEditing))return;
     event.preventDefault();this.homeZoom(event.deltaY<0?.15:-.15);
@@ -376,6 +409,7 @@ export class DemoScene {
     this.canvas.addEventListener('pointermove',this.homePointerMove);
     this.canvas.addEventListener('pointerup',this.homePointerUp);
     this.canvas.addEventListener('pointercancel',this.homePointerCancel);
+    this.canvas.addEventListener('pointerleave',this.homePointerLeave);
     this.canvas.addEventListener('wheel',this.homeWheel,{passive:false});
     this.canvas.addEventListener('wheel', this.wheel, {passive: false});
     this.previousTime = performance.now();
@@ -390,6 +424,7 @@ export class DemoScene {
     this.canvas.removeEventListener('pointermove',this.homePointerMove);
     this.canvas.removeEventListener('pointerup',this.homePointerUp);
     this.canvas.removeEventListener('pointercancel',this.homePointerCancel);
+    this.canvas.removeEventListener('pointerleave',this.homePointerLeave);
     this.canvas.removeEventListener('wheel',this.homeWheel);
     this.canvas.removeEventListener('wheel', this.wheel);
     this.clearInput();
@@ -428,18 +463,24 @@ export class DemoScene {
       const mapChanged = this.state.mapId !== this.lastMapId;
       if (mapChanged && this.state.mapId === 'market') {this.marketInitialized = false;this.marketExitRequested = false;this.marketMarkers.reset();}
       this.clearInput();
+      // 第二章以旁白开场：market_intro 载入时服务端已把 mapId 切到 market 且
+      // phase=dialogue，集市地图立刻开始绘制。落位不能等到 explore——否则旁白
+      // 期间猫停留在上一张图的旧坐标，旁白结束才"闪现"到入口。地图出现的当下
+      // 就放到入口（或已通关的北街结算点）并框好相机。
+      if (this.state.mapId === 'market' && !this.marketInitialized) {
+        const cleared = this.state.flags.includes('market_cleared');
+        this.marketFloor = cleared ? 'L0' : marketEntry.floor;
+        this.x = cleared ? 1310 : marketEntry.x;
+        this.y = cleared ? 169 : marketEntry.y;
+        this.marketInitialized = true;
+        this.snapMarketCamera();
+      }
       if (mode === 'explore') {
         if (this.state.mapId === 'alley') {
           if (mapChanged || (this.lastMode === 'dialogue' && this.state.flags.includes('alley_rescued'))) this.rainyAlley.reset(this.state.flags, this.state.alleyBattleReturn);
         } else if (this.state.mapId === 'tunnel') {
           if (mapChanged) this.tunnelMap.reset();
         } else {
-          if (!this.marketInitialized) {
-            this.marketFloor=this.state.flags.includes('market_cleared')?'L0':marketEntry.floor;
-            this.x = this.state.flags.includes('market_cleared') ? 1310 : marketEntry.x;
-            this.y = this.state.flags.includes('market_cleared') ? 169 : marketEntry.y;
-            this.marketInitialized=true;
-          }
           this.snapMarketCamera();
         }
       }
@@ -798,10 +839,12 @@ export class DemoScene {
       void loadHomeArtwork().then(art=>{if(!this.destroyed)this.homeArtwork=art;}).catch(()=>{if(!this.destroyed)this.homeAssetError=true;});
     }
     if(this.homeEditing){
-      const {state,selection,valid}=this.homeEditing,ctx=this.context,view=this.homeView();
+      const {state,selection,valid,hover}=this.homeEditing,ctx=this.context,view=this.homeView();
       ctx.save();ctx.fillStyle='#13262e';ctx.fillRect(0,0,this.viewWidth,this.viewHeight);
       ctx.beginPath();ctx.rect(view.viewport.x,view.viewport.y,view.viewport.width,view.viewport.height);ctx.clip();
       ctx.translate(view.x,view.y);ctx.scale(view.scale,view.scale);paintHomestead(ctx,state,this.homeArtwork);
+      // 悬浮（细描边）与选中（虚线金框）分开画：悬浮提示“这件可抓取”，选中承载有效/无效状态。
+      if(hover&&hover!==selection){const hovered=homeInventory(state).find(i=>i.layoutKey===hover&&!i.stored);if(hovered){const f=HOME_FRAMES[hovered.sprite],h=hovered.width*f.height/f.width;ctx.strokeStyle='rgba(255,225,154,.55)';ctx.lineWidth=1.5/view.scale;ctx.strokeRect(hovered.x-hovered.width/2-4,hovered.y-h-4,hovered.width+8,h+8);}}
       const selected=homeInventory(state).find(i=>i.layoutKey===selection&&!i.stored);
       if(selected){const f=HOME_FRAMES[selected.sprite],h=selected.width*f.height/f.width;ctx.strokeStyle=valid?'#ffe19a':'#ff8377';ctx.lineWidth=2/view.scale;ctx.setLineDash([7/view.scale,4/view.scale]);ctx.strokeRect(selected.x-selected.width/2-5,selected.y-h-5,selected.width+10,h+10);ctx.setLineDash([]);}
       ctx.restore();
@@ -874,15 +917,12 @@ export class DemoScene {
       const entry=object?.furnitureId?[object.slot??object.layoutKey,object.furnitureId]:undefined;
       if(!entry)continue;
       claimed.add(entry[1]);
-      const point=homePosePoint(entry[0],entry[1],object);
-      const cat=this.createHomeCat(affinity.breed,stage,affinity.poses[entry[1]],point.x,point.y);cat.slot=entry[0];
-      if(entry[1] in PARCEL_ART){
-        const from=previous.get(affinity.breed)??HOME_RESIDENTS[affinity.breed];
-        cat.furnitureArrival={from:{x:from.x,y:from.y},to:point,pose:cat.pose!,started:this.homeTime};cat.pose=null;cat.x=from.x;cat.y=from.y;
-      }
+      const from=previous.get(affinity.breed)??HOME_RESIDENTS[affinity.breed];
+      const cat=this.createHomeCat(affinity.breed,stage,null,from.x,from.y);
+      useFurniture(cat,object!,[...this.homeCats,cat],homeObjects(state),this.homeTime,false);
       this.homeCats.push(cat);
     }
-    for(const breed of state.cats as CatBreed[]){
+    for(const breed of [...state.cats.filter((id):id is CatBreed=>id in HOME_RESIDENTS),'advisor'] as HomeCatBreed[]){
       if(!(breed in HOME_RESIDENTS) || this.homeCats.some(cat=>cat.breed===breed))continue;
       const [dx,dy]=DemoScene.homeCatDefaults[breed];
       const cat = this.createHomeCat(breed, stage, null, dx, dy);
@@ -893,7 +933,7 @@ export class DemoScene {
     settleCats(this.homeCats,homeObjects(state),this.homeTime);
     return this.homeCats;
   }
-  private createHomeCat(breed:CatBreed, stage:number, pose:string|null, x:number, y:number):HomeCatAgent{
+  private createHomeCat(breed:HomeCatBreed, stage:number, pose:string|null, x:number, y:number):HomeCatAgent{
     const pool = stage>=2?DemoScene.homeRoamNodes:DemoScene.homeShelterNodes;
     const seed = breed.length*7 + breed.charCodeAt(0);
     // 阶段 1:从第一步就紧靠角落纸箱;之后回到各自的默认驻点。
@@ -926,31 +966,22 @@ export class DemoScene {
   }
   private drawHomeCats(stage:number){
     const objects=homeObjects(this.state!).filter(o=>!o.front),cats=this.ensureHomeCats(stage).filter(c=>!(this.homeDrag?.cat===c.breed&&this.homeDrag.moved));
-    const residents=cats.filter(c=>!c.slot),seated=cats.filter(c=>c.slot);
-    const layers=[...objects.map(o=>({y:o.y,object:o,cat:undefined as HomeCatAgent|undefined})),...residents.map(c=>({y:c.y,object:undefined,cat:c}))].sort((a,b)=>a.y-b.y);
-    for(const layer of layers)if(layer.object)paintHomeObject(this.context,layer.object,this.homeArtwork,this.homeTime);else if(layer.cat)paintResident(this.context,layer.cat,this.homeTime,stage);
-    // Reserved furniture users draw after their furniture. Repainting an entire
-    // castle / shelf crop used to cover the cat with the opaque new sprites.
-    for(const cat of seated.sort((a,b)=>a.y-b.y)){
-      paintResident(this.context,cat,this.homeTime,stage);
-      const host=objects.find(o=>(o.slot??o.layoutKey)===cat.slot);
-      if(host&&!cat.furnitureArrival)paintHomeFurnitureFront(this.context,host,this.homeArtwork);
-    }
+    paintHomeResidents(this.context,objects,cats,this.homeArtwork,this.homeTime,stage);
     for(const cat of cats)if(cat.social&&currentCatMood(cat,this.homeTime)!=='irritated'&&this.homeTime>cat.social.started+900)this.drawPixelHeart(cat.x,cat.y-70-Math.sin(this.homeTime*.003)*4,1.3,.8);
   }
-  private homeCatAt(x:number,y:number,exclude?:CatBreed){
+  private homeCatAt(x:number,y:number,exclude?:HomeCatBreed){
     if(y>=733&&(x<706||x>=924))return undefined;
     const objects=this.state?homeObjects(this.state):[];
     return [...this.homeCats].sort((a,b)=>Number(!!b.slot)-Number(!!a.slot)||b.y-a.y).find(c=>{
       if(c.breed===exclude||!residentContains(c,this.homeTime,x,y))return false;
       return !objects.some(o=>{
         const host=c.slot===(o.slot??o.layoutKey);
-        const covers=o.front||(!c.slot&&o.y>c.y)||(host&&['castle','hammock','blanket','cushion'].includes(o.kind)&&y>=o.y-5&&y<=o.y+1);
+        const covers=!groundCover(o)&&(o.front||(!c.slot&&homeObjectDepth(o)>c.y)||(host&&['castle','hammock','blanket','cushion'].includes(o.kind)&&y>=o.y-5&&y<=o.y+1));
         return covers&&homeObjectOpaqueAt(o,x,y,this.homeArtwork);
       });
     });
   }
-  private dropHomeCat(breed:CatBreed,point:{x:number;y:number},offset={x:0,y:24}){
+  private dropHomeCat(breed:HomeCatBreed,point:{x:number;y:number},offset={x:0,y:24}){
     if(!this.state||this.state.phase!=='home'||this.homeBeat)return;
     const view=this.homeView(),x=(point.x-view.x)/view.scale,y=(point.y-view.y)/view.scale,cat=this.homeCats.find(c=>c.breed===breed);if(!cat)return;
     const objects=homeObjects(this.state),partner=this.homeCatAt(x,y,breed);

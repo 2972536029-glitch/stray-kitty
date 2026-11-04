@@ -1,9 +1,11 @@
 import {useCallback, useRef, useState} from 'react';
+import type {ComponentType} from 'react';
 import type {BattleResult, Catalog, GameState} from '../../contracts';
 import {BattleResultScreen} from './BattleResultScreen';
 import {L00BattleHost} from './L00BattleHost';
 import {createChapterContext} from './chapter-context';
 import {ChapterBattleViewport} from './chapter/ChapterBattleViewport';
+import type {ChapterBattleViewportProps} from './chapter/ChapterBattleViewport';
 import {createMarketContext} from './market-context';
 import {MarketBattleViewport} from './market/MarketBattleViewport';
 import {createGreenhouseContext} from './greenhouse-context';
@@ -20,6 +22,20 @@ interface Props {
   onResult:(result:BattleResult)=>void|boolean|Promise<boolean|void>;
   settlement?:{busy:boolean;pending:boolean;error:string;retry:()=>void|Promise<void>};
 }
+
+interface ChapterStage {
+  createContext: typeof createChapterContext;
+  Viewport: ComponentType<ChapterBattleViewportProps>;
+}
+
+const CHAPTER_STAGES: Readonly<Record<string, ChapterStage>> = {
+  alley_rescue: {createContext: createChapterContext, Viewport: ChapterBattleViewport},
+  alley_boss: {createContext: createChapterContext, Viewport: ChapterBattleViewport},
+  market_boss: {createContext: createMarketContext, Viewport: MarketBattleViewport},
+  greenhouse_boss: {createContext: createGreenhouseContext, Viewport: GreenhouseBattleViewport},
+  tunnel_boss: {createContext: createTunnelContext, Viewport: TunnelBattleViewport},
+  finale_boss: {createContext: createFinaleContext, Viewport: FinaleBattleViewport},
+};
 
 export function BattleHost(props:Props){
   return <BattleSession key={props.state.activeBattle?.id??'missing-attempt'} {...props}/>;
@@ -63,32 +79,11 @@ function BattleStage({state, catalog, paused, onResult}: {
   if (state.activeBattle?.stageId === 'l00_tutorial') {
     return <L00BattleHost key={state.activeBattle.id} state={state} catalog={catalog} paused={paused} onResult={onResult}/>;
   }
-  if (state.activeBattle?.stageId === 'market_boss') {
-    let context: ReturnType<typeof createMarketContext>;
-    try {context = createMarketContext(state, catalog);}
-    catch (error) {return <section className="l00-host-error" role="alert"><h2>战斗暂时无法进入</h2><p>{error instanceof Error ? error.message : '暂时无法进入这场战斗。'}</p></section>;}
-    return <MarketBattleViewport key={context.attemptId} {...context} paused={paused} onResult={result => onResult({attemptId: context.attemptId, ...result})}/>;
-  }
-  if (state.activeBattle?.stageId === 'greenhouse_boss') {
-    let context: ReturnType<typeof createGreenhouseContext>;
-    try {context = createGreenhouseContext(state, catalog);}
-    catch (error) {return <section className="l00-host-error" role="alert"><h2>战斗暂时无法进入</h2><p>{error instanceof Error ? error.message : '暂时无法进入这场战斗。'}</p></section>;}
-    return <GreenhouseBattleViewport key={context.attemptId} {...context} paused={paused} onResult={result => onResult({attemptId: context.attemptId, ...result})}/>;
-  }
-  if (state.activeBattle?.stageId === 'tunnel_boss') {
-    let context: ReturnType<typeof createTunnelContext>;
-    try {context = createTunnelContext(state, catalog);}
-    catch (error) {return <section className="l00-host-error" role="alert"><h2>战斗暂时无法进入</h2><p>{error instanceof Error ? error.message : '暂时无法进入这场战斗。'}</p></section>;}
-    return <TunnelBattleViewport key={context.attemptId} {...context} paused={paused} onResult={result => onResult({attemptId: context.attemptId, ...result})}/>;
-  }
-  if (state.activeBattle?.stageId === 'finale_boss') {
-    let context: ReturnType<typeof createFinaleContext>;
-    try {context = createFinaleContext(state, catalog);}
-    catch (error) {return <section className="l00-host-error" role="alert"><h2>战斗暂时无法进入</h2><p>{error instanceof Error ? error.message : '暂时无法进入这场战斗。'}</p></section>;}
-    return <FinaleBattleViewport key={context.attemptId} {...context} paused={paused} onResult={result => onResult({attemptId: context.attemptId, ...result})}/>;
-  }
+  // Unknown stages retain the chapter adapter's validation and existing error message.
+  const stageId = state.activeBattle?.stageId ?? '';
+  const {createContext, Viewport} = Object.hasOwn(CHAPTER_STAGES, stageId) ? CHAPTER_STAGES[stageId] : CHAPTER_STAGES.alley_boss;
   let context: ReturnType<typeof createChapterContext>;
-  try {context = createChapterContext(state, catalog);}
+  try {context = createContext(state, catalog);}
   catch (error) {return <section className="l00-host-error" role="alert"><h2>战斗暂时无法进入</h2><p>{error instanceof Error ? error.message : '暂时无法进入这场战斗。'}</p></section>;}
-  return <ChapterBattleViewport key={context.attemptId} {...context} stageId={state.activeBattle?.stageId} paused={paused} onResult={result => onResult({attemptId: context.attemptId, ...result})}/>;
+  return <Viewport key={context.attemptId} {...context} stageId={state.activeBattle?.stageId} paused={paused} onResult={result => onResult({attemptId: context.attemptId, ...result})}/>;
 }

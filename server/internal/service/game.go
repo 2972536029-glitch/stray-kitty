@@ -566,7 +566,7 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		s.Placements[c.SlotID] = c.FurnitureID
 		return nil
 	case "DRAW_FURNITURE":
-		return g.drawParcel(s, c.PoolID)
+		return g.drawParcels(s, c.PoolID, c.Count)
 	case "CLAIM_PARCEL_REWARD":
 		return g.claimParcelReward(s, c.RewardID)
 	default:

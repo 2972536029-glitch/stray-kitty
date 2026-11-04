@@ -366,6 +366,9 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			w.Header().Set("Cache-Control", "no-store")
+			// Nginx reads the upstream response priority before scheduling HTTP/2
+			// DATA, so small API replies can precede in-flight scene images.
+			w.Header().Set("Priority", "u=0")
 		}
 		// 预匹配一次拿路由模板(mux.Handler 只匹配不执行 handler)。
 		// 未匹配路径回退固定值:原始路径是用户可任意构造的高基数来源,
@@ -469,7 +472,7 @@ func validateCommand(body []byte, kind string) error {
 		"EXIT_MARKET":         {"layer", "position"},
 		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
 		"SAVE_HOME_LAYOUT":    {"changes"},
-		"DRAW_FURNITURE":      {"poolId"},
+		"DRAW_FURNITURE":      {"poolId", "count"},
 		"CLAIM_PARCEL_REWARD": {"rewardId"},
 		"CHECK_RANDOM_ZONE":   {"zoneId", "layer", "position"},
 		"BUY_FURNITURE":       {"productId"},
@@ -506,6 +509,12 @@ func validateCommand(body []byte, kind string) error {
 	}
 	if err := json.Unmarshal(body, &raw); err != nil {
 		return err
+	}
+	if value, exists := raw.Command["count"]; exists {
+		var count int
+		if json.Unmarshal(value, &count) != nil || (count != 1 && count != 10) {
+			return domain.Fail("INVALID_REQUEST", "count 只接受 1 或 10", 400)
+		}
 	}
 	for key := range raw.Command {
 		if key != "type" && !domain.Contains(allowedKeys, key) {

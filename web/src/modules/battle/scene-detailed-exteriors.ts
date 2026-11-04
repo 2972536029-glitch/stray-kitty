@@ -2,6 +2,7 @@
  * At placement time the renderer preserves the silhouette and fits inside the
  * authored exterior box, so the new art cannot enlarge the collision footprint. */
 import {createSceneryRaster,sceneryRaster,SCENERY_CELL_SIZE} from './scene-raster';
+import {queueImage} from '../../core/image-loading';
 export type DetailedExteriorKind='narrow-home'|'wide-home'|'planted-bed'|'glass-frame';
 const crops:Record<DetailedExteriorKind,readonly [number,number,number,number]>={
   'narrow-home':[210,30,378,533],
@@ -27,23 +28,21 @@ const urls:Record<Asset,string>={
   'warehouse-roll-pallet':new URL('./assets/scene-warehouse-roll-pallet-v1.png',import.meta.url).href,
   'warehouse-storage-rack':new URL('./assets/scene-warehouse-storage-rack-v1.png',import.meta.url).href,
 };
-const atlases=new Map<Asset,HTMLImageElement>(),listeners=new Map<Asset,Set<()=>void>>();
+const atlases=new Map<Asset,HTMLImageElement>(),listeners=new Set<()=>void>();
 function source(asset:Asset='exteriors'){
   let atlas=atlases.get(asset);
   if(!atlas&&typeof Image!=='undefined'){
     atlas=new Image();atlases.set(asset,atlas);
-    atlas.onload=()=>{for(const ready of listeners.get(asset)??[])ready();listeners.delete(asset);};
-    atlas.onerror=()=>listeners.delete(asset);
-    atlas.src=urls[asset];
+    atlas.onload=()=>{for(const ready of listeners)ready();};
+    void queueImage(atlas,urls[asset]);
   }
   return atlas?.complete&&atlas.naturalWidth>0?atlas:undefined;
 }
 export function whenDetailedExteriorsReady(paint:()=>void){
-  for(const asset of Object.keys(urls) as Asset[]){
-    if(source(asset))continue;
-    const pending=listeners.get(asset)??new Set<()=>void>();pending.add(paint);listeners.set(asset,pending);
-  }
-  return()=>{for(const pending of listeners.values())pending.delete(paint);};
+  // Painting chooses the atlases to load. Keep listening for later choices too;
+  // one failed or completed atlas must not discard another atlas's repaint.
+  listeners.add(paint);
+  return()=>{listeners.delete(paint);};
 }
 /** Draw at the bottom of the exterior box, with no stretched or cropped house. */
 export function paintDetailedExterior(ctx:CanvasRenderingContext2D,kind:DetailedExteriorKind,width:number,height:number){

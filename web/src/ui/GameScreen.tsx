@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode} from 'react';
+import {useEffect, useRef, useState, type ReactNode} from 'react';
 import type {Catalog, EventResolution, GameCommand, GameState} from '../contracts';
 import type {CatBreed} from '../adapters/canvas/pixelCat';
 import type {SceneAnchor} from './DialogueBubble';
@@ -19,9 +19,13 @@ import {GreenhouseLoadout} from '../modules/battle/GreenhouseLoadout';
 import {TunnelLoadout} from '../modules/battle/TunnelLoadout';
 import {FinaleLoadout} from '../modules/battle/FinaleLoadout';
 import {explorationFooterText} from './explorationFooter';
+import {useTouchDevice} from './MobileViewport';
 
 const phases: Record<string, string> = {dialogue: '猫咪物语', explore: '小巷探索', event: '一次相遇', preparation: '守护准备', battle: '序章守护', settlement: '救援结果', home: '我们的花房'};
 interface Props {
+  onHomeAdvisor?:()=>void;
+  homeAdvisorDisabled?:boolean;
+  onHomeTutorialChange?:(active:boolean)=>void;
   homeEditing?:boolean;
   onHomeManual:()=>void;
   state: GameState; catalog: Catalog; busy: boolean; pending: boolean; disabled: boolean; paused: boolean; near: boolean;
@@ -37,7 +41,8 @@ interface Props {
   onCommand: (command: GameCommand) => void; onInteract: (interactionId?: string) => void;
   onPause: () => void; onMap: () => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onSettings: () => void; onWarehouse: () => void; onDecorate: () => void; onTitle: () => void; children: ReactNode;
 }
-export default function GameScreen({homeEditing,onHomeManual,state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, topExpanded, onToggleTopbar, speakerAnchor, onJournal, onSkip, qaOpen, onQA, onCommand, onInteract, onPause, onMap, onShop, onParcels, onRecharge, onSettings, onWarehouse, onDecorate, onTitle, children}: Props) {
+export default function GameScreen({onHomeAdvisor,homeAdvisorDisabled,onHomeTutorialChange,homeEditing,onHomeManual,state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, topExpanded, onToggleTopbar, speakerAnchor, onJournal, onSkip, qaOpen, onQA, onCommand, onInteract, onPause, onMap, onShop, onParcels, onRecharge, onSettings, onWarehouse, onDecorate, onTitle, children}: Props) {
+  const touchDevice = useTouchDevice();
   // 首次进入守护准备时的教学高亮；完成后记在本地，不再打扰。
   const [battleTutorialDone, setBattleTutorialDone] = useState(() => {try {return localStorage.getItem('stray-kitty.tutorial.battle') === 'done';} catch {return true;}});
   const [homeTutorialDone, setHomeTutorialDone] = useState(() => {try {return localStorage.getItem('stray-kitty.tutorial.home') === 'done';} catch {return true;}});
@@ -96,7 +101,7 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
     return () => window.clearTimeout(timer);
   }, [state.phase, state.mapId]);
   const nearHint = state.phase === 'explore' && near && nearTarget
-    ? `靠近「${nearTarget.label.replace(/\s*·\s*E$/, '')}」了，按 E 互动`
+    ? `靠近「${nearTarget.label.replace(/\s*·\s*E$/, '')}」了，${touchDevice ? '点击右下角「互动」' : '按 E 互动'}`
     : null;
   const warehouseOptionalHint=warehouseOptionalInvestigationHint(state,near&&nearTarget?nearTarget.id:undefined);
   const hintHidden = state.phase === 'explore' && introHintDone && !nearHint && !inspectHint;
@@ -108,111 +113,63 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
   // 教学期（进场 3 秒）结束后，探索阶段不再回落到“方向键 / WASD”类兜底教学文案：
   // 否则离开交互物时 <p key> 变化重挂、把兜底字重新点亮 6 秒，看起来像提示“变成”了移动教学（所有地图一致修掉）。
   const footerTextVisible = !!nearHint || (!!inspectHint && state.phase === 'explore') || (!!footerGuideText && (state.phase !== 'explore' || !introHintDone));
-  // 探索顶栏点击外部可收起；战斗顶栏常显，暂停和旅程工具始终可见。
-  const topbarOpen = state.phase === 'battle' || topExpanded;
+  const displayedGuide = touchDevice && state.phase === 'explore' ? '左手拖动摇杆移动 · 右手点击互动，攀爬或穿过障碍' : footerGuideText;
+  const displayedInspectHint = touchDevice ? inspectHint?.replace(/C\s*·\s*/g, '点击「攀爬」· ').replace(/Q\s*·\s*/g, '点击「钻缝」· ').replace('松开移动键，再轻按 Q', '松开摇杆，再点「钻缝」').replace(/按\s*E/g, '点击「互动」') : inspectHint;
+  // 悬停感知：鼠标进入顶部感应条 / 顶栏本体即滑出；离开后延时 2.4s 自动淡出收起
+  // （倒计时内再次移入则取消）。点击木签小钮仍是辅助入口（触屏无 hover 时靠它）。
+  const [hoverPeek, setHoverPeek] = useState(false);
+  const hideTimer = useRef<number | null>(null);
+  const topbarHoverIn = () => {
+    if (hideTimer.current !== null) {window.clearTimeout(hideTimer.current); hideTimer.current = null;}
+    setHoverPeek(true);
+  };
+  const topbarHoverOut = () => {
+    if (hideTimer.current !== null) window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => {
+      hideTimer.current = null;
+      setHoverPeek(false);
+      if (topExpanded) onToggleTopbar(false); // 无操作也收起手动展开态，交互统一为“悬停显示”
+    }, 2400);
+  };
+  useEffect(() => () => {if (hideTimer.current !== null) window.clearTimeout(hideTimer.current);}, []);
+  // 所有阶段（含战斗）顶栏统一为悬停唤出 + 离开延时淡出；点击外部可收起手动展开态。
+  const topbarOpen = topExpanded || hoverPeek;
   useEffect(() => {
     if (!topExpanded || state.phase === 'battle') return;
     const dismiss = (event: PointerEvent) => {
       const target = event.target as HTMLElement | null;
-      if (target?.closest('.topbar, .topbar-toggle, dialog, .game-modal')) return;
+      // .tutorial-highlight 与顶栏同源：教学卡（含「知道了」）虽渲染在 world-wrap，
+      // 点击它绝不能当成“点空白”折叠顶栏——否则教学组件在 click 前被卸载，
+      // stray-kitty.tutorial.* 永远写不进 done，顶栏还塌下去。
+      if (target?.closest('.topbar, .topbar-toggle, dialog, .game-modal, .tutorial-highlight')) return;
       onToggleTopbar(false);
     };
     window.addEventListener('pointerdown', dismiss);
     return () => {window.removeEventListener('pointerdown', dismiss);};
   }, [topExpanded, state.phase, onToggleTopbar]);
-  // 折叠小钮可自由拖拽：松手后吸附到最近的屏幕边（上/下/左/右），沿边位置随手指保留，记忆在本地。
-  type ToggleEdge = 'top' | 'bottom' | 'left' | 'right';
-  interface ToggleAnchor {edge: ToggleEdge; pos: number}
-  const clampRange = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-  const legacyAnchor = (id: string): ToggleAnchor => {
-    const vw = window.innerWidth;
-    const map: Record<string, ToggleAnchor> = {
-      'top-left': {edge: 'top', pos: 60}, 'top-center': {edge: 'top', pos: vw / 2}, 'top-right': {edge: 'top', pos: vw - 186},
-      'bottom-left': {edge: 'bottom', pos: 60}, 'bottom-center': {edge: 'bottom', pos: vw / 2}, 'bottom-right': {edge: 'bottom', pos: vw - 60},
-    };
-    return map[id] ?? {edge: 'top', pos: vw / 2};
-  };
-  const [toggleAnchor, setToggleAnchor] = useState<ToggleAnchor>(() => {
-    try {
-      const raw = localStorage.getItem('stray-kitty.hud.topbarToggle');
-      if (!raw) return {edge: 'top', pos: window.innerWidth / 2};
-      const parsed = JSON.parse(raw) as ToggleAnchor;
-      if (parsed && ['top', 'bottom', 'left', 'right'].includes(parsed.edge) && typeof parsed.pos === 'number') return parsed;
-      return legacyAnchor(raw);
-    } catch {return {edge: 'top', pos: window.innerWidth / 2};}
-  });
-  const [toggleDrag, setToggleDrag] = useState<{x: number; y: number} | null>(null);
-  const toggleGrab = useRef<{x: number; y: number; moved: boolean} | null>(null);
-  const snapToggle = (x: number, y: number) => {
-    const vw = window.innerWidth, vh = window.innerHeight;
-    // 四条边取最近者：上下边沿保留水平落点，左右边沿保留垂直落点（钳在安全范围内）。
-    const distances: Record<ToggleEdge, number> = {top: y, bottom: vh - y, left: x, right: vw - x};
-    const edge = (Object.entries(distances) as [ToggleEdge, number][]).sort((a, b) => a[1] - b[1])[0][0];
-    const next: ToggleAnchor = edge === 'top' || edge === 'bottom'
-      ? {edge, pos: clampRange(x, 64, vw - 64)}
-      : {edge, pos: clampRange(y, 44, vh - 44)};
-    setToggleAnchor(next);
-    try {localStorage.setItem('stray-kitty.hud.topbarToggle', JSON.stringify(next));} catch {/* 隐私模式下跳过记忆 */}
-  };
-  // 窗口尺寸变化后重算静止落点（否则吸在右/下边缘的小钮在窗口缩小后可能跑出屏幕）。
-  const [viewportTick, setViewportTick] = useState(0);
-  useEffect(() => {
-    const onResize = () => setViewportTick(tick => tick + 1);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  // 静止态的落点：按边换算成 left/top（钮宽约 64、高约 33，用中心坐标减半居中）。
-  const toggleRestStyle = useMemo((): CSSProperties => {
-    const vw = window.innerWidth, vh = window.innerHeight, {edge, pos} = toggleAnchor;
-    if (edge === 'top') return {left: clampRange(pos - 32, 10, vw - 74), top: 8};
-    if (edge === 'bottom') return {left: clampRange(pos - 32, 10, vw - 74), top: vh - 46};
-    if (edge === 'left') return {left: 12, top: clampRange(pos - 17, 8, vh - 52)};
-    return {left: vw - 76, top: clampRange(pos - 17, 8, vh - 52)};
-  }, [toggleAnchor, viewportTick]);
-  const onTogglePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    event.currentTarget.setPointerCapture(event.pointerId);
-    toggleGrab.current = {x: event.clientX, y: event.clientY, moved: false};
-  };
-  const onTogglePointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    const grab = toggleGrab.current;
-    if (!grab) return;
-    if (!grab.moved && Math.hypot(event.clientX - grab.x, event.clientY - grab.y) < 6) return;
-    grab.moved = true;
-    setToggleDrag({x: event.clientX, y: event.clientY});
-  };
-  const onTogglePointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    const grab = toggleGrab.current;
-    toggleGrab.current = null;
-    if (!grab) return;
-    if (!grab.moved) {onToggleTopbar(!topExpanded);playSound(topExpanded ? 'close' : 'open');return;}
-    snapToggle(event.clientX, event.clientY);
-    setToggleDrag(null);
-  };
+  // 顶栏唤出方式：鼠标探入顶部感应条或顶栏本体即滑出，离开 2.4s 后自动淡出（原可拖拽木签小钮已移除，统一为悬停交互）。
   const isHomeScene = state.chapterId !== 'prologue' && (state.phase === 'home' || (state.phase === 'dialogue' && node?.scene === 'home'));
+  const homeTutorialVisible=state.phase==='home'&&topbarOpen&&!homeTutorialDone;
+  useEffect(()=>{onHomeTutorialChange?.(homeTutorialVisible);return()=>onHomeTutorialChange?.(false);},[homeTutorialVisible,onHomeTutorialChange]);
   return <div className="app-shell" data-home-editing={homeEditing||undefined} data-phase={state.phase} data-home-scene={isHomeScene || undefined}>
-    {state.phase !== 'battle' && <button type="button"
-      className={`topbar-toggle${topExpanded ? ' expanded' : ''}${toggleDrag ? ' dragging' : ''}`}
-      style={toggleDrag ? {left: toggleDrag.x - 32, top: toggleDrag.y - 17} : toggleRestStyle}
-      aria-expanded={topExpanded} aria-label={topExpanded ? '收起顶部信息栏' : '展开顶部信息栏（可拖拽）'}
-      onPointerDown={onTogglePointerDown} onPointerMove={onTogglePointerMove} onPointerUp={onTogglePointerUp} onPointerCancel={onTogglePointerUp}>
-      <span className="topbar-toggle-paw" aria-hidden="true">ฅ</span><span className="topbar-toggle-chev" aria-hidden="true">▾</span>
-    </button>}
-    <header className={`topbar${topbarOpen ? '' : ' topbar-collapsed'}`}><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
+    {!homeEditing && <div className="topbar-sensor" aria-hidden="true" onMouseEnter={topbarHoverIn} onMouseLeave={topbarHoverOut}/>}
+    <header className={`topbar${topbarOpen ? '' : ' topbar-collapsed'}`} onMouseEnter={topbarHoverIn} onMouseLeave={topbarHoverOut}><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
       <span className="chapter-pill">{finaleBattle ? '第五章 · 终局试玩' : tunnelBattle ? '第四章 · 地下通道试玩' : greenhouseBattle ? '第三章 · 废弃花房试玩' : marketBattle ? '第二章 · 集市防线战斗试玩' : tutorialBattle ? '序章 · 金枪鱼事件' : chapterBattle ? '第一章 · 陌生小巷' : chapter?.title}</span>
-      {state.phase!=='home'&&<div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>}
+      {state.phase!=='home'&&state.phase!=='explore'&&<div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>}
       <nav aria-label="旅程工具">
         {state.phase==='battle'&&<button className="battle-host-pause" onClick={onPause}>{paused?'继续旅程':'暂停'}</button>}
-        {state.phase==='home'?<button className="home-manual-button" aria-label="家园手册" aria-haspopup="dialog" disabled={disabled} onClick={onHomeManual}>⌂ <span>家园手册</span></button>:<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button>}
+        {state.phase==='home'?<button className="home-manual-button" aria-label="家园手册" data-tip="打开家园手册：花房总览 · 旅程记录 · 家具收藏" aria-haspopup="dialog" disabled={disabled} onClick={onHomeManual}>⌂ <span>家园手册</span></button>:<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button>}
+        {state.phase==='home'&&state.chapterId!=='prologue'&&onHomeAdvisor&&<button className="home-advisor-button" aria-label="问阿策" title="和阿策聊聊修缮、家具、伙伴和公开规则" aria-haspopup="dialog" disabled={disabled||homeAdvisorDisabled} onClick={onHomeAdvisor}><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M3 3h14v10H8l-5 4V3Z"/><path d="M6 7h8M6 10h5"/></svg><span>问阿策</span></button>}
         <button className="parcel-button" aria-label="猫爪邮局" aria-haspopup="dialog" onClick={onParcels}>✉ <span>猫爪邮局</span></button>
         <button className="shop-button" aria-label="猫国商店" aria-haspopup="dialog" onClick={onShop}>▣ <span>猫国商店</span></button>
         <button className="map-button" aria-label="章节地图" aria-haspopup="dialog" onClick={onMap}>▦ <span>章节地图</span></button>
-        {state.phase==='home'&&<><button className="warehouse-button" aria-label="家园仓库" aria-haspopup="dialog" disabled={disabled} onClick={onWarehouse}>▤ <span>家园仓库</span></button><button className="home-decorate-button" aria-label="布置家具" disabled={disabled} onClick={onDecorate}>▧ <span>布置</span></button></>}
+        {state.phase==='home'&&<><button className="warehouse-button" aria-label="家园仓库" data-tip="打开家园仓库：出战携带清单" aria-haspopup="dialog" disabled={disabled} onClick={onWarehouse}>▤ <span>家园仓库</span></button><button className="home-decorate-button" aria-label="布置家具" data-tip="进入家具布置模式：移动 / 收回 / 重新摆放家具" disabled={disabled} onClick={onDecorate}>▧ <span>布置</span></button></>}
         {state.phase !== 'battle' && <button className="settings-button" aria-label="游戏设置" onClick={onSettings}>⚙ <span>设置</span></button>}{isDevelopment&&<button className="dev-button" aria-label="验收工具" aria-haspopup="dialog" aria-expanded={qaOpen} onClick={onQA}>🛠️ <span>验收</span></button>}
       </nav></header>
     <main><h1 className="visually-hidden">一只猫的旅程，一群猫的家。</h1>
       <div className="game-layout"><section className="world-panel"><div className="world-toolbar"><div><span className="live-dot"/><strong>{finaleBattle && state.phase === 'battle' ? '终局试玩' : tunnelBattle && state.phase === 'battle' ? '第四章试玩' : greenhouseBattle && state.phase === 'battle' ? '第三章试玩' : marketBattle && state.phase === 'battle' ? '第二章试玩' : chapterBattle && state.phase === 'battle' ? '第一章守护' : phases[state.phase]}</strong><span className="area-label">{finaleBattle ? '总仓库决战' : tunnelBattle ? '暗道守护' : greenhouseBattle ? '花房守护' : marketBattle ? '集市守护' : chapterBattle ? '深巷守护' : isHomeScene ? '拱顶花房' : map?.name}</span></div>{state.phase !== 'battle' && <button className="quiet" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}</div>
         <div className="world-wrap">{children}
-          {state.qaCheckpointId && <aside className="qa-active-badge" role="status"><span>正在使用验收进度</span><button onClick={onQA}>返回原进度 / 切换节点</button></aside>}
+          {state.qaCheckpointId && state.phase !== 'battle' && <aside className="qa-active-badge" role="status"><span>正在使用验收进度</span><button onClick={onQA}>返回原进度 / 切换节点</button></aside>}
           {alleyObjective && <div className="alley-objective" key={alleyObjective} role="status"><span>雨巷线索</span><strong>{alleyObjective}</strong></div>}
           {isHomeScene && <aside className="home-life-status"><span>{state.phase === 'dialogue' ? '故事进行中' : '花房日常'}</span><strong>{state.phase === 'dialogue' ? '伙伴们正跟随故事行动' : '拖动猫咪到家具或伙伴身边，一起玩一会儿'}</strong></aside>}
 
@@ -226,15 +183,15 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
           {needsCrateRecovery && <section className="event-card preparation-card"><h2>先找到纸箱里的伙伴</h2><p>回到小巷继续寻找，发现伙伴后再准备守护。</p><button disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'alley'})}>返回小巷寻找纸箱 →</button></section>}
           {state.phase === 'preparation' && !needsCrateRecovery && !chapterBattle && !standaloneBattle && <section className="event-card preparation-card"><span className="eyebrow">{state.mapId === 'market' ? 'MIDNIGHT MARKET INTEL' : 'RESCUE MISSION 01'}</span><h2>{state.mapId === 'market' ? '集市情报与收获' : '为伙伴点亮一条路'}</h2>{resolution ? <EventResult resolution={resolution}/> : state.lastResult.roll ? <div className="roll-result"><Dice value={state.lastResult.roll}/><span>骰子 · {state.lastResult.roll} 点</span></div> : <PixelCat breed="tuanzi" size={78}/>}<p>{!resolution || state.lastResult.outcome === 'lost' ? state.lastResult.message : state.mapId === 'market' ? '从鸟雀们那里得到了重要的线索与物资。' : '点点会跟上我们。准备好，就一起守住撤离路线。'}</p>{state.mapId === 'market' ? <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}><button disabled={disabled} onClick={() => onCommand({type: 'GO_EXPLORE', mapId: 'market'})}>带着收获继续探索集市 →</button><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回花房基地</button></div> : <><p className="muted">第一章守护 · 四位伙伴与八波黑影<br/>利用站位、蓄能与技能击败首领，最多允许 2 次突破。</p><button className="tutorial-target-battle" disabled={disabled} onClick={() => onCommand({type: 'START_BATTLE', stageId: 'alley_rescue'})}>开始守护 →</button></>}</section>}
           {state.phase === 'preparation' && !battleTutorialDone && <TutorialHighlight selector=".tutorial-target-battle" kicker="守护教学" text="每盏灯消耗 2 格能量，每 4 秒回复 1 格。点击「开始守护」，为点点点亮第一条撤离路线。" storageKey="stray-kitty.tutorial.battle" onDone={() => setBattleTutorialDone(true)}/>}
-          {state.phase === 'home' && topbarOpen && !homeTutorialDone && <TutorialHighlight selector=".home-decorate-button" kicker="整理家园" text="顶栏可以分别打开手册、邮局、商店与章节地图。点击「布置」，在当前场景的底部背包里整理家具。" storageKey="stray-kitty.tutorial.home" onDone={() => setHomeTutorialDone(true)}/>}
+          {homeTutorialVisible && <TutorialHighlight selector=".home-decorate-button" kicker="整理家园" text="顶栏可以分别打开手册、邮局、商店与章节地图。点击「布置」，在当前场景的底部背包里整理家具。" storageKey="stray-kitty.tutorial.home" onDone={() => setHomeTutorialDone(true)}/>}
           {state.phase === 'settlement' && state.activeBattle?.stageId === 'l00_tutorial' && <section className="event-card rescue-card"><span className="eyebrow">L00 · FIRST LIGHT</span><div className="rescue-cats"><PixelCat size={90} mood="brave"/></div><h2>{state.lastResult.outcome === 'won' ? '第一道防线守住了。' : '再调整一次站位与技能时机。'}</h2><p>{state.lastResult.message}</p><button disabled={disabled} onClick={() => onCommand(state.lastResult.outcome === 'won' ? {type: 'CONTINUE'} : {type: 'START_BATTLE', stageId: 'l00_tutorial'})}>{state.lastResult.outcome === 'won' ? '进入雨夜小巷 →' : '重新开始教学'}</button></section>}
           {state.phase === 'settlement' && !standaloneBattle && state.activeBattle?.stageId !== 'l00_tutorial' && <section className="event-card rescue-card"><span className="eyebrow">{state.lastResult.outcome === 'won' ? 'A SAFE WAY HOME' : 'TRY A LITTLE DIFFERENTLY'}</span><div className="rescue-cats"><PixelCat size={90} mood="brave"/>{state.cats.includes('diandian') && <PixelCat breed="diandian" size={80}/>}<PixelCat breed="tuanzi" size={86}/></div><h2>{state.lastResult.outcome === 'won' ? activeStage === 'alley_boss' ? '深巷里的黑影散去了' : '回家的路，也是救援的开始。' : '再一起想想办法。'}</h2><p>{state.lastResult.message}</p>{state.lastResult.firstClear && state.lastResult.stageId === 'alley_rescue' && <p className="reward-note">点点加入 · 纸箱猫窝<br/>✦ 猫爪邮票 ×2 · ◆ 材料 ×3</p>}<button disabled={disabled} onClick={() => onCommand({type: 'CONTINUE'})}>{state.lastResult.outcome === 'won' ? '带伙伴回家 →' : '调整防线，再试一次'}</button></section>}
           {state.phase === 'settlement' && standaloneBattle && <section className="event-card rescue-card"><span className="eyebrow">{finaleBattle ? 'L05 · LIGHT THE WAY HOME' : tunnelBattle ? 'L04 · UNDERGROUND TUNNEL' : greenhouseBattle ? 'L03 · ABANDONED GREENHOUSE' : 'L02 · MIDNIGHT MARKET'}</span><h2>{state.lastResult.outcome === 'won' ? finaleBattle ? '所有的光，终于照亮归途' : tunnelBattle ? '暗道的归路守住了' : greenhouseBattle ? '花房的归路守住了' : '集市的灯火守住了' : finaleBattle ? '伙伴们还在，重新安排终局防线' : tunnelBattle ? '再调整一次暗道防线' : greenhouseBattle ? '再调整一次花房防线' : '再调整一次集市防线'}</h2><p>{state.lastResult.message}</p><button data-testid={finaleBattle ? 'finale-continue' : tunnelBattle ? 'tunnel-continue' : greenhouseBattle ? 'greenhouse-continue' : 'market-continue'} disabled={disabled} onClick={() => onCommand({type: 'CONTINUE'})}>{state.lastResult.outcome === 'won' ? state.mapId==='warehouse'?'返回仓库 →':'返回家园 →' : '调整防线，再试一次'}</button></section>}
           {showExploreResult && resolution && <section className="event-card explore-result-card"><span className="eyebrow">一次相遇的结果</span><EventResult resolution={resolution}/><button disabled={disabled} onClick={() => {setDismissedResult(resolutionKey);arrivedFromEvent.current = false;}}>继续赶路 →</button></section>}
           {paused && <div className="pause-label"><span>旅程已暂停</span><button onClick={onPause}>继续旅程</button></div>}
         </div>
-        {footerVisible && <div className={`world-footer${hintHidden ? ' hint-idle' : ''}`}>{footerTextVisible && <p key={nearHint ?? inspectHint ?? footerGuideText ?? 'hint'} className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{nearHint ? <><span className="hint-paw">🐾</span>{nearHint}{warehouseOptionalHint&&<small className="optional-investigation-hint">{warehouseOptionalHint}</small>}</> : inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{inspectHint}</> : footerGuideText}</p>}
-          {state.phase === 'explore' && <>{near && nearTarget && <button disabled={disabled} onClick={() => onInteract(nearTarget.id)}>{nearTarget.label}</button>}{state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued') && state.mapId !== 'market' && <button disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>回到花房</button>}</>}
+        {footerVisible && <div className={`world-footer${hintHidden ? ' hint-idle' : ''}`}>{footerTextVisible && <p key={nearHint ?? inspectHint ?? footerGuideText ?? 'hint'} className={inspectHint && state.phase === 'explore' ? 'inspect-hint' : ''}>{nearHint ? <><span className="hint-paw">🐾</span>{nearHint}{warehouseOptionalHint&&<small className="optional-investigation-hint">{warehouseOptionalHint}</small>}</> : inspectHint && state.phase === 'explore' ? <><span className="hint-paw">🐾</span>{displayedInspectHint}</> : displayedGuide}</p>}
+          {state.phase === 'explore' && <>{near && nearTarget && <button disabled={disabled} onClick={() => onInteract(nearTarget.id)}>{nearTarget.label}</button>}{state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued') && state.mapId !== 'market' && <button className="home-return-button" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>回到花房</button>}</>}
         </div>}
       </section></div>
     </main>

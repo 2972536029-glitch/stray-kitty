@@ -3,6 +3,7 @@ import stageAtlas from './stage-atlas.json' with { type: 'json' };
 import parcelAtlas from '../lottery/atlas.json' with { type: 'json' };
 import {PARCEL_IDS} from '../lottery/furnitureArt';
 import {chapterBackgroundReady} from '../map/artwork';
+import {queueImage} from '../../core/image-loading';
 
 export const HOME_ART_ID = 'arched-greenhouse-staged-v3';
 const legacySprites = ['window.broken','window.patched','window.restored','window.festive','roof.broken','roof.patched','roof.restored','roof.festive','nest','blanket','bowls','chest','tower','planter','workbench','hammock','lantern','string','cushion','floor'] as const;
@@ -16,13 +17,14 @@ export const HOME_STAGE_SPRITES = {
 const parcelSprites=PARCEL_IDS.map(id=>`parcel.${id}` as const);
 export const HOME_SPRITES=[...legacySprites,...HOME_STAGE_SPRITES.shelter,...HOME_STAGE_SPRITES.improvised,...HOME_STAGE_SPRITES.timber,...HOME_STAGE_SPRITES.celebration,...HOME_STAGE_SPRITES.botany,...parcelSprites] as const;
 export type HomeSprite = typeof HOME_SPRITES[number];
-export const HOME_ATLASES={atlas:'/assets/home/components.png',shelter:'/assets/home/furniture-shelter-v3.png',improvised:'/assets/home/furniture-improvised-v3.png',timber:'/assets/home/furniture-timber-v3.png',celebration:'/assets/home/furniture-celebration-v3.png',botany:'/assets/home/furniture-botany-v2.png',parcelMoss:'/assets/home/furniture-parcels-moss-v2.png',parcelMoon:'/assets/home/furniture-parcels-moon-v2.png'} as const;
+export const HOME_ATLASES={atlas:'/assets/home/components.png',shelter:'/assets/home/furniture-shelter-v3.png',improvised:'/assets/home/furniture-improvised-v3.png',timber:'/assets/home/furniture-timber-v3.png',celebration:'/assets/home/furniture-celebration-v3.png',botany:'/assets/home/furniture-botany-v2.png',botanyFront:'/assets/home/planter-tropical-front-v3.png',parcelMoss:'/assets/home/furniture-parcels-moss-v2.png',parcelMoon:'/assets/home/furniture-parcels-moon-v2.png'} as const;
 export type HomeSheet=keyof typeof HOME_ATLASES;
 export interface HomeFrame {x:number;y:number;width:number;height:number;sheet:HomeSheet}
-const staged={...stageAtlas,parcelMoss:parcelAtlas.moss,parcelMoon:parcelAtlas.moon} as unknown as Record<Exclude<HomeSheet,'atlas'>,{width:number;height:number;frames:Record<string,Omit<HomeFrame,'sheet'>>}>;
+const staged={...stageAtlas,parcelMoss:parcelAtlas.moss,parcelMoon:parcelAtlas.moon} as unknown as Record<Exclude<HomeSheet,'atlas'|'botanyFront'>,{width:number;height:number;frames:Record<string,Omit<HomeFrame,'sheet'>>}>;
 export const HOME_FRAMES=Object.fromEntries([
   ...legacySprites.map((id,i)=>[id,{...atlas.frames[i],sheet:'atlas'}]),
-  ...Object.entries(staged).flatMap(([sheet,data])=>Object.entries(data.frames).map(([id,frame])=>[id,{...frame,sheet}]))
+  ...Object.entries(staged).flatMap(([sheet,data])=>Object.entries(data.frames).map(([id,frame])=>[id,{...frame,sheet}])),
+  ['botany.tropical',{x:0,y:0,width:1374,height:1145,sheet:'botanyFront'}]
 ]) as Record<HomeSprite,HomeFrame>;
 export type HomeArtwork={base:HTMLImageElement}&Record<HomeSheet,HTMLImageElement>;
 let loading: Promise<HomeArtwork> | undefined;
@@ -30,7 +32,7 @@ export function loadHomeArtwork(): Promise<HomeArtwork> {
   if (!loading) {
     const load = (url:string) => new Promise<HTMLImageElement>((resolve,reject) => {
       const image = new Image();image.onload = () => resolve(image);image.onerror = () => reject(new Error('花房素材加载失败，请刷新重试'));
-      image.src = url;
+      void queueImage(image,url);
     });
     loading = Promise.all([chapterBackgroundReady('greenhouse'),...Object.values(HOME_ATLASES).map(load)])
       .then(([base,...sheets]) => ({base,...Object.fromEntries(Object.keys(HOME_ATLASES).map((sheet,i)=>[sheet,sheets[i]]))} as HomeArtwork)).catch(error => {loading=undefined;throw error;});

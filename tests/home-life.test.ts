@@ -2,7 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {homeObjects,type HomeObject} from '../web/src/modules/home/objects';
-import {catOverlap,freeCatPoint,furnitureActivity,useFurniture,socialize,endSocial,stepHomeLife,SOCIAL_KINDS,type LifeCat} from '../web/src/modules/home/life';
+import {catOverlap,freeCatPoint,furnitureActivity,useFurniture,socialize,endSocial,settleCats,releaseFurniture,stepHomeLife,SOCIAL_KINDS,type LifeCat} from '../web/src/modules/home/life';
+import {homeWalkable} from '../web/src/modules/home/navigation';
+import {furnitureBlocksCat} from '../web/src/modules/home/spatial';
+import {homeResidentLayers} from '../web/src/modules/home/resident-layers';
 import type {CatBreed} from '../web/src/adapters/canvas/pixelCat';
 import {petCat,nearbyFurnitureCat,canChatter} from '../web/src/modules/home/reactions';
 import {currentCatMood,PET_LINES,FURNITURE_LINES,SOCIAL_LINES,furnitureLine,setCatMood,socialLines} from '../web/src/modules/home/dialogue';
@@ -86,4 +89,35 @@ test('furniture clicks can invite nearby free cats, never a distant preferred ca
   assert.equal(nearbyFurnitureCat([distant,near],800,474,'momo',0),near);
   near.manualUntil=1000;assert.equal(nearbyFurnitureCat([near],800,474,'tuanzi',0),undefined);
   near.manualUntil=0;near.slot='occupied';assert.equal(nearbyFurnitureCat([near],800,474,'tuanzi',0),undefined);
+});
+
+test('folded bedding and leaves reserve body clearance; old free cats are moved out and releases stay clear',()=>{
+  for(const id of ['soft_blanket','sprout_planter','nebula_planter']){
+    const object=homeObjects({flags:['greenhouse_fortified_full'],placements:{sun_spot:id}}).find(o=>o.furnitureId===id)!;
+    const resident=cat('tuanzi',object.x,object.y),nearby=[resident];
+    assert.equal(homeWalkable(resident,[object]),false,id);
+    settleCats(nearby,[object],0);assert.equal(homeWalkable(resident,[object]),true,id);
+    assert.ok(useFurniture(resident,object,nearby,[object],100));stepHomeLife(nearby,[object],1300,1200,3);
+    if(id!=='soft_blanket')assert.equal(furnitureBlocksCat(object,resident),false,'sniffing is beside the planter');
+    releaseFurniture(resident,[object],nearby,1500);assert.equal(homeWalkable(resident,[object]),true,'leaving cannot hide the cat under its host');
+  }
+});
+
+test('rugs paint below every cat and furniture users share their host depth rather than overlaying unrelated furnishings',()=>{
+  const rug=homeObjects({flags:['greenhouse_fortified_full'],placements:{sun_spot:'clover_rug'}}).find(o=>o.furnitureId==='clover_rug')!;
+  const host=objects.find(o=>o.id==='cat-tower')!,resident=cat('diandian',host.x,host.y-100);resident.slot=host.slot??host.layoutKey;
+  const behind=cat('tuanzi',600,host.y-30),layers=homeResidentLayers([rug,host],[behind,resident]);
+  assert.equal(layers[0].object,rug);
+  assert.ok(layers.findIndex(l=>l.object===host)<layers.findIndex(l=>l.cat===resident));
+  assert.ok(layers.findIndex(l=>l.cat===behind)<layers.findIndex(l=>l.object===host));
+});
+
+test('advisor uses the same petting, furniture reservation and social actions without entering the owned roster',()=>{
+  const advisor:LifeCat={...cat('tuanzi',720,520),breed:'advisor'},partner=cat('momo',820,520),cats=[advisor,partner];
+  assert.ok(petCat(advisor,0)?.line);assert.ok(PET_LINES.advisor.happy.length>=4);
+  assert.ok(socialize(advisor,partner,'nose',cats,[],3000));assert.equal(partner.social?.partner,'advisor');
+  endSocial(advisor,cats,4000);
+  const nest=homeObjects({flags:['greenhouse_fortified_full'],placements:{sun_spot:'soft_blanket'}}).find(o=>o.furnitureId==='soft_blanket')!;
+  partner.x=500;partner.y=500;assert.ok(useFurniture(advisor,nest,cats,[nest],5000));
+  stepHomeLife(cats,[nest],6200,1200,3);assert.equal(advisor.slot,nest.slot??nest.layoutKey);
 });

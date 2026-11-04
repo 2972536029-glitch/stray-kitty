@@ -5,12 +5,14 @@ import {currentHomeRenovation,repairBalance,repairRequirements,REPAIR_COST_LABEL
 import {playSound} from '../../ui/soundEffects';
 import './repairs.css';
 
-interface Props {scene:DemoScene;state:GameState;catalog:Catalog;busy:boolean;pending:boolean;error:string;onRepair:(c:GameCommand)=>Promise<boolean>;onRetry:()=>void}
-export default function HomeRepairOverlay({scene,state,catalog,busy,pending,error,onRepair,onRetry}:Props){
+interface Props {scene:DemoScene;state:GameState;catalog:Catalog;busy:boolean;pending:boolean;error:string;onRepair:(c:GameCommand)=>Promise<boolean>;onRetry:()=>void;onActivityChange?:(activity:{renovating:boolean;repairCardOpen:boolean})=>void}
+export default function HomeRepairOverlay({scene,state,catalog,busy,pending,error,onRepair,onRetry,onActivityChange}:Props){
   const project=currentHomeRenovation(state,catalog),parts=project?.parts??[];
   const [selected,setSelected]=useState(''),[message,setMessage]=useState(''),[renovating,setRenovating]=useState(scene.homeRenovating);
   const root=useRef<HTMLDivElement>(null),inFlight=useRef(false);
   const part=parts.find(p=>p.id===selected&&!state.homeRepairs?.includes(p.id));
+  useEffect(()=>{onActivityChange?.({renovating,repairCardOpen:!!part});},[renovating,part,onActivityChange]);
+  useEffect(()=>()=>onActivityChange?.({renovating:false,repairCardOpen:false}),[onActivityChange]);
   const locked=busy||pending||renovating,requirement=part&&repairRequirements(state,part);
   useEffect(()=>{
     let frame=0,wasRenovating=scene.homeRenovating;setRenovating(wasRenovating);

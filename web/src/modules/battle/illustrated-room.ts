@@ -1,4 +1,5 @@
 import {getIllustratedRoomBounds} from './scene-room-layout';
+import {queueImage} from '../../core/image-loading';
 
 const roomUrl=new URL('./assets/finale-room-scene-v1.png',import.meta.url).href;
 
@@ -9,13 +10,13 @@ function readyImage(){
     roomImage=new Image();
     roomImage.onload=()=>{for(const notify of listeners)notify();listeners.clear();};
     roomImage.onerror=()=>listeners.clear();
-    roomImage.src=roomUrl;
+    void queueImage(roomImage,roomUrl);
   }
   return roomImage?.complete&&roomImage.naturalWidth>0?roomImage:undefined;
 }
 export function hasIllustratedRoom(){return !!readyImage();}
 export function whenIllustratedRoomReady(paint:()=>void){
-  if(readyImage())return()=>{};
+  if(roomImage?.complete&&roomImage.naturalWidth>0)return()=>{};
   listeners.add(paint);return()=>{listeners.delete(paint);};
 }
 
