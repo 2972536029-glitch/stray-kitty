@@ -10,6 +10,7 @@ import CollectionPolaroid from './CollectionPolaroid';
 import PostcardCanvas,{type StrokePoint} from './PostcardCanvas';
 import PostalMark from './PostalMark';
 import ParcelDelivery,{ParcelSprite} from './ParcelDelivery';
+import {PostalJournalBackdrop} from './QueuedImage';
 import './parcels.css';
 import './capsules.css';
 import './postal-journal.css';
@@ -59,6 +60,7 @@ export default function PostalJournal({state,catalog,disabled,retryDisabled,erro
   const heading=stage==='preview'?'把期待，寄给小小的家':stage==='drawing'?'这一笔，随心就好':stage==='sending'?'你的心意，正在寄出':stage==='arriving'?'包裹正在送来':'拆一份，家的新模样';
   return <Modal title="猫爪邮局" onClose={()=>{if(!inFlight)onClose();}} className="postal-journal">
     <div className="postal-layout" data-stage={stage}>
+      <PostalJournalBackdrop/>
       <header className="postal-header"><div className="postal-brand"><PostalMark/><span>猫爪邮局<small>PAW POST · LITTLE DELIVERIES</small></span></div><div className="postal-wallet"><span>邮票 <b>{state.currencies.stamp??0}</b></span><button disabled={active||disabled} onClick={onRecharge}>罐头 <b>{state.currencies.tuna??0}</b> ＋</button></div><nav aria-label="邮局资料"><button disabled={active||disabled} onClick={()=>setSheet('collection')}>家具图鉴 <small>{owned}/{pool.entries.length}</small></button><button disabled={active||disabled} onClick={()=>setSheet('history')}>收据</button><button disabled={active||disabled} onClick={()=>setSheet('rules')}>规则</button></nav></header>
       <div className="postal-body"><aside className="postal-aside"><span className="postal-kicker">A LITTLE LETTER TO HOME</span><h2>{heading}</h2><span className="postal-underline" aria-hidden="true"/><div className="postal-pools" role="tablist" aria-label="家具卡池" aria-orientation="vertical">{catalog.pools.map(p=><button key={p.id} role="tab" id={`postal-tab-${p.id}`} aria-selected={p.id===pool.id} aria-controls="postal-stage" disabled={active||disabled} onClick={()=>changePool(p.id)}><span>{p.currency==='stamp'?'日常来信':'特别来信'}</span><b>{p.theme}</b><small>{p.cost} {p.currency==='tuna'?'罐头':'邮票'} / 份</small></button>)}</div><CollectionPolaroid key={pool.id} pool={pool} catalog={catalog} owned={state.furniture}/></aside>
       <main id="postal-stage" className={`postal-stage stage-${stage}`} role="tabpanel" aria-labelledby={`postal-tab-${pool.id}`}>

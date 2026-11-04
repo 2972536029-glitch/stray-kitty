@@ -2,6 +2,7 @@
  * At placement time the renderer preserves the silhouette and fits inside the
  * authored exterior box, so the new art cannot enlarge the collision footprint. */
 import {createSceneryRaster,sceneryRaster,SCENERY_CELL_SIZE} from './scene-raster';
+import {queueImage} from '../../core/image-loading';
 export type DetailedExteriorKind='narrow-home'|'wide-home'|'planted-bed'|'glass-frame';
 const crops:Record<DetailedExteriorKind,readonly [number,number,number,number]>={
   'narrow-home':[210,30,378,533],
@@ -33,7 +34,7 @@ function source(asset:Asset='exteriors'){
   if(!atlas&&typeof Image!=='undefined'){
     atlas=new Image();atlases.set(asset,atlas);
     atlas.onload=()=>{for(const ready of listeners)ready();};
-    atlas.src=urls[asset];
+    void queueImage(atlas,urls[asset]);
   }
   return atlas?.complete&&atlas.naturalWidth>0?atlas:undefined;
 }

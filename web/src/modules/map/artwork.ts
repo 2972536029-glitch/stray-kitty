@@ -1,4 +1,5 @@
 import {marketArt} from '../nightMarket/map';
+import {queueImage} from '../../core/image-loading';
 
 const alleyUrl = new URL('./assets/rainy-alley-background-clean.lossless.webp', import.meta.url).href;
 const marketL0Url = new URL('./assets/night_market_L0_streets_1672x941.lossless.webp', import.meta.url).href;
@@ -34,7 +35,10 @@ let classicActiveMapId = '';
 function load(mapId: string, floor: string, priority: 'high' | 'low' = floor === 'L0' ? 'high' : 'low'): Artwork {
   const [url, fallback] = artwork[mapId][floor];
   const existing = cache.get(url);
-  if (existing) return existing;
+  if (existing) {
+    if (priority === 'high') existing.image.fetchPriority = 'high';
+    return existing;
+  }
   const image = new Image();
   image.decoding = 'async';
   image.fetchPriority = priority;
@@ -42,12 +46,12 @@ function load(mapId: string, floor: string, priority: 'high' | 'low' = floor ===
   result.ready = new Promise<HTMLImageElement>((resolve, reject) => {
     let usingFallback = false;
     const failed = () => {
-      if (!usingFallback) {usingFallback = true;image.src = fallback;}
+      if (!usingFallback) {usingFallback = true;void queueImage(image,fallback);}
       else {result.state = 'error';reject(new Error(`Unable to load ${mapId} ${floor} background`));}
     };
     image.onload = () => {void image.decode().then(() => {result.state = 'ready';resolve(image);}, failed);};
     image.onerror = failed;
-    image.src = url;
+    void queueImage(image,url);
   });
   // Renderers can use the image while it loads; a missing fallback must not
   // produce an unhandled rejection in that path.
@@ -63,7 +67,7 @@ export function chapterBackground(mapId: string, floor = 'L0'): HTMLImageElement
 }
 
 export function chapterBackgroundState(mapId: string, floor = 'L0'): ChapterBackgroundState {
-  return load(mapId, floor).state;
+  return load(mapId, floor, 'high').state;
 }
 
 export function retryChapterBackground(mapId: string, floor = 'L0') {
@@ -88,7 +92,7 @@ export function preloadClassicChapterArtwork(activeMapId: string) {
 }
 
 export function chapterBackgroundReady(mapId: string, floor = 'L0'): Promise<HTMLImageElement> {
-  return load(mapId, floor).ready;
+  return load(mapId, floor, 'high').ready;
 }
 
 export function preloadChapterArtwork(mapId: string) {
@@ -97,6 +101,6 @@ export function preloadChapterArtwork(mapId: string) {
   // Give the entry floor the connection first. Alternate floors warm once it
   // is decoded, or immediately if traversal needs them before that point.
   void chapterBackgroundReady(mapId).then(() => {
-    for (const floor of Object.keys(artwork[mapId])) if (floor !== 'L0') load(mapId, floor);
+    for (const floor of Object.keys(artwork[mapId])) if (floor !== 'L0') load(mapId, floor, 'low');
   }, () => {warming.delete(mapId);});
 }

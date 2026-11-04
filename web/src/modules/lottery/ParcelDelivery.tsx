@@ -3,8 +3,9 @@ import type {Catalog} from '../../contracts';
 import type {ParcelDraw} from './types';
 import {FurnitureArt} from './ParcelArt';
 import {catNames} from './CapsuleCollection';
+import QueuedImage from './QueuedImage';
 
-export function ParcelSprite({open=false,className=''}:{open?:boolean;className?:string}){return <span className={`postal-parcel-sprite ${open?'is-open':''} ${className}`} aria-hidden="true"/>;}
+export function ParcelSprite({open=false,className=''}:{open?:boolean;className?:string}){return <span className={`postal-parcel-sprite ${open?'is-open':''} ${className}`} aria-hidden="true">{['closed','open'].map(frame=><span key={frame} className={`postal-parcel-frame ${frame}`}><QueuedImage url="/assets/lottery/postal-parcels.png" alt="" hideUntilReady/></span>)}</span>;}
 interface Props{draws:ParcelDraw[];opened:string[];opening:string|null;focused:string|null;catalog:Catalog;disabled:boolean;onOpen:(id:string)=>void;onDismiss:()=>void;onPlace:(id:string)=>void}
 export default function ParcelDelivery({draws,opened,opening,focused,catalog,disabled,onOpen,onDismiss,onPlace}:Props){
   const selected=draws.find(d=>d.id===focused&&opened.includes(d.id)),item=selected&&catalog.furniture.find(f=>f.id===selected.furnitureId);

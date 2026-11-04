@@ -13,11 +13,15 @@ function inside(points:readonly Point[],x:number,y:number){
   return result;
 }
 
-test('loaded market artwork keeps both L notches, every route and all seven entrances clear',()=>{
+test('loaded market artwork keeps both L notches, every route and all seven entrances clear',async()=>{
   const originals=['Image','document'].map(name=>Object.getOwnPropertyDescriptor(globalThis,name));
   let allocations=0;
-  const images:{complete:boolean;naturalWidth:number}[]=[];
-  class ImageStub {complete=false;naturalWidth=1536;src='';constructor(){images.push(this);}}
+  const images:ImageStub[]=[];
+  class ImageStub extends EventTarget {
+    complete=false;naturalWidth=0;src='';onload:(()=>void)|null=null;
+    constructor(){super();images.push(this);}
+    load(){assert.ok(this.src);this.complete=true;this.naturalWidth=1536;this.dispatchEvent(new Event('load'));this.onload?.();}
+  }
   const ink={scale(){},drawImage(){}};
   Object.defineProperty(globalThis,'Image',{configurable:true,value:ImageStub});
   Object.defineProperty(globalThis,'document',{configurable:true,value:{createElement(){allocations++;return {width:0,height:0,getContext:()=>ink};}}});
@@ -33,7 +37,8 @@ test('loaded market artwork keeps both L notches, every route and all seven entr
   try{
     assert.equal(paintDetailedMarketBanks(ctx as unknown as CanvasRenderingContext2D),false,'unloaded art retains the existing fallback');
     assert.equal(allocations,0);
-    images[0].complete=true;
+    await Promise.resolve();
+    images[0].load();
     assert.equal(paintDetailedMarketBanks(ctx as unknown as CanvasRenderingContext2D),true);
     assert.equal(drawn.length,4);
     const obstacles=new Set(MAP.obstacles.map(cell=>`${cell.x},${cell.y}`));

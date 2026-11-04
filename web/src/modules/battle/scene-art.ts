@@ -1,6 +1,7 @@
 import {paintDetailedSceneProp} from './scene-props';
 import {hasIllustratedRoom,whenIllustratedRoomReady} from './illustrated-room';
 import {paintTunnelShallowWater} from './scene-tunnel-water';
+import {queueImage} from '../../core/image-loading';
 
 /** Battle-owned, deterministic pixel scenery. Geometry and simulation remain in chapter configs. */
 export type BattleSceneId = 'prologue' | 'alley' | 'market' | 'greenhouse' | 'tunnel' | 'finale';
@@ -38,7 +39,7 @@ function sceneAtlas(){
     floorAtlas=new Image();
     floorAtlas.onload=()=>{groundTileCache.clear();for(const listener of atlasListeners)listener();atlasListeners.clear();};
     floorAtlas.onerror=()=>atlasListeners.clear();
-    floorAtlas.src=new URL('./assets/floor-material-atlas.png',import.meta.url).href;
+    void queueImage(floorAtlas,new URL('./assets/floor-material-atlas.png',import.meta.url).href);
   }
   return floorAtlas?.complete&&floorAtlas.naturalWidth>0?floorAtlas:undefined;
 }

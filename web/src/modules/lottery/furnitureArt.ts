@@ -1,6 +1,7 @@
 import {furnitureWidthCm, FURNITURE_PIXELS_PER_CM} from '../home/furnishings';
 export {FURNITURE_PIXELS_PER_CM} from '../home/furnishings';
 import atlas from './atlas.json' with {type:'json'};
+import {queueImage} from '../../core/image-loading';
 // Each item has an individual transparent PNG and a registered in-scene crop.
 export const PARCEL_ART = {
   moss_cottage: {widthCm:furnitureWidthCm('moss_cottage'),kind:'castle',cat:'diandian',pose:'castle_peek',slot:'corner'},
@@ -37,7 +38,7 @@ export function isParcelFurniture(id:string):id is ParcelFurnitureID {return Obj
 export type ParcelArtwork={moss:HTMLImageElement;moon:HTMLImageElement};
 let loading:Promise<ParcelArtwork>|undefined;
 export function loadParcelArtwork():Promise<ParcelArtwork>{
-  if(!loading){const load=(url:string)=>new Promise<HTMLImageElement>((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error('主题家具素材暂时没有送到，请重试。'));image.src=url;});loading=Promise.all([load('/assets/home/furniture-parcels-moss-v2.png'),load('/assets/home/furniture-parcels-moon-v2.png')]).then(([moss,moon])=>({moss,moon})).catch(e=>{loading=undefined;throw e;});}return loading;
+  if(!loading){const load=(url:string)=>new Promise<HTMLImageElement>((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error('主题家具素材暂时没有送到，请重试。'));void queueImage(image,url);});loading=Promise.all([load('/assets/home/furniture-parcels-moss-v2.png'),load('/assets/home/furniture-parcels-moon-v2.png')]).then(([moss,moon])=>({moss,moon})).catch(e=>{loading=undefined;throw e;});}return loading;
 }
 export function parcelFrame(id:string){
   const key=`parcel.${id}`;
