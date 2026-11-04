@@ -152,6 +152,7 @@ stray-kitty/
 │  │     │  ├─ parcels/  两套主题的二十四件独立透明家具组件
 │  │     │  └─ stages/  四阶段四十八件正向透明家具组件
 │  │     ├─ lottery/  通用邮寄拼贴手账底图与透明包裹开合图集
+│  │     │  └─ fonts/
 │  │     └─ night-market/
 │  └─ src/  运行代码
 │     ├─ adapters/  具体运行能力
