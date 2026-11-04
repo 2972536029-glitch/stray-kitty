@@ -27,6 +27,8 @@ import {rainyAlleyObject} from '../modules/rainyAlley/assets';
 import AcceptancePanel from '../ui/AcceptancePanel';
 import Modal from '../ui/Modal';
 import type {GameCommand} from '../contracts';
+import HomeAdvisor from '../modules/advisor/HomeAdvisor';
+import {homeAdvisorBlock, type HomeAdvisorActivity} from '../modules/advisor/home-presentation';
 import {preloadChapterArtwork, preloadClassicChapterArtwork} from '../modules/map/artwork';
 
 export default function App() {
@@ -48,7 +50,13 @@ export default function App() {
   const [checkingRandomZone, setCheckingRandomZone] = useState(false);
   const [togglingWarehouseLight, setTogglingWarehouseLight] = useState(false);
   const [inspection, setInspection] = useState<{label: string; text: string} | null>(null);
-  const [overlay, setOverlay] = useState<'home' | 'decorate' | 'map' | 'parcels' | 'shop' | 'journal' | 'recharge' | 'warehouse' | 'settings' | 'auth' | 'qa' | null>(null);
+  const [overlay, setOverlay] = useState<'home' | 'advisor' | 'decorate' | 'map' | 'parcels' | 'shop' | 'journal' | 'recharge' | 'warehouse' | 'settings' | 'auth' | 'qa' | null>(null);
+  const [homeRepairActivity,setHomeRepairActivity]=useState({renovating:false,repairCardOpen:false});
+  const [homeTutorialOpen,setHomeTutorialOpen]=useState(false);
+  const setHomeAdvisorOpen=useCallback<React.Dispatch<React.SetStateAction<boolean>>>(value=>setOverlay(current=>{
+    const next=typeof value==='function'?value(current==='advisor'):value;
+    return next?'advisor':current==='advisor'?null:current;
+  }),[]);
   const [homeTab,setHomeTab]=useState<HomeHubTab>('overview');
   const openHome=(tab:HomeHubTab='overview')=>{setHomeTab(tab);setOverlay('home');};
   const homeNavigate=async(command:GameCommand)=>{if(await send(command))setOverlay(null);};
@@ -177,6 +185,10 @@ export default function App() {
   // Lamp toggles keep walking responsive while the server confirms the light
   // and any gate change. Commands remain serialized; other interactions pause.
   const backgroundWarehouseLight=togglingWarehouseLight&&state?.mapId==='warehouse'&&state.phase==='explore';
+  const homeAdvisorActivity:HomeAdvisorActivity={entered,externalPaused:paused||portraitPhone,overlayOpen:!!overlay&&overlay!=='advisor',
+    busy,pending,renovating:!homeScene||homeRepairActivity.renovating||!!homeScene.homeRenovating,
+    repairCardOpen:homeRepairActivity.repairCardOpen,tutorialOpen:homeTutorialOpen,pageHidden:document.hidden};
+  const homeAdvisorBlocked=state?homeAdvisorBlock(state,homeAdvisorActivity):'outside-home';
   const frozen = paused || portraitPhone || ((busy || pending) && !backgroundZoneCheck && !backgroundWarehouseLight) || !!overlay || !!inspection || !entered;
   const randomEligible = !!state && !!catalog?.events.some(event => event.triggers.includes('random') && event.maps?.includes('alley') && (event.requiresFlags ?? []).every(flag => state.flags.includes(flag)) && (event.repeatable || !state.drawnEvents?.includes(`alley:${event.id}`)));
   return <>
@@ -186,7 +198,7 @@ export default function App() {
         {!entered && <StartScreen hasProgress={state.revision > 0} disabled={disabled} onStart={() => setEntered(true)} onShop={() => setOverlay('shop')} onReset={resetSession} onAuth={() => setOverlay('auth')}/>}
         {/* Keep an active battle mounted and paused behind the title, so returning does not restart its attempt. */}
         {(entered || state.phase === 'battle') && <div hidden={!entered}>
-          <GameScreen onHomeManual={()=>openHome()} homeEditing={overlay==='decorate'} state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay || !!inspection} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} topExpanded={topExpanded} onToggleTopbar={toggleTopbar} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} qaOpen={overlay === 'qa'} onQA={() => setOverlay('qa')} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onPause={() => setPaused(!paused)} onMap={() => state.phase==='home'?openHome('depart'):setOverlay('map')} onShop={() => state.phase==='home'?openHome('shop'):setOverlay('shop')} onParcels={() => state.phase==='home'?openHome('parcels'):setOverlay('parcels')} onRecharge={() => openRecharge()} onSettings={() => setOverlay('settings')} onWarehouse={()=>openHome('warehouse')} onDecorate={()=>openDecorate()} onTitle={() => {setEntered(false);setPaused(false);}} speakerAnchor={getSpeakerAnchor}>
+          <GameScreen onHomeAdvisor={()=>{if(!homeAdvisorBlocked&&!homeScene?.homeRenovating)setHomeAdvisorOpen(true);}} homeAdvisorDisabled={!!homeAdvisorBlocked} onHomeTutorialChange={setHomeTutorialOpen} onHomeManual={()=>openHome()} homeEditing={overlay==='decorate'} state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay || !!inspection} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} topExpanded={topExpanded} onToggleTopbar={toggleTopbar} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} qaOpen={overlay === 'qa'} onQA={() => setOverlay('qa')} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onPause={() => setPaused(!paused)} onMap={() => state.phase==='home'?openHome('depart'):setOverlay('map')} onShop={() => state.phase==='home'?openHome('shop'):setOverlay('shop')} onParcels={() => state.phase==='home'?openHome('parcels'):setOverlay('parcels')} onRecharge={() => openRecharge()} onSettings={() => setOverlay('settings')} onWarehouse={()=>openHome('warehouse')} onDecorate={()=>openDecorate()} onTitle={() => {setEntered(false);setPaused(false);}} speakerAnchor={getSpeakerAnchor}>
             {state.phase === 'battle'
               ? <BattleHost key={qaVisit} state={state} catalog={catalog} paused={frozen} onResult={result => send({type: 'COMPLETE_BATTLE', ...result})} settlement={{busy,pending,error,retry}}/>
               : <Viewport key={`${state.qaCheckpointId ?? 'journey'}:${qaVisit}`} state={state} storyNode={currentStory(catalog, state)} paused={frozen} onSceneReady={scene => {sceneRef.current = scene;setHomeScene(scene);scene?.setTopbarExpanded(topExpandedRef.current);}} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone} onMarketBattle={(floor,position)=>void send({type:'START_BATTLE',stageId:'market_boss',layer:floor,returnPosition:position})} onMarketExit={(floor,position)=>void send({type:'EXIT_MARKET',layer:floor,position})} onWorldPosition={point => {rainyPosition.current = point;if(state.mapId==='tunnel')tunnelPosition.current=point;}} onWarehousePosition={(floor,point)=>{warehousePosition.current={floor,point};}} onWarehouseClimbReady={fn=>{warehouseClimb.current=fn;}} randomEligible={randomEligible}/>}
@@ -195,7 +207,8 @@ export default function App() {
       </>}
     {/* 序章开场引导只在每个存档的第一次进入时播放,且仅对话相位挂载——教学战中刷新页面不能让动画盖住战斗 UI。 */}
     {entered && state?.chapterId === 'prologue' && state.phase === 'dialogue' && !introDone && <PrologueSequence onComplete={() => {setIntroDone(true);try {localStorage.setItem('stray-kitty.prologue.intro', 'done');} catch {/* 隐私模式下跳过记忆，不影响本次游玩 */}}}/>}
-    {entered && state?.phase==='home' && state.chapterId!=='prologue' && catalog && homeScene && !overlay && !paused && <HomeRepairOverlay scene={homeScene} state={state} catalog={catalog} busy={busy} pending={pending} error={error} onRepair={send} onRetry={()=>void retry()}/>}
+    {entered && state?.phase==='home' && state.chapterId!=='prologue' && catalog && homeScene && !overlay && !paused && <HomeRepairOverlay scene={homeScene} state={state} catalog={catalog} busy={busy} pending={pending} error={error} onRepair={send} onRetry={()=>void retry()} onActivityChange={setHomeRepairActivity}/>}
+    {entered && state?.phase==='home' && catalog && <HomeAdvisor state={state} catalog={catalog} open={overlay==='advisor'} blocked={!!homeAdvisorBlocked} resetKey={qaVisit} onOpenChange={setHomeAdvisorOpen}/>}
     {inspection && state?.phase === 'explore' && state.mapId === 'alley' && <Modal title={inspection.label} className="inspection-dialog" onClose={() => setInspection(null)}>
       <header><span className="eyebrow">小巷见闻</span><h2>{inspection.label}</h2></header>
       <p>{inspection.text}</p>

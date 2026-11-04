@@ -1,0 +1,43 @@
+[
+  {
+    "id": "shelter",
+    "title": "一起安顿花房",
+    "text": "点点已经成为伙伴，旧花房成了大家可以休息和安顿的地方。",
+    "requiredFlags": ["alley_rescued", "rescue_story_done"],
+    "requiredCats": ["diandian"],
+    "sourceNodes": ["rescue_2"]
+  },
+  {
+    "id": "market-return",
+    "title": "从集市回到花房",
+    "text": "伙伴们已经穿过午夜集市的北侧出口，回到花房。",
+    "requiredFlags": ["rescue_story_done", "chapter_2_started", "market_cleared", "market_exit_crossed"],
+    "requiredCats": [],
+    "sourceNodes": ["market_intro_1"],
+    "sourceRule": "server/internal/service/game.go: EXIT_MARKET 的正式出口结算"
+  },
+  {
+    "id": "momo-joined",
+    "title": "墨墨加入伙伴",
+    "text": "墨墨已经在花房加入伙伴，愿意和大家一起守护这里。",
+    "requiredFlags": ["rescue_story_done", "chapter_3_started", "momo_joined"],
+    "requiredCats": ["momo"],
+    "sourceNodes": ["greenhouse_intro_6", "greenhouse_intro_7"]
+  },
+  {
+    "id": "tunnel-rescue",
+    "title": "暗道救援归来",
+    "text": "第一批失踪的猫咪已经从地下暗道安全转移到花房。",
+    "requiredFlags": ["chapter_4_started", "tunnel_explored", "cats_rescued_batch1"],
+    "requiredCats": [],
+    "sourceNodes": ["rescue_intro_10"]
+  },
+  {
+    "id": "kingdom",
+    "title": "流浪猫王国落成",
+    "text": "伙伴们的流浪猫王国已经落成。喵喵与主人重逢，也和伙伴约好了再回来。",
+    "requiredFlags": ["finale_started", "finale_completed", "kingdom_founded"],
+    "requiredCats": [],
+    "sourceNodes": ["finale_intro_7", "finale_intro_8", "finale_intro_9"]
+  }
+]
