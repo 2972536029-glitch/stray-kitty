@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode} from 'react';
+import {useEffect, useRef, useState, type ReactNode} from 'react';
 import type {Catalog, EventResolution, GameCommand, GameState} from '../contracts';
 import type {CatBreed} from '../adapters/canvas/pixelCat';
 import type {SceneAnchor} from './DialogueBubble';
@@ -112,8 +112,25 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
   const footerTextVisible = !!nearHint || (!!inspectHint && state.phase === 'explore') || (!!footerGuideText && (state.phase !== 'explore' || !introHintDone));
   const displayedGuide = touchDevice && state.phase === 'explore' ? '左手拖动摇杆移动 · 右手点击互动，攀爬或穿过障碍' : footerGuideText;
   const displayedInspectHint = touchDevice ? inspectHint?.replace(/C\s*·\s*/g, '点击「攀爬」· ').replace(/Q\s*·\s*/g, '点击「钻缝」· ').replace('松开移动键，再轻按 Q', '松开摇杆，再点「钻缝」').replace(/按\s*E/g, '点击「互动」') : inspectHint;
-  // 探索顶栏点击外部可收起；战斗顶栏常显，暂停和旅程工具始终可见。
-  const topbarOpen = state.phase === 'battle' || topExpanded;
+  // 悬停感知：鼠标进入顶部感应条 / 顶栏本体即滑出；离开后延时 2.4s 自动淡出收起
+  // （倒计时内再次移入则取消）。点击木签小钮仍是辅助入口（触屏无 hover 时靠它）。
+  const [hoverPeek, setHoverPeek] = useState(false);
+  const hideTimer = useRef<number | null>(null);
+  const topbarHoverIn = () => {
+    if (hideTimer.current !== null) {window.clearTimeout(hideTimer.current); hideTimer.current = null;}
+    setHoverPeek(true);
+  };
+  const topbarHoverOut = () => {
+    if (hideTimer.current !== null) window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => {
+      hideTimer.current = null;
+      setHoverPeek(false);
+      if (topExpanded) onToggleTopbar(false); // 无操作也收起手动展开态，交互统一为“悬停显示”
+    }, 2400);
+  };
+  useEffect(() => () => {if (hideTimer.current !== null) window.clearTimeout(hideTimer.current);}, []);
+  // 所有阶段（含战斗）顶栏统一为悬停唤出 + 离开延时淡出；点击外部可收起手动展开态。
+  const topbarOpen = topExpanded || hoverPeek;
   useEffect(() => {
     if (!topExpanded || state.phase === 'battle') return;
     const dismiss = (event: PointerEvent) => {
@@ -127,86 +144,13 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
     window.addEventListener('pointerdown', dismiss);
     return () => {window.removeEventListener('pointerdown', dismiss);};
   }, [topExpanded, state.phase, onToggleTopbar]);
-  // 折叠小钮可自由拖拽：松手后吸附到最近的屏幕边（上/下/左/右），沿边位置随手指保留，记忆在本地。
-  type ToggleEdge = 'top' | 'bottom' | 'left' | 'right';
-  interface ToggleAnchor {edge: ToggleEdge; pos: number}
-  const clampRange = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-  const legacyAnchor = (id: string): ToggleAnchor => {
-    const vw = window.innerWidth;
-    const map: Record<string, ToggleAnchor> = {
-      'top-left': {edge: 'top', pos: 60}, 'top-center': {edge: 'top', pos: vw / 2}, 'top-right': {edge: 'top', pos: vw - 186},
-      'bottom-left': {edge: 'bottom', pos: 60}, 'bottom-center': {edge: 'bottom', pos: vw / 2}, 'bottom-right': {edge: 'bottom', pos: vw - 60},
-    };
-    return map[id] ?? {edge: 'top', pos: vw / 2};
-  };
-  const [toggleAnchor, setToggleAnchor] = useState<ToggleAnchor>(() => {
-    try {
-      const raw = localStorage.getItem('stray-kitty.hud.topbarToggle');
-      if (!raw) return {edge: 'top', pos: window.innerWidth / 2};
-      const parsed = JSON.parse(raw) as ToggleAnchor;
-      if (parsed && ['top', 'bottom', 'left', 'right'].includes(parsed.edge) && typeof parsed.pos === 'number') return parsed;
-      return legacyAnchor(raw);
-    } catch {return {edge: 'top', pos: window.innerWidth / 2};}
-  });
-  const [toggleDrag, setToggleDrag] = useState<{x: number; y: number} | null>(null);
-  const toggleGrab = useRef<{x: number; y: number; moved: boolean} | null>(null);
-  const snapToggle = (x: number, y: number) => {
-    const vw = window.innerWidth, vh = window.innerHeight;
-    // 四条边取最近者：上下边沿保留水平落点，左右边沿保留垂直落点（钳在安全范围内）。
-    const distances: Record<ToggleEdge, number> = {top: y, bottom: vh - y, left: x, right: vw - x};
-    const edge = (Object.entries(distances) as [ToggleEdge, number][]).sort((a, b) => a[1] - b[1])[0][0];
-    const next: ToggleAnchor = edge === 'top' || edge === 'bottom'
-      ? {edge, pos: clampRange(x, 64, vw - 64)}
-      : {edge, pos: clampRange(y, 44, vh - 44)};
-    setToggleAnchor(next);
-    try {localStorage.setItem('stray-kitty.hud.topbarToggle', JSON.stringify(next));} catch {/* 隐私模式下跳过记忆 */}
-  };
-  // 窗口尺寸变化后重算静止落点（否则吸在右/下边缘的小钮在窗口缩小后可能跑出屏幕）。
-  const [viewportTick, setViewportTick] = useState(0);
-  useEffect(() => {
-    const onResize = () => setViewportTick(tick => tick + 1);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  // 静止态的落点：按边换算成 left/top（钮宽约 64、高约 33，用中心坐标减半居中）。
-  const toggleRestStyle = useMemo((): CSSProperties => {
-    const vw = window.innerWidth, vh = window.innerHeight, {edge, pos} = toggleAnchor;
-    if (edge === 'top') return {left: clampRange(pos - 32, 10, vw - 74), top: 8};
-    if (edge === 'bottom') return {left: clampRange(pos - 32, 10, vw - 74), top: vh - 46};
-    if (edge === 'left') return {left: 12, top: clampRange(pos - 17, 8, vh - 52)};
-    return {left: vw - 76, top: clampRange(pos - 17, 8, vh - 52)};
-  }, [toggleAnchor, viewportTick]);
-  const onTogglePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    event.currentTarget.setPointerCapture(event.pointerId);
-    toggleGrab.current = {x: event.clientX, y: event.clientY, moved: false};
-  };
-  const onTogglePointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    const grab = toggleGrab.current;
-    if (!grab) return;
-    if (!grab.moved && Math.hypot(event.clientX - grab.x, event.clientY - grab.y) < 6) return;
-    grab.moved = true;
-    setToggleDrag({x: event.clientX, y: event.clientY});
-  };
-  const onTogglePointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    const grab = toggleGrab.current;
-    toggleGrab.current = null;
-    if (!grab) return;
-    if (!grab.moved) {onToggleTopbar(!topExpanded);playSound(topExpanded ? 'close' : 'open');return;}
-    snapToggle(event.clientX, event.clientY);
-    setToggleDrag(null);
-  };
+  // 顶栏唤出方式：鼠标探入顶部感应条或顶栏本体即滑出，离开 2.4s 后自动淡出（原可拖拽木签小钮已移除，统一为悬停交互）。
   const isHomeScene = state.chapterId !== 'prologue' && (state.phase === 'home' || (state.phase === 'dialogue' && node?.scene === 'home'));
   return <div className="app-shell" data-home-editing={homeEditing||undefined} data-phase={state.phase} data-home-scene={isHomeScene || undefined}>
-    {state.phase !== 'battle' && <button type="button"
-      className={`topbar-toggle${topExpanded ? ' expanded' : ''}${toggleDrag ? ' dragging' : ''}`}
-      style={toggleDrag ? {left: toggleDrag.x - 32, top: toggleDrag.y - 17} : toggleRestStyle}
-      aria-expanded={topExpanded} aria-label={topExpanded ? '收起顶部信息栏' : '展开顶部信息栏（可拖拽）'}
-      onPointerDown={onTogglePointerDown} onPointerMove={onTogglePointerMove} onPointerUp={onTogglePointerUp} onPointerCancel={onTogglePointerUp}>
-      <span className="topbar-toggle-paw" aria-hidden="true">ฅ</span><span className="topbar-toggle-chev" aria-hidden="true">▾</span>
-    </button>}
-    <header className={`topbar${topbarOpen ? '' : ' topbar-collapsed'}`}><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
+    {!homeEditing && <div className="topbar-sensor" aria-hidden="true" onMouseEnter={topbarHoverIn} onMouseLeave={topbarHoverOut}/>}
+    <header className={`topbar${topbarOpen ? '' : ' topbar-collapsed'}`} onMouseEnter={topbarHoverIn} onMouseLeave={topbarHoverOut}><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
       <span className="chapter-pill">{finaleBattle ? '第五章 · 终局试玩' : tunnelBattle ? '第四章 · 地下通道试玩' : greenhouseBattle ? '第三章 · 废弃花房试玩' : marketBattle ? '第二章 · 集市防线战斗试玩' : tutorialBattle ? '序章 · 金枪鱼事件' : chapterBattle ? '第一章 · 陌生小巷' : chapter?.title}</span>
-      {state.phase!=='home'&&<div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>}
+      {state.phase!=='home'&&state.phase!=='explore'&&<div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>}
       <nav aria-label="旅程工具">
         {state.phase==='battle'&&<button className="battle-host-pause" onClick={onPause}>{paused?'继续旅程':'暂停'}</button>}
         {state.phase==='home'?<button className="home-manual-button" aria-label="家园手册" data-tip="打开家园手册：花房总览 · 旅程记录 · 家具收藏" aria-haspopup="dialog" disabled={disabled} onClick={onHomeManual}>⌂ <span>家园手册</span></button>:<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button>}
@@ -219,7 +163,7 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
     <main><h1 className="visually-hidden">一只猫的旅程，一群猫的家。</h1>
       <div className="game-layout"><section className="world-panel"><div className="world-toolbar"><div><span className="live-dot"/><strong>{finaleBattle && state.phase === 'battle' ? '终局试玩' : tunnelBattle && state.phase === 'battle' ? '第四章试玩' : greenhouseBattle && state.phase === 'battle' ? '第三章试玩' : marketBattle && state.phase === 'battle' ? '第二章试玩' : chapterBattle && state.phase === 'battle' ? '第一章守护' : phases[state.phase]}</strong><span className="area-label">{finaleBattle ? '总仓库决战' : tunnelBattle ? '暗道守护' : greenhouseBattle ? '花房守护' : marketBattle ? '集市守护' : chapterBattle ? '深巷守护' : isHomeScene ? '拱顶花房' : map?.name}</span></div>{state.phase !== 'battle' && <button className="quiet" onClick={onPause}>{paused ? '继续旅程' : '暂停'}</button>}</div>
         <div className="world-wrap">{children}
-          {state.qaCheckpointId && <aside className="qa-active-badge" role="status"><span>正在使用验收进度</span><button onClick={onQA}>返回原进度 / 切换节点</button></aside>}
+          {state.qaCheckpointId && state.phase !== 'battle' && <aside className="qa-active-badge" role="status"><span>正在使用验收进度</span><button onClick={onQA}>返回原进度 / 切换节点</button></aside>}
           {alleyObjective && <div className="alley-objective" key={alleyObjective} role="status"><span>雨巷线索</span><strong>{alleyObjective}</strong></div>}
           {isHomeScene && <aside className="home-life-status"><span>{state.phase === 'dialogue' ? '故事进行中' : '花房日常'}</span><strong>{state.phase === 'dialogue' ? '伙伴们正跟随故事行动' : '拖动猫咪到家具或伙伴身边，一起玩一会儿'}</strong></aside>}
 
