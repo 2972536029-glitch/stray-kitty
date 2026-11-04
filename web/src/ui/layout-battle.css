@@ -1,6 +1,10 @@
 /* Only the battle phase uses a scrollable module surface; exploration keeps its full-screen canvas. */
 .app-shell[data-phase=battle]{display:flex;flex-direction:column;background:#f1e8d3}
-.app-shell[data-phase=battle] .topbar{position:relative;top:auto;left:auto;right:auto;flex-shrink:0;margin:10px 12px;padding:9px 12px;min-height:58px}
+/* 顶栏在战斗中同样悬停唤出：从文档流改为悬浮层（收起滑出屏外、不占布局，棋盘得以顶到屏幕上沿）；
+   实体配色仍由 theme-cozy 的 [data-phase=battle] 规则提供。 */
+.app-shell[data-phase=battle] .topbar{position:absolute;z-index:5;top:18px;left:20px;right:20px;flex-shrink:0;margin:0;padding:9px 12px;min-height:58px;transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s cubic-bezier(.4,0,.2,1)}
+.app-shell[data-phase=battle] .topbar.topbar-collapsed{transform:translateY(-112%);opacity:0;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.app-shell[data-phase=battle] .topbar{transition:none}.app-shell[data-phase=battle] .topbar.topbar-collapsed{transform:none}}
 .app-shell[data-phase=battle]>main{display:block;flex:1;min-height:0}
 .app-shell[data-phase=battle] .game-layout{display:block;height:100%}
 .app-shell[data-phase=battle] .world-panel{position:relative;inset:auto;height:100%;display:flex;flex-direction:column}
@@ -16,7 +20,6 @@
  .app-shell[data-phase=battle] .world-wrap{padding:8px;scrollbar-gutter:auto}
  .app-shell[data-phase=battle] .world-footer{margin:5px 8px 7px;padding:5px 8px}
 }
-/* Keep the battle header on its original solid palette; immersive.css owns its compact sizing. */
-.app-shell[data-phase=battle] .topbar{background:#ebe1ccf7;border:2px solid #382f2b;backdrop-filter:none;-webkit-backdrop-filter:none}
-.app-shell[data-phase=battle] .topbar :is(nav button,.chapter-pill,.wallet>span){border:2px solid #382f2b;backdrop-filter:none;-webkit-backdrop-filter:none}
-.app-shell[data-phase=battle] .topbar .wallet>span{background:#f1e8d3}
+/* 战斗顶栏不再使用实体米色面板：与其他界面统一为透明悬浮 + 文字描边（沉浸战斗内的紧凑尺寸由 immersive.css 提供）。 */
+.app-shell[data-phase=battle] .topbar{background:transparent;border-bottom:2px solid transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
+.app-shell[data-phase=battle] .topbar :is(nav button,.chapter-pill,.wallet>span){backdrop-filter:none;-webkit-backdrop-filter:none}
