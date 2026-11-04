@@ -366,6 +366,9 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			w.Header().Set("Cache-Control", "no-store")
+			// Nginx reads the upstream response priority before scheduling HTTP/2
+			// DATA, so small API replies can precede in-flight scene images.
+			w.Header().Set("Priority", "u=0")
 		}
 		// 预匹配一次拿路由模板(mux.Handler 只匹配不执行 handler)。
 		// 未匹配路径回退固定值:原始路径是用户可任意构造的高基数来源,
