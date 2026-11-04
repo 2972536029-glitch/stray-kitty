@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
+import MobileViewport, {usePortraitPhone} from '../ui/MobileViewport';
 import {useGame} from './useGame';
 import {Viewport} from '../examples/demo/Viewport';
 import type {DemoScene} from '../examples/demo/scene';
@@ -29,6 +30,7 @@ import type {GameCommand} from '../contracts';
 import {preloadChapterArtwork, preloadClassicChapterArtwork} from '../modules/map/artwork';
 
 export default function App() {
+  const portraitPhone = usePortraitPhone();
   const warehouseReview = import.meta.env.DEV && new URLSearchParams(window.location.search).has('warehouseQA');
   const game = useGame();
   const {state, catalog, send, reportMove, busy, pending, error, disabled, retry, skipDialogue, resetSession, sessionUnavailable, startNewJourney, refresh, port} = game;
@@ -175,7 +177,7 @@ export default function App() {
   // Lamp toggles keep walking responsive while the server confirms the light
   // and any gate change. Commands remain serialized; other interactions pause.
   const backgroundWarehouseLight=togglingWarehouseLight&&state?.mapId==='warehouse'&&state.phase==='explore';
-  const frozen = paused || ((busy || pending) && !backgroundZoneCheck && !backgroundWarehouseLight) || !!overlay || !!inspection || !entered;
+  const frozen = paused || portraitPhone || ((busy || pending) && !backgroundZoneCheck && !backgroundWarehouseLight) || !!overlay || !!inspection || !entered;
   const randomEligible = !!state && !!catalog?.events.some(event => event.triggers.includes('random') && event.maps?.includes('alley') && (event.requiresFlags ?? []).every(flag => state.flags.includes(flag)) && (event.repeatable || !state.drawnEvents?.includes(`alley:${event.id}`)));
   return <>
     {error && overlay !== 'shop' && overlay !== 'parcels' && overlay !== 'qa' && overlay !== 'decorate' && overlay !== 'home' && <div className="error-banner" role="alert">{error}<button disabled={busy} onClick={() => void retry()}>重试上次操作</button>{sessionUnavailable && state && <button disabled={busy} onClick={() => void startNewJourney()}>开始新旅程（保留旧会话记录）</button>}</div>}
@@ -216,5 +218,6 @@ export default function App() {
     {overlay === 'settings' && <SettingsPanel musicVolume={musicVolume} sfxVolume={sfxVolume} onMusicVolume={value => {setMusicVolume(value);localStorage.setItem('stray-kitty.audio.music', String(value));}} onSfxVolume={value => {setSfxVolume(value);localStorage.setItem('stray-kitty.audio.sfx', String(value));}} onClose={() => setOverlay(null)} onPause={entered&&state?.phase==='home'?()=>{setOverlay(null);setPaused(true);}:undefined}/>}
     {loadout && <div className="visually-hidden" aria-live="polite">已确认暖心罐罐 {loadout.inventoryItems.warmCan} 份，蹦蹦冻干 {loadout.inventoryItems.freezeDry} 份；尚未锁定或扣除库存。</div>}
     {state && overlay === 'auth' && <AuthDialog mode={state.revision > 0 ? 'register' : 'login'} hasProgress={state.revision > 0} api={port} onLoggedIn={async () => {await refresh();setEntered(false);}} onClose={() => setOverlay(null)}/>}
+    <MobileViewport portrait={portraitPhone}/>
   </>;
 }
