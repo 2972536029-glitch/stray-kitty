@@ -1,0 +1,39 @@
+.home-advisor-dialog.game-modal{width:min(720px,calc(100vw - 32px));height:min(720px,calc(100dvh - 40px));max-height:calc(100dvh - 40px);padding:0;overflow:hidden;background:#f5ecd8;color:#463d30;border:3px solid #5b4935;border-radius:8px;box-shadow:0 10px 0 #2e302a55,0 24px 80px #15231c66}
+.home-advisor-dialog[open]{display:flex;flex-direction:column}
+.home-advisor-dialog.game-modal .modal-close{position:absolute;float:none;right:14px;top:14px;width:38px;height:38px;min-height:38px;z-index:2;margin:0;padding:0;background:#eee1c4;color:#5b4935;border:1px solid #bba47b;box-shadow:2px 2px 0 #81644544}
+.home-advisor-header{display:flex;align-items:center;gap:14px;flex:none;padding:18px 62px 14px 24px;background:#e7dbbf;border-bottom:1px solid #c6b494}
+.home-advisor-portrait{width:74px;height:74px;flex:none;display:grid;place-items:center;border:1px solid #b9a17a;background:#f5ecd8;box-shadow:3px 3px 0 #a58c6744;border-radius:50%;overflow:hidden}
+.home-advisor-portrait canvas{width:84px;height:84px;image-rendering:pixelated}
+.home-advisor-header small{font-size:9px;letter-spacing:.18em;color:#8b7151}
+.home-advisor-header h2{margin:4px 0;font-size:24px;letter-spacing:.1em;color:#574533}
+.home-advisor-header p{margin:0;color:#827158;font-size:12px}
+.home-advisor-log{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:22px 26px;scrollbar-width:thin;scrollbar-color:#c4ad85 transparent}
+.home-advisor-welcome{margin-bottom:20px;padding:15px 18px;border-left:3px solid #8a9b76;background:#e7e8d755}
+.home-advisor-welcome b{font-size:15px;line-height:1.9;font-weight:500}
+.home-advisor-welcome p{margin:8px 0 0;font-size:12px;line-height:1.8;color:#83745e}
+.home-advisor-prompts{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.home-advisor-prompts button{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;padding:12px 14px;font-size:12px;line-height:1.5;border:1px solid #d5c4a6;background:#faf5e9;color:#67563f;box-shadow:2px 2px 0 #c2ab8544;border-radius:4px}
+.home-advisor-prompts button:hover{background:#eee6d1;border-color:#ac956b}
+.home-advisor-prompts button span{color:#9a855e}
+.home-advisor-stories{margin-top:20px;color:#7c6b51;font-size:12px}
+.home-advisor-stories summary{cursor:pointer;padding:10px 0;border-bottom:1px dashed #cbb995}
+.home-advisor-stories p{line-height:1.85;margin:12px 0}.home-advisor-stories b{display:block;color:#5f543f;font-weight:500}
+.home-advisor-exchange{display:flex;flex-direction:column;gap:12px;margin-top:22px}
+.home-advisor-question{align-self:flex-end;max-width:88%;margin:0;padding:11px 16px;background:#748368;color:#fff9e8;border-radius:10px 10px 2px 10px;font-size:14px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.home-advisor-exchange article{align-self:flex-start;max-width:94%;padding:14px 18px;background:#fffaf0;border:1px solid #d8c7a5;border-radius:2px 10px 10px 10px;box-shadow:2px 2px 0 #d6c6a755}
+.home-advisor-exchange article>small{font-size:10px;color:#8d795c}.home-advisor-exchange h3{font-size:14px;margin:8px 0;color:#65513a}
+.home-advisor-exchange article p{font-size:14px;line-height:1.9;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.home-advisor-local-note{display:block;margin-top:10px;color:#8d795c;font-size:11px}
+.home-advisor-pending{align-self:flex-start;margin:0;color:#827256;font-size:13px;padding:12px 6px}
+.home-advisor-pending span{display:inline-block;margin-right:8px;letter-spacing:3px;animation:home-advisor-breathe 1.4s ease-in-out infinite}
+.home-advisor-notice{font-size:11px;line-height:1.8;color:#887354;padding-top:12px}
+.home-advisor-form{display:flex;align-items:stretch;gap:10px;flex:none;padding:15px 20px 9px;background:#eae0cb;border-top:1px solid #c6b494}
+.home-advisor-form textarea{width:0;flex:1;min-width:0;resize:none;box-sizing:border-box;padding:10px 12px;border:1px solid #b9a584;border-radius:4px;box-shadow:inset 1px 2px 0 #dbccb155;background:#fffaf0;color:#463d30;font:inherit;font-size:14px;line-height:1.6}
+.home-advisor-form textarea:focus-visible{outline:2px solid #7e8d6b;outline-offset:2px}
+.home-advisor-form button{padding:10px 16px;background:#6f7f63;border:1px solid #4c5c42;color:#fff6df;box-shadow:2px 3px 0 #4e5b4144;border-radius:4px;font-size:13px;white-space:nowrap}
+.home-advisor-footer{flex:none;display:flex;justify-content:space-between;gap:10px;padding:0 22px 13px;background:#eae0cb;color:#8b795d;font-size:10px}
+.home-advisor-footer small{font-size:9px}
+@keyframes home-advisor-breathe{0%,100%{opacity:.35}50%{opacity:1}}
+@media(max-width:600px){.home-advisor-prompts{grid-template-columns:1fr}.home-advisor-log{padding:16px}.home-advisor-header{padding-left:16px}.home-advisor-form{padding:12px 12px 9px;gap:8px}.home-advisor-form button{padding:8px 12px}.home-advisor-footer{padding:0 14px 12px}.home-advisor-footer small{display:none}}
+@media(max-height:550px){.home-advisor-dialog.game-modal{height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);width:min(720px,calc(100vw - 24px))}.home-advisor-header{padding-top:8px;padding-bottom:8px;gap:10px}.home-advisor-portrait{width:44px;height:44px}.home-advisor-portrait canvas{width:56px;height:56px}.home-advisor-header small,.home-advisor-header p{display:none}.home-advisor-header h2{font-size:19px}.home-advisor-dialog.game-modal .modal-close{top:8px;right:10px}.home-advisor-log{padding:12px 18px}.home-advisor-welcome{padding:8px 12px;margin-bottom:12px}.home-advisor-welcome b{font-size:13px}.home-advisor-welcome p{display:none}.home-advisor-prompts{gap:7px}.home-advisor-prompts button{padding:10px;min-height:44px}.home-advisor-form{padding:8px 14px;gap:8px}.home-advisor-form textarea{min-height:44px;height:44px;padding:7px 10px;font-size:16px}.home-advisor-form button{min-height:44px}.home-advisor-footer{padding:0 16px 7px;font-size:9px}.home-advisor-footer small{display:none}}
+@media(prefers-reduced-motion:reduce){.home-advisor-pending span{animation:none}}

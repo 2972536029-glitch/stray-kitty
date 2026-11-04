@@ -145,6 +145,8 @@ GameScreen 在原顶栏分别提供家园手册、邮局、商店、章节地图
 
 home/dialogue 按性格、动作和情绪维护台词轮换，reactions 管逐猫摸摸间隔、短时情绪恢复、闲聊节流及家具邀请距离。catPainter 共享正向／逆向身体变换与原猫图稿的透明度命中，picking 检查家具纹理遮挡；点击、拖起和放到伙伴身边共用可见猫判定。鼠标按下命中猫后，松开只处理该猫，防抖期间也不会落到家具邀请。日常状态仅在 Canvas 场景内存中，剧情接管与暂停逻辑保持优先。
 
+家园顶栏「问阿策」由 App 的 advisor 弹层挂载 advisor/HomeAdvisor，复用 AdvisorProvider、旅程上下文和原只读问答，不登记战斗快照。聊天弹层暂停家园日常，其自身暂停不作为 Provider 的 blocked。HomeRepairOverlay 回传修缮卡与演出状态，GameScreen 回传家园教学状态，home-presentation 统一决定能否打开和当前外观文案；外部操作、关闭、切场景与后台取消等待。story/advisor-home.json 提供经剧情核对的短摘要和全部可见条件，由 knownHomeStorySummaries 筛选后供面板展开查看；试玩记录和 QA 进度不解锁亲历摘要。数据不扩展存档或 API，服务端 AI 仍读取现有公开知识，六章战斗会话保持独立。
+
 ## 4. 接入与分工
 
 | 负责人 | 主要位置 | 输入 → 输出 |
