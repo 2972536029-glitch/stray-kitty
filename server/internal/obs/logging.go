@@ -27,6 +27,17 @@ func logWithTrace(ctx context.Context, level slog.Level, msg string, args []any)
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if identity, ok := ctx.Value(identityKey{}).(logIdentity); ok {
+		if identity.playerID != "" {
+			args = append(args, "player_id", identity.playerID)
+		}
+		if identity.sessionID != "" {
+			args = append(args, "session_id", identity.sessionID)
+		}
+	}
+	if qa, ok := ctx.Value(qaKey{}).(bool); ok {
+		args = append(args, "qa", qa)
+	}
 	traceID, spanID := traceIDs(ctx)
 	if traceID != "" {
 		args = append(args, "dd.trace_id", traceID, "dd.span_id", spanID)

@@ -193,8 +193,13 @@ func (c *Client) Reply(ctx context.Context, session string, input domain.Advisor
 		if resp.Source != "model" {
 			result, reason = "fallback", resp.Reason
 		}
-		obs.Incr("kitty.advisor.call", "result:"+result, "reason:"+reason)
-		obs.Histogram("kitty.advisor.duration_ms", float64(time.Since(start).Microseconds())/1000, "result:"+result)
+		scope := metricScope(input.Scope)
+		source := "local"
+		if resp.Source == "model" {
+			source = "model"
+		}
+		obs.Incr("kitty.advisor.call", "result:"+result, "reason:"+reason, "scope:"+scope, "source:"+source, obs.QATag(ctx))
+		obs.Histogram("kitty.advisor.duration_ms", float64(time.Since(start).Microseconds())/1000, "result:"+result, "scope:"+scope, "source:"+source, obs.QATag(ctx))
 	}()
 	if c == nil || c.key == "" {
 		return local("not_configured")

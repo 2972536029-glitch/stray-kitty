@@ -727,6 +727,10 @@
           "mainline": {
             "type": "boolean",
             "description": "True for a battle entered through its gated chapter map; home trials remain independent."
+          },
+          "qa": {
+            "type": "boolean",
+            "description": "Server-owned marker preserving QA attribution through settlement and the later return command."
           }
         },
         "required": [
@@ -1645,6 +1649,11 @@
           },
           "nodeId": {
             "type": "string"
+          },
+          "optionId": {
+            "type": "string",
+            "enum": ["proud", "honest"],
+            "description": "Optional attitude for prologue_banter or prologue_sneak; omitted by older clients."
           }
         },
         "required": [

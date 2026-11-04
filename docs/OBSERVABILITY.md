@@ -50,11 +50,57 @@ span、指标、日志、K8s Deployment labels(`tags.datadoghq.com/*`)共用同�
 | `kitty.payment.session` | count | 支付会话出口 | result |
 | `kitty.payment.webhook` | count | Xsolla webhook 出口(paymentd) | result: ok/rejected/error |
 | `kitty.payment.ledger_save_duration_ms` | histogram | 账本原子写完成 | — |
-| `kitty.advisor.call` | count | 阿策问答出口 | result: success/fallback, reason(有限枚举) |
-| `kitty.advisor.duration_ms` | histogram | 同上 | result |
+| `kitty.advisor.call` | count | 阿策问答出口 | result: success/fallback, reason, scope, source, qa(有限枚举) |
+| `kitty.advisor.duration_ms` | histogram | 同上 | result, scope, source, qa |
 | `kitty.event.random` | count | 随机事件触发 | map, event(内容配置内有限集合) |
 | `kitty.repo.save_duration_ms` | histogram | 游戏存档原子写完成 | — |
 | `kitty.repo.state_size_bytes` | gauge | 同上(存档体积) | — |
+
+### #18 模块一、三业务指标
+
+以下成功指标只在存档持久化成功后记录；失败回滚与幂等重放不计入成功统计。
+全部业务指标带有限 `qa:true/false` 标签，看板及业务告警用 `!qa:true` 排除验收流量。
+玩家/会话标识始终只进入日志，不能作为指标标签。配置与部署步骤见
+[`biz-obs-delivery.md`](biz-obs-delivery.md)。
+
+| 指标 | 类型 | 一句话口径 | 标签 |
+|---|---|---|---|
+| `kitty.story.node` | count | 每次成功进入一个新剧情节点记一次，含创建会话的首节点和自动跳转。 | chapter, node, qa |
+| `kitty.story.choice` | count | 两处现有序章态度选择成功推进时记录当前选择。 | node, option, qa |
+| `kitty.story.gate_hit` | count | 其他前置满足但线索不足而撞终章门槛，或进入线索不足分支时记一次。 | gate:finale_clue_insufficient, qa |
+| `kitty.battle.start` | count | 新建有效 active attempt 时记一次，含教学自动开战和失败重试。 | chapter:L00–L05/unknown, difficulty:low/medium/high/unknown, qa |
+| `kitty.battle.settle` | count | 一场有效结算提交后记一次，服务器 won/lost 转成 win/lose。 | chapter, difficulty, outcome:win/lose/retreat/unknown, qa |
+| `kitty.battle.return_check` | count | 结算后真正离开结果页或明确离开失败准备页时，校验服务器预期区域和阶段。 | map, result:ok/deviation, qa |
+| `kitty.event.resolve` | count | CHOOSE_EVENT 成功结算后记一次。 | event, option, tier:fail/partial/success/crit/unknown, qa |
+| `kitty.event.flag` | count | 本次提交新增的每个 flag 记一次，不重复记录已有 flag。 | flag, qa |
+| `kitty.payment.funnel` | count | 下单/尝试及首次落入游戏存档的支付终点分别计数。 | step:session_created/charge_attempt/charge_success/charge_declined, qa |
+| `kitty.economy.delta` | count | 每次已提交事务中，每种货币的非零净变动记一次。 | currency:fish/stamps/tuna, direction:gain/spend, bucket:1/2-5/6-20/21-100/100+, qa |
+| `kitty.economy.amount` | count | 同一次变动累计实际货币数量，用于金额收支比。 | currency, direction, qa |
+
+- 剧情选项使用现有 `ADVANCE_STORY.optionId`，仅 `prologue_banter` / `prologue_sneak`
+  的 `proud` / `honest` 有效；旧端省略仍能推进，但不会凭空记一个选择。
+- 节点/事件/选项/地图使用 catalog 白名单；Go 分支产生的旗标登记于
+  `server/internal/service/gameplay_observability_flags.json`。未知存档值归 `unknown`，
+  不允许用户文本直接成为标签。标签在 Datadog 中归一小写，查询用 `chapter:l00`。
+- 终章拒绝请求不落幂等 receipt，因此每次实际遭到门槛拒绝分别计数；成功请求重放仍不记。
+- 胜率是 `win/(win+lose)`；retreat/unknown 单列。当前没有真实撤退结算接口，不能
+  把尚未结算、失败后重试或返回标题伪造成 retreat。return_check 不在 COMPLETE_BATTLE
+  刚打开结果页时记“成功”，也不能证明浏览器角色坐标已恢复到 returnPosition。
+- `Attempt.qa` 是服务端保存的观测标记，使 QA 模拟结算后普通 CONTINUE、重试和奖励
+  仍可排除；客户端命令不能设置该字段。QA_RESTORE 保留被恢复原存档的真实标记。
+- `fish` 对应真实背包 `inventory.food`，`stamps` 对应 `currencies.stamp`，`tuna`
+  对应 `currencies.tuna`。统一提交出口覆盖事件/战斗奖励、拾取、修缮、商店、抽奖、
+  来信奖励及本地/远端/webhook 充值。十连抽是一次事务净变动，数量完整累计；
+  `delta` 的次数比不等于金额比，经济面板必须用 `amount`。
+- `session_created` 专指 Xsolla checkout 创建，区别于游戏 `kitty.session.started`。
+  mock charge 在有效请求进入网关时记 attempt；Xsolla 在成功创建 checkout 时记 attempt，
+  当前接口无法获知玩家真正提交卡号的时刻。成功/拒付在游戏存档首次追加对应充值流水
+  后记终点，重复 credit 回调不重计，抽奖消费流水不计成支付成功。
+- 阿策 `scope` 为 `battle/journey/explore_hint/home/unknown`，空 scope 兼容为 battle；
+  当前家园实际使用 journey，home 为预留枚举。`source` 区分 model/local；既有
+  success/fallback 与有限 reason 标签保持兼容。
+- 看板里的主线触达/彩蛋揭示均为事件次数，不是去重玩家漏斗或留存率。支付完成可能跨
+  时间窗口；样本积累前不设置猜测的转化率和经济健康阈值。
 
 **结果四分类**(埋点的通用语义,实现在 `domain.ClassifyFault`):
 
@@ -68,6 +114,14 @@ span、指标、日志、K8s Deployment labels(`tags.datadoghq.com/*`)共用同�
 `declined`(演示卡拒付)是支付专属的正常业务结果,单列,不算 rejected 也不算 error。
 
 ## 3. Logs
+
+#18 新增字段为 **`player_id`、`session_id`、`qa`**。认证成功后从实际存档解析玩家，
+登录 alias 保持同一玩家 ID；session_id 是带专用域前缀的 token SHA-256，登录换 token
+时切换。原 bearer token、密码以及用于存档检索的 token hash 均不输出。`qa` 为 boolean，
+可用 `service:kitty-api env:preview @player_id:* @session_id:* -@qa:true` 检索真实交互日志。
+`obs.LogInfo/Warn/Error` 从请求 context 自动附加身份，涵盖认证后的 HTTP 请求和阿策日志。
+无身份的后台日志/认证失败不会继承上一请求；异步充值 credit 没有交互会话，只带真实
+player_id，不伪造 session_id。原有不接受 context 的底层诊断日志不属于会话日志来源。
 
 JSON 行打 stdout(slog),`obs.LogInfo/Warn/Error` 自动注入当前 span 的
 `dd.trace_id / dd.span_id`(**低 64 位十进制**——128 位 hex 会导致 Logs↔Trace 关联永远失败,

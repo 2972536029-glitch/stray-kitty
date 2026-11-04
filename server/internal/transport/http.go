@@ -67,6 +67,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			return
 		}
 		obs.Incr("kitty.session.started")
+		*r = *r.WithContext(obs.WithQA(obs.WithIdentity(r.Context(), id, service.LogSessionID(token)), false))
 		a.json(w, 201, map[string]string{"playerId": id, "token": token})
 	})
 	mux.HandleFunc("GET /api/v1/state", func(w http.ResponseWriter, r *http.Request) {
@@ -122,6 +123,19 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			return
 		}
 		var req domain.CommandRequest
+		// Classify only a known command enum from the bounded JSON envelope,
+		// before strict field validation, so rejected QA requests stay isolated.
+		var observedCommand struct {
+			Command struct {
+				Type string `json:"type"`
+			} `json:"command"`
+		}
+		if json.Unmarshal(body, &observedCommand) == nil {
+			switch observedCommand.Command.Type {
+			case "QA_CHECKPOINT", "QA_RESTORE", "QA_SIMULATE_VICTORY", "QA_SIMULATE_DEFEAT":
+				*r = *r.WithContext(obs.WithQA(r.Context(), true))
+			}
+		}
 		decoder := json.NewDecoder(strings.NewReader(string(body)))
 		decoder.DisallowUnknownFields()
 		if err = decoder.Decode(&req); err != nil {
@@ -185,18 +199,20 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 或 packId", 400))
 			return
 		}
+		qaTag := a.paymentIdentity(r, req.PlayerID)
+		obs.Incr("kitty.payment.funnel", "step:charge_attempt", qaTag)
 		result, err := a.pay.Charge(r.Context(), req.PlayerID, req.PackID, req.CardNumber)
 		if err != nil {
-			obs.Incr("kitty.payment.charge", "result:"+domain.ClassifyFault(err))
+			obs.Incr("kitty.payment.charge", "result:"+domain.ClassifyFault(err), qaTag)
 			a.fail(w, r, err)
 			return
 		}
 		// declined 是正常业务(HTTP 200 + 治愈文案),与 success 同为支付结果,
 		// 只有 result:error(系统故障)进故障告警。
 		if result.Txn.Status == "declined" {
-			obs.Incr("kitty.payment.charge", "result:declined")
+			obs.Incr("kitty.payment.charge", "result:declined", qaTag)
 		} else {
-			obs.Incr("kitty.payment.charge", "result:success")
+			obs.Incr("kitty.payment.charge", "result:success", qaTag)
 		}
 		resp := map[string]any{"txnId": result.Txn.ID, "pack": result.Pack, "status": result.Txn.Status, "tunaGranted": result.Pack.TunaGranted, "tunaBalance": result.TunaBalance}
 		if result.Txn.Status == "declined" {
@@ -211,6 +227,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 查询参数", 400))
 			return
 		}
+		a.paymentIdentity(r, playerID)
 		txns, err := a.pay.History(r.Context(), playerID)
 		if err != nil {
 			a.fail(w, r, err)
@@ -251,13 +268,19 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 或 packId", 400))
 			return
 		}
+		qaTag := a.paymentIdentity(r, req.PlayerID)
 		result, err := a.pay.Session(r.Context(), req.PlayerID, req.PackID)
 		if err != nil {
-			obs.Incr("kitty.payment.session", "result:"+domain.ClassifyFault(err))
+			obs.Incr("kitty.payment.session", "result:"+domain.ClassifyFault(err), qaTag)
 			a.fail(w, r, err)
 			return
 		}
-		obs.Incr("kitty.payment.session", "result:success")
+		obs.Incr("kitty.payment.session", "result:success", qaTag)
+		// Xsolla exposes checkout creation here, not the later card submission.
+		// It is the attempt boundary for this flow; only committed credit emits
+		// charge_success, so webhook retries cannot inflate the terminal step.
+		obs.Incr("kitty.payment.funnel", "step:session_created", qaTag)
+		obs.Incr("kitty.payment.funnel", "step:charge_attempt", qaTag)
 		a.json(w, 200, result)
 	})
 	// 支付服务 webhook 收款后的内部入账口:仅集群内调用,INTERNAL_TOKEN 未配置时整个端点关闭。
@@ -290,6 +313,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId、txn 或 pack", 400))
 			return
 		}
+		a.paymentIdentity(r, req.PlayerID)
 		balance, err := a.game.ApplyCharge(req.PlayerID, req.Txn, req.Pack)
 		if err != nil {
 			a.fail(w, r, err)
@@ -339,6 +363,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			return
 		}
 		emit("success", "ok")
+		a.sessionIdentity(r, token)
 		a.json(w, 200, map[string]string{"playerId": playerID, "token": token})
 	})
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
@@ -382,6 +407,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		span.SetTag("http.method", r.Method)
 		span.SetTag("http.route", route)
 		span.SetTag("http.url", r.URL.Path)
+		r = r.WithContext(ctx)
 		sw := &obs.StatusWriter{ResponseWriter: w}
 		start := time.Now()
 		defer func() {
@@ -397,10 +423,10 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			}
 			obs.FinishWeb(span, status)
 			obs.HTTPMetrics(r.Method, route, status, durMS)
-			obs.LogInfo(ctx, "http request", "method", r.Method, "path", r.URL.Path, "route", route,
+			obs.LogInfo(r.Context(), "http request", "method", r.Method, "path", r.URL.Path, "route", route,
 				"status", status, "duration_ms", durMS, "request_id", id)
 		}()
-		mux.ServeHTTP(sw, r.WithContext(ctx))
+		mux.ServeHTTP(sw, r)
 	})
 }
 func (a *API) token(r *http.Request) (string, error) {
@@ -408,7 +434,11 @@ func (a *API) token(r *http.Request) (string, error) {
 	if !strings.HasPrefix(value, "Bearer ") || len(strings.TrimSpace(value[7:])) < 16 {
 		return "", domain.Fail("UNAUTHORIZED", "需要匿名会话令牌", 401)
 	}
-	return strings.TrimSpace(value[7:]), nil
+	token := strings.TrimSpace(value[7:])
+	// Identity lookup is observational: a failed lookup must not change the
+	// existing handler's validation order or its business error response.
+	a.sessionIdentity(r, token)
+	return token, nil
 }
 
 // authCredentials 注册/登录共用的请求正文。
@@ -455,7 +485,7 @@ func (a *API) fail(w http.ResponseWriter, r *http.Request, err error) {
 
 func validateCommand(body []byte, kind string) error {
 	allowed := map[string][]string{
-		"ADVANCE_STORY":       {"nodeId"},
+		"ADVANCE_STORY":       {"nodeId", "optionId"},
 		"START_STORY":         {"nodeId"},
 		"INTERACT":            {"interactionId", "layer", "position"},
 		"REPORT_MOVE":         {"distance"},

@@ -9,7 +9,7 @@ const speakers: Record<string, CatBreed> = {'喵喵': 'miaomiao', '团子': 'tua
 interface Props {
   node: StoryNode;
   disabled: boolean;
-  onNext: () => void;
+  onNext: (optionId?: 'proud' | 'honest') => void;
   onSkip?: () => void;
   eventResult?: ReactNode;
   /** 询问场景：说话者是否在画面里、头顶在哪（不在场则走旁白字幕条）。 */
@@ -20,19 +20,7 @@ export default function DialoguePanel({node, disabled, onNext, onSkip, eventResu
   const [attitude, setAttitude] = useState<'proud' | 'honest'>('proud');
   const [closing, setClosing] = useState(false);
 
-  // 空格/回车推进对话（main 新增）；焦点在表单控件或对话框内时不抢键。
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (disabled || target?.closest('dialog') || target?.matches('input,select,textarea,button') || target?.isContentEditable) return;
-      if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        if (!disabled) onNext();
-      }
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [disabled, onNext]);
+  const hasChoices = node.id === 'prologue_banter' || node.id === 'prologue_sneak';
 
   let displayText = node.text;
   if (node.id === 'prologue_banter') {
@@ -62,9 +50,10 @@ export default function DialoguePanel({node, disabled, onNext, onSkip, eventResu
   const advance = () => {
     if (disabled || closing) return;
     setShown(displayText.length);
-    if (node.next) {onNext(); return;}
+    const next = () => onNext(hasChoices ? attitude : undefined);
+    if (node.next) {next(); return;}
     setClosing(true);
-    window.setTimeout(onNext, 240);
+    window.setTimeout(next, 240);
   };
   const skip = () => {
     if (disabled || closing || !onSkip) return;
@@ -77,7 +66,7 @@ export default function DialoguePanel({node, disabled, onNext, onSkip, eventResu
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target?.matches('input,select,textarea') || target?.isContentEditable) return;
+      if (target?.closest('dialog') || target?.matches('input,select,textarea,button') || target?.isContentEditable) return;
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
         advanceRef.current();
@@ -86,8 +75,6 @@ export default function DialoguePanel({node, disabled, onNext, onSkip, eventResu
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
-
-  const hasChoices = node.id === 'prologue_banter' || node.id === 'prologue_sneak';
 
   return <>
     {node.scene === 'poster' && <aside className="lost-poster" aria-label="寻猫启事"><b>寻猫启事</b><PixelCat size={100}/><strong>它叫喵喵。</strong><span>家里的蓝色饭碗，一直在等它。</span></aside>}

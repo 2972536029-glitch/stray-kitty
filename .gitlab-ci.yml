@@ -1,5 +1,12 @@
 stages: [verify, build, package, deploy]
 
+business_observability_checks:
+  stage: verify
+  image: python:3.12
+  script:
+    - python monitors/apply-business-observability.py --check
+    - python -m unittest discover -s monitors -p 'test_*.py' -v
+
 web_checks:
   stage: verify
   image: node:24

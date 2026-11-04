@@ -86,26 +86,6 @@
     ]
   },
   {
-    "name": "[小猫回家记] 支付拒付率过高(演示业务异常)",
-    "type": "query alert",
-    "query": "avg(last_15m):((sum:kitty.payment.charge{result:declined}.as_count() / (sum:kitty.payment.charge{result:declined}.as_count() + sum:kitty.payment.charge{result:success}.as_count())) * 100) >= 50",
-    "message": "15 分钟内超过一半的充值以 declined 结束(HTTP 全 200,属于「服务健康但业务异常」)。{{#is_alert}} 拒付是正常业务路径,但占比异常时先查演示卡使用方式(4242 成功/0000 拒付)与前端传参。{{/is_alert}} {{#is_recovery}} 拒付率已回落。{{/is_recovery}} 无支付流量时显示 No Data 属预期。\n\n@slack-bj_xsolla_school-hans-team",
-    "options": {
-      "thresholds": {
-        "critical": 50
-      },
-      "notify_audit": false,
-      "require_full_window": false,
-      "notify_no_data": false,
-      "renotify_interval": 0,
-      "evaluation_delay": 120
-    },
-    "tags": [
-      "team:stray-kitty",
-      "purpose:payment-business"
-    ]
-  },
-  {
     "name": "[小猫回家记] Xsolla Webhook 入账失败",
     "type": "query alert",
     "query": "sum(last_15m):sum:kitty.payment.webhook{result:error}.as_count() >= 1",
@@ -124,27 +104,6 @@
       "team:stray-kitty",
       "service:kitty-paymentd",
       "purpose:webhook-error"
-    ]
-  },
-  {
-    "name": "[小猫回家记] 阿策降级率过高",
-    "type": "query alert",
-    "query": "avg(last_15m):((sum:kitty.advisor.call{service:kitty-api,result:fallback}.as_count() / sum:kitty.advisor.call{service:kitty-api}.as_count()) * 100) >= 50",
-    "message": "15 分钟内超过一半的阿策问答走了本地兜底(未用到模型)。{{#is_alert}} 按 reason tag 细分:not_configured=环境缺 key(配置问题)、provider_rate_limited=配额打满、timeout/provider_unavailable=服务不可达、invalid_response=返回不合规范。{{/is_alert}} {{#is_recovery}} 降级率已回落。{{/is_recovery}}\n\n@slack-bj_xsolla_school-hans-team",
-    "options": {
-      "thresholds": {
-        "critical": 50
-      },
-      "notify_audit": false,
-      "require_full_window": false,
-      "notify_no_data": false,
-      "renotify_interval": 0,
-      "evaluation_delay": 120
-    },
-    "tags": [
-      "team:stray-kitty",
-      "service:kitty-api",
-      "purpose:advisor-fallback"
     ]
   },
   {
