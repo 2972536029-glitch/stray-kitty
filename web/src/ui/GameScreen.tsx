@@ -114,7 +114,10 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
     if (!topExpanded || state.phase === 'battle') return;
     const dismiss = (event: PointerEvent) => {
       const target = event.target as HTMLElement | null;
-      if (target?.closest('.topbar, .topbar-toggle, dialog, .game-modal')) return;
+      // .tutorial-highlight 与顶栏同源：教学卡（含「知道了」）虽渲染在 world-wrap，
+      // 点击它绝不能当成“点空白”折叠顶栏——否则教学组件在 click 前被卸载，
+      // stray-kitty.tutorial.* 永远写不进 done，顶栏还塌下去。
+      if (target?.closest('.topbar, .topbar-toggle, dialog, .game-modal, .tutorial-highlight')) return;
       onToggleTopbar(false);
     };
     window.addEventListener('pointerdown', dismiss);
@@ -202,11 +205,11 @@ export default function GameScreen({homeEditing,onHomeManual,state, catalog, bus
       {state.phase!=='home'&&<div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>}
       <nav aria-label="旅程工具">
         {state.phase==='battle'&&<button className="battle-host-pause" onClick={onPause}>{paused?'继续旅程':'暂停'}</button>}
-        {state.phase==='home'?<button className="home-manual-button" aria-label="家园手册" aria-haspopup="dialog" disabled={disabled} onClick={onHomeManual}>⌂ <span>家园手册</span></button>:<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button>}
+        {state.phase==='home'?<button className="home-manual-button" aria-label="家园手册" data-tip="打开家园手册：花房总览 · 旅程记录 · 家具收藏" aria-haspopup="dialog" disabled={disabled} onClick={onHomeManual}>⌂ <span>家园手册</span></button>:<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button>}
         <button className="parcel-button" aria-label="猫爪邮局" aria-haspopup="dialog" onClick={onParcels}>✉ <span>猫爪邮局</span></button>
         <button className="shop-button" aria-label="猫国商店" aria-haspopup="dialog" onClick={onShop}>▣ <span>猫国商店</span></button>
         <button className="map-button" aria-label="章节地图" aria-haspopup="dialog" onClick={onMap}>▦ <span>章节地图</span></button>
-        {state.phase==='home'&&<><button className="warehouse-button" aria-label="家园仓库" aria-haspopup="dialog" disabled={disabled} onClick={onWarehouse}>▤ <span>家园仓库</span></button><button className="home-decorate-button" aria-label="布置家具" disabled={disabled} onClick={onDecorate}>▧ <span>布置</span></button></>}
+        {state.phase==='home'&&<><button className="warehouse-button" aria-label="家园仓库" data-tip="打开家园仓库：出战携带清单" aria-haspopup="dialog" disabled={disabled} onClick={onWarehouse}>▤ <span>家园仓库</span></button><button className="home-decorate-button" aria-label="布置家具" data-tip="进入家具布置模式：移动 / 收回 / 重新摆放家具" disabled={disabled} onClick={onDecorate}>▧ <span>布置</span></button></>}
         {state.phase !== 'battle' && <button className="settings-button" aria-label="游戏设置" onClick={onSettings}>⚙ <span>设置</span></button>}{isDevelopment&&<button className="dev-button" aria-label="验收工具" aria-haspopup="dialog" aria-expanded={qaOpen} onClick={onQA}>🛠️ <span>验收</span></button>}
       </nav></header>
     <main><h1 className="visually-hidden">一只猫的旅程，一群猫的家。</h1>

@@ -51,13 +51,15 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
   useEffect(()=>{if(pending||busy||state.revision===base.revision||!changes.length)return;if(changes.every(c=>{const p=state.homeLayout?.[c.key];return p&&p.x===c.x&&p.y===c.y&&p.stored===c.stored;}))onClose();},[state,pending,busy]);
   useEffect(()=>{
     const move=(event:PointerEvent)=>{
-      if(panDrag.current?.pointer===event.pointerId){const d=panDrag.current;scene.panHomeEditor(d,{x:event.clientX,y:event.clientY});panDrag.current={pointer:event.pointerId,x:event.clientX,y:event.clientY};return;}
+      if(panDrag.current?.pointer===event.pointerId){scene.homeCanvas.style.cursor='grabbing';const d=panDrag.current;scene.panHomeEditor(d,{x:event.clientX,y:event.clientY});panDrag.current={pointer:event.pointerId,x:event.clientX,y:event.clientY};return;}
       const d=dragRef.current;if(!d||event.pointerId!==d.pointer)return;
+      scene.homeCanvas.style.cursor='grabbing';
       const point=local(event.clientX,event.clientY);setDrag({...d,moved:d.moved||Math.hypot(event.clientX-d.start.x,event.clientY-d.start.y)>4,inside:point.inside,point:{x:point.x+d.offset.x,y:point.y+d.offset.y}});
     };
     const up=(event:PointerEvent)=>{
-      if(panDrag.current?.pointer===event.pointerId){panDrag.current=null;return;}
+      if(panDrag.current?.pointer===event.pointerId){panDrag.current=null;scene.homeCanvas.style.cursor='';return;}
       const d=dragRef.current;if(!d||event.pointerId!==d.pointer)return;
+      scene.homeCanvas.style.cursor='';
       const point=local(event.clientX,event.clientY);setDrag(null);
       if(!d.moved)return;
       const rect=bag.current!.getBoundingClientRect(),overBag=event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom;
@@ -65,7 +67,7 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
       else if(point.inside)commit(d.key,point.x+d.offset.x,point.y+d.offset.y,false);
       else setNotice('落点在场景外，已取消这次拖动。');
     };
-    const cancelled=()=>{setDrag(null);panDrag.current=null;};
+    const cancelled=()=>{setDrag(null);panDrag.current=null;scene.homeCanvas.style.cursor='';};
     window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',cancelled);window.addEventListener('blur',cancelled);
     return()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',cancelled);window.removeEventListener('blur',cancelled);};
   },[items,draft,locked,conflict,scene]);
@@ -84,7 +86,7 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
   const preview=drag?.moved&&drag.inside&&drag.point?{...draftState,homeLayout:{...draft,[drag.key]:{...drag.point,stored:false}}}:draftState;
   const valid=!drag?.point||!selected||validHomePosition(selected,drag.point.x,drag.point.y);
   useEffect(()=>{scene.setHomeEditing({state:preview,selection,valid});},[scene,preview,selection,valid]);
-  useEffect(()=>()=>scene.setHomeEditing(undefined),[scene]);
+  useEffect(()=>()=>{scene.setHomeEditing(undefined);scene.homeCanvas.style.cursor='';},[scene]);
   const begin=(event:ReactPointerEvent,item:HomeItem,fromBag:boolean)=>{
     if(locked||conflict||event.button!==0)return;event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);setSelection(item.layoutKey);
     const p=local(event.clientX,event.clientY);setDrag({key:item.layoutKey,pointer:event.pointerId,start:{x:event.clientX,y:event.clientY},offset:fromBag?{x:0,y:0}:{x:item.x-p.x,y:item.y-p.y},moved:false,inside:!fromBag});
@@ -99,9 +101,18 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
       if(selected?.stored){commit(selected.layoutKey,p.x,p.y,false);return;}
       setSelection('');panDrag.current={pointer:e.pointerId,x:e.clientX,y:e.clientY};
     };
+    // 悬浮光标与高亮：命中可拖家具给 move（可抓取），空白维持 grab（拖动画面）；
+    // 拖动/平移期间不参与，光标由 window 的 move/up 处理为 grabbing。
+    const hover=(e:PointerEvent)=>{
+      if(dragRef.current||panDrag.current)return;
+      const p=local(e.clientX,e.clientY),item=p.inside?homeHit(items,p.x,p.y):undefined;
+      scene.homeCanvas.style.cursor=item?'move':'grab';
+      scene.setHomeHover(item?.layoutKey);
+    };
+    const leave=()=>{scene.homeCanvas.style.cursor='';scene.setHomeHover(undefined);};
     const wheel=()=>setZoom(scene.homeZoomLevel);
-    c.addEventListener('pointerdown',down);c.addEventListener('wheel',wheel);
-    return()=>{c.removeEventListener('pointerdown',down);c.removeEventListener('wheel',wheel);};
+    c.addEventListener('pointerdown',down);c.addEventListener('pointermove',hover);c.addEventListener('pointerleave',leave);c.addEventListener('wheel',wheel);
+    return()=>{c.removeEventListener('pointerdown',down);c.removeEventListener('pointermove',hover);c.removeEventListener('pointerleave',leave);c.removeEventListener('wheel',wheel);scene.homeCanvas.style.cursor='';};
   },[scene,items,selected,draft,locked,conflict]);
   const zoomBy=(amount:number)=>{scene.homeZoom(amount);setZoom(scene.homeZoomLevel);};
   const shown=items.filter(item=>(filter==='all'||(filter==='bag'?item.stored:!item.stored))&&item.name.includes(query));
