@@ -1,12 +1,10 @@
-import {breeds,drawPixelCat} from '../../adapters/canvas/pixelCat';
+import {advisorPalette,breeds,drawPixelCat} from '../../adapters/canvas/pixelCat';
 import type {LifeCat} from './life';
 import {currentCatMood} from './dialogue';
-import {drawCat} from '../battle/l00/painter';
 import type {HomeCatBreed} from './layout';
 
 function drawResidentBody(ctx:CanvasRenderingContext2D,breed:HomeCatBreed,mood:'brave'|'worried'|'idle'){
-  if(breed==='advisor')drawCat(ctx,'advisor',0,0,64,mood==='brave'?'hurt':'idle');
-  else drawPixelCat(ctx,breed,mood);
+  drawPixelCat(ctx,breed,mood);
 }
 
 /** Every shared action uses the project's original cat, including its markings. */
@@ -56,7 +54,7 @@ export function paintResident(ctx:CanvasRenderingContext2D,cat:LifeCat,time:numb
   const t=time*.004+cat.seed,pose=cat.pose,kind=cat.social?.kind,sleeping=pose==='hammock_sleep'||kind==='nap';
   const f=residentTransform(cat,time,held),x=f.x,y=f.y,mood=currentCatMood(cat,time),reacting=(cat.petReactionUntil??0)>time&&!held;
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.translate(x,y);ctx.rotate(f.angle);ctx.scale(f.sx,f.sy);ctx.translate(-32,-58);drawResidentBody(ctx,cat.breed,reacting&&mood==='irritated'?'brave':sleeping||reacting&&mood==='happy'?'worried':stage===1&&cat.breed!=='advisor'?'worried':'idle');ctx.restore();
-  const paw=(px:number,py:number,w:number,h:number)=>{ctx.fillStyle=cat.breed==='advisor'?'#eae4cf':breeds[cat.breed].fur;ctx.fillRect(Math.round(px),Math.round(py),w,h);};
+  const paw=(px:number,py:number,w:number,h:number)=>{ctx.fillStyle=cat.breed==='advisor'?advisorPalette.fur:breeds[cat.breed].fur;ctx.fillRect(Math.round(px),Math.round(py),w,h);};
   if(pose==='knead'){paw(x-13,y-10+Math.max(0,Math.sin(t*3))*4,7,8);paw(x+6,y-10+Math.max(0,-Math.sin(t*3))*4,7,8);}
   if(['scratch','bat_chime','investigate','paw_table'].includes(pose??'')||kind==='groom'||kind==='play'){const lift=Math.max(0,Math.sin(t*3))*12;paw(x+cat.facing*18-3,y-31-lift,6,15);}
   if(pose==='bat_ball'||kind==='play'){const bx=x+cat.facing*(35+Math.sin(t*2)*9),by=y-4;ctx.fillStyle='#c38d64';ctx.fillRect(bx-5,by-8,10,9);ctx.fillStyle='#f4d59a';ctx.fillRect(bx-1,by-7,2,7);}
