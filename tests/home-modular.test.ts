@@ -7,6 +7,8 @@ import {HOME_FRAMES, HOME_SPRITES, HOME_ATLASES, HOME_STAGE_SPRITES} from '../we
 import {homeObjects, homePosePoint} from '../web/src/modules/home/objects';
 import {homeWalkable, homeWalkStep} from '../web/src/modules/home/navigation';
 import {PARCEL_ART} from '../web/src/modules/lottery/furnitureArt';
+import {FURNITURE_CATEGORIES,furnitureWidth,furnitureWidthCm} from '../web/src/modules/home/furnishings';
+import {homeInventory} from '../web/src/modules/home/objects';
 
 test('both twelve-piece collections pair real art, placeable slots and the matching original cat interaction',()=>{
   const catalog=JSON.parse(fs.readFileSync('web/content/catalog.json','utf8'));
@@ -19,6 +21,18 @@ test('both twelve-piece collections pair real art, placeable slots and the match
       assert.ok(meta.slot in HOME_SLOTS);assert.ok(fs.existsSync(`web/public/assets/home/parcels/${item.id}.png`));assert.notEqual(item.source,'story');
     }
   }
+});
+
+test('every stage and owned furnishing has one placement category and one canonical measured width',()=>{
+  const furniture=JSON.parse(fs.readFileSync('web/content/home/furniture.json','utf8')) as {id:string;widthCm:number}[];
+  for(const flags of [[],['greenhouse_sealed'],['greenhouse_fortified_full'],['kingdom_founded']]){
+    const items=homeInventory({flags,placements:{},furniture:furniture.map(f=>f.id)});
+    for(const item of items){assert.ok(item.category in FURNITURE_CATEGORIES,item.layoutKey);assert.ok(item.width>0);}
+    for(const record of furniture){const item=items.find(item=>item.furnitureId===record.id)!;assert.equal(item.width,furnitureWidth(record.id));assert.equal(record.widthCm,furnitureWidthCm(record.id));}
+  }
+  assert.ok(furnitureWidth('willow_sofa')>furnitureWidth('seedling_stool')*2);
+  assert.ok(furnitureWidth('blue_bowl')<furnitureWidth('cloud_nest'));
+  assert.ok(furnitureWidth('postmark_clock')<furnitureWidth('moss_cottage'));
 });
 
 test('the full home fits phones and desktops; zoom, pan and hit projection stay inside the building',()=>{
@@ -97,8 +111,10 @@ test('free movement cannot tunnel through large furnishings or the walls; rugs r
   const end=homeWalkStep(start,target,400,objects);
   assert.ok(end.x<HOME_SLOTS.sun_spot.x-80,'cannot cross a placed castle even with a large frame delta');
   assert.ok(homeWalkable(end,objects));
-  const rug=homeObjects({flags:['greenhouse_fortified_full'],placements:{sun_spot:'soft_blanket'}});
+  const rug=homeObjects({flags:['greenhouse_fortified_full'],placements:{sun_spot:'clover_rug'}});
   assert.ok(homeWalkable(HOME_SLOTS.sun_spot,rug));
+  const folded=homeObjects({flags:['greenhouse_fortified_full'],placements:{sun_spot:'soft_blanket'}});
+  assert.equal(homeWalkable(HOME_SLOTS.sun_spot,folded),false,'folded bedding has volume and is not a flat rug');
   assert.equal(homeWalkable({x:820,y:790},objects),false,'the south door is not an idle roaming destination');
   assert.equal(homeWalkable({x:20,y:480},objects),false);
 });

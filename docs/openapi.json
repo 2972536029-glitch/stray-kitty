@@ -763,7 +763,9 @@
             "type": "array",
             "minItems": 1,
             "maxItems": 10,
-            "items": {"$ref": "#/components/schemas/ParcelDraw"},
+            "items": {
+              "$ref": "#/components/schemas/ParcelDraw"
+            },
             "description": "本次一份或十份包裹的有序收据；前端拆包后才呈现对应家具。"
           }
         },
@@ -1366,6 +1368,22 @@
             "type": "integer",
             "minimum": 1,
             "description": "布置参考宽度（厘米）；同一世界比例显示，非战斗数值。"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "wall",
+              "decor",
+              "table",
+              "bed",
+              "seat",
+              "storage",
+              "plant",
+              "rug",
+              "lighting",
+              "toy"
+            ],
+            "description": "布置分类：墙饰、装饰、桌子、小窝、座椅、收纳、绿植、地毯、灯具或玩具。"
           }
         },
         "required": [
@@ -1910,7 +1928,10 @@
           },
           "count": {
             "type": "integer",
-            "enum": [1, 10],
+            "enum": [
+              1,
+              10
+            ],
             "default": 1,
             "description": "可选；一次寄出一份或十份，默认保持单抽。十份在同一事务内结算，任一抽失败全部回滚。"
           }
@@ -2634,17 +2655,41 @@
             }
           },
           {
-            "required": ["scope", "sceneKey", "expectedRevision"],
+            "required": [
+              "scope",
+              "sceneKey",
+              "expectedRevision"
+            ],
             "properties": {
-              "scope": {"const": "explore_hint"},
-              "context": {"maxLength": 2048}
+              "scope": {
+                "const": "explore_hint"
+              },
+              "context": {
+                "maxLength": 2048
+              }
             },
             "not": {
               "anyOf": [
-                {"required": ["attemptId"]},
-                {"required": ["stageId"]},
-                {"required": ["question"]},
-                {"required": ["history"]}
+                {
+                  "required": [
+                    "attemptId"
+                  ]
+                },
+                {
+                  "required": [
+                    "stageId"
+                  ]
+                },
+                {
+                  "required": [
+                    "question"
+                  ]
+                },
+                {
+                  "required": [
+                    "history"
+                  ]
+                }
               ]
             }
           }
@@ -2653,10 +2698,14 @@
       "ExploreHintObservation": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["hint"],
+        "required": [
+          "hint"
+        ],
         "properties": {
           "hint": {
-            "type": "string", "minLength": 1, "maxLength": 240,
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240,
             "description": "地图当前批准显示的本地情境提示；目标资格/远近/完成条件由地图判定。不能发送整张表、内部目标ID、隐藏内容或据坐标猜出的路线。"
           }
         }
@@ -3204,6 +3253,22 @@
           },
           "replacementSlot": {
             "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "wall",
+              "decor",
+              "table",
+              "bed",
+              "seat",
+              "storage",
+              "plant",
+              "rug",
+              "lighting",
+              "toy"
+            ],
+            "description": "布置分类：墙饰、装饰、桌子、小窝、座椅、收纳、绿植、地毯、灯具或玩具。"
           }
         }
       },

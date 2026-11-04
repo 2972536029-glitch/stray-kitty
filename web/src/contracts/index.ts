@@ -1,3 +1,4 @@
+export type FurnitureCategory='wall'|'decor'|'table'|'bed'|'seat'|'storage'|'plant'|'rug'|'lighting'|'toy';
 import type {LotteryState, ParcelDraw, ParcelPool, ParcelReward} from '../modules/lottery/types';
 export type GamePhase = 'dialogue' | 'explore' | 'event' | 'preparation' | 'battle' | 'settlement' | 'home';
 export type BattleCarryId = 'lantern' | 'mirror' | 'bell' | 'box' | 'dog' | 'dove' | 'rats' | 'kitten';
@@ -30,7 +31,7 @@ export interface GameState {
 }
 export interface HomePlacement {x:number;y:number;stored:boolean}
 export interface HomeLayoutChange extends HomePlacement {key:string}
-export interface HomeDecor {id:string;objectId:string;stage:number;name:string;sprite:string;x:number;y:number;width:number;kind:string;front?:boolean;wall?:boolean;replacementSlot?:string}
+export interface HomeDecor {id:string;objectId:string;stage:number;name:string;sprite:string;category?:FurnitureCategory;x:number;y:number;width:number;kind:string;front?:boolean;wall?:boolean;replacementSlot?:string}
 export interface QACheckpoint {id: string; chapterId: string; title: string; phase: GamePhase; mapId: string; kind: 'story' | 'explore' | 'battle' | 'home' | 'event'; detail: string}
 export interface QATools {enabled: boolean; checkpoints: QACheckpoint[]}
 export type GameCommand =
@@ -98,7 +99,7 @@ export interface Catalog {
   chapters: {id: string; title: string; summary: string; status: string}[];
   story: StoryNode[]; maps: MapDefinition[]; events: EventDefinition[]; stages: StageDefinition[];
   cats: {id: string; name: string; color: string; description: string; skill: string}[];
-  furniture: {id: string; name: string; theme: string; source?: 'story' | 'free_pool' | 'paid_pool'; description?: string; widthCm?: number; preferredSlot?: string; interactionCat?: string; interaction?: string}[];
+  furniture: {id: string; name: string; theme: string; source?: 'story' | 'free_pool' | 'paid_pool'; description?: string; category?:FurnitureCategory; widthCm?: number; preferredSlot?: string; interactionCat?: string; interaction?: string}[];
   slots: {id: string; name: string}[];
   homeDecor: HomeDecor[];
   renovations?: RenovationDefinition[];

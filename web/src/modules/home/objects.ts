@@ -1,3 +1,5 @@
+import {furnitureWidth, furnitureCategory, type FurnitureCategory} from './furnishings';
+import {homeObjectDepth} from './spatial';
 import decor from '../../../content/home/decor.json' with { type: 'json' };
 import type {GameState} from '../../contracts';
 import type {CatBreed} from '../../adapters/canvas/pixelCat';
@@ -9,18 +11,18 @@ export type HomeObjectKind='decor'|'plant'|'storage'|'workbench'|'nest'|'castle'
 export interface HomeObject extends HomePoint {id:string;layoutKey:string;wall?:boolean;sprite:HomeSprite;width:number;kind:HomeObjectKind;solid:boolean;front?:boolean;slot?:string;furnitureId?:string}
 const furnitureSprites:Record<string,{sprite:HomeSprite;width:number;kind:HomeObjectKind}>={
   ...Object.fromEntries(PARCEL_IDS.map(id=>[id,{sprite:`parcel.${id}` as HomeSprite,width:parcelWidth(id),kind:PARCEL_ART[id].kind}])),
-  cardboard_nest:{sprite:'s1.box',width:186,kind:'nest'},box_castle:{sprite:'s3.castle',width:192,kind:'castle'},
-  blue_bowl:{sprite:'s2.bowls',width:114,kind:'bowls'},soft_blanket:{sprite:'s2.blanket',width:150,kind:'blanket'},
-  snack_cushion:{sprite:'s2.cushion',width:112,kind:'cushion'},red_cushion:{sprite:'s4.redcushion',width:112,kind:'cushion'},
-  cloud_nest:{sprite:'s3.cloudnest',width:154,kind:'blanket'},moon_hammock:{sprite:'s3.hammock',width:194,kind:'hammock'},
-  tin_lamp:{sprite:'s2.tinlamp',width:52,kind:'lamp'},sun_lamp:{sprite:'s4.sunlamp',width:64,kind:'lamp'},star_glass:{sprite:'s4.starlamp',width:66,kind:'lamp'}
+  cardboard_nest:{sprite:'s1.box',width:furnitureWidth('cardboard_nest'),kind:'nest'},box_castle:{sprite:'s3.castle',width:furnitureWidth('box_castle'),kind:'castle'},
+  blue_bowl:{sprite:'s2.bowls',width:furnitureWidth('blue_bowl'),kind:'bowls'},soft_blanket:{sprite:'s2.blanket',width:furnitureWidth('soft_blanket'),kind:'blanket'},
+  snack_cushion:{sprite:'s2.cushion',width:furnitureWidth('snack_cushion'),kind:'cushion'},red_cushion:{sprite:'s4.redcushion',width:furnitureWidth('red_cushion'),kind:'cushion'},
+  cloud_nest:{sprite:'s3.cloudnest',width:furnitureWidth('cloud_nest'),kind:'blanket'},moon_hammock:{sprite:'s3.hammock',width:furnitureWidth('moon_hammock'),kind:'hammock'},
+  tin_lamp:{sprite:'s2.tinlamp',width:furnitureWidth('tin_lamp'),kind:'lamp'},sun_lamp:{sprite:'s4.sunlamp',width:furnitureWidth('sun_lamp'),kind:'lamp'},star_glass:{sprite:'s4.starlamp',width:furnitureWidth('star_glass'),kind:'lamp'}
 };
-export interface HomeItem extends HomeObject {stored:boolean;name:string}
+export interface HomeItem extends HomeObject {stored:boolean;name:string;category:FurnitureCategory}
 export function homeInventory(state:HomeAppearance):HomeItem[]{
   const stage=homeStage(state),items:HomeItem[]=[];
   for(const d of decor.filter(d=>d.stage===stage)){
     const override=state.homeLayout?.[d.id],kind=d.kind as HomeObjectKind;
-    items.push({id:d.objectId,layoutKey:d.id,sprite:d.sprite as HomeSprite,x:d.x,y:d.y,width:d.width,kind,front:'front' in d&&d.front,wall:'wall' in d&&d.wall,solid:['plant','storage','workbench','nest','castle','hammock','tower'].includes(kind),name:d.name,stored:!!(d.replacementSlot&&state.placements[d.replacementSlot]),...override});
+    items.push({id:d.objectId,layoutKey:d.id,sprite:d.sprite as HomeSprite,x:d.x,y:d.y,width:d.width,kind,front:'front' in d&&d.front,wall:'wall' in d&&d.wall,solid:['plant','storage','workbench','nest','castle','hammock','tower'].includes(kind),name:d.name,category:furnitureCategory(d.id,true),stored:!!(d.replacementSlot&&state.placements[d.replacementSlot]),...override});
   }
   const owned=state.furniture??Object.values(state.placements);
   for(const id of owned){
@@ -29,11 +31,11 @@ export function homeInventory(state:HomeAppearance):HomeItem[]{
     const locked=!!slot&&['beam','sun_spot'].includes(slot)&&stage<3;
     const sprite=id==='cardboard_nest'&&stage>=2?'s2.nest':appearance.sprite;
     const layoutKey='furniture:'+id,override=state.homeLayout?.[layoutKey];
-    items.push({id:slot?'placed:'+slot:layoutKey,layoutKey,...appearance,sprite,...point,y:id==='star_glass'?Math.min(350,point.y-150):id==='comet_mobile'?point.y-58:point.y,solid:['nest','castle','hammock','storage','workbench','plant','sofa','seat'].includes(appearance.kind),slot:slot??layoutKey,furnitureId:id,name:id,wall:['star_glass','postmark_clock','lunar_clock','comet_mobile'].includes(id),stored:!slot||locked,...override});
+    items.push({id:slot?'placed:'+slot:layoutKey,layoutKey,...appearance,sprite,...point,y:id==='star_glass'?Math.min(350,point.y-150):id==='comet_mobile'?point.y-58:point.y,solid:['nest','castle','hammock','storage','workbench','plant','sofa','seat'].includes(appearance.kind),slot:slot??layoutKey,furnitureId:id,name:id,category:furnitureCategory(id),wall:['star_glass','postmark_clock','lunar_clock','comet_mobile'].includes(id),stored:!slot||locked,...override});
   }
   return items;
 }
-export function homeObjects(state:HomeAppearance):HomeObject[]{return homeInventory(state).filter(item=>!item.stored).sort((a,b)=>a.y-b.y);}
+export function homeObjects(state:HomeAppearance):HomeObject[]{return homeInventory(state).filter(item=>!item.stored).sort((a,b)=>homeObjectDepth(a)-homeObjectDepth(b));}
 export function homeObjectInteraction(object:HomeObject):{cat:CatBreed;pose:string;point:HomePoint}{
   const id=object.furnitureId;
   if(id&&isParcelFurniture(id)){const m=PARCEL_ART[id];return{cat:m.cat,pose:m.pose,point:homePosePoint(object.slot??'',id,object)};}

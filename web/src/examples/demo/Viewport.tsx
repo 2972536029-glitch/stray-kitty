@@ -7,6 +7,7 @@ import type {ChapterBackgroundStatus} from '../../modules/map/artwork';
 import TouchControls from '../../ui/TouchControls';
 
 interface Props {
+  onHomeAdvisor?:()=>void;
   state: GameState;
   paused: boolean;
   storyNode?: StoryNode;
@@ -50,6 +51,7 @@ export function Viewport(props: Props) {
       (floor,point)=>latest.current.onWarehousePosition?.(floor,point),
       setBackground
     );
+    runtime.onHomeAdvisor=()=>latest.current.onHomeAdvisor?.();
     runtime.state = latest.current.state;runtime.pausedByUser = latest.current.paused;runtime.storyScene = latest.current.storyNode?.scene;runtime.storyNode = latest.current.storyNode;runtime.randomEligible = latest.current.randomEligible ?? true;scene.current = runtime;
     runtime.start();
     latest.current.onWarehouseClimbReady?.(()=>runtime.climbWarehouse());
