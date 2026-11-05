@@ -14,20 +14,26 @@ interface Props {
 }
 
 export default function DialoguePanel({node, disabled, onNext, eventResult}: Props) {
-  const [attitude, setAttitude] = useState<'proud' | 'honest'>('proud');
+  const [attitude, setAttitude] = useState<'proud' | 'honest' | null>(null);
   const [closing, setClosing] = useState(false);
 
   const hasChoices = node.id === 'prologue_banter' || node.id === 'prologue_sneak';
 
   let displayText = node.text;
-  if (node.id === 'prologue_banter') {
-    displayText = attitude === 'honest'
-      ? '呜……谁是小少爷！肚子好饿，爪子踩得冰凉凉的……胖橘，你身上有没有藏小鱼干先借本咪垫垫底……'
-      : '谁是小少爷！本咪是微服私访的领地巡察官！……咕噜噜（肚子大声抗议）……本咪只是出来视察民情！';
-  } else if (node.id === 'prologue_sneak') {
-    displayText = attitude === 'honest'
-      ? '咕噜噜……好香啊，本咪的口水已经止不住了！不行，就尝一口，就去吃一口好不好嘛！'
-      : '咕噜噜……本咪的小肚子突然有了强烈的想法。本咪只是身为领地之王，顺便下楼巡视两分钟。只尝一口，一口就回来，肯定不会迷路！';
+  if (hasChoices) {
+    if (!attitude) {
+      displayText = node.id === 'prologue_sneak'
+        ? '（面对扑鼻的香气，喵喵心里正在纠结……请选择喵喵此时的心情与态度：）'
+        : '（被唤作小少爷，喵喵心里正憋着一股小情绪……请选择喵喵此时的态度：）';
+    } else if (node.id === 'prologue_banter') {
+      displayText = attitude === 'honest'
+        ? '呜……谁是小少爷！肚子好饿，爪子踩得冰凉凉的……胖橘，你身上有没有藏小鱼干先借本咪垫垫底……'
+        : '谁是小少爷！本咪是微服私访的领地巡察官！……咕噜噜（肚子大声抗议）……本咪只是出来视察民情！';
+    } else if (node.id === 'prologue_sneak') {
+      displayText = attitude === 'honest'
+        ? '咕噜噜……好香啊，本咪的口水已经止不住了！不行，就尝一口，就去吃一口好不好嘛！'
+        : '咕噜噜……本咪的小肚子突然有了强烈的想法。本咪只是身为领地之王，顺便下楼巡视两分钟。只尝一口，一口就回来，肯定不会迷路！';
+    }
   }
 
   // Typewriter text stays decorative: clicking the card always advances one node.
@@ -52,10 +58,10 @@ export default function DialoguePanel({node, disabled, onNext, eventResult}: Pro
 
   // Both the full-card click and skip advance exactly one story node.
   const advance = () => {
-    if (disabled || closing || advancing.current) return;
+    if (disabled || closing || advancing.current || (hasChoices && !attitude)) return;
     advancing.current = true;
     setShown(displayText.length);
-    const next = () => onNext(hasChoices ? attitude : undefined);
+    const next = () => onNext(hasChoices ? (attitude ?? undefined) : undefined);
     if (node.next) {next(); return;}
     setClosing(true);
     exitTimer.current = window.setTimeout(next, 240);
@@ -81,6 +87,7 @@ export default function DialoguePanel({node, disabled, onNext, eventResult}: Pro
       breed={speakers[node.speaker]}
       closing={closing}
       disabled={disabled}
+      hint={hasChoices && !attitude ? '请选择上方态度' : undefined}
       onAdvance={advance}
       onSkip={advance}
     >
@@ -103,7 +110,7 @@ export default function DialoguePanel({node, disabled, onNext, eventResult}: Pro
         </div>
       )}
       {eventResult}
-      <p key={node.id + attitude}>{displayText.slice(0, shown)}{typing && <i className="dialogue-caret" aria-hidden="true"/>}</p>
+      <p key={node.id + (attitude ?? 'initial')}>{displayText.slice(0, shown)}{typing && <i className="dialogue-caret" aria-hidden="true"/>}</p>
     </DialogueBubble>
   </>;
 }
