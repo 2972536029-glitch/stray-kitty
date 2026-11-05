@@ -1,3 +1,4 @@
+import {getCatAttackProgress, getCatBodyPose, withCatAttackLimb} from '../shared/catAttackMotion';
 import {getDragRangeCat} from '../shared/dragRangePreview';
 import {paintCarryAnchor} from '../carry-painter';
 import {paintBasicAttack} from '../shared/basicAttackPainter';
@@ -20,19 +21,36 @@ export const obstacleCell=(x:number,y:number)=>MAP.obstacles.some(cell=>cell.x==
 const rect=(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h);};
 const blocks=(ctx:CanvasRenderingContext2D,color:string,points:number[][])=>{for(const [x,y,w,h] of points)rect(ctx,x,y,w,h,color);};
 
-export function drawGreenhouseCat(ctx:CanvasRenderingContext2D,id:GreenhouseCatId,x:number,y:number,size:number,attacking=false){
-  if(id==='caster'||id==='guard'||id==='tuanzi'){drawChapterCat(ctx,id,x,y,size,false,attacking);return;}
+export function drawGreenhouseCat(ctx:CanvasRenderingContext2D,id:GreenhouseCatId,x:number,y:number,size:number,attacking=false,attackProgress?:number){
+  if(id==='caster'||id==='guard'||id==='tuanzi'){drawChapterCat(ctx,id,x,y,size,false,attacking,attackProgress);return;}
   const fighter=id==='bruiser',black=id==='momo';
   const fur=black?'#525760':fighter?'#b48c69':'#c7d3d2',light=black?'#737b80':fighter?'#e4c89d':'#f2f0df',patch=black?'#363d43':fighter?'#745b48':'#8dabad';
-  ctx.save();ctx.translate(x+(attacking?1:0),y);ctx.scale(size/32,size/32);
+  const progress=attackProgress??(attacking ? .42 : undefined),moving=progress!==undefined&&progress>0&&progress<1;
+  ctx.save();ctx.translate(x,y);ctx.scale(size/32,size/32);
   blocks(ctx,'#263b352d',[[6,28,22,2],[10,30,13,1]]);
-  blocks(ctx,fur,[[7,7,18,13],[7,4,5,8],[20,4,5,8],[6,10,21,8],[9,19,16,9],[7,26,8,3],[21,26,6,3],[25,22,5,4]]);
+  const body=getCatBodyPose(progress);ctx.translate(body.x,body.y);
+  blocks(ctx,fur,[[7,7,18,13],[7,4,5,8],[20,4,5,8],[6,10,21,8],[9,19,16,9],[7,26,8,3],[21,26,6,3],...(!fighter&&moving?[]:[[25,22,5,4]])]);
   blocks(ctx,light,[[11,14,12,6],[12,21,10,5],[9,26,4,2],[23,26,4,2]]);
   blocks(ctx,patch,[[8,7,3,7],[15,7,3,4],[22,7,3,7],[10,20,3,5],[22,20,3,4]]);
   blocks(ctx,black?'#d3c68a':'#385149',[[10,13,3,2],[21,13,3,2]]);rect(ctx,16,17,2,1,'#c48f80');
-  if(fighter){blocks(ctx,'#765a40',[[4,18,8,10],[5,28,6,2]]);blocks(ctx,'#c5a774',[[5,19,6,8],[7,20,2,6]]);blocks(ctx,'#a57358',[[12,20,12,2],[17,22,3,4]]);}
-  else if(black){blocks(ctx,'#8caa89',[[10,20,15,2],[17,22,3,3]]);blocks(ctx,'#e1d4a2',[[24,18,5,3],[23,21,7,6],[25,27,3,2]]);rect(ctx,25,22,3,4,'#fbf0be');}
-  else {blocks(ctx,'#77989c',[[10,20,15,2],[15,22,5,3]]);blocks(ctx,'#d9bb68',[[17,22,3,4],[25,20,4,6]]);rect(ctx,26,26,2,1,'#657f83');}
+  if(fighter){
+    withCatAttackLimb(ctx,'punch',progress,10,21,()=>{
+      blocks(ctx,'#765a40',[[4,18,8,10],[5,28,6,2]]);blocks(ctx,'#c5a774',[[5,19,6,8],[7,20,2,6]]);
+    });
+    blocks(ctx,'#a57358',[[12,20,12,2],[17,22,3,4]]);
+  }else if(black){
+    blocks(ctx,'#8caa89',[[10,20,15,2],[17,22,3,3]]);
+    withCatAttackLimb(ctx,'lantern',progress,24,21,()=>{
+      if(moving)rect(ctx,25,22,5,4,fur);
+      blocks(ctx,'#e1d4a2',[[24,18,5,3],[23,21,7,6],[25,27,3,2]]);rect(ctx,25,22,3,4,'#fbf0be');
+    });
+  }else{
+    blocks(ctx,'#77989c',[[10,20,15,2],[15,22,5,3]]);rect(ctx,17,22,3,4,'#d9bb68');
+    withCatAttackLimb(ctx,'bell',progress,24,21,()=>{
+      if(moving)rect(ctx,25,22,5,4,fur);
+      rect(ctx,25,20,4,6,'#d9bb68');rect(ctx,26,26,2,1,'#657f83');
+    });
+  }
   ctx.restore();
 }
 
@@ -138,7 +156,7 @@ export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseSta
   for(const cat of state.cats){
     if(cat.status!=='active'||cat.id===hiddenCatId)continue;const x=cat.x*CELL,y=cat.y*CELL;
     if(cat.id===selected){ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;ctx.strokeRect(x+4,y+4,CELL-8,CELL-8);}
-    drawGreenhouseCat(ctx,cat.id,x+9,y+7,62,cat.cooldown>.5);
+    const attackProgress=getCatAttackProgress(state.effects,cat);drawGreenhouseCat(ctx,cat.id,x+9,y+7,62,attackProgress!==undefined,attackProgress);
     if(cat.shield>0){ctx.strokeStyle='#a1dce0';ctx.fillStyle='#83bdc018';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x+40,y+42,31,29,0,0,Math.PI*2);ctx.fill();ctx.stroke();}
     if(cat.attackBuffRemaining>0){ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+64,y+25);ctx.lineTo(x+68,y+17);ctx.lineTo(x+72,y+25);ctx.stroke();}
 

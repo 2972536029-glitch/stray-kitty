@@ -1,12 +1,7 @@
 stages: [verify, build, package, deploy]
 
-business_observability_checks:
-  stage: verify
-  image: python:3.12
-  script:
-    - python monitors/apply-business-observability.py --check
-    - python -m unittest discover -s monitors -p 'test_*.py' -v
-
+# 2026-11-05: business_observability_checks job 已随 as-code 流水线退役(网页管理,
+# 见 monitors/README.md)——原 job 跑 apply-business-observability.py --check + unittest。
 web_checks:
   stage: verify
   image: node:24
