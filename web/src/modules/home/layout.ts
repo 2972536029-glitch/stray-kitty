@@ -2,6 +2,8 @@ import type {GameState} from '../../contracts';
 import type {CatBreed} from '../../adapters/canvas/pixelCat';
 
 export const HOME_SIZE = {width: 1672, height: 941} as const;
+// Frame the room and its front wall; the deep exterior plinth stays offscreen.
+export const HOME_FRAMING = {x:16,y:22,width:1640,height:852} as const;
 export const HOME_LAYOUT_ID = 'arched-greenhouse-modular-v1';
 export type HomePoint = {x: number; y: number};
 export type HomeCatBreed = CatBreed | 'advisor';

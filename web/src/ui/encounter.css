@@ -45,14 +45,14 @@
 .encounter-result.encounter-sheet .resolution-dice strong {font-size:23px}
 .encounter-result.encounter-sheet .resolution-dice>div:last-child>span {font-size:14px}
 .encounter-result.encounter-sheet .event-resolution p {font-size:18px;line-height:1.85;margin:20px 0 12px}
-.encounter-result.encounter-sheet .outcome-effects>span {font-size:13px;border:1px solid #bca78170;background:#fff7e077}
+.encounter-result.encounter-sheet .outcome-effects>span {font-size:15px;line-height:1.5;padding:6px 9px;border:1px solid #bca78170;background:#fff7e077}
 .encounter-result.encounter-sheet>button {float:right;min-width:172px;font-size:17px;background:#536e5e;border:1px solid #496456;box-shadow:none}
 .encounter-preparation .event-resolution {margin:20px 0;padding:0;border:0;background:none}
 .event-card.encounter-preparation .event-resolution p {font-size:18px;line-height:1.8}
 .encounter-preparation .resolution-dice strong {font-size:23px}
-.encounter-preparation .outcome-effects>span {font-size:13px}
+.encounter-preparation .outcome-effects>span {font-size:15px;line-height:1.5;padding:6px 9px}
 .encounter-next-actions {display:flex;justify-content:flex-end;gap:14px;margin-top:20px}
-.encounter-sheet .encounter-next-actions>button {min-height:48px;padding:10px 20px;font-size:17px;border:1px solid #496456;background:#536e5e;box-shadow:none}
+.encounter-sheet .encounter-next-actions>button {display:flex;align-items:center;justify-content:center;min-height:48px;padding:10px 20px;font-size:17px;font-weight:700;text-align:center;color:#fff4d8;border:1px solid #496456;background:#536e5e;box-shadow:none}
 @keyframes discovery-in {from{opacity:0;translate:0 8px}to{opacity:1;translate:0 0}}
 @keyframes encounter-unfold {from{opacity:0;translate:0 8px;scale:.97}to{opacity:1;translate:0 0;scale:1}}
 @media(max-width:700px),(max-height:600px) {

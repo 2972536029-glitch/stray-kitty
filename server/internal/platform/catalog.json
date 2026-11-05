@@ -7598,6 +7598,7 @@
     },
     {
       "id": "stage:3:citrus-tree",
+      "storedByDefault": true,
       "objectId": "citrus-tree",
       "stage": 3,
       "name": "柠檬盆栽",
@@ -7611,6 +7612,7 @@
     },
     {
       "id": "stage:3:south-flowers",
+      "storedByDefault": true,
       "objectId": "south-flowers",
       "stage": 3,
       "name": "繁花长花槽",
@@ -7623,6 +7625,7 @@
     },
     {
       "id": "stage:3:west-plant-stand",
+      "storedByDefault": true,
       "objectId": "west-plant-stand",
       "stage": 3,
       "name": "温室育苗架",
@@ -7648,6 +7651,7 @@
     },
     {
       "id": "stage:3:west-vines",
+      "storedByDefault": true,
       "objectId": "west-vines",
       "stage": 3,
       "name": "开花藤蔓",
@@ -7661,6 +7665,7 @@
     },
     {
       "id": "stage:3:east-vines",
+      "storedByDefault": true,
       "objectId": "east-vines",
       "stage": 3,
       "name": "常春藤",
@@ -7674,6 +7679,7 @@
     },
     {
       "id": "stage:3:hanging-fern",
+      "storedByDefault": true,
       "objectId": "hanging-fern",
       "stage": 3,
       "name": "悬挂蕨草",
@@ -7687,6 +7693,7 @@
     },
     {
       "id": "stage:3:garden-handcart",
+      "storedByDefault": true,
       "objectId": "garden-handcart",
       "stage": 3,
       "name": "园艺小推车",
@@ -7712,6 +7719,7 @@
     },
     {
       "id": "stage:3:stool-seedling",
+      "storedByDefault": true,
       "objectId": "stool-seedling",
       "stage": 3,
       "name": "幼苗小木凳",
@@ -7736,6 +7744,7 @@
     },
     {
       "id": "stage:3:round-bed",
+      "storedByDefault": true,
       "objectId": "round-bed",
       "stage": 3,
       "name": "云朵绒绒窝",
@@ -7748,6 +7757,7 @@
     },
     {
       "id": "stage:3:west-leaf-tub",
+      "storedByDefault": true,
       "objectId": "west-leaf-tub",
       "stage": 3,
       "name": "阔叶盆栽",
@@ -7760,6 +7770,7 @@
     },
     {
       "id": "stage:3:red-geraniums",
+      "storedByDefault": true,
       "objectId": "red-geraniums",
       "stage": 3,
       "name": "天竺葵花盆",
@@ -7773,6 +7784,7 @@
     },
     {
       "id": "stage:3:herb-tub",
+      "storedByDefault": true,
       "objectId": "herb-tub",
       "stage": 3,
       "name": "小香草盆",
@@ -7785,6 +7797,7 @@
     },
     {
       "id": "stage:3:wall-ivy",
+      "storedByDefault": true,
       "objectId": "wall-ivy",
       "stage": 3,
       "name": "墙边垂藤",
@@ -7799,6 +7812,7 @@
     },
     {
       "id": "stage:3:south-east-ivy",
+      "storedByDefault": true,
       "objectId": "south-east-ivy",
       "stage": 3,
       "name": "墙边垂藤",
@@ -7839,6 +7853,7 @@
     },
     {
       "id": "stage:3:reading-hammock",
+      "storedByDefault": true,
       "objectId": "reading-hammock",
       "stage": 3,
       "name": "叶纹吊床",
@@ -7903,6 +7918,7 @@
     },
     {
       "id": "stage:4:citrus-tree",
+      "storedByDefault": true,
       "objectId": "citrus-tree",
       "stage": 4,
       "name": "柠檬盆栽",
@@ -7916,6 +7932,7 @@
     },
     {
       "id": "stage:4:south-flowers",
+      "storedByDefault": true,
       "objectId": "south-flowers",
       "stage": 4,
       "name": "繁花长花槽",
@@ -7928,6 +7945,7 @@
     },
     {
       "id": "stage:4:west-plant-stand",
+      "storedByDefault": true,
       "objectId": "west-plant-stand",
       "stage": 4,
       "name": "温室育苗架",
@@ -7953,6 +7971,7 @@
     },
     {
       "id": "stage:4:west-vines",
+      "storedByDefault": true,
       "objectId": "west-vines",
       "stage": 4,
       "name": "开花藤蔓",
@@ -7966,6 +7985,7 @@
     },
     {
       "id": "stage:4:east-vines",
+      "storedByDefault": true,
       "objectId": "east-vines",
       "stage": 4,
       "name": "常春藤",
@@ -7979,6 +7999,7 @@
     },
     {
       "id": "stage:4:hanging-fern",
+      "storedByDefault": true,
       "objectId": "hanging-fern",
       "stage": 4,
       "name": "悬挂蕨草",
@@ -7992,6 +8013,7 @@
     },
     {
       "id": "stage:4:garden-handcart",
+      "storedByDefault": true,
       "objectId": "garden-handcart",
       "stage": 4,
       "name": "园艺小推车",
@@ -8017,6 +8039,7 @@
     },
     {
       "id": "stage:4:stool-seedling",
+      "storedByDefault": true,
       "objectId": "stool-seedling",
       "stage": 4,
       "name": "幼苗小木凳",
@@ -8041,6 +8064,7 @@
     },
     {
       "id": "stage:4:round-bed",
+      "storedByDefault": true,
       "objectId": "round-bed",
       "stage": 4,
       "name": "云朵绒绒窝",
@@ -8053,6 +8077,7 @@
     },
     {
       "id": "stage:4:west-leaf-tub",
+      "storedByDefault": true,
       "objectId": "west-leaf-tub",
       "stage": 4,
       "name": "阔叶盆栽",
@@ -8065,6 +8090,7 @@
     },
     {
       "id": "stage:4:red-geraniums",
+      "storedByDefault": true,
       "objectId": "red-geraniums",
       "stage": 4,
       "name": "天竺葵花盆",
@@ -8078,6 +8104,7 @@
     },
     {
       "id": "stage:4:herb-tub",
+      "storedByDefault": true,
       "objectId": "herb-tub",
       "stage": 4,
       "name": "小香草盆",
@@ -8090,6 +8117,7 @@
     },
     {
       "id": "stage:4:wall-ivy",
+      "storedByDefault": true,
       "objectId": "wall-ivy",
       "stage": 4,
       "name": "墙边垂藤",
@@ -8104,6 +8132,7 @@
     },
     {
       "id": "stage:4:south-east-ivy",
+      "storedByDefault": true,
       "objectId": "south-east-ivy",
       "stage": 4,
       "name": "墙边垂藤",
@@ -8131,6 +8160,7 @@
     },
     {
       "id": "stage:4:welcome-left",
+      "storedByDefault": true,
       "objectId": "welcome-left",
       "stage": 4,
       "name": "迎宾花台",
@@ -8143,6 +8173,7 @@
     },
     {
       "id": "stage:4:welcome-right",
+      "storedByDefault": true,
       "objectId": "welcome-right",
       "stage": 4,
       "name": "迎宾花箱",
@@ -8155,6 +8186,7 @@
     },
     {
       "id": "stage:4:entry-rug",
+      "storedByDefault": true,
       "objectId": "entry-rug",
       "stage": 4,
       "name": "暖阳庆典地毯",
@@ -8180,6 +8212,7 @@
     },
     {
       "id": "stage:4:celebration-flowers",
+      "storedByDefault": true,
       "objectId": "celebration-flowers",
       "stage": 4,
       "name": "庆典花柱",
@@ -8193,6 +8226,7 @@
     },
     {
       "id": "stage:4:celebration-banner",
+      "storedByDefault": true,
       "objectId": "celebration-banner",
       "stage": 4,
       "name": "猫国小旗",
@@ -8258,6 +8292,7 @@
     },
     {
       "id": "stage:4:reading-hammock",
+      "storedByDefault": true,
       "objectId": "reading-hammock",
       "stage": 4,
       "name": "叶纹吊床",

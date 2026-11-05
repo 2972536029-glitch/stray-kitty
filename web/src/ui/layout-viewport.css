@@ -93,7 +93,7 @@ html,body,#root{min-height:100%;width:100%}
 .alley-objective{position:absolute;z-index:2;pointer-events:none;top:160px;left:22px;max-width:min(360px,calc(100% - 44px));padding:8px 12px;border:2px solid #66513e;border-radius:3px;background:#132d39e6;color:#f5e7c7;box-shadow:3px 3px 0 #16242c;font-size:12px}
 .alley-objective span{display:block;color:#e2b87a;font-size:10px;margin-bottom:3px}
 .alley-objective strong{display:block;font-weight:600;line-height:1.5}
-.app-shell[data-home-scene=true] .world-wrap{background:#13262e}
+.app-shell[data-home-scene=true] .world-wrap{background:#637f70}
 .app-shell[data-home-scene=true] .game-viewport canvas{object-fit:cover;image-rendering:pixelated}
 .home-life-status{position:absolute;z-index:1;top:157px;left:22px;padding:9px 13px;border-left:3px solid #d2b779;background:#354a35e8;color:#f2e5c6;pointer-events:none;box-shadow:3px 3px 0 #2a392933;max-width:calc(100% - 44px)}
 .home-life-status span{display:block;font-size:10px;letter-spacing:2px;color:#d6bf86;margin-bottom:5px}

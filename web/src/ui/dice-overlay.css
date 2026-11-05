@@ -1,4 +1,5 @@
-/* One cube renderer is shared by the toss and its settled result. */
+/* Toss and result share a camera angle, with the rolled face on top. */
+.dice-top-view {position:absolute;inset:0;display:block;transform-style:preserve-3d;transform:rotateX(-40deg) rotateY(-28deg) rotateX(90deg)}
 .dice.cube-dice {--die-size:48px;position:relative;display:block;width:var(--die-size);height:var(--die-size);padding:0;border:0;border-radius:0;background:none;box-shadow:none!important;perspective:700px;overflow:visible;flex-shrink:0}
 .cube-dice .dice-cube {position:absolute;inset:0;display:block;transform-style:preserve-3d;will-change:transform}
 .cube-dice .dice-face {position:absolute;inset:0;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);place-items:center;padding:15%;border:1px solid #9a8056;border-radius:14%;backface-visibility:hidden;background:linear-gradient(135deg,#fff9e9,#e6d6b3);box-shadow:inset 0 0 0 2px #fff9e877}
@@ -31,7 +32,7 @@
 .ceremony-die{position:relative;width:var(--die);height:var(--die);perspective:760px;animation:ceremony-pop .36s cubic-bezier(.25,1.5,.45,1) backwards}
 .ceremony-die:nth-child(2){animation-delay:.07s}
 @keyframes ceremony-pop{0%{transform:scale(.15) rotate(-10deg);opacity:0}62%{transform:scale(1.14) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0)}}
-.die3d{position:absolute;inset:0}
+.die3d{position:absolute;inset:0;transform-style:preserve-3d}
 .die3d-squash,.die3d-cube{position:absolute;inset:0;transform-style:preserve-3d;will-change:transform}
 
 /* 地面像素阴影：随弹跳缩放，落地重击时摊到最大 */
@@ -69,7 +70,7 @@
 .dice-ceremony.toss .ceremony-die:nth-child(2) .die3d-shadow{animation-duration:1.78s;animation-delay:.58s}
 @keyframes die3d-shadow{0%{transform:scale(1.05);opacity:.85}46%{transform:scale(.62);opacity:.4}82%{transform:scale(1.05);opacity:.85}100%{transform:scale(1);opacity:.8}}
 
-/* 落定：高空带旋转坠落→触地压扁(定格点数面朝镜头)→小幅回弹→居中定住 */
+/* 落定：高空带旋转坠落→触地压扁(定格点数面朝上)→小幅回弹→居中定住 */
 .dice-ceremony.reveal .die3d-cube{animation:die3d-land .55s cubic-bezier(.22,.61,.36,1) forwards}
 .dice-ceremony.reveal .die3d-squash{animation:die3d-drop .55s cubic-bezier(.3,.6,.3,1) forwards}
 .dice-ceremony.reveal .die3d-shadow{animation:die3d-shadow-slam .55s ease-out forwards}

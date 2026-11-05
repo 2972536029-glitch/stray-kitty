@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {HomeCamera} from '../web/src/modules/home/camera';
-import {HOME_SIZE, HOME_SLOTS, HOME_ROAM_NODES, HOME_SHELTER_NODES} from '../web/src/modules/home/layout';
+import {HOME_SIZE, HOME_FRAMING, HOME_SLOTS, HOME_ROAM_NODES, HOME_SHELTER_NODES} from '../web/src/modules/home/layout';
 import {HOME_FRAMES, HOME_SPRITES, HOME_ATLASES, HOME_STAGE_SPRITES} from '../web/src/modules/home/assets';
 import {homeObjects, homePosePoint} from '../web/src/modules/home/objects';
 import {homeWalkable, homeWalkStep} from '../web/src/modules/home/navigation';
@@ -35,12 +35,13 @@ test('every stage and owned furnishing has one placement category and one canoni
   assert.ok(furnitureWidth('postmark_clock')<furnitureWidth('moss_cottage'));
 });
 
-test('the full home fits phones and desktops; zoom, pan and hit projection stay inside the building',()=>{
+test('home framing fills the viewport and trims the exterior; zoom, pan and hit projection stay inside the building',()=>{
   for(const [width,height] of [[800,480],[222,480],[800,250]]){
     const camera=new HomeCamera(),fit=camera.frame(width,height);
-    assert.ok(fit.x>=-1&&fit.y>=-1);
-    assert.ok(fit.x+HOME_SIZE.width*fit.scale<=width+1);
-    assert.ok(fit.y+HOME_SIZE.height*fit.scale<=height+1);
+    assert.ok(fit.x<=1&&fit.y<=1);
+    assert.ok(fit.x+HOME_SIZE.width*fit.scale>=width-1);
+    assert.ok(fit.y+HOME_SIZE.height*fit.scale>=height-1);
+    assert.ok((height-fit.y)/fit.scale<=HOME_FRAMING.y+HOME_FRAMING.height+1);
     camera.changeZoom(100);camera.pan(-100000,100000,width,height);
     const view=camera.frame(width,height);
     assert.equal(camera.zoom,2.4);
