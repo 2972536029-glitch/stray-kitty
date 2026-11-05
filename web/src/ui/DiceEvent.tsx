@@ -27,7 +27,7 @@ export default function DiceEvent({event, disabled, rolling, random = false, par
     if (!option || disabled || rolling || submitted.current) return;
     submitted.current = true;onChoose(selected,usePush);
   };
-  return <section className="event-card encounter-sheet event-choice" aria-labelledby="encounter-title">
+  return <section className="event-card encounter-sheet encounter-portrait event-choice" aria-labelledby="encounter-title">
     <header className="encounter-heading"><span>{random ? '路上的偶遇' : '眼前的发现'}</span><h2 id="encounter-title">{event.title}</h2></header>
     <p className="encounter-story">{event.text}</p>
     <div className="choice-list encounter-choices" aria-label="选择行动">{visibleOptions.map((o,i) =>

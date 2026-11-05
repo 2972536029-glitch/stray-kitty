@@ -13,41 +13,21 @@
 .event-resolution .cube-dice {--die-size:38px}
 .event-resolution.compact .cube-dice {--die-size:25px}
 
-/* —— 掷骰判定仪式：全屏遮罩 + 真 3D 立方骰 + 四档天气氛围特效 ——
+/* —— 透明掷骰层 + 真 3D 立方骰 + 四档天气氛围特效 ——
    风格约束：粒子全部是硬边缘像素方块/Emoji；骰面用 preserve-3d 六面立方 +
    分档内阴影雕出木/石质感；调色取星露谷式的暖纸色 + 彩虹金 / 灰紫雨。 */
 
-.dice-ceremony{position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;--die:clamp(104px,21vmin,188px);background:#241f1ed9;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);outline:0;animation:ceremony-fade .22s ease-out;cursor:default}
+.dice-ceremony{position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;--die:clamp(88px,14vmin,150px);background:transparent;border:0;box-shadow:none;outline:0;animation:ceremony-fade .22s ease-out;cursor:default}
 .dice-ceremony.reveal{cursor:pointer}
 @keyframes ceremony-fade{from{opacity:0}to{opacity:1}}
 
-/* 标题（沿用事件卡措辞），翻滚与揭晓两阶段常驻顶部 */
-.ceremony-heading{position:absolute;top:5vh;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;animation:ceremony-fade .3s .05s ease-out backwards}
-.ceremony-heading span{font-size:12px;letter-spacing:4px;color:#f1e8d3b3}
-.ceremony-heading h2{margin:0;max-width:92vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:clamp(18px,3.6vmin,30px);letter-spacing:2px;color:#fff3d6;text-shadow:3px 3px 0 #241f1ecc}
-
-/* 四档氛围底色（全屏洗色层，揭晓时淡入盖住基础遮罩） */
-.weather-wash{position:absolute;inset:0;z-index:0;pointer-events:none;animation:wash-in .5s ease-out backwards}
-@keyframes wash-in{from{opacity:0}to{opacity:1}}
-.weather-wash.tier-crit{background:radial-gradient(circle at 50% 44%,#6d5118ef 0%,#241f1ef2 64%)}
-.weather-wash.tier-success{background:radial-gradient(circle at 50% 38%,#b7a55fc4 0%,#453f28df 55%,#241f1eee 100%)}
-.weather-wash.tier-partial{background:linear-gradient(#525f6fe8,#3a4250ea)}
-.weather-wash.tier-fail{background:radial-gradient(circle at 50% 46%,#191624f7 0%,#0f0c17f8 72%)}
-
-/* 屏幕边缘光晕/暗角（crit 暖金描边、fail 暗紫暗角），盖在最上层但不挡点击 */
-.ceremony-vignette{position:absolute;inset:0;z-index:3;pointer-events:none;animation:wash-in .45s steps(3) backwards}
-.ceremony-vignette.tier-crit{box-shadow:inset 0 0 10vmin 2vmin #f2c14e4d,inset 0 0 24vmin 6vmin #e4573d26}
-.ceremony-vignette.tier-success{box-shadow:inset 0 0 12vmin 3vmin #ffe08a38}
-.ceremony-vignette.tier-partial{box-shadow:inset 0 0 18vmin 5vmin #5c6b7f70}
-.ceremony-vignette.tier-fail{box-shadow:inset 0 0 16vmin 5vmin #191024e0,inset 0 0 30vmin 8vmin #0d0813cc}
-
-/* 舞台：骰子绝对居中（50%/50% + 负位移）；失败档结算瞬间整台轻震（容器震动） */
-.ceremony-stage{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1;width:min(92vw,560px);height:min(92vw,560px);display:flex;align-items:center;justify-content:center}
+/* Only the two dice and their effects float above the unchanged scene. */
+.ceremony-stage{position:relative;z-index:1;width:min(540px,calc(100vw - 48px));height:min(650px,calc(100dvh - 112px));display:flex;align-items:center;justify-content:center}
 .dice-ceremony.reveal.tier-fail .ceremony-stage{animation:ceremony-shake .34s steps(5)}
-@keyframes ceremony-shake{0%{transform:translate(-50%,-50%)}25%{transform:translate(calc(-50% + 5px),calc(-50% - 4px))}50%{transform:translate(calc(-50% - 4px),calc(-50% + 5px))}75%{transform:translate(calc(-50% + 3px),calc(-50% + 2px))}100%{transform:translate(-50%,-50%)}}
+@keyframes ceremony-shake{25%{transform:translate(4px,-3px)}50%{transform:translate(-3px,4px)}75%{transform:translate(2px,1px)}}
 
 /* ———— 真 3D 骰：透视在每颗骰子上，链路 die(透视)→squash(保 3D)→cube(保 3D)→六面 ———— */
-.ceremony-pair{position:relative;z-index:1;display:flex;gap:6vmin}
+.ceremony-pair{position:relative;z-index:1;display:flex;gap:48px}
 .ceremony-die{position:relative;width:var(--die);height:var(--die);perspective:760px;animation:ceremony-pop .36s cubic-bezier(.25,1.5,.45,1) backwards}
 .ceremony-die:nth-child(2){animation-delay:.07s}
 @keyframes ceremony-pop{0%{transform:scale(.15) rotate(-10deg);opacity:0}62%{transform:scale(1.14) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0)}}
@@ -148,15 +128,6 @@
 .dice-ceremony.reveal.tier-fail .ceremony-aura{animation:ceremony-aura-pulse 1s steps(2) infinite}
 @keyframes ceremony-aura-pulse{0%{transform:scale(1);opacity:.95}100%{transform:scale(1.12);opacity:.7}}
 
-/* 结算横幅：四档各自配色，步进出帧 */
-.ceremony-banner{position:absolute;left:50%;top:-3vmin;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:10px;padding:9px 18px;border:3px solid #2c231d;box-shadow:4px 4px 0 #24312e99;font-size:clamp(14px,2.6vmin,22px);font-weight:800;letter-spacing:2px;white-space:nowrap;animation:ceremony-banner-in .34s steps(3) .12s backwards}
-.ceremony-banner b{font-size:clamp(18px,3.4vmin,30px)}
-.ceremony-banner.tier-crit{background:#f5c84c;color:#4a3a0e}
-.ceremony-banner.tier-success{background:#79b961;color:#1f3d18}
-.ceremony-banner.tier-partial{background:#d9a441;color:#47350e}
-.ceremony-banner.tier-fail{background:#a5847c;color:#3d211c}
-@keyframes ceremony-banner-in{from{transform:translateX(-50%) scale(.4);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
-
 /* —— 粒子层：坐标/大小/延迟由 JS 随机注入 CSS 变量，Emoji 用 content 渲染 —— */
 .ceremony-fx{position:absolute;inset:0;pointer-events:none;z-index:2}
 .ceremony-fx span{position:absolute;display:block}
@@ -220,16 +191,9 @@
 .dice-ceremony.reveal.tier-success .fx-emoji{filter:drop-shadow(0 0 5px #ffd76a)}
 .dice-ceremony.reveal.tier-fail .fx-emoji{text-shadow:2px 2px 0 #0d0813b3}
 
-/* 底部提示：结算后提示可跳过 */
-.ceremony-hint{position:absolute;bottom:7vh;left:0;right:0;text-align:center;color:#f1e8d3b3;font-size:12px;letter-spacing:3px;animation:ceremony-hint-blink 1.2s steps(2) infinite}
-@keyframes ceremony-hint-blink{0%{opacity:.9}100%{opacity:.35}}
-
 @media(max-width:520px){
   .dice-ceremony{--die:clamp(88px,19vmin,150px)}
   .ceremony-pair{gap:4vmin}
-  .ceremony-banner{letter-spacing:1px;padding:7px 12px}
-  .ceremony-heading{top:3.5vh}
-  .ceremony-heading h2{font-size:clamp(15px,4.2vmin,22px)}
 }
 
 @media (prefers-reduced-motion:reduce){

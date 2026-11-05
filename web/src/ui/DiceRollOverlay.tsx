@@ -62,7 +62,7 @@ const CLOUD_SPOTS = [
 ];
 
 /**
- * 全屏掷骰判定仪式。开启后接管画面：遮罩模糊 → 双骰 3D 翻滚等待服务端结算 →
+ * 透明掷骰层。开启后接管焦点：双骰 3D 翻滚等待服务端结算 →
  * 按四档（大成功金辉爆彩/成功阳光明媚/有代价阴云密布/失败狂风暴雨）揭晓骰点并撒专属特效。
  * 结算（或被上层中止）由 GameScreen 控制：resolution 未到=继续翻滚，onClose=收起。
  */
@@ -205,12 +205,10 @@ export default function DiceRollOverlay({resolution, startedAt, title, onClose}:
   const tierLabel = eventTiers.find(t => t.id === tier)?.label ?? '';
   const auraAngles = [0, 45, 90, 135, 180, 225, 270, 315];
   const reveal = phase === 'reveal';
-  return <div ref={root} tabIndex={-1} className={`dice-ceremony ${reveal ? `reveal tier-${tier ?? ''}` : 'toss'}`} role="alertdialog" aria-modal="true" aria-label={reveal ? `判定结果 ${tierLabel}` : '骰子判定进行中'} onClick={() => {if (reveal) onCloseRef.current();}} onKeyDown={e => {
+  return <div ref={root} tabIndex={-1} className={`dice-ceremony ${reveal ? `reveal tier-${tier ?? ''}` : 'toss'}`} role="alertdialog" aria-modal="true" aria-label={reveal ? `${title}，判定结果 ${tierLabel}` : `${title}，骰子判定进行中`} onClick={() => {if (reveal) onCloseRef.current();}} onKeyDown={e => {
     if (e.key === 'Tab') {e.preventDefault(); return;}
     if (['Escape', 'Enter', ' '].includes(e.key)) {e.preventDefault(); e.stopPropagation(); if (reveal && !e.repeat) onCloseRef.current();}
   }}>
-    {reveal && <span className={`weather-wash tier-${tier}`} aria-hidden="true"/>}
-    <header className="ceremony-heading"><span>这一刻的运气</span><h2>{title}</h2></header>
     <div className="ceremony-stage">
       {reveal && <div className="ceremony-weather" aria-hidden="true">
         {tier === 'success' && <div className="weather-sun"><span className="sun-halo"/><span className="sun-core"/><span className="sun-rays"/></div>}
@@ -221,7 +219,6 @@ export default function DiceRollOverlay({resolution, startedAt, title, onClose}:
       </div>}
       {reveal && tier === 'fail' && <div className="ceremony-aura">{auraAngles.map(a => <span key={a} style={{'--a': `${a}deg`, '--r': `${rnd(24, 30).toFixed(1)}vmin`} as Particle}/>)}</div>}
       <div className="ceremony-pair">
-        {reveal && dice && <div className={`ceremony-banner tier-${tier}`} role="status"><b>{dice[0] + dice[1]}</b><span>{tierLabel}</span></div>}
         <div className="ceremony-die"><Dice3D value={dice?.[0]}/></div>
         <div className="ceremony-die"><Dice3D value={dice?.[1]}/></div>
       </div>
@@ -229,7 +226,5 @@ export default function DiceRollOverlay({resolution, startedAt, title, onClose}:
         {[...ribbons, ...glints, ...rain, ...streaks, ...emojis].map((p, i) => <span key={i} className={p.className as string} style={p}/>)}
       </div>}
     </div>
-    {reveal && <span className={`ceremony-vignette tier-${tier}`} aria-hidden="true"/>}
-    {reveal && <p className="ceremony-hint">点击任意处继续</p>}
   </div>;
 }

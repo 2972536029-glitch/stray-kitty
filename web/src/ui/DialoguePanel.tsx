@@ -2,7 +2,29 @@ import type {StoryNode} from '../contracts';
 import type {CatBreed} from '../adapters/canvas/pixelCat';
 import DialogueBubble from './DialogueBubble';
 import PixelCat from './PixelCat';
-import {useEffect, useRef, useState, type ReactNode} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState, type ReactNode} from 'react';
+
+type Attitude = 'proud' | 'honest';
+
+function AttitudeChoice({nodeId, disabled, onChoose}: {nodeId: string; disabled: boolean; onChoose: (value: Attitude) => void}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useLayoutEffect(() => {
+    const dialog = ref.current!;
+    dialog.showModal();
+    return () => dialog.close();
+  }, []);
+  return <dialog ref={ref} className="story-choice-modal" aria-labelledby="story-choice-title" aria-describedby="story-choice-prompt" onCancel={event => event.preventDefault()}>
+    <span className="story-choice-kicker">喵喵的心里话</span>
+    <PixelCat breed="miaomiao" size={144}/>
+    <h2 id="story-choice-title">这一刻，想怎么回应？</h2>
+    <p id="story-choice-prompt">{nodeId === 'prologue_sneak' ? '香气飘了过来，小肚子先动了心……' : '被叫作小少爷，喵喵有点不服气……'}</p>
+    <div className="story-choice-options" role="group" aria-label="猫咪态度">
+      <button type="button" disabled={disabled} onClick={() => onChoose('proud')}><span aria-hidden="true">😼</span><strong>傲娇嘴硬</strong><small>本咪当然有自己的打算！</small></button>
+      <button type="button" disabled={disabled} onClick={() => onChoose('honest')}><span aria-hidden="true">😿</span><strong>诚实撒娇</strong><small>就说出心里真正的想法吧。</small></button>
+    </div>
+    <small className="story-choice-hint">选择后，继续听喵喵说下去</small>
+  </dialog>;
+}
 
 const speakers: Record<string, CatBreed> = {'喵喵': 'miaomiao', '团子': 'tuanzi', '点点': 'diandian', '墨墨': 'momo'};
 
@@ -14,18 +36,19 @@ interface Props {
 }
 
 export default function DialoguePanel({node, disabled, onNext, eventResult}: Props) {
-  const [attitude, setAttitude] = useState<'proud' | 'honest' | null>(null);
+  const [choice, setChoice] = useState<{nodeId: string; attitude: Attitude} | null>(null);
+  const attitude = choice?.nodeId === node.id ? choice.attitude : null;
   const [closing, setClosing] = useState(false);
 
   const hasChoices = node.id === 'prologue_banter' || node.id === 'prologue_sneak';
+  const choosing = hasChoices && !attitude;
+  useEffect(() => {
+    if (hasChoices && attitude) document.querySelector<HTMLButtonElement>('.dialogue-advance-hit')?.focus({preventScroll:true});
+  }, [node.id, hasChoices, attitude]);
 
-  let displayText = node.text;
-  if (hasChoices) {
-    if (!attitude) {
-      displayText = node.id === 'prologue_sneak'
-        ? '（面对扑鼻的香气，喵喵心里正在纠结……请选择喵喵此时的心情与态度：）'
-        : '（被唤作小少爷，喵喵心里正憋着一股小情绪……请选择喵喵此时的态度：）';
-    } else if (node.id === 'prologue_banter') {
+  let displayText = choosing ? '' : node.text;
+  if (hasChoices && attitude) {
+    if (node.id === 'prologue_banter') {
       displayText = attitude === 'honest'
         ? '呜……谁是小少爷！肚子好饿，爪子踩得冰凉凉的……胖橘，你身上有没有藏小鱼干先借本咪垫垫底……'
         : '谁是小少爷！本咪是微服私访的领地巡察官！……咕噜噜（肚子大声抗议）……本咪只是出来视察民情！';
@@ -82,35 +105,16 @@ export default function DialoguePanel({node, disabled, onNext, eventResult}: Pro
 
   return <>
     {node.scene === 'poster' && <aside className="lost-poster" aria-label="寻猫启事"><b>寻猫启事</b><PixelCat size={100}/><strong>它叫喵喵。</strong><span>家里的蓝色饭碗，一直在等它。</span></aside>}
-    <DialogueBubble
+    {choosing ? <AttitudeChoice key={node.id} nodeId={node.id} disabled={disabled} onChoose={value => setChoice({nodeId:node.id, attitude:value})}/> : <DialogueBubble
       speaker={node.speaker}
       breed={speakers[node.speaker]}
       closing={closing}
       disabled={disabled}
-      hint={hasChoices && !attitude ? '请选择上方态度' : undefined}
       onAdvance={advance}
       onSkip={advance}
     >
-      {hasChoices && (
-        <div className="attitude-toggle" role="group" aria-label="猫咪态度">
-          <button
-            type="button"
-            className={`attitude-btn ${attitude === 'proud' ? 'active' : ''}`}
-            onClick={() => setAttitude('proud')}
-          >
-            😼 傲娇嘴硬
-          </button>
-          <button
-            type="button"
-            className={`attitude-btn ${attitude === 'honest' ? 'active' : ''}`}
-            onClick={() => setAttitude('honest')}
-          >
-            😿 诚实撒娇
-          </button>
-        </div>
-      )}
       {eventResult}
       <p key={node.id + (attitude ?? 'initial')}>{displayText.slice(0, shown)}{typing && <i className="dialogue-caret" aria-hidden="true"/>}</p>
-    </DialogueBubble>
+    </DialogueBubble>}
   </>;
 }

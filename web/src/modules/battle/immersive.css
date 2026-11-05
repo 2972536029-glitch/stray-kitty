@@ -1,12 +1,4 @@
 /* Story scenery, with battle information anchored inside the view. */
-.app-shell:has(.battle-l00.battle-immersive) .topbar{min-height:56px;height:56px;margin:0;padding:6px 20px;border-width:0 0 1px;border-radius:0;box-shadow:none;flex-wrap:nowrap;gap:16px}
-/* 战斗内顶栏保持大字号与清晰辨识度（与地图、花房一致的可读性）。 */
-.app-shell:has(.battle-l00.battle-immersive) .topbar .brand strong{font-size:20px;font-weight:800;color:#fff0cf;letter-spacing:1.5px}
-.app-shell:has(.battle-l00.battle-immersive) .topbar .brand-mark{width:34px;height:34px;font-size:26px;box-shadow:none}
-.app-shell:has(.battle-l00.battle-immersive) .topbar .brand small,.app-shell:has(.battle-l00.battle-immersive) .topbar .wallet{display:none}
-.app-shell:has(.battle-l00.battle-immersive) .topbar .chapter-pill{padding:6px 12px;font-size:15px;font-weight:600;color:#f4dbaf;box-shadow:none}
-.app-shell:has(.battle-l00.battle-immersive) .topbar nav{margin-left:auto;gap:8px}
-.app-shell:has(.battle-l00.battle-immersive) .topbar nav button{min-height:36px;height:36px;padding:4px 12px;font-size:15px;font-weight:700;color:#f5e6bf;box-shadow:none}
 .app-shell:has(.battle-l00.battle-immersive) .world-toolbar,.app-shell:has(.battle-l00.battle-immersive) .world-footer{display:none}
 .app-shell:has(.battle-l00.battle-immersive) .world-wrap{padding:0;overflow:hidden;scrollbar-gutter:auto;background:#263a34}
 .app-shell:has(.battle-l00.battle-immersive) .dev-bar{position:absolute;top:76px;left:10px;right:10px;z-index:60;max-height:45vh}
@@ -120,8 +112,6 @@
  .battle-l00.battle-immersive .btl-board-caption{left:190px;right:230px;font-size:10px}
 }
 @media(max-width:699px){
- .app-shell:has(.battle-l00.battle-immersive) .topbar{padding:3px 6px;height:40px;min-height:40px;gap:4px}
- .app-shell:has(.battle-l00.battle-immersive) .topbar .brand>span:last-child{display:none}.app-shell:has(.battle-l00.battle-immersive) .topbar nav{gap:4px}.app-shell:has(.battle-l00.battle-immersive) .topbar nav button{width:30px;padding:3px;font-size:12px}.app-shell:has(.battle-l00.battle-immersive) .topbar nav .battle-host-pause{width:auto;min-width:46px;font-size:10px}
  .battle-l00.battle-immersive :is(.prologue-battlefield,.chapter-battlefield,.market-battlefield,.greenhouse-battlefield,.tunnel-battlefield,.finale-battlefield){inset:152px 0 158px}
  .battle-l00.battle-immersive :is(.prologue-board-scroll,.chapter-board-scroll,.market-board-scroll,.greenhouse-board-scroll,.tunnel-board-scroll,.finale-board-scroll){padding:12px}
  .battle-l00.battle-immersive .btl-head{left:8px;top:64px;width:105px}.battle-l00.battle-immersive .btl-head strong{font-size:11px;max-height:32px;overflow:hidden}.battle-l00.battle-immersive .btl-progress{display:block;font-size:10px}.battle-l00.battle-immersive .btl-progress>span:first-child{display:none}

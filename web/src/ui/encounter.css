@@ -39,14 +39,14 @@
 .app-shell:has(.discovery-dock) .world-footer:not(:has(.home-return-button)) {display:none}
 .app-shell:has(.discovery-dock) .world-footer .home-return-button {font-size:13px}
 .app-shell:has(.discovery-dock) .world-footer>p {display:none}
-.app-shell .explore-result-card.encounter-sheet {min-height:260px}
-.explore-result-card.encounter-sheet .event-resolution {padding:0;margin:20px 0;border:0;background:none}
-.explore-result-card.encounter-sheet .resolution-dice {gap:28px}
-.explore-result-card.encounter-sheet .resolution-dice strong {font-size:23px}
-.explore-result-card.encounter-sheet .resolution-dice>div:last-child>span {font-size:14px}
-.explore-result-card.encounter-sheet .event-resolution p {font-size:18px;line-height:1.85;margin:20px 0 12px}
-.explore-result-card.encounter-sheet .outcome-effects>span {font-size:13px;border:1px solid #bca78170;background:#fff7e077}
-.explore-result-card.encounter-sheet>button {float:right;min-width:172px;font-size:17px;background:#536e5e;border:1px solid #496456;box-shadow:none}
+.app-shell .encounter-result.encounter-sheet {min-height:260px}
+.encounter-result.encounter-sheet .event-resolution {padding:0;margin:20px 0;border:0;background:none}
+.encounter-result.encounter-sheet .resolution-dice {gap:28px}
+.encounter-result.encounter-sheet .resolution-dice strong {font-size:23px}
+.encounter-result.encounter-sheet .resolution-dice>div:last-child>span {font-size:14px}
+.encounter-result.encounter-sheet .event-resolution p {font-size:18px;line-height:1.85;margin:20px 0 12px}
+.encounter-result.encounter-sheet .outcome-effects>span {font-size:13px;border:1px solid #bca78170;background:#fff7e077}
+.encounter-result.encounter-sheet>button {float:right;min-width:172px;font-size:17px;background:#536e5e;border:1px solid #496456;box-shadow:none}
 .encounter-preparation .event-resolution {margin:20px 0;padding:0;border:0;background:none}
 .event-card.encounter-preparation .event-resolution p {font-size:18px;line-height:1.8}
 .encounter-preparation .resolution-dice strong {font-size:23px}
@@ -66,8 +66,8 @@
   .choice-index {font-size:14px;padding-right:9px}.choice-check {font-size:17px}
   .encounter-actions {padding-top:10px;gap:12px}.encounter-sheet .encounter-roll {min-height:44px;min-width:155px;padding:9px 14px;gap:9px;font-size:15px}.encounter-roll>span {margin-left:8px}
   .encounter-sheet .push-btn {min-height:44px;padding:8px 10px;font-size:12px}.encounter-roll-actions {gap:10px}.encounter-rules {font-size:10px}
-  .explore-result-card.encounter-sheet .event-resolution p {font-size:14px;margin:12px 0}.explore-result-card.encounter-sheet .resolution-dice strong {font-size:18px}
-  .app-shell .explore-result-card.encounter-sheet {min-height:0}.explore-result-card.encounter-sheet>button {font-size:14px;min-height:44px}
+  .encounter-result.encounter-sheet .event-resolution p {font-size:14px;margin:12px 0}.encounter-result.encounter-sheet .resolution-dice strong {font-size:18px}
+  .app-shell .encounter-result.encounter-sheet {min-height:0}.encounter-result.encounter-sheet>button {font-size:14px;min-height:44px}
   .event-card.encounter-preparation .event-resolution p {font-size:14px}.encounter-preparation .resolution-dice strong {font-size:18px}.encounter-sheet .encounter-next-actions>button {min-height:44px;font-size:14px;padding:9px 15px}
 }
 @media(max-width:600px) and (min-height:601px) {
@@ -77,9 +77,37 @@
 }
 @media(prefers-reduced-motion:reduce) {.app-shell .discovery-dock,.event-card.encounter-sheet {animation:none}.encounter-sheet .encounter-choices button {transition:none}}
 
+/* Fixed and random encounters share one portrait page, including their results. */
+.event-card.encounter-sheet.encounter-portrait {display:flex;flex-direction:column;width:min(540px,calc(100% - 48px));min-height:min(650px,calc(100dvh - 112px));max-height:calc(100dvh - 112px);padding:30px 32px 28px}
+.encounter-portrait .encounter-heading {flex-direction:column;align-items:flex-start;gap:10px;padding-bottom:20px}
+.encounter-portrait .encounter-heading>span {font-size:12px;letter-spacing:3px}
+.event-card.encounter-portrait h2 {font-size:30px;letter-spacing:2px}
+.event-card.encounter-portrait .encounter-story {margin:22px 0 24px;font-size:18px;line-height:1.85}
+.encounter-portrait .encounter-choices {grid-template-columns:minmax(0,1fr);gap:12px;margin-bottom:24px}
+.encounter-portrait .encounter-choices button {min-height:68px;padding:15px 16px;gap:12px;font-size:18px}
+.encounter-portrait .encounter-actions {flex-direction:column;align-items:stretch;gap:12px;margin-top:auto;padding-top:14px}
+.encounter-portrait .encounter-roll-actions {display:flex;flex-direction:column-reverse;align-items:stretch;gap:10px}
+.encounter-portrait .encounter-roll {width:100%;min-height:54px;font-size:18px}
+.encounter-portrait .push-btn {min-height:40px;padding:8px 14px;font-size:14px}
+.encounter-portrait .encounter-rules {font-size:13px}
+.app-shell .encounter-result.encounter-portrait {min-height:min(580px,calc(100dvh - 112px))}
+.encounter-result.encounter-portrait .event-resolution {margin:30px 0;flex:1}
+.encounter-result.encounter-portrait .resolution-dice {flex-direction:column;align-items:center;gap:20px;text-align:center}
+.encounter-result.encounter-portrait>button {float:none;width:100%;min-height:54px;flex-shrink:0}
+.encounter-result .encounter-next-actions {flex-direction:column;align-items:stretch;margin-top:auto;gap:10px}
+.encounter-result .encounter-next-actions>button {width:100%;min-height:54px}
+@media(max-height:750px) {
+  .event-card.encounter-sheet.encounter-portrait {padding:22px 28px}
+  .encounter-portrait .encounter-heading {gap:5px;padding-bottom:14px}
+  .event-card.encounter-portrait .encounter-story {margin:16px 0;line-height:1.75}
+  .encounter-portrait .encounter-choices {margin-bottom:18px}
+  .encounter-portrait .encounter-choices button {min-height:60px;padding:12px 15px}
+}
+
 /* Native inspection dialogs use the same visual centre as choices and dice. */
 dialog.game-modal.inspection-dialog {inset:0;margin:auto;width:min(680px,calc(100vw - 40px));max-height:calc(100dvh - 110px);padding:34px 40px;border:1px solid #baa17a;border-radius:5px;background:radial-gradient(#a5885120 .6px,transparent .8px) 0 0/7px 7px,linear-gradient(115deg,#fcf2dc,#eee0c2);box-shadow:0 0 0 3px #e4cfaa77,0 14px 60px #0d222866;color:#635644}
 .inspection-dialog>header h2 {font-size:30px;letter-spacing:3px;margin:12px 0 0;color:#6c5038}
+dialog.game-modal.inspection-dialog::backdrop {background:transparent;backdrop-filter:none}
 dialog.inspection-dialog>p {font-size:18px;line-height:1.9;margin:24px 0}
 .inspection-dialog>button:not(.modal-close) {min-height:48px;float:right;font-size:16px;box-shadow:none}
 @media(max-width:700px),(max-height:600px) {dialog.game-modal.inspection-dialog {padding:20px 26px}.inspection-dialog>header h2 {font-size:23px}dialog.inspection-dialog>p {font-size:15px;margin:16px 0}.inspection-dialog>button:not(.modal-close) {min-height:44px}}

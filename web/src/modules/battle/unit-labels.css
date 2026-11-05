@@ -1,3 +1,5 @@
+.battle-l00.battle-immersive {--battle-unit-font:clamp(12px,19cqw,22px);--battle-menu-width:212px;--battle-menu-height:178px}
+
 /* Keep chapter names readable at the board's actual zoom, including mobile
    overview. The fixed grid tracks size these containers; labels never size a tile. */
 .battle-l00.battle-immersive :is(.chapter-cell,.market-cell,.greenhouse-cell,.tunnel-cell,.finale-cell){
@@ -18,15 +20,15 @@
   gap:clamp(2px,3cqw,5px);
   box-sizing:border-box;
   width:max-content;
-  max-width:calc(100% - 4px);
+  max-width:calc(100% - 2px);
   margin:0;
-  padding:1px 4px;
+  padding:1px 3px;
   border:1px solid #b6c6a7;
   border-radius:3px;
   background:rgb(17 39 43 / 94%);
   color:#fff8df;
   box-shadow:0 1px 2px #071b1d99;
-  font-size:clamp(10px,18cqw,20px);
+  font-size:var(--battle-unit-font);
   font-weight:800;
   line-height:1.1;
   text-shadow:0 1px 1px #071719,-1px 0 #071719,1px 0 #071719;
@@ -55,25 +57,45 @@
   display:block;
   flex:0 0 auto;
   margin:0;
-  padding:1px 2px;
+  padding:0;
   border:0;
   border-radius:2px;
   background:#56726473;
-  color:#e1e7c9;
-  font-size:clamp(10px,11cqw,12px);
-  font-weight:500;
+  color:inherit;
+  font-size:inherit;
+  font-weight:inherit;
   line-height:1.1;
 }
 
 /* Keep the name, rather than replacing it with a tiny role badge. Role details
    remain available in the skill menu and the cell's accessible description. */
-@container battle-unit-cell (max-width:74px){
+@container battle-unit-cell (max-width:48px){
   .battle-l00.battle-immersive :is(.chapter-unit-state,.market-unit-state,.greenhouse-unit-state,.tunnel-unit-state,.finale-unit-state,.finale-ally-state)
     > :is(.btl-unit-name,.finale-ally-name)
     > :is(.chapter-role-badge,.market-role-badge,.greenhouse-role-badge,.tunnel-role-badge,.finale-role-badge,small){
     display:none;
   }
 }
+
+/* The prologue uses the same type scale as the goal and later chapter cats. */
+.battle-l00.battle-immersive[data-scene=prologue] .btl-unit {container-name:battle-unit-cell;container-type:inline-size}
+.battle-l00.battle-immersive[data-scene=prologue] .btl-unit>.btl-unit-name {display:flex;align-items:center;gap:6px;width:max-content;max-width:calc(100% - 4px);font-size:var(--battle-unit-font);font-weight:800;line-height:1.1;padding:1px 4px;white-space:nowrap}
+.battle-l00.battle-immersive[data-scene=prologue] .btl-unit>.btl-unit-name small {display:inline;margin:0;font-size:inherit;font-weight:inherit;line-height:inherit;color:inherit}
+
+/* A single row for name and role, with a matching skill title in every scene. */
+.battle-l00.battle-immersive[data-scene] .btl-cat-menu {box-sizing:border-box;width:var(--battle-menu-width);min-height:var(--battle-menu-height);padding:12px;gap:10px}
+.battle-l00.battle-immersive[data-scene] .btl-cat-menu-heading {gap:8px}
+.battle-l00.battle-immersive[data-scene] .btl-cat-menu-heading strong {display:flex;flex-wrap:nowrap;align-items:center;gap:8px;min-width:0;font-size:22px;line-height:1.3;white-space:nowrap}
+.battle-l00.battle-immersive[data-scene] .btl-cat-menu-heading strong>[class$="-role-badge"] {display:inline;flex-shrink:0;padding:0;border:0;background:none;color:inherit;font-size:inherit;font-weight:inherit;line-height:inherit}
+.battle-l00.battle-immersive[data-scene] .btl-cat-menu-close {flex-shrink:0;width:28px;height:28px;font-size:24px}
+.battle-l00.battle-immersive[data-scene] .btl-skill-orb {box-sizing:border-box;width:64px;height:64px;min-width:64px}
+.battle-l00.battle-immersive[data-scene] .btl-skill-orb>svg {width:36px;height:36px}
+.battle-l00.battle-immersive[data-scene] .btl-skill-orb>span {font-size:30px}
+.battle-l00.battle-immersive[data-scene] .btl-cat-menu-footer {font-size:22px}
+.battle-l00.battle-immersive[data-scene] .btl-skill-tooltip {width:380px}
+.battle-l00.battle-immersive[data-scene] .btl-skill-tooltip>strong {font-size:22px}
+.battle-l00.battle-immersive[data-scene] .btl-skill-tooltip>p {font-size:18px;line-height:1.65}
+.battle-l00.battle-immersive[data-scene] .btl-skill-tooltip>p[class$="-positioning"] {font-size:18px}
 
 /* Small overview tiles retain a full, single-line name and leave the lower
    portion of the tile available for the cat and its health / energy meters. */

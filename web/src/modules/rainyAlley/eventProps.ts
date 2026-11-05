@@ -4,26 +4,55 @@ import {drawPixelCat} from '../../adapters/canvas/pixelCat';
 
 export const propIds = ['alley_puddle_reflection','alley_empty_fish_can','alley_fish_dry','alley_crate','alley_poster','alley_scratch_marks','alley_blanket_stack'] as const;
 export const cellSize = 40;
+const atlasScale = 2;
+const atlasCellSize = cellSize * atlasScale;
+// Visible tops relative to the shared ground anchor; labels use these same bounds.
+const propTop: Record<typeof propIds[number], number> = {
+  alley_puddle_reflection: 13, alley_empty_fish_can: 16, alley_fish_dry: 11,
+  alley_crate: 63, alley_poster: 27, alley_scratch_marks: 16, alley_blanket_stack: 13,
+};
+export function eventPropTopOffset(id: string, scale = 1) {
+  return (propTop[id as typeof propIds[number]] ?? 32) * scale;
+}
+/** Set loose props on pavement beside the background's lamp and railing posts.
+ * Interaction centres and the authored collision map stay at their existing positions. */
+export function eventPropPosition(id: string, point: {x: number; y: number}) {
+  if (id === 'alley_puddle_reflection') return {x:point.x + 8, y:point.y + 26};
+  if (id === 'alley_empty_fish_can') return {x:point.x + 30, y:point.y + 10};
+  return {x:point.x, y:point.y};
+}
+
+/** Kitten source is scaled .75 in the crate, matching the explorer's .62 × .85. */
+export function eventPropScale(id:string,baseScale=1) {
+  return id==='alley_crate' ? (.62*.85)/.75 : baseScale;
+}
+
 let atlas: HTMLCanvasElement | undefined;
 export function eventPropAtlas() {
   if (atlas) return atlas;
-  atlas = document.createElement('canvas'); atlas.width = propIds.length * cellSize; atlas.height = cellSize;
+  atlas = document.createElement('canvas'); atlas.width = propIds.length * atlasCellSize; atlas.height = atlasCellSize;
   const c = atlas.getContext('2d')!; c.imageSmoothingEnabled = false;
   const rect = (color: string, x: number, y: number, w: number, h: number) => {c.fillStyle=color;c.fillRect(x,y,w,h);};
   for (const [i,id] of propIds.entries()) {
-    c.save();c.translate(i*cellSize,0);
+    c.save();c.translate(i*atlasCellSize,0);c.scale(atlasScale,atlasScale);
     // Preserve pixel shapes and shaded faces, but separate props from the blue/gold map.
     // Weathered metal, linen and faded green sit in the scene rather than floating like UI icons.
     const edge='#302c2b',wood='#d4b29b',light='#f4dfbf';
     if(id==='alley_puddle_reflection') {
-      // Flat, broken rain reflections, without an upright icon silhouette.
-      rect('#142c37aa',5,28,29,4);rect('#294853',3,29,32,2);rect('#50717a',7,27,22,1);
-      rect('#a99864',12,28,4,1);rect('#d4bd7c',20,29,7,1);rect('#62878e',8,30,10,1);rect('#7aa4a4',23,31,6,1);
+      // Keep Jenny's reflection and palette, with a broader, deeper patch of water.
+      c.save();c.translate(20,32);c.scale(1.1,1.6);c.translate(-20,-32);
+      rect('#284653',4,26,30,6);rect('#284653',8,24,22,10);rect('#4b9d9c',6,26,28,4);rect('#75bdb5',10,25,18,7);
+      rect('#c5f5df',7,27,7,1);rect('#e0ffec',23,28,8,1);rect('#b1e1d0',11,33,9,1);
+      // Broken reflection rather than an upright second cat.
+      rect('#b1e3d3',17,27,8,3);rect('#ddf5da',16,27,2,2);rect('#ddf5da',23,27,2,2);rect('#86cfc2',18,30,6,2);
+      c.restore();
     } else if(id==='alley_empty_fish_can') {
-      rect('#08101455',8,31,24,3);rect(edge,10,23,21,9);rect('#526864',11,24,19,7);
-      rect('#a1aa94',11,22,18,2);rect('#1d3337',13,24,14,3);rect('#8d977b',12,28,16,3);
-      rect('#bba477',17,28,7,2);rect('#506353',18,28,3,1);rect('#c6bfa0',12,31,15,1);
-      rect(edge,6,20,7,7);rect('#9fa88e',7,21,5,5);rect('#d5cfad',7,21,2,3);rect('#647c6e',11,23,1,3);
+      rect('rgba(8,16,20,.38)',8,31,24,4);rect(edge,10,21,21,11);rect('#b37188',11,22,19,8);
+      rect('#efdabd',11,21,18,2);rect('#4c3c50',13,23,14,3);rect('#d99eab',12,27,16,3);
+      rect('#e5e3bc',16,27,8,2);rect('#fff3d5',18,27,2,1);rect('#f5e6ce',12,30,15,1);
+      // Open, bent lid on the left: readable silhouette and one cool highlight.
+      rect(edge,6,16,7,9);rect('#b2cbb7',7,17,5,7);rect('#e0f2d4',7,17,2,5);rect('#708e83',11,19,1,5);
+      rect('#514435',29,29,3,3);
     } else if(id==='alley_fish_dry') {
       rect('#14201e55',6,31,28,3);rect('#8c8062',5,24,29,8);rect('#b9ac87',6,25,27,6);rect('#d3c39c',7,25,25,1);
       const fish=(x:number,y:number)=>{rect('#4b3e30',x+4,y-1,14,6);rect('#705539',x,y,4,4);rect('#aa7e49',x+4,y,13,4);rect('#d1ac6d',x+7,y,8,1);rect('#715039',x+7,y+3,8,1);rect('#bd965b',x+1,y+1,4,2);rect('#292e27',x+15,y+1,1,1);};
@@ -77,6 +106,6 @@ export function paintEventProp(c:CanvasRenderingContext2D,id:string,x:number,y:n
   const i=propIds.indexOf(id as typeof propIds[number]);if(i<0)return;
   c.save();c.imageSmoothingEnabled=false;
   const top=id==='alley_crate'&&completed?19:0;
-  c.drawImage(eventPropAtlas(),i*cellSize,top,cellSize,cellSize-top,Math.round(x-20*scale),Math.round(y-(32-top)*scale),cellSize*scale,(cellSize-top)*scale);
+  c.drawImage(eventPropAtlas(),i*atlasCellSize,top*atlasScale,atlasCellSize,(cellSize-top)*atlasScale,Math.round(x-20*scale),Math.round(y-(32-top)*scale),cellSize*scale,(cellSize-top)*scale);
   c.restore();
 }

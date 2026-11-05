@@ -5,7 +5,7 @@ import {rainyAlleyObjectEligible, rainyAlleyRegistration, rainyAlleySource, type
 import {findPath, sweepMove} from './collision';
 import {paintSqueezePassage} from './squeezePainter';
 import {createSqueezeMotion, type SqueezeMotion} from './squeezeMotion';
-import {paintEventProp} from './eventProps';
+import {eventPropPosition, eventPropScale, eventPropTopOffset, paintEventProp} from './eventProps';
 import {rainyEventObjective, EVENT_PROP_SCALE, type AlleyLabel} from './eventLabels';
 import {chapterBackground} from '../map/artwork';
 import {
@@ -358,12 +358,14 @@ export class IntegratedRainyAlley {
     for (const object of rainyAlleySource.objects.fixed) {
       if (object.id === DOG_FRIEND_ID || (object.requiresFlag && !flags.includes(object.requiresFlag))) continue;
       const completed = !rainyAlleyObjectEligible(object, flags);
+      const position = eventPropPosition(object.id, object);
+      const propScale = eventPropScale(object.id, EVENT_PROP_SCALE);
       context.save(); context.globalAlpha = completed ? .48 : 1;
-      paintEventProp(context, object.id, object.x, object.y, EVENT_PROP_SCALE, completed);
+      paintEventProp(context, object.id, position.x, position.y, propScale, completed);
       context.restore();
       if (object.id === 'alley_crate' && !completed) {
         context.save(); context.strokeStyle = 'rgba(225,197,123,.48)'; context.lineWidth = 1;
-        context.beginPath(); context.ellipse(object.x, object.y + 3, 19 * EVENT_PROP_SCALE, 5 * EVENT_PROP_SCALE, 0, 0, Math.PI * 2); context.stroke(); context.restore();
+        context.beginPath(); context.ellipse(object.x, object.y + 3, 19 * propScale, 5 * propScale, 0, 0, Math.PI * 2); context.stroke(); context.restore();
       }
     }
   }
@@ -381,11 +383,12 @@ export class IntegratedRainyAlley {
       .map(object => {
         const eligible = rainyAlleyObjectEligible(object, flags);
         const distance = Math.hypot(this.position.x - object.x, this.position.y - object.y);
-        const offset = Math.max(44.8, (object.id === 'alley_crate' ? 63 : 32) * EVENT_PROP_SCALE);
+        const position = eventPropPosition(object.id, object);
+        const offset = object.id === DOG_FRIEND_ID ? 34 : eventPropTopOffset(object.id, eventPropScale(object.id, EVENT_PROP_SCALE));
         const active = eligible && object.id === this.nearby?.id && !this.cheering();
         return {
           id: object.id, text: object.label, key: active ? 'e' : undefined,
-          ...project({x: object.x, y: object.y - offset - 6}),
+          ...project({x: position.x, y: position.y - offset - 6}),
           alpha: (object.id === objective ? 1 : Math.max(0, Math.min(1, (95 - distance) / 30))) * (eligible ? 1 : .42),
           objective: object.id === objective
         };
