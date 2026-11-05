@@ -244,6 +244,12 @@ func (g *Game) adviseJourney(ctx context.Context, token string, input domain.Adv
 		return domain.AdvisorResponse{}, domain.Fail("INVALID_ADVISOR_REQUEST", "当前进度暂时无法读取", 400)
 	}
 	visible := json.RawMessage(input.Context)
+	if before.Phase == "home" {
+		// Home facts are fully available from the authenticated save and curated
+		// server catalog. Do not send duplicate/untrusted client story claims,
+		// forged progress, or a whole story catalog to the model under any key.
+		visible = json.RawMessage(`{}`)
+	}
 	combined, err := json.Marshal(struct {
 		ServerProgress map[string]any  `json:"serverProgress"`
 		VisibleContext json.RawMessage `json:"visibleContext"`

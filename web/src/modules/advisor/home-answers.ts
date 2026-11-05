@@ -1,5 +1,6 @@
 import type {Catalog, GameState} from '../../contracts';
 import battleReference from '../../../../server/internal/service/advisor_battle_reference.json';
+import {getHomeStoryAnswer} from './home-story-answers';
 import {eventInventoryRule, eventEncouragementRule, eventChoiceRule, eventFailureRule,
   eventEncouragementRecovery, eventProbabilityMeaning, publicEventProbabilityText} from './public-event-rules';
 
@@ -43,9 +44,11 @@ export function getHomePublicAnswer(state: GameState, catalog: Catalog, question
     const names = state.furniture.slice(0, 24).map(id => catalog.furniture.find(item => item.id === id)?.name).filter(Boolean);
     return {title: '家园家具', text: `家园家具和战斗补给是不同功能。当前拥有的家具：${names.join('、') || '暂无可核实记录'}。摆放、收纳和可用位置以家园当前界面为准；我只能解释，不会替你购买或摆放。`};
   }
-  if (/完整历史|完整剧情|所有剧情|每次.*(?:选择|对话)|以前.*说|之前.*台词|未来剧情|后面.*(?:剧情|结局)/.test(q)) {
+  if (/完整历史|完整剧情|所有剧情|每次.*(?:选择|对话)|以前.*说|之前.*台词|未来.*(?:剧情|结局)|后面.*(?:剧情|结局)/.test(q)) {
     return {title: '已知故事的范围', text: '目前记录能核实已完成关卡、当前进度和最近一次事件，不是完整的已读台词或全部选择日志。我可以解释这些已有记录；没有记录的旧对白和未来剧情无法确认，也不会编出一段回忆。'};
   }
+  const storyAnswer = getHomeStoryAnswer(state, q);
+  if (storyAnswer) return storyAnswer;
   if (/剧情|故事|经历|通关|回顾/.test(q) && /已|以前|之前|前面|经历|通关|回顾/.test(q)) {
     const names = state.completedStages.slice(0, 16).map(id => catalog.stages.find(stage => stage.id === id)?.name).filter(Boolean);
     return {title: '有记录的旅程', text: `当前可核实的已完成关卡：${names.join('、') || '暂无具名记录'}。这只能证明通关进度，不代表完整剧情或全部选择日志；没有记录的对白和角色动机无法确认。`};

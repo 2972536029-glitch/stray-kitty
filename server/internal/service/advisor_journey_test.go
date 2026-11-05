@@ -78,8 +78,15 @@ func TestJourneyAdvisorSelectsVisibleCatalogFactsWithoutMutatingSave(t *testing.
 						Visible  map[string]any `json:"visibleContext"`
 					} `json:"context"`
 				}
-				if json.Unmarshal([]byte(content), &payload) != nil || payload.Scope != "journey" || payload.Context.Progress["phase"] != phase || payload.Context.Visible["visibleLabel"] != "眼前的路灯" {
+				if json.Unmarshal([]byte(content), &payload) != nil || payload.Scope != "journey" || payload.Context.Progress["phase"] != phase {
 					t.Error("server progress and visible client information were not separated")
+				}
+				if phase == "home" {
+					if len(payload.Context.Visible) != 0 {
+						t.Error("home must use server facts instead of duplicate client context")
+					}
+				} else if payload.Context.Visible["visibleLabel"] != "眼前的路灯" {
+					t.Error("legacy non-home current observation was lost")
 				}
 				_, hasStory := payload.Context.Progress["currentStory"]
 				_, hasEvent := payload.Context.Progress["currentEvent"]
