@@ -29,6 +29,7 @@ flowchart TD
 
 ```text
 stray-kitty/
+├─ dashboards/
 ├─ deploy/  部署模板
 │  ├─ team-preview/
 │  │  └─ k8s/
