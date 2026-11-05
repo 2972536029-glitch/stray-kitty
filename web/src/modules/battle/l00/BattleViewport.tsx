@@ -24,6 +24,7 @@ import {useBattleDragPreview} from '../shared/useBattleDragPreview';
 import {getSkillTooltipPosition} from '../skillTooltipPosition';
 import type {AnimationBook, CatKind, CatPose} from './painter';
 import './battle.css';
+import '../unit-labels.css';
 
 interface Props {
   context:BattleContext;paused:boolean;onResult:(result:BattleResult)=>void;onStart?:()=>void;
@@ -68,7 +69,6 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const [submitted,setSubmitted]=useState(false);
   const [starting,setStarting]=useState(false);
   const [startError,setStartError]=useState('');
-  const [overview,setOverview]=useState(()=>window.innerWidth>=700);
   const advisorChat=useModelAdvisor({
     attemptId:context.attempt.id,stageId:context.attempt.stageId,open:chatOpen,
     blocked:paused||!!game?.externallyPaused||submitted||starting||game?.phase==='won'||game?.phase==='failed',
@@ -83,7 +83,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const dragPreview=useBattleDragPreview<CatId>({boardRef,columns:7,rows:3,activeCatId:dragging,drawCat:drawPrologueDragCat});
   const battlefieldRef=useRef<HTMLDivElement>(null),menuRef=useRef<HTMLDivElement>(null),tooltipRef=useRef<HTMLDivElement>(null);
   const fittedWidth=useBattleBoardFit(scrollRef,7,3);
-  const boardWidth=overview?fittedWidth:Math.max(700,Math.round((fittedWidth??560)*1.25));
+  const boardWidth=fittedWidth;
   const callbackRef=useRef(onResult);callbackRef.current=onResult;
   const pausedRef=useRef(paused);pausedRef.current=paused;
   const holdRef=useRef(false);holdRef.current=chatOpen||!!drag&&game?.phase!=='teach_live_move';
@@ -161,7 +161,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     for(const node of [battlefieldRef.current,scrollRef.current,boardRef.current,menuRef.current,tooltipRef.current])if(node)observer.observe(node);
     update();window.addEventListener('resize',schedule);window.addEventListener('scroll',schedule,true);
     return()=>{observer.disconnect();cancelAnimationFrame(frame);window.removeEventListener('resize',schedule);window.removeEventListener('scroll',schedule,true);};
-  },[inspectedCat,inspectedPosition?.x,inspectedPosition?.y,overview,skillTooltipOpen]);
+  },[inspectedCat,inspectedPosition?.x,inspectedPosition?.y,skillTooltipOpen]);
   if(!game)return <div className="battle-l00 btl-loading">正在整理战斗地格……</div>;
 
   const blocked=paused||game.externallyPaused||submitted||starting;
@@ -360,10 +360,9 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
           <button className="btl-play-toggle" data-testid="battle-play-toggle" aria-label={game.phase==='ready'?'开始序章战斗':game.paused?'开始，继续战斗':'暂停战斗'} disabled={blocked||terminal||chatOpen||game.phase!=='ready'&&!runningPhase} onClick={startOrPause}>{game.phase==='ready'||game.paused||!runningPhase?'开始':'暂停'}</button>
           <span data-testid="battle-speed-status" role="status">{speedStatus}</span>
         </div>
-        <div className="prologue-map-tools"><button type="button" className="btl-quiet" aria-pressed={overview} onClick={()=>setOverview(value=>!value)}>{overview?'放大战场':'查看全图'}</button></div>
         <div className="prologue-battlefield" ref={battlefieldRef}>
           <div className="prologue-board-scroll" ref={scrollRef} role="region" aria-label="序章战场，窄屏可横向滚动">
-        <div className={`btl-board${overview?' is-overview':''}${aim?' btl-board-aiming':''}`} ref={boardRef} style={{width:boardWidth}} data-testid="battle-board" onPointerDown={aimDown} onPointerMove={aimMove} onPointerLeave={()=>previewAt(null)} onPointerUp={event=>finishAim(event)} onPointerCancel={event=>finishAim(event,true)} onLostPointerCapture={()=>{if(aimPointerRef.current!==null){aimPointerRef.current=null;previewAt(null);}}}>
+        <div className={`btl-board is-overview${aim?' btl-board-aiming':''}`} ref={boardRef} style={{width:boardWidth}} data-testid="battle-board" onPointerDown={aimDown} onPointerMove={aimMove} onPointerLeave={()=>previewAt(null)} onPointerUp={event=>finishAim(event)} onPointerCancel={event=>finishAim(event,true)} onLostPointerCapture={()=>{if(aimPointerRef.current!==null){aimPointerRef.current=null;previewAt(null);}}}>
           <canvas width={700} height={300} ref={canvasRef} aria-hidden="true"/>
           <SkillFeedback columns={CONFIG.COLUMNS} rows={CONFIG.ROWS} bursts={skillFeedback.bursts} shields={game.cats.filter(cat=>cat.status==='active'&&cat.shield>0)}/>
           <div className="btl-cells" role="group" aria-label={aim?'技能瞄准，全地图 21 格均可选择中心，鼠标移动预览最多 5 格十字，左键释放，右键或 Esc 取消；方向键预览，回车释放':'3 行 7 列战斗地格，B1 为固定保护终点，B7 为唯一出怪口，禁止部署，19 格可部署'}>{Array.from({length:21},(_,i)=>{
@@ -386,7 +385,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
           {active.map(cat=><button key={cat.id} className={`btl-unit${cat.id==='hero'?' btl-hero-unit':''}${selected===cat.id?' btl-selected':''}${cat.combatant&&cat.energy>=CONFIG.MAX_ENERGY?' btl-energy-halo':''}${game.phase==='teach_move'&&cat.id==='guard'||skillTeaching(cat)&&inspectedCat!==cat.id&&!aim?' btl-focus':''}`} style={{left:`${cat.x/7*100}%`,top:`${cat.y/3*100}%`,opacity:dragging===cat.id?0:undefined}} aria-label={`${cat.name}，${cat.breed}，体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}，${cellName(cat)}，${cat.combatant?`阻挡 ${cat.blockedCount} / ${cat.maxBlocks}，能量 ${Math.floor(cat.energy)} / 100${cat.shield>0?`，护盾 ${Math.ceil(cat.shield)}`:''}`:'固定指挥，不攻击，不可移动'}`} data-testid={`battle-cat-${cat.id}`} data-x={cat.x} data-y={cat.y} data-dragging={dragging===cat.id} disabled={!selectable(cat)} onClick={event=>{if(event.detail===0)suppressClick.current=false;catClick(cat);}} {...moveHandlers(cat)}><span className="btl-unit-name">{cat.name}{cat.combatant&&<small>挡 {cat.blockedCount}/{cat.maxBlocks}</small>}</span><CatHealth cat={cat}/>{cat.combatant&&<CatEnergy cat={cat} compact/>}{cat.shield>0&&<span className="btl-unit-shield">盾 {Math.ceil(cat.shield)}</span>}</button>)}
           {game.enemies.filter(enemy=>enemy.x>=0&&enemy.x<=CONFIG.VISIBLE_MAX_X).map(enemy=><span key={enemy.id} className="btl-live-enemy" data-testid={`battle-enemy-${enemy.id}`} data-cell={cellName({x:Math.min(6,Math.max(0,Math.round(enemy.x))),y:Math.round(enemy.y)})} aria-label={`${enemy.name}，体力 ${Math.ceil(enemy.hp)}`} style={{left:`${enemy.x/7*100}%`,top:`${enemy.y/3*100}%`,width:'14.285714%',height:'33.33333%',position:'absolute',pointerEvents:'none'}}/>)}
           {inspected&&inspectedSkill&&<>
-            <div className="btl-cat-menu" ref={menuRef} role="group" aria-label={`${inspected.name}的技能菜单，查看时临时半速，教学和手动暂停优先`} data-testid="battle-cat-menu" style={{left:inspected.x<3?`calc(${(inspected.x+1)/7*100}% + 3px)`:`calc(${inspected.x/7*100}% - 112px)`,top:`clamp(6px, calc(${(inspected.y+.5)/3*100}% - 46px), calc(100% - 114px))`}} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}>
+            <div className="btl-cat-menu" ref={menuRef} role="group" aria-label={`${inspected.name}的技能菜单，查看时临时半速，教学和手动暂停优先`} data-testid="battle-cat-menu" style={{left:inspected.x<3?`calc(${(inspected.x+1)/7*100}% + 3px)`:`calc(${inspected.x/7*100}% - var(--battle-menu-width))`,top:`clamp(6px, calc(${(inspected.y+.5)/3*100}% - 72px), calc(100% - var(--battle-menu-height)))`}} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}>
               <div className="btl-cat-menu-heading"><strong className="prologue-menu-cat-name">{inspected.name}<span className="prologue-role-badge" data-role={inspected.id==='guard'?'盾卫':'远程'}>{inspected.id==='guard'?'盾卫':'远程'}</span></strong><button className="btl-cat-menu-close" data-testid="battle-close-cat-menu" aria-label="关闭猫咪菜单" onClick={closeInspection}>×</button></div>
               <button className={`btl-skill-orb${canCast(inspected)?' btl-skill-orb-ready':''}${skillTeaching(inspected)&&canCast(inspected)?' btl-focus':''}`} data-testid={`battle-skill-${inspected.id}`} aria-label={`${inspectedSkill.name}，能量 ${Math.floor(inspected.energy)} / ${inspectedSkill.cost}${canCast(inspected)?'，点击释放':'，当前不可释放，可查看说明'}`} aria-disabled={!canCast(inspected)} aria-describedby={`battle-skill-description-${inspected.id}`} onMouseEnter={()=>setSkillTooltipOpen(true)} onMouseLeave={event=>{if(document.activeElement!==event.currentTarget)setSkillTooltipOpen(false);}} onFocus={()=>setSkillTooltipOpen(true)} onBlur={()=>setSkillTooltipOpen(false)} onClick={()=>chooseSkill(inspected)}>
                 <svg viewBox="0 0 24 24" aria-hidden="true" shapeRendering="crispEdges">{inspected.id==='guard'?<><path d="M5 3h14v11h-2v3h-3v3h-4v-3H7v-3H5z"/><path className="btl-skill-icon-cut" d="M8 6h8v7h-2v3h-4v-3H8z"/></>:<><path d="M10 2h4v6h3v3h5v3h-5v3h-3v5h-4v-5H7v-3H2v-3h5V8h3z"/><path className="btl-skill-icon-cut" d="M10 10h4v4h-4z"/></>}</svg>

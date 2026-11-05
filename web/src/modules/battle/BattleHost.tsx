@@ -16,6 +16,7 @@ import {createFinaleContext} from './finale-context';
 import {FinaleBattleViewport} from './finale/FinaleBattleViewport';
 import './scene-art.css';
 import './immersive.css';
+import './battle-hud.css';
 
 interface Props {
   state:GameState;catalog:Catalog;paused:boolean;

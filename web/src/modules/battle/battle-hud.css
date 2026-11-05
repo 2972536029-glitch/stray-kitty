@@ -1,0 +1,89 @@
+/* Shared across all six battle scenes. The top row is reserved for the game menu;
+   the second row groups the situation, waves and playback above the field. */
+.app-shell .battle-immersive[data-scene] {--hud-top:94px;--hud-edge:24px;--hud-gap:16px;--hud-height:100px;--hud-column:calc((100% - 2 * var(--hud-edge) - 2 * var(--hud-gap)) / 3);--hud-font:18px;--hud-title:24px;--field-top:250px}
+.app-shell .battle-immersive[data-scene] :is(.btl-head,.btl-wave-status,.btl-playback) {box-sizing:border-box;top:var(--hud-top);height:var(--hud-height);min-height:var(--hud-height);width:var(--hud-column);max-width:none;margin:0!important;padding:12px 0!important;border:0;border-radius:0;background:none;box-shadow:none;color:#fff3d5;transform:none;text-shadow:0 2px 3px #071820,0 0 8px #071820}
+.app-shell .battle-immersive[data-scene] .btl-head {left:var(--hud-edge);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:6px}
+.app-shell .battle-immersive[data-scene] .btl-head strong {display:block;max-height:none;font-size:var(--hud-title);line-height:1.35;white-space:normal;color:#fff0c6}
+.app-shell .battle-immersive[data-scene] .btl-progress {display:flex;flex-wrap:wrap;gap:4px 18px;font-size:var(--hud-font);line-height:1.5;white-space:normal}
+.app-shell .battle-immersive[data-scene] .btl-wave-status {left:50%;width:max-content;max-width:var(--hud-column);height:auto;min-height:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 20px!important;border:1px solid #839c8b;border-radius:6px;background:linear-gradient(120deg,#15332ff5,#203a35f5);box-shadow:0 4px 12px #081e2240;text-align:center}
+.app-shell .battle-immersive[data-scene] .btl-wave-status>strong {font-size:var(--hud-title);line-height:1.35;color:#f1dfaf}
+.app-shell .battle-immersive[data-scene] .btl-wave-status>span {display:block;font-size:var(--hud-font);line-height:1.5;font-weight:400;color:#c5d4c6}
+.app-shell .battle-immersive[data-scene] .btl-playback {left:auto;right:var(--hud-edge);width:max-content;max-width:var(--hud-column);display:flex;flex-wrap:wrap;justify-content:flex-end;align-content:center;gap:6px 10px;text-align:right}
+.app-shell .battle-immersive[data-scene] .btl-playback>button {box-sizing:border-box;min-height:44px;height:auto;padding:8px 12px!important;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;box-shadow:none;color:#f1e8d0;text-shadow:inherit;font-size:20px!important;line-height:1.3}
+.app-shell .battle-immersive[data-scene] .btl-playback .btl-speed-selected {background:none;color:#ffe3a0;border-bottom-color:#e2c67f}
+.app-shell .battle-immersive[data-scene] .btl-playback .btl-play-toggle {background:none;color:#ffe3a0}
+.app-shell .battle-immersive[data-scene] .btl-playback>button:hover:not(:disabled) {background:none;color:#fff4c7;box-shadow:none}
+.app-shell .battle-immersive[data-scene] .btl-playback .btl-play-toggle {min-width:96px}
+.app-shell .battle-immersive[data-scene] .btl-playback>span {position:static;flex-basis:100%;white-space:normal;margin:0;font-size:16px!important;line-height:1.4;color:#c5d4c6}
+.app-shell .battle-immersive[data-scene] .battle-hud-details {top:calc(var(--hud-top) + var(--hud-height) + 12px);left:var(--hud-edge);max-width:min(580px,calc(100% - 48px));font-size:18px}
+.app-shell .battle-immersive[data-scene] .battle-hud-details>summary {box-sizing:border-box;min-height:40px;padding:8px 16px;font-size:18px;line-height:1.3}
+.app-shell .battle-immersive[data-scene] .battle-hud-details[open] {z-index:25;width:580px;max-height:calc(100% - var(--hud-top) - var(--hud-height) - 40px);padding:18px 22px;background:#193630fa}
+.app-shell .battle-immersive[data-scene] .battle-hud-details :is(.btl-subhead,.btl-difficulty-strip,.btl-range-legend span,.btl-board-help,.chapter-ready,.market-ready,.greenhouse-ready,.tunnel-ready,.finale-ready) {font-size:18px;line-height:1.65}
+.app-shell .battle-immersive[data-scene] .battle-hud-details .btl-difficulty-strip {border-block:1px solid #9bb4a244;margin:10px 0;padding:12px 0}
+.app-shell .battle-immersive[data-scene] .battle-hud-details .btl-range-legend {display:grid;gap:10px;margin:14px 0}
+.app-shell .battle-immersive[data-scene] .battle-hud-details .btl-range-legend i {width:16px;height:16px;flex-shrink:0}
+.app-shell .battle-immersive[data-scene] :is(.prologue-battlefield,.chapter-battlefield,.market-battlefield,.greenhouse-battlefield,.tunnel-battlefield,.finale-battlefield) {top:var(--field-top)}
+.app-shell .battle-immersive[data-scene=prologue].btl-teaching .prologue-battlefield {bottom:146px}
+.app-shell .battle-immersive[data-scene] .battle-hud-mechanic {top:calc(var(--hud-top) + var(--hud-height) + 16px);font-size:16px;max-width:46%}
+.app-shell .battle-immersive[data-scene] .battle-hud-mechanic strong {font-size:16px}
+.app-shell .battle-immersive[data-scene] .battle-carry-panel.is-compact {top:calc(var(--hud-top) + var(--hud-height) + 12px);left:auto;right:var(--hud-edge);max-width:30%;font-size:14px}
+.app-shell .battle-immersive[data-scene] .battle-carry-panel.is-compact .battle-carry-heading strong,.app-shell .battle-immersive[data-scene] .battle-carry-panel.is-compact>button {font-size:14px}
+.app-shell .battle-immersive[data-scene] :is(.prologue-map-tools,.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools) {right:var(--hud-edge);bottom:96px;gap:8px;max-width:calc(100% - 260px)}
+.app-shell .battle-immersive[data-scene] :is(.prologue-map-tools,.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools) button {min-height:44px;font-size:18px!important;padding:9px 14px!important}
+.app-shell .battle-immersive[data-scene=prologue] .prologue-map-tools {bottom:24px}
+.app-shell .battle-immersive[data-scene] .battle-advisor {left:18px;bottom:8px;width:240px;height:190px}
+.app-shell .battle-immersive[data-scene] .battle-advisor>button {width:240px;height:190px}
+.app-shell .battle-immersive[data-scene] .battle-advisor :is(canvas,.btl-portrait) {width:184px!important;height:184px!important}
+.app-shell .battle-immersive[data-scene] .battle-advisor strong {left:130px;bottom:26px;padding:5px 12px;font-size:22px}
+.app-shell .battle-immersive[data-scene] .battle-advisor button>span:not(.btl-portrait) {display:block;left:140px;top:28px;font-size:18px;padding:10px 14px}
+.app-shell .battle-immersive[data-scene] .btl-chat {box-sizing:border-box;left:250px;bottom:24px;width:min(720px,calc(100% - 280px));max-height:calc(100% - 120px);padding:24px;background:#f5edd9f5;border-color:#bba880}
+.app-shell .battle-immersive[data-scene] .btl-panel-heading strong {font-size:25px}
+.app-shell .battle-immersive[data-scene] .btl-panel-heading small {font-size:15px}
+.app-shell .battle-immersive[data-scene] .btl-chat-log {max-height:38vh}
+.app-shell .battle-immersive[data-scene] .btl-chat-log article strong {font-size:20px}
+.app-shell .battle-immersive[data-scene] :is(.btl-chat-log article p,.btl-question) {font-size:19px;line-height:1.7}
+.app-shell .battle-immersive[data-scene] .btl-chat :is(button,input) {min-height:44px;font-size:17px}
+.app-shell .battle-immersive[data-scene] .btl-chat :is(.btl-advisor-source,.btl-advisor-status,.btl-advisor-notice) {font-size:14px}
+.app-shell .battle-immersive[data-scene] .btl-board-caption {left:270px;right:360px;font-size:16px}
+.app-shell .battle-immersive[data-scene=prologue] .btl-controls {left:270px;right:240px;bottom:24px;width:auto;text-align:center}
+@media(min-width:1101px) and (min-height:601px) {
+  .app-shell .battle-immersive[data-scene] .btl-controls {width:230px}
+  .app-shell .battle-immersive[data-scene] .btl-controls>p {font-size:15px}
+  .app-shell .battle-immersive[data-scene] .battle-hud-boss {left:270px;right:270px}
+}
+@media(max-width:1100px) and (min-height:601px) {
+  .app-shell .battle-immersive[data-scene] {--hud-edge:16px;--hud-gap:10px;--hud-title:20px;--hud-font:16px;--hud-height:112px;--field-top:260px}
+  .app-shell .battle-immersive[data-scene] .btl-playback>button {font-size:17px!important;padding:8px 12px!important}
+  .app-shell .battle-immersive[data-scene] .btl-playback>span {font-size:14px!important}
+}
+/* Short landscape screens keep a full-width status row and put secondary tools
+   beside the board. Font sizes stay useful without covering playable cells. */
+@media(max-height:600px) {
+  .app-shell .battle-immersive[data-scene] {--hud-top:58px;--hud-edge:8px;--hud-gap:8px;--hud-height:76px;--hud-title:16px;--hud-font:13px;--field-top:142px;min-height:0}
+  .app-shell .battle-immersive[data-scene] :is(.btl-head,.btl-wave-status,.btl-playback) {padding:6px 10px!important;gap:3px}
+  .app-shell .battle-immersive[data-scene] .btl-playback>button {min-height:36px;font-size:15px!important;padding:6px 10px!important}
+  .app-shell .battle-immersive[data-scene] .btl-playback .btl-play-toggle {min-width:72px}
+  .app-shell .battle-immersive[data-scene] .btl-playback>span {display:block;font-size:12px!important}
+  .app-shell .battle-immersive[data-scene] .battle-hud-details {top:142px;left:6px;max-width:calc(100% - 12px)}
+  .app-shell .battle-immersive[data-scene] .battle-hud-details>summary {min-height:36px;font-size:14px;padding:7px 10px}
+  .app-shell .battle-immersive[data-scene] .battle-hud-details[open] {max-height:calc(100% - 154px);padding:12px 16px}
+  .app-shell .battle-immersive[data-scene] .battle-hud-details :is(.btl-subhead,.btl-difficulty-strip,.btl-range-legend span,.btl-board-help) {font-size:16px}
+  .app-shell .battle-immersive[data-scene] :is(.prologue-battlefield,.chapter-battlefield,.market-battlefield,.greenhouse-battlefield,.tunnel-battlefield,.finale-battlefield),
+  .app-shell .battle-immersive[data-scene=prologue].btl-teaching .prologue-battlefield {inset:var(--field-top) 112px 56px 112px}
+  .app-shell .battle-immersive[data-scene] :is(.prologue-map-tools,.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools) {top:142px;right:6px;bottom:auto;width:100px;max-width:100px;gap:4px}
+  .app-shell .battle-immersive[data-scene] :is(.prologue-map-tools,.chapter-map-tools,.market-map-tools,.greenhouse-map-tools,.tunnel-map-tools,.finale-map-tools) button {min-height:36px;font-size:13px!important;padding:6px 8px!important}
+  .app-shell .battle-immersive[data-scene] .battle-advisor {left:0;bottom:0;width:110px;height:116px}
+  .app-shell .battle-immersive[data-scene] .battle-advisor>button {width:110px;height:116px}
+  .app-shell .battle-immersive[data-scene] .battle-advisor :is(canvas,.btl-portrait) {width:110px!important;height:110px!important}
+  .app-shell .battle-immersive[data-scene] .battle-advisor strong {left:26px;bottom:2px;padding:3px 8px;font-size:16px}
+  .app-shell .battle-immersive[data-scene] .battle-advisor button>span:not(.btl-portrait) {display:none}
+  .app-shell .battle-immersive[data-scene] .btl-chat {inset:58px 8px 8px 114px;width:auto;max-height:none;padding:14px;overflow:auto}
+  .app-shell .battle-immersive[data-scene] .btl-panel-heading strong {font-size:20px}
+  .app-shell .battle-immersive[data-scene] :is(.btl-chat-log article p,.btl-question) {font-size:17px}
+  .app-shell .battle-immersive[data-scene] .btl-chat-log {max-height:28vh}
+  .app-shell .battle-immersive[data-scene] .battle-carry-panel.is-compact {top:182px;left:6px;right:auto;width:100px;max-width:100px;max-height:70px;overflow:auto;flex-wrap:wrap}
+  .app-shell .battle-immersive[data-scene] .battle-hud-mechanic {top:134px;left:112px;right:112px;max-width:none;width:auto;transform:none;font-size:12px;max-height:24px;overflow:auto}
+  .app-shell .battle-immersive[data-scene]:has(.battle-hud-mechanic) {--field-top:164px}
+  .app-shell .battle-immersive[data-scene] .battle-hud-boss {left:114px;right:114px;bottom:4px}
+  .app-shell .battle-immersive[data-scene] .btl-board-caption {left:114px;right:114px;bottom:56px;font-size:12px;max-height:24px}
+}

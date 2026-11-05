@@ -111,7 +111,7 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
         width: Math.max(1, (Math.min(right, boardRect.right) - Math.max(left, boardRect.left)) / scaleX),
         height: Math.max(1, (Math.min(bottom, boardRect.bottom) - Math.max(top, boardRect.top)) / scaleY),
       } : {x: 0, y: 0, width: frame.width, height: frame.height};
-      const cardWidth = Math.min(520, Math.max(1, boardBounds.width - 24));
+      const cardWidth = Math.min(760, Math.max(1, boardBounds.width - 24));
       const cardNode = cardRef.current;
       const copyNode = cardNode?.querySelector<HTMLElement>('.btl-tutorial-card-copy');
       const actionsNode = cardNode?.querySelector<HTMLElement>('.btl-tutorial-card-actions');
@@ -182,7 +182,7 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
       <div className="btl-tutorial-card-copy" role="status" aria-live="polite" aria-atomic="true">
         <div className="btl-tutorial-kicker"><span>阿策 · 实战课堂</span><span>{step} / {total}</span></div>
         <strong>{title}</strong><p>{text}</p>
-        {layout.targetOutside && <small className="btl-tutorial-scroll-hint">提示位置在画面外，左右滑动棋盘查看，或点击“查看全图”。</small>}
+        {layout.targetOutside && <small className="btl-tutorial-scroll-hint">提示位置在画面外，左右滑动棋盘查看。</small>}
       </div>
       {children && <div className="btl-tutorial-card-actions">{children}</div>}
     </aside></>, host)}

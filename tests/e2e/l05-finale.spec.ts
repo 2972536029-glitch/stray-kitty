@@ -159,7 +159,6 @@ test('L05 full-board view fits desktop and mobile, and still opens cat controls'
     for(const cell of ['A11','D2','G11'])expect(await page.getByTestId('finale-cell-'+cell).evaluate(cell=>{const b=cell.getBoundingClientRect();return cell.contains(document.elementFromPoint(b.x+b.width/2,b.y+b.height/2));})).toBe(true);
     await page.screenshot({path:info.outputPath(`l05-fit-${viewport.width}-${viewport.height}.png`),fullPage:true});
     await page.getByTestId('finale-cat-momo').click();await expect(page.getByTestId('finale-skill-momo')).toBeVisible();await page.keyboard.press('Escape');
-    await page.getByRole('button',{name:'放大战场',exact:true}).click();await expect(page.getByRole('button',{name:'查看全图',exact:true})).toBeVisible();
-    await page.getByRole('button',{name:'查看全图',exact:true}).click();
+    await expect(page.getByRole('button',{name:/^(放大战场|查看全图)$/})).toHaveCount(0);
   }
 });
