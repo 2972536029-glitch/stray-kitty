@@ -23,7 +23,7 @@ test('market is a complete 5 by 8 board with fourteen obstacles, seven entrances
   const state = createMarketBattle();
   assert.equal(state.stageId, 'market_boss'); assert.equal(CELLS.length, 40);
   assert.equal(MAP.obstacles.length, 14); assert.equal(MAP.spawns.length, 7);
-  assert.equal(CELLS.filter(isDeployableCell).length, 17);
+  assert.equal(CELLS.filter(cell => isDeployableCell(cell)).length, 17);
   assert.deepEqual(MAP.obstacles.map(cellName), ['A1','A2','A3','A6','A7','A8','B1','D1','E1','E2','E3','E6','E7','E8']);
   assert.deepEqual(MAP.spawns.map(cellName), ['A4','A5','B8','C8','D8','E4','E5']);
   assert.equal(cellName(MAP.goal), 'C1'); assert.deepEqual(getBossCells(state.boss), [{x: 6, y: 2}]);

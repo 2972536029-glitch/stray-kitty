@@ -27,8 +27,10 @@ export function isEnemyVisible(state: TunnelState, enemy: Position): boolean {
 /** Four boss cells share one target and one HP pool; minions may cross the footprint. */
 export function getBossCells(boss: Pick<TunnelBoss, 'x' | 'y' | 'width' | 'height'>): Position[] {return footprintCells(boss);}
 export function getBossDistance(boss: TunnelBoss, target: Position): number {return footprintDistance(boss, target);}
-export function isDeployableCell(position: Position): boolean {
-  return isPlayableCell(position) && !same(position, MAP.goal) && !MAP.bossCells.some(cell => same(cell, position)) && !MAP.spawns.some(cell => same(cell, position));
+export function isDeployableCell(position: Position, state?: Pick<TunnelState, 'boss'>): boolean {
+  return isPlayableCell(position) && !same(position, MAP.goal)
+    && (state?.boss.phase === 'defeated' || !MAP.bossCells.some(cell => same(cell, position)))
+    && !MAP.spawns.some(cell => same(cell, position));
 }
 export function getAttackCells(cat: TunnelCat): Position[] {return geometry.attackCells(cat);}
 export function getSkillCells(cat: TunnelCat, target?: Position | null): Position[] {
@@ -44,7 +46,7 @@ export function getDeployError(state: TunnelState, catId: TunnelCatId, target: P
   if (state.aim) return '请先完成或取消技能瞄准。';
   if (!isTunnelCell(target)) return '这里没有可用地格。';
   if (isObstacle(target)) return '管线和地下杂物占用了这个位置。';
-  if (!isDeployableCell(target)) return '保护点、刷怪口和首领位置不能部署。';
+  if (!isDeployableCell(target, state)) return '保护点、刷怪口和仍在场的首领位置不能部署。';
   if (cat.status !== 'active') return '这位伙伴已经退场，本场不能重新上阵。';
   const occupying = state.enemies.filter(enemy => inCells(enemy, [target]));
   if (occupying.length) return occupying.some(enemy => isEnemyVisible(state, enemy))
@@ -65,7 +67,7 @@ export function getTunnelAdvice(state: TunnelState): string {
     : '断灯期间伙伴和保护点附近一格仍可见，其余黑影隐入黑暗；攻击、移动与蓄能照常，黑暗会自动结束。';
   if (state.nightVisionRemaining > EPS) return '墨墨的夜视正在恢复全场视野；利用护盾时间维持防线，点点可治疗仍在场的伙伴。';
   if (state.cats.some(cat => cat.status === 'retired')) return '体力归零的伙伴本场不能返回。点点只治疗在场伙伴，墨墨只能提供夜视与护盾。';
-  if (state.boss.phase === 'defeated') return '首领倒下，断灯已经消散；仍需守完余下小怪波次。';
+  if (state.boss.phase === 'defeated') return '首领原占格已可部署；首领倒下，断灯已经消散；仍需守完余下小怪波次。';
   return '三条路线会绕开管线。每模拟秒积攒 5 能量；斑斑守住左侧暗管，点点负责治疗，墨墨保留夜视与全队护盾应对断灯。';
 }
 function log(state: TunnelState, text: string): void {

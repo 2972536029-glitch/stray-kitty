@@ -31,7 +31,7 @@ interface ChapterSpec<S extends ChapterBattleState> {
   title: string; map: Board; cells: readonly Position[];
   skills: Readonly<Record<string, Skill>>;
   attackCells: (cat: S['cats'][number]) => Position[];
-  deployable: (position: Position) => boolean;
+  deployable: (position: Position, state: Pick<S, 'boss'>) => boolean;
   energyPerSecond: number; warningSeconds: number; bossRule: string;
 }
 
@@ -121,12 +121,14 @@ function buildChapter<S extends ChapterBattleState>(stageId: string, state: S, s
       已瞄准猫: state.aim?.catId ?? null,
       当前瞄准格: state.aim?.target ? cell(state.aim.target) : null,
     },
-    地图: mapContext(spec.map, spec.cells, spec.deployable),
+    地图: mapContext({...spec.map, bossCells: state.boss.phase === 'defeated' ? [] : spec.map.bossCells}, spec.cells,
+      position => spec.deployable(position, state)),
     规则: {...COMMON_RULES,
       能量: `仍在场的主力每模拟秒自动增加${spec.energyPerSecond}能量，上限100；封能期间暂停增长，已满能仍可释放。`,
       胜利: state.stageId === 'finale_boss' ? '守完全部波次、处理全部普通黑影，并击败永夜之王和两名精英。' : '守完全部波次、处理全部普通黑影，并击败本章首领。',
       失败: `累计突破达到${state.maxLeaks}次，或全部主力退场即失败；固定援军存活也不能抵消主力全退场。`,
       首领机制: spec.bossRule,
+      首领退场: '首领被击退后，原占格立即成为候选部署格；仍须避开敌人占格，战斗结束后不能继续移动。',
     },
     主力: mainCats.map(cat => ({
       编号: cat.id, 名称: label(cat.name), 职责: label(cat.role),

@@ -14,11 +14,13 @@ export {cellName};
 export function isChapterCell(position: Position): boolean {return geometry.isCell(position);}
 export function isObstacle(position: Position): boolean {return geometry.isObstacle(position);}
 export function isPlayableCell(position: Position): boolean {return geometry.isPlayableCell(position);}
-/** A boss is one combat entity with four targetable, non-deployable cells. */
+/** A living boss reserves four targetable cells; retreat releases them for cats. */
 export function getBossCells(boss: Pick<ChapterBoss, 'x' | 'y' | 'width' | 'height'>): Position[] {return footprintCells(boss);}
 export function getBossDistance(boss: ChapterBoss, target: Position): number {return footprintDistance(boss, target);}
-export function isDeployableCell(position: Position): boolean {
-  return isPlayableCell(position) && !same(position, MAP.goal) && !MAP.bossCells.some(cell => same(cell, position)) && !MAP.spawns.some(cell => same(cell, position));
+export function isDeployableCell(position: Position, state?: Pick<ChapterState, 'boss'>): boolean {
+  return isPlayableCell(position) && !same(position, MAP.goal)
+    && (state?.boss.phase === 'defeated' || !MAP.bossCells.some(cell => same(cell, position)))
+    && !MAP.spawns.some(cell => same(cell, position));
 }
 export function getAttackCells(cat: ChapterCat): Position[] {return geometry.attackCells(cat);}
 export function getSkillCells(cat: ChapterCat, target?: Position | null): Position[] {
@@ -34,7 +36,7 @@ export function getDeployError(state: ChapterState, catId: ChapterCatId, target:
   if (state.aim) return '请先完成或取消技能瞄准。';
   if (!isChapterCell(target)) return '这里没有可用地格。';
   if (isObstacle(target)) return '垃圾桶和杂物占用了这个位置。';
-  if (!isDeployableCell(target)) return '保护点、刷怪口和首领位置不能部署。';
+  if (!isDeployableCell(target, state)) return '保护点、刷怪口和仍在场的首领位置不能部署。';
   if (cat.status !== 'active') return '这位伙伴已经退场，本场不能重新上阵。';
   if (state.enemies.some(enemy => inCells(enemy, [target]))) return '这格有黑影，暂时不能移动过去。';
   const occupant = state.cats.find(other => other.id !== catId && other.status === 'active' && same(other, target));
@@ -52,7 +54,7 @@ export function getChapterAdvice(state: ChapterState): string {
   if (healer.status === 'active' && healer.energy >= 100 && state.cats.some(cat => cat.status === 'active' && cat.hp < cat.maxHp * 0.75)) return '点点已经蓄满能量，可以用安心呼噜治疗仍在场的队友；不要等到体力归零才治疗。';
   const retired = state.cats.filter(cat => cat.status === 'retired');
   if (retired.length) return `${retired.map(cat => cat.name).join('、')}已退场，本场不能复活。调整剩余伙伴的位置，守住三路汇合处。`;
-  if (state.boss.phase === 'defeated') return '首领已经倒下，还要守住余下的小怪波次。不要过早收起防线。';
+  if (state.boss.phase === 'defeated') return '首领原占格已可部署；首领已经倒下，还要守住余下的小怪波次。不要过早收起防线。';
   return '绒绒守支巷，斑斑挡上路，团子守下路，点点提供治疗。每模拟秒自动积攒 5 能量，满 100 后手动释放技能。';
 }
 function log(state: ChapterState, text: string): void {

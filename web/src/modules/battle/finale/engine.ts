@@ -26,8 +26,10 @@ export function getBossDamageMultiplier(state: FinaleState): number {
 /** Nine boss cells share one target and one HP pool; minions may cross the footprint. */
 export function getBossCells(boss: Pick<FinaleBoss, 'x' | 'y' | 'width' | 'height'>): Position[] {return footprintCells(boss);}
 export function getBossDistance(boss: FinaleBoss, target: Position): number {return footprintDistance(boss, target);}
-export function isDeployableCell(position: Position): boolean {
-  return isPlayableCell(position) && !same(position, MAP.goal) && !MAP.bossCells.some(cell => same(cell, position)) && !MAP.spawns.some(cell => same(cell, position))
+export function isDeployableCell(position: Position, state?: Pick<FinaleState, 'boss'>): boolean {
+  return isPlayableCell(position) && !same(position, MAP.goal)
+    && (state?.boss.phase === 'defeated' || !MAP.bossCells.some(cell => same(cell, position)))
+    && !MAP.spawns.some(cell => same(cell, position))
     && !MAP.eliteCells.some(cell => same(cell, position)) && !ALLY_DEFINITIONS.some(ally => same(ally, position));
 }
 export function getAttackCells(cat: FinaleCat): Position[] {return geometry.attackCells(cat);}
@@ -44,7 +46,7 @@ export function getDeployError(state: FinaleState, catId: FinaleCatId, target: P
   if (state.aim) return '请先完成或取消技能瞄准。';
   if (!isFinaleCell(target)) return '这里没有可用地格。';
   if (isObstacle(target)) return '钢架与仓库杂物占用了这个位置。';
-  if (!isDeployableCell(target)) return '保护点、入口、首领、精英及固定援军席位不能部署。';
+  if (!isDeployableCell(target, state)) return '保护点、入口、仍在场的首领、精英及固定援军席位不能部署。';
   if (cat.status !== 'active') return '这位伙伴已经退场，本场不能重新上阵。';
   const occupying = state.enemies.filter(enemy => inCells(enemy, [target]));
   if (occupying.length) return occupying.some(enemy => isEnemyVisible(state, enemy))
