@@ -35,6 +35,7 @@ import {chapterBackground, chapterBackgroundState, preloadChapterArtwork, retryC
 // Keep warehouse code in the entry bundle: an open tab must not request a
 // retired JavaScript chunk when story progression or QA first enters this map.
 import {WarehouseWalkMap, type WarehouseReviewOptions} from '../../modules/chapter5/WarehouseWalkMap';
+import prologueHomeArtwork from '../../ui/assets/opening/apartment-afternoon.png';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 剧情接管之外，日常由共享家具动作、伙伴互动和漫步组成。
@@ -64,6 +65,7 @@ export class DemoScene {
   }
   private get tunnelMap() {return this.tunnelMapInstance ??= new TunnelMap();}
   private cityBackdrop: HTMLImageElement;
+  private prologueHomeImage?: HTMLImageElement;
   private marketFloor: MarketFloor = 'L0';
   private readonly marketMarkers=new MarketEventMarkers();
   private marketCamera = new FollowCamera();
@@ -872,18 +874,26 @@ export class DemoScene {
   }
   // 序章:喵喵原本的家,午后阳光与天蓝色饭碗(静态,不参与花房修缮系统)。
   private drawPrologueHome(){
-    this.rect(0,0,800,480,0xa6bba0);this.rect(110,65,580,350,0xd2d0ab);this.rect(100,61,600,18,0x688775);
-    for(let x=110;x<=690;x+=145)this.rect(x,78,8,230,0x799782);
-    this.rect(118,310,563,100,0xbba982);for(let y=320;y<410;y+=22)this.rect(118,y,563,2,0x9f916f,.6);
-    this.rect(270,88,260,173,0xb2c8b6);this.rect(395,88,8,173,0x7c9986);this.rect(270,164,260,8,0x7c9986);
-    this.rect(135,240,55,75,0x8f9c73);for(let i=0;i<5;i++)this.rect(130+i*13,210-(i%2)*18,14,45,0x6d8d6a);
+    // Lazy load only for this scene, keeping the active chapter's download priority.
+    // No cat, blanket or bowl is baked into the environment plate.
+    if (!this.prologueHomeImage) {
+      this.prologueHomeImage = new Image();
+      this.prologueHomeImage.src = prologueHomeArtwork;
+    }
+    const image = this.prologueHomeImage, ctx = this.context;
+    ctx.save();ctx.globalAlpha = 1;ctx.fillStyle = '#5c5841';ctx.fillRect(0,0,800,480);
+    if (image.complete && image.naturalWidth > 0) {
+      const scale = Math.max(800 / image.naturalWidth, 480 / image.naturalHeight);
+      const width = Math.round(image.naturalWidth * scale), height = Math.round(image.naturalHeight * scale);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(image, Math.round((800-width)/2), Math.round((480-height)/2), width, height);
+    }
+    ctx.restore();
+    this.pixelEllipse(265,358,25,5,0x403726,.22);
     this.cat(265,350);
     // 晒着阳光的柔软毛毯（平铺毯身 + 花纹 + 折痕 + 流苏）与标志性天蓝色饭碗（立体透视碗口）。
     this.blanket(267, 348);
     this.bowl(335, 352);
-    this.graphics.fillStyle(0xfff0ad, 0.15);
-    this.graphics.fillCircle(280, 340, 70);
-    this.lamp(610,200);for(let i=0;i<8;i++)this.rect(145+i*70,98+(i%2)*6,5,9,0xf4d68e);
   }
   // —— 猫咪动态层:专属家具姿态优先,其余自由漫步 ——
   private ensureHomeCats(stage:number):HomeCatAgent[]{

@@ -20,6 +20,7 @@ import {TunnelLoadout} from '../modules/battle/TunnelLoadout';
 import {FinaleLoadout} from '../modules/battle/FinaleLoadout';
 import {explorationFooterText} from './explorationFooter';
 import {useTouchDevice} from './MobileViewport';
+import {trackFeatureEntry, trackRechargeEntryExpose, trackRechargeEntryClick} from '../observability/actions';
 
 const phases: Record<string, string> = {dialogue: '猫咪物语', explore: '小巷探索', event: '一次相遇', preparation: '守护准备', battle: '序章守护', settlement: '救援结果', home: '我们的花房'};
 interface Props {
@@ -132,6 +133,12 @@ export default function GameScreen({onHomeAdvisor,homeAdvisorDisabled,onHomeTuto
     }, 2400);
   };
   useEffect(() => () => {if (hideTimer.current !== null) window.clearTimeout(hideTimer.current);}, []);
+  // 模块二业务埋点:钱包里的「金枪鱼罐头」充值入口在对话/准备/战斗/结算相位展示,展示即计一次曝光。
+  const rechargeEntryVisible = state.phase !== 'home' && state.phase !== 'explore';
+  useEffect(() => {
+    if (!rechargeEntryVisible) return;
+    trackRechargeEntryExpose('topbar');
+  }, [rechargeEntryVisible]);
   // 所有阶段（含战斗）顶栏统一为悬停唤出 + 离开延时淡出；点击外部可收起手动展开态。
   const topbarOpen = topExpanded || hoverPeek;
   useEffect(() => {
@@ -151,17 +158,17 @@ export default function GameScreen({onHomeAdvisor,homeAdvisorDisabled,onHomeTuto
   const isHomeScene = state.chapterId !== 'prologue' && (state.phase === 'home' || (state.phase === 'dialogue' && node?.scene === 'home'));
   const homeTutorialVisible=state.phase==='home'&&topbarOpen&&!homeTutorialDone;
   useEffect(()=>{onHomeTutorialChange?.(homeTutorialVisible);return()=>onHomeTutorialChange?.(false);},[homeTutorialVisible,onHomeTutorialChange]);
-  return <div className="app-shell" data-home-editing={homeEditing||undefined} data-phase={state.phase} data-home-scene={isHomeScene || undefined}>
+  return <div className="app-shell" data-home-editing={homeEditing||undefined} data-phase={state.phase} data-home-scene={isHomeScene || undefined} data-opening-home={state.chapterId === 'prologue' && state.phase === 'dialogue' && node?.scene === 'home' || undefined}>
     {!homeEditing && <div className="topbar-sensor" aria-hidden="true" onMouseEnter={topbarHoverIn} onMouseLeave={topbarHoverOut}/>}
     <header className={`topbar${topbarOpen ? '' : ' topbar-collapsed'}`} onMouseEnter={topbarHoverIn} onMouseLeave={topbarHoverOut}><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
       <span className="chapter-pill">{finaleBattle ? '第五章 · 终局试玩' : tunnelBattle ? '第四章 · 地下通道试玩' : greenhouseBattle ? '第三章 · 废弃花房试玩' : marketBattle ? '第二章 · 集市防线战斗试玩' : tutorialBattle ? '序章 · 金枪鱼事件' : chapterBattle ? '第一章 · 陌生小巷' : chapter?.title}</span>
-      {state.phase!=='home'&&state.phase!=='explore'&&<div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>}
+      {state.phase!=='home'&&state.phase!=='explore'&&<div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={() => {trackRechargeEntryClick('topbar');onRecharge();}} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>}
       <nav aria-label="旅程工具">
         {state.phase==='battle'&&<button className="battle-host-pause" onClick={onPause}>{paused?'继续旅程':'暂停'}</button>}
-        {state.phase==='home'?<button className="home-manual-button" aria-label="家园手册" data-tip="打开家园手册：花房总览 · 旅程记录 · 家具收藏" aria-haspopup="dialog" disabled={disabled} onClick={onHomeManual}>⌂ <span>家园手册</span></button>:<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button>}
-        {state.phase==='home'&&state.chapterId!=='prologue'&&onHomeAdvisor&&<button className="home-advisor-button" aria-label="问阿策" title="和阿策聊聊修缮、家具、伙伴和公开规则" aria-haspopup="dialog" disabled={disabled||homeAdvisorDisabled} onClick={onHomeAdvisor}><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M3 3h14v10H8l-5 4V3Z"/><path d="M6 7h8M6 10h5"/></svg><span>问阿策</span></button>}
-        <button className="parcel-button" aria-label="猫爪邮局" aria-haspopup="dialog" onClick={onParcels}>✉ <span>猫爪邮局</span></button>
-        <button className="shop-button" aria-label="猫国商店" aria-haspopup="dialog" onClick={onShop}>▣ <span>猫国商店</span></button>
+        {state.phase==='home'?<button className="home-manual-button" aria-label="家园手册" data-tip="打开家园手册：花房总览 · 旅程记录 · 家具收藏" aria-haspopup="dialog" disabled={disabled} onClick={() => {trackFeatureEntry('home');onHomeManual();}}>⌂ <span>家园手册</span></button>:<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>旅程记录</span></button>}
+        {state.phase==='home'&&state.chapterId!=='prologue'&&onHomeAdvisor&&<button className="home-advisor-button" aria-label="问阿策" title="和阿策聊聊修缮、家具、伙伴和公开规则" aria-haspopup="dialog" disabled={disabled||homeAdvisorDisabled} onClick={() => {trackFeatureEntry('advisor');onHomeAdvisor?.();}}><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M3 3h14v10H8l-5 4V3Z"/><path d="M6 7h8M6 10h5"/></svg><span>问阿策</span></button>}
+        <button className="parcel-button" aria-label="猫爪邮局" aria-haspopup="dialog" onClick={() => {trackFeatureEntry('lottery');onParcels();}}>✉ <span>猫爪邮局</span></button>
+        <button className="shop-button" aria-label="猫国商店" aria-haspopup="dialog" onClick={() => {trackFeatureEntry('shop');onShop();}}>▣ <span>猫国商店</span></button>
         <button className="map-button" aria-label="章节地图" aria-haspopup="dialog" onClick={onMap}>▦ <span>章节地图</span></button>
         {state.phase==='home'&&<><button className="warehouse-button" aria-label="家园仓库" data-tip="打开家园仓库：出战携带清单" aria-haspopup="dialog" disabled={disabled} onClick={onWarehouse}>▤ <span>家园仓库</span></button><button className="home-decorate-button" aria-label="布置家具" data-tip="进入家具布置模式：移动 / 收回 / 重新摆放家具" disabled={disabled} onClick={onDecorate}>▧ <span>布置</span></button></>}
         {state.phase !== 'battle' && <button className="settings-button" aria-label="游戏设置" onClick={onSettings}>⚙ <span>设置</span></button>}{isDevelopment&&<button className="dev-button" aria-label="验收工具" aria-haspopup="dialog" aria-expanded={qaOpen} onClick={onQA}>🛠️ <span>验收</span></button>}

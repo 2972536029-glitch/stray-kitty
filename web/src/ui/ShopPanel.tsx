@@ -1,12 +1,16 @@
 import type {Catalog,GameCommand,GameState} from '../contracts';
+import {useEffect} from 'react';
+import {trackRechargeEntryExpose, trackRechargeEntryClick} from '../observability/actions';
 import Modal from './Modal';
 import ParcelRewards from '../modules/lottery/ParcelRewards';
 
 export default function ShopPanel({state,catalog,disabled,error,onCommand,onRefresh,onRetry,onClose,onRecharge,onParcels}:{state:GameState;catalog:Catalog;disabled:boolean;error:string;onCommand:(command:GameCommand)=>Promise<boolean>;onRefresh:()=>Promise<void>;onRetry:()=>void;onClose:()=>void;onRecharge:()=>void;onParcels:()=>void}){
+  // 模块二埋点:商店面板每次打开计一次充值入口曝光(含家园手册内的商店页与标题界面商店)。
+  useEffect(() => {trackRechargeEntryExpose('shop');}, []);
   return <Modal title="猫国商店" onClose={onClose} className="cat-shop">
     <header><div><span className="eyebrow">LITTLE EVERYDAY GIFTS</span><h2>猫国商店</h2><p>收下来信，完成伙伴的小心愿，为家攒下一点喜欢。</p></div><div className="shop-wallets">
       <div className="shop-wallet">✦ <b data-testid="shop-stamps">{state.currencies.stamp??0}</b><small>猫爪邮票</small></div>
-      <button className="shop-wallet tuna" onClick={onRecharge} aria-label="金枪鱼罐头，点击充值">🥫 <b>{state.currencies.tuna??0}</b><small>金枪鱼罐头 · 充值</small></button>
+      <button className="shop-wallet tuna" onClick={() => {trackRechargeEntryClick('shop');onRecharge();}} aria-label="金枪鱼罐头，点击充值">🥫 <b>{state.currencies.tuna??0}</b><small>金枪鱼罐头 · 充值</small></button>
     </div></header>
     {state.phase!=='home'&&<p className="shop-notice">回到花房后，就可以签收来信与猫咪心愿。</p>}
     <ParcelRewards state={state} catalog={catalog} disabled={disabled} onCommand={onCommand} onRefresh={onRefresh}/>

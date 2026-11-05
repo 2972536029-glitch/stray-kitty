@@ -1,3 +1,4 @@
+@font-face{font-family:PostalPoolHand;src:url('/assets/lottery/fonts/ma-shan-zheng-pools.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
 .home-hub:has(.postal-journal){width:min(1390px,calc(100vw - 38px));height:min(870px,calc(100dvh - 38px));max-width:none;max-height:calc(100dvh - 38px);border:0;background:none;box-shadow:0 20px 85px #101c2866}
 .home-hub:has(.postal-journal)>.home-hub-header,.home-hub:has(.postal-journal)>.home-hub-footer{display:none}
 .home-hub:has(.postal-journal) .home-hub-content{padding:0;overflow:hidden}
@@ -13,14 +14,16 @@ dialog.postal-journal{inset:0;margin:auto;width:min(1390px,calc(100vw - 38px));h
 .postal-journal button:disabled{cursor:default;opacity:.46;filter:grayscale(.25)}
 .postal-journal button:focus-visible{outline:2px solid var(--post-blue);outline-offset:5px}
 .postal-header{display:flex;align-items:center;gap:22px;flex-shrink:0;min-height:56px;padding-right:42px;position:relative;z-index:9}
-.postal-brand{display:flex;align-items:center;gap:12px;min-width:205px;padding:9px 17px;background:#f6e7ce;border:1px dashed #af9574;outline:4px solid #f4e6ce;box-shadow:2px 5px 5px #64442b24;transform:rotate(-1.3deg)}
+.postal-brand{display:flex;align-items:center;gap:12px;min-width:205px;padding:9px 17px;background:none;border:1px solid transparent;transform:rotate(-1.3deg)}
 .postal-brand>svg{width:35px;height:35px;color:var(--post-red)}
 .postal-brand>span{font-size:25px;font-weight:bold;line-height:1.1;letter-spacing:3px}
 .postal-brand small{font-size:7px;display:block;font-family:monospace;font-weight:400;letter-spacing:1.2px;color:#8d7265;margin-top:7px}
 .postal-wallet{display:flex;gap:15px;margin-left:auto;align-items:center;white-space:nowrap;font-size:12px;color:#745c4a}
 .postal-wallet b{font-size:15px;margin-left:5px;color:#4a3c36}
 .postal-wallet button{background:#f8ebd8;border:1px solid #ccb495;box-shadow:1px 2px 0 #bfa58a55;padding:8px 10px;color:#745c4a;font-size:12px}
-.postal-header nav{display:flex;gap:15px;align-items:center;margin-left:8px;background:#f9eedfe8;padding:6px 10px;box-shadow:1px 2px 3px #68492d17;border-radius:2px}
+.postal-header nav{--postal-tools-gap:15px;display:flex;gap:var(--postal-tools-gap);align-items:center;margin-left:8px;padding:6px 10px}
+/* Reserve the former archive slot to preserve the user's saved balance coordinates. */
+.postal-header:after{content:'';display:block;flex:none;width:186.40625px;margin-left:8px}
 .postal-header nav button{background:none;border:0;box-shadow:none;padding:5px 0;font-size:13px;color:#584a3d;white-space:nowrap}
 .postal-header nav button:hover{color:var(--post-red);transform:translateY(-1px)}
 .postal-header nav small{font:9px monospace;color:#9f7860;margin-left:4px}
@@ -142,7 +145,7 @@ dialog.postal-journal{inset:0;margin:auto;width:min(1390px,calc(100vw - 38px));h
 .postal-ticket:not(:disabled):active{transform:translateY(1px)}
 .postal-journal .postal-text-button{font-size:11px;border:0;background:none;box-shadow:none;padding:5px 0;color:#8b6e55;white-space:nowrap;letter-spacing:0}
 .postal-text-button:hover{color:var(--post-red)}
-.postal-footer-parcel{width:90px;height:90px;flex-shrink:0;transform:rotate(6deg);margin-left:4px}
+.postal-footer-parcel{width:90px;height:90px;flex-shrink:0;transform:translate(-6px,-8px) rotate(6deg) scale(2);margin-left:4px}
 .postal-disclaimer{flex-shrink:0;text-align:center;font-size:10px;letter-spacing:2px;color:#987d65;margin:3px 0 0;padding:0;line-height:1.7}
 .postal-sending{font-size:13px;letter-spacing:2px;color:#956644;animation:postal-breathe 1.8s ease-in-out infinite}
 .postal-error{position:absolute;left:5%;right:5%;bottom:3%;z-index:40;box-shadow:0 4px 12px #50322633;margin:0;border:1px solid #b8846a;background:#f7e9d7;font-family:system-ui,sans-serif;max-height:110px;overflow:auto}
@@ -234,10 +237,10 @@ dialog.postal-journal{inset:0;margin:auto;width:min(1390px,calc(100vw - 38px));h
 .postal-aside>.postal-kicker{font-size:6px;letter-spacing:1px}.postal-underline{width:80px;margin-bottom:18px}
 .postal-pools{gap:10px}.postal-pools button{padding:9px 10px 10px 13px;gap:5px;min-height:77px}.postal-pools button b{font-size:17px;letter-spacing:1px}.postal-pools button small{font-size:9px}.postal-pools button span{font-size:8px;letter-spacing:1px}
 .postal-preview-note{width:137px;padding:10px 7px 9px;margin:25px 0 0 1px}.postal-preview-note>div{height:80px}.postal-preview-note b{font-size:12px}.postal-preview-note small{font-size:8px}.postal-tape{left:32px;width:62px;height:18px}
-.postal-paper-stack{--paper-edge:polygon(.3% 1.2%,3.2% .5%,6.8% 1%,10.4% .2%,15.2% .7%,19.1% .1%,23.5% .8%,28% .2%,32.8% .6%,38.1% .1%,43% .8%,48.4% .3%,54% .8%,59.4% .1%,64.8% .7%,70.5% .2%,76% .8%,81% .1%,86.7% .6%,92% .2%,96.2% .9%,99.7% .3%,99.3% 6%,99.8% 12%,99.2% 19%,99.8% 26%,99.4% 33%,99.9% 40%,99.3% 47%,99.8% 54%,99.1% 61%,99.7% 68%,99.3% 75%,99.9% 83%,99.2% 91%,99.6% 98.8%,96% 99.5%,91% 99%,86% 99.7%,81.4% 99.1%,76% 99.8%,71.7% 99.2%,66% 99.6%,61.3% 99.1%,56% 99.8%,51.7% 99.3%,46% 99.9%,41.6% 99.3%,36.2% 99.8%,31% 99.2%,26.3% 99.7%,21% 99.1%,16% 99.8%,11.4% 99.1%,7% 99.7%,3% 99.1%,.1% 99.6%,.6% 93%,.1% 86%,.8% 79%,.2% 72%,.7% 65%,.1% 58%,.8% 51%,.2% 44%,.7% 37%,.1% 30%,.8% 23%,.2% 16%,.7% 9%)}
+.postal-paper-stack{--paper-edge:none}
 .postal-paper-back{clip-path:var(--paper-edge);background:#c8ae87;inset:3px -5px -6px -6px;transform:rotate(-1deg)}
 .postal-paper-back:before{inset:4px 8px;background:#87908c;clip-path:var(--paper-edge);opacity:.65}
-.postal-paper{border:0;background:#fff5e4;box-shadow:none;clip-path:var(--paper-edge);transform:rotate(.25deg)}
+.postal-paper{border:0;background-color:#fff5e4;background-image:linear-gradient(#fff8e8b3,#fff8e8b3),url('/assets/lottery/postal-journal-base.png');background-size:auto,240% 240%;background-position:center;box-shadow:none;clip-path:var(--paper-edge);transform:rotate(.25deg)}
 .postal-paper:before{display:none}.postal-suite{inset:0;padding:11px;display:block}
 .postal-preview-mount{height:100%;padding:0;border:0;background:#e4d5b8;box-shadow:none;transform:none;clip-path:var(--paper-edge)}
 .postal-preview-mount .parcel-theme-preview{height:100%;border:0;outline:0;box-shadow:none;margin:0;display:block;background:none}
@@ -252,4 +255,60 @@ dialog.postal-journal{inset:0;margin:auto;width:min(1390px,calc(100vw - 38px));h
 @media(max-height:800px) and (min-width:801px){.postal-body{grid-template-columns:135px minmax(0,1fr);gap:18px}.postal-aside h2{font-size:23px;max-width:135px}.postal-pools button{min-height:68px;padding:8px 9px 8px 12px;gap:4px}.postal-pools button b{font-size:16px}.postal-preview-note{width:121px;margin-top:20px}.postal-preview-note>div{height:65px}.postal-preview-note b{font-size:10px}.postal-preview-note small{font-size:7px}.postal-suite-heading{top:21px;left:24px;padding:10px 16px 13px}.postal-suite-heading h3{font-size:25px;margin:6px 0 7px}.postal-suite-heading p{font-size:9px}.postal-suite-register{bottom:18px;left:24px;right:24px;font-size:9px}.postal-suite-register b{font-size:20px}}
 @media(max-width:1100px) and (min-width:801px){.postal-body{grid-template-columns:130px minmax(0,1fr);gap:17px}.postal-aside h2{font-size:23px;max-width:130px}.postal-preview-note{width:120px}.postal-suite-heading{max-width:53%}.postal-suite-heading h3{font-size:23px;letter-spacing:3px}}
 @media(max-width:800px){.postal-aside h2{max-width:none;font-size:22px}.postal-pools{max-width:350px}.postal-pools button{min-height:62px;max-width:165px;padding:7px 11px;gap:3px}.postal-pools button b{font-size:16px}.postal-pools button span{font-size:7px}.postal-pools button small{font-size:8px}.postal-suite{padding:7px}.postal-suite-heading{top:15px;left:17px;max-width:63%;padding:8px 13px 10px}.postal-suite-heading .postal-kicker{font-size:5px;letter-spacing:1px}.postal-suite-heading h3{font-size:20px;margin:5px 0;letter-spacing:2px}.postal-suite-heading p{font-size:8px;letter-spacing:0}.postal-suite-register{bottom:14px;left:17px;right:16px;font-size:8px;letter-spacing:1px}.postal-suite-register b{font-size:18px}.postal-suite-register small{font-size:6px}.postal-suite-register>span:last-child{font-size:8px}.postal-suite-register>span:last-child b{font-size:16px}.postal-drawing-pen{width:76px;height:91.2px}}
+.postal-body{grid-template-columns:var(--postal-sidebar-width,150px) minmax(0,1fr)}
+.postal-pools button{padding:9px 10px;gap:5px;min-height:91px;justify-content:center}
+.postal-pools button b{font-size:min(var(--postal-pool-title-size,26px),calc((var(--postal-sidebar-width,150px) - 25px)/4));line-height:1.18;letter-spacing:.5px;font-weight:500;white-space:nowrap}
+.postal-pools button span,.postal-pools button small{font-size:var(--postal-pool-meta-size,12px);line-height:1.4;letter-spacing:.5px}
+.postal-paper,.postal-paper-back,.postal-paper-back:before,.postal-preview-mount{-webkit-mask-image:var(--postal-paper-mask);mask-image:var(--postal-paper-mask);-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.postal-suite-heading{left:var(--postal-title-x,31px);top:var(--postal-title-y,27px);transform:rotate(-1.3deg) scale(var(--postal-title-scale,1));transform-origin:top left}
+.postal-suite-register{left:var(--postal-info-x,29px);bottom:var(--postal-info-y,22px)}
+.postal-preview-mount{-webkit-mask-image:var(--postal-image-mask);mask-image:var(--postal-image-mask)}
+.postal-pools button,.postal-pools button[aria-selected=true]{isolation:isolate;background:none;border-color:transparent;box-shadow:none;filter:drop-shadow(1px 3px 2px #71513a2b)}
+.postal-pools button:before,.postal-pools button:after{content:'';position:absolute;inset:-1px;z-index:-2;pointer-events:none;background:#b79a73;-webkit-mask:var(--postal-card-mask) 0 0/100% 100% no-repeat;mask:var(--postal-card-mask) 0 0/100% 100% no-repeat}
+.postal-pools button:after{inset:1px 0 0;z-index:-1;background-image:linear-gradient(#f6e7d1aa,#f6e7d1aa),url('/assets/lottery/postal-journal-base.png');background-size:auto,1672px 941px;background-position:center,-510px -360px;box-shadow:inset 0 0 14px #aa85562b}
+.postal-pools button[aria-selected=true]:after{background-image:linear-gradient(90deg,#536a8080 0 4px,#fff6e8d1 4px),url('/assets/lottery/postal-journal-base.png');box-shadow:inset 0 0 14px #d0b78340}
+.postal-layout>.postal-suite-heading{left:42%;top:66px;max-width:none;padding:0;background:none;box-shadow:none;clip-path:none;transform:translateX(-50%);text-align:center;transition:opacity .4s,transform .6s,visibility .4s;pointer-events:none}
+.postal-layout>.postal-suite-heading h3{font-family:PostalPoolHand,'KaiTi','STKaiti',cursive;font-size:30px;line-height:1.2;letter-spacing:0;font-weight:400;margin:6px 0 0;white-space:nowrap;color:#604c38;text-shadow:0 1px #fff5e0}
+.postal-layout>.postal-suite-heading .postal-kicker{font-size:6px;letter-spacing:2.5px;color:#9e8261}
+.postal-layout>.postal-suite-heading[data-theme=moon] h3{color:#52637a}
+.postal-layout:not([data-stage=preview])>.postal-suite-heading{opacity:0;visibility:hidden;transform:translate(-50%,-10px)}
+.postal-wallet>span,.postal-wallet>button{position:relative;isolation:isolate;transform:scale(1.24);transform-origin:center}
+.postal-wallet>button{background:none;border-color:transparent;box-shadow:none}
+.postal-wallet>span:before,.postal-wallet>button:before{content:'';position:absolute;inset:-9px -5px;z-index:-1;pointer-events:none;border:1px solid #bda37c;border-radius:2px;background-image:linear-gradient(#fff3dfb8,#fff3dfb8),url('/assets/lottery/postal-journal-base.png');background-position:center,-510px -360px;background-size:auto,1672px 941px;box-shadow:1px 2px 2px #8b6f4830}
+.postal-wallet>button:before{inset:0 6px}
+.postal-wallet>button:disabled{opacity:1;filter:none}
+.postal-actions>.postal-ticket[data-testid^=parcel-draw]{height:var(--postal-draw-button-height,48px);min-height:var(--postal-draw-button-height,48px);box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px 19px;line-height:1.2}
+.postal-actions>.postal-ticket[data-testid^=parcel-draw] small{margin:0;line-height:1.2}
+.postal-info-links{position:absolute;right:124px;bottom:16px;display:flex;gap:17px;align-items:center;z-index:12}
+.postal-journal .postal-info-links button{padding:5px 2px;background:none;box-shadow:none;border:0;border-bottom:1px dashed #a88b6970;border-radius:0;font-size:15px;line-height:1.4;color:#7b5d43}
+.postal-info-links button:hover{color:var(--post-red);transform:translateY(-1px)}
+.postal-journal .postal-owned-link{display:inline-flex;align-items:baseline;gap:3px;padding:3px 6px;color:inherit;font:inherit;letter-spacing:inherit;white-space:nowrap;background:#253b292b;border:1px dashed #fff3da70;border-radius:3px;box-shadow:none;text-shadow:inherit;pointer-events:auto}
+.postal-owned-link i{font:17px/1 serif;font-style:normal;margin-left:3px}.postal-owned-link:hover{background:#253b2955}
+.postal-journal .postal-info-links .postal-rules-button{min-width:112px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px 18px;border:1px solid #ac8b62;border-radius:4px;background-image:linear-gradient(#fff2dca8,#fff2dca8),url('/assets/lottery/postal-journal-base.png');background-size:auto,1672px 941px;background-position:center,-510px -360px;color:#74583d;font-size:20px;letter-spacing:4px;box-shadow:inset 0 0 0 3px #fff6e494,inset 0 0 0 4px #bda37e80,2px 3px 4px #71513a24;transform:rotate(-1deg)}
+.postal-rules-button small{font-size:8px;line-height:1.2;letter-spacing:1px;color:#a48765}
+.postal-viewport{position:relative;width:100%;height:100%;overflow:hidden}
+.postal-layout{container-type:inline-size;width:calc(100% / var(--postal-viewport-fit,1));height:calc(100% / var(--postal-viewport-fit,1));transform:scale(var(--postal-viewport-fit,1));transform-origin:top left}
+.postal-balances{position:absolute;right:10%;top:5%;z-index:10;display:flex;gap:12px;align-items:stretch;color:#775c43}
+.postal-journal .postal-balance-card{position:relative;isolation:isolate;display:flex;align-items:center;gap:10px;width:clamp(148px,10.7cqw,174px);height:68px;padding:9px 12px;box-sizing:border-box;flex:none;border:1px solid #b39a75;border-radius:5px;background-image:linear-gradient(#fff5e2ad,#fff0dabd),url('/assets/lottery/postal-journal-base.png');background-size:auto,1672px 941px;background-position:center,-510px -360px;box-shadow:inset 0 0 0 3px #fff7e7a8,inset 0 0 0 4px #c5af8c5c,2px 4px 4px #79583a22;color:inherit;text-align:left;letter-spacing:0;font-family:inherit}
+.postal-balance-card:before{content:'';position:absolute;left:9px;right:9px;bottom:6px;height:1px;background:#b79b7055;pointer-events:none}
+.postal-currency-icon{display:block;width:38px;height:38px;flex:none;filter:drop-shadow(1px 2px 0 #80644220)}
+.postal-balance-value{display:flex;flex-direction:column;gap:4px}.postal-balance-value>span{font-size:15px;line-height:1;letter-spacing:2px;color:#91785b}.postal-balance-value>b{font:24px/1.1 Georgia,'Times New Roman',serif;letter-spacing:1px;color:#654e3b;font-variant-numeric:tabular-nums}
+.postal-balance-plus{position:absolute;right:8px;top:8px;display:grid;place-items:center;width:17px;height:17px;border:1px solid #bda684;border-radius:50%;font:12px/1 serif;font-style:normal;color:#9a7b54;background:#fff4dfb0}
+.postal-journal .postal-balance-card:disabled{opacity:1;filter:none}.postal-journal button.postal-balance-card:not(:disabled):hover{filter:brightness(1.04);box-shadow:inset 0 0 0 3px #fff7e7a8,inset 0 0 0 4px #c5af8c5c,2px 5px 6px #79583a33;transform:none}
+.postal-preview-note{transition:opacity .3s ease,visibility .3s ease}.postal-layout:not([data-stage=preview]) .postal-preview-note{opacity:0;visibility:hidden;pointer-events:none}
+.postal-corner-stamps{transition:opacity .3s ease}.postal-layout:not([data-stage=preview]) .postal-corner-stamps{opacity:0;pointer-events:none}
+.postal-layout:not([data-stage=preview]) .postal-actions>[data-testid^=parcel-draw]{visibility:hidden;pointer-events:none}
+.postal-stage-actions{position:absolute;left:var(--postal-action-center-x,50%);top:var(--postal-action-center-y,50%);transform:translate(-50%,-50%);display:grid;place-items:center;width:max-content}
+.postal-stage-secondary{position:absolute;right:calc(100% + 22px);display:flex;gap:16px;align-items:center;white-space:nowrap}
+.postal-journal .postal-stage-ticket{min-width:224px;min-height:76px;font-size:23px;line-height:1.2;padding:10px 23px}.postal-stage-ticket small{font-size:12px}
+.postal-journal .postal-stage-ticket:hover,.postal-journal .postal-stage-ticket:active,.postal-journal .postal-actions>.postal-ticket:hover,.postal-journal .postal-actions>.postal-ticket:active{transform:rotate(-.8deg)}
+.postal-journal .postal-parcel{container-type:size}.postal-journal .postal-delivery:not(.single) .postal-parcel{max-height:none}
+.postal-journal .postal-parcel .postal-parcel-sprite{width:min(100cqw,calc(100cqh - 28px));height:auto;max-height:none;aspect-ratio:1}
+.postal-delivery:not(.single) .postal-parcel-hint{bottom:4%;font-size:12px}.postal-delivery:not(.single) .postal-parcel-name{bottom:2%;font-size:12px}.postal-delivery:not(.single) .postal-parcel-name small{font-size:10px}
+@media(max-width:1100px){.postal-balances{right:5%;gap:8px}.postal-journal .postal-balance-card{width:145px;height:62px;padding:8px 10px;gap:8px}.postal-currency-icon{width:33px;height:33px}.postal-balance-value>b{font-size:22px}.postal-balance-value>span{font-size:14px}}
+@media(max-width:800px){.postal-header:after{display:none}.postal-balances{right:5%;top:19px}.postal-journal .postal-balance-card{width:105px;height:52px;padding:7px;gap:5px}.postal-currency-icon{width:25px;height:25px}.postal-balance-value>b{font-size:18px}.postal-balance-value>span{font-size:11px;letter-spacing:1px}.postal-balance-plus{top:4px;right:4px;width:12px;height:12px;font-size:9px}.postal-journal .postal-stage-ticket{min-width:180px;min-height:62px;font-size:18px}}
+.postal-info-tabs{display:flex;gap:9px;margin-top:18px}.postal-info-tabs button{padding:9px 19px;border:1px solid #bda77f;border-radius:3px;background:#fff8e9;color:#846f54;font:14px 'SimSun',serif;box-shadow:none}.postal-info-tabs button[aria-pressed=true]{background:#94734e;color:#fff4dc;border-color:#84613e}.postal-info-tabs small{font:10px monospace;margin-left:4px}.postal-receipt-note{font-size:12px;line-height:1.7;color:#8c7860;margin:0}
+@media(max-height:800px) and (min-width:801px){.postal-pools button{min-height:86px;padding:8px 10px;gap:4px}}
+@media(max-width:800px){.postal-pools button{min-height:88px;max-width:175px}}
+@media(max-width:800px){.postal-layout>.postal-suite-heading{top:65px;left:55%}.postal-layout>.postal-suite-heading h3{font-size:24px;letter-spacing:4px}.postal-info-links{right:85px;bottom:5px;gap:10px}.postal-journal .postal-info-links button{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.postal-journal *,.postal-journal *:before,.postal-journal *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
