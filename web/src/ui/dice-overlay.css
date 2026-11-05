@@ -12,33 +12,230 @@
 .cube-dice .face-5 {transform:rotateX(-90deg) translateZ(calc(var(--die-size)/2));background:#c8b28c}
 .event-resolution .cube-dice {--die-size:38px}
 .event-resolution.compact .cube-dice {--die-size:25px}
-.dice-ceremony {position:fixed;inset:0;z-index:90;background:#101c2666;backdrop-filter:blur(3px);outline:0;animation:encounter-veil-in .24s ease-out;cursor:default}
-.dice-ceremony.reveal {cursor:pointer}
-.dice-ceremony .ceremony-sheet {min-height:360px;padding-bottom:22px}
-.ceremony-tray {position:relative;display:flex;align-items:center;justify-content:center;gap:68px;min-height:218px;margin-top:14px;background:radial-gradient(ellipse at 42% 64%,#c7b08530,transparent 67%)}
-.ceremony-pair {display:flex;align-items:center;gap:66px;padding:30px 32px}
-.ceremony-die {position:relative;isolation:isolate;transform-origin:center 180%;transition:translate .48s ease,rotate .48s ease}
-.ceremony-die::after {content:'';position:absolute;z-index:-1;left:-15%;right:-15%;bottom:-28px;height:16px;border-radius:50%;background:#6a573a33;filter:blur(5px);transition:opacity .4s}
-.ceremony-die .cube-dice {--die-size:80px}
-.dice-ceremony.toss .ceremony-die {animation:die-bounce .7s ease-in-out infinite alternate}
-.dice-ceremony.toss .ceremony-die:nth-child(2) {animation-delay:-.25s}
-.dice-ceremony.toss .ceremony-die::after {opacity:.45}
-.ceremony-result {width:170px;min-height:100px;display:flex;justify-content:center;align-items:center;gap:15px;color:#8b785b;font-size:16px}
-.ceremony-result strong {font-family:Georgia,serif;font-size:72px;font-weight:400;line-height:1;color:#6c5137}
-.ceremony-result span {letter-spacing:2px}
-.dice-ceremony.reveal .ceremony-result {animation:result-ink-in .45s .2s both}
-.dice-ceremony.good .ceremony-result span {color:#536c4d}
-.ceremony-hint {display:block;min-height:20px;text-align:right;font-size:12px;letter-spacing:2px;color:#a48f6d}
-@keyframes die-bounce {from{translate:0 2px;rotate:-6deg}to{translate:0 -20px;rotate:7deg}}
-@keyframes result-ink-in {from{opacity:0;translate:0 5px}to{opacity:1;translate:0 0}}
-@keyframes encounter-veil-in {from{background:#101c2600;backdrop-filter:blur(0)}to{background:#101c2666;backdrop-filter:blur(3px)}}
-@media(max-width:700px),(max-height:600px) {
-  .dice-ceremony .ceremony-sheet {min-height:235px;padding-bottom:12px}
-  .ceremony-tray {min-height:136px;margin-top:5px;gap:28px}
-  .ceremony-pair {gap:42px;padding:20px}
-  .ceremony-die .cube-dice {--die-size:54px}
-  .ceremony-result {font-size:13px;width:130px;gap:10px;min-height:70px}
-  .ceremony-result strong {font-size:50px}
-  .ceremony-hint {font-size:10px;min-height:14px}
+
+/* —— 掷骰判定仪式：全屏遮罩 + 真 3D 立方骰 + 四档天气氛围特效 ——
+   风格约束：粒子全部是硬边缘像素方块/Emoji；骰面用 preserve-3d 六面立方 +
+   分档内阴影雕出木/石质感；调色取星露谷式的暖纸色 + 彩虹金 / 灰紫雨。 */
+
+.dice-ceremony{position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;--die:clamp(104px,21vmin,188px);background:#241f1ed9;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);outline:0;animation:ceremony-fade .22s ease-out;cursor:default}
+.dice-ceremony.reveal{cursor:pointer}
+@keyframes ceremony-fade{from{opacity:0}to{opacity:1}}
+
+/* 标题（沿用事件卡措辞），翻滚与揭晓两阶段常驻顶部 */
+.ceremony-heading{position:absolute;top:5vh;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;animation:ceremony-fade .3s .05s ease-out backwards}
+.ceremony-heading span{font-size:12px;letter-spacing:4px;color:#f1e8d3b3}
+.ceremony-heading h2{margin:0;max-width:92vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:clamp(18px,3.6vmin,30px);letter-spacing:2px;color:#fff3d6;text-shadow:3px 3px 0 #241f1ecc}
+
+/* 四档氛围底色（全屏洗色层，揭晓时淡入盖住基础遮罩） */
+.weather-wash{position:absolute;inset:0;z-index:0;pointer-events:none;animation:wash-in .5s ease-out backwards}
+@keyframes wash-in{from{opacity:0}to{opacity:1}}
+.weather-wash.tier-crit{background:radial-gradient(circle at 50% 44%,#6d5118ef 0%,#241f1ef2 64%)}
+.weather-wash.tier-success{background:radial-gradient(circle at 50% 38%,#b7a55fc4 0%,#453f28df 55%,#241f1eee 100%)}
+.weather-wash.tier-partial{background:linear-gradient(#525f6fe8,#3a4250ea)}
+.weather-wash.tier-fail{background:radial-gradient(circle at 50% 46%,#191624f7 0%,#0f0c17f8 72%)}
+
+/* 屏幕边缘光晕/暗角（crit 暖金描边、fail 暗紫暗角），盖在最上层但不挡点击 */
+.ceremony-vignette{position:absolute;inset:0;z-index:3;pointer-events:none;animation:wash-in .45s steps(3) backwards}
+.ceremony-vignette.tier-crit{box-shadow:inset 0 0 10vmin 2vmin #f2c14e4d,inset 0 0 24vmin 6vmin #e4573d26}
+.ceremony-vignette.tier-success{box-shadow:inset 0 0 12vmin 3vmin #ffe08a38}
+.ceremony-vignette.tier-partial{box-shadow:inset 0 0 18vmin 5vmin #5c6b7f70}
+.ceremony-vignette.tier-fail{box-shadow:inset 0 0 16vmin 5vmin #191024e0,inset 0 0 30vmin 8vmin #0d0813cc}
+
+/* 舞台：骰子绝对居中（50%/50% + 负位移）；失败档结算瞬间整台轻震（容器震动） */
+.ceremony-stage{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1;width:min(92vw,560px);height:min(92vw,560px);display:flex;align-items:center;justify-content:center}
+.dice-ceremony.reveal.tier-fail .ceremony-stage{animation:ceremony-shake .34s steps(5)}
+@keyframes ceremony-shake{0%{transform:translate(-50%,-50%)}25%{transform:translate(calc(-50% + 5px),calc(-50% - 4px))}50%{transform:translate(calc(-50% - 4px),calc(-50% + 5px))}75%{transform:translate(calc(-50% + 3px),calc(-50% + 2px))}100%{transform:translate(-50%,-50%)}}
+
+/* ———— 真 3D 骰：透视在每颗骰子上，链路 die(透视)→squash(保 3D)→cube(保 3D)→六面 ———— */
+.ceremony-pair{position:relative;z-index:1;display:flex;gap:6vmin}
+.ceremony-die{position:relative;width:var(--die);height:var(--die);perspective:760px;animation:ceremony-pop .36s cubic-bezier(.25,1.5,.45,1) backwards}
+.ceremony-die:nth-child(2){animation-delay:.07s}
+@keyframes ceremony-pop{0%{transform:scale(.15) rotate(-10deg);opacity:0}62%{transform:scale(1.14) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+.die3d{position:absolute;inset:0}
+.die3d-squash,.die3d-cube{position:absolute;inset:0;transform-style:preserve-3d;will-change:transform}
+
+/* 地面像素阴影：随弹跳缩放，落地重击时摊到最大 */
+.die3d-shadow{position:absolute;left:6%;right:6%;bottom:calc(var(--die) * -.16);height:calc(var(--die) * .12);background:#100d0b73;border-radius:50%}
+
+/* 六个面：translateZ 拼出立方体，各面亮度不同雕出体积感；backface 隐藏避免穿帮 */
+.die3d-face{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:7%;padding:16%;box-sizing:border-box;border:5px solid #332921;box-shadow:inset 6px 6px 0 #fffdf5a8,inset -7px -7px 0 #0000001f;backface-visibility:hidden}
+.die3d-face i{visibility:hidden;border-radius:3px;background:#8a4b32;box-shadow:inset -2px -2px 0 #64341f}
+.die3d-face i.on{visibility:visible}
+.die3d-face.f1{transform:translateZ(calc(var(--die) / 2));background:#f2e9d2}
+.die3d-face.f2{transform:rotateX(90deg) translateZ(calc(var(--die) / 2));background:#f8f1de}
+.die3d-face.f3{transform:rotateY(90deg) translateZ(calc(var(--die) / 2));background:#e8dabb}
+.die3d-face.f4{transform:rotateY(-90deg) translateZ(calc(var(--die) / 2));background:#ddcba7}
+.die3d-face.f5{transform:rotateX(-90deg) translateZ(calc(var(--die) / 2));background:#d3c096}
+.die3d-face.f6{transform:rotateY(180deg) translateZ(calc(var(--die) / 2));background:#e2d3b2}
+
+/* 翻滚：立方体匀速整周翻转（720°X/1080°Y），弹跳与压扁交给外层 squash，两段互不干扰；
+   第二颗错拍更躁动；等待服务端期间无限循环 */
+.dice-ceremony.toss .die3d-cube{animation:die3d-toss 1.6s linear .52s infinite}
+.dice-ceremony.toss .ceremony-die:nth-child(2) .die3d-cube{animation-duration:1.78s;animation-delay:.58s}
+@keyframes die3d-toss{to{transform:rotateX(720deg) rotateY(1080deg)}}
+
+/* 抛物线弹跳：起跳拉伸→顶点→落地压扁回弹，分段缓动模拟重力 */
+.dice-ceremony.toss .die3d-squash{animation:die3d-bounce 1.6s .52s infinite}
+.dice-ceremony.toss .ceremony-die:nth-child(2) .die3d-squash{animation-duration:1.78s;animation-delay:.58s}
+@keyframes die3d-bounce{
+  0%{transform:translateY(0) scaleX(1.14) scaleY(.88);animation-timing-function:cubic-bezier(.2,.65,.45,1)}
+  12%{transform:translateY(-2vmin) scaleX(1) scaleY(1)}
+  46%{transform:translateY(-9.5vmin) scaleX(1) scaleY(1);animation-timing-function:cubic-bezier(.55,.06,.85,.4)}
+  82%{transform:translateY(0) scaleX(1) scaleY(1)}
+  90%{transform:translateY(0) scaleX(1.16) scaleY(.86)}
+  100%{transform:translateY(0) scaleX(1) scaleY(1)}
 }
-@media(prefers-reduced-motion:reduce) {.dice-ceremony,.dice-ceremony.toss .ceremony-die,.dice-ceremony.reveal .ceremony-result {animation:none}.ceremony-die,.ceremony-die::after {transition:none}}
+.dice-ceremony.toss .die3d-shadow{animation:die3d-shadow 1.6s .52s infinite}
+.dice-ceremony.toss .ceremony-die:nth-child(2) .die3d-shadow{animation-duration:1.78s;animation-delay:.58s}
+@keyframes die3d-shadow{0%{transform:scale(1.05);opacity:.85}46%{transform:scale(.62);opacity:.4}82%{transform:scale(1.05);opacity:.85}100%{transform:scale(1);opacity:.8}}
+
+/* 落定：高空带旋转坠落→触地压扁(定格点数面朝镜头)→小幅回弹→居中定住 */
+.dice-ceremony.reveal .die3d-cube{animation:die3d-land .55s cubic-bezier(.22,.61,.36,1) forwards}
+.dice-ceremony.reveal .die3d-squash{animation:die3d-drop .55s cubic-bezier(.3,.6,.3,1) forwards}
+.dice-ceremony.reveal .die3d-shadow{animation:die3d-shadow-slam .55s ease-out forwards}
+@keyframes die3d-land{
+  0%{transform:rotateX(calc(320deg + var(--fx,0deg))) rotateY(calc(480deg + var(--fy,0deg)))}
+  58%,100%{transform:rotateX(calc(720deg + var(--fx,0deg))) rotateY(calc(1080deg + var(--fy,0deg)))}
+}
+@keyframes die3d-drop{
+  0%{transform:translateY(-13vmin) scaleX(.94) scaleY(1.08);animation-timing-function:cubic-bezier(.5,.06,.86,.42)}
+  50%{transform:translateY(0) scaleX(1) scaleY(1)}
+  60%{transform:translateY(0) scaleX(1.26) scaleY(.74);animation-timing-function:cubic-bezier(.2,1.5,.4,1)}
+  78%{transform:translateY(-3.4vmin) scaleX(.92) scaleY(1.1)}
+  90%{transform:translateY(0) scaleX(1.08) scaleY(.93)}
+  100%{transform:translateY(0) scaleX(1) scaleY(1)}
+}
+@keyframes die3d-shadow-slam{0%{transform:scale(.5);opacity:.35}50%{transform:scale(1.22);opacity:.95}100%{transform:scale(1);opacity:.8}}
+
+/* ———— 四档天气道具（都垫在骰子后面） ———— */
+.ceremony-weather{position:absolute;inset:0;z-index:0;pointer-events:none}
+
+/* 成功：骰子上方旋转的像素小太阳（八角射线步进旋转 + 同心环光晕） */
+.weather-sun{position:absolute;left:50%;top:2%;width:12vmin;height:12vmin;transform:translateX(-50%);animation:sun-pop .45s steps(4) backwards}
+.sun-halo{position:absolute;inset:-55%;border-radius:50%;background:repeating-radial-gradient(circle,#ffe08a2b 0 1.5vmin,transparent 1.5vmin 3vmin);animation:halo-pulse 1.4s steps(2) infinite}
+.sun-core{position:absolute;inset:26%;background:#ffd23e;box-shadow:inset -.9vmin -.9vmin 0 #f2a63d,.3vmin .3vmin 0 #fff3b0}
+.sun-rays{position:absolute;top:50%;left:50%;width:1.1vmin;height:1.1vmin;margin:-.55vmin 0 0 -.55vmin;background:#ffd23e;box-shadow:0 -3.6vmin 0 #ffde6b,0 3.6vmin 0 #ffde6b,-3.6vmin 0 0 #ffde6b,3.6vmin 0 0 #ffde6b,-2.5vmin -2.5vmin 0 #f2a63d,2.5vmin -2.5vmin 0 #f2a63d,-2.5vmin 2.5vmin 0 #f2a63d,2.5vmin 2.5vmin 0 #f2a63d;animation:sun-spin 2.8s steps(8) infinite}
+@keyframes sun-spin{to{transform:rotate(360deg)}}
+@keyframes halo-pulse{0%{transform:scale(.9);opacity:.6}100%{transform:scale(1.05);opacity:1}}
+@keyframes sun-pop{0%{transform:translateX(-50%) scale(0)}70%{transform:translateX(-50%) scale(1.2)}100%{transform:translateX(-50%) scale(1)}}
+
+/* 有代价：秋风疾扫——云被吹得斜身加速往返（skew 出被风扯过的姿态） */
+.cloud-pixel{position:absolute;width:1.5vmin;height:1.5vmin;background:#b9c3cf;box-shadow:-1.5vmin -1.5vmin 0 #b9c3cf,0 -1.5vmin 0 #b9c3cf,1.5vmin -1.5vmin 0 #b9c3cf,-4.5vmin 0 0 #b9c3cf,-3vmin 0 0 #b9c3cf,-1.5vmin 0 0 #b9c3cf,1.5vmin 0 0 #b9c3cf,3vmin 0 0 #b9c3cf,4.5vmin 0 0 #b9c3cf,-3vmin 1.5vmin 0 #98a4b4,-1.5vmin 1.5vmin 0 #98a4b4,0 1.5vmin 0 #98a4b4,1.5vmin 1.5vmin 0 #98a4b4,3vmin 1.5vmin 0 #98a4b4;animation:cloud-in .5s steps(3) backwards,cloud-race var(--cd,7s) linear infinite alternate}
+@keyframes cloud-race{from{transform:translate(calc(-50% - 9vmin),-50%) skewX(-6deg) scale(var(--cw,1))}to{transform:translate(calc(-50% + 9vmin),-50%) skewX(-6deg) scale(var(--cw,1))}}
+@keyframes cloud-in{from{opacity:0}to{opacity:1}}
+
+/* 有代价：Emoji 骑云同行——渲染为云的子元素（坐标相对云身），云漂它也漂；
+   各自打着旋从云里缓缓洒落，与云零割裂 */
+.weather-clouds .fx-emoji{position:absolute;display:block}
+.fx-emoji-shed{animation:fx-emoji-shed var(--d) ease-in-out var(--w) forwards}
+@keyframes fx-emoji-shed{
+  0%{transform:translate(0,0) rotate(0);opacity:0}
+  10%{opacity:1}
+  35%{transform:translate(calc(var(--dx) * .4),10vmin) rotate(calc(var(--r) * .35))}
+  70%{transform:translate(calc(var(--dx) * .2),22vmin) rotate(calc(var(--r) * .7))}
+  100%{transform:translate(var(--dx),34vmin) rotate(var(--r));opacity:0}
+}
+
+/* 失败：骰子头顶笼罩巨大的像素大乌云（13 格宽）+ 云底闪现的像素闪电 */
+.storm-cloud{position:absolute;left:50%;top:4%;width:2vmin;height:2vmin;background:#454052;transform:translate(-50%,0);box-shadow:-8vmin -4vmin 0 #5a5268,-6vmin -4vmin 0 #5a5268,-4vmin -4vmin 0 #5a5268,-2vmin -4vmin 0 #5a5268,0 -4vmin 0 #5a5268,2vmin -4vmin 0 #5a5268,4vmin -4vmin 0 #5a5268,6vmin -4vmin 0 #5a5268,8vmin -4vmin 0 #5a5268,-10vmin -2vmin 0 #4a4458,-8vmin -2vmin 0 #4a4458,-6vmin -2vmin 0 #4a4458,-4vmin -2vmin 0 #4a4458,-2vmin -2vmin 0 #4a4458,2vmin -2vmin 0 #4a4458,4vmin -2vmin 0 #4a4458,6vmin -2vmin 0 #4a4458,8vmin -2vmin 0 #4a4458,10vmin -2vmin 0 #4a4458,-12vmin 0 0 #454052,-10vmin 0 0 #454052,-8vmin 0 0 #454052,-6vmin 0 0 #454052,-4vmin 0 0 #454052,-2vmin 0 0 #454052,2vmin 0 0 #454052,4vmin 0 0 #454052,6vmin 0 0 #454052,8vmin 0 0 #454052,10vmin 0 0 #454052,12vmin 0 0 #454052,-10vmin 2vmin 0 #332f3d,-8vmin 2vmin 0 #332f3d,-6vmin 2vmin 0 #332f3d,-4vmin 2vmin 0 #332f3d,-2vmin 2vmin 0 #332f3d,0 2vmin 0 #332f3d,2vmin 2vmin 0 #332f3d,4vmin 2vmin 0 #332f3d,6vmin 2vmin 0 #332f3d,8vmin 2vmin 0 #332f3d,10vmin 2vmin 0 #332f3d;animation:cloud-in .5s steps(3) backwards,storm-bob 3s ease-in-out infinite alternate}
+@keyframes storm-bob{from{transform:translate(-50%,0)}to{transform:translate(-50%,1.2vmin)}}
+.storm-bolt{position:absolute;left:50%;top:calc(4% + 10vmin);width:1.6vmin;height:1.6vmin;background:#ffd23e;transform:translateX(-1.6vmin);box-shadow:1.6vmin 0 0 #ffd23e,0 1.6vmin 0 #ffe98a,-1.6vmin 1.6vmin 0 #ffe98a,-1.6vmin 3.2vmin 0 #ffd23e;animation:bolt-flash 1.7s steps(1) infinite}
+@keyframes bolt-flash{0%,72%{opacity:0}73%,78%{opacity:1}79%,100%{opacity:0}}
+
+/* 失败：暗紫阴影像素块绕骰环伺（垫在骰子后面，步进呼吸） */
+.ceremony-aura{position:absolute;inset:0;pointer-events:none;z-index:0}
+.ceremony-aura span{position:absolute;top:50%;left:50%;width:clamp(12px,2.6vmin,20px);height:clamp(12px,2.6vmin,20px);background:#4e3a63;box-shadow:inset -3px -3px 0 #35284a;transform:rotate(var(--a)) translateY(calc(-1 * var(--r)))}
+.dice-ceremony.reveal.tier-fail .ceremony-aura{animation:ceremony-aura-pulse 1s steps(2) infinite}
+@keyframes ceremony-aura-pulse{0%{transform:scale(1);opacity:.95}100%{transform:scale(1.12);opacity:.7}}
+
+/* 结算横幅：四档各自配色，步进出帧 */
+.ceremony-banner{position:absolute;left:50%;top:-3vmin;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:10px;padding:9px 18px;border:3px solid #2c231d;box-shadow:4px 4px 0 #24312e99;font-size:clamp(14px,2.6vmin,22px);font-weight:800;letter-spacing:2px;white-space:nowrap;animation:ceremony-banner-in .34s steps(3) .12s backwards}
+.ceremony-banner b{font-size:clamp(18px,3.4vmin,30px)}
+.ceremony-banner.tier-crit{background:#f5c84c;color:#4a3a0e}
+.ceremony-banner.tier-success{background:#79b961;color:#1f3d18}
+.ceremony-banner.tier-partial{background:#d9a441;color:#47350e}
+.ceremony-banner.tier-fail{background:#a5847c;color:#3d211c}
+@keyframes ceremony-banner-in{from{transform:translateX(-50%) scale(.4);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+
+/* —— 粒子层：坐标/大小/延迟由 JS 随机注入 CSS 变量，Emoji 用 content 渲染 —— */
+.ceremony-fx{position:absolute;inset:0;pointer-events:none;z-index:2}
+.ceremony-fx span{position:absolute;display:block}
+
+/* 大成功：彩虹硬边彩带——自骰心炸开后受重力下坠翻滚，三波连发 */
+.fx-ribbon{width:calc(var(--s) * .5);height:var(--s);background:var(--c);box-shadow:2px 2px 0 #241f1e2e;animation:fx-spray var(--d) cubic-bezier(.12,.7,.3,1) var(--w) forwards}
+@keyframes fx-spray{
+  0%{transform:translate(-50%,-50%) rotate(0);opacity:1}
+  55%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) rotate(calc(var(--rot) * .5));opacity:1}
+  100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty) + var(--fall))) rotate(var(--rot));opacity:0}
+}
+
+/* 好结果：金色亮晶在骰周错拍闪烁（十字方块，纯步进，无渐变发光） */
+.fx-glint{width:var(--s);height:var(--s);background:#ffe08a;box-shadow:0 calc(-1 * var(--s)) 0 #ffe08a,0 var(--s) 0 #ffe08a,calc(-1 * var(--s)) 0 0 #ffe08a,var(--s) 0 0 #ffe08a;animation:fx-glint .55s steps(2) var(--w) infinite}
+@keyframes fx-glint{0%{opacity:1}100%{opacity:0}}
+
+/* 失败：密集像素雨丝贴着屏幕纵落（步进下落更像素） */
+.fx-rain{width:var(--s);height:var(--h);background:var(--c);animation:fx-rain var(--d) linear var(--w) forwards}
+@keyframes fx-rain{0%{transform:translateY(-6vmin);opacity:0}12%{opacity:1}100%{transform:translateY(64vmin);opacity:.4}}
+
+/* 有代价：灰白像素风痕横掠屏幕，给秋风补一层空气感（双层错位更利落） */
+.fx-streak{width:calc(var(--s) * 5);height:4px;background:#cdd6e05c;box-shadow:0 -3px 0 #cdd6e036;animation:fx-streak var(--d) linear var(--w) forwards}
+@keyframes fx-streak{0%{transform:translate(0,0);opacity:0}15%{opacity:1}80%{opacity:1}100%{transform:translate(126vw,var(--dy));opacity:0}}
+
+/* 四档 Emoji 粒子：硬投影贴边，成功档额外发光 */
+.fx-emoji{font-size:var(--s);line-height:1;font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif;text-shadow:2px 2px 0 #241f1e66}
+.fx-emoji::before{content:var(--e)}
+/* 大成功：双圆环冲击波——自骰心荡开、冲过头再收成环，环上悬停自转后上飘散去 */
+.fx-emoji-ring{animation:fx-emoji-ring var(--d) cubic-bezier(.16,.8,.3,1) var(--w) forwards}
+@keyframes fx-emoji-ring{
+  0%{transform:translate(-50%,-50%) scale(.1) rotate(0);opacity:0}
+  22%{transform:translate(calc(-50% + var(--tx) * 1.16),calc(-50% + var(--ty) * 1.16)) scale(1.25) rotate(calc(var(--r) * .35));opacity:1}
+  42%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1) rotate(calc(var(--r) * -.15))}
+  78%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1) rotate(var(--r));opacity:1}
+  100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty) - 4vmin)) scale(.9) rotate(var(--r));opacity:0}
+}
+/* 大成功：满屏大爆炸——大号 Emoji 自骰心炸到屏幕四角，先胀后散铺满整屏 */
+.fx-emoji-boom{animation:fx-emoji-boom var(--d) cubic-bezier(.12,.74,.28,1) var(--w) forwards}
+@keyframes fx-emoji-boom{
+  0%{transform:translate(-50%,-50%) scale(.2) rotate(0);opacity:0}
+  15%{opacity:1}
+  60%{transform:translate(calc(-50% + var(--tx) * .75),calc(-50% + var(--ty) * .75)) scale(1.3) rotate(calc(var(--r) * .5))}
+  100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(.95) rotate(var(--r));opacity:0}
+}
+.fx-emoji-fall{animation:fx-emoji-fall var(--d) ease-in-out var(--w) forwards}
+@keyframes fx-emoji-fall{
+  0%{transform:translate(0,-4vmin) rotate(0);opacity:0}
+  12%{opacity:1}
+  30%{transform:translate(calc(var(--sw) * .6),18vmin) rotate(calc(var(--r) * .4))}
+  60%{transform:translate(calc(var(--sw) * -.4),44vmin) rotate(calc(var(--r) * -.2))}
+  100%{transform:translate(var(--sw),72vmin) rotate(var(--r));opacity:0}
+}
+.fx-emoji-slam{animation:fx-emoji-slam var(--d) cubic-bezier(.5,.04,.86,.45) var(--w) forwards}
+@keyframes fx-emoji-slam{
+  0%{transform:translate(0,-8vmin) scale(1);opacity:0}
+  10%{opacity:1}
+  55%{transform:translate(0,58vmin) scale(1.3,.7)}
+  70%{transform:translate(0,52vmin) scale(1)}
+  100%{transform:translate(0,58vmin) scale(1);opacity:0}
+}
+.dice-ceremony.reveal.tier-success .fx-emoji{filter:drop-shadow(0 0 5px #ffd76a)}
+.dice-ceremony.reveal.tier-fail .fx-emoji{text-shadow:2px 2px 0 #0d0813b3}
+
+/* 底部提示：结算后提示可跳过 */
+.ceremony-hint{position:absolute;bottom:7vh;left:0;right:0;text-align:center;color:#f1e8d3b3;font-size:12px;letter-spacing:3px;animation:ceremony-hint-blink 1.2s steps(2) infinite}
+@keyframes ceremony-hint-blink{0%{opacity:.9}100%{opacity:.35}}
+
+@media(max-width:520px){
+  .dice-ceremony{--die:clamp(88px,19vmin,150px)}
+  .ceremony-pair{gap:4vmin}
+  .ceremony-banner{letter-spacing:1px;padding:7px 12px}
+  .ceremony-heading{top:3.5vh}
+  .ceremony-heading h2{font-size:clamp(15px,4.2vmin,22px)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .dice-ceremony{animation:none}
+  .dice-ceremony.toss .die3d-cube,.dice-ceremony.toss .die3d-squash,.dice-ceremony.toss .die3d-shadow{animation-duration:.9s;animation-delay:.2s}
+  .dice-ceremony.reveal .ceremony-stage{animation:none}
+  .sun-rays,.sun-halo{animation:none}
+  .ceremony-fx span{animation-iteration-count:1!important}
+}
