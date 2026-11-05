@@ -1,11 +1,13 @@
+import {getDragRangeCat} from '../shared/dragRangePreview';
 import {useEffect, useRef, useState} from 'react';
 import type {KeyboardEvent, PointerEvent} from 'react';
 import type {BattleDifficulty, FinaleAction, FinaleCat, FinaleCatId, FinaleState, Position} from './types';
 import {CELLS, DIFFICULTIES, ENEMY_DEFINITIONS, MAP, RULES, SKILLS, WAVES, ROUTES} from './config';
 import {advanceFinale, createFinaleBattle, dispatchFinale, getAttackCells, getBossCells, getBossDamageMultiplier, getFinaleAdvice, getFinaleSpeed, getDeployError, getSkillCells, isDeployableCell} from './engine';
-import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, OBSTACLE_NAMES, paintFinale} from './painter';
+import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, OBSTACLE_NAMES, paintFinale, drawFinaleCat} from './painter';
 import {AdvisorPortrait} from '../shared/AdvisorPortrait';
 import {useBattleLoop} from '../shared/useBattleLoop';
+import {useBattleDragPreview} from '../shared/useBattleDragPreview';
 import {getFinaleAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
 import {CarryPanel} from '../CarryPanel';
@@ -61,6 +63,7 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
   });
   const canvasRef=useRef<HTMLCanvasElement>(null),boardRef=useRef<HTMLDivElement>(null),scrollRef=useRef<HTMLDivElement>(null);
   const fittedWidth=useBattleBoardFit(scrollRef,MAP.columns,MAP.rows);
+  const dragPreview=useBattleDragPreview({boardRef,columns:MAP.columns,rows:MAP.rows,activeCatId:dragging,drawCat:drawFinaleCat});
   const battlefieldRef=useRef<HTMLDivElement>(null),menuRef=useRef<HTMLDivElement>(null);
   const tooltipRef=useRef<HTMLDivElement>(null);
   const chatLogRef=useRef<HTMLDivElement>(null);
@@ -126,20 +129,20 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
   useEffect(()=>{
     if(attemptRef.current===attemptId)return;
     attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);skillFeedback.clear();
-    setSelected(null);setMoving(null);setHover(null);setChatOpen(false);setDragging(null);setNotice('');
+    setSelected(null);setMoving(null);setHover(null);setChatOpen(false);setDragging(null);gesture.current=null;dragPreview.clear();setNotice('');
     setQuestion('');
     publish(createFinaleBattle({difficulty,carry}));
   },[attemptId,difficulty,carry]);
 
   useEffect(()=>{
-    if(paused){setSelected(null);setMoving(null);setHover(null);setDragging(null);gesture.current=null;}
+    if(paused||hidden){setSelected(null);setMoving(null);setHover(null);setDragging(null);gesture.current=null;dragPreview.clear();}
     publish(dispatchFinale(gameRef.current,{type:'SET_EXTERNAL_PAUSE',paused:paused||document.hidden}));
-  },[paused]);
+  },[paused,hidden]);
   useEffect(()=>{publish(dispatchFinale(gameRef.current,{type:'SET_UI_PAUSE',paused:chatOpen||retreatOpen||!!dragging}));},[chatOpen,retreatOpen,dragging]);
 
   useBattleLoop({
     gameRef,canvasRef,boardRef,paused,uiPaused:chatOpen||retreatOpen||!!dragging,
-    selected,hover,dispatch:dispatchFinale,advance:advanceFinale,paint:paintFinale,setGame,setHidden,
+    selected,hover,dragging,dispatch:dispatchFinale,advance:advanceFinale,paint:paintFinale,setGame,setHidden,
   });
 
   useEffect(()=>{
@@ -165,24 +168,28 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
   }
   function pointerDown(event:PointerEvent<HTMLElement>,catId:FinaleCatId){
     if(event.button!==0||paused||hidden||chatOpen||gameRef.current.aim)return;
+    if(gesture.current)return;
+    const cat=gameRef.current.cats.find(candidate=>candidate.id===catId);if(!cat||cat.status!=='active')return;
+    dragPreview.begin(catId,event.clientX,event.clientY,cat);
     gesture.current={catId,pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,moved:false};
     event.currentTarget.setPointerCapture(event.pointerId);
   }
   function pointerMove(event:PointerEvent<HTMLElement>){
     const g=gesture.current;if(!g||g.pointerId!==event.pointerId)return;
-    if(!g.moved&&Math.hypot(event.clientX-g.startX,event.clientY-g.startY)>7){g.moved=true;setDragging(g.catId);setSelected(g.catId);act({type:'SET_UI_PAUSE',paused:true});}
-    if(g.moved){setHover(pointAt(event.clientX,event.clientY));event.preventDefault();}
+    if(!g.moved&&Math.hypot(event.clientX-g.startX,event.clientY-g.startY)>7){g.moved=true;setDragging(g.catId);setSelected(g.catId);act({type:'CLOSE_INSPECTION'});act({type:'SET_UI_PAUSE',paused:true});}
+    if(g.moved){dragPreview.move(event.clientX,event.clientY);setHover(pointAt(event.clientX,event.clientY));event.preventDefault();}
   }
   function pointerUp(event:PointerEvent<HTMLElement>){
     const g=gesture.current;
-    if(!g||g.pointerId!==event.pointerId){
+    if(g&&g.pointerId!==event.pointerId)return;
+    if(!g){
       if(event.pointerType==='touch'&&!gameRef.current.aim){
         const p=pointAt(event.clientX,event.clientY);if(p)cellClick(p);
         suppressSyntheticClick();
       }
       return;
     }
-    gesture.current=null;
+    gesture.current=null;dragPreview.clear();
     if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
     setDragging(null);act({type:'SET_UI_PAUSE',paused:chatOpen});
     if(g.moved){
@@ -194,7 +201,12 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
       suppressSyntheticClick();
     }
   }
-  function pointerCancel(){gesture.current=null;setDragging(null);setHover(null);act({type:'SET_UI_PAUSE',paused:chatOpen});}
+  function pointerCancel(event?:PointerEvent<HTMLElement>){
+    const g=gesture.current;if(event&&(!g||g.pointerId!==event.pointerId))return;
+    if(g?.moved){suppressSyntheticClick();setSelected(null);}
+    gesture.current=null;dragPreview.clear();setDragging(null);setHover(null);
+    act({type:'SET_UI_PAUSE',paused:chatOpen||retreatOpen});
+  }
   function cellClick(position:Position){
     if(suppressClick.current){suppressClick.current=false;return;}
     if(paused||hidden||chatOpen)return;
@@ -226,6 +238,7 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
   function keyDown(event:KeyboardEvent<HTMLDivElement>){
     if(event.key==='Enter'||event.key===' ')suppressClick.current=false;
     if(event.key==='Escape'){
+      if(gesture.current){event.preventDefault();pointerCancel();return;}
       event.preventDefault();if(chatOpen)setChatOpen(false);else if(retreatOpen)setRetreatOpen(false);else if(gameRef.current.aim)cancelAim();else closeInspection();return;
     }
     const aim=gameRef.current.aim;if(!aim)return;
@@ -249,7 +262,8 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
   const bossFootprint=game.boss.phase==='defeated'?[]:getBossCells(game.boss);
   const inspected=chosen?.status==='active'&&game.inspectedCatId===chosen.id&&!game.aim&&!moving&&!dragging&&!chatOpen&&!retreatOpen&&!paused&&!hidden&&!ended?chosen:null;
   const aimCat=game.aim?game.cats.find(cat=>cat.id===game.aim?.catId):null;
-  const attackCells=chosen?.status==='active'&&!game.aim?getAttackCells(chosen):[];
+  const rangeCat=getDragRangeCat(chosen,dragging,hover,(cat,target)=>!getDeployError(game,cat.id,target));
+  const attackCells=rangeCat?.status==='active'&&!game.aim?getAttackCells(rangeCat):[];
   const skillCells=aimCat&&game.aim?.target?getSkillCells(aimCat,game.aim.target):[];
   const canCast=!!inspected&&game.phase==='battle'&&!game.paused&&inspected.energy>=100;
 
@@ -304,7 +318,7 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
               const enemyCount=visibleEnemies.filter(enemy=>Math.round(enemy.x)===position.x&&Math.round(enemy.y)===position.y).length;
               const bossCell=bossFootprint.some(cell=>cell.x===position.x&&cell.y===position.y),spawnCell=MAP.spawns.some(cell=>cell.x===position.x&&cell.y===position.y);
               const attack=attackCells.some(cell=>cell.x===position.x&&cell.y===position.y),effect=skillCells.some(cell=>cell.x===position.x&&cell.y===position.y);
-              return <button type="button" key={name} className={`finale-cell${blocked?' is-obstacle':''}`} style={{gridColumn:position.x+1,gridRow:position.y+1}} data-cell={`${position.x},${position.y}`} data-testid={`finale-cell-${name}`} title={clearedTripwire?TRIPWIRE_DESCRIPTION:undefined} data-boss-danger={telegraph} data-danger={telegraph} data-enemies={enemyCount} data-deployable={isDeployableCell(position,game)} data-boss-footprint={bossCell} data-elite-id={elite?.id} data-ally-pad={ally?.id} data-spawn={spawnCell} data-attack-range={attack} data-skill-range={effect} aria-label={`${name}${blocked?`，${OBSTACLE_NAMES[name]}，不可通行`:cat?`，${cat.name}，${CAT_PRESENTATION[cat.id].label}，体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}，能量 ${Math.floor(cat.energy)} / 100`:position.x===MAP.goal.x&&position.y===MAP.goal.y?'，喵喵，守护目标，全程不参与战斗':ally?`，${ally.name}固定支援台，第${ally.arriveWave}波支援，不可移动` :elite?`，${elite.name}，体力${Math.ceil(elite.hp)}/${elite.maxHp}`:spawnCell?'，出怪口':bossCell?'，九格首领占格':'，地格'}${enemyCount?`，${enemyCount} 个普通黑影`:''}${telegraph?'，首领技能危险格，请移出范围':''}${attack?'，普通攻击可达':''}${effect?'，技能覆盖':''}`} disabled={paused||hidden||ended} onClick={()=>cellClick(position)} onPointerEnter={()=>{setHover(position);if(gameRef.current.aim)act({type:'AIM_SKILL',...position});}} onFocus={()=>{if(gameRef.current.aim){setHover(position);act({type:'AIM_SKILL',...position});}}} onPointerDown={event=>{if(cat)pointerDown(event,cat.id);}} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancel}>{position.x===MAP.goal.x&&position.y===MAP.goal.y&&<GoalLabel/>}{spawnCell&&<SpawnLabel/>}{clearedTripwire&&<TripwireLabel/>}{cat&&<span className={`finale-unit-state${cat.energy>=100?' btl-energy-halo':''}`} data-testid={`finale-cat-${cat.id}`} data-status={cat.status} data-x={cat.x} data-y={cat.y} data-energy={cat.energy} data-attack-buff={cat.attackBuffRemaining.toFixed(2)} data-hp={Math.ceil(cat.hp)} data-max-hp={cat.maxHp}><span className="btl-unit-name"><span className="finale-unit-name">{cat.name}</span><RoleBadge id={cat.id}/></span><UnitMeters cat={cat} prefix="finale"/></span>}{ally&&<span className="finale-ally-state" data-testid={`finale-ally-${ally.id}`} data-status={ally.status} data-hp={Math.ceil(ally.hp)} data-x={ally.x} data-y={ally.y} data-arrivals={ally.arrivals} title={ally.description}><span className="finale-ally-name">{ally.name}<small>{ally.status==='waiting'?'待援':ally.status==='retired'?'退场':'固定'}</small></span>{ally.status==='active'&&<UnitMeters cat={ally} prefix="finale-ally"/>}</span>}</button>;
+              return <button type="button" key={name} className={`finale-cell${blocked?' is-obstacle':''}`} style={{gridColumn:position.x+1,gridRow:position.y+1}} data-cell={`${position.x},${position.y}`} data-testid={`finale-cell-${name}`} title={clearedTripwire?TRIPWIRE_DESCRIPTION:undefined} data-boss-danger={telegraph} data-danger={telegraph} data-enemies={enemyCount} data-deployable={isDeployableCell(position,game)} data-boss-footprint={bossCell} data-elite-id={elite?.id} data-ally-pad={ally?.id} data-spawn={spawnCell} data-attack-range={attack} data-skill-range={effect} aria-label={`${name}${blocked?`，${OBSTACLE_NAMES[name]}，不可通行`:cat?`，${cat.name}，${CAT_PRESENTATION[cat.id].label}，体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}，能量 ${Math.floor(cat.energy)} / 100`:position.x===MAP.goal.x&&position.y===MAP.goal.y?'，喵喵，守护目标，全程不参与战斗':ally?`，${ally.name}固定支援台，第${ally.arriveWave}波支援，不可移动` :elite?`，${elite.name}，体力${Math.ceil(elite.hp)}/${elite.maxHp}`:spawnCell?'，出怪口':bossCell?'，九格首领占格':'，地格'}${enemyCount?`，${enemyCount} 个普通黑影`:''}${telegraph?'，首领技能危险格，请移出范围':''}${attack?'，普通攻击可达':''}${effect?'，技能覆盖':''}`} disabled={paused||hidden||ended} onClick={()=>cellClick(position)} onPointerEnter={()=>{setHover(position);if(gameRef.current.aim)act({type:'AIM_SKILL',...position});}} onFocus={()=>{if(gameRef.current.aim){setHover(position);act({type:'AIM_SKILL',...position});}}} onPointerDown={event=>{if(cat)pointerDown(event,cat.id);}} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerCancel} onLostPointerCapture={event=>{if(gesture.current?.pointerId===event.pointerId)pointerCancel(event);}}>{position.x===MAP.goal.x&&position.y===MAP.goal.y&&<GoalLabel/>}{spawnCell&&<SpawnLabel/>}{clearedTripwire&&<TripwireLabel/>}{cat&&<span className={`finale-unit-state${cat.energy>=100?' btl-energy-halo':''}`} data-testid={`finale-cat-${cat.id}`} style={{visibility:dragging===cat.id?'hidden':undefined}} data-status={cat.status} data-x={cat.x} data-y={cat.y} data-energy={cat.energy} data-attack-buff={cat.attackBuffRemaining.toFixed(2)} data-hp={Math.ceil(cat.hp)} data-max-hp={cat.maxHp}><span className="btl-unit-name"><span className="finale-unit-name">{cat.name}</span><RoleBadge id={cat.id}/></span><UnitMeters cat={cat} prefix="finale"/></span>}{ally&&<span className="finale-ally-state" data-testid={`finale-ally-${ally.id}`} data-status={ally.status} data-hp={Math.ceil(ally.hp)} data-x={ally.x} data-y={ally.y} data-arrivals={ally.arrivals} title={ally.description}><span className="finale-ally-name">{ally.name}<small>{ally.status==='waiting'?'待援':ally.status==='retired'?'退场':'固定'}</small></span>{ally.status==='active'&&<UnitMeters cat={ally} prefix="finale-ally"/>}</span>}</button>;
             })}</div>
           </div></div>
           {inspected&&<><div ref={menuRef} className="btl-cat-menu" role="group" aria-label={`${inspected.name}，${CAT_PRESENTATION[inspected.id].label}的技能菜单`} data-testid="finale-cat-menu" data-cat-id={inspected.id} style={menuPosition} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()} onContextMenu={event=>{event.preventDefault();closeInspection();}}><div className="btl-cat-menu-heading"><strong className="finale-menu-cat-name">{inspected.name}<RoleBadge id={inspected.id}/></strong><button type="button" className="btl-cat-menu-close" data-testid="finale-close-cat-menu" aria-label="关闭猫咪菜单" onClick={closeInspection}>×</button></div><button type="button" className={`btl-skill-orb${canCast?' btl-skill-orb-ready':''}`} data-testid={`finale-skill-${inspected.id}`} aria-label={`${SKILLS[inspected.id].name}，能量 ${inspected.energy} / 100${canCast?'，点击释放':'，当前不可释放，可查看说明'}`} aria-disabled={!canCast} aria-describedby={`finale-skill-description-${inspected.id}`} onMouseEnter={()=>setSkillTooltipOpen(true)} onMouseLeave={event=>{if(document.activeElement!==event.currentTarget)setSkillTooltipOpen(false);}} onFocus={()=>setSkillTooltipOpen(true)} onBlur={()=>setSkillTooltipOpen(false)} onClick={()=>{if(canCast)chooseSkill(inspected.id);else setSkillTooltipOpen(true);}}><span aria-hidden="true">{ICONS[inspected.id]}</span></button><div className="btl-cat-menu-footer"><span>{Math.floor(inspected.energy)} / 100</span></div></div><div ref={tooltipRef} className={`btl-skill-tooltip${skillTooltipOpen?' btl-tooltip-visible':''}`} role="tooltip" id={`finale-skill-description-${inspected.id}`} data-testid="finale-skill-tooltip" style={tooltipPosition} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}><p className="finale-positioning" data-testid="finale-cat-positioning">{CAT_PRESENTATION[inspected.id].positioning}</p><strong>{SKILLS[inspected.id].name}</strong><p>{SKILLS[inspected.id].description}{SKILLS[inspected.id].targeting==='area'?' 全地图选点，黄色十字为本次作用范围；左键或 Enter 释放，右键 / Esc 取消。':''}</p>{inspected.attackBuffRemaining>0&&<span className="finale-attack-buff">普攻强化剩余 {inspected.attackBuffRemaining.toFixed(1)} 秒</span>}{inspected.shield>0&&<span className="btl-shield-detail">额外护盾 {Math.ceil(inspected.shield)} · 剩余 {inspected.shieldRemaining.toFixed(1)} 秒</span>}</div></>}
@@ -316,5 +330,6 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
     <div className="btl-controls"><p role="status" className={notice?'finale-notice':''}>{notice||game.logs.at(-1)?.text||'伙伴们准备好了。'}<small>{ended?submitted?'正在交回主流程结算…':'守护结束':'每模拟秒 +5 能量 · 满 100 手动施法 · 体力归零退场'}</small></p>{game.phase==='battle'&&<button type="button" className="btl-quiet finale-retreat" disabled={paused||hidden} data-testid="finale-retreat" onClick={()=>{cancelAim();closeInspection();setChatOpen(false);setRetreatOpen(true);}}>撤离本场</button>}</div>
     {chatOpen&&<section className="btl-chat" aria-label="军师阿策聊天"><div className="btl-panel-heading"><span><strong>阿策的战术小纸条</strong><small>当前战况 · 模型建议 / 本地兜底</small></span><button type="button" className="btl-quiet" onClick={()=>setChatOpen(false)}>收起聊天</button></div><div ref={chatLogRef} className="btl-chat-log" aria-live="polite" aria-busy={advisorChat.loading}><article><strong>眼前战况</strong><p>{advice}</p></article><AdvisorChatMessages {...advisorChat}/></div><div className="btl-suggestions">{['两名精英先打谁？','援军何时加入？','王冠坠击怎么躲？','光路有什么用？'].map(text=><button type="button" key={text} disabled={paused||hidden||advisorChat.loading} onClick={()=>ask(text)}>{text}</button>)}</div><form onSubmit={event=>{event.preventDefault();ask(question);}}><label className="btl-sr-only" htmlFor="finale-question">询问军师</label><input id="finale-question" value={question} disabled={paused||hidden||advisorChat.loading} onChange={event=>setQuestion(event.target.value)} maxLength={500} placeholder="问问精英、援军、光路或猫咪能力……"/><button type="submit" disabled={paused||hidden||advisorChat.loading||!question.trim()}>{advisorChat.loading?'思考中…':'询问'}</button></form></section>}
     {retreatOpen&&<div className="finale-modal"><section className="finale-dialog" role="dialog" aria-modal="true" aria-labelledby="finale-retreat-title"><h3 id="finale-retreat-title">让伙伴撤离本场？</h3><p>本场按失败结束；之后沿主流程回到准备阶段，重新挑战时六位主力恢复出战状态，援军按波次重新加入。</p><div><button type="button" autoFocus onClick={()=>setRetreatOpen(false)}>继续守护</button><button type="button" disabled={paused} data-testid="finale-confirm-retreat" onClick={()=>{setRetreatOpen(false);act({type:'SET_UI_PAUSE',paused:false});act({type:'RETREAT'});}}>确认撤离</button></div></section></div>}
+    {dragPreview.preview}
   </section>;
 }

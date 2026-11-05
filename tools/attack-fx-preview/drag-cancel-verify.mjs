@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import {mkdir,writeFile} from 'node:fs/promises';
+import {chromium,expect} from '@playwright/test';
+import {startDragPreview} from './drag-server.mjs';
+import {repo} from './server.mjs';
+const output=path.resolve(process.argv[2]??path.join(repo,'test-results/cat-drag-cancel'));await mkdir(output,{recursive:true});
+const server=await startDragPreview(),browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE??(process.platform==='win32'?'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe':undefined)}),context=await browser.newContext({viewport:{width:1440,height:1000},hasTouch:true}),page=await context.newPage();const errors=[],requests=[],records=[];let failure,current;
+page.on('pageerror',error=>errors.push(error.message));page.on('requestfailed',request=>requests.push(request.url()));
+const ghost=page.getByTestId('battle-drag-ghost');
+async function middle(locator){const b=await locator.boundingBox();assert(b);return {x:b.x+b.width/2,y:b.y+b.height/2};}
+async function begin(locator){const p=await middle(locator);await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(p.x+42,p.y-18,{steps:3});await expect(ghost).toBeVisible();return p;}
+try{
+  await page.goto('http://127.0.0.1:8187/__drag-fixture?controls=1');await page.waitForFunction(()=>!!window.battleDragFixture);await expect(page.getByTestId('chapter-battle')).toHaveAttribute('data-phase','ready');
+  await page.evaluate(()=>{window.pointerLog=[];for(const type of ['pointerdown','pointerup','pointercancel','lostpointercapture'])document.addEventListener(type,event=>{window.pointerLog.push({type,id:event.pointerId,primary:event.isPrimary});if(type==='pointerdown')window.lastDown={id:event.pointerId,target:event.target.closest('button')};},true);});
+  for(const chapter of ['chapter','market','greenhouse','tunnel','finale']){
+    current=chapter;await page.getByRole('combobox',{name:'选择章节'}).selectOption(chapter);await expect(page.getByTestId(`${chapter}-battle`)).toHaveAttribute('data-phase','ready');const cat=page.getByTestId(`${chapter}-cat-guard`),source=cat.locator('..'),initial={x:await cat.getAttribute('data-x'),y:await cat.getAttribute('data-y')};
+    await begin(source);await page.keyboard.press('Escape');await expect(ghost).toHaveCount(0);await page.mouse.up();await expect(page.getByTestId(`${chapter}-cat-menu`)).toHaveCount(0);records.push({chapter,case:'escape-cancels-without-menu'});
+    await begin(source);await page.evaluate(()=>window.lastDown.target.releasePointerCapture(window.lastDown.id));await page.mouse.move(5,5);await expect(ghost).toHaveCount(0);await page.mouse.up();await expect(page.getByTestId(`${chapter}-cat-menu`)).toHaveCount(0);records.push({chapter,case:'native-lost-capture-cancels'});
+    const client=await context.newCDPSession(page),p=await middle(source),primary={x:p.x+42,y:p.y-18,id:1};await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...p,id:1}]});await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[primary]});await expect(ghost).toBeVisible();
+    const secondary={x:p.x+80,y:p.y+20,id:2};await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[primary,secondary]});await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[secondary]});await expect(ghost).toBeVisible();await client.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});await expect(ghost).toHaveCount(0);await expect(page.getByTestId(`${chapter}-cat-menu`)).toHaveCount(0);await client.detach();records.push({chapter,case:'secondary-touch-end-does-not-cancel-primary'});
+    await page.evaluate(()=>{window.originalRaf=requestAnimationFrame;window.requestAnimationFrame=callback=>setTimeout(()=>callback(performance.now()),600);});
+    await begin(source);await expect(cat).toHaveCSS('visibility','hidden');await page.screenshot({path:path.join(output,`${chapter}-low-raf-held.png`)});await page.keyboard.press('Escape');await expect(ghost).toHaveCount(0);await expect(cat).toHaveCSS('visibility','visible');await page.mouse.up();await page.evaluate(()=>window.requestAnimationFrame=window.originalRaf);records.push({chapter,case:'600ms-raf-drag-source-immediate-hide-restore'});
+    assert.equal(await cat.getAttribute('data-x'),initial.x);assert.equal(await cat.getAttribute('data-y'),initial.y);
+  }
+  await page.getByRole('combobox',{name:'选择章节'}).selectOption('l00');const battle=page.locator('section[aria-label="序章塔防战斗"]');await expect(battle).toHaveAttribute('data-phase','ready');await page.getByTestId('battle-speed-toggle').click();await page.getByTestId('battle-play-toggle').click();await expect(battle).toHaveAttribute('data-phase','teach_position',{timeout:60000});
+  current='l00';const cat=page.getByTestId('battle-cat-caster'),p=await begin(cat);await page.mouse.move(p.x,p.y,{steps:4});await expect(ghost).toBeVisible();await page.mouse.up();await expect(ghost).toHaveCount(0);await expect(page.getByTestId('battle-cat-menu')).toHaveCount(0);records.push({chapter:'l00',case:'moved-past-threshold-stays-drag-after-returning'});
+  await begin(cat);await page.keyboard.press('Escape');await expect(ghost).toHaveCount(0);await page.mouse.up();await expect(page.getByTestId('battle-cat-menu')).toHaveCount(0);records.push({chapter:'l00',case:'escape-cancels-without-menu'});
+  assert.equal(errors.length,0);assert.equal(requests.length,0);console.log(`PASS ${records.length} cancellation/multitouch/low-RAF cases, interactive toolbar`);
+}catch(error){failure=error;console.error(current,error);await page.screenshot({path:path.join(output,'failure.png')}).catch(()=>{});}finally{const pointerLog=await page.evaluate(()=>window.pointerLog);await writeFile(path.join(output,'verification.json'),JSON.stringify({passed:!failure,current,records,errors,requests,pointerLog,failure:failure?.stack},null,2));await context.close();await browser.close();await server.close();}if(failure)process.exitCode=1;

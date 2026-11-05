@@ -1,11 +1,14 @@
+import {getDragRangeCat} from '../shared/dragRangePreview';
 import {paintCarryAnchor} from '../carry-painter';
+import {paintBasicAttack} from '../shared/basicAttackPainter';
+import {getBossAttackMotion} from '../shared/bossAttackMotion';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
 import {paintTunnelObstacleScenery, TUNNEL_JOINED_OBSTACLE_CELLS} from '../scene-industrial-obstacles';
 import {paintDetailedTunnelFixture} from '../scene-detailed-exteriors';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP} from './config';
-import {getAttackCells, getSkillCells, isDarkened, isEnemyVisible} from './engine';
+import {getAttackCells, getDeployError, getSkillCells, isDarkened, isEnemyVisible} from './engine';
 import type {TunnelCatId, TunnelState, Position} from './types';
 
 export const CELL=80;
@@ -23,7 +26,7 @@ export const OBSTACLE_NAMES:Readonly<Record<string,string>>={
 const rect=(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h);};
 const blocks=(ctx:CanvasRenderingContext2D,color:string,points:number[][])=>{for(const [x,y,w,h] of points)rect(ctx,x,y,w,h,color);};
 
-function drawTunnelCat(ctx:CanvasRenderingContext2D,id:TunnelCatId,x:number,y:number,size:number,attacking:boolean){
+export function drawTunnelCat(ctx:CanvasRenderingContext2D,id:TunnelCatId,x:number,y:number,size:number,attacking=false){
   if(id==='caster'||id==='guard'||id==='tuanzi'||id==='diandian'){drawChapterCat(ctx,id,x,y,size,false,attacking);return;}
   const black=id==='momo',fur=black?'#525760':'#b48c69',light=black?'#737b80':'#e4c89d',patch=black?'#363d43':'#745b48';
   ctx.save();ctx.translate(x+(attacking?1:0),y);ctx.scale(size/32,size/32);
@@ -105,9 +108,14 @@ function drawObstacle(ctx:CanvasRenderingContext2D,p:Position){
 /** A sluice-armoured shadow with a visible breaker lamp; footprint remains exactly 2 × 2. */
 function drawBoss(ctx:CanvasRenderingContext2D,state:TunnelState){
   const boss=state.boss;if(boss.phase==='defeated')return;
-  const windup=boss.phase==='windup',basic=state.effects.find(effect=>effect.kind==='boss-attack');
-  const lunge=basic?Math.sin(Math.PI*(1-Math.min(1,basic.remaining/.4)))*3:0;
-  ctx.save();ctx.translate(boss.x*CELL+10-lunge,boss.y*CELL+6);ctx.scale(1.7,1.7);
+  const windup=boss.phase==='windup',basic=boss.phase==='idle'?state.effects.find(effect=>effect.kind==='boss-attack'):undefined;
+  const motion=getBossAttackMotion(basic?.remaining);
+  const dx=basic?basic.to.x+.5-boss.x-boss.width/2:-1,dy=basic?basic.to.y+.5-boss.y-boss.height/2:0;
+  const direction=dx>0?1:-1,distance=Math.max(1,Math.hypot(dx,dy));
+  const rawAngle=Math.atan2(dy,dx)-Math.PI/2;
+  const punchAngle=Math.atan2(Math.sin(rawAngle),Math.cos(rawAngle));
+  const lunge=motion.strike*7-motion.pull*3;
+  ctx.save();ctx.translate(boss.x*CELL+10+dx/distance*lunge,boss.y*CELL+6+dy/distance*lunge+motion.pull*2);ctx.scale(1.7,1.7);
   blocks(ctx,'#263b3533',[[6,77,70,6],[14,82,54,3]]);
   blocks(ctx,'#2e475b',[[20,15,42,16],[15,30,52,36],[10,66,23,13],[49,66,23,13],[10,33,8,30],[65,33,8,30]]);
   blocks(ctx,'#739bac',[[19,29,8,36],[56,30,8,35],[24,17,34,5]]);
@@ -128,9 +136,29 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:TunnelState){
   ctx.strokeStyle='#dfbf7f';ctx.lineWidth=3;ctx.beginPath();ctx.arc(42,55,12,0,Math.PI*2);ctx.moveTo(30,55);ctx.lineTo(54,55);ctx.moveTo(42,43);ctx.lineTo(42,67);ctx.stroke();
   blocks(ctx,'#927f5b',[[40,53,4,4],[28,45,7,1],[47,64,7,1]]);
   blocks(ctx,'#eddaa0',[[40,53,3,1],[41,54,1,1],[29,43,8,1],[48,62,6,1]]);
-  blocks(ctx,'#678492',[[3,32,10,10],[70,32,10,10],[0,43,7,22],[76,43,7,22]]);
-  blocks(ctx,'#94adb6',[[4,34,7,2],[71,34,7,2],[1,46,3,2],[77,46,3,2]]);
-  blocks(ctx,'#3d5a6d',[[5,39,6,2],[72,39,6,2],[1,54,4,1],[1,61,4,2],[77,54,4,1],[77,61,4,2]]);
+  // Each piston arm pivots at its shoulder. The selected arm cocks inward,
+  // turns toward the actual target and drives a short, heavy fist forward.
+  // The other arm, and both arms outside a basic hit, retain the original pose.
+  for(const side of [-1,1]){
+    const active=basic&&side===direction,shift=side===-1?0:76;
+    const shoulder=side===-1?8:75;
+    ctx.save();
+    if(active){
+      ctx.translate(shoulder,37);
+      ctx.rotate(punchAngle*motion.strike+side*.55*motion.pull);
+      ctx.translate(-shoulder,-37-5*motion.pull+6*motion.strike);
+    }
+    blocks(ctx,'#678492',side===-1?[[3,32,10,10],[0,43,7,22]]:[[70,32,10,10],[76,43,7,22]]);
+    blocks(ctx,'#94adb6',side===-1?[[4,34,7,2],[1,46,3,2]]:[[71,34,7,2],[77,46,3,2]]);
+    blocks(ctx,'#3d5a6d',side===-1?[[5,39,6,2],[1,54,4,1],[1,61,4,2]]:[[72,39,6,2],[77,54,4,1],[77,61,4,2]]);
+    if(active&&motion.pull+motion.strike>0){
+      blocks(ctx,'#29495b',[[shift-3,54,14,16],[shift-1,70,10,3]]);
+      blocks(ctx,'#87abb7',[[shift-2,55,12,12]]);
+      blocks(ctx,'#d0e4de',[[shift-1,56,10,3],[shift,60,2,5],[shift+6,60,2,5]]);
+      rect(ctx,shift,68,8,2,'#567b8a');
+    }
+    ctx.restore();
+  }
   rect(ctx,32,0,20,10,'#6f7d65');rect(ctx,35,2,14,6,windup&&Math.sin(state.elapsed*9)>0?'#dba86e':windup?'#f0d8a0':'#b5c99c');
   blocks(ctx,'#445c59',[[33,8,18,1],[50,2,1,5]]);rect(ctx,33,1,1,3,'#a1b39a');
   if(windup){
@@ -147,8 +175,7 @@ function drawEffects(ctx:CanvasRenderingContext2D,state:TunnelState){
     if(dark&&(effect.kind==='attack'||effect.kind==='defeat'||effect.kind==='skill'&&!effect.cells)&&!isEnemyVisible(state,effect.to))continue;
     ctx.save();ctx.globalAlpha=Math.min(1,effect.remaining*3);
     if(effect.kind==='attack'||effect.kind==='boss-attack'){
-      const from=effect.kind==='boss-attack'?{x:state.boss.x+.5,y:state.boss.y+.5}:effect.from;
-      ctx.strokeStyle=effect.kind==='attack'?SCENE_INK.gold:'#879471';ctx.lineWidth=effect.kind==='attack'?2:4;ctx.beginPath();ctx.moveTo((from.x+.5)*CELL,(from.y+.5)*CELL);ctx.quadraticCurveTo((from.x+effect.to.x+1)*CELL/2,(from.y+effect.to.y)*CELL/2-12,(effect.to.x+.5)*CELL,(effect.to.y+.5)*CELL);ctx.stroke();
+      paintBasicAttack(ctx,effect,{cellSize:CELL,boss:state.boss,theme:'tunnel'});
     }else if(effect.kind==='blackout'){
       ctx.strokeStyle='#d2ac72';ctx.lineWidth=2;for(const p of CELLS)ctx.strokeRect(p.x*CELL+6,p.y*CELL+6,CELL-12,CELL-12);
     }else for(const p of effect.cells??[effect.to]){
@@ -160,7 +187,7 @@ function drawEffects(ctx:CanvasRenderingContext2D,state:TunnelState){
   }
 }
 
-export function paintTunnel(ctx:CanvasRenderingContext2D,state:TunnelState,selected:TunnelCatId|null,moveTarget:Position|null){
+export function paintTunnel(ctx:CanvasRenderingContext2D,state:TunnelState,selected:TunnelCatId|null,moveTarget:Position|null,hiddenCatId?:TunnelCatId|null){
   const dark=isDarkened(state),night=state.nightVisionRemaining>0,windup=state.boss.phase==='windup';
   ctx.clearRect(0,0,BOARD_WIDTH,BOARD_HEIGHT);ctx.imageSmoothingEnabled=false;ctx.save();
   // All terrain, effects and sprites are clipped to the 37 actual cells, including during blackout.
@@ -187,7 +214,7 @@ export function paintTunnel(ctx:CanvasRenderingContext2D,state:TunnelState,selec
   // Static known landmarks and warning remain readable; no hidden minion data is painted.
   ctx.strokeStyle=dark?SCENE_INK.label:SCENE_INK.gold;ctx.lineWidth=2;if(state.boss.phase!=='defeated')ctx.strokeRect(state.boss.x*CELL+4,state.boss.y*CELL+4,2*CELL-8,2*CELL-8);
   if(windup){ctx.strokeStyle=`rgba(255,153,121,${.55+.2*Math.sin(state.elapsed*8)})`;ctx.lineWidth=2;for(const p of CELLS)ctx.strokeRect(p.x*CELL+6,p.y*CELL+6,CELL-12,CELL-12);}
-  const chosen=state.cats.find(cat=>cat.id===selected&&cat.status==='active');
+  const chosen=getDragRangeCat(state.cats.find(cat=>cat.id===selected&&cat.status==='active'),hiddenCatId,moveTarget,(cat,target)=>!getDeployError({...state,enemies:state.enemies.filter(enemy=>isEnemyVisible(state,enemy))},cat.id,target));
   if(chosen&&!state.aim){ctx.fillStyle=dark?'#8ee2cb30':'#8ee2cb28';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;for(const p of getAttackCells(chosen)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);}}
   if(state.aim){ctx.fillStyle='#7ccbd12d';for(const p of CELLS)if(!obstacleCell(p.x,p.y))ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);const cat=state.cats.find(value=>value.id===state.aim?.catId);if(cat&&state.aim.target){ctx.fillStyle='#f4ce8366';ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;for(const p of getSkillCells(cat,state.aim.target)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+5,p.y*CELL+5,CELL-10,CELL-10);}}}
   if(moveTarget&&mapCell(moveTarget.x,moveTarget.y)){ctx.strokeStyle=dark?'#e6f5d7':SCENE_INK.selected;ctx.lineWidth=2;ctx.strokeRect(moveTarget.x*CELL+5,moveTarget.y*CELL+5,CELL-10,CELL-10);}
@@ -205,7 +232,7 @@ export function paintTunnel(ctx:CanvasRenderingContext2D,state:TunnelState,selec
   if(dark){ctx.fillStyle='#e5e8cb24';ctx.beginPath();ctx.ellipse(gx+40,gy+40,33,33,0,0,Math.PI*2);ctx.fill();}
   drawCat(ctx,'hero',gx+9,gy+5,62);
   for(const cat of state.cats){
-    if(cat.status!=='active')continue;const x=cat.x*CELL,y=cat.y*CELL;
+    if(cat.status!=='active'||cat.id===hiddenCatId)continue;const x=cat.x*CELL,y=cat.y*CELL;
     if(dark){ctx.fillStyle='#dfe7c926';ctx.beginPath();ctx.ellipse(x+40,y+42,33,30,0,0,Math.PI*2);ctx.fill();}
     if(cat.id===selected){ctx.strokeStyle=dark?'#c8ffe7':SCENE_INK.selected;ctx.lineWidth=2;ctx.strokeRect(x+4,y+4,CELL-8,CELL-8);}
     drawTunnelCat(ctx,cat.id,x+9,y+7,62,cat.cooldown>.5);

@@ -1,7 +1,10 @@
+import {getDragRangeCat} from '../shared/dragRangePreview';
 import {paintCarryAnchor} from '../carry-painter';
+import {paintBasicAttack} from '../shared/basicAttackPainter';
+import {getBossAttackMotion} from '../shared/bossAttackMotion';
 import {drawCat} from '../l00/painter';
 import type {ChapterState, ChapterCat, ChapterCatId as CatId, Position} from './types';
-import {getAttackCells, getBossCells, getSkillCells} from './engine';
+import {getAttackCells, getDeployError, getBossCells, getSkillCells} from './engine';
 import {CELLS, MAP} from './config';
 import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
 import {paintAlleyObstacleScenery} from '../scene-garden-alley-obstacles';
@@ -43,11 +46,14 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:ChapterState){
   const x=(boss.x+boss.width/2)*CELL;
   const windup=boss.phase==='windup';
   const basicAttack=boss.phase==='idle'?state.effects.find(fx=>fx.kind==='boss-attack'):undefined;
-  const swing=basicAttack?Math.sin(Math.PI*(1-Math.max(0,Math.min(1,basicAttack.remaining/.4)))):0;
-  const direction=basicAttack&&basicAttack.to.x>boss.x+boss.width/2?1:-1;
+  const motion=getBossAttackMotion(basicAttack?.remaining);
+  const aimX=basicAttack?(basicAttack.to.x+.5)-(boss.x+boss.width/2):-1;
+  const aimY=basicAttack?(basicAttack.to.y+.5)-(boss.y+boss.height/2):0;
+  const aimLength=Math.max(.01,Math.hypot(aimX,aimY));
+  const direction=aimX>0?1:-1;
   const bounce=windup?Math.sin(state.elapsed*18)*1.5:Math.sin(state.elapsed*2)*1.2;
   const scale=1.6;
-  ctx.save();ctx.translate(x-36*scale+(windup?4:direction*6*swing),boss.y*CELL+20+bounce-3*swing);ctx.scale(scale,scale);
+  ctx.save();ctx.translate(x-36*scale+(windup?4:0),boss.y*CELL+20+bounce);ctx.scale(scale,scale);
   pixelBlocks(ctx,'#10242177',[[2,77,73,7],[11,83,52,3]]);
   pixelBlocks(ctx,SCENE_INK.enemy,[[15,17,47,54],[10,33,58,37],[8,66,19,13],[46,66,18,13],[20,5,35,15],[15,12,46,16]]);
   pixelBlocks(ctx,SCENE_INK.enemyLight,[[17,18,8,34],[22,7,29,5],[53,25,9,39]]);
@@ -73,8 +79,29 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:ChapterState){
     pixelBlocks(ctx,'#e8d1a0',[[5,1,2,2],[68,1,2,2],[7,16,2,2],[65,16,2,2]]);
     ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=3;for(const a of [-1,1]){ctx.beginPath();ctx.moveTo(38+a*44,-4);ctx.lineTo(38+a*48,-11);ctx.stroke();}
   }else{
-    // The actual basic-hit effect drives a short horizontal swing, separate from the overhead slam.
-    ctx.save();ctx.translate(direction*8*swing,-5*swing);ctx.rotate(direction*.16*swing);
+    // Brace the body while both elbows lift the barrier, sweep it toward the
+    // actual target, then return it to the same idle grip. The overhead skill
+    // continues to use the separate windup drawing above.
+    const weaponX=aimX/aimLength*(-7*motion.pull+25*motion.strike);
+    const weaponY=-17*motion.pull+(aimY/aimLength*12-4)*motion.strike;
+    const angle=direction*(-.46*motion.pull+.52*motion.strike);
+    const grip=(gx:number,gy:number)=>({
+      x:36+weaponX+(gx-36)*Math.cos(angle)-(gy-43)*Math.sin(angle),
+      y:43+weaponY+(gx-36)*Math.sin(angle)+(gy-43)*Math.cos(angle),
+    });
+    if(basicAttack){
+      ctx.save();ctx.lineCap='square';ctx.lineJoin='bevel';
+      for(const [sx,sy,gx,gy] of [[16,37,5,49],[57,38,32,49]]){
+        const hand=grip(gx,gy),elbowX=sx+direction*(5*motion.strike-9*motion.pull);
+        const elbowY=sy+9-14*motion.pull;
+        ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(elbowX,elbowY);ctx.lineTo(hand.x,hand.y);
+        ctx.strokeStyle=SCENE_INK.enemy;ctx.lineWidth=12;ctx.stroke();
+        ctx.strokeStyle='#6e8790';ctx.lineWidth=5;ctx.stroke();
+        pixelBlocks(ctx,'#a6b6b2',[[hand.x-4,hand.y-4,8,8]]);
+      }
+      ctx.restore();
+    }
+    ctx.save();ctx.translate(36+weaponX,43+weaponY);ctx.rotate(angle);ctx.translate(-36,-43);
     pixelBlocks(ctx,'#263c36',[[-8,43,49,13],[-5,56,43,9]]);pixelBlocks(ctx,'#b09460',[[-5,46,44,7],[-2,56,37,5]]);
     pixelBlocks(ctx,'#ddc48a',[[-3,47,39,1],[0,57,32,1],[0,49,2,2],[31,49,2,2]]);
     pixelBlocks(ctx,'#5c5140',[[7,50,10,2],[22,50,7,2],[1,60,30,1]]);
@@ -84,7 +111,7 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:ChapterState){
   ctx.restore();
 }
 
-export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,selected:CatId|null,moveTarget:Position|null){
+export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,selected:CatId|null,moveTarget:Position|null,hiddenCatId?:CatId|null){
   ctx.clearRect(0,0,BOARD_WIDTH,BOARD_HEIGHT);ctx.imageSmoothingEnabled=false;
   // Pixel scenery remains inside the existing combat footprint.
   // Clip every combat drawing to real cells so the convex map's empty area stays transparent.
@@ -113,7 +140,7 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
   }
   drawCat(ctx,'hero',10,3*CELL+13,58);
   paintCarryAnchor(ctx,state.carry,CELL,mapCell);
-  const cat=state.cats.find(c=>c.id===selected&&c.status==='active');
+  const cat=getDragRangeCat(state.cats.find(c=>c.id===selected&&c.status==='active'),hiddenCatId,moveTarget,(cat,target)=>!getDeployError(state,cat.id,target));
   if(cat&&!state.aim){ctx.fillStyle='#8ee2cb30';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;for(const p of getAttackCells(cat)){if(mapCell(p.x,p.y)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4.5,p.y*CELL+4.5,CELL-9,CELL-9);}}}
   if(state.aim){
     const aimingCat=state.cats.find(c=>c.id===state.aim?.catId);
@@ -138,7 +165,7 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
     rect(ctx,1,-6,36,4,'#243741');rect(ctx,1,-6,36*enemy.hp/enemy.maxHp,4,'#efc58a');ctx.restore();
   }
   for(const c of state.cats){
-    if(c.status!=='active')continue;
+    if(c.status!=='active'||c.id===hiddenCatId)continue;
     const x=c.x*CELL,y=c.y*CELL;
     if(c.id===selected){ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;ctx.strokeRect(x+4,y+4,CELL-8,CELL-8);}
     drawChapterCat(ctx,c.id,x+9,y+9,62,false,c.cooldown>.5);
@@ -148,23 +175,8 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
   }
   for(const fx of state.effects){
     ctx.save();ctx.globalAlpha=Math.min(1,fx.remaining*3);
-    if(fx.kind==='boss-attack'){
-      // A directional impact links the stationary boss to the one cat it actually hit.
-      const tx=(fx.to.x+.5)*CELL,ty=(fx.to.y+.5)*CELL;
-      const bx=(state.boss.x+state.boss.width/2)*CELL,by=(state.boss.y+state.boss.height/2)*CELL;
-      const dx=tx-bx,dy=ty-by,distance=Math.max(1,Math.hypot(dx,dy)),nx=dx/distance,ny=dy/distance;
-      const sx=bx+nx*CELL*.65,sy=by+ny*CELL*.4;
-      const progress=1-Math.max(0,Math.min(1,fx.remaining/.4));
-      ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=4;ctx.beginPath();
-      ctx.moveTo(sx,sy);ctx.quadraticCurveTo((sx+tx)/2-ny*14,(sy+ty)/2+nx*14,tx-nx*10,ty-ny*10);ctx.stroke();
-      ctx.fillStyle=SCENE_INK.gold;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx-nx*16-ny*7,ty-ny*16+nx*7);ctx.lineTo(tx-nx*16+ny*7,ty-ny*16-nx*7);ctx.closePath();ctx.fill();
-      const flash=10+progress*10;ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.beginPath();
-      ctx.moveTo(tx-flash,ty-flash);ctx.lineTo(tx+flash,ty+flash);ctx.moveTo(tx+flash,ty-flash);ctx.lineTo(tx-flash,ty+flash);ctx.stroke();
-    }else if(fx.kind==='attack'){
-      // Cleared boss cells can now contain cats or minions; use their real tile.
-      const center=(p:Position)=>state.boss.phase!=='defeated'&&p.x===state.boss.x&&p.y===state.boss.y?{x:state.boss.x+state.boss.width/2-.5,y:state.boss.y+state.boss.height/2-.5}:p;
-      const from=center(fx.from),to=center(fx.to);
-      ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo((from.x+.5)*CELL,(from.y+.5)*CELL);ctx.lineTo((to.x+.5)*CELL,(to.y+.5)*CELL);ctx.stroke();
+    if(fx.kind==='boss-attack'||fx.kind==='attack'){
+      paintBasicAttack(ctx,fx,{cellSize:CELL,boss:state.boss,theme:'alley'});
     }else if(fx.kind==='heal'||fx.kind==='shield'){
       const x=(fx.to.x+.5)*CELL,y=(fx.to.y+.4)*CELL;ctx.fillStyle=fx.kind==='heal'?'#a9e0a8':'#a0e3ed';ctx.fillRect(x-13,y-2,26,4);ctx.fillRect(x-2,y-13,4,26);
     }else{

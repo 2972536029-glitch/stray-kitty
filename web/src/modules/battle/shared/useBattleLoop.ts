@@ -1,4 +1,4 @@
-import {useEffect, useRef} from 'react';
+import {useEffect, useLayoutEffect, useRef} from 'react';
 import {triggerBossSkillShake} from '../battleFx';
 
 interface Position {x: number; y: number}
@@ -17,9 +17,10 @@ export interface BattleLoopOptions<State extends LoopState, CatId extends string
   uiPaused: boolean;
   selected: CatId | null;
   hover: Position | null;
+  dragging?: CatId | null;
   dispatch: (state: State, action: PauseAction) => State;
   advance: (state: State, seconds: number) => State;
-  paint: (context: CanvasRenderingContext2D, state: State, selected: CatId | null, hover: Position | null) => void;
+  paint: (context: CanvasRenderingContext2D, state: State, selected: CatId | null, hover: Position | null, hiddenCatId?: CatId | null) => void;
   setGame: (state: State) => void;
   setHidden: (hidden: boolean) => void;
 }
@@ -57,7 +58,7 @@ export function startBattleLoop<State extends LoopState, CatId extends string>(
     options.gameRef.current = current;
     triggerBossSkillShake(options.boardRef.current, previousBossSkills, current.boss.slams);
     const context = options.canvasRef.current?.getContext('2d');
-    if (context) options.paint(context, current, options.selected, options.hover);
+    if (context) options.paint(context, current, options.selected, options.hover, options.dragging);
     if (time - lastRender >= 50) {
       options.setGame(current);
       lastRender = time;
@@ -77,5 +78,11 @@ export function startBattleLoop<State extends LoopState, CatId extends string>(
 export function useBattleLoop<State extends LoopState, CatId extends string>(options: BattleLoopOptions<State, CatId>): void {
   const optionsRef = useRef(options);
   optionsRef.current = options;
+  // Match source-sprite visibility to the portal in the same commit, including
+  // a cancelled drop or a display whose animation frames are temporarily slow.
+  useLayoutEffect(() => {
+    const current = optionsRef.current, context = current.canvasRef.current?.getContext('2d');
+    if (context) current.paint(context, current.gameRef.current, current.selected, current.hover, current.dragging);
+  }, [options.dragging, options.hover?.x, options.hover?.y]);
   useEffect(() => startBattleLoop(() => optionsRef.current), []);
 }

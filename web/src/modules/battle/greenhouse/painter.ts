@@ -1,10 +1,13 @@
+import {getDragRangeCat} from '../shared/dragRangePreview';
 import {paintCarryAnchor} from '../carry-painter';
+import {paintBasicAttack} from '../shared/basicAttackPainter';
+import {getGreenhouseArmPose} from '../shared/greenhouseArmPose';
 import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
 import {paintGreenhouseObstacleScenery} from '../scene-garden-alley-obstacles';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP} from './config';
-import {getAttackCells, getSkillCells} from './engine';
+import {getAttackCells, getDeployError, getSkillCells} from './engine';
 import type {GreenhouseCatId, GreenhouseState, Position} from './types';
 
 export const CELL=80;
@@ -17,7 +20,7 @@ export const obstacleCell=(x:number,y:number)=>MAP.obstacles.some(cell=>cell.x==
 const rect=(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h);};
 const blocks=(ctx:CanvasRenderingContext2D,color:string,points:number[][])=>{for(const [x,y,w,h] of points)rect(ctx,x,y,w,h,color);};
 
-function drawGreenhouseCat(ctx:CanvasRenderingContext2D,id:GreenhouseCatId,x:number,y:number,size:number,attacking:boolean){
+export function drawGreenhouseCat(ctx:CanvasRenderingContext2D,id:GreenhouseCatId,x:number,y:number,size:number,attacking=false){
   if(id==='caster'||id==='guard'||id==='tuanzi'){drawChapterCat(ctx,id,x,y,size,false,attacking);return;}
   const fighter=id==='bruiser',black=id==='momo';
   const fur=black?'#525760':fighter?'#b48c69':'#c7d3d2',light=black?'#737b80':fighter?'#e4c89d':'#f2f0df',patch=black?'#363d43':fighter?'#745b48':'#8dabad';
@@ -37,8 +40,8 @@ function drawGreenhouseCat(ctx:CanvasRenderingContext2D,id:GreenhouseCatId,x:num
 function drawBoss(ctx:CanvasRenderingContext2D,state:GreenhouseState){
   const boss=state.boss;if(boss.phase==='defeated')return;
   const windup=boss.phase==='windup',basic=state.effects.find(effect=>effect.kind==='boss-attack');
-  const lunge=basic?Math.sin(Math.PI*(1-Math.min(1,basic.remaining/.4)))*4:0;
-  ctx.save();ctx.translate(boss.x*CELL+12-lunge,boss.y*CELL+10);ctx.scale(1.7,1.7);
+  const pose=getGreenhouseArmPose(boss,basic?.to,basic?.remaining,CELL);
+  ctx.save();ctx.translate(pose.body.x,pose.body.y);ctx.scale(pose.body.scale,pose.body.scale);
   blocks(ctx,'#263b3533',[[8,73,64,8],[17,80,45,3]]);
   blocks(ctx,'#344e43',[[20,14,40,15],[15,29,50,39],[10,64,20,13],[49,64,20,13]]);
   blocks(ctx,'#789b78',[[19,27,10,35],[56,30,9,33],[25,16,30,6]]);
@@ -64,9 +67,25 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:GreenhouseState){
     }
     ctx.fillStyle='#ddd49b';for(let i=0;i<4;i++)ctx.fillRect(20+i*12,4-Math.sin(state.elapsed*5+i)*6,3,3);
   }else{
-    ctx.strokeStyle='#789b6c';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(17,42);ctx.quadraticCurveTo(-4-lunge*3,42,5-lunge*2,69);ctx.moveTo(63,42);ctx.quadraticCurveTo(83,49,71,71);ctx.stroke();
-    blocks(ctx,'#b0a277',[[0,54,7,3],[8,64,7,3],[72,55,7,3]]);
-    blocks(ctx,'#d2c18d',[[1,54,3,1],[9,64,3,1],[73,55,3,1]]);
+    for(const [side,arm] of [[-1,pose.left],[1,pose.right]] as const){
+      const moving=pose.active&&side===pose.side;
+      const {shoulder,control,hand}=arm;
+      ctx.strokeStyle='#789b6c';ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();
+      ctx.moveTo(shoulder.x,shoulder.y);ctx.quadraticCurveTo(control.x,control.y,hand.x,hand.y);ctx.stroke();
+      if(moving){
+        // Bark nodes follow the same flexible curve, rather than hovering in
+        // their idle locations when the shoulder and forearm swing past them.
+        for(const t of [.45,.82]){
+          const u=1-t,x=u*u*shoulder.x+2*u*t*control.x+t*t*hand.x;
+          const y=u*u*shoulder.y+2*u*t*control.y+t*t*hand.y;
+          rect(ctx,x-3,y-1,6,3,'#b0a277');rect(ctx,x-2,y-1,3,1,'#d2c18d');
+        }
+        ctx.fillStyle='#789b6c';ctx.beginPath();ctx.arc(hand.x,hand.y,4,0,Math.PI*2);ctx.fill();
+      }else{
+        blocks(ctx,'#b0a277',side===-1?[[0,54,7,3],[8,64,7,3]]:[[72,55,7,3]]);
+        blocks(ctx,'#d2c18d',side===-1?[[1,54,3,1],[9,64,3,1]]:[[73,55,3,1]]);
+      }
+    }
   }
   ctx.restore();
 }
@@ -84,7 +103,7 @@ function drawThorns(ctx:CanvasRenderingContext2D,p:Position,warning:boolean,time
   }
 }
 
-export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseState,selected:GreenhouseCatId|null,moveTarget:Position|null){
+export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseState,selected:GreenhouseCatId|null,moveTarget:Position|null,hiddenCatId?:GreenhouseCatId|null){
   ctx.clearRect(0,0,BOARD_WIDTH,BOARD_HEIGHT);ctx.imageSmoothingEnabled=false;ctx.save();
   // Clip every sprite and effect to the 34 real cells.
   ctx.beginPath();for(const p of CELLS)ctx.rect(p.x*CELL,p.y*CELL,CELL,CELL);ctx.clip();
@@ -102,7 +121,7 @@ export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseSta
   ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;if(state.boss.phase!=='defeated')ctx.strokeRect(state.boss.x*CELL+4,state.boss.y*CELL+4,2*CELL-8,2*CELL-8);
   drawCat(ctx,'hero',8,MAP.goal.y*CELL+11,62);
   paintCarryAnchor(ctx,state.carry,CELL,mapCell);
-  const chosen=state.cats.find(cat=>cat.id===selected&&cat.status==='active');
+  const chosen=getDragRangeCat(state.cats.find(cat=>cat.id===selected&&cat.status==='active'),hiddenCatId,moveTarget,(cat,target)=>!getDeployError(state,cat.id,target));
   if(chosen&&!state.aim){ctx.fillStyle='#8ee2cb28';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;for(const p of getAttackCells(chosen)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);}}
   if(state.aim){ctx.fillStyle='#7ccbd12d';for(const p of CELLS)if(!obstacleCell(p.x,p.y))ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);const cat=state.cats.find(value=>value.id===state.aim?.catId);if(cat&&state.aim.target){ctx.fillStyle='#f4ce8366';ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;for(const p of getSkillCells(cat,state.aim.target)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+5,p.y*CELL+5,CELL-10,CELL-10);}}}
   if(moveTarget&&mapCell(moveTarget.x,moveTarget.y)){ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;ctx.strokeRect(moveTarget.x*CELL+5,moveTarget.y*CELL+5,CELL-10,CELL-10);}
@@ -117,7 +136,7 @@ export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseSta
     rect(ctx,1,-6,36,4,'#203946');rect(ctx,1,-6,36*enemy.hp/enemy.maxHp,4,'#c1ae83');ctx.restore();
   }
   for(const cat of state.cats){
-    if(cat.status!=='active')continue;const x=cat.x*CELL,y=cat.y*CELL;
+    if(cat.status!=='active'||cat.id===hiddenCatId)continue;const x=cat.x*CELL,y=cat.y*CELL;
     if(cat.id===selected){ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;ctx.strokeRect(x+4,y+4,CELL-8,CELL-8);}
     drawGreenhouseCat(ctx,cat.id,x+9,y+7,62,cat.cooldown>.5);
     if(cat.shield>0){ctx.strokeStyle='#a1dce0';ctx.fillStyle='#83bdc018';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x+40,y+42,31,29,0,0,Math.PI*2);ctx.fill();ctx.stroke();}
@@ -127,8 +146,7 @@ export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseSta
   for(const effect of state.effects){
     ctx.save();ctx.globalAlpha=Math.min(1,effect.remaining*3);
     if(effect.kind==='attack'||effect.kind==='boss-attack'){
-      const from=effect.kind==='boss-attack'?{x:state.boss.x+.5,y:state.boss.y+.5}:effect.from;
-      ctx.strokeStyle=effect.kind==='attack'?SCENE_INK.gold:'#668052';ctx.lineWidth=effect.kind==='attack'?2:5;ctx.beginPath();ctx.moveTo((from.x+.5)*CELL,(from.y+.5)*CELL);ctx.quadraticCurveTo((from.x+effect.to.x+1)*CELL/2,(from.y+effect.to.y)*CELL/2-12,(effect.to.x+.5)*CELL,(effect.to.y+.5)*CELL);ctx.stroke();
+      paintBasicAttack(ctx,effect,{cellSize:CELL,boss:state.boss,theme:'greenhouse'});
     }else if(effect.kind==='shield'){const x=(effect.to.x+.5)*CELL,y=(effect.to.y+.4)*CELL;ctx.strokeStyle='#96d8d3';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,27,0,Math.PI*2);ctx.stroke();}
     else for(const p of effect.cells??[effect.to]){const x=p.x*CELL,y=p.y*CELL;ctx.strokeStyle=effect.kind==='thorn'?'#9d784d':effect.kind==='seed'?'#87985e':SCENE_INK.gold;ctx.lineWidth=3;ctx.beginPath();ctx.arc(x+40,y+40,effect.kind==='thorn'?17:25,0,Math.PI*2);ctx.stroke();}
     ctx.restore();
