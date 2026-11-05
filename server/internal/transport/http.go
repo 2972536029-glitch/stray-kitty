@@ -185,7 +185,14 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 或 packId", 400))
 			return
 		}
-		result, err := a.pay.Charge(r.Context(), req.PlayerID, req.PackID, req.CardNumber)
+		// 会话底座:支付端点没有 Bearer,身份取自请求体 playerId(服务端生成的 ID,
+		// 只进日志;session_id 需要令牌派生,此处为空——obs 对空值跳过注入)。
+		ctx := obs.WithSession(r.Context(), req.PlayerID, "")
+		r = r.WithContext(ctx)
+		// 漏斗:通过校验、即将判定 = charge_attempt;declined 是漏斗终点之一,不是故障;
+		// 系统故障不是漏斗步,由 kitty.payment.charge{result:error} 监控覆盖。
+		obs.Incr("kitty.payment.funnel", "step:charge_attempt")
+		result, err := a.pay.Charge(ctx, req.PlayerID, req.PackID, req.CardNumber)
 		if err != nil {
 			obs.Incr("kitty.payment.charge", "result:"+domain.ClassifyFault(err))
 			a.fail(w, r, err)
@@ -195,9 +202,12 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		// 只有 result:error(系统故障)进故障告警。
 		if result.Txn.Status == "declined" {
 			obs.Incr("kitty.payment.charge", "result:declined")
+			obs.Incr("kitty.payment.funnel", "step:charge_declined")
 		} else {
 			obs.Incr("kitty.payment.charge", "result:success")
+			obs.Incr("kitty.payment.funnel", "step:charge_success")
 		}
+		obs.LogInfo(ctx, "payment charge", "pack_id", req.PackID, "status", result.Txn.Status, "txn_id", result.Txn.ID)
 		resp := map[string]any{"txnId": result.Txn.ID, "pack": result.Pack, "status": result.Txn.Status, "tunaGranted": result.Pack.TunaGranted, "tunaBalance": result.TunaBalance}
 		if result.Txn.Status == "declined" {
 			resp["reason"] = result.Txn.Reason
@@ -251,13 +261,17 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 或 packId", 400))
 			return
 		}
-		result, err := a.pay.Session(r.Context(), req.PlayerID, req.PackID)
+		ctx := obs.WithSession(r.Context(), req.PlayerID, "")
+		r = r.WithContext(ctx)
+		result, err := a.pay.Session(ctx, req.PlayerID, req.PackID)
 		if err != nil {
 			obs.Incr("kitty.payment.session", "result:"+domain.ClassifyFault(err))
 			a.fail(w, r, err)
 			return
 		}
 		obs.Incr("kitty.payment.session", "result:success")
+		obs.Incr("kitty.payment.funnel", "step:session_created")
+		obs.LogInfo(ctx, "payment session", "pack_id", req.PackID, "provider", result.Provider)
 		a.json(w, 200, result)
 	})
 	// 支付服务 webhook 收款后的内部入账口:仅集群内调用,INTERNAL_TOKEN 未配置时整个端点关闭。
@@ -379,6 +393,9 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		}
 		route := obs.SanitizeRoute(pattern)
 		span, ctx := obs.StartWebSpan(r.Context(), r.Header, "http.request", r.Method+" "+route)
+		// 会话底座:Bearer 鉴权请求把玩家/会话标识放进 ctx,obs 日志自动注入每条日志。
+		// 观测旁路 no-op 纪律:token 无效/存档缺失时静默跳过,业务响应不受任何影响。
+		ctx = a.withSessionCtx(ctx, r)
 		span.SetTag("http.method", r.Method)
 		span.SetTag("http.route", route)
 		span.SetTag("http.url", r.URL.Path)
@@ -409,6 +426,24 @@ func (a *API) token(r *http.Request) (string, error) {
 		return "", domain.Fail("UNAUTHORIZED", "需要匿名会话令牌", 401)
 	}
 	return strings.TrimSpace(value[7:]), nil
+}
+
+// withSessionCtx 在 Bearer 令牌形状合法且存档存在时,把玩家/会话标识放进请求 ctx,
+// obs 日志(ctx 版本)自动提取注入每条日志。session_id = service.Hash(token),与存档键
+// 同源(同一令牌恒定);player_id 取玩家记录 ID(稳定玩家身份,登录别名共享)。
+// player_id/session_id 只进日志、绝不进指标 tag(player_id 随玩家增长,低基数纪律);
+// 任何失败静默跳过——观测旁路绝不影响业务(no-op 纪律)。
+func (a *API) withSessionCtx(ctx context.Context, r *http.Request) context.Context {
+	token, err := a.token(r)
+	if err != nil {
+		return ctx
+	}
+	sessionID := service.Hash(token)
+	player, err := a.game.Store.Get(sessionID)
+	if err != nil {
+		return ctx
+	}
+	return obs.WithSession(ctx, player.ID, sessionID)
 }
 
 // authCredentials 注册/登录共用的请求正文。

@@ -50,11 +50,16 @@ span、指标、日志、K8s Deployment labels(`tags.datadoghq.com/*`)共用同�
 | `kitty.payment.session` | count | 支付会话出口 | result |
 | `kitty.payment.webhook` | count | Xsolla webhook 出口(paymentd) | result: ok/rejected/error |
 | `kitty.payment.ledger_save_duration_ms` | histogram | 账本原子写完成 | — |
-| `kitty.advisor.call` | count | 阿策问答出口 | result: success/fallback, reason(有限枚举) |
-| `kitty.advisor.duration_ms` | histogram | 同上 | result |
+| `kitty.advisor.call` | count | 阿策问答出口 | result: success/fallback, reason(有限枚举), scope: battle/journey/explore_hint/home/unknown(模块三新增) |
+| `kitty.advisor.duration_ms` | histogram | 同上 | result, scope(模块三新增) |
+| `kitty.payment.funnel` | count | 支付漏斗步完成时(模块三新增;每步一条,declined 是终点不是故障) | step: session_created/charge_attempt/charge_success/charge_declined |
+| `kitty.economy.delta` | count | 货币变动应用处(模块三新增:事件奖励/商店/抽奖/来信/充值入账) | currency: fish/stamps/tuna, direction: gain/spend, bucket: 1/2-5/6-20/21-100/100+ |
 | `kitty.event.random` | count | 随机事件触发 | map, event(内容配置内有限集合) |
 | `kitty.repo.save_duration_ms` | histogram | 游戏存档原子写完成 | — |
 | `kitty.repo.state_size_bytes` | gauge | 同上(存档体积) | — |
+
+> 模块三补充:`kitty.advisor.call` 的 `scope=home` 是家园场景下的 journey 问答,由服务端按当前 phase 细分;`kitty.payment.funnel` 的 declined 是漏斗终点之一不是故障。
+> **会话底座(模块三)**:Bearer 鉴权的业务日志自动携带 `player_id` / `session_id` 字段(字段名即验收告知的名称),只进日志绝不进指标 tag;支付端点无 Bearer,身份取自请求体 playerId 注入日志。
 
 **结果四分类**(埋点的通用语义,实现在 `domain.ClassifyFault`):
 
@@ -134,6 +139,28 @@ compose 单机形态支付在进程内(mock),该链路在拆分形态(team-previ
 traceparent(后端 `DD_TRACE_PROPAGATION_STYLE=tracecontext,datadog` 接住)——玩家操作可一路
 串到 kitty-api → kitty-paymentd 的后端 trace。SDK 从 npm 打包(官方 CDN 域名在国内网络不可达,
 旅行牛牛验证过的坑),动态 import 单独分包不占首包。
+
+### 6.1 业务埋点(模块二,`web/src/observability/actions.ts`)
+
+统一封装 `web/src/observability/actions.ts`:RUM 未初始化时全部 no-op,观测永不影响游戏;
+action 清单冻结于 `docs/biz-obs-module2-plan.md` §1,组件只调用封装函数,不直接散调 SDK。
+
+| action | 一句话说明(验收 #4) | 接线位置 |
+|---|---|---|
+| `continue_adventure_click` | 主界面点击「开始/继续冒险」,引导转化漏斗第一步(开始/继续都计,漏斗入口只有一个) | App.tsx `onStart` |
+| `chapter1_enter` | 进入第一章(章节 alley)即漏斗终点;含老玩家点「继续冒险」直接落回小巷的回场,每次会话只记一次 | App.tsx 章节 effect |
+| `dice_roll_duration` | 掷骰动画开始→揭晓的时长(ms,含等结算的翻滚续命),回答"动画是否过长" | DiceRollOverlay 揭晓时刻 |
+| `home_panel_open_duration` | 进入花房→本次花房时段首次成功打开「布置」面板(布置模式)的耗时(ms);离开花房重置 | App.tsx 花房计时 effect |
+| `recharge_entry_expose` / `recharge_entry_click` | 充值入口展示/点击;location 初版枚举 `topbar`(顶栏钱包)/`shop`(商店)/`parcels`(邮局),最终枚举待余尧确认(计划 §4) | GameScreen 顶栏钱包、ShopPanel、PostalJournal |
+| `feature_entry_use` | 顶栏四个玩法入口被使用,feature 枚举 `home`/`lottery`/`shop`/`advisor`(家园手册/猫爪邮局/猫国商店/问阿策) | GameScreen 顶栏 |
+| `ui_blocker` | UI 卡点分布。**未接线**:node 枚举待轩扬定义(计划 §4),口径对齐后接线 | 待定 |
+| `tutorial_step_done` | 教学关键步骤完成。**未接线**:step 枚举待齐雯定义(计划 §4),口径对齐后接线 | 待定 |
+| `first_active_move` | 引导后实战中首次主动换位的 delay_ms。**未接线**:依赖教学结束时机口径(随 tutorial 口径一起接) | 待定 |
+
+边界说明:标题界面(StartScreen)的商店入口不计入 `feature_entry_use`(标题页不属于玩法渗透范围);
+「回到花房」等章节导航不计入(是导航不是玩法入口)。
+看板 `[小猫回家记][业务-前端] 体验与渗透`(模块二独占,US5)按计划 §2 面板清单建;
+监控「充值入口点击率下降」有基线前不建(计划 §3)。
 
 ## 7. 本地无 Datadog 运行
 

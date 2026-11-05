@@ -145,6 +145,7 @@ func (g *Game) drawParcel(s *domain.GameState, poolID string) error {
 	}
 	draw := domain.ParcelDraw{ID: drawID, PoolID: pool.ID, FurnitureID: id, Currency: currency, Cost: pool.Cost, Number: progress.Draws + 1, Duplicate: domain.Contains(s.Furniture, id), Guaranteed: guaranteed, CreatedAt: now}
 	s.Currencies[currency] -= pool.Cost
+	economyDelta(economyCurrencyTag(currency), "spend", pool.Cost)
 	progress.Draws++
 	message := fmt.Sprintf("%s送来了「%s」，去花房给它找个位置吧。", pool.Name, name)
 	if draw.Duplicate {
@@ -205,7 +206,9 @@ func (g *Game) claimParcelReward(s *domain.GameState, rewardID string) error {
 			return domain.Fail("INVALID_REWARD", "来信奖励配置无效。", 500)
 		}
 		s.Currencies["stamp"] += reward.Stamp
+		economyDelta("stamps", "gain", reward.Stamp)
 		s.Currencies["tuna"] += reward.Tuna
+		economyDelta("tuna", "gain", reward.Tuna)
 		if reward.Kind == "daily" {
 			s.Lottery.DailyClaims = domain.Add(s.Lottery.DailyClaims, reward.ID)
 		} else {

@@ -100,9 +100,11 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string, usePus
 					return domain.Fail("INVALID_CONTENT", "事件资源配置无效", 500)
 				}
 				s.Inventory["food"] += reward.Fish
+				economyDelta("fish", "gain", reward.Fish)
 				s.Inventory["clue"] += reward.Clue
 				s.Inventory["material"] += reward.Material
 				s.Currencies["stamp"] += reward.Stamps
+				economyDelta("stamps", "gain", reward.Stamps)
 			}
 			// 团子·讨生活:觅食类事件失败时,老江湖仍保底拿到成功档奖励的一半(向上取整)。
 			// 放在主 LastResult 赋值之后,追加文案不被覆盖。
@@ -111,9 +113,11 @@ func (g *Game) chooseEvent(s *domain.GameState, eventID, optionID string, usePus
 				if success, ok := option.Outcomes["success"]; ok && success.Reward != nil {
 					half := func(v int) int { return (v + 1) / 2 }
 					s.Inventory["food"] += half(success.Reward.Fish)
+					economyDelta("fish", "gain", half(success.Reward.Fish))
 					s.Inventory["clue"] += half(success.Reward.Clue)
 					s.Inventory["material"] += half(success.Reward.Material)
 					s.Currencies["stamp"] += half(success.Reward.Stamps)
+					economyDelta("stamps", "gain", half(success.Reward.Stamps))
 					s.Flags = domain.Add(s.Flags, "tuanzi_provided")
 					tuanziFallback = " 团子带着大家在附近又翻找了一圈,老江湖没让你们空手而归。"
 				}

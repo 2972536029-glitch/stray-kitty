@@ -610,6 +610,7 @@ func (g *Game) ApplyCharge(playerID string, txn domain.Txn, pack domain.Recharge
 		}
 		if txn.Status == "confirmed" {
 			p.State.Currencies["tuna"] += pack.TunaGranted
+			economyDelta("tuna", "gain", pack.TunaGranted)
 		}
 		domain.AppendTxn(&p.State, txn)
 		balance = p.State.Currencies["tuna"]
