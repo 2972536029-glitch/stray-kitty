@@ -13,17 +13,17 @@ export function eventPropAtlas() {
   for (const [i,id] of propIds.entries()) {
     c.save();c.translate(i*cellSize,0);
     // Preserve pixel shapes and shaded faces, but separate props from the blue/gold map.
-    // Mint, dusty coral and lilac accents remain distinct without a glowing marker plate.
+    // Weathered metal, linen and faded green sit in the scene rather than floating like UI icons.
     const edge='#302c2b',wood='#d4b29b',light='#f4dfbf';
     if(id==='alley_puddle_reflection') {
-      rect('#284653',4,26,30,6);rect('#284653',8,24,22,10);rect('#4b9d9c',6,26,28,4);rect('#75bdb5',10,25,18,7);
-      rect('#c5f5df',7,27,7,1);rect('#e0ffec',23,28,8,1);rect('#b1e1d0',11,33,9,1);
+      rect('#284653',4,26,30,6);rect('#284653',8,24,22,10);rect('#4b9d9c',6,26,28,4);rect('#658f90',10,25,18,7);
+      rect('#9bb9b6',7,27,7,1);rect('#c1d6cb',23,28,8,1);rect('#b1e1d0',11,33,9,1);
       // Broken reflection rather than an upright second cat.
-      rect('#b1e3d3',17,27,8,3);rect('#ddf5da',16,27,2,2);rect('#ddf5da',23,27,2,2);rect('#86cfc2',18,30,6,2);
+      rect('#7dabad',17,27,8,3);rect('#b6c7b6',16,27,2,2);rect('#b6c7b6',23,27,2,2);rect('#86cfc2',18,30,6,2);
     } else if(id==='alley_empty_fish_can') {
-      rect('rgba(8,16,20,.38)',8,31,24,4);rect(edge,10,21,21,11);rect('#b37188',11,22,19,8);
-      rect('#efdabd',11,21,18,2);rect('#4c3c50',13,23,14,3);rect('#d99eab',12,27,16,3);
-      rect('#e5e3bc',16,27,8,2);rect('#fff3d5',18,27,2,1);rect('#f5e6ce',12,30,15,1);
+      rect('rgba(8,16,20,.38)',8,31,24,4);rect(edge,10,21,21,11);rect('#647a78',11,22,19,8);
+      rect('#c3c6ad',11,21,18,2);rect('#233b42',13,23,14,3);rect('#8da29a',12,27,16,3);
+      rect('#c0ac78',16,27,8,2);rect('#fff3d5',18,27,2,1);rect('#f5e6ce',12,30,15,1);
       // Open, bent lid on the left: readable silhouette and one cool highlight.
       rect(edge,6,16,7,9);rect('#b2cbb7',7,17,5,7);rect('#e0f2d4',7,17,2,5);rect('#708e83',11,19,1,5);
       rect('#514435',29,29,3,3);
@@ -39,20 +39,20 @@ export function eventPropAtlas() {
       rect(edge,3,19,11,6);rect('#dfb8a2',4,20,9,4);rect(edge,27,19,10,6);rect(light,28,20,8,4);
       rect('#fff0d1',9,24,15,1);rect('#735468',23,27,1,7);rect('#a5e0c9',19,25,4,5);rect('#b28f8e',10,32,5,1);
     } else if(id==='alley_poster') {
-      rect('rgba(8,16,20,.34)',9,8,23,28);rect(edge,8,5,23,30);rect('#ad86b2',9,6,21,28);rect('#e2d1ea',10,6,19,27);
-      rect('#fff1f0',11,7,16,1);rect('#a0779c',10,31,6,2);rect('#b298bc',26,25,3,7);rect('#f7e5ed',25,30,3,2);
-      rect('#64496e',16,13,9,8);rect('#64496e',15,11,3,5);rect('#64496e',22,11,3,5);rect('#f0e5ce',18,17,1,1);rect('#f0e5ce',22,17,1,1);
-      rect('#84648d',13,24,13,1);rect('#a083a7',15,27,9,1);rect('#d5757c',19,5,3,3);rect('#ffc6b0',19,5,1,1);
+      rect('rgba(8,16,20,.34)',9,8,23,28);rect(edge,8,5,23,30);rect('#a58b65',9,6,21,28);rect('#ded2b2',10,6,19,27);
+      rect('#f0e7ce',11,7,16,1);rect('#a58d67',10,31,6,2);rect('#b4a27d',26,25,3,7);rect('#e4d8ba',25,30,3,2);
+      rect('#67624d',16,13,9,8);rect('#67624d',15,11,3,5);rect('#67624d',22,11,3,5);rect('#f0e5ce',18,17,1,1);rect('#f0e5ce',22,17,1,1);
+      rect('#89785a',13,24,13,1);rect('#b19d75',15,27,9,1);rect('#d5757c',19,5,3,3);rect('#ffc6b0',19,5,1,1);
     } else if(id==='alley_scratch_marks') {
       // Mint-lit claw scores and stone chips keep the clue visible against warm walls.
       rect('rgba(18,27,31,.25)',8,21,24,13);
-      for(const [x,y,h] of [[12,15,14],[18,13,15],[24,16,13]]){rect('#374b4a',x,y,2,h);rect('#c1e7d1',x+2,y,1,h-2);rect('#6b9f91',x+1,y+h,2,2);rect('#f3ffe0',x+3,y+1,1,4);}
+      for(const [x,y,h] of [[12,15,14],[18,13,15],[24,16,13]]){rect('#374b4a',x,y,2,h);rect('#9ba990',x+2,y,1,h-2);rect('#6b9f91',x+1,y+h,2,2);rect('#c4cab2',x+3,y+1,1,4);}
       rect('#bcddc1',11,32,3,1);rect('#89ae9c',26,31,2,2);rect('#e2f5ce',19,33,2,1);
     } else {
-      rect('rgba(8,16,20,.4)',3,32,33,4);rect(edge,5,23,29,11);rect('#87618e',6,24,27,8);rect('#c5a2c9',7,24,24,2);
-      rect(edge,8,15,24,11);rect('#b68abf',9,16,22,8);rect('#ecd3e6',10,16,19,2);rect('#946a9f',12,20,19,3);
+      rect('rgba(8,16,20,.4)',3,32,33,4);rect(edge,5,23,29,11);rect('#55644f',6,24,27,8);rect('#9d9c7c',7,24,24,2);
+      rect(edge,8,15,24,11);rect('#8c8c6c',9,16,22,8);rect('#c8bb99',10,16,19,2);rect('#696e53',12,20,19,3);
       rect('#a3cbb8',10,17,3,8);rect('#e7efce',10,18,3,1);rect('#e7efce',10,21,3,1);
-      rect('#75507f',24,24,6,8);rect('#c9a5d0',24,25,4,1);rect('#513e61',8,31,16,1);rect('#d0b1a8',8,33,2,2);rect('#d0b1a8',13,33,2,1);
+      rect('#575b46',24,24,6,8);rect('#a79f7c',24,25,4,1);rect('#454b3c',8,31,16,1);rect('#d0b1a8',8,33,2,2);rect('#d0b1a8',13,33,2,1);
     }
     c.restore();
   }

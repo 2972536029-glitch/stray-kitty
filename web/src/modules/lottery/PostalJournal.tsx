@@ -83,7 +83,7 @@ export default function PostalJournal({state,catalog,disabled,retryDisabled,erro
     setOpening(id);setStage('opening');playSound('open');
   };
   const receipt=(r:ParcelDraw)=>{setSelected(r.poolId);onPool(r.poolId);setDraws([r]);setOpened([r.id]);setFocused(r.id);setStage('result');setSheet(null);};
-  const notice=!atHome?'回到花房后，就能签收家具包裹。':status.locked?'完成点点的救援后开放。':balance<pool.cost?`${currency}不足，${pool.currency==='tuna'?'可以去补给小站看看。':'可到猫国商店领取来信与心愿。'}`:'先寄一张小小的期待，再拆开送给家的心意。';
+  const notice=!atHome?'回到花房后，就能签收家具包裹。':status.locked?'完成点点的救援后开放。':balance<pool.cost?`${currency}不足，${pool.currency==='tuna'?'可以去补给小站看看。':'可到猫咪补给站领取来信与心愿。'}`:'先寄一张小小的期待，再拆开送给家的心意。';
   const heading=stage==='preview'?'把期待，寄给小小的家':stage==='drawing'?'这一笔，随心就好':stage==='sending'?'你的心意，正在寄出':stage==='arriving'?'包裹正在送来':'拆一份，家的新模样';
   return <Modal title="猫爪邮局" onClose={()=>{if(!inFlight)onClose();}} className="postal-journal">
     <div className="postal-viewport"><div ref={layoutRoot} className="postal-layout" data-stage={stage} style={presentationStyle}>

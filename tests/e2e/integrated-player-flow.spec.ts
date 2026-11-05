@@ -437,8 +437,13 @@ test('E: merged HomeMap, directed Momo story and home navigation remain connecte
   await click(page,'继续故事');await click(page,'继续故事');await expect(canvas(page)).toHaveAttribute('data-home-beat','greenhouse_intro_3');
   await expect.poll(async()=>(await cats()).find((cat:{breed:string;height:number})=>cat.breed==='momo')?.height??0,{intervals:[40,60,80]}).toBeGreaterThan(5);
   expect((await state(page)).cats).not.toContain('momo');await page.screenshot({path:'output/player-flow/home-story.png'});
-  await click(page,/跳过剧情/);await expect(canvas(page)).toHaveAttribute('data-home-control','free');expect((await state(page)).cats).toContain('momo');
-  rows.push({button:'跳过剧情（第三章）',expected:'Momo recruited; home free mode',result:'pass'});
+  await click(page,/跳过剧情/);await expect(canvas(page)).toHaveAttribute('data-home-beat','greenhouse_intro_4');
+  for(let remaining=0;remaining<6&&await canvas(page).getAttribute('data-home-control')!=='free';remaining++){
+    const previousBeat=await canvas(page).getAttribute('data-home-beat');await click(page,/跳过剧情/);
+    await expect.poll(async()=>await canvas(page).getAttribute('data-home-beat')!==previousBeat).toBe(true);
+  }
+  await expect(canvas(page)).toHaveAttribute('data-home-control','free');expect((await state(page)).cats).toContain('momo');
+  rows.push({button:'跳过剧情（第三章）',expected:'one node per click; Momo recruited at story exit',result:'pass'});
   await open(page,101);await expect(canvas(page)).toHaveAttribute('data-rendered-scene','home');
   await click(page,'收起家园面板');await expect(page.getByRole('heading',{name:'整理我们的家'})).toHaveCount(0);await click(page,'整理家园');await expect(page.getByRole('heading',{name:'整理我们的家'})).toBeVisible();
   const before=await state(page);await click(page,'章节地图');await expect(page.locator('.home-map')).toHaveAttribute('data-layout',(await canvas(page).getAttribute('data-home-layout'))!);await expect(page.locator('.map-stop.current')).toContainText('废弃花房');

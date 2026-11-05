@@ -1,0 +1,82 @@
+/* Discoveries, choices and dice share the same bottom-centred paper surface. */
+.app-shell .discovery-dock {position:absolute;z-index:7;bottom:max(24px,var(--safe-bottom,0px));left:0;right:0;margin:0 auto;width:min(680px,calc(100% - 48px));display:flex;align-items:center;gap:22px;padding:16px 20px 16px 24px;color:#f8ebcf;background:linear-gradient(115deg,#233b3bf2,#152b30f2);border:1px solid #d4bb8273;border-radius:5px;box-shadow:0 8px 30px #05181b66,inset 0 0 0 4px #f7e7bf09;backdrop-filter:blur(12px);animation:discovery-in .24s ease-out}
+.discovery-icon {display:grid;place-items:center;width:52px;height:52px;flex-shrink:0;color:#ddc194;border:1px solid #dbc19244;border-radius:50%;background:#e7c68c09}
+.discovery-icon svg {width:28px;height:28px}
+.discovery-name {flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.discovery-name small {font-size:11px;letter-spacing:3px;color:#b8baa1}
+.discovery-name strong {font-size:22px;line-height:1.4;font-weight:500;letter-spacing:2px}
+.discovery-name>span {font-size:12px;color:#c1c8af;line-height:1.5}
+.app-shell .discovery-dock button {display:flex;align-items:center;gap:11px;min-height:48px;padding:8px 14px;background:#f0e3c5;color:#3b504b;border:1px solid #d6c398;border-radius:3px;box-shadow:none;font-size:16px;font-weight:500;white-space:nowrap}
+.discovery-dock button kbd {display:grid;place-items:center;width:27px;height:28px;border:1px solid #acb09a;border-bottom-width:3px;border-radius:4px;font:500 15px Georgia,serif;color:#506158;background:#fff6de}
+.discovery-dock button i {font-size:18px;font-style:normal;color:#8f997d}
+.event-card.encounter-sheet {position:absolute;z-index:10;top:auto;bottom:max(24px,var(--safe-bottom,0px));left:0;right:0;margin:0 auto;align-self:auto;justify-self:auto;transform:none;width:min(1160px,calc(100% - 48px));max-width:none;max-height:calc(100dvh - 104px);min-height:320px;padding:30px 44px 26px;overflow:auto;overscroll-behavior:contain;color:#524737;border:1px solid #baa17a;border-radius:4px 7px 3px 6px;background:radial-gradient(#a5885120 .6px,transparent .8px) 0 0/7px 7px,linear-gradient(115deg,#fcf2dc,#eee0c2);box-shadow:0 0 0 3px #e4cfaa77,inset 0 0 0 7px #fff7e555,0 14px 60px #0d222866;animation:encounter-unfold .32s cubic-bezier(.2,.8,.3,1);transform-origin:50% 100%}
+.encounter-heading {display:flex;align-items:center;gap:24px;min-height:40px;padding-bottom:16px;border-bottom:1px solid #b79e7266}
+.encounter-heading>span {font-size:12px;letter-spacing:3px;color:#9b8059;white-space:nowrap}
+.event-card.encounter-sheet h2 {margin:0;color:#6c5038;font-size:30px;font-weight:600;line-height:1.4;letter-spacing:3px}
+.event-card.encounter-sheet .encounter-story {margin:18px 0 22px;max-width:1040px;font-size:18px;line-height:1.9;color:#635644}
+.encounter-sheet .encounter-choices {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0 0 22px}
+.encounter-sheet .encounter-choices button {position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:14px;min-height:66px;padding:16px 19px;background:#fff8e65c;color:#5f5747;border:1px solid #bca781;border-radius:3px;box-shadow:0 2px 0 #c9b38b66;text-align:left;font-size:18px;font-weight:500;line-height:1.5;transition:background .18s,border-color .18s,box-shadow .18s}
+.encounter-sheet .encounter-choices button:hover:not(:disabled) {transform:none;background:#fff9e7;border-color:#78866b;box-shadow:0 2px 0 #8b977855}
+.encounter-sheet .encounter-choices button[aria-pressed=true] {background:#e0e3cf;color:#3f5d51;border-color:#6d846d;box-shadow:inset 3px 0 0 #6d846d,0 2px 0 #83917b55}
+.choice-index {font:17px Georgia,serif;color:#aa9472;padding-right:13px;border-right:1px solid #b6a58066}
+.choice-label {flex:1;min-width:0}
+.choice-check {color:#8a9a7a;font-size:20px}
+.encounter-sheet .option-fates {flex-basis:100%;margin:8px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;font-size:11px}
+.encounter-sheet .option-fates i {display:flex;gap:6px;font-style:normal;color:#7c7562;line-height:1.5}
+.encounter-sheet .option-fates b {font-weight:500;white-space:nowrap}
+.encounter-actions {display:flex;justify-content:space-between;align-items:flex-end;gap:20px;padding-top:16px;border-top:1px solid #b79e7244}
+.encounter-roll-actions {display:flex;align-items:center;gap:14px;flex-shrink:0}
+.encounter-sheet .encounter-roll {display:flex;align-items:center;justify-content:center;gap:12px;min-width:198px;min-height:54px;padding:12px 22px;border:1px solid #496456;border-radius:3px;background:#536e5e;color:#fff4d8;box-shadow:0 3px 0 #344b3d55;font-size:18px;letter-spacing:2px}
+.encounter-roll svg {width:21px;height:21px;stroke:currentColor;stroke-width:1.4}
+.encounter-roll>span {margin-left:15px;font-size:21px;color:#c6d1b7}
+.encounter-sheet .push-btn {min-height:46px;padding:10px 14px;border:1px solid #b39b73;border-radius:3px;background:transparent;color:#866c49;box-shadow:none;font-size:14px;font-weight:500}
+.push-btn small {font-size:12px;margin-left:5px}
+.encounter-rules {font-size:12px;color:#9a8462}
+.encounter-rules summary {cursor:pointer;min-height:32px;padding:6px 0;letter-spacing:1px}
+.encounter-rules>div {display:flex;flex-wrap:wrap;gap:12px;padding:8px 0;max-width:620px;font-size:12px;line-height:1.5}
+.encounter-rules b {margin-right:6px;font-family:Georgia,serif;font-weight:500;color:#6c7158}
+.event-card.encounter-sheet .encounter-rules p {flex-basis:100%;margin:0;font-size:12px;color:#788367}
+.app-shell[data-encounter-active] .topbar,.app-shell[data-encounter-active] .topbar-sensor,.app-shell[data-encounter-active] .qa-active-badge,.app-shell[data-encounter-active] .world-toolbar,.app-shell[data-encounter-active] .world-footer,.app-shell[data-encounter-active] .alley-objective,.app-shell[data-encounter-active] .touch-controls {visibility:hidden;pointer-events:none}
+.app-shell[data-rolling] .world-wrap>.event-card,.app-shell[data-rolling] .story-dialogue {visibility:hidden;pointer-events:none}
+.app-shell[data-phase=dialogue] .world-footer {display:none}
+.app-shell:has(.discovery-dock) .world-footer:not(:has(.home-return-button)) {display:none}
+.app-shell:has(.discovery-dock) .world-footer .home-return-button {font-size:13px}
+.app-shell:has(.discovery-dock) .world-footer>p {display:none}
+.app-shell .explore-result-card.encounter-sheet {min-height:260px}
+.explore-result-card.encounter-sheet .event-resolution {padding:0;margin:20px 0;border:0;background:none}
+.explore-result-card.encounter-sheet .resolution-dice {gap:28px}
+.explore-result-card.encounter-sheet .resolution-dice strong {font-size:23px}
+.explore-result-card.encounter-sheet .resolution-dice>div:last-child>span {font-size:14px}
+.explore-result-card.encounter-sheet .event-resolution p {font-size:18px;line-height:1.85;margin:20px 0 12px}
+.explore-result-card.encounter-sheet .outcome-effects>span {font-size:13px;border:1px solid #bca78170;background:#fff7e077}
+.explore-result-card.encounter-sheet>button {float:right;min-width:172px;font-size:17px;background:#536e5e;border:1px solid #496456;box-shadow:none}
+.encounter-preparation .event-resolution {margin:20px 0;padding:0;border:0;background:none}
+.event-card.encounter-preparation .event-resolution p {font-size:18px;line-height:1.8}
+.encounter-preparation .resolution-dice strong {font-size:23px}
+.encounter-preparation .outcome-effects>span {font-size:13px}
+.encounter-next-actions {display:flex;justify-content:flex-end;gap:14px;margin-top:20px}
+.encounter-sheet .encounter-next-actions>button {min-height:48px;padding:10px 20px;font-size:17px;border:1px solid #496456;background:#536e5e;box-shadow:none}
+@keyframes discovery-in {from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes encounter-unfold {from{opacity:0;transform:translateY(12px) scale(.94,.88)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:700px),(max-height:600px) {
+  .app-shell .discovery-dock {width:min(590px,calc(100% - 300px));bottom:max(16px,var(--safe-bottom,0px));gap:12px;padding:10px 12px;min-height:68px}
+  .discovery-icon {width:36px;height:36px}.discovery-icon svg {width:22px;height:22px}
+  .discovery-name small {font-size:9px;letter-spacing:2px}.discovery-name strong {font-size:16px;letter-spacing:1px}.discovery-name>span {font-size:10px}
+  .app-shell .discovery-dock button {min-height:44px;padding:7px 10px;gap:8px;font-size:14px}.discovery-dock button kbd {width:22px;height:24px;font-size:13px}
+  .event-card.encounter-sheet {width:calc(100% - 32px);bottom:max(12px,var(--safe-bottom,0px));min-height:0;max-height:calc(100dvh - 66px);padding:16px 24px 14px}
+  .encounter-heading {gap:16px;min-height:28px;padding-bottom:10px}.encounter-heading>span {font-size:10px;letter-spacing:2px}
+  .event-card.encounter-sheet h2 {font-size:22px;letter-spacing:2px}.event-card.encounter-sheet .encounter-story {margin:10px 0 14px;font-size:14px;line-height:1.7}
+  .encounter-sheet .encounter-choices {gap:10px;margin-bottom:14px}.encounter-sheet .encounter-choices button {min-height:50px;padding:9px 12px;gap:9px;font-size:14px}
+  .choice-index {font-size:14px;padding-right:9px}.choice-check {font-size:17px}
+  .encounter-actions {padding-top:10px;gap:12px}.encounter-sheet .encounter-roll {min-height:44px;min-width:155px;padding:9px 14px;gap:9px;font-size:15px}.encounter-roll>span {margin-left:8px}
+  .encounter-sheet .push-btn {min-height:44px;padding:8px 10px;font-size:12px}.encounter-roll-actions {gap:10px}.encounter-rules {font-size:10px}
+  .explore-result-card.encounter-sheet .event-resolution p {font-size:14px;margin:12px 0}.explore-result-card.encounter-sheet .resolution-dice strong {font-size:18px}
+  .app-shell .explore-result-card.encounter-sheet {min-height:0}.explore-result-card.encounter-sheet>button {font-size:14px;min-height:44px}
+  .event-card.encounter-preparation .event-resolution p {font-size:14px}.encounter-preparation .resolution-dice strong {font-size:18px}.encounter-sheet .encounter-next-actions>button {min-height:44px;font-size:14px;padding:9px 15px}
+}
+@media(max-width:600px) and (min-height:601px) {
+  .app-shell .discovery-dock {width:calc(100% - 32px);bottom:145px}
+  .encounter-sheet .encounter-choices {grid-template-columns:1fr}
+  .encounter-actions {align-items:stretch;flex-direction:column}.encounter-roll-actions {justify-content:flex-end}
+}
+@media(prefers-reduced-motion:reduce) {.app-shell .discovery-dock,.event-card.encounter-sheet {animation:none}.encounter-sheet .encounter-choices button {transition:none}}

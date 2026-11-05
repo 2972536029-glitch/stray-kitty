@@ -48,7 +48,8 @@ export class MarketEventMarkers {
       const before=this.opacity.get(item.id)??0,alpha=before+(target-before)*(1-Math.exp(-dt*10));this.opacity.set(item.id,alpha);
       if(!onFloor||alpha<.005)continue;
       const active=!!interactions[item.id]&&interactions[item.id]===activeId||item.id==='boss'&&battleActive;
-      this.labels.draw(ctx,title+(active?' · E':''),item.x,item.y-38*iconScale-16+Math.sin(now/520+item.x*.021)*2.6,alpha*(completed?.52:1),item.id===objective);
+      if(allNames)this.labels.draw(ctx,title,item.x,item.y-38*iconScale-16,alpha*(completed?.52:1),item.id===objective);
+      else {ctx.save();ctx.globalAlpha=alpha*(completed?.35:1);ctx.strokeStyle=item.id===objective?'#e4cf98':'#bacabb';ctx.lineWidth=active?1.1:.7;ctx.setLineDash(active?[]:[2,3]);ctx.beginPath();ctx.ellipse(item.x,item.y+4,active?14:9,active?4:3,0,0,Math.PI*2);ctx.stroke();ctx.restore();}
     }
   }
 }

@@ -40,12 +40,12 @@ for(const size of [{width:667,height:320},{width:844,height:390},{width:932,heig
     await withinViewport(page,'.touch-stick,.touch-actions button,.topbar nav button');
     const header=await page.locator('.topbar').boundingBox();expect(header!.height).toBeLessThanOrEqual(50);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(size.width);
-    await page.locator('.topbar').getByRole('button',{name:'猫国商店',exact:true}).tap();
-    await expect(page.getByRole('dialog',{name:'猫国商店'})).toBeVisible();
+    await page.locator('.topbar').getByRole('button',{name:'猫咪补给站',exact:true}).tap();
+    await expect(page.getByRole('dialog',{name:'猫咪补给站'})).toBeVisible();
     await withinViewport(page,'dialog[open]');
     await page.locator('dialog[open]').evaluate(e=>e.scrollTop=e.scrollHeight);
     await withinViewport(page,'dialog[open]>.modal-close');
-    await page.getByRole('button',{name:'关闭猫国商店',exact:true}).tap();
+    await page.getByRole('button',{name:'关闭猫咪补给站',exact:true}).tap();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 }
@@ -76,10 +76,10 @@ for(const id of ['alley.explore','market.explore','rescue.explore','finale.explo
     // Trigger the existing toolbar action while the captured pointer is down;
     // the layout tests above exercise the same button through a real tap.
     await page.locator('.topbar .shop-button').evaluate((button:HTMLButtonElement)=>button.click());
-    await expect(page.getByRole('dialog',{name:'猫国商店'})).toBeVisible();
+    await expect(page.getByRole('dialog',{name:'猫咪补给站'})).toBeVisible();
     await expect(stick).toBeDisabled();
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-    await page.getByRole('button',{name:'关闭猫国商店',exact:true}).tap();
+    await page.getByRole('button',{name:'关闭猫咪补给站',exact:true}).tap();
     await page.waitForTimeout(250);const resumed=await position(page);await page.waitForTimeout(200);
     expect(await position(page)).toEqual(resumed);
     await cdp.detach();

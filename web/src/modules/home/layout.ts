@@ -10,6 +10,10 @@ export const HOME_SLOTS: Readonly<Record<string, HomePoint>> = {
   corner: {x: 254, y: 382}, window: {x: 1400, y: 618},
   courtyard: {x: 1255, y: 700}, beam: {x: 280, y: 640}, sun_spot: {x: 1050, y: 585},
 };
+// Only untouched first-stage defaults use the new shelter/workshop composition.
+// Saved homeLayout positions continue to override these points.
+const SHELTER_SLOTS:Readonly<Record<string,HomePoint>>={corner:{x:390,y:495},desk:{x:1190,y:435}};
+export function homeSlotPoint(slot:string,stage:number):HomePoint|undefined {return (stage===1?SHELTER_SLOTS[slot]:undefined)??HOME_SLOTS[slot];}
 export const HOME_RESIDENTS: Record<HomeCatBreed, HomePoint> = {
   miaomiao: {x: 730, y: 510}, tuanzi: {x: 850, y: 540},
   diandian: {x: 1030, y: 530}, momo: {x: 1170, y: 440},
@@ -20,7 +24,7 @@ export const HOME_ROAM_NODES: readonly HomePoint[] = [
   {x: 1200, y: 600}, {x: 1200, y: 450}, {x: 760, y: 475}, {x: 900, y: 450},
 ];
 export const HOME_SHELTER_NODES: readonly HomePoint[] = [
-  {x: 350, y: 480}, {x: 400, y: 460}, {x: 400, y: 520},
+  {x:395,y:610},{x:515,y:615},{x:650,y:550},{x:310,y:660},{x:565,y:675},
 ];
 
 export function homeStage(state: Pick<GameState, 'flags'> & Partial<Pick<GameState, 'phase' | 'storyNodeId'>>): number {

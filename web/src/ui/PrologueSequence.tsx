@@ -1,12 +1,13 @@
 import {useEffect, useRef, useState} from 'react';
 import PixelCat from './PixelCat';
+import DialogueBubble from './DialogueBubble';
 import {playSound} from './soundEffects';
 import homeArtwork from './assets/opening/apartment-afternoon.png';
 import alleyArtwork from './assets/opening/rainy-alley.png';
 
 /** Four story beats, from the familiar afternoon home into the rainy alley.
  * Environment plates, existing animated cat and readable captions stay separate.
- * Click/Space progression, skip and completion callbacks retain their behavior.
+ * The shared bottom frame advances one beat per click, Space or skip.
  */
 const STORY_LINES = [
   '午后的阳光落在毛毯上，一切都是熟悉的温度。',
@@ -37,13 +38,9 @@ export default function PrologueSequence({onComplete}: {onComplete: () => void})
   }, [step.line, step.phase === 'fading']);
 
   const advance = () => {
-    if (step.phase === 'typing') {           // 打字中点击 → 立即显示整行
-      setTyped(STORY_LINES[step.line]);
-      setStep({phase: 'waiting', line: step.line});
-    } else if (step.phase === 'waiting') {   // 等待中点击 → 下一幕或收尾
-      if (step.line + 1 < STORY_LINES.length) setStep({phase: 'typing', line: step.line + 1});
-      else setStep({phase: 'fading', line: step.line});
-    }
+    if (step.phase === 'fading') return;
+    if (step.line + 1 < STORY_LINES.length) setStep({phase: 'typing', line: step.line + 1});
+    else setStep({phase: 'fading', line: step.line});
   };
 
   useEffect(() => {
@@ -53,13 +50,16 @@ export default function PrologueSequence({onComplete}: {onComplete: () => void})
   }, [step.phase, onComplete]);
 
   useEffect(() => {
-    const handleKey = (event: KeyboardEvent) => {if (event.key === ' ' || event.key === 'Enter') {event.preventDefault();advance();}};
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.repeat || (event.target as HTMLElement | null)?.closest('button,input,textarea,select,a')) return;
+      if (event.key === ' ' || event.key === 'Enter') {event.preventDefault();advance();}
+    };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   });
 
   const stage = Math.min(step.line, STORY_LINES.length - 1);
-  return <div className={`prologue-overlay opening-prologue prologue-s${stage} prologue-${step.phase}`} role="presentation" onClick={advance}>
+  return <div className={`prologue-overlay opening-prologue prologue-s${stage} prologue-${step.phase}`} role="dialog" aria-modal="true" aria-label="序章">
     {/* Background, native cat and captions remain independent layers. */}
     <div className="prologue-camera" aria-hidden="true">
       <div className="prologue-scene">
@@ -70,13 +70,10 @@ export default function PrologueSequence({onComplete}: {onComplete: () => void})
       </div>
     </div>
     <div className="prologue-chapter-mark" aria-hidden="true"><span>序章</span><b>{STAGE_TITLES[stage]}</b></div>
-    <div className="prologue-stage" aria-live="polite">
-      <span className="prologue-brand">小猫回家记 · 序章 <span>{String(stage + 1).padStart(2, '0')} / 04</span></span>
-      <p className="prologue-text">{typed}{step.phase === 'typing' && <i className="prologue-caret"/>}</p>
+    <DialogueBubble speaker="旁白" kicker={`序章 · ${String(stage + 1).padStart(2, '0')} / 04`} closing={step.phase === 'fading'} onAdvance={advance} onSkip={() => {playSound('close');advance();}}>
+      <p className="prologue-text">{typed}{step.phase === 'typing' && <i className="dialogue-caret" aria-hidden="true"/>}</p>
       <div className="prologue-progress" aria-hidden="true">{STORY_LINES.map((_, index) => <i key={index} className={index <= stage ? 'is-active' : undefined}/>)}</div>
-      <small className="prologue-hint">{step.line + 1 < STORY_LINES.length || step.phase === 'typing' ? '点击屏幕或按空格继续' : '点击屏幕，开始旅程'}</small>
-    </div>
-    <button className="prologue-skip" data-sound="close" onClick={event => {event.stopPropagation();playSound('close');setStep({phase: 'fading', line: step.line});}}>跳过序章 »</button>
+    </DialogueBubble>
   </div>;
 }
 
