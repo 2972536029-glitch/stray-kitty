@@ -63,8 +63,8 @@
    "payload": {
     "name": "[小猫回家记][业务-主线] 剧情节点断流(推进比骤降)",
     "type": "query alert",
-    "query": "sum(last_30m):(sum:kitty.story.node{service:kitty-api,env:preview,!qa:true}.as_count() / sum:kitty.session.started{service:kitty-api,env:preview,!qa:true}.as_count()) < 0.5",
-    "message": "30 分钟窗口内剧情推进与开局量之比低于 0.5(有真实流量但剧情链路几乎不推进)。排查 START_STORY / ADVANCE_STORY 的拒绝与持久化日志。无流量时本监控不告警(0/0 自然跳过)。\n\n@slack-bj_xsolla_school-hans-team",
+    "query": "sum(last_30m):(sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,!node:prologue_1}.as_count() / sum:kitty.session.started{service:kitty-api,env:preview,!qa:true}.as_count()) < 0.5",
+    "message": "30 分钟窗口内剧情推进(不含序章入口节点 prologue_1)与开局量之比低于 0.5(有真实流量但剧情链路几乎不推进)。排查 START_STORY / ADVANCE_STORY 的拒绝与持久化日志。无流量时本监控不告警(0/0 自然跳过)。\n\n@slack-bj_xsolla_school-hans-team",
     "options": {
      "notify_no_data": false,
      "notify_audit": false,
