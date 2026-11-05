@@ -46,13 +46,22 @@
   clip-path:none;border:2px solid #899575;border-radius:2px;color:#f4e7c8;
   box-shadow:inset 0 2px 0 #fff4c315,0 4px 0 #101f2b;
 }
-.opening-title .start-actions .start-play {background:#b7784e;border-color:#e8cd93;color:#fff3d7;box-shadow:inset 0 2px 0 #ffedc640,inset 0 -3px 0 #8d5237,0 4px 0 #10202c}
-.opening-title .start-play::after {content:'→';margin-left:auto;color:#f6d899;font-size:22px}
+.opening-title .start-actions .start-play {
+  background:#b7784e;border-color:#e8cd93;color:#fff3d7;
+  box-shadow:inset 0 2px 0 #ffedc640,inset 0 -3px 0 #8d5237,0 4px 0 #10202c;
+  display: flex;flex-direction: column;align-items: center;justify-content: center;text-align: center;padding: 16px 20px;
+}
+.opening-title .start-actions .start-play::after {display: none}
+.opening-title .start-actions .start-play .game-button-icon {display: none}
+.opening-title .start-actions .start-play .game-button-copy {
+  display: flex;flex-direction: column;align-items: center;justify-content: center;text-align: center;width: 100%;
+}
 .opening-title .start-actions .start-shop {background:#2d4842eb;border-color:#829573}
 .opening-title .start-actions .start-reset {background:#293a46eb;border-color:#7d897a;color:#ddd6bc}
 .opening-title .start-actions b {font-size:15px;letter-spacing:1px}
-.opening-title .start-actions .start-play b {font-size:25px;letter-spacing:1px}
+.opening-title .start-actions .start-play b {font-size:26px;letter-spacing:2px;text-align: center;display: block;margin: 0}
 .opening-title .start-actions small {font-size:13px;line-height:1.6;margin-top:4px;color:#e0d6ba}
+.opening-title .start-actions .start-play small {font-size:13px;line-height:1.5;margin-top:5px;color:#e0d6ba;text-align: center;display: block}
 .opening-title .start-actions .start-reset small {color:#abb8ae}
 .opening-title .game-button-icon,.opening-title .game-button-icon svg {width:21px;height:21px}
 .opening-title .start-actions .game-button:hover:not(:disabled) {filter:brightness(1.12);transform:translateY(-2px)}

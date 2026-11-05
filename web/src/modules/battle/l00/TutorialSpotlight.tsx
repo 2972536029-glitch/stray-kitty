@@ -100,9 +100,6 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
         return {x: rounded((x - left) / scaleX), y: rounded((y - top) / scaleY)};
       };
       const source = pointFor(sourceSelector), target = pointFor(targetSelector);
-      track(cardRef.current);
-      track(cardRef.current?.querySelector('.btl-tutorial-card-copy') ?? null);
-      track(cardRef.current?.querySelector('.btl-tutorial-card-actions') ?? null);
       const board = container.querySelector<HTMLElement>('[data-testid="battle-board"]');
       track(board);
       const boardRect = board?.getBoundingClientRect();
@@ -116,9 +113,18 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
       } : {x: 0, y: 0, width: frame.width, height: frame.height};
       const cardWidth = Math.min(520, Math.max(1, boardBounds.width - 24));
       const cardNode = cardRef.current;
-      const cardHeight = cardNode ? cardNode.scrollHeight + cardNode.offsetHeight - cardNode.clientHeight : 180;
-      const card = placeTutorialCard(frame, boardBounds, {width: cardWidth, height: cardHeight}, protectedBoxes, secondaryBoxes);
-      const next: Layout = {frame, holes, source, target, targetOutside: !!targetSelector && !!container.querySelector(targetSelector) && !target, card, cardMeasured: !!cardRef.current, cardScrollable: cardHeight > card.height + .5};
+      const copyNode = cardNode?.querySelector<HTMLElement>('.btl-tutorial-card-copy');
+      const actionsNode = cardNode?.querySelector<HTMLElement>('.btl-tutorial-card-actions');
+      const naturalHeight = copyNode ? copyNode.scrollHeight + (actionsNode ? actionsNode.scrollHeight + 16 : 0) + 36 : 160;
+      const cardHeight = Math.max(naturalHeight, 140);
+      const rawCard = placeTutorialCard(frame, boardBounds, {width: cardWidth, height: cardHeight}, protectedBoxes, secondaryBoxes);
+      const card = {
+        x: rounded(rawCard.x),
+        y: rounded(rawCard.y),
+        width: rounded(rawCard.width),
+        height: rounded(rawCard.height),
+      };
+      const next: Layout = {frame, holes, source, target, targetOutside: !!targetSelector && !!container.querySelector(targetSelector) && !target, card, cardMeasured: !!cardRef.current, cardScrollable: cardHeight > card.height + 4};
       setLayout(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
     }
     function schedule() {if (!pending) pending = requestAnimationFrame(measure);}
