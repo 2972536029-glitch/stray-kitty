@@ -5,6 +5,7 @@ import {test} from 'node:test';
 import contentCatalog from '../web/content/catalog.json' with { type: 'json' };
 import {rainyAlleyMapData} from '../web/src/modules/rainyAlley/mapData.ts';
 import {findPath, sweepMove} from '../web/src/modules/rainyAlley/collision.ts';
+import {createSqueezeMotion} from '../web/src/modules/rainyAlley/squeezeMotion.ts';
 import {
   battleReturnPositionTarget, CRATE_CLIMBS, crateClimbTarget, rainyAlleyFieldClosed, rainyAlleyFieldOpen,
   rainyAlleySqueezeFieldClosed, rainyAlleySqueezeFieldOpen, SQUEEZE_BOUNDS, SQUEEZE_CENTER_X, squeezeExitTarget
@@ -55,13 +56,14 @@ for (const gateOpen of [false, true]) for (const direction of [-1, 1] as const) 
     assert.ok(entry && exit);
     assert.ok(squeeze.isTraversable(entry.x, entry.y));
     assert.ok(normal.isTraversable(exit.x, exit.y));
+    const motion = createSqueezeMotion(entry, normal, squeeze, direction);
+    assert.ok(motion);
     let position = {...entry};
     for (let i = 0; i < 180; i++) {
-      const dx = SQUEEZE_CENTER_X - position.x, dy = exit.y - position.y, distance = Math.hypot(dx, dy);
-      if (distance <= 1) {position = {x: SQUEEZE_CENTER_X, y: exit.y}; break;}
-      const amount = Math.min(distance, 58 / 60);
-      position = sweepMove(squeeze, position, {x: dx / distance * amount, y: dy / distance * amount}, 2).position;
+      const next = motion.advance(1 / 60);position = next.position;
+      if (next.done) break;
     }
+    assert.deepEqual(position, exit);
     assert.ok(normal.isTraversable(position.x, position.y));
     if (direction < 0) for (const x of [-12, 12]) {
       const turn = sweepMove(normal, position, {x, y: 0}, 2);
@@ -72,6 +74,43 @@ for (const gateOpen of [false, true]) for (const direction of [-1, 1] as const) 
     assert.ok(normal.isTraversable(resumed.x, resumed.y));
   });
 }
+
+for (const gateOpen of [false, true]) for (const frameSeconds of [1/120, 1/60, 1/30, .05]) {
+  test(`squeeze approach keeps flowing from off-centre entries, gate=${gateOpen}, dt=${frameSeconds}`, () => {
+    const normal = gateOpen ? rainyAlleyFieldOpen : rainyAlleyFieldClosed;
+    const field = gateOpen ? rainyAlleySqueezeFieldOpen : rainyAlleySqueezeFieldClosed;
+    let checked = 0;
+    for (const direction of [-1, 1] as const) for (let offset = -10; offset <= 10; offset += 2) for (let inset = 0; inset <= 18; inset += 2) {
+      const start = {x: SQUEEZE_CENTER_X + offset, y: direction > 0 ? SQUEEZE_BOUNDS.top - inset : SQUEEZE_BOUNDS.bottom + inset};
+      if (!normal.isTraversable(start.x, start.y)) continue;
+      const motion = createSqueezeMotion(start, normal, field, direction);
+      assert.ok(motion, `valid entry ${JSON.stringify(start)} remains usable`);
+      assert.deepEqual(motion.advance(0), {position: start, done: false}, 'Q starts without teleporting or moving during pause');
+      let position = start, elapsed = 0, lateralOnly = 0, done = false;
+      while (elapsed < 2 && !done) {
+        const next = motion.advance(frameSeconds);
+        assert.ok(field.isTraversable(next.position.x, next.position.y), 'every frame stays within the squeeze collision field');
+        assert.ok(Math.hypot(next.position.x-position.x,next.position.y-position.y) <= 96*frameSeconds+1e-6, 'approach stays within normal walking speed');
+        assert.ok(direction*(next.position.y-position.y) >= -1e-6, 'the cat never backs up to align');
+        if (direction*(next.position.y-position.y) < .05*frameSeconds*60) lateralOnly += frameSeconds;
+        elapsed += frameSeconds;position = next.position;done = next.done;
+      }
+      assert.ok(done && elapsed < 1.6, `entry ${JSON.stringify(start)} finishes promptly (${elapsed}s)`);
+      assert.ok(lateralOnly < .2, `entry ${JSON.stringify(start)} has no prolonged wall shuffle (${lateralOnly}s)`);
+      assert.ok(normal.isTraversable(position.x, position.y), 'ordinary movement resumes on a safe exit');
+      assert.equal(motion.compression, 0, 'the cat releases its squeeze pose at the exit');
+      checked++;
+    }
+    assert.ok(checked > 80, 'cover both mouths and the full valid prompt region');
+  });
+}
+
+test('squeeze route rejects distant and obstructed entries', () => {
+  const normal = rainyAlleyFieldClosed, field = rainyAlleySqueezeFieldClosed;
+  for (const start of [{x:SQUEEZE_CENTER_X+11,y:291},{x:SQUEEZE_CENTER_X,y:280},{x:480,y:320}]) {
+    assert.equal(createSqueezeMotion(start,normal,field,1),null);
+  }
+});
 
 test('upper squeeze street permits rightward travel even after walking down against the entrance', () => {
   for (const field of [rainyAlleyFieldClosed, rainyAlleyFieldOpen]) {
