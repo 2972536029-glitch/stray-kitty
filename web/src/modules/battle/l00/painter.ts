@@ -5,6 +5,7 @@ import {COMMANDER_POSITION, SPAWN_POINTS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, getSkillTargetCells} from './ranges';
 import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
 import {paintBasicAttack} from '../shared/basicAttackPainter';
+import {getCatBodyPose,withCatAttackLimb} from '../shared/catAttackMotion';
 
 export type CatKind = CatId | 'advisor';
 
@@ -22,9 +23,11 @@ function blocks(ctx:CanvasRenderingContext2D,color:string,rects:number[][]){for(
 /** All sprites are battle-local canvas primitives; no map or story assets are replaced. */
 export function drawCat(ctx:CanvasRenderingContext2D,kind:CatKind,x:number,y:number,size:number,pose:CatPose='idle',motion=0){
   const p=palettes[kind];ctx.save();ctx.translate(x,y);ctx.scale(size/32,size/32);ctx.imageSmoothingEnabled=false;
-  if(pose==='attack')ctx.translate(Math.sin(motion*Math.PI)*2,-Math.sin(motion*Math.PI));
+  const progress=pose==='attack'&&(kind==='caster'||kind==='guard')?motion:undefined;
+  const moving=progress!==undefined&&Number.isFinite(progress)&&progress>0&&progress<1;
   if(pose==='hurt')ctx.translate(Math.sin(motion*Math.PI*5),0);
   blocks(ctx,'#314b3520',[[7,28,21,2],[10,30,14,1]]);
+  const body=getCatBodyPose(pose==='attack'?motion:undefined);ctx.translate(body.x,body.y);
   if(pose==='sleep'){
     blocks(ctx,p.fur,[[12,19,13,9],[16,17,7,2],[23,20,4,7],[6,18,11,9],[4,21,3,5],[7,16,4,4],[14,17,3,3]]);
     blocks(ctx,p.shade,[[23,21,3,6],[18,26,7,2],[10,26,7,2]]);
@@ -36,10 +39,10 @@ export function drawCat(ctx:CanvasRenderingContext2D,kind:CatKind,x:number,y:num
     pixel(ctx,5,24,1,1,'#c49386');
     ctx.fillStyle='#85967b';ctx.font='5px monospace';ctx.fillText('z',23,14);ctx.restore();return;
   }
-  blocks(ctx,p.fur,[[9,19,15,9],[7,22,4,5],[22,22,4,5],[8,8,17,13],[9,6,5,5],[20,6,4,5],[7,11,2,7],[25,11,2,7]]);
+  blocks(ctx,p.fur,[[9,19,15,9],[7,22,4,5],...(!moving?[[22,22,4,5]]:[]),[8,8,17,13],[9,6,5,5],[20,6,4,5],[7,11,2,7],[25,11,2,7]]);
   blocks(ctx,'#5a594c',[[10,5,3,3],[21,5,2,3]]);
   blocks(ctx,p.light,[[11,15,11,5],[8,26,6,3],[21,26,6,3]]);
-  blocks(ctx,p.shade,[[23,12,2,7],[21,19,3,2],[22,22,2,5]]);
+  blocks(ctx,p.shade,[[23,12,2,7],[21,19,3,2],...(!moving?[[22,22,2,5]]:[])]);
   if(kind==='hero'||kind==='caster')blocks(ctx,p.fur,[[6,14,2,4],[5,16,2,2],[26,14,2,5],[27,17,2,2],[8,20,2,3],[24,20,2,3]]);
   if(kind==='hero'){
     blocks(ctx,p.patch,[[8,9,2,4],[23,9,2,5],[24,18,2,2]]);
@@ -56,16 +59,21 @@ export function drawCat(ctx:CanvasRenderingContext2D,kind:CatKind,x:number,y:num
   else{blocks(ctx,p.eye,[[11,13,3,3],[20,13,3,3]]);blocks(ctx,'#3f493f',[[12,14,1,2],[21,14,1,2]]);blocks(ctx,'#fffdf5',[[11,13,1,1],[20,13,1,1]]);}
   pixel(ctx,16,17,2,1,'#c49386');pixel(ctx,17,18,1,1,'#55584b');
   if(kind==='caster'){
-    blocks(ctx,'#776a52',[[25,17,1,10],[24,25,2,2]]);
-    blocks(ctx,'#d6b46a',[[23,14,5,5],[25,12,1,9],[21,16,9,1]]);pixel(ctx,24,15,3,3,'#fff2bb');
+    withCatAttackLimb(ctx,'cast',progress,23,22,()=>{
+      if(moving){pixel(ctx,22,22,4,5,p.fur);pixel(ctx,22,22,2,5,p.shade);}
+      blocks(ctx,'#776a52',[[25,17,1,10],[24,25,2,2]]);
+      blocks(ctx,'#d6b46a',[[23,14,5,5],[25,12,1,9],[21,16,9,1]]);pixel(ctx,24,15,3,3,'#fff2bb');
+    });
   }else if(kind==='guard'){
-    blocks(ctx,'#778379',[[22,19,7,1],[21,20,9,7],[23,27,5,2]]);
-    blocks(ctx,'#e0d9c2',[[23,20,5,1],[22,21,7,5],[24,26,3,2]]);pixel(ctx,24,22,3,3,'#78957b');
+    withCatAttackLimb(ctx,'shield',progress,22,22,()=>{
+      if(moving){pixel(ctx,22,22,4,5,p.fur);pixel(ctx,22,22,2,5,p.shade);}
+      blocks(ctx,'#778379',[[22,19,7,1],[21,20,9,7],[23,27,5,2]]);
+      blocks(ctx,'#e0d9c2',[[23,20,5,1],[22,21,7,5],[24,26,3,2]]);pixel(ctx,24,22,3,3,'#78957b');
+    });
   }else if(kind==='advisor'){
     blocks(ctx,'#b4a379',[[13,22,15,7],[12,23,1,5]]);pixel(ctx,14,23,13,5,'#fff0cb');
     blocks(ctx,'#79916e',[[15,24,3,1],[17,24,1,3],[18,26,6,1],[23,25,1,1]]);pixel(ctx,24,24,1,1,'#b97a63');
   }
-  if(pose==='attack'&&kind==='guard')blocks(ctx,'#e8d5a2',[[29,17,1,7],[30,18,1,5],[28,16,1,1]]);
   ctx.restore();
 }
 
