@@ -31,7 +31,7 @@ export interface GameState {
 }
 export interface HomePlacement {x:number;y:number;stored:boolean}
 export interface HomeLayoutChange extends HomePlacement {key:string}
-export interface HomeDecor {id:string;objectId:string;stage:number;name:string;sprite:string;category?:FurnitureCategory;x:number;y:number;width:number;kind:string;front?:boolean;wall?:boolean;replacementSlot?:string}
+export interface HomeDecor {id:string;objectId:string;stage:number;name:string;sprite:string;category?:FurnitureCategory;x:number;y:number;width:number;kind:string;front?:boolean;wall?:boolean;replacementSlot?:string;storedByDefault?:boolean}
 export interface QACheckpoint {id: string; chapterId: string; title: string; phase: GamePhase; mapId: string; kind: 'story' | 'explore' | 'battle' | 'home' | 'event'; detail: string}
 export interface QATools {enabled: boolean; checkpoints: QACheckpoint[]}
 export type GameCommand =

@@ -3263,6 +3263,11 @@
           "replacementSlot": {
             "type": "string"
           },
+          "storedByDefault": {
+            "type": "boolean",
+            "default": false,
+            "description": "解锁后默认收纳到家具背包；玩家保存的布置优先。"
+          },
           "category": {
             "type": "string",
             "enum": [
