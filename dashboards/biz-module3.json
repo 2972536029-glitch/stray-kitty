@@ -1,0 +1,150 @@
+{
+  "title": "[小猫回家记][业务-经营] 支付与经济",
+  "description": "模块三(经营与底座):支付漏斗、金枪鱼收支、阿策 scope 维度、彩蛋揭示率(引用模块一指标,未上线前 No Data)、按玩家会话统计雏形(会话底座日志字段 player_id/session_id)、本模块监控状态。",
+  "widgets": [
+    {
+      "definition": {
+        "type": "note",
+        "content": "## 支付与经济(模块三)\n支付漏斗只含后半段;前半段(曝光/点击)见模块二看板。",
+        "font_size": "14",
+        "text_align": "left",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "bottom",
+        "background_color": "white",
+        "has_padding": true
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "支付漏斗(kitty.payment.funnel by step)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "horizontal",
+        "legend_columns": ["avg", "min", "max", "value", "sum"],
+        "requests": [
+          {
+            "q": "sum:kitty.payment.funnel{*} by {step}",
+            "display_type": "bars"
+          }
+        ],
+        "markers": [],
+        "yaxis": {
+          "scale": "sqrt",
+          "label": "",
+          "include_zero": true
+        }
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "金枪鱼收支比(事件数口径,gain/spend,1h)",
+        "title_size": "16",
+        "title_align": "left",
+        "requests": [
+          {
+            "q": "avg(last_1h):(sum:kitty.economy.delta{currency:tuna,direction:gain}.as_count() / sum:kitty.economy.delta{currency:tuna,direction:spend}.as_count())",
+            "aggregator": "last"
+          }
+        ],
+        "precision": 2
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "经济事件流(kitty.economy.delta by currency,direction)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "requests": [
+          {
+            "q": "sum:kitty.economy.delta{*} by {currency,direction}",
+            "display_type": "bars"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "阿策请求量(kitty.advisor.call by scope)",
+        "show_legend": true,
+        "requests": [
+          {
+            "q": "sum:kitty.advisor.call{*} by {scope}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "阿策回退率(by scope)",
+        "show_legend": true,
+        "requests": [
+          {
+            "q": "avg(last_5m):(sum:kitty.advisor.call{result:fallback}.as_count() / sum:kitty.advisor.call{*}.as_count()) by {scope}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "彩蛋揭示率(kitty.event.flag by flag;模块一指标,上线前 No Data)",
+        "show_legend": true,
+        "requests": [
+          {
+            "q": "sum:kitty.event.flag{*} by {flag}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "query_table",
+        "title": "玩家会话统计雏形(distinct session_id by player_id)",
+        "requests": [
+          {
+            "response_format": "event_list",
+            "storage": "hot",
+            "q": "service:kitty-api @session_id:*",
+            "group_by": [
+              {
+                "facet": "@player_id",
+                "limit": 10,
+                "sort": {
+                  "aggregation": "cardinality",
+                  "facet": "@session_id",
+                  "order": "desc"
+                }
+              }
+            ],
+            "compute": {
+              "aggregation": "cardinality",
+              "facet": "@session_id"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "monitor_summary",
+        "query": "tag:owner:biz-module3",
+        "title": "监控状态(本模块)",
+        "show_priority": false,
+        "sort": "status,asc"
+      }
+    }
+  ],
+  "layout_type": "ordered",
+  "tags": ["team:stray-kitty", "owner:biz-module3"]
+}

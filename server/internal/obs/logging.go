@@ -27,6 +27,16 @@ func logWithTrace(ctx context.Context, level slog.Level, msg string, args []any)
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	// 会话底座:ctx 携带玩家/会话标识时自动注入每条日志(player_id/session_id 只进
+	// 日志,绝不进指标 tag——低基数纪律,见 session.go)。无标识时日志行为不变。
+	if ident := sessionFrom(ctx); ident.PlayerID != "" || ident.SessionID != "" {
+		if ident.PlayerID != "" {
+			args = append(args, "player_id", ident.PlayerID)
+		}
+		if ident.SessionID != "" {
+			args = append(args, "session_id", ident.SessionID)
+		}
+	}
 	traceID, spanID := traceIDs(ctx)
 	if traceID != "" {
 		args = append(args, "dd.trace_id", traceID, "dd.span_id", spanID)

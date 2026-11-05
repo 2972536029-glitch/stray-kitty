@@ -102,7 +102,8 @@
     },
     "tags": [
       "team:stray-kitty",
-      "purpose:payment-business"
+      "purpose:payment-business",
+      "owner:biz-module3"
     ]
   },
   {
@@ -144,7 +145,8 @@
     "tags": [
       "team:stray-kitty",
       "service:kitty-api",
-      "purpose:advisor-fallback"
+      "purpose:advisor-fallback",
+      "owner:biz-module3"
     ]
   },
   {
@@ -230,6 +232,50 @@
     "tags": [
       "team:stray-kitty",
       "purpose:storage"
+    ]
+  },
+  {
+    "name": "[小猫回家记][业务-经营] 支付转化异常",
+    "type": "query alert",
+    "query": "avg(last_1h):(sum:kitty.payment.funnel{step:charge_success}.as_count() / sum:kitty.payment.funnel{step:charge_attempt}.as_count()) < 0.5",
+    "message": "1 小时内漏斗成功步不足 attempt 的一半——扣掉 declined 终点后大量尝试没有正常收敛,通常是支付链路故障(账本写失败/网关异常)。declined 是漏斗终点不是故障,拒付率由专门监控负责;无流量时 No Data 属预期,阈值两周后按基线校准。\n\n@slack-bj_xsolla_school-hans-team",
+    "options": {
+      "thresholds": {
+        "critical": 0.5
+      },
+      "notify_audit": false,
+      "require_full_window": false,
+      "notify_no_data": false,
+      "renotify_interval": 0,
+      "evaluation_delay": 60
+    },
+    "tags": [
+      "team:stray-kitty",
+      "service:kitty-api",
+      "purpose:payment-funnel",
+      "owner:biz-module3"
+    ]
+  },
+  {
+    "name": "[小猫回家记][业务-经营] 金枪鱼收支比漂移",
+    "type": "query alert",
+    "query": "avg(last_6h):(sum:kitty.economy.delta{currency:tuna,direction:gain}.as_count() / sum:kitty.economy.delta{currency:tuna,direction:spend}.as_count()) > 3",
+    "message": "6 小时窗口金枪鱼 gain 事件数超过 spend 事件数 3 倍——通胀预警。口径:事件数比(金额分桶在 bucket tag,见指标字典);收支比健康区间待与余尧/浩哲对齐,两周后按基线校准。无经济流量时 No Data 属预期。\n\n@slack-bj_xsolla_school-hans-team",
+    "options": {
+      "thresholds": {
+        "critical": 3
+      },
+      "notify_audit": false,
+      "require_full_window": false,
+      "notify_no_data": false,
+      "renotify_interval": 0,
+      "evaluation_delay": 60
+    },
+    "tags": [
+      "team:stray-kitty",
+      "service:kitty-api",
+      "purpose:economy-drift",
+      "owner:biz-module3"
     ]
   }
 ]

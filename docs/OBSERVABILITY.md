@@ -50,11 +50,16 @@ span、指标、日志、K8s Deployment labels(`tags.datadoghq.com/*`)共用同�
 | `kitty.payment.session` | count | 支付会话出口 | result |
 | `kitty.payment.webhook` | count | Xsolla webhook 出口(paymentd) | result: ok/rejected/error |
 | `kitty.payment.ledger_save_duration_ms` | histogram | 账本原子写完成 | — |
-| `kitty.advisor.call` | count | 阿策问答出口 | result: success/fallback, reason(有限枚举) |
-| `kitty.advisor.duration_ms` | histogram | 同上 | result |
+| `kitty.advisor.call` | count | 阿策问答出口 | result: success/fallback, reason(有限枚举), scope: battle/journey/explore_hint/home/unknown(模块三新增) |
+| `kitty.advisor.duration_ms` | histogram | 同上 | result, scope(模块三新增) |
+| `kitty.payment.funnel` | count | 支付漏斗步完成时(模块三新增;每步一条,declined 是终点不是故障) | step: session_created/charge_attempt/charge_success/charge_declined |
+| `kitty.economy.delta` | count | 货币变动应用处(模块三新增:事件奖励/商店/抽奖/来信/充值入账) | currency: fish/stamps/tuna, direction: gain/spend, bucket: 1/2-5/6-20/21-100/100+ |
 | `kitty.event.random` | count | 随机事件触发 | map, event(内容配置内有限集合) |
 | `kitty.repo.save_duration_ms` | histogram | 游戏存档原子写完成 | — |
 | `kitty.repo.state_size_bytes` | gauge | 同上(存档体积) | — |
+
+> 模块三补充:`kitty.advisor.call` 的 `scope=home` 是家园场景下的 journey 问答,由服务端按当前 phase 细分;`kitty.payment.funnel` 的 declined 是漏斗终点之一不是故障。
+> **会话底座(模块三)**:Bearer 鉴权的业务日志自动携带 `player_id` / `session_id` 字段(字段名即验收告知的名称),只进日志绝不进指标 tag;支付端点无 Bearer,身份取自请求体 playerId 注入日志。
 
 **结果四分类**(埋点的通用语义,实现在 `domain.ClassifyFault`):
 
