@@ -122,17 +122,23 @@ class BusinessObservabilityTests(unittest.TestCase):
             deploy(self.bundle, client, apply=True)
         self.assertFalse(client.writes())
 
-    def test_composites_use_created_real_ids_and_silent_components(self):
+    def test_stall_monitors_use_ratio_form_and_reference_correct_signals(self):
         client = FakeDatadog(self.bundle)
         deploy(self.bundle, client, apply=True)
-        ids = {item['id'] for item in client.monitors if item['type'] != 'composite'}
+        # 本 org 对 composite monitor 的 PUT/POST 实测 400(2026-11-05),
+        # 两条断流监控已改写为比率形态:结算或推进 ÷ 开局 < 0.5。
         composites = [item for item in client.monitors if item['type'] == 'composite']
-        self.assertEqual(len(composites), 2)
-        for item in composites:
-            self.assertTrue(all(int(v.strip()) in ids for v in item['query'].split('&&')))
-        for item in client.monitors:
-            if 'role:component' in item['tags']:
-                self.assertNotIn('@', item['message'])
+        self.assertEqual(len(composites), 0, 'composite form was rejected by the org; must stay ratio-based')
+        stalls = [m for m in client.monitors if '断流' in m['name'] or '没有结算' in m['name']]
+        self.assertEqual(len(stalls), 2)
+        for item in stalls:
+            self.assertIn('< 0.5', item['query'])
+        denominators = ' '.join(item['query'] for item in stalls)
+        self.assertIn('sum:kitty.session.started', denominators)
+        self.assertIn('sum:kitty.battle.start', denominators)
+        # 组合语义被比率替代后,子监控无静默通知的纪律转为直接断言两条比率监控自身带通知
+        for item in stalls:
+            self.assertIn('@slack-bj_xsolla_school-hans-team', item['message'])
 
     def test_query_operand_cannot_accidentally_include_qa_or_other_environments(self):
         spec = next(s for s in self.bundle['monitors'] if s['id'] == 'payment-declined')
@@ -154,11 +160,6 @@ class BusinessObservabilityTests(unittest.TestCase):
         with self.assertRaisesRegex(DefinitionError, 'session-created prologue_1'):
             validate_bundle(self.bundle)
 
-    def test_composite_cannot_reference_missing_or_later_monitor(self):
-        spec = next(s for s in self.bundle['monitors'] if s['payload']['type'] == 'composite')
-        spec['payload']['query'] = '${story-session-volume} && ${not-deployed}'
-        with self.assertRaisesRegex(DefinitionError, 'earlier'):
-            validate_bundle(self.bundle)
 
     def test_financial_ratio_uses_actual_amount_not_event_count(self):
         dashboard = next(s for s in self.bundle['dashboards'] if s['id'] == 'economy-dashboard')
