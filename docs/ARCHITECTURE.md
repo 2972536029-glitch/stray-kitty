@@ -70,6 +70,7 @@ stray-kitty/
 │  ├─ L05-INTEGRATION.md  第五章光路援军与独立试玩边界
 │  ├─ LEVEL-EXPLORATION-ARCHITECTURE.md
 │  ├─ MAP-QA-FOLLOWUP.md
+│  ├─ monitoring-audit-2026-11-05.md
 │  ├─ OBSERVABILITY.md
 │  ├─ openapi.json  API 规范
 │  ├─ PAYMENT-XSOLLA-SANDBOX.md
