@@ -1,10 +1,10 @@
 import type {StoryNode} from '../contracts';
-import type {CatBreed} from '../adapters/canvas/pixelCat';
+import type {CatAppearance} from '../adapters/canvas/pixelCat';
 import DialogueBubble from './DialogueBubble';
 import PixelCat from './PixelCat';
 import {useEffect, useRef, useState, type ReactNode} from 'react';
 
-const speakers: Record<string, CatBreed> = {'喵喵': 'miaomiao', '团子': 'tuanzi', '点点': 'diandian', '墨墨': 'momo'};
+const speakers: Record<string, CatAppearance> = {'喵喵': 'miaomiao', '团子': 'tuanzi', '点点': 'diandian', '墨墨': 'momo', '阿策': 'ace', '绒绒': 'rongrong'};
 
 interface Props {
   node: StoryNode;

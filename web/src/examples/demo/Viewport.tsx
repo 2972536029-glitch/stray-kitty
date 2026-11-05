@@ -6,6 +6,7 @@ import {DemoScene} from './scene';
 import type {ChapterBackgroundStatus} from '../../modules/map/artwork';
 import TouchControls from '../../ui/TouchControls';
 import AlleyLabels from '../../modules/rainyAlley/AlleyLabels';
+import MarketLabels from '../../modules/nightMarket/MarketLabels';
 
 interface Props {
   onHomeAdvisor?:()=>void;
@@ -61,7 +62,7 @@ export function Viewport(props: Props) {
     latest.current.onSceneReady?.(runtime);
     // CanvasViewport 只认 destroy；在这里补一次 onSceneReady(null) 的通知。
     return {destroy() {runtime.destroy();scene.current = null;latest.current.onSceneReady?.(null);}};
-  }}/>{activeScene && props.state.phase === 'explore' && props.state.mapId === 'alley' && <AlleyLabels scene={activeScene}/>}{props.state.phase === 'explore' && <TouchControls disabled={props.paused || background?.state === 'loading' || background?.state === 'error'} mapId={props.state.mapId}
+  }}/>{activeScene && props.state.phase === 'explore' && props.state.mapId === 'alley' && <AlleyLabels scene={activeScene}/>}{activeScene && props.state.phase === 'explore' && props.state.mapId === 'market' && <MarketLabels scene={activeScene} state={props.state}/>}{props.state.phase === 'explore' && <TouchControls disabled={props.paused || background?.state === 'loading' || background?.state === 'error'} mapId={props.state.mapId}
     onDirection={(direction, held) => scene.current?.setDirection(direction, held)} onAction={action => scene.current?.performAction(action)}/>}
   {background && (background.state === 'loading' || background.state === 'error') && <div className="map-loading-panel" role={background.state === 'error' ? 'alert' : 'status'}>
     <div><span aria-hidden="true">ฅ</span><p>{background.state === 'error' ? '地图暂时没打开' : '正在打开地图……'}</p>
