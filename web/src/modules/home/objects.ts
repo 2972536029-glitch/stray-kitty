@@ -1,12 +1,12 @@
 import {furnitureWidth, furnitureCategory, type FurnitureCategory} from './furnishings';
 import {homeObjectDepth} from './spatial';
 import decor from '../../../content/home/decor.json' with { type: 'json' };
-import type {GameState} from '../../contracts';
+import type {GameState,HomeDecor} from '../../contracts';
 import type {CatBreed} from '../../adapters/canvas/pixelCat';
 import {HOME_SLOTS, homeSlotPoint, homeStage, type HomePoint} from './layout';
 import {HOME_FRAMES, type HomeSprite} from './assets';
 import {PARCEL_ART, PARCEL_IDS, isParcelFurniture, parcelWidth} from '../lottery/furnitureArt';
-export type HomeAppearance=Pick<GameState,'flags'|'placements'> & Partial<Pick<GameState,'phase'|'storyNodeId'|'furniture'|'homeLayout'|'homeRepairs'>>;
+export type HomeAppearance=Pick<GameState,'flags'|'placements'> & Partial<Pick<GameState,'phase'|'storyNodeId'|'furniture'|'homeLayout'|'homeRepairs'|'homeDecorOwned'>>;
 export type HomeObjectKind='decor'|'plant'|'storage'|'workbench'|'nest'|'castle'|'hammock'|'blanket'|'cushion'|'bowls'|'lamp'|'tower'|'sofa'|'seat';
 export interface HomeObject extends HomePoint {id:string;layoutKey:string;wall?:boolean;sprite:HomeSprite;width:number;kind:HomeObjectKind;solid:boolean;front?:boolean;slot?:string;furnitureId?:string}
 const furnitureSprites:Record<string,{sprite:HomeSprite;width:number;kind:HomeObjectKind}>={
@@ -17,16 +17,18 @@ const furnitureSprites:Record<string,{sprite:HomeSprite;width:number;kind:HomeOb
   cloud_nest:{sprite:'s3.cloudnest',width:furnitureWidth('cloud_nest'),kind:'blanket'},moon_hammock:{sprite:'s3.hammock',width:furnitureWidth('moon_hammock'),kind:'hammock'},
   tin_lamp:{sprite:'s2.tinlamp',width:furnitureWidth('tin_lamp'),kind:'lamp'},sun_lamp:{sprite:'s4.sunlamp',width:furnitureWidth('sun_lamp'),kind:'lamp'},star_glass:{sprite:'s4.starlamp',width:furnitureWidth('star_glass'),kind:'lamp'}
 };
-export interface HomeItem extends HomeObject {stored:boolean;name:string;category:FurnitureCategory}
-export function homeInventory(state:HomeAppearance):HomeItem[]{
+export interface HomeItem extends HomeObject {stored:boolean;name:string;category:FurnitureCategory;owned?:boolean;description?:string;acquisition?:HomeDecor['acquisition']}
+export function homeInventory(state:HomeAppearance,includeAvailable=false):HomeItem[]{
   const stage=homeStage(state),items:HomeItem[]=[];
-  for(const d of decor.filter(d=>d.stage===stage)){
+  for(const d of (decor as HomeDecor[]).filter(d=>d.stage===stage)){
     // A player's arrangement follows the same furnishing through later repairs.
     // An explicit current-stage edit takes precedence over an inherited one.
-    const earlier=stage>=3?decor.filter(previous=>previous.stage<stage&&previous.objectId===d.objectId).sort((a,b)=>b.stage-a.stage).find(previous=>state.homeLayout?.[previous.id]):undefined;
+    const earlier=stage>=3?decor.filter(previous=>previous.stage<stage&&(previous.objectId===d.objectId||previous.objectId===d.renovatedFrom)).sort((a,b)=>b.stage-a.stage).find(previous=>state.homeLayout?.[previous.id]):undefined;
+    const owned=!d.acquisition||!!state.homeDecorOwned?.includes(d.objectId)||decor.some(previous=>previous.objectId===d.objectId&&previous.stage<=stage&&!!state.homeLayout?.[previous.id]);
+    if(!owned&&!includeAvailable)continue;
     const override=state.homeLayout?.[d.id]??(earlier?state.homeLayout?.[earlier.id]:undefined),kind=d.kind as HomeObjectKind;
     const storedByDefault='storedByDefault' in d&&d.storedByDefault===true;
-    items.push({id:d.objectId,layoutKey:d.id,sprite:d.sprite as HomeSprite,x:d.x,y:d.y,width:d.width,kind,front:'front' in d&&d.front,wall:'wall' in d&&d.wall,solid:['plant','storage','workbench','nest','castle','hammock','tower'].includes(kind),name:d.name,category:furnitureCategory(d.id,true),stored:storedByDefault||!!(d.replacementSlot&&state.placements[d.replacementSlot]),...override});
+    items.push({id:d.objectId,layoutKey:d.id,sprite:d.sprite as HomeSprite,x:d.x,y:d.y,width:d.width,kind,front:d.front,wall:d.wall,solid:['plant','storage','workbench','nest','castle','hammock','tower'].includes(kind),name:d.name,category:furnitureCategory(d.id,true),owned,description:d.description??d.acquisition?.description,acquisition:d.acquisition,stored:storedByDefault||!!(d.replacementSlot&&state.placements[d.replacementSlot]),...override});
   }
   const owned=state.furniture??Object.values(state.placements);
   for(const id of owned){

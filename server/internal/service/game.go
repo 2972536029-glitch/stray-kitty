@@ -559,6 +559,8 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 		return nil
 	case "SAVE_HOME_LAYOUT":
 		return g.saveHomeLayout(s, c.Changes)
+	case "ACQUIRE_HOME_DECOR":
+		return g.acquireHomeDecor(s, c.DecorID)
 	case "PLACE_FURNITURE":
 		if err := domain.RequirePhase(*s, "home"); err != nil {
 			return err

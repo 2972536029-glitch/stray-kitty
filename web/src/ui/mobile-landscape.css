@@ -14,7 +14,7 @@
   button,a,input,select,summary{touch-action:manipulation}
   input:not([type=range]),select,textarea{font-size:16px}
   .game-viewport canvas{touch-action:none}
-  .game-modal .modal-close{position:sticky;float:right;top:0;right:0;z-index:50;width:44px;height:44px;min-height:44px;margin:0 0 4px 8px;font-size:24px;display:grid;place-items:center}
+  .game-modal .modal-close{position:absolute;float:none;left:auto;top:16px;right:16px;z-index:50;width:44px;height:44px;min-height:44px;margin:0;font-size:24px;display:grid;place-items:center}
 }
 
 @media(any-pointer:coarse) and (orientation:landscape) and (max-height:600px){

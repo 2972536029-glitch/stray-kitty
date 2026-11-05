@@ -216,7 +216,7 @@ export default function App() {
       <button onClick={() => setInspection(null)}>继续探索 →</button>
     </Modal>}
     {state && catalog && overlay === 'qa' && <AcceptancePanel state={state} catalog={catalog} busy={busy} pending={pending} error={error} loadTools={loadQATools} onCommand={runQACommand} onSkip={async () => {const success = await skipDialogue();if(success){setOverlay(null);setPaused(false);}return success;}} onRetry={() => void retry()} onClose={() => setOverlay(null)}/>}
-    {state && catalog && overlay==='home' && homeTab!=='parcels' && <HomeHub state={state} catalog={catalog} tab={homeTab} locked={busy||pending} busy={busy} error={error} onDecorate={openDecorate} onClose={()=>setOverlay(null)} onRetry={()=>void retry()} journal={<JourneyRecord state={state} busy={busy} pending={pending} disabled={disabled} onReplay={c=>void homeNavigate(c)}/> }>
+    {state && catalog && overlay==='home' && homeTab!=='parcels' && <HomeHub state={state} catalog={catalog} tab={homeTab} locked={busy||pending} busy={busy} error={error} onDecorate={openDecorate} onCommand={send} onClose={()=>setOverlay(null)} onRetry={()=>void retry()} journal={<JourneyRecord state={state} busy={busy} pending={pending} disabled={disabled} onReplay={c=>void homeNavigate(c)}/> }>
       {homeTab==='shop' && <ShopPanel state={state} catalog={catalog} disabled={disabled} error={error} onRetry={()=>void retry()} onClose={()=>setOverlay(null)} onCommand={send} onRefresh={refresh} onParcels={()=>setHomeTab('parcels')} onRecharge={()=>setHomeTab('recharge')}/>}
       {homeTab==='depart' && <WorldMap state={state} catalog={catalog} disabled={disabled} onClose={()=>setOverlay(null)} onNavigate={c=>void homeNavigate(c)}/>}
 
