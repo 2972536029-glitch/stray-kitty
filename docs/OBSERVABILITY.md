@@ -17,8 +17,15 @@ kitty-api(Go, cmd/api)──TracedRoundTripper──► DeepSeek(阿策问答)
 slog JSON + dd.trace_id        DogStatsD(UDP 8125)      APM(8126)
    └──────────── Datadog Agent(compose profile / GKE namespace 内 Deployment)────┘
                           ↓
-                  Monitor(11 条,monitors/monitors.json)──► Slack(告警 / 恢复)
+                  Monitor(16 条,Datadog UI / Bits AI 管理)──► Slack(告警 / 恢复)
 ```
+
+## 0. 当前状态速览(2026-11-05)
+
+- **仪表盘 3 个**(已从 4 个整合):「总览」(整体好不好:关键数字/全部告警/服务健康)、「玩家旅程」(打开页面→前端报错→引导→主线→战斗→剧情→随机事件→充值入口,带 env/host 筛选,默认只看公网域名)、「经营与支付」(支付漏斗/Webhook 入账/经济收支/阿策 AI/玩家会话日志)。三者顶部互跳链接,结构统一:顶部关键数字 → 按步骤展开 → 告警与排查。
+- **告警 16 个**(全部带 team:stray-kitty 标签,通知 Slack):基础 9 + 公网拨测 2 + 业务 5(明细见 §5)。
+- **管理方式 ⚠️**:看板与告警只在 **Datadog 网页上通过 Bits AI 维护**;仓库里的 monitors/*.json 与 apply 脚本仅作历史存档,**不要再运行 --apply**(会覆盖网页上的修改)。开新的 Bits AI 对话时,先把本手册链接发给它,它就能接上进度。
+- **指标归属**:Webhook 入账失败与经营看板「存档写入耗时」面板的指标来自 **kitty-paymentd**(不是 kitty-api)——排查时先看这个服务;游戏存档 game.json 写盘指标 `kitty.repo.*` 由 kitty-api 上报。
 
 ## 1. 服务与统一标签
 
@@ -151,39 +158,37 @@ JSON 行打 stdout(slog),`obs.LogInfo/Warn/Error` 自动注入当前 span 的
 这是本项目唯一的跨进程 + 外部渠道链路,APM 里按 `service:kitty-paymentd` 过滤可见完整 span 树。
 compose 单机形态支付在进程内(mock),该链路在拆分形态(team-preview / k8s)完整可见。
 
-## 5. Monitors 与阈值依据
+## 5. Monitors(16 条,Datadog UI / Bits AI 管理)
 
-定义在 `monitors/monitors.json`(11 条,查询覆盖 env:(dev OR preview)),`python monitors/apply-monitors.py` 按名称幂等
-创建/更新(读进程环境变量 `DD_API_KEY/DD_APP_KEY/DD_SITE`,不自动加载 .env)。
+> **管理方式变更(2026-11-05)**:监控统一在 Datadog 网页上通过 Bits AI 维护。仓库里的
+> `monitors/business-observability.json`、`monitors/monitors.json` 与 apply 脚本仅作**历史存档**——
+> **不要再运行 `--apply`**,会覆盖网页上的修改。开新的 Bits AI 对话时,先把本文档链接发给它。
 
-| Monitor | 查询对象 | 阈值(初版) | 依据 |
-|---------|----------|------|------|
-| HTTP 5xx Rate | `kitty.http.requests` 5xx 占比 | >10%(5m) | 正常 e2e 流量 0%;注入式故障可复现 |
-| 命令系统错误率 | `kitty.command{result:error}` 占比 | >10%(5m) | rejected 已被分类排除,只统计系统错误 |
-| 命令处理 p95 | `kitty.command.duration_ms.95percentile` | >5000ms(warn 2000) | 2026-11-03 本机 4h e2e 基线:p95 中位 592ms、冷启动突发 13.2s;警告留 3 倍余量 |
-| 支付系统错误 | `kitty.payment.charge{result:error}` | ≥1 次(5m) | 支付错误应零容忍;declined 不算 |
-| 支付拒付率 | declined/(success+declined) | ≥50%(15m) | 正常玩法不应连续拒付;演示可复现 |
-| Webhook 入账失败 | `kitty.payment.webhook{result:error}` | ≥1 次(15m) | 5xx 会等渠道重试,必须人工确认最终到账 |
-| 阿策降级率 | `kitty.advisor.call{result:fallback}` 占比 | ≥50%(15m) | reason tag 可细分:not_configured/timeout/限流等 |
-| 登录失败突增 | `kitty.auth.login{code:BAD_CREDENTIALS}` | >10 次(15m) | 正常玩家不应连续输错;疑似爆破 |
-| 服务心跳 | `kitty.http.requests` 总量 | <1(10m)+ no-data 15m | 前端开着就有流量;全停即告警 |
-| 存档写入耗时 | `kitty.repo.save_duration_ms.95percentile` | >5000ms(warn 2000) | 基线实测:写盘 p95 中位 275ms、冷启动最大 6.6s;单 JSON 文件仍是主要 IO 风险 |
+**当前告警 16 条**(全部带 team:stray-kitty 标签,通知 Slack):
 
-阈值方法论(与旅行牛牛一致):**不是拍脑袋**——先跑 30 分钟真实流量(e2e 套件就是现成的
-流量发生器:`KITTY_TEST_PORT=8080 KITTY_TEST_EXTERNAL_SERVER=1 npx playwright test`),
-用 Metrics Explorer 看 p95 与错误分布,再微调阈值。当前初版阈值保守,上线前必须复核。
+| 组 | 告警 | 级别/条件 |
+|---|---|---|
+| 基础(9) | 心跳、HTTP 5xx、命令 p95、命令系统错误率、存档写入耗时、存档体积、登录失败突增、支付系统错误、Webhook 入账失败 | 支付系统错误(P1,≥1 次/5m)、Webhook 入账失败(P1,≥1 次/15m)、其余沿用既有阈值 |
+| 公网拨测(2) | /healthz、/api/payment/config | Seoul+Tokyo 双点,5 分钟周期 |
+| 业务(5) | 支付拒付率过高(P3,15m 拒付率≥50%)、阿策降级率过高(P3,15m ≥50%)、战后返回校验失败(P3,15m 偏离≥3)、剧情节点断流(P3,30m 推进÷开局<0.5,不含 prologue_1)、战斗只有开始没有结算(P3,30m 结算÷开局<0.5) | 均为比率/计数形态 |
 
-踩坑实录(移植与联调中实际发生的):
-- monitor query 里的比较值必须与 `options.thresholds.critical` 一致(`>0` 配 critical 1 会
-  400);比例监控忘了 ×100 也会 400——已修复并以 git 为准。
-- `as_count()` 计数窗口用 `sum` + `.as_count()`,别把上报速率当窗口内次数。
-- 小项目没人操作很常见:除心跳外全部关闭 no-data 告警。
+无真实玩家流量时,业务类告警显示 No Data 属正常。
+
+**阈值方法论**(沿用):先跑真实流量取基线(e2e 套件/成员试玩都是现成流量),用 Metrics Explorer
+看分布再调阈值;composite monitor 本 org 实测 400 不可用——组合语义用比率形态表达
+(如剧情断流 = 推进÷开局 <0.5,排除 prologue_1 种子;战斗断流 = 结算÷开局 <0.5)。
+基础监控的历史阈值依据(git 中 monitors.json 历史版本)仍生效。
+
+**踩坑实录**(对 Bits 建的监控同样适用):
+- monitor query 里的比较值必须与 `options.thresholds.critical` 一致;比例监控要 ×100。
+- `as_count()` 计数窗口用 `sum` + `.as_count()`。
+- composite monitor 本 org 不可用(400)——组合语义一律用比率形态。
+- 业务类告警默认关 no-data(心跳除外)。
 
 ## 6. RUM(前端,可插拔)
 
-1. Datadog UI → RUM → New Application,拿 `applicationId` + `clientToken`。
-2. 在 `web/index.html` 取消注释 `window.KITTY_RUM` 注入块并填入两个值。
-3. 刷新页面即生效;未配置时 `web/src/observability/rum.ts` 自动 no-op,游戏不受影响。
+✅ **已激活(2026-11-05)**:应用 `kitty-frontend`(US5),`web/index.html` 已注入真实配置
+(site=us5.datadoghq.com / env=preview),近 24h 收到 403 会话。备用环境未配置时仍自动 no-op。
 
 开启后自动采集 Page Load / User Action / Error / 资源 / 长任务,并对同源 `/api/` 请求注入
 traceparent(后端 `DD_TRACE_PROPAGATION_STYLE=tracecontext,datadog` 接住)——玩家操作可一路
@@ -209,10 +214,8 @@ action 清单冻结于 `docs/biz-obs-module2-plan.md` §1,组件只调用封装�
 
 边界说明:标题界面(StartScreen)的商店入口不计入 `feature_entry_use`(标题页不属于玩法渗透范围);
 「回到花房」等章节导航不计入(是导航不是玩法入口)。
-看板 `[小猫回家记][业务-前端] 体验与渗透`(模块二独占,US5)按计划 §2 面板清单建,
-as-code:`dashboards/biz-module2.json`(apply 用模块三引入的 `dashboards/apply-dashboards.py`,
-按 title 幂等创建/更新;合并后 `DD_SITE=us5.datadoghq.com` + 有效 US5 key 执行)。
-监控「充值入口点击率下降」有基线前不建(计划 §3)。
+模块二独立看板已并入三看板体系(biz-module2.json 随 web-managed 迁移退役):体验类面板
+进「玩家旅程」,充值漏斗进「经营与支付」。监控「充值入口点击率下降」有基线前不建(计划 §3)。
 
 ## 7. 本地无 Datadog 运行
 
@@ -245,13 +248,13 @@ docker compose -f deploy/compose.yaml --profile observability up --build -d
 | Golden Trace | 单进程链路 | 充值到账跨进程链路完整可见 |
 
 
-## 线上接线清单(一次性步骤,目标:试玩 preview 环境)
+## 线上接线清单(2026-11-03 起执行,2026-11-05 全部完成并归档)
 
 > 2026-11-03 已完成:org 11 条监控同步(env 过滤已移除——monitor query 不支持多值 env 括号语法,
 > 按 `service:kitty-api` / `kitty.*` 前缀聚合,双环境数据汇入同一监控);
 > Synthetics 公网拨测 2 条已创建(Seoul+Tokyo 双探测点,5 分钟周期,public_id `4ju-vjx-jqt` /healthz、
 > `gqk-tb8-daq` /api/payment/config)。
-> 待办为下表三步,全部是一次性基础设施动作:
+> 下表三步已全部完成(执行记录见下方),保留作历史参考:
 
 | 步骤 | 动作 | 谁/哪侧 |
 |---|---|---|
@@ -271,9 +274,9 @@ RUM 激活见 §RUM(两步:UI 建 RUM 应用 → index.html 填 token,随下次�
 - **US5 org**(`us5.datadoghq.com`,共享采集 key `bj-collector-key` 所属):线上 preview 的 Agent 与日志旁路实际上报到这里(浩哲已在 !136 修正并重新发布,APM `env:preview` 每分钟 40+ span);
 - `deploy/compose.yaml` 本地仿真默认 US1 是**故意的**(本地用的是 US1 的 key);`deploy/.env.example` 与 preview 模板默认 US5(线上用共享采集 key)。
 
-**待决**:监控与拨测应与数据流同 org。两条路径二选一(需团队确认"哪个 org 是课程官方的"):
+**已决(2026-11-05)**:US5 为工作 org(全部监控/拨测/数据在此);US1 的 13 条旧副本监控待清理(待办)。原两选项:
 - A. 数据流迁 US1:团队改用余尧的 API key 作采集 key,回滚 !136 的 DD_SITE,重新部署 Agent;
-- B. 监控迁 US5:向 org 管理员申请 US5 的 APP key,`DD_SITE=us5.datadoghq.com python monitors/apply-monitors.py` + `apply-synthetics.py` 30 分钟重建全部 13 条。
+- B(已采纳):监控在 US5 直接创建(web-managed),as-code 退役;US1 旧副本清理列入待办。
 
 ## 线上接线清单(实际执行记录,2026-11-03 完成)
 
@@ -291,5 +294,6 @@ RUM 激活见 §RUM(两步:UI 建 RUM 应用 → index.html 填 token,随下次�
 - 埋点/字段/分类维护由服务端负责;`kitty.command` 的 type 枚举扩展时同步本文档与 monitors。
 - 监控只能观察被实际触发的请求,不能单凭"没有报警"证明数据一致(幂等与对账由测试与回执表保障)。
 - `kitty.repo.state_size_bytes` 持续增长说明存档膨胀,需要规划裁剪或分档——这是本架构的已知边界。
-- 阈值复核、Slack 频道绑定是接入负责人的手工步骤;基础设施定义以 `monitors/monitors.json` 为准，模块一/三业务定义以
-  `monitors/business-observability.json` 为准，模块二看板以 `dashboards/biz-module2.json` 为准；改动走 git。
+- **2026-11-05 起,监控与看板转为 Datadog UI/Bits 管理(web-managed)**:仓库内 monitors/dashboards
+  JSON 与 apply 脚本仅作历史存档,**禁止运行 --apply**(会覆盖网页修改)。变更以 Datadog UI 为准,
+  重大调整在 #18 记录。指标字典(本文档 §2)仍是口径的事实来源。
