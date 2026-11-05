@@ -47,13 +47,6 @@ export default function GameScreen({onHomeAdvisor,homeAdvisorDisabled,onHomeTuto
   const chapter = catalog.chapters.find(c => c.id === state.chapterId);
   const event = catalog.events.find(e => e.id === state.pendingEventId);
   const map = catalog.maps.find(m => m.id === state.mapId);
-  const alleyObjective = state.phase === 'explore' && state.mapId === 'alley'
-    ? !state.flags.includes('alley_rescued')
-      ? '循着求救声，寻找纸箱里的点点'
-      : !state.flags.includes('lost_poster_found')
-        ? '去看看墙上的寻猫启事'
-        : null
-    : null;
   const resolution = state.eventState?.lastResolution;
   const activeStage = state.activeBattle?.stageId ?? state.lastResult.stageId;
   const tutorialBattle = activeStage === 'l00_tutorial' && ['battle', 'settlement'].includes(state.phase);
@@ -130,7 +123,6 @@ export default function GameScreen({onHomeAdvisor,homeAdvisorDisabled,onHomeTuto
       <div className="game-layout"><section className="world-panel">
         <div className="world-wrap">{children}
           {state.qaCheckpointId && state.phase !== 'battle' && <aside className="qa-active-badge" role="status"><span>正在使用验收进度</span><button onClick={onQA}>返回原进度 / 切换节点</button></aside>}
-          {alleyObjective && <div className="alley-objective" key={alleyObjective} role="status"><span>雨巷线索</span><strong>{alleyObjective}</strong></div>}
           {isHomeScene && <aside className="home-life-status"><span>{state.phase === 'dialogue' ? '故事进行中' : '花房日常'}</span><strong>{state.phase === 'dialogue' ? '伙伴们正跟随故事行动' : '拖动猫咪到家具或伙伴身边，一起玩一会儿'}</strong></aside>}
 
           {state.phase === 'dialogue' && node && <DialoguePanel node={node} disabled={disabled} onNext={optionId => onCommand({type: 'ADVANCE_STORY', nodeId: node.id, ...(optionId ? {optionId} : {})})} eventResult={resolution?.outcome.situation?.storyNodeId === node.id ? <EventResult resolution={resolution} compact/> : undefined}/>}
@@ -152,7 +144,7 @@ export default function GameScreen({onHomeAdvisor,homeAdvisorDisabled,onHomeTuto
           {state.phase === 'settlement' && !standaloneBattle && state.activeBattle?.stageId !== 'l00_tutorial' && <section className="event-card rescue-card"><span className="eyebrow">{state.lastResult.outcome === 'won' ? 'A SAFE WAY HOME' : 'TRY A LITTLE DIFFERENTLY'}</span><div className="rescue-cats"><PixelCat size={90} mood="brave"/>{state.cats.includes('diandian') && <PixelCat breed="diandian" size={80}/>}<PixelCat breed="tuanzi" size={86}/></div><h2>{state.lastResult.outcome === 'won' ? activeStage === 'alley_boss' ? '深巷里的黑影散去了' : '回家的路，也是救援的开始。' : '再一起想想办法。'}</h2><p>{state.lastResult.message}</p>{state.lastResult.firstClear && state.lastResult.stageId === 'alley_rescue' && <p className="reward-note">点点加入 · 纸箱猫窝<br/>✦ 猫爪邮票 ×2 · ◆ 材料 ×3</p>}<button disabled={disabled} onClick={() => onCommand({type: 'CONTINUE'})}>{state.lastResult.outcome === 'won' ? '带伙伴回家 →' : '调整防线，再试一次'}</button></section>}
           {state.phase === 'settlement' && standaloneBattle && <section className="event-card rescue-card"><span className="eyebrow">{finaleBattle ? 'L05 · LIGHT THE WAY HOME' : tunnelBattle ? 'L04 · UNDERGROUND TUNNEL' : greenhouseBattle ? 'L03 · ABANDONED GREENHOUSE' : 'L02 · MIDNIGHT MARKET'}</span><h2>{state.lastResult.outcome === 'won' ? finaleBattle ? '所有的光，终于照亮归途' : tunnelBattle ? '暗道的归路守住了' : greenhouseBattle ? '花房的归路守住了' : '集市的灯火守住了' : finaleBattle ? '伙伴们还在，重新安排终局防线' : tunnelBattle ? '再调整一次暗道防线' : greenhouseBattle ? '再调整一次花房防线' : '再调整一次集市防线'}</h2><p>{state.lastResult.message}</p><button data-testid={finaleBattle ? 'finale-continue' : tunnelBattle ? 'tunnel-continue' : greenhouseBattle ? 'greenhouse-continue' : 'market-continue'} disabled={disabled} onClick={() => onCommand({type: 'CONTINUE'})}>{state.lastResult.outcome === 'won' ? state.mapId==='warehouse'?'返回仓库 →':'返回家园 →' : '调整防线，再试一次'}</button></section>}
           {showExploreResult && resolution && <section className="event-card encounter-sheet explore-result-card"><header className="encounter-heading"><span>相遇之后</span><h2>{catalog.events.find(e => e.id === resolution.eventId)?.title}</h2></header><EventResult resolution={resolution}/><button disabled={disabled} onClick={() => {setDismissedResult(resolutionKey);arrivedFromEvent.current = false;}}>继续赶路 →</button></section>}
-          {interactionTarget && <InteractionDock target={interactionTarget} touch={touchDevice} disabled={disabled} hint={warehouseOptionalHint ?? (interactionTarget.id==='alley_dog_friend_point'?'它抬眼看了看你，尾巴轻轻拍着石板。':undefined)} onInteract={onInteract}/>}
+          {state.mapId !== 'alley' && interactionTarget && <InteractionDock target={interactionTarget} touch={touchDevice} disabled={disabled} hint={warehouseOptionalHint ?? (interactionTarget.id==='alley_dog_friend_point'?'它抬眼看了看你，尾巴轻轻拍着石板。':undefined)} onInteract={onInteract}/>}
           {paused && <div className="pause-label"><span>旅程已暂停</span><button onClick={onPause}>继续旅程</button></div>}
         </div>
         {footerVisible && <div className={`world-footer${hintHidden ? ' hint-idle' : ''}`}>

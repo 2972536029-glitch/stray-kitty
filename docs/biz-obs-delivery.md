@@ -2,9 +2,12 @@
 
 本文件对应 #18。配置保存在 `monitors/business-observability.json`，部署入口为
 `monitors/apply-business-observability.py`。配置与离线测试就位不等于已部署：
-2026-11-05 已通过 US5 只读连接核对用户手动导入的两张看板：
-[主线与玩法](https://us5.datadoghq.com/dashboard/b6t-avm-uyi/)（19 个组件）和
-[支付与经济](https://us5.datadoghq.com/dashboard/wbx-cm5-me5/)（12 个组件）。
+2026-11-05 已通过 US5 只读连接核对用户手动导入的两张看板，并同步线上分组布局：
+[主线与玩法](https://us5.datadoghq.com/dashboard/b6t-avm-uyi/)的仓库版本有 19 个叶子组件，
+[支付与经济](https://us5.datadoghq.com/dashboard/wbx-cm5-me5/)有 11 个叶子组件（均不含分组容器）。
+经营看板的仓库版本已删除重复 `sack_cat_freed` 单图，彩蛋保留在主线按 flag 拆分的图中；
+线上经营看板仍有 12 个叶子组件，需要用户手动删除该图、将原「彩蛋与会话底座」组改名为
+「玩家与会话」，并删除会话列表中重复的 timestamp 列，或导入更新后的经营看板 payload。
 新埋点版本仍待合入、发布 preview 和真实数据验收；业务告警尚未创建或接管。
 MCP 组织写入权限关闭，当前资源变更由具有网页权限的成员手动执行。
 
@@ -84,10 +87,12 @@ repository 出口重复计数。旧告警的 `purpose` 与 `owner:biz-module3` �
 preview/QA 过滤、金额数量口径和归属标记；模块二 `dashboards/biz-module2.json` 及其
 发布入口保留。业务配置测试同时检查不同发布入口之间没有同名资源定义。
 
-网页保存时，Datadog 可能将旧日志组件表示转换为 `list_stream`，并省略 timeseries 的
-可选 `aggregator` 字段。验收应核对日志查询/列、指标查询字符串、公式与标量 `sum`
-是否保持等价；COUNT 的 `.as_count()` 查询保留 SUM 时间聚合。不要把界面标准化
-产生的字段差异当成业务数据口径变化。
+本次同步保留线上分组、组内顺序、widget ID、可编辑默认字段、`reflow_type:auto` 和 tags。
+SDK 的 camelCase 属性已转为 API snake_case，`additionalProperties` 已展开；仅排除看板
+只读身份/时间/URL/作者等元信息及权限字段，避免导入空 `restricted_roles` 改变权限。
+网页日志组件现为 `list_stream`，timeseries 可省略 query 的 `aggregator`；标量 query
+仍显式使用 `sum`，所有 COUNT 序列保留 `sum:...as_count()`。递归校验覆盖分组里的
+指标、日志和监控摘要，分组不能绕过 QA/环境过滤、金额口径或 `role:alert` 限定。
 
 ## 本地验证与应用
 
@@ -135,10 +140,12 @@ API 不提供整个 bundle 的事务：若写入途中出现网络错误、权�
 错误，脚本返回非零并停止后续写入，已成功部分会保留。先重新执行 `--plan` 观察服务端
 实际状态，再重跑 `--apply`；不盲目重试、不回滚或删除监控。不要同时运行两个发布实例。
 
-本次使用 Dashboards API v1 的 `title/description/layout_type:ordered/widgets`。
-timeseries 返回 `timeseries`，query_value/toplist/sunburst 使用 `scalar`；每个 metric
-查询使用 `queries + formulas` 和 `aggregator:sum`。Pie Chart 的实际 API 类型是
-`sunburst`；监控摘要为 `manage_status`；会话列表为 `log_stream`。
+本次使用 Dashboards API v1 的 ordered 布局、group 组件和自动重排，保留线上可编辑默认字段。
+timeseries 返回 `timeseries`，query_value/toplist/sunburst 使用 `scalar`；metric 查询使用
+`queries + formulas`，标量 query 必须 `aggregator:sum`，timeseries 的该字段可省略。
+Pie Chart 的实际 API 类型是 `sunburst`；监控摘要为 `manage_status`；会话列表为
+`list_stream`，request 使用 `response_format:event_list`，query 使用 `data_source:logs_stream`
+与 `query_string`。旧 `log_stream` 表示仍可校验，但当前导出采用 list_stream。
 参见 [Dashboard create schema](https://docs.datadoghq.com/api/latest/dashboards/create-a-new-dashboard/)、
 [Pie Chart](https://docs.datadoghq.com/dashboards/widgets/pie_chart/)、
 [Monitor Summary](https://docs.datadoghq.com/dashboards/widgets/monitor_summary/)。
@@ -151,7 +158,7 @@ timeseries 返回 `timeseries`，query_value/toplist/sunburst 使用 `scalar`；
 1. 正式发布带埋点版本后，在 preview 走剧情、选项、终章门槛、战斗 win/lose、
    事件结算/flag、支付成功/拒付、奖励/购买/抽奖，以及各阿策 scope，查看 US5 真数据。
    当前真实接口没有撤退流程，不要求构造不存在的 retreat 路径；该值仅为结算分类保留枚举。
-2. 打开两个看板，检查各查询能取到值、窗口与 QA 过滤正确；检查 log_stream 中的
+2. 先完成上述经营看板手动去重，再打开两个看板，检查各查询能取到值、窗口与 QA 过滤正确；检查会话列表中的
    `player_id`、`session_id`，确认它们没有出现在指标标签里。
 3. 查看三个主线告警及四个子条件的状态；重点验证有流量但没有推进/结算、没有流量
    两种场景。验收流量必须有明确标记并在业务报表中排除；不要为验证而停用真实服务。
@@ -162,4 +169,4 @@ timeseries 返回 `timeseries`，query_value/toplist/sunburst 使用 `scalar`；
 
 离线回归覆盖：旧 ID 接管、重复应用不重建、只读 plan、任何写入前的同名冲突检查、
 远端校验失败时零写入、真实 composite ID 绑定、QA 每个操作数过滤、拒绝伪造基线、
-金额比使用 amount，以及受管资源改名后的稳定定位。
+分组内金额比使用 amount、日志身份/过滤、模块/告警角色摘要，以及受管资源改名后的稳定定位。

@@ -34,7 +34,7 @@ test.afterAll(async()=>{if(child&&closed){const force=setTimeout(()=>child?.kill
 
 async function openFixture(page:Page,id:string){
   await page.addInitScript(({origin,session})=>{if(location.origin===origin)localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));},{origin,session:sessions.get(id)!});
-  await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();
+  await page.goto(origin);await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
 }
 
 test('Chapter Route labels Chapter 3 and finale as unavailable exploration maps',async({page})=>{

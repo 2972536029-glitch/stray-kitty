@@ -154,6 +154,7 @@ type CommandResponse struct {
 	Replayed bool      `json:"replayed"`
 }
 type StoryNode struct {
+	Scene     string   `json:"scene,omitempty"`
 	ID        string   `json:"id"`
 	ChapterID string   `json:"chapterId"`
 	Next      string   `json:"next"`

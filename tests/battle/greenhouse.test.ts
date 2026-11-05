@@ -24,7 +24,7 @@ const hazard=(position:Position,id=1):GreenhouseHazard=>({...position,id,remaini
 test('greenhouse contains exactly the requested 34 cells, with genuine holes and 23 deployment cells',()=>{
   const state=createGreenhouseBattle();assert.equal(state.stageId,'greenhouse_boss');assert.equal(CELLS.length,34);
   assert.deepEqual(Array.from({length:6},(_,y)=>CELLS.filter(cell=>cell.y===y).map(cell=>cell.x+1)),[[2,3,4,5],[1,2,3,4,5,6,7],[2,3,4,5,6,7,8],[2,3,4,5,6,7,8,9],[2,3,4,5,6,7,8],[7]]);
-  assert.equal(CELLS.filter(isDeployableCell).length,23);assert.equal(cellName(MAP.goal),'B1');
+  assert.equal(CELLS.filter(cell => isDeployableCell(cell)).length,23);assert.equal(cellName(MAP.goal),'B1');
   assert.deepEqual(MAP.obstacles.map(cellName),['C3','D3','D4']);assert.deepEqual(MAP.spawns.map(cellName),['C8','E8','F7']);
   assert.deepEqual(getBossCells(state.boss).map(cellName),['C6','C7','D6','D7']);
   let holes=0;for(let y=0;y<6;y++)for(let x=0;x<9;x++)if(!CELLS.some(cell=>cell.x===x&&cell.y===y)){

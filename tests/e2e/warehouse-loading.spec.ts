@@ -24,7 +24,7 @@ test('warehouse loads props alongside the floor, skips unrelated chapters, and r
   await page.route(/warehouse_L0_ground.*\.(?:png|webp)/, async route => {await groundGate;await route.continue();});
   try {
     await page.goto('/');
-    await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+    await page.getByRole('button', {name: /^(暂不登录|继续冒险)/}).click();
     await expect.poll(() => images.some(url => url.includes('warehouse_L0_ground'))).toBe(true);
     // The large floor is still blocked: props must already be downloading.
     await expect.poll(() => images.some(url => url.includes('crate_one'))).toBe(true);
@@ -68,7 +68,7 @@ test('warehouse retains a working PNG fallback if the lossless ground fails', as
   await page.route(/warehouse_L0_ground.*\.webp/, route => route.abort('failed'));
   page.on('response', response => {if (/warehouse_L0_ground.*\.png/.test(response.url()) && response.ok()) fallback.push(response.url());});
   await page.goto('/');
-  await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+  await page.getByRole('button', {name: /^(暂不登录|继续冒险)/}).click();
   await expect(page.locator('canvas[data-map-id="warehouse"]')).toHaveAttribute('data-ready', 'true');
   expect(fallback).toHaveLength(1);
 });
@@ -84,7 +84,7 @@ for (const [checkpoint, scene, artwork] of [
     page.on('response', response => {if (response.request().resourceType() === 'image' && response.ok()) images.push(response.url());});
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('/');
-    await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+    await page.getByRole('button', {name: /^(暂不登录|继续冒险)/}).click();
     const canvas = page.locator('canvas');
     await expect(canvas).toHaveAttribute('data-rendered-scene', scene);
     await expect.poll(() => images.some(url => url.includes(artwork))).toBe(true);
@@ -105,7 +105,7 @@ for (const entry of ['qa', 'story', 'qa-story'] as const) {
     const errors: string[] = [], lateScripts: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('/');
-    await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+    await page.getByRole('button', {name: /^(暂不登录|继续冒险)/}).click();
     await expect(page.getByRole('button', {name: '继续故事', exact: true})).toBeVisible();
     const session = await page.evaluate(() => JSON.parse(localStorage.getItem('stray-kitty.session.v1')!) as Session);
     const headers = {Authorization: `Bearer ${session.token}`};
@@ -120,7 +120,7 @@ for (const entry of ['qa', 'story', 'qa-story'] as const) {
       });
       expect(response.ok()).toBe(true);
       await page.reload();
-      await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+      await page.getByRole('button', {name: /^(暂不登录|继续冒险)/}).click();
       await expect(page.getByRole('button', {name: '继续故事', exact: true})).toBeVisible();
     }
 

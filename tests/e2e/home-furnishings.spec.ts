@@ -7,12 +7,12 @@ import {HOME_FRAMES,HOME_ATLASES} from '../../web/src/modules/home/assets';
 const canvas=(page:Page)=>page.locator('.game-viewport canvas');
 async function openHome(page:Page,request:APIRequestContext){
   await page.addInitScript(()=>{localStorage.setItem('stray-kitty.tutorial.home','done');localStorage.setItem('stray-kitty.hud.topbar','expanded');});
-  await page.goto('/');await expect(page.getByRole('button',{name:/^(开始冒险|继续冒险)/})).toBeVisible();
+  await page.goto('/');await expect(page.getByRole('button',{name:/^(暂不登录|继续冒险)/})).toBeVisible();
   const token=await page.evaluate(()=>JSON.parse(localStorage.getItem('stray-kitty.session.v1')!).token),headers={Authorization:`Bearer ${token}`};
   const state=await(await request.get('/api/v1/state',{headers})).json() as GameState;
   const response=await request.post('/api/v1/commands',{headers:{...headers,'Idempotency-Key':crypto.randomUUID()},data:{expectedRevision:state.revision,command:{type:'QA_CHECKPOINT',checkpointId:'greenhouse.home_3'}}});
   expect(response.ok(),await response.text()).toBe(true);
-  await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+  await page.reload();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
   await expect(canvas(page)).toHaveAttribute('data-home-artwork','ready');
   return headers;
 }

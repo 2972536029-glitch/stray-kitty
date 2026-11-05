@@ -4,7 +4,8 @@ import json
 from pathlib import Path
 import unittest
 
-from biz_observability import DefinitionError, MANAGED, deploy, find_existing, load_bundle, validate_bundle
+from biz_observability import (DefinitionError, MANAGED, deploy, find_existing, load_bundle,
+                               validate_bundle, widget_definitions)
 
 
 class FakeDatadog:
@@ -161,11 +162,96 @@ class BusinessObservabilityTests(unittest.TestCase):
 
     def test_financial_ratio_uses_actual_amount_not_event_count(self):
         dashboard = next(s for s in self.bundle['dashboards'] if s['id'] == 'economy-dashboard')
-        for widget in dashboard['payload']['widgets']:
-            definition = widget['definition']
-            if '金额收支比' in definition.get('title', ''):
+        matched = 0
+        for definition in widget_definitions(dashboard['payload']['widgets']):
+            if '金额收支比' in definition.get('title', '') or '实际货币收支数量' in definition.get('title', ''):
+                matched += 1
                 for request in definition['requests']:
                     self.assertTrue(all('kitty.economy.amount{' in q['query'] for q in request['queries']))
+        self.assertEqual(matched, 3, 'The grouped amount and two ratio charts must all be checked')
+        definition = next(d for d in widget_definitions(dashboard['payload']['widgets'])
+                          if '金额收支比' in d.get('title', ''))
+        query = definition['requests'][0]['queries'][0]
+        query['query'] = query['query'].replace('kitty.economy.amount', 'kitty.economy.delta')
+        with self.assertRaisesRegex(DefinitionError, 'Financial amounts'):
+            validate_bundle(self.bundle)
+
+    def test_grouped_dashboard_export_preserves_content_and_api_fields(self):
+        for spec, count in zip(self.bundle['dashboards'], [19, 11]):
+            payload = spec['payload']
+            self.assertEqual(payload['reflow_type'], 'auto')
+            self.assertIn('team:stray-kitty', payload['tags'])
+            self.assertTrue(all(widget['definition']['type'] == 'group' for widget in payload['widgets']))
+            self.assertTrue(all(isinstance(widget['id'], int) for widget in payload['widgets']))
+            definitions = list(widget_definitions(payload['widgets']))
+            self.assertEqual(sum(d['type'] != 'group' for d in definitions), count)
+            self.assertEqual(len([d for d in definitions if d['type'] == 'manage_status']), 1)
+            for group in (d for d in definitions if d['type'] == 'group'):
+                self.assertTrue(all(isinstance(widget['id'], int) for widget in group['widgets']))
+            self.assertNotIn('additionalProperties', json.dumps(payload))
+            self.assertFalse({'id', 'restricted_roles', 'is_read_only', 'author_handle', 'created_at', 'url'} & payload.keys())
+        story, economy = self.bundle['dashboards']
+        self.assertIn('kitty.event.flag', json.dumps(story['payload']))
+        self.assertNotIn('sack_cat_freed', json.dumps(economy['payload']))
+        stream = next(d for d in widget_definitions(economy['payload']['widgets']) if d['type'] == 'list_stream')
+        request = stream['requests'][0]
+        self.assertEqual(request['query']['data_source'], 'logs_stream')
+        self.assertEqual(request['response_format'], 'event_list')
+        self.assertEqual([c['field'] for c in request['columns']].count('timestamp'), 1)
+
+    def test_grouped_metric_queries_cannot_bypass_aggregation_or_traffic_filters(self):
+        for kind, mutation, expected in [
+            ('timeseries', lambda q: q.update(query=q['query'].replace(',!qa:true', '')), 'QA'),
+            ('timeseries', lambda q: q.update(query=q['query'].replace('env:preview', 'env:dev')), 'preview'),
+            ('timeseries', lambda q: q.update(query=q['query'].replace('sum:', 'avg:', 1)), 'sum and as_count'),
+            ('timeseries', lambda q: q.update(query=q['query'].replace('.as_count()', '')), 'sum and as_count'),
+            ('timeseries', lambda q: q.update(aggregator='avg'), 'aggregate with sum'),
+            ('query_value', lambda q: q.pop('aggregator'), 'aggregate with sum'),
+        ]:
+            with self.subTest(kind=kind, expected=expected):
+                bundle = copy.deepcopy(self.bundle)
+                definition = next(d for d in widget_definitions(bundle['dashboards'][0]['payload']['widgets'])
+                                  if d['type'] == kind)
+                mutation(definition['requests'][0]['queries'][0])
+                with self.assertRaisesRegex(DefinitionError, expected):
+                    validate_bundle(bundle)
+        # The exported timeseries queries intentionally omit this optional field.
+        timeseries = [d for d in widget_definitions(self.bundle['dashboards'][0]['payload']['widgets'])
+                      if d['type'] == 'timeseries']
+        self.assertTrue(timeseries)
+        self.assertTrue(all('aggregator' not in q for d in timeseries for r in d['requests'] for q in r['queries']))
+
+    def test_grouped_session_logs_and_monitor_summaries_keep_their_scopes(self):
+        for token in ['service:kitty-api', 'env:preview', '@player_id:*', '@session_id:*', '-@qa:true']:
+            with self.subTest(log_filter=token):
+                bundle = copy.deepcopy(self.bundle)
+                stream = next(d for d in widget_definitions(bundle['dashboards'][1]['payload']['widgets'])
+                              if d['type'] == 'list_stream')
+                query = stream['requests'][0]['query']
+                query['query_string'] = query['query_string'].replace(token, '')
+                with self.assertRaisesRegex(DefinitionError, 'Session logs must filter'):
+                    validate_bundle(bundle)
+        for index, query in [(0, 'tag:business-module:1'), (0, 'tag:business-module:3 tag:role:alert'),
+                             (1, 'tag:business-module:3 tag:role:component')]:
+            with self.subTest(summary=query):
+                bundle = copy.deepcopy(self.bundle)
+                summary = next(d for d in widget_definitions(bundle['dashboards'][index]['payload']['widgets'])
+                               if d['type'] == 'manage_status')
+                summary['query'] = query
+                with self.assertRaisesRegex(DefinitionError, 'module and role:alert'):
+                    validate_bundle(bundle)
+
+    def test_group_support_does_not_allow_unrecognized_or_permission_fields(self):
+        for level, field in [('dashboard', 'restricted_roles'), ('group', 'additionalProperties'),
+                             ('list_stream', 'responseFormat')]:
+            with self.subTest(level=level, field=field):
+                bundle = copy.deepcopy(self.bundle)
+                payload = bundle['dashboards'][1]['payload']
+                target = payload if level == 'dashboard' else next(
+                    d for d in widget_definitions(payload['widgets']) if d['type'] == level)
+                target[field] = []
+                with self.assertRaisesRegex(DefinitionError, 'Unsupported'):
+                    validate_bundle(bundle)
 
     def test_renamed_managed_monitor_uses_stable_definition_identity(self):
         spec = self.bundle['monitors'][0]

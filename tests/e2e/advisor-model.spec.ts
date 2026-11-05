@@ -49,7 +49,7 @@ test('all six chapters use the authenticated model route without changing game s
     try{
       const session=sessions.get(stage)!;
       await page.addInitScript(session=>localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session)),session);
-      await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();
+      await page.goto(origin);await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
       const battle=stage==='l00_tutorial'?page.locator('section[aria-label="序章塔防战斗"]'):page.getByTestId(prefix+'-battle');
       if(stage==='l00_tutorial')await completeL00Tutorial(page,battle);else await battle.getByRole('button',{name:'开始守护',exact:true}).click();
       await page.getByTestId(prefix+'-advisor').click();
@@ -74,7 +74,7 @@ test('all six chapters use the authenticated model route without changing game s
 
 test('provider failure gives the existing local chapter answer',async({page})=>{
   await page.addInitScript(session=>localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session)),sessions.get('failure')!);
-  await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();
+  await page.goto(origin);await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
   await page.getByTestId('tunnel-advisor').click();
   const dialog=page.getByRole('region',{name:'军师阿策聊天'});
   await dialog.getByLabel('询问军师').fill('模拟不可用，墨墨夜视能持续多久？');
@@ -87,7 +87,7 @@ test('provider failure gives the existing local chapter answer',async({page})=>{
 
 test('closing chat discards a delayed response and opening it does not resubmit',async({page})=>{
   await page.addInitScript(session=>localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session)),sessions.get('cancel')!);
-  await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();
+  await page.goto(origin);await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
   await page.getByTestId('tunnel-advisor').click();
   const dialog=page.getByRole('region',{name:'军师阿策聊天'});
   await dialog.getByLabel('询问军师').fill('慢一点回答，墨墨怎样恢复视野？');
@@ -103,7 +103,7 @@ test('closing chat discards a delayed response and opening it does not resubmit'
 
 test('battle chat redirects home questions locally without consuming a provider request',async({page})=>{
   await page.addInitScript(session=>localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session)),sessions.get('cancel')!);
-  await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();
+  await page.goto(origin);await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
   await page.getByTestId('tunnel-advisor').click();
   const dialog=page.getByRole('region',{name:'军师阿策聊天'});
   const before=providerRequests.length;

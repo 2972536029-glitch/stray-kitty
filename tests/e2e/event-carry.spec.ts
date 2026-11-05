@@ -38,7 +38,7 @@ test.beforeAll(async({request})=>{
 test.afterAll(async()=>{if(child&&closed){const force=setTimeout(()=>child?.kill('SIGKILL'),3000);child.kill('SIGTERM');await closed;clearTimeout(force);}});
 async function openFixture(page:Page,id:string){
   await page.addInitScript(({origin,session})=>{if(location.origin===origin)localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));},{origin,session:sessions.get(id)!});
-  await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();
+  await page.goto(origin);await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
 }
 
 test('eight event carries reach the real board, remain bounded and never create an inventory bag',async({browser},info)=>{
@@ -53,7 +53,7 @@ test('eight event carries reach the real board, remain bounded and never create 
       await expect(page.locator('.greenhouse-cell')).toHaveCount(34);
       await expect(page.getByTestId('greenhouse-bag')).toHaveCount(0);
       const attempt=await page.getByTestId('greenhouse-battle').getAttribute('data-attempt-id');
-      await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+      await page.reload();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
       await expect(page.getByTestId('greenhouse-battle')).toHaveAttribute('data-attempt-id',attempt!);
       await expect(panel).toHaveAttribute('data-carry',carry);
       if(carry==='mirror')await expect(page.getByTestId('battle-carry-use')).toBeDisabled();
@@ -112,7 +112,7 @@ test('new animal allies survive real retreat, retry and refresh without spending
       const after=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
       expect(after.activeBattle!.id).not.toBe(before.activeBattle!.id);expect(after.activeBattle!.modifiers).toEqual(before.activeBattle!.modifiers);
       expect(after.eventState!.pendingModifiers.carry).toBe(entry.carry);expect(after.inventory).toEqual(before.inventory);
-      await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+      await page.reload();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
       await expect(page.getByTestId(entry.prefix+'-battle')).toHaveAttribute('data-attempt-id',after.activeBattle!.id);
       await expect(page.getByTestId('battle-carry-panel')).toHaveAttribute('data-carry',entry.carry);
       if(entry.carry==='kitten')await expect(page.getByTestId('battle-carry-panel')).toHaveAttribute('data-kitten-wave','0');

@@ -18,8 +18,10 @@ export function isPlayableCell(position: Position): boolean {return geometry.isP
 /** The market boss is one stationary entity occupying C7; minions may cross its cell. */
 export function getBossCells(boss: Pick<MarketBoss, 'x' | 'y' | 'width' | 'height'>): Position[] {return footprintCells(boss);}
 export function getBossDistance(boss: MarketBoss, target: Position): number {return footprintDistance(boss, target);}
-export function isDeployableCell(position: Position): boolean {
-  return isPlayableCell(position) && !same(position, MAP.goal) && !MAP.bossCells.some(cell => same(cell, position)) && !MAP.spawns.some(cell => same(cell, position));
+export function isDeployableCell(position: Position, state?: Pick<MarketState, 'boss'>): boolean {
+  return isPlayableCell(position) && !same(position, MAP.goal)
+    && (state?.boss.phase === 'defeated' || !MAP.bossCells.some(cell => same(cell, position)))
+    && !MAP.spawns.some(cell => same(cell, position));
 }
 export function getAttackCells(cat: MarketCat): Position[] {return geometry.attackCells(cat);}
 export function getSkillCells(cat: MarketCat, target?: Position | null): Position[] {
@@ -35,7 +37,7 @@ export function getDeployError(state: MarketState, catId: MarketCatId, target: P
   if (state.aim) return '请先完成或取消技能瞄准。';
   if (!isMarketCell(target)) return '这里没有可用地格。';
   if (isObstacle(target)) return '摊位和杂物占用了这个位置。';
-  if (!isDeployableCell(target)) return '保护点、刷怪口和首领位置不能部署。';
+  if (!isDeployableCell(target, state)) return '保护点、刷怪口和仍在场的首领位置不能部署。';
   if (cat.status !== 'active') return '这位伙伴已经退场，本场不能重新上阵。';
   if (state.enemies.some(enemy => inCells(enemy, [target]))) return '这格有黑影，暂时不能移动过去。';
   const occupant = state.cats.find(other => other.id !== catId && other.status === 'active' && same(other, target));
@@ -51,7 +53,7 @@ export function getMarketAdvice(state: MarketState): string {
   const healer = state.cats.find(cat => cat.id === 'diandian')!;
   if (healer.status === 'active' && healer.energy >= 100 && state.cats.some(cat => cat.status === 'active' && cat.hp < cat.maxHp * .7)) return '点点能量已满，安心呼噜可治疗所有在场伙伴；退场的猫无法复活。';
   if (state.cats.some(cat => cat.status === 'active' && cat.energyBlockedRemaining > 0)) return '横扫命中的伙伴暂时停止自动蓄能，已蓄满的技能仍然可以释放。';
-  if (state.boss.phase === 'defeated') return '首领倒下后仍要守完八波，小怪未全部处理前不会通关。';
+  if (state.boss.phase === 'defeated') return '首领原占格已可部署；首领倒下后仍要守完八波，小怪未全部处理前不会通关。';
   return '栗栗用盾与强化普攻守线，铃铃十字减速支援多路。每模拟秒自动蓄能 5 点，满 100 后主动释放；不要等体力归零再治疗。';
 }
 function log(state: MarketState, text: string): void {

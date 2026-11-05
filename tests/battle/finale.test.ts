@@ -25,7 +25,7 @@ function enemy(route:FinaleRouteId,extra:Partial<FinaleEnemy>={}):FinaleEnemy {
 test('finale footprint has 74 real cells, 17 obstacles, 39 deployments, three leaders and permanent ally reservations',()=>{
   const state=createFinaleBattle();assert.equal(state.stageId,'finale_boss');assert.equal(CELLS.length,74);
   assert.deepEqual(Array.from({length:7},(_,y)=>CELLS.filter(cell=>cell.y===y).length),[8,11,12,12,12,11,8]);
-  assert.equal(MAP.obstacles.length,17);assert.equal(CELLS.filter(isDeployableCell).length,39);assert.equal(cellName(MAP.goal),'D2');
+  assert.equal(MAP.obstacles.length,17);assert.equal(CELLS.filter(cell => isDeployableCell(cell)).length,39);assert.equal(cellName(MAP.goal),'D2');
   assert.deepEqual(getBossCells(state.boss).map(cellName),['C9','C10','C11','D9','D10','D11','E9','E10','E11']);
   assert.deepEqual(state.elites.map(value=>[value.name,cellName(value)]),[['影甲卫','B9'],['鸣影卫','F9']]);
   assert.deepEqual(state.allies.map(value=>[value.name,cellName(value),value.arriveWave]),[['铃铃','B5',3],['桃桃','F5',5],['音音','F4',7]]);

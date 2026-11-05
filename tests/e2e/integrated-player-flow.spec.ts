@@ -81,7 +81,7 @@ async function open(page:Page,id:number) {
   await page.goto('/');
   await expect(page.locator('.start-play')).toBeEnabled();
   await page.evaluate(id=>localStorage.setItem('stray-kitty.session.v1',JSON.stringify({playerId:`fixture-${id}`,token:`integrated-player-flow-${id}`})),id);
-  await page.reload();await page.getByRole('button',{name:/继续冒险|开始冒险/}).click();
+  await page.reload();await page.getByRole('button',{name:/继续冒险|暂不登录/}).click();
 }
 async function state(page:Page):Promise<GameState> {
   return page.evaluate(async()=>{const session=JSON.parse(localStorage.getItem('stray-kitty.session.v1')!);return(await fetch('/api/v1/state',{signal:AbortSignal.timeout(10000),headers:{Authorization:`Bearer ${session.token}`}})).json();});
@@ -191,9 +191,9 @@ test('B: every available Home, map, trial, story, replay and development chapter
     await open(page,id++);await expect(page.getByTestId(testId)).toContainText('战斗试玩');await page.getByTestId(testId).click();expect((await state(page)).activeBattle?.stageId).toBe(stage);await click(page,'模拟胜利（QA）');await click(page,stage==='alley_boss'?'带伙伴回家 →':'返回家园 →');expect((await state(page)).phase).toBe('home');rows.push({button:testId,expected:stage,result:'pass'});
   }
   await open(page,84);const before=await state(page);await click(page,'章节地图');await expect(page.getByRole('button',{name:'前往午夜集市',exact:true})).toHaveCount(0);await click(page,'关闭猫爪地图');expect(await state(page)).toEqual(before);
-  await click(page,'返回标题');await click(page,/继续冒险/);expect(await state(page)).toEqual(before);
+  await click(page,'返回标题');await click(page,/暂不登录|继续冒险/);expect(await state(page)).toEqual(before);
   rows.push({button:'关闭猫爪地图 / 返回标题 / 继续冒险',expected:'same saved state',result:'pass'});
-  await click(page,'返回标题');await click(page,/重新开始（重置为新存档）/);await expect(page.getByRole('button',{name:/开始冒险/})).toBeVisible();expect((await state(page)).storyNodeId).toBe('prologue_1');rows.push({button:'标题 / 重新开始（重置为新存档）',expected:'new isolated prologue session',result:'pass'});
+  await click(page,'返回标题');await click(page,/重新开始（重置为新存档）/);await expect(page.getByRole('button',{name:/暂不登录/})).toBeVisible();expect((await state(page)).storyNodeId).toBe('prologue_1');rows.push({button:'标题 / 重新开始（重置为新存档）',expected:'new isolated prologue session',result:'pass'});
   await open(page,85);await click(page,/听阿策分析线索/);expect((await state(page)).storyNodeId).toBe('finale_clue_insufficient');await dialogue(page);await checkScene(page,'market');
   await open(page,87);await click(page,/回集市收集线索/);await checkScene(page,'market');
   await open(page,86);await click(page,/带着收获继续探索集市/);await checkScene(page,'market');
@@ -203,7 +203,7 @@ test('B: every available Home, map, trial, story, replay and development chapter
   for(const [fixtureId,map] of [[50,'alley'],[51,'tunnel']] as const){await open(page,fixtureId);await click(page,new RegExp(map==='alley'?'再去小巷走走':'前往地下暗道'));await click(page,'回到花房');expect((await state(page)).phase).toBe('home');rows.push({button:`回到花房 (${map})`,expected:'home',result:'pass'});}
   await open(page,52);await click(page,/再去小巷走走/);await click(page,'验收工具');await click(page,/直达花房/);expect((await state(page)).phase).toBe('home');rows.push({button:'验收 / 直达花房',expected:'home',result:'pass'});
   await open(page,88);await dialogue(page);await checkScene(page,'alley',false,'随机遭遇失败 / 继续故事');
-  await open(page,99);await click(page,'验收工具');await click(page,/重置为新存档/);await expect(page.getByRole('button',{name:/开始冒险/})).toBeVisible();expect((await state(page)).storyNodeId).toBe('prologue_1');rows.push({button:'验收 / 重置为新存档',expected:'new isolated prologue session',result:'pass'});
+  await open(page,99);await click(page,'验收工具');await click(page,/重置为新存档/);await expect(page.getByRole('button',{name:/暂不登录/})).toBeVisible();expect((await state(page)).storyNodeId).toBe('prologue_1');rows.push({button:'验收 / 重置为新存档',expected:'new isolated prologue session',result:'pass'});
 });
 
 // This helper only presses real movement keys. Routes use the production collision
@@ -341,7 +341,7 @@ async function alleyWalk(page:Page,target:{x:number;y:number},openGate:boolean) 
 test('C: connected normal journey through implemented exploration, story and completion transitions',async({page})=>{
   test.setTimeout(900000);
   zoneChecks.clear();
-  await page.goto('/');await click(page,/开始冒险/);await dialogue(page);
+  await page.goto('/');await click(page,/暂不登录/);await dialogue(page);
   expect((await state(page)).activeBattle?.stageId).toBe('l00_tutorial');await click(page,'模拟胜利（QA）');await click(page,'进入雨夜小巷 →');await dialogue(page);await checkScene(page,'alley');
   await flowRow(page,'Prologue → Chapter 1','continue tutorial settlement and chapter introduction','l00_completed; alley/explore');
   await alleyWalk(page,{x:975,y:453},false);await page.keyboard.press('e');
@@ -484,7 +484,7 @@ test('G: Chapter 3 shows its required defense and Chapter 4 entry without scroll
   expect((await state(page)).activeBattle?.stageId).toBe('greenhouse_boss');await click(page,'模拟胜利（QA）');await page.getByTestId('greenhouse-continue').click();
   expect((await state(page)).flags).toContain('greenhouse_fortified');await expect(page.getByTestId('chapter3-defense-start')).toHaveCount(0);
   expect(await withinPanel('chapter4-start')).toBe(true);await page.screenshot({path:'output/player-flow/chapter4-next-step.png'});
-  await page.reload();await page.getByRole('button',{name:/继续冒险|开始冒险/}).click();expect(await withinPanel('chapter4-start')).toBe(true);
+  await page.reload();await page.getByRole('button',{name:/继续冒险|暂不登录/}).click();expect(await withinPanel('chapter4-start')).toBe(true);
   await page.getByTestId('chapter4-start').click();expect((await state(page)).storyNodeId).toBe('rescue_intro_1');await dialogue(page);await checkScene(page,'tunnel',true,'主线进度 / 启程：第四章');
   await flowRow(page,'Chapter 3 visible next step → Chapter 4','finish Chapter 3 dialogue, primary defense action, QA victory, top Chapter 4 entry','greenhouse_fortified; rescue_intro_1 → actual TunnelMap');
 });

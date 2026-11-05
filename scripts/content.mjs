@@ -110,5 +110,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const spatialTarget=path.join(root,'server/internal/service/warehouse_geometry.json');
   if(process.argv.includes('--check')) {if(!fs.existsSync(spatialTarget)||!fs.readFileSync(spatialTarget).equals(spatialSource))throw Error('warehouse geometry mirror is stale; run content:sync');}
   else fs.writeFileSync(spatialTarget,spatialSource);
+  // AI-only story handoff: keep the backend's embedded copy identical to the
+  // authored UI summaries without adding story metadata to gameplay contracts.
+  const storySource=fs.readFileSync(path.join(root,'web/content/story/advisor-home.json'));
+  const notes=JSON.parse(storySource.toString('utf8'));
+  const validList=(values,required)=>Array.isArray(values)&&(!required||values.length>0)&&new Set(values).size===values.length&&values.every(value=>typeof value==='string'&&value.trim().length>0);
+  if(!Array.isArray(notes)||new Set(notes.map(note=>note?.id)).size!==notes.length||notes.some(note=>!note||['id','title','text'].some(key=>typeof note[key]!=='string'||!note[key].trim())||!validList(note.requiredFlags,true)||!validList(note.requiredCats,false)||note.requiredCats.some(id=>!catalog.cats.some(cat=>cat.id===id))||!validList(note.sourceNodes,true)||note.sourceNodes.some(id=>!catalog.story.some(node=>node.id===id))))throw Error('advisor-home story summaries or visibility/source conditions are invalid');
+  const storyTarget=path.join(root,'server/internal/service/advisor_home_story.json');
+  if(process.argv.includes('--check')) {if(!fs.existsSync(storyTarget)||!fs.readFileSync(storyTarget).equals(storySource))throw Error('advisor home story mirror is stale; run content:sync');}
+  else fs.writeFileSync(storyTarget,storySource);
   console.log('Content IDs, references and generated catalogs verified.');
 }

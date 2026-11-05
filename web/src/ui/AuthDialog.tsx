@@ -4,9 +4,9 @@ import Modal from './Modal';
 
 // 小猫账号:注册把当前旅程绑定到用户名密码(进度原样保留),登录在任意设备取回。
 // 游客玩法不受影响——不注册也照常玩,账号只解决"换设备找回归档"。
-export default function AuthDialog({mode: initialMode, hasProgress, api, onLoggedIn, onClose}: {
+export default function AuthDialog({mode: initialMode, hasProgress, api, onLoggedIn, onClose, successLabel = '好的'}: {
   mode: 'register' | 'login'; hasProgress: boolean; api: GameApiPort;
-  onLoggedIn: () => Promise<void> | void; onClose: () => void;
+  onLoggedIn: () => Promise<void> | void; onClose: () => void; successLabel?:string;
 }) {
   const [mode, setMode] = useState(initialMode);
   const [username, setUsername] = useState('');
@@ -26,6 +26,7 @@ export default function AuthDialog({mode: initialMode, hasProgress, api, onLogge
     try {
       if (mode === 'register') {
         const result = await api.registerAccount(username.trim(), password);
+        await onLoggedIn();
         setDone(`账号「${result.username}」已保存这段旅程——换电脑或清缓存后，用登录就能找回。`);
       } else {
         const session = await api.loginAccount(username.trim(), password);
@@ -41,11 +42,11 @@ export default function AuthDialog({mode: initialMode, hasProgress, api, onLogge
   return <Modal onClose={onClose} title={done ? '小猫账号' : mode === 'register' ? '把旅程存进账号' : '登录取回旅程'}>
     {done ? <div className="auth-done">
       <p>{done}</p>
-      <button className="primary-action-btn" onClick={onClose}>好的</button>
+      <button className="primary-action-btn" onClick={onClose}>{successLabel}</button>
     </div> : <form className="auth-form" onSubmit={e=>{e.preventDefault();void submit();}}>
       <header><span className="eyebrow">A JOURNEY TO KEEP</span><h2>{mode === 'register' ? '把旅程存进账号' : '登录取回旅程'}</h2></header>
       {mode === 'register' && hasProgress && <p className="muted">注册不会打断旅程——当前的进度会原样绑定到账号。</p>}
-      {mode === 'register' && !hasProgress && <p className="muted">先开始旅程再来注册，账号保存的是进行中的进度。</p>}
+      {mode === 'register' && !hasProgress && <p className="muted">新账号会保存当前旅程，之后可在其他设备登录继续。</p>}
       {mode === 'login' && <p className="muted">在任何设备登录，都能取回绑定的旅程进度。</p>}
       <label className="select-label">用户名<input value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" placeholder="3~24 个字符" disabled={busy}/></label>
       <label className="select-label">密码<input type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} placeholder="至少 8 位" disabled={busy}/></label>

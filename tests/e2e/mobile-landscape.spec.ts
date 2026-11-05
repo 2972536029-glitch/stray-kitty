@@ -8,7 +8,7 @@ test.beforeEach(async({page})=>{
 });
 
 async function open(page:Page){
-  await page.goto('/');await expect(page.getByRole('button',{name:/^(开始冒险|继续冒险)/})).toBeVisible();
+  await page.goto('/');await expect(page.getByRole('button',{name:/^(暂不登录|继续冒险)/})).toBeVisible();
 }
 async function checkpoint(page:Page,request:APIRequestContext,id:string){
   const token=await page.evaluate(()=>JSON.parse(localStorage.getItem('stray-kitty.session.v1')!).token);
@@ -16,7 +16,7 @@ async function checkpoint(page:Page,request:APIRequestContext,id:string){
   const state=await(await request.get('/api/v1/state',{headers})).json();
   const result=await request.post('/api/v1/commands',{headers:{...headers,'Idempotency-Key':crypto.randomUUID()},data:{expectedRevision:state.revision,command:{type:'QA_CHECKPOINT',checkpointId:id}}});
   expect(result.ok(),await result.text()).toBe(true);
-  await page.reload();await page.getByRole('button',{name:/^(开始冒险|继续冒险)/}).click();
+  await page.reload();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
   await expect(page.locator('.app-shell')).toBeVisible();
   await expect(page.locator('.map-loading-panel')).toHaveCount(0);
 }
@@ -137,7 +137,7 @@ test('home manual and furniture controls work on a small landscape phone',async(
 
 test('desktop keeps its original layout without touch or rotation overlays',async({browser,baseURL})=>{
   const context=await browser.newContext({baseURL,viewport:{width:1440,height:900},hasTouch:false,isMobile:false});
-  const page=await context.newPage();await open(page);await page.getByRole('button',{name:/^(开始冒险|继续冒险)/}).click();
+  const page=await context.newPage();await open(page);await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
   await expect(page.locator('.touch-controls')).not.toBeVisible();await expect(page.getByRole('dialog',{name:'请横屏游玩'})).toHaveCount(0);
   await context.close();
 });

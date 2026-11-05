@@ -20,7 +20,7 @@ test('compact chapter has 26 real cells, three entrances, four boss cells and ex
   assert.deepEqual(state.cats.map(cat => cat.name), ['绒绒', '斑斑', '团子', '点点']);
   assert.equal(CAT_DEFINITIONS.tuanzi.breed, '橘猫'); assert.equal(CAT_DEFINITIONS.diandian.breed, '暹罗猫');
   assert.equal(CAT_DEFINITIONS.guard.breed, '奶牛猫');
-  assert.equal(CELLS.filter(isDeployableCell).length, 15);
+  assert.equal(CELLS.filter(cell => isDeployableCell(cell)).length, 15);
   for (const cell of [...MAP.obstacles, ...MAP.spawns, MAP.goal, ...MAP.bossCells]) assert.equal(isDeployableCell(cell), false);
   for (const cat of state.cats) assert.equal(getDeployError(state, cat.id, cat), null);
   assert.equal(TOTAL_MINIONS, 31); assert.equal(WAVES.length, 8);

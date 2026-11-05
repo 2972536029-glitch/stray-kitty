@@ -51,6 +51,7 @@ func (g *Game) drawParcels(s *domain.GameState, poolID string, requested *int) e
 	if count != 1 && count != 10 {
 		return domain.Fail("INVALID_COMMAND", "请选择寄出一份或十份。", 400)
 	}
+	previousResult := s.LastResult
 	draws := make([]domain.ParcelDraw, 0, count)
 	for i := 0; i < count; i++ {
 		if err := g.drawParcel(s, poolID); err != nil {
@@ -58,15 +59,33 @@ func (g *Game) drawParcels(s *domain.GameState, poolID string, requested *int) e
 		}
 		draws = append(draws, *s.LastResult.Draw)
 	}
+	if s.Phase == "dialogue" {
+		// A postal visit must not replace the interrupted story's result context.
+		previousResult.Draw = s.LastResult.Draw
+		s.LastResult = previousResult
+	}
 	s.LastResult.Draws = draws
 	// Reward names belong to the individual receipts, revealed only when opened.
-	s.LastResult.Message = fmt.Sprintf("%d 份包裹已送达，点击包裹拆开看看。", count)
+	if s.Phase != "dialogue" {
+		s.LastResult.Message = fmt.Sprintf("%d 份包裹已送达，点击包裹拆开看看。", count)
+	}
 	return nil
 }
 
 func (g *Game) drawParcel(s *domain.GameState, poolID string) error {
-	if err := domain.RequirePhase(*s, "home"); err != nil {
-		return err
+	if s.Phase != "home" {
+		atHomeStory := false
+		if s.Phase == "dialogue" {
+			for _, node := range g.Catalog.Story {
+				if node.ID == s.StoryNodeID && node.Scene == "home" {
+					atHomeStory = true
+					break
+				}
+			}
+		}
+		if !atHomeStory {
+			return domain.Fail("INVALID_PHASE", "请回到花房签收家具包裹。", 409)
+		}
 	}
 	var pool *domain.Pool
 	for i := range g.Catalog.Pools {

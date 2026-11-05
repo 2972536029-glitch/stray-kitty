@@ -15,7 +15,7 @@ async function openAttempt(page:Page,request:APIRequestContext,checkpoint?:strin
   else for(let i=0;state.phase==='dialogue'&&i<20;i++)await command({type:'ADVANCE_STORY',nodeId:state.storyNodeId});
   expect(state.phase).toBe('battle');
   await page.addInitScript(value=>localStorage.setItem('stray-kitty.session.v1',JSON.stringify(value)),session);
-  await page.goto('/');await page.getByRole('button',{name:/^继续冒险/}).click();
+  await page.goto('/');await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
   return {headers,state};
 }
 

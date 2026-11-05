@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -115,4 +116,49 @@ func TestParcelBatchRejectsUnsupportedCounts(t *testing.T) {
 	for _, count := range []int{-1, 0, 2, 11} {
 		expectCode(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: "moss_letters", Count: &count}, "INVALID_COMMAND")
 	}
+}
+
+func TestHomeStoryParcelsKeepStoryAndOriginalProgress(t *testing.T) {
+	for _, checkpoint := range []string{"greenhouse.home_3", "greenhouse.story", "finale.celebration"} {
+		for _, count := range []int{1, 10} {
+			t.Run(fmt.Sprintf("%s/%d", checkpoint, count), func(t *testing.T) {
+				g, token, _ := setup(t)
+				g.QAVictoryEnabled = true
+				original, _ := g.State(token)
+				execute(t, g, token, domain.Command{Type: "QA_CHECKPOINT", CheckpointID: checkpoint})
+				fundParcelBatch(t, g, token, 20)
+				before, _ := g.State(token)
+				request := domain.CommandRequest{ExpectedRevision: &before.Revision, Command: domain.Command{Type: "DRAW_FURNITURE", PoolID: "moss_letters", Count: &count}}
+				response, err := g.Execute(token, "qa-postal-draw", request)
+				if err != nil {
+					t.Fatal(err)
+				}
+				after := response.State
+				if after.Phase != before.Phase || after.StoryNodeID != before.StoryNodeID || after.MapID != before.MapID || after.Currencies["stamp"] != before.Currencies["stamp"]-count || len(after.LastResult.Draws) != count {
+					t.Fatal("postal draw changed story or failed to deduct the exact batch cost")
+				}
+				if before.Phase == "dialogue" && (after.LastResult.Message != before.LastResult.Message || after.LastResult.Outcome != before.LastResult.Outcome || after.LastResult.StageID != before.LastResult.StageID) {
+					t.Fatal("postal visit replaced story result context")
+				}
+				replayed, err := g.Execute(token, "qa-postal-draw", request)
+				if err != nil || !replayed.Replayed || !sameStateJSON(after, replayed.State) {
+					t.Fatal("postal replay charged twice")
+				}
+				if after.Phase == "dialogue" {
+					execute(t, g, token, domain.Command{Type: "ADVANCE_STORY", NodeID: after.StoryNodeID})
+				}
+				restored := execute(t, g, token, domain.Command{Type: "QA_RESTORE"})
+				if restored.StoryNodeID != original.StoryNodeID || !reflect.DeepEqual(restored.Currencies, original.Currencies) {
+					t.Fatal("QA draw affected original journey")
+				}
+			})
+		}
+	}
+}
+
+func TestParcelsRejectNonHomeStory(t *testing.T) {
+	g, token, _ := setup(t)
+	g.QAVictoryEnabled = true
+	execute(t, g, token, domain.Command{Type: "QA_CHECKPOINT", CheckpointID: "market.story"})
+	rejectUnchanged(t, g, token, domain.Command{Type: "DRAW_FURNITURE", PoolID: "moss_letters"})
 }

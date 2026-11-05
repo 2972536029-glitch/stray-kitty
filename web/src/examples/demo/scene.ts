@@ -55,12 +55,9 @@ export class DemoScene {
   // Keep other chapters' image downloads out of the active map's loading path.
   private rainyAlleyInstance?: IntegratedRainyAlley;
   private tunnelMapInstance?: TunnelMap;
-  private menuInset = 42;
-  private hudObserver?: ResizeObserver;
   private get rainyAlley() {
     if (!this.rainyAlleyInstance) {
       this.rainyAlleyInstance = new IntegratedRainyAlley();
-      this.rainyAlleyInstance.setMinimapShift(this.menuInset);
     }
     return this.rainyAlleyInstance;
   }
@@ -404,19 +401,7 @@ export class DemoScene {
     if(this.state?.phase!=='home'||this.state.chapterId==='prologue'||this.homeRenovating||(this.pausedByUser&&!this.homeEditing))return;
     event.preventDefault();this.homeZoom(event.deltaY<0?.15:-.15);
   };
-  private updateHudBounds = () => {
-    const bounds=this.canvas.getBoundingClientRect(),menu=document.querySelector('.fixed-game-menu')?.getBoundingClientRect();
-    if(!bounds.width||!bounds.height||!menu)return;
-    const cover=getComputedStyle(this.canvas).objectFit==='cover';
-    const scale=(cover?Math.max:Math.min)(bounds.width/this.viewWidth,bounds.height/this.viewHeight);
-    const originY=bounds.top+(bounds.height-this.viewHeight*scale)/2;
-    this.menuInset=Math.max(0,(menu.bottom+12-originY)/scale-10);
-    this.rainyAlleyInstance?.setMinimapShift(this.menuInset);
-  };
   start() {
-    this.hudObserver=new ResizeObserver(this.updateHudBounds);this.hudObserver.observe(this.canvas);
-    const menu=document.querySelector('.fixed-game-menu');if(menu)this.hudObserver.observe(menu);
-    this.updateHudBounds();
     window.addEventListener('keydown', this.keydown);
     window.addEventListener('keyup', this.keyup);
     window.addEventListener('blur', this.clearInput);
@@ -431,7 +416,7 @@ export class DemoScene {
     this.frame = requestAnimationFrame(this.tick);
   }
   destroy() {
-    this.destroyed = true;this.hudObserver?.disconnect();cancelAnimationFrame(this.frame);
+    this.destroyed = true;cancelAnimationFrame(this.frame);
     window.removeEventListener('keydown', this.keydown);
     window.removeEventListener('keyup', this.keyup);
     window.removeEventListener('blur', this.clearInput);

@@ -6,6 +6,7 @@ import {playSound} from '../../ui/soundEffects';
 import {trackRechargeEntryExpose, trackRechargeEntryClick} from '../../observability/actions';
 import {ThemePreview} from './ParcelArt';
 import {poolStatus} from './model';
+import {currentStory} from '../../core/story';
 import CapsuleCollection from './CapsuleCollection';
 import CollectionPolaroid from './CollectionPolaroid';
 import type {StrokePoint} from './PostcardCanvas';
@@ -44,7 +45,7 @@ export default function PostalJournal({state,catalog,disabled,retryDisabled,erro
   const [stage,setStage]=useState<Stage>(saved?'parcels':'preview'),[count,setCount]=useState<1|10>(saved?.ids.length===10?10:1),[stroke,setStroke]=useState<StrokePoint[]>(saved?.stroke??[]);
   const [draws,setDraws]=useState<ParcelDraw[]>(()=>saved?saved.ids.map(id=>state.lottery!.history.find(r=>r.id===id)!):[]),[opened,setOpened]=useState<string[]>(saved?.opened??[]),[opening,setOpening]=useState<string|null>(null),[focused,setFocused]=useState<string|null>(null);
   const pending=useRef<{poolId:string;count:1|10;started:number}|null>(null),locked=useRef(false),last=useRef(state.lastResult.draw?.id);
-  const pool=catalog.pools.find(p=>p.id===selected)??catalog.pools[0],status=poolStatus(state,pool),atHome=state.phase==='home',owned=pool.entries.length-status.missing.length;
+  const pool=catalog.pools.find(p=>p.id===selected)??catalog.pools[0],status=poolStatus(state,pool),atHome=state.phase==='home'||state.phase==='dialogue'&&currentStory(catalog,state)?.scene==='home',owned=pool.entries.length-status.missing.length;
   const presentationStyle=useMemo(()=>postalPresentationStyle(presentation,previewTheme(pool.currency)),[presentation,pool.currency]);
   const balance=state.currencies[pool.currency]??0,currency=pool.currency==='tuna'?'罐头':'邮票',active=stage!=='preview',inFlight=['sending','arriving','opening'].includes(stage),allOpened=draws.length>0&&draws.every(d=>opened.includes(d.id));
   const reduced=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -83,7 +84,8 @@ export default function PostalJournal({state,catalog,disabled,retryDisabled,erro
     setOpening(id);setStage('opening');playSound('open');
   };
   const receipt=(r:ParcelDraw)=>{setSelected(r.poolId);onPool(r.poolId);setDraws([r]);setOpened([r.id]);setFocused(r.id);setStage('result');setSheet(null);};
-  const notice=!atHome?'回到花房后，就能签收家具包裹。':status.locked?'完成点点的救援后开放。':balance<pool.cost?`${currency}不足，${pool.currency==='tuna'?'可以去补给小站看看。':'可到猫咪补给站领取来信与心愿。'}`:'先寄一张小小的期待，再拆开送给家的心意。';
+  const pendingNotice=disabled&&!retryDisabled?'上一次操作尚未确认，请先重试，确认后即可继续抽取。':'';
+  const notice=disabled?(pendingNotice||'正在确认操作，请稍候。'):!atHome?'回到花房后，就能签收家具包裹。':status.locked?'完成点点的救援后开放。':balance<pool.cost?`${currency}不足，${pool.currency==='tuna'?'可以去补给小站看看。':'可到猫咪补给站领取来信与心愿。'}`:'先寄一张小小的期待，再拆开送给家的心意。';
   const heading=stage==='preview'?'把期待，寄给小小的家':stage==='drawing'?'这一笔，随心就好':stage==='sending'?'你的心意，正在寄出':stage==='arriving'?'包裹正在送来':'拆一份，家的新模样';
   return <Modal title="猫爪邮局" onClose={()=>{if(!inFlight)onClose();}} className="postal-journal">
     <div className="postal-viewport"><div ref={layoutRoot} className="postal-layout" data-stage={stage} style={presentationStyle}>
@@ -100,12 +102,12 @@ export default function PostalJournal({state,catalog,disabled,retryDisabled,erro
         </section><span className="postal-corner-stamps" aria-hidden="true"><i/><i/></span></div>
       </main></div>
       <footer className="postal-footer"><div className="postal-pity" role="status"><span>{status.missing.length===0?'全套已集齐 · 重复家具转为修缮材料':status.guaranteed?'暖心保底 · 下一份必得未拥有家具':`最多再 ${status.untilNew} 次，遇见一件新家具`}</span><small>{active?'自由涂画，只为这一刻的小小仪式。':notice}</small>{!active&&balance<pool.cost&&pool.currency==='tuna'&&<button onClick={() => {trackRechargeEntryClick('parcels');onRecharge();}}>去补给小站 ›</button>}</div>
-        <div ref={actionsRoot} className="postal-actions">{([1,10] as const).map((n,i)=><button key={n} ref={button=>{drawButtons.current[i]=button;}} className={`postal-ticket ${n===1?'primary':''}`} data-testid={n===1?'parcel-draw':'parcel-draw-ten'} aria-hidden={active} tabIndex={active?-1:0} disabled={active||disabled||!atHome||status.locked||balance<pool.cost*n} onClick={()=>begin(n)}><span>寄出{n===1?'一':'十'}份</span><small>{currency} ×{pool.cost*n}</small></button>)}
+        <div ref={actionsRoot} className="postal-actions">{([1,10] as const).map((n,i)=><button key={n} ref={button=>{drawButtons.current[i]=button;}} className={`postal-ticket ${n===1?'primary':''}`} data-testid={n===1?'parcel-draw':'parcel-draw-ten'} aria-hidden={active} tabIndex={active?-1:0} disabled={active||disabled||!atHome||status.locked||balance<pool.cost*n} title={disabled||!atHome||status.locked?notice:balance<pool.cost*n?`还需 ${pool.cost*n-balance} ${currency}`:undefined} onClick={()=>begin(n)}><span>寄出{n===1?'一':'十'}份</span><small>{currency} ×{pool.cost*n}</small></button>)}
         {active&&<div className="postal-stage-actions">{stage==='drawing'?<><div className="postal-stage-secondary">{stroke.length>0&&<button className="postal-text-button" onClick={()=>setStroke([])}>↶ 重画</button>}<button className="postal-text-button" onClick={()=>{setStage('preview');setStroke([]);}}>取消</button></div><button className="postal-stage-ticket postal-ticket" data-testid="postcard-skip" onClick={()=>void send()} disabled={disabled}><span>跳过涂画</span><small>直接寄出 · {count} 份包裹</small></button></>
         :inFlight?<span className="postal-sending" role="status">{stage==='sending'?'盖上邮戳，把期待寄出去…':stage==='arriving'?'包裹送达，轻轻放好…':'纸绳松开，惊喜就要出现…'}</span>
         :<>{!allOpened&&<div className="postal-stage-secondary"><button className="postal-text-button" onClick={onClose}>稍后再拆</button></div>}<button className="postal-stage-ticket postal-ticket primary" data-testid="parcel-stage-action" onClick={()=>{if(allOpened){back();return;}setOpened(draws.map(d=>d.id));setFocused(null);setStage('parcels');playSound('chime');}}><span>{allOpened?'回到套装':'全部拆开'}</span><small>{allOpened?'再寄一份喜欢':'已拆 '+opened.length+' / '+draws.length}</small></button></>}</div>}</div><ParcelSprite className="postal-footer-parcel"/><nav className="postal-info-links" aria-label="邮局手册"><button className="postal-rules-button" disabled={active||disabled} onClick={()=>{setInfoTab('rules');setSheet('rules');}}><span>规则</span><small>玩法 · 收据</small></button></nav>
       </footer><p className="postal-disclaimer">涂画仅供互动，不影响抽取结果</p>
-      {error&&<div className="parcel-error postal-error" role="alert"><span>{error}</span><button disabled={retryDisabled} onClick={onRetry}>重试上次操作</button>{stage==='sending'&&!disabled&&<button onClick={()=>{pending.current=null;setStage('drawing');}}>返回明信片</button>}</div>}
+      {(error||pendingNotice)&&<div className="parcel-error postal-error" role="alert"><span>{error||pendingNotice}</span><button disabled={retryDisabled} onClick={onRetry}>重试上次操作</button>{stage==='sending'&&!disabled&&<button onClick={()=>{pending.current=null;setStage('drawing');}}>返回明信片</button>}</div>}
     </div></div>
     {sheet==='collection'&&<CapsuleCollection key={pool.id} state={state} catalog={catalog} pool={pool} onClose={()=>setSheet(null)}/>}
     {sheet==='rules'&&<Modal title="邮局规则与收据" className="gacha-info-sheet postal-info" onClose={()=>setSheet(null)}><header><span className="eyebrow">PAW POST · A LITTLE HANDBOOK</span><h2>邮局手册</h2><div className="postal-info-tabs" role="group" aria-label="查看规则或收据"><button aria-pressed={infoTab==='rules'} onClick={()=>setInfoTab('rules')}>抽取规则</button><button aria-pressed={infoTab==='history'} onClick={()=>setInfoTab('history')}>包裹收据 <small>{state.lottery?.history.length??0}</small></button></div></header>

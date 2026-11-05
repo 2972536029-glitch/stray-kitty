@@ -43,14 +43,21 @@ func (g *Game) advisorHomeKnowledge(s domain.GameState, texts advisorDisplayText
 	}
 	knownProgress := map[string]any{
 		"completedBattles":    completed,
-		"historyCompleteness": "通关记录只证明完成过这些关卡，包含可能的独立试玩，不证明对应主线对白已经发生。最近事件以serverProgress.lastEvent为准；没有完整已读台词或全部历史选择日志，不补写未记录的经历，不凭knownFlags名称编故事。",
+		"storySummaries":      advisorKnownHomeStorySummaries(s),
+		"storyRecordStatus":   "limited-progress-records",
+		"historyCompleteness": "storySummaries是按服务端真实进度逐条筛选的已公开剧情短摘要，仅能说明摘要明确记载的事实。通关记录只证明完成过这些关卡，包含可能的独立试玩，不证明对应主线对白已经发生。最近事件以serverProgress.lastEvent为准；没有完整已读台词或全部历史选择日志，不补写未记录的经历，不凭knownFlags名称编故事。",
+	}
+	if s.QACheckpointID != "" {
+		knownProgress["storyRecordStatus"] = "qa-checkpoint"
+		knownProgress["historyCompleteness"] = "当前是QA检查点，进度标记用于构造验收场景，不能证明玩家亲历了主线；storySummaries为空。可以解释当前功能和公开规则，不把当前目标、通关记录、伙伴档案或聊天历史说成玩家曾经经历的剧情，没有完整已读台词或全部历史选择日志。"
 	}
 	if name := g.advisorKnownStageName(texts, s.LastResult.StageID); name != "" && (s.LastResult.Outcome == "won" || s.LastResult.Outcome == "lost") {
 		knownProgress["lastBattle"] = map[string]string{"name": name, "outcome": s.LastResult.Outcome, "recordMeaning": "仅记录已经结算的胜负，不是当前战况，也不证明发生过未记录的主线剧情。"}
 	}
 	return map[string]any{
-		"scope":      "家园入口可以解释战斗、家园、已结识伙伴、事件公开规则、资源和能核实的已知进度。只答问题涉及的内容，不主动列举未解锁章节、伙伴或结果。",
-		"liveBattle": map[string]any{"available": false, "explanation": "家园没有正在运行的战斗快照，不能报告实时血量、能量、站位、敌人数量或推荐眼前战术。历史聊天和已经结算的战斗记录也不能充当实时状态；需要进入当前战斗查看。"},
+		"scope":       "家园入口可以解释战斗、家园、已结识伙伴、事件公开规则、资源和能核实的已知进度。只答问题涉及的内容，不主动列举未解锁章节、伙伴或结果。",
+		"currentGoal": advisorHomeGoal(s),
+		"liveBattle":  map[string]any{"available": false, "explanation": "家园没有正在运行的战斗快照，不能报告实时血量、能量、站位、敌人数量或推荐眼前战术。历史聊天和已经结算的战斗记录也不能充当实时状态；需要进入当前战斗查看。"},
 		"battleRules": []string{
 			"战斗猫会按自身攻击范围自动攻击；按阻挡容量拦住接触的普通敌人，超出容量的敌人继续前进。移位不会把已越过防线的敌人拉回来。",
 			"技能依靠在场伙伴随战斗模拟时间积攒能量，蓄满后由玩家手动释放；不是等待技能冷却，也不会由阿策自动代放。具体能量速度、技能数值与范围按对应关卡已经公开的说明。",

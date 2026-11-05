@@ -259,530 +259,622 @@
     {
       "id": "story-dashboard",
       "payload": {
-        "title": "[小猫回家记][业务-主线] 主线漏斗与玩法",
         "description": "#18 业务观测 · preview · [managed-by:stray-kitty-biz-obs;definition:story-dashboard]\n由 monitors/business-observability.json 维护；变更需同步代码。",
         "layout_type": "ordered",
+        "notify_list": [],
+        "reflow_type": "auto",
+        "tags": [
+          "team:stray-kitty",
+          "ai:modified_with_ai"
+        ],
+        "template_variables": [],
+        "title": "[小猫回家记][业务-主线] 主线漏斗与玩法",
         "widgets": [
           {
             "definition": {
-              "type": "note",
-              "content": "主线各阶段采用当前窗口事件次数，不是去重玩家漏斗或留存率；同一玩家重复开始可能多次计数。全部查询固定 env:preview，并排除 qa:true。历史未打 qa 标签的数据仍包含。胜率仅 win/(win+lose)，retreat/unknown 单列；零分母显示无数据。",
-              "background_color": "white",
-              "font_size": "14",
-              "text_align": "left",
-              "has_padding": true
-            }
-          },
-          {
-            "definition": {
-              "type": "timeseries",
-              "title": "主线阶段触达次数（按章入口节点）",
-              "requests": [
+              "background_color": "gray",
+              "layout_type": "ordered",
+              "show_title": true,
+              "title": "业务监控状态",
+              "type": "group",
+              "widgets": [
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "session",
-                      "query": "sum:kitty.session.started{service:kitty-api,env:preview,!qa:true}.as_count()",
-                      "aggregator": "sum"
-                    },
-                    {
-                      "data_source": "metrics",
-                      "name": "prologue",
-                      "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:prologue_1}.as_count()",
-                      "aggregator": "sum"
-                    },
-                    {
-                      "data_source": "metrics",
-                      "name": "alley",
-                      "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:chapter1_intro}.as_count()",
-                      "aggregator": "sum"
-                    },
-                    {
-                      "data_source": "metrics",
-                      "name": "market",
-                      "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:market_intro_1}.as_count()",
-                      "aggregator": "sum"
-                    },
-                    {
-                      "data_source": "metrics",
-                      "name": "greenhouse",
-                      "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:greenhouse_intro_1}.as_count()",
-                      "aggregator": "sum"
-                    },
-                    {
-                      "data_source": "metrics",
-                      "name": "rescue",
-                      "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:rescue_intro_1}.as_count()",
-                      "aggregator": "sum"
-                    },
-                    {
-                      "data_source": "metrics",
-                      "name": "finale",
-                      "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:finale_intro_1}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "session"
-                    },
-                    {
-                      "formula": "prologue"
-                    },
-                    {
-                      "formula": "alley"
-                    },
-                    {
-                      "formula": "market"
-                    },
-                    {
-                      "formula": "greenhouse"
-                    },
-                    {
-                      "formula": "rescue"
-                    },
-                    {
-                      "formula": "finale"
-                    }
-                  ],
-                  "response_format": "timeseries",
-                  "display_type": "line"
+                  "definition": {
+                    "color_preference": "text",
+                    "count": 50,
+                    "display_format": "countsAndList",
+                    "hide_zero_counts": true,
+                    "query": "tag:business-module:1 tag:role:alert",
+                    "show_last_triggered": false,
+                    "show_priority": false,
+                    "sort": "status,desc",
+                    "start": 0,
+                    "summary_type": "monitors",
+                    "title": "业务监控状态（不含复合条件子监控）",
+                    "type": "manage_status",
+                    "last_triggered_format": "relative",
+                    "show_investigation": false,
+                    "show_status": true
+                  },
+                  "id": 6724233235687213
                 }
               ]
-            }
+            },
+            "id": 7302918456120055
           },
           {
             "definition": {
-              "type": "query_value",
-              "title": "新建游戏会话次数",
-              "requests": [
+              "background_color": "vivid_orange",
+              "layout_type": "ordered",
+              "show_title": true,
+              "title": "随机事件与彩蛋",
+              "type": "group",
+              "widgets": [
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.session.started{service:kitty-api,env:preview,!qa:true}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ],
-              "autoscale": true,
-              "precision": 2
-            }
-          },
-          {
-            "definition": {
-              "type": "query_value",
-              "title": "序章 · 金枪鱼事件 · 入口触达次数",
-              "requests": [
-                {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:prologue_1}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ],
-              "autoscale": true,
-              "precision": 2
-            }
-          },
-          {
-            "definition": {
-              "type": "query_value",
-              "title": "第一章 · 陌生小巷 · 入口触达次数",
-              "requests": [
-                {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:chapter1_intro}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ],
-              "autoscale": true,
-              "precision": 2
-            }
-          },
-          {
-            "definition": {
-              "type": "query_value",
-              "title": "第二章 · 午夜集市 · 入口触达次数",
-              "requests": [
-                {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:market_intro_1}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ],
-              "autoscale": true,
-              "precision": 2
-            }
-          },
-          {
-            "definition": {
-              "type": "query_value",
-              "title": "第三章 · 废弃花房 · 入口触达次数",
-              "requests": [
-                {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:greenhouse_intro_1}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ],
-              "autoscale": true,
-              "precision": 2
-            }
-          },
-          {
-            "definition": {
-              "type": "query_value",
-              "title": "第四章 · 消失的猫咪们 · 入口触达次数",
-              "requests": [
-                {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:rescue_intro_1}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ],
-              "autoscale": true,
-              "precision": 2
-            }
-          },
-          {
-            "definition": {
-              "type": "query_value",
-              "title": "终章 · 点亮流浪猫王国 · 入口触达次数",
-              "requests": [
-                {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:finale_intro_1}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ],
-              "autoscale": true,
-              "precision": 2
-            }
-          },
-          {
-            "definition": {
-              "type": "timeseries",
-              "title": "各章结算次数（outcome 分列）",
-              "requests": [
-                {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.battle.settle{service:kitty-api,env:preview,!qa:true} by {chapter,difficulty,outcome}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "timeseries",
-                  "display_type": "bars"
-                }
-              ]
-            }
-          },
-          {
-            "definition": {
-              "type": "timeseries",
-              "title": "各章胜率 %（win / (win + lose)）",
-              "requests": [
-                {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "win",
-                      "query": "sum:kitty.battle.settle{service:kitty-api,env:preview,!qa:true,outcome:win} by {chapter,difficulty}.as_count()",
-                      "aggregator": "sum"
+                  "definition": {
+                    "legend": {
+                      "type": "table"
                     },
-                    {
-                      "data_source": "metrics",
-                      "name": "lose",
-                      "query": "sum:kitty.battle.settle{service:kitty-api,env:preview,!qa:true,outcome:lose} by {chapter,difficulty}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "100 * win / (win + lose)"
-                    }
-                  ],
-                  "response_format": "timeseries",
-                  "display_type": "line"
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.event.resolve{service:kitty-api,env:preview,!qa:true} by {tier}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "事件结算档位分布",
+                    "type": "sunburst"
+                  },
+                  "id": 2111278330984950
+                },
+                {
+                  "definition": {
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.event.resolve{service:kitty-api,env:preview,!qa:true} by {event,option,tier}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "事件选择与档位",
+                    "type": "toplist"
+                  },
+                  "id": 5024946767923227
+                },
+                {
+                  "definition": {
+                    "legend_layout": "auto",
+                    "requests": [
+                      {
+                        "display_type": "line",
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.event.flag{service:kitty-api,env:preview,!qa:true} by {flag}.as_count()"
+                          }
+                        ],
+                        "response_format": "timeseries"
+                      }
+                    ],
+                    "show_legend": true,
+                    "title": "彩蛋 / 故事 flag 新增次数",
+                    "type": "timeseries"
+                  },
+                  "id": 8610548133037299
                 }
               ]
-            }
+            },
+            "id": 7302918456120044
           },
           {
             "definition": {
-              "type": "query_value",
-              "title": "L00 教学胜率 %（不含 retreat/unknown）",
-              "requests": [
+              "background_color": "vivid_green",
+              "layout_type": "ordered",
+              "show_title": true,
+              "title": "剧情选项与终章门槛",
+              "type": "group",
+              "widgets": [
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "win",
-                      "query": "sum:kitty.battle.settle{service:kitty-api,env:preview,!qa:true,chapter:l00,outcome:win}.as_count()",
-                      "aggregator": "sum"
-                    },
-                    {
-                      "data_source": "metrics",
-                      "name": "lose",
-                      "query": "sum:kitty.battle.settle{service:kitty-api,env:preview,!qa:true,chapter:l00,outcome:lose}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "100 * win / (win + lose)"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ],
-              "autoscale": true,
-              "precision": 2
-            }
-          },
-          {
-            "definition": {
-              "type": "toplist",
-              "title": "剧情选项次数",
-              "requests": [
+                  "definition": {
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.story.choice{service:kitty-api,env:preview,!qa:true} by {node,option}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "剧情选项次数",
+                    "type": "toplist"
+                  },
+                  "id": 8668120433570782
+                },
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.story.choice{service:kitty-api,env:preview,!qa:true} by {node,option}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ]
-            }
-          },
-          {
-            "definition": {
-              "type": "sunburst",
-              "title": "事件结算档位分布",
-              "requests": [
-                {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.event.resolve{service:kitty-api,env:preview,!qa:true} by {tier}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ],
-              "legend": {
-                "type": "table"
-              }
-            }
-          },
-          {
-            "definition": {
-              "type": "toplist",
-              "title": "事件选择与档位",
-              "requests": [
-                {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.event.resolve{service:kitty-api,env:preview,!qa:true} by {event,option,tier}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "scalar"
+                  "definition": {
+                    "autoscale": true,
+                    "precision": 2,
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.story.gate_hit{service:kitty-api,env:preview,!qa:true,gate:finale_clue_insufficient}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "终章线索门槛拒绝次数",
+                    "type": "query_value"
+                  },
+                  "id": 7666088047966018
                 }
               ]
-            }
+            },
+            "id": 7302918456120033
           },
           {
             "definition": {
-              "type": "timeseries",
-              "title": "彩蛋 / 故事 flag 新增次数",
-              "requests": [
+              "background_color": "vivid_purple",
+              "layout_type": "ordered",
+              "show_title": true,
+              "title": "战斗结算与胜率",
+              "type": "group",
+              "widgets": [
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.event.flag{service:kitty-api,env:preview,!qa:true} by {flag}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "timeseries",
-                  "display_type": "line"
+                  "definition": {
+                    "legend_layout": "auto",
+                    "requests": [
+                      {
+                        "display_type": "bars",
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.battle.settle{service:kitty-api,env:preview,!qa:true} by {chapter,difficulty,outcome}.as_count()"
+                          }
+                        ],
+                        "response_format": "timeseries"
+                      }
+                    ],
+                    "show_legend": true,
+                    "title": "各章结算次数（outcome 分列）",
+                    "type": "timeseries"
+                  },
+                  "id": 1242359908979938
+                },
+                {
+                  "definition": {
+                    "autoscale": true,
+                    "precision": 2,
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "100 * win / (win + lose)"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "win",
+                            "query": "sum:kitty.battle.settle{service:kitty-api,env:preview,!qa:true,chapter:l00,outcome:win}.as_count()"
+                          },
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "lose",
+                            "query": "sum:kitty.battle.settle{service:kitty-api,env:preview,!qa:true,chapter:l00,outcome:lose}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "L00 教学胜率 %（不含 retreat/unknown）",
+                    "type": "query_value"
+                  },
+                  "id": 3954859601180424
+                },
+                {
+                  "definition": {
+                    "autoscale": true,
+                    "precision": 2,
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.battle.return_check{service:kitty-api,env:preview,!qa:true,result:deviation}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "战后返回偏离次数",
+                    "type": "query_value"
+                  },
+                  "id": 2772053757910201
+                },
+                {
+                  "definition": {
+                    "legend_layout": "auto",
+                    "requests": [
+                      {
+                        "display_type": "line",
+                        "formulas": [
+                          {
+                            "formula": "100 * win / (win + lose)"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "data_source": "metrics",
+                            "name": "win",
+                            "query": "sum:kitty.battle.settle{service:kitty-api,env:preview,!qa:true,outcome:win} by {chapter,difficulty}.as_count()"
+                          },
+                          {
+                            "data_source": "metrics",
+                            "name": "lose",
+                            "query": "sum:kitty.battle.settle{service:kitty-api,env:preview,!qa:true,outcome:lose} by {chapter,difficulty}.as_count()"
+                          }
+                        ],
+                        "response_format": "timeseries"
+                      }
+                    ],
+                    "show_legend": true,
+                    "title": "各章胜率 %（win / (win + lose)）",
+                    "type": "timeseries"
+                  },
+                  "id": 533767181574871
                 }
               ]
-            }
+            },
+            "id": 7302918456120022
           },
           {
             "definition": {
-              "type": "query_value",
-              "title": "终章线索门槛拒绝次数",
-              "requests": [
+              "background_color": "vivid_blue",
+              "layout_type": "ordered",
+              "show_title": true,
+              "title": "主线漏斗（窗口事件次数口径）",
+              "type": "group",
+              "widgets": [
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.story.gate_hit{service:kitty-api,env:preview,!qa:true,gate:finale_clue_insufficient}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ],
-              "autoscale": true,
-              "precision": 2
-            }
-          },
-          {
-            "definition": {
-              "type": "query_value",
-              "title": "战后返回偏离次数",
-              "requests": [
+                  "definition": {
+                    "background_color": "white",
+                    "content": "主线各阶段采用当前窗口事件次数，不是去重玩家漏斗或留存率；同一玩家重复开始可能多次计数。全部查询固定 env:preview，并排除 qa:true。历史未打 qa 标签的数据仍包含。胜率仅 win/(win+lose)，retreat/unknown 单列；零分母显示无数据。",
+                    "font_size": "14",
+                    "has_padding": true,
+                    "text_align": "left",
+                    "type": "note"
+                  },
+                  "id": 2065613008234980
+                },
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.battle.return_check{service:kitty-api,env:preview,!qa:true,result:deviation}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "scalar"
+                  "definition": {
+                    "autoscale": true,
+                    "precision": 2,
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.session.started{service:kitty-api,env:preview,!qa:true}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "新建游戏会话次数",
+                    "type": "query_value"
+                  },
+                  "id": 3013685198775254
+                },
+                {
+                  "definition": {
+                    "autoscale": true,
+                    "precision": 2,
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:prologue_1}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "序章 · 金枪鱼事件 · 入口触达次数",
+                    "type": "query_value"
+                  },
+                  "id": 6625581140086143
+                },
+                {
+                  "definition": {
+                    "legend_layout": "auto",
+                    "requests": [
+                      {
+                        "display_type": "line",
+                        "formulas": [
+                          {
+                            "formula": "session"
+                          },
+                          {
+                            "formula": "prologue"
+                          },
+                          {
+                            "formula": "alley"
+                          },
+                          {
+                            "formula": "market"
+                          },
+                          {
+                            "formula": "greenhouse"
+                          },
+                          {
+                            "formula": "rescue"
+                          },
+                          {
+                            "formula": "finale"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "data_source": "metrics",
+                            "name": "session",
+                            "query": "sum:kitty.session.started{service:kitty-api,env:preview,!qa:true}.as_count()"
+                          },
+                          {
+                            "data_source": "metrics",
+                            "name": "prologue",
+                            "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:prologue_1}.as_count()"
+                          },
+                          {
+                            "data_source": "metrics",
+                            "name": "alley",
+                            "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:chapter1_intro}.as_count()"
+                          },
+                          {
+                            "data_source": "metrics",
+                            "name": "market",
+                            "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:market_intro_1}.as_count()"
+                          },
+                          {
+                            "data_source": "metrics",
+                            "name": "greenhouse",
+                            "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:greenhouse_intro_1}.as_count()"
+                          },
+                          {
+                            "data_source": "metrics",
+                            "name": "rescue",
+                            "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:rescue_intro_1}.as_count()"
+                          },
+                          {
+                            "data_source": "metrics",
+                            "name": "finale",
+                            "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:finale_intro_1}.as_count()"
+                          }
+                        ],
+                        "response_format": "timeseries"
+                      }
+                    ],
+                    "show_legend": true,
+                    "title": "主线阶段触达次数（按章入口节点）",
+                    "type": "timeseries"
+                  },
+                  "id": 1295607602088843
+                },
+                {
+                  "definition": {
+                    "autoscale": true,
+                    "precision": 2,
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:chapter1_intro}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "第一章 · 陌生小巷 · 入口触达次数",
+                    "type": "query_value"
+                  },
+                  "id": 8265279621186112
+                },
+                {
+                  "definition": {
+                    "autoscale": true,
+                    "precision": 2,
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:market_intro_1}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "第二章 · 午夜集市 · 入口触达次数",
+                    "type": "query_value"
+                  },
+                  "id": 8696969932123707
+                },
+                {
+                  "definition": {
+                    "autoscale": true,
+                    "precision": 2,
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:greenhouse_intro_1}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "第三章 · 废弃花房 · 入口触达次数",
+                    "type": "query_value"
+                  },
+                  "id": 3406537662175859
+                },
+                {
+                  "definition": {
+                    "autoscale": true,
+                    "precision": 2,
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:rescue_intro_1}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "第四章 · 消失的猫咪们 · 入口触达次数",
+                    "type": "query_value"
+                  },
+                  "id": 1176361422368037
+                },
+                {
+                  "definition": {
+                    "autoscale": true,
+                    "precision": 2,
+                    "requests": [
+                      {
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.story.node{service:kitty-api,env:preview,!qa:true,node:finale_intro_1}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "终章 · 点亮流浪猫王国 · 入口触达次数",
+                    "type": "query_value"
+                  },
+                  "id": 3053802639227990
                 }
-              ],
-              "autoscale": true,
-              "precision": 2
-            }
-          },
-          {
-            "definition": {
-              "type": "manage_status",
-              "title": "业务监控状态（不含复合条件子监控）",
-              "query": "tag:business-module:1 tag:role:alert",
-              "summary_type": "monitors",
-              "display_format": "countsAndList",
-              "sort": "status,desc"
-            }
+              ]
+            },
+            "id": 7302918456120011
           }
         ]
       }
@@ -790,301 +882,397 @@
     {
       "id": "economy-dashboard",
       "payload": {
-        "title": "[小猫回家记][业务-经营] 支付与经济",
         "description": "#18 业务观测 · preview · [managed-by:stray-kitty-biz-obs;definition:economy-dashboard]\n由 monitors/business-observability.json 维护；变更需同步代码。",
         "layout_type": "ordered",
+        "notify_list": [],
+        "reflow_type": "auto",
+        "tags": [
+          "team:stray-kitty",
+          "ai:modified_with_ai"
+        ],
+        "template_variables": [],
+        "title": "[小猫回家记][业务-经营] 支付与经济",
         "widgets": [
           {
             "definition": {
-              "type": "note",
-              "content": "支付曝光/点击归模块二前端 RUM 看板；此处从后端 session_created 开始。经济 delta 是变动次数，amount 是实际货币数量；金额比必须用 amount。未建立健康基线前，支付转化/经济漂移只展示趋势，不部署占位阈值告警。会话日志可检索，尚不是经过去重及 cohort 对齐的留存率。",
-              "background_color": "white",
-              "font_size": "14",
-              "text_align": "left",
-              "has_padding": true
-            }
-          },
-          {
-            "definition": {
-              "type": "timeseries",
-              "title": "支付漏斗各步次数",
-              "requests": [
+              "background_color": "vivid_blue",
+              "layout_type": "ordered",
+              "show_title": true,
+              "title": "支付漏斗（后端，窗口事件次数口径）",
+              "type": "group",
+              "widgets": [
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.payment.funnel{service:kitty-api,env:preview,!qa:true} by {step}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "timeseries",
-                  "display_type": "bars"
+                  "definition": {
+                    "background_color": "white",
+                    "content": "支付曝光/点击归模块二前端 RUM 看板；此处从后端 session_created 开始。经济 delta 是变动次数，amount 是实际货币数量；金额比必须用 amount。未建立健康基线前，支付转化/经济漂移只展示趋势，不部署占位阈值告警。会话日志可检索，尚不是经过去重及 cohort 对齐的留存率。",
+                    "font_size": "14",
+                    "has_padding": true,
+                    "show_tick": false,
+                    "text_align": "left",
+                    "type": "note",
+                    "vertical_align": "top"
+                  },
+                  "id": 8856865792709083
+                },
+                {
+                  "definition": {
+                    "legend_layout": "auto",
+                    "requests": [
+                      {
+                        "display_type": "bars",
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.payment.funnel{service:kitty-api,env:preview,!qa:true} by {step}.as_count()"
+                          }
+                        ],
+                        "response_format": "timeseries"
+                      }
+                    ],
+                    "show_legend": true,
+                    "title": "支付漏斗各步次数",
+                    "type": "timeseries"
+                  },
+                  "id": 8298831807901978
+                },
+                {
+                  "definition": {
+                    "autoscale": true,
+                    "precision": 2,
+                    "requests": [
+                      {
+                        "aggregator": "last",
+                        "formulas": [
+                          {
+                            "formula": "100 * success / attempt"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "success",
+                            "query": "sum:kitty.payment.funnel{service:kitty-api,env:preview,!qa:true,step:charge_success}.as_count()"
+                          },
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "attempt",
+                            "query": "sum:kitty.payment.funnel{service:kitty-api,env:preview,!qa:true,step:charge_attempt}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "支付尝试→成功比例 %（窗口事件口径）",
+                    "type": "query_value"
+                  },
+                  "id": 2096865575878281
                 }
               ]
-            }
+            },
+            "id": 435272333220800
           },
           {
             "definition": {
-              "type": "query_value",
-              "title": "支付尝试→成功比例 %（窗口事件口径）",
-              "requests": [
+              "background_color": "vivid_green",
+              "layout_type": "ordered",
+              "show_title": true,
+              "title": "经济收支",
+              "type": "group",
+              "widgets": [
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "success",
-                      "query": "sum:kitty.payment.funnel{service:kitty-api,env:preview,!qa:true,step:charge_success}.as_count()",
-                      "aggregator": "sum"
-                    },
-                    {
-                      "data_source": "metrics",
-                      "name": "attempt",
-                      "query": "sum:kitty.payment.funnel{service:kitty-api,env:preview,!qa:true,step:charge_attempt}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "100 * success / attempt"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ],
-              "autoscale": true,
-              "precision": 2
-            }
-          },
-          {
-            "definition": {
-              "type": "timeseries",
-              "title": "货币变动次数（不能解释为金额）",
-              "requests": [
+                  "definition": {
+                    "legend_layout": "auto",
+                    "requests": [
+                      {
+                        "display_type": "bars",
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.economy.delta{service:kitty-api,env:preview,!qa:true} by {currency,direction,bucket}.as_count()"
+                          }
+                        ],
+                        "response_format": "timeseries"
+                      }
+                    ],
+                    "show_legend": true,
+                    "title": "货币变动次数（不能解释为金额）",
+                    "type": "timeseries"
+                  },
+                  "id": 1138745470403754
+                },
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.economy.delta{service:kitty-api,env:preview,!qa:true} by {currency,direction,bucket}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "timeseries",
-                  "display_type": "bars"
-                }
-              ]
-            }
-          },
-          {
-            "definition": {
-              "type": "timeseries",
-              "title": "实际货币收支数量",
-              "requests": [
+                  "definition": {
+                    "legend_layout": "auto",
+                    "requests": [
+                      {
+                        "display_type": "bars",
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.economy.amount{service:kitty-api,env:preview,!qa:true} by {currency,direction}.as_count()"
+                          }
+                        ],
+                        "response_format": "timeseries"
+                      }
+                    ],
+                    "show_legend": true,
+                    "title": "实际货币收支数量",
+                    "type": "timeseries"
+                  },
+                  "id": 6292230735506975
+                },
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.economy.amount{service:kitty-api,env:preview,!qa:true} by {currency,direction}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "timeseries",
-                  "display_type": "bars"
-                }
-              ]
-            }
-          },
-          {
-            "definition": {
-              "type": "timeseries",
-              "title": "分币种金额收支比（gain / spend）",
-              "requests": [
+                  "definition": {
+                    "legend_layout": "auto",
+                    "requests": [
+                      {
+                        "display_type": "line",
+                        "formulas": [
+                          {
+                            "formula": "gain / spend"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "data_source": "metrics",
+                            "name": "gain",
+                            "query": "sum:kitty.economy.amount{service:kitty-api,env:preview,!qa:true,direction:gain} by {currency}.as_count()"
+                          },
+                          {
+                            "data_source": "metrics",
+                            "name": "spend",
+                            "query": "sum:kitty.economy.amount{service:kitty-api,env:preview,!qa:true,direction:spend} by {currency}.as_count()"
+                          }
+                        ],
+                        "response_format": "timeseries"
+                      }
+                    ],
+                    "show_legend": true,
+                    "title": "分币种金额收支比（gain / spend）",
+                    "type": "timeseries"
+                  },
+                  "id": 1441193557205695
+                },
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "gain",
-                      "query": "sum:kitty.economy.amount{service:kitty-api,env:preview,!qa:true,direction:gain} by {currency}.as_count()",
-                      "aggregator": "sum"
-                    },
-                    {
-                      "data_source": "metrics",
-                      "name": "spend",
-                      "query": "sum:kitty.economy.amount{service:kitty-api,env:preview,!qa:true,direction:spend} by {currency}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "gain / spend"
-                    }
-                  ],
-                  "response_format": "timeseries",
-                  "display_type": "line"
-                }
-              ]
-            }
-          },
-          {
-            "definition": {
-              "type": "query_value",
-              "title": "金枪鱼金额收支比（零支出显示无数据）",
-              "requests": [
-                {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "gain",
-                      "query": "sum:kitty.economy.amount{service:kitty-api,env:preview,!qa:true,currency:tuna,direction:gain}.as_count()",
-                      "aggregator": "sum"
-                    },
-                    {
-                      "data_source": "metrics",
-                      "name": "spend",
-                      "query": "sum:kitty.economy.amount{service:kitty-api,env:preview,!qa:true,currency:tuna,direction:spend}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "gain / spend"
-                    }
-                  ],
-                  "response_format": "scalar"
-                }
-              ],
-              "autoscale": true,
-              "precision": 2
-            }
-          },
-          {
-            "definition": {
-              "type": "timeseries",
-              "title": "阿策请求次数（scope / result）",
-              "requests": [
-                {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.advisor.call{service:kitty-api,env:preview,!qa:true} by {scope,result}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "timeseries",
-                  "display_type": "line"
+                  "definition": {
+                    "autoscale": true,
+                    "precision": 2,
+                    "requests": [
+                      {
+                        "aggregator": "last",
+                        "formulas": [
+                          {
+                            "formula": "gain / spend"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "gain",
+                            "query": "sum:kitty.economy.amount{service:kitty-api,env:preview,!qa:true,currency:tuna,direction:gain}.as_count()"
+                          },
+                          {
+                            "aggregator": "sum",
+                            "data_source": "metrics",
+                            "name": "spend",
+                            "query": "sum:kitty.economy.amount{service:kitty-api,env:preview,!qa:true,currency:tuna,direction:spend}.as_count()"
+                          }
+                        ],
+                        "response_format": "scalar"
+                      }
+                    ],
+                    "title": "金枪鱼金额收支比（零支出显示无数据）",
+                    "type": "query_value"
+                  },
+                  "id": 5352407245055847
                 }
               ]
-            }
+            },
+            "id": 3945395413945929
           },
           {
             "definition": {
-              "type": "timeseries",
-              "title": "阿策回退率 %（按 scope）",
-              "requests": [
+              "background_color": "vivid_purple",
+              "layout_type": "ordered",
+              "show_title": true,
+              "title": "阿策顾问",
+              "type": "group",
+              "widgets": [
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "fallback",
-                      "query": "sum:kitty.advisor.call{service:kitty-api,env:preview,!qa:true,result:fallback} by {scope}.as_count()",
-                      "aggregator": "sum"
-                    },
-                    {
-                      "data_source": "metrics",
-                      "name": "calls",
-                      "query": "sum:kitty.advisor.call{service:kitty-api,env:preview,!qa:true} by {scope}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "100 * fallback / calls"
-                    }
-                  ],
-                  "response_format": "timeseries",
-                  "display_type": "line"
+                  "definition": {
+                    "legend_layout": "auto",
+                    "requests": [
+                      {
+                        "display_type": "line",
+                        "formulas": [
+                          {
+                            "formula": "a"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "data_source": "metrics",
+                            "name": "a",
+                            "query": "sum:kitty.advisor.call{service:kitty-api,env:preview,!qa:true} by {scope,result}.as_count()"
+                          }
+                        ],
+                        "response_format": "timeseries"
+                      }
+                    ],
+                    "show_legend": true,
+                    "title": "阿策请求次数（scope / result）",
+                    "type": "timeseries"
+                  },
+                  "id": 3301274560682844
+                },
+                {
+                  "definition": {
+                    "legend_layout": "auto",
+                    "requests": [
+                      {
+                        "display_type": "line",
+                        "formulas": [
+                          {
+                            "formula": "100 * fallback / calls"
+                          }
+                        ],
+                        "queries": [
+                          {
+                            "data_source": "metrics",
+                            "name": "fallback",
+                            "query": "sum:kitty.advisor.call{service:kitty-api,env:preview,!qa:true,result:fallback} by {scope}.as_count()"
+                          },
+                          {
+                            "data_source": "metrics",
+                            "name": "calls",
+                            "query": "sum:kitty.advisor.call{service:kitty-api,env:preview,!qa:true} by {scope}.as_count()"
+                          }
+                        ],
+                        "response_format": "timeseries"
+                      }
+                    ],
+                    "show_legend": true,
+                    "title": "阿策回退率 %（按 scope）",
+                    "type": "timeseries"
+                  },
+                  "id": 8414734528638343
                 }
               ]
-            }
+            },
+            "id": 4981670853684453
           },
           {
             "definition": {
-              "type": "timeseries",
-              "title": "彩蛋揭示次数趋势（非玩家揭示率）",
-              "requests": [
+              "background_color": "vivid_orange",
+              "layout_type": "ordered",
+              "show_title": true,
+              "title": "玩家与会话",
+              "type": "group",
+              "widgets": [
                 {
-                  "queries": [
-                    {
-                      "data_source": "metrics",
-                      "name": "a",
-                      "query": "sum:kitty.event.flag{service:kitty-api,env:preview,!qa:true,flag:sack_cat_freed}.as_count()",
-                      "aggregator": "sum"
-                    }
-                  ],
-                  "formulas": [
-                    {
-                      "formula": "a"
-                    }
-                  ],
-                  "response_format": "timeseries",
-                  "display_type": "line"
+                  "definition": {
+                    "requests": [
+                      {
+                        "columns": [
+                          {
+                            "field": "status_line",
+                            "width": "auto"
+                          },
+                          {
+                            "field": "timestamp",
+                            "width": "auto"
+                          },
+                          {
+                            "field": "message",
+                            "width": "auto"
+                          },
+                          {
+                            "field": "@player_id",
+                            "width": "auto"
+                          },
+                          {
+                            "field": "@session_id",
+                            "width": "auto"
+                          },
+                          {
+                            "field": "content",
+                            "width": "auto"
+                          }
+                        ],
+                        "query": {
+                          "data_source": "logs_stream",
+                          "indexes": [],
+                          "query_string": "service:kitty-api env:preview @player_id:* @session_id:* -@qa:true",
+                          "sort": {
+                            "column": "timestamp",
+                            "order": "desc"
+                          },
+                          "storage": "hot"
+                        },
+                        "response_format": "event_list"
+                      }
+                    ],
+                    "title": "玩家 / 会话日志（留存分析底座）",
+                    "type": "list_stream"
+                  },
+                  "id": 607208805402831
                 }
               ]
-            }
+            },
+            "id": 434932559870330
           },
           {
             "definition": {
-              "type": "log_stream",
-              "title": "玩家 / 会话日志（留存分析底座）",
-              "query": "service:kitty-api env:preview @player_id:* @session_id:* -@qa:true",
-              "indexes": [],
-              "columns": [
-                "timestamp",
-                "message",
-                "@player_id",
-                "@session_id"
-              ],
-              "show_date_column": true,
-              "show_message_column": true,
-              "message_display": "inline",
-              "sort": {
-                "column": "timestamp",
-                "order": "desc"
-              }
-            }
-          },
-          {
-            "definition": {
-              "type": "manage_status",
-              "title": "业务监控状态（不含复合条件子监控）",
-              "query": "tag:business-module:3 tag:role:alert",
-              "summary_type": "monitors",
-              "display_format": "countsAndList",
-              "sort": "status,desc"
-            }
+              "background_color": "gray",
+              "layout_type": "ordered",
+              "show_title": true,
+              "title": "业务监控状态",
+              "type": "group",
+              "widgets": [
+                {
+                  "definition": {
+                    "color_preference": "text",
+                    "count": 50,
+                    "display_format": "countsAndList",
+                    "hide_zero_counts": true,
+                    "query": "tag:business-module:3 tag:role:alert",
+                    "show_last_triggered": false,
+                    "show_priority": false,
+                    "sort": "status,desc",
+                    "start": 0,
+                    "summary_type": "monitors",
+                    "title": "业务监控状态（不含复合条件子监控）",
+                    "type": "manage_status",
+                    "last_triggered_format": "relative",
+                    "show_investigation": false,
+                    "show_status": true
+                  },
+                  "id": 1955899115172593
+                }
+              ]
+            },
+            "id": 3661900202378128
           }
         ]
       }

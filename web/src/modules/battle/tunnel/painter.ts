@@ -1,5 +1,4 @@
 import {paintCarryAnchor} from '../carry-painter';
-import {paintBossRetreatLabel} from '../boss-retreat-label';
 import {paintSceneEdge, paintSceneProp, paintSceneTile, SCENE_INK} from '../scene-art';
 import {paintTunnelObstacleScenery, TUNNEL_JOINED_OBSTACLE_CELLS} from '../scene-industrial-obstacles';
 import {paintDetailedTunnelFixture} from '../scene-detailed-exteriors';
@@ -168,7 +167,7 @@ export function paintTunnel(ctx:CanvasRenderingContext2D,state:TunnelState,selec
   ctx.beginPath();for(const p of CELLS)ctx.rect(p.x*CELL,p.y*CELL,CELL,CELL);ctx.clip();
   for(const p of CELLS){
     const goal=p.x===MAP.goal.x&&p.y===MAP.goal.y,obstacle=obstacleCell(p.x,p.y);
-    paintSceneTile(ctx,'tunnel',p.x,p.y,CELL,{goal,obstacle,spawn:MAP.spawns.some(cell=>cell.x===p.x&&cell.y===p.y),boss:MAP.bossCells.some(cell=>cell.x===p.x&&cell.y===p.y)});
+    paintSceneTile(ctx,'tunnel',p.x,p.y,CELL,{goal,obstacle,spawn:MAP.spawns.some(cell=>cell.x===p.x&&cell.y===p.y),boss:state.boss.phase!=='defeated'&&MAP.bossCells.some(cell=>cell.x===p.x&&cell.y===p.y)});
     if(!joinedObstacles.has(`${p.x},${p.y}`))paintSceneEdge(ctx,'tunnel',p.x,p.y,CELL,mapCell);
   }
   paintTunnelObstacleScenery(ctx);
@@ -181,18 +180,17 @@ export function paintTunnel(ctx:CanvasRenderingContext2D,state:TunnelState,selec
       blocks(ctx,'#d3c39a',[[x+20,y+32,13,4],[x+20,y+28,4,12]]);
     }else blocks(ctx,SCENE_INK.danger,[[x+45,y+24,4,23],[x+41,y+28,4,15],[x+37,y+32,4,7]]);
   }
-  for(const p of MAP.bossCells)rect(ctx,p.x*CELL+3,p.y*CELL+3,CELL-6,CELL-6,'#e0b26c17');
+  if(state.boss.phase!=='defeated')for(const p of MAP.bossCells)rect(ctx,p.x*CELL+3,p.y*CELL+3,CELL-6,CELL-6,'#e0b26c17');
   paintCarryAnchor(ctx,state.carry,CELL,mapCell);
   if(dark){ctx.fillStyle='#071421d4';for(const p of CELLS)ctx.fillRect(p.x*CELL+2,p.y*CELL+2,CELL-4,CELL-4);}
   else if(night){ctx.fillStyle='#9cdaca26';for(const p of CELLS)ctx.fillRect(p.x*CELL+3,p.y*CELL+3,CELL-6,CELL-6);}
   // Static known landmarks and warning remain readable; no hidden minion data is painted.
-  ctx.strokeStyle=dark?SCENE_INK.label:SCENE_INK.gold;ctx.lineWidth=2;ctx.strokeRect(state.boss.x*CELL+4,state.boss.y*CELL+4,2*CELL-8,2*CELL-8);
+  ctx.strokeStyle=dark?SCENE_INK.label:SCENE_INK.gold;ctx.lineWidth=2;if(state.boss.phase!=='defeated')ctx.strokeRect(state.boss.x*CELL+4,state.boss.y*CELL+4,2*CELL-8,2*CELL-8);
   if(windup){ctx.strokeStyle=`rgba(255,153,121,${.55+.2*Math.sin(state.elapsed*8)})`;ctx.lineWidth=2;for(const p of CELLS)ctx.strokeRect(p.x*CELL+6,p.y*CELL+6,CELL-12,CELL-12);}
   const chosen=state.cats.find(cat=>cat.id===selected&&cat.status==='active');
   if(chosen&&!state.aim){ctx.fillStyle=dark?'#8ee2cb30':'#8ee2cb28';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;for(const p of getAttackCells(chosen)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);}}
   if(state.aim){ctx.fillStyle='#7ccbd12d';for(const p of CELLS)if(!obstacleCell(p.x,p.y))ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);const cat=state.cats.find(value=>value.id===state.aim?.catId);if(cat&&state.aim.target){ctx.fillStyle='#f4ce8366';ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;for(const p of getSkillCells(cat,state.aim.target)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+5,p.y*CELL+5,CELL-10,CELL-10);}}}
   if(moveTarget&&mapCell(moveTarget.x,moveTarget.y)){ctx.strokeStyle=dark?'#e6f5d7':SCENE_INK.selected;ctx.lineWidth=2;ctx.strokeRect(moveTarget.x*CELL+5,moveTarget.y*CELL+5,CELL-10,CELL-10);}
-  if(state.boss.phase==='defeated')paintBossRetreatLabel(ctx,'监守已退去',MAP.boss.x*CELL,MAP.boss.y*CELL,2*CELL,2*CELL);
   drawBoss(ctx,state);
   for(const enemy of state.enemies.filter(enemy=>isEnemyVisible(state,enemy))){
     ctx.save();ctx.translate((enemy.x+.5)*CELL-19,(enemy.y+.5)*CELL-24+Math.sin(state.elapsed*6+enemy.x)*2);

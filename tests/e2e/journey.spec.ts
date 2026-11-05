@@ -9,7 +9,7 @@ const ajv=new Ajv2020({strict:false,allErrors:true});
 const stateSchema=ajv.compile({components:spec.components,$ref:'#/components/schemas/GameState'});
 const catalogSchema=ajv.compile({components:spec.components,$ref:'#/components/schemas/Catalog'});
 async function enterGame(page:Page) {
- await page.getByRole('button',{name:/^(开始冒险|继续冒险)/}).click();
+ await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
 }
 // 序章对话结束后服务端自动进入 l00_tutorial 教学战(雨巷探索的前置教学)。
 // 这里用 API 上下文结算教学战(不经过页面,避免污染 battleCommands 断言),再刷新同步前端。
@@ -55,7 +55,7 @@ test('真实浏览器贯通序章救援与家园闭环、集市事件验收和�
    if(type==='START_BATTLE'||type==='COMPLETE_BATTLE')battleCommands.push(type);
   }
  });
- await page.goto('/');await expect(page.getByRole('button',{name:'开始冒险'})).toBeVisible();
+ await page.goto('/');await expect(page.getByRole('button',{name:'暂不登录'})).toBeVisible();
  fs.mkdirSync('output/preview',{recursive:true});await page.screenshot({path:'output/preview/start.png',fullPage:true});
  await enterGame(page);await expect(page.locator('[data-renderer="canvas2d"]')).toBeVisible();
  fs.mkdirSync('output/preview',{recursive:true});await page.screenshot({path:'output/preview/desktop.png',fullPage:true});
@@ -157,7 +157,7 @@ test('服务器已提交但响应丢失时，重试原请求不会重复推进',
  expect(revision).toBe(1);
 });
 test('窄屏首屏没有水平溢出且故事可操作',async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.goto('/');await expect(page.getByRole('button',{name:'开始冒险'})).toBeVisible();
+ await page.setViewportSize({width:390,height:844});await page.goto('/');await expect(page.getByRole('button',{name:'暂不登录'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await page.screenshot({path:'output/preview/mobile-start.png',fullPage:true});
  await enterGame(page);await expect(page.getByRole('button',{name:'继续故事'})).toBeVisible();await page.getByRole('button',{name:'继续故事'}).click();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await page.screenshot({path:'output/preview/mobile.png',fullPage:true});
@@ -180,7 +180,7 @@ test('章节地图按进度显示，弹窗冻结移动并恢复焦点',async({pa
  await expect(page.getByRole('button',{name:'点点 · 纸箱 · E'})).toHaveCount(0);
  await page.getByRole('button',{name:'暂停',exact:true}).click();await expect(page.getByText('旅程已暂停',{exact:true})).toBeVisible();
  await page.locator('.pause-label').getByRole('button',{name:'继续旅程'}).click();await expect(page.locator('.pause-label')).toHaveCount(0);
- await page.getByRole('button',{name:'返回标题'}).click();await expect(page.getByRole('button',{name:'继续冒险'})).toBeVisible();await enterGame(page);
+ await page.getByRole('button',{name:'返回标题'}).click();await expect(page.getByRole('button',{name:/^(暂不登录|继续冒险)/})).toBeVisible();await enterGame(page);
  await expect(page.getByRole('button',{name:'继续故事'})).toHaveCount(0);
 });
 
@@ -211,7 +211,7 @@ test('新版美术资源可加载，矮屏菜单与新增剧情态度可操作',
   await page.setViewportSize(viewport);await page.goto('/');
   const decoded=await page.evaluate(async()=>{const image=new Image();image.src='/assets/city-backdrop.svg';await image.decode();return {width:image.naturalWidth,height:image.naturalHeight};});expect(decoded.width).toBeGreaterThan(0);expect(decoded.height).toBeGreaterThan(0);
   await expect(page.locator('.start-menu-backdrop')).toBeVisible();await expect(page.locator('.start-cats svg.pixel-cat')).toHaveCount(3);
-  const play=page.getByRole('button',{name:'开始冒险'});await play.scrollIntoViewIfNeeded();
+  const play=page.getByRole('button',{name:'暂不登录'});await play.scrollIntoViewIfNeeded();
   const bounds=(await play.boundingBox())!;expect(bounds.y).toBeGreaterThanOrEqual(0);expect(bounds.y+bounds.height).toBeLessThanOrEqual(viewport.height);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:`output/preview/start-${viewport.width}x${viewport.height}.png`,fullPage:true});

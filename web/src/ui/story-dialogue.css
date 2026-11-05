@@ -18,8 +18,8 @@
 .story-dialogue.dialogue-bubble:has(.dialogue-advance-hit:focus-visible) {outline:2px solid #bf9659;outline-offset:6px}
 .story-dialogue.dialogue-bubble .dialogue-header {position:relative;z-index:2;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;pointer-events:none}
 .story-dialogue.dialogue-bubble .dialogue-who {display:flex;align-items:center;min-height:58px;gap:12px;margin:0}
-.story-dialogue.dialogue-bubble.dialogue-has-portrait {padding-left:clamp(215px,17vw,310px)}
-.story-dialogue.dialogue-bubble .dialogue-avatar {position:absolute;left:24px;bottom:18px;z-index:2;display:grid;place-items:center;width:clamp(180px,14vw,260px);height:clamp(180px,14vw,260px);padding:0;border:0;background:none;box-shadow:none;pointer-events:none}
+.story-dialogue.dialogue-bubble.dialogue-has-portrait {padding-left:clamp(185px,14.5vw,260px)}
+.story-dialogue.dialogue-bubble .dialogue-avatar {position:absolute;left:24px;bottom:44px;z-index:2;display:grid;place-items:center;width:clamp(155px,12vw,220px);height:clamp(155px,12vw,220px);padding:0;border:0;background:none;box-shadow:none;pointer-events:none}
 .story-dialogue.dialogue-bubble .dialogue-avatar .pixel-cat {width:100%!important;height:100%!important;filter:drop-shadow(0 7px 0 #76604326)}
 .story-dialogue.dialogue-bubble .dialogue-identity {display:flex;flex-direction:column;gap:5px}
 .story-dialogue.dialogue-bubble .dialogue-identity small {font-size:12px;font-weight:500;letter-spacing:3px;color:#a18b65;line-height:1.1}
@@ -44,8 +44,8 @@
 @keyframes dialogue-page-cue {50%{translate:0 3px;opacity:.45}}
 @media(max-width:700px),(max-height:600px) {
   .story-dialogue.dialogue-bubble {left:max(14px,var(--safe-left,0px));right:max(14px,var(--safe-right,0px));bottom:max(12px,var(--safe-bottom,0px));width:calc(100% - 28px);min-height:138px;padding:14px 20px 25px}
-  .story-dialogue.dialogue-bubble.dialogue-has-portrait {padding-left:154px}
-  .story-dialogue.dialogue-bubble .dialogue-avatar {width:150px;height:150px;left:0;bottom:12px}
+  .story-dialogue.dialogue-bubble.dialogue-has-portrait {padding-left:134px}
+  .story-dialogue.dialogue-bubble .dialogue-avatar {width:128px;height:128px;left:0;bottom:28px}
   .story-dialogue.dialogue-bubble .dialogue-who {gap:9px;min-height:44px}
   .story-dialogue.dialogue-bubble .dialogue-identity {gap:4px}
   .story-dialogue.dialogue-bubble .dialogue-identity small {font-size:8px;letter-spacing:2px}
@@ -57,6 +57,6 @@
   .story-dialogue.dialogue-bubble .dialogue-read-hint {right:20px;bottom:10px;font-size:9px}
   .story-dialogue.dialogue-bubble .attitude-toggle button {font-size:12px;padding:5px 9px}
 }
-@media(max-width:600px) {.story-dialogue.dialogue-bubble.dialogue-has-portrait {padding-left:122px}.story-dialogue.dialogue-bubble .dialogue-avatar {width:120px;height:120px;left:0;bottom:20px}.story-dialogue.dialogue-bubble .dialogue-skip {min-width:112px;font-size:14px}.story-dialogue.dialogue-bubble .dialogue-who .speaker {font-size:21px}}
+@media(max-width:600px) {.story-dialogue.dialogue-bubble.dialogue-has-portrait {padding-left:108px}.story-dialogue.dialogue-bubble .dialogue-avatar {width:104px;height:104px;left:0;bottom:36px}.story-dialogue.dialogue-bubble .dialogue-skip {min-width:112px;font-size:14px}.story-dialogue.dialogue-bubble .dialogue-who .speaker {font-size:21px}}
 @media(any-pointer:coarse) {.story-dialogue.dialogue-bubble .dialogue-skip {min-height:44px}}
 @media(prefers-reduced-motion:reduce) {.story-dialogue.dialogue-bubble,.story-dialogue.dialogue-bubble .dialogue-read-hint i {animation:none}.story-dialogue.dialogue-bubble.dialogue-bubble-closing {opacity:0}}

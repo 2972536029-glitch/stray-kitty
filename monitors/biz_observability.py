@@ -57,31 +57,87 @@ def validate_metric_query(query):
     require("player_id" not in query and "session_id" not in query,
             "Player/session identifiers must never be metric dimensions")
     for scope in re.findall(r"kitty\.[a-zA-Z0-9_.]+\{([^}]+)\}", query):
-        require("!qa:true" in scope and "env:preview" in scope,
+        tags = {tag.strip() for tag in scope.split(",")}
+        require({"!qa:true", "env:preview", "service:kitty-api"} <= tags,
                 "Every metric operand must independently filter QA and environment")
 
 
+def widget_definitions(widgets):
+    """Visit containers and leaves so a UI group cannot bypass policy checks."""
+    for widget in widgets:
+        require(set(widget) <= {"definition", "id", "layout"}, "Unsupported widget field")
+        definition = widget["definition"]
+        yield definition
+        if definition.get("type") == "group":
+            yield from widget_definitions(definition.get("widgets", []))
+
+
+def validate_session_query(query):
+    require({"service:kitty-api", "env:preview", "@player_id:*", "@session_id:*", "-@qa:true"}
+            <= set(query.split()), "Session logs must filter identity, environment and QA")
+
+
 def validate_dashboard(payload, key):
-    require(set(payload) <= {"title", "description", "layout_type", "widgets"},
+    require(set(payload) <= {"title", "description", "layout_type", "widgets", "reflow_type",
+                             "tags", "notify_list", "template_variables"},
             f"Unsupported dashboard field: {key}")
     require(payload.get("layout_type") == "ordered", "Dashboards use ordered layout")
+    require(payload.get("reflow_type", "auto") == "auto", "Dashboard groups use automatic reflow")
     require(MARKER.format(key=key) in payload.get("description", ""),
             f"Dashboard ownership marker missing: {key}")
     require(payload.get("widgets"), f"Empty dashboard: {key}")
-    for widget in payload["widgets"]:
-        definition = widget["definition"]
+    module = {"story-dashboard": "1", "economy-dashboard": "3"}.get(key)
+    require(module is not None, f"Unknown dashboard module: {key}")
+    # This is the supported API subset, including defaults returned by the UI.
+    # SDK camelCase and additionalProperties wrappers must be normalized before
+    # storing payloads; permission/identity fields are intentionally excluded.
+    fields = {
+        "group": {"background_color", "layout_type", "show_title", "widgets"},
+        "note": {"content", "background_color", "font_size", "has_padding", "show_tick",
+                 "text_align", "vertical_align"},
+        "timeseries": {"requests", "legend_layout", "show_legend"},
+        "query_value": {"requests", "autoscale", "precision"},
+        "toplist": {"requests"},
+        "sunburst": {"requests", "legend"},
+        "manage_status": {"query", "color_preference", "count", "display_format", "hide_zero_counts",
+                          "show_last_triggered", "show_priority", "sort", "start", "summary_type",
+                          "last_triggered_format", "show_investigation", "show_status"},
+        "log_stream": {"query", "indexes", "columns", "show_date_column", "show_message_column",
+                       "message_display", "sort"},
+        "list_stream": {"requests"},
+    }
+    for definition in widget_definitions(payload["widgets"]):
         kind = definition["type"]
-        require(kind in {"note", "timeseries", "query_value", "toplist", "sunburst",
-                         "manage_status", "log_stream"}, f"Unsupported widget: {kind}")
-        if kind == "note":
+        require(kind in fields, f"Unsupported widget: {kind}")
+        require(set(definition) <= fields[kind] | {"type", "title"}, f"Unsupported {kind} field")
+        if kind == "group":
+            require(definition.get("layout_type") == "ordered" and definition.get("widgets"),
+                    "Groups must contain widgets in ordered layout")
+        elif kind == "note":
             require(bool(definition.get("content")), "Note content is required")
         elif kind == "manage_status":
-            require("business-module:" in definition.get("query", ""),
-                    "Monitor summaries must be scoped to their module")
+            require(set(definition.get("query", "").split()) ==
+                    {f"tag:business-module:{module}", "tag:role:alert"},
+                    "Monitor summaries must select their module and role:alert only")
         elif kind == "log_stream":
-            query = definition.get("query", "")
-            require("@session_id:*" in query and "env:preview" in query and "-@qa:true" in query,
-                    "Session logs must filter environment and QA")
+            validate_session_query(definition.get("query", ""))
+            require({"@player_id", "@session_id"} <= set(definition.get("columns", [])),
+                    "Session logs must display player and session identifiers")
+        elif kind == "list_stream":
+            require(bool(definition.get("requests")), "Empty session list request")
+            for request in definition["requests"]:
+                require(set(request) <= {"columns", "query", "response_format"},
+                        "Unsupported list_stream request field")
+                require(request.get("response_format") == "event_list", "Session list must return event_list")
+                query = request.get("query", {})
+                require(set(query) <= {"data_source", "indexes", "query_string", "sort", "storage"},
+                        "Unsupported logs_stream query field")
+                require(query.get("data_source") == "logs_stream", "Session list must query logs_stream")
+                validate_session_query(query.get("query_string", ""))
+                columns = [column["field"] for column in request.get("columns", [])]
+                require(len(columns) == len(set(columns)), "Session list columns must be unique")
+                require({"@player_id", "@session_id"} <= set(columns),
+                        "Session logs must display player and session identifiers")
         else:
             require(bool(definition.get("requests")), f"Empty request: {kind}")
             for request in definition["requests"]:
@@ -93,8 +149,17 @@ def validate_dashboard(payload, key):
                         "Query names must be present and unique")
                 for query in request["queries"]:
                     require(query["data_source"] == "metrics", "Unsupported query data_source")
-                    require(query.get("aggregator") == "sum", "Counts must aggregate with sum")
+                    # The UI omits this optional field only for timeseries;
+                    # scalar requests still need explicit window aggregation.
+                    require(query.get("aggregator", "sum" if kind == "timeseries" else None) == "sum",
+                            "Counts must aggregate with sum")
                     validate_metric_query(query["query"])
+                    require(re.fullmatch(r"sum:kitty\.[a-zA-Z0-9_.]+\{[^}]+\}(?: by \{[^}]+\})?\.as_count\(\)",
+                                         query["query"]) is not None,
+                            "Count series must use sum and as_count()")
+                    if "金额收支比" in definition.get("title", "") or "实际货币收支数量" in definition.get("title", ""):
+                        require("kitty.economy.amount{" in query["query"],
+                                "Financial amounts and ratios must use economy.amount")
                 for formula in request.get("formulas", []):
                     variables = set(re.findall(r"[A-Za-z_][A-Za-z_0-9]*", formula["formula"]))
                     require(variables <= names, "Formula references unknown metric queries")
