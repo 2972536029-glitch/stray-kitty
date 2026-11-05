@@ -4,13 +4,14 @@ import {followCameraPoint} from '../../adapters/canvas/camera';
 import {rainyAlleyObjectEligible, rainyAlleyRegistration, rainyAlleySource, type RainyFixedObject} from './assets';
 import {findPath, sweepMove} from './collision';
 import {paintSqueezePassage} from './squeezePainter';
+import {createSqueezeMotion, type SqueezeMotion} from './squeezeMotion';
 import {paintEventProp} from './eventProps';
 import {rainyEventObjective, EVENT_PROP_SCALE, type AlleyLabel} from './eventLabels';
 import {chapterBackground} from '../map/artwork';
 import {
   rainyAlleyFieldClosed, rainyAlleyFieldOpen, rainyAlleyGeometryClosed, rainyAlleyGeometryOpen,
   rainyAlleySqueezeFieldClosed, rainyAlleySqueezeFieldOpen, SQUEEZE_BOUNDS, SQUEEZE_CENTER_X,
-  SQUEEZE_OPENING_WIDTH, CRATE_CLIMBS, CRATE_CLIMB_RADIUS, battleReturnPositionTarget, crateClimbTarget, squeezeExitTarget
+  SQUEEZE_OPENING_WIDTH, CRATE_CLIMBS, CRATE_CLIMB_RADIUS, battleReturnPositionTarget, crateClimbTarget
 } from './runtimeGeometry';
 import type {Point, WorldPolygon} from './types';
 
@@ -19,7 +20,6 @@ const spawn = {x: 111, y: 626};
 const pendingPosterReturn = {x: 990, y: 396};
 const speed = 96;
 const cameraSize = {width: 530, height: 325};
-const squeezeSpeed = 58;
 const CLIMB_DURATION = 0.55;
 // —— 巷尾的老黄：比通用标记更宽的靠近提示半径；首次靠近的一次性氛围字幕与交互欢呼（纯表现层）。 ——
 const DOG_FRIEND_ID = 'alley_dog_friend_point';
@@ -45,7 +45,7 @@ export class IntegratedRainyAlley {
   private lastZoneAttempt: string | null = null;
   private zoneChecksInFlight = new Set<string>();
   private zoneCheckStatus = new Map<string, ZoneCheckResult>();
-  private squeezeTargetY: number | null = null;
+  private squeezeMotion: SqueezeMotion | null = null;
   private squeezeFeedbackUntil = 0;
   private climbTime = 0;
   private climbFrom: Point | null = null;
@@ -73,7 +73,7 @@ export class IntegratedRainyAlley {
     this.path = []; this.destination = null; this.nearby = null;
     this.zonesInside.clear();
     for (const zone of rainyAlleySource.objects.zones) if (Math.hypot(this.position.x - zone.x, this.position.y - zone.y) <= zone.r) this.zonesInside.add(zone.id);
-    this.zoneChecksInFlight.clear(); this.squeezeTargetY = null; this.squeezeFeedbackUntil = 0; this.climbTime = 0; this.climbFrom = null; this.climbTo = null; this.climbCrateId = null;
+    this.zoneChecksInFlight.clear(); this.squeezeMotion = null; this.squeezeFeedbackUntil = 0; this.climbTime = 0; this.climbFrom = null; this.climbTo = null; this.climbCrateId = null;
   }
 
   toggleDebug() {this.debug = !this.debug;}
@@ -90,22 +90,22 @@ export class IntegratedRainyAlley {
   /** 欢呼是否进行中（进行中让出 [E] 提示气泡，避免两层气泡叠在一起）。 */
   private cheering() {return performance.now() < this.cheerUntil;}
   pauseForEvent() {this.path = []; this.destination = null;}
-  squeezePromptActive() {return this.squeezeTargetY === null && this.squeezeDirection() !== 0;}
+  squeezePromptActive() {return this.squeezeMotion === null && this.squeezeDirection() !== 0;}
   squeezeHint() {
-    if (this.squeezeTargetY !== null) return '正在侧身挤过狭缝…';
+    if (this.squeezeMotion !== null) return '正在侧身挤过狭缝…';
     if (performance.now() < this.squeezeFeedbackUntil) return '已穿过狭缝，可以继续移动。';
     return this.squeezePromptActive() ? '松开移动键，再轻按 Q 挤过狭缝' : null;
   }
   tryStartSqueeze() {
     const direction = this.squeezeDirection();
-    if (!direction || this.squeezeTargetY !== null) return false;
-    this.path = []; this.destination = null;
+    if (!direction || this.squeezeMotion !== null) return false;
     const normalField = this.gateOpen ? rainyAlleyFieldOpen : rainyAlleyFieldClosed;
     const squeezeField = this.gateOpen ? rainyAlleySqueezeFieldOpen : rainyAlleySqueezeFieldClosed;
-    const exit = squeezeExitTarget(normalField, squeezeField, direction);
-    if (!exit) return false;
+    const motion = createSqueezeMotion(this.position, normalField, squeezeField, direction);
+    if (!motion) return false;
+    this.path = []; this.destination = null;
     this.squeezeFeedbackUntil = 0;
-    this.squeezeTargetY = exit.y;
+    this.squeezeMotion = motion;
     return true;
   }
 
@@ -137,15 +137,10 @@ export class IntegratedRainyAlley {
       const progress = 1 - this.climbTime / CLIMB_DURATION, eased = progress * progress * (3 - 2 * progress);
       this.position = {x: this.climbFrom.x + (this.climbTo.x - this.climbFrom.x) * eased, y: this.climbFrom.y + (this.climbTo.y - this.climbFrom.y) * eased};
       if (this.climbTime === 0) {this.position = {...this.climbTo}; this.climbFrom = null; this.climbTo = null; this.climbCrateId = null;}
-    } else if (this.squeezeTargetY !== null) {
-      const squeezeField = gateOpen ? rainyAlleySqueezeFieldOpen : rainyAlleySqueezeFieldClosed;
-      const dx = SQUEEZE_CENTER_X - this.position.x, dy = this.squeezeTargetY - this.position.y;
-      const distance = Math.hypot(dx, dy);
-      if (distance <= 1) {this.position = {x: SQUEEZE_CENTER_X, y: this.squeezeTargetY}; this.squeezeTargetY = null; this.squeezeFeedbackUntil = performance.now() + 1800;}
-      else {
-        const amount = Math.min(distance, squeezeSpeed * deltaSeconds);
-        this.position = sweepMove(squeezeField, this.position, {x: dx / distance * amount, y: dy / distance * amount}, 2).position;
-      }
+    } else if (this.squeezeMotion !== null) {
+      const result = this.squeezeMotion.advance(deltaSeconds);
+      this.position = result.position;
+      if (result.done) {this.squeezeMotion = null; this.squeezeFeedbackUntil = performance.now() + 1800;}
     } else if (horizontal || vertical) {
       const length = Math.hypot(horizontal, vertical);
       this.path = []; this.destination = null;
@@ -212,7 +207,10 @@ export class IntegratedRainyAlley {
     this.drawMarkers(context, flags);
     context.save();
     context.translate(this.position.x, this.position.y);
-    if (this.squeezeTargetY !== null) context.scale(.7, 1.04);
+    if (this.squeezeMotion !== null) {
+      const compression = this.squeezeMotion.compression;
+      context.scale(1 - .3 * compression, 1 + .04 * compression);
+    }
     if (this.climbTime > 0) {
       const westClimb = this.climbCrateId === 'west';
       const lift = Math.sin(Math.PI * (1 - this.climbTime / CLIMB_DURATION)) * (westClimb ? 12 : 5);
@@ -405,7 +403,7 @@ export class IntegratedRainyAlley {
     const point = Math.hypot(this.position.x-top.x,this.position.y-top.y) < Math.hypot(this.position.x-bottom.x,this.position.y-bottom.y) ? top : bottom;
     const distance = Math.hypot(this.position.x-point.x,this.position.y-point.y);
     labels.push({id:'squeeze',text:'侧身穿过',key:this.squeezePromptActive() ? 'q' : undefined,
-      ...project({x:SQUEEZE_BOUNDS.right + 22,y:point.y - 14}),alpha:this.squeezeTargetY !== null ? 0 : Math.max(0,Math.min(1,(72-distance)/30))});
+      ...project({x:SQUEEZE_BOUNDS.right + 22,y:point.y - 14}),alpha:this.squeezeMotion !== null ? 0 : Math.max(0,Math.min(1,(72-distance)/30))});
     return labels;
   }
 
