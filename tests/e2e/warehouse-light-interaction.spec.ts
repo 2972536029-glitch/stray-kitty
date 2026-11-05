@@ -14,7 +14,7 @@ test('warehouse light acknowledgements do not freeze walking, bypass pause, or d
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
-  await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+  await page.getByRole('button', {name: /^(暂不登录|继续冒险)/}).click();
   const canvas = page.locator('canvas[data-map-id="warehouse"]');
   await expect(canvas).toHaveAttribute('data-ready', 'true');
   await canvas.focus();

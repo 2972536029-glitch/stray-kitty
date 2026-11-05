@@ -61,3 +61,29 @@ test('explicit fresh journey archives the unavailable session and starts with a 
     assert.deepEqual(archives[0].pending, {playerId: oldSession.playerId, key: 'pending-command-1', request: oldRequest});
   } finally {globalThis.fetch = originalFetch;restore();}
 });
+
+
+test('successful login is remembered only for its own session and never stores the password', async () => {
+  const {storage,restore}=installStorage(),originalFetch=globalThis.fetch;
+  try {
+    const cache=new BrowserSessionStore();cache.write(oldSession);
+    const account={playerId:'account-player',token:'account-token'};
+    globalThis.fetch=async()=>new Response(JSON.stringify(account),{status:200});
+    const api=new HttpGameApi(cache),session=await api.loginAccount('HomeCat','secret-password');api.adoptSession(session);
+    assert.equal(new HttpGameApi(cache).accountName(),'homecat');
+    assert.ok(!Array.from({length:storage.length},(_,i)=>storage.getItem(storage.key(i)!)).join('').includes('secret-password'));
+    cache.write(oldSession);assert.equal(new HttpGameApi(cache).accountName(),null);
+    cache.clear();assert.equal(storage.getItem('stray-kitty.account.v1'),null);
+  } finally {globalThis.fetch=originalFetch;restore();}
+});
+
+test('register remembers the current journey while failed login leaves it intact', async () => {
+  const {restore}=installStorage(),originalFetch=globalThis.fetch;
+  try {
+    const cache=new BrowserSessionStore();cache.write(oldSession);const api=new HttpGameApi(cache);
+    globalThis.fetch=async()=>new Response(JSON.stringify({username:'newcat'}),{status:201});
+    await api.registerAccount('NewCat','registration-password');assert.equal(api.accountName(),'newcat');assert.deepEqual(cache.read(),oldSession);
+    globalThis.fetch=async()=>new Response(JSON.stringify({error:{code:'AUTH_FAILED',message:'bad login'}}),{status:401});
+    await assert.rejects(api.loginAccount('OtherCat','wrong-password'));assert.equal(api.accountName(),'newcat');assert.deepEqual(cache.read(),oldSession);
+  } finally {globalThis.fetch=originalFetch;restore();}
+});

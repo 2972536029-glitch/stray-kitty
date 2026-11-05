@@ -38,7 +38,7 @@ test('既有内容版本的战斗会话刷新后沿用同一场次，宽窄屏�
     }
   });
   await page.goto('/');
-  await page.getByRole('button', {name: '继续冒险'}).click();
+  await page.getByRole('button', {name:/^(暂不登录|继续冒险)/}).click();
   const battle = page.locator('section[aria-label="序章塔防战斗"]');
   await expect(battle).toHaveAttribute('data-phase', 'ready');
   await expect(page.getByTestId('battle-wave-progress')).toContainText('实战共 6 波');
@@ -72,7 +72,7 @@ test('既有内容版本的战斗会话刷新后沿用同一场次，宽窄屏�
   await expect(page.getByTestId('battle-cat-caster')).toHaveAttribute('aria-label',/体力 65 \/ 80，C4，/);
   await expect(page.getByTestId('battle-cat-guard')).toHaveAttribute('aria-label',/体力 240 \/ 240，B5，/);
   await page.reload();
-  await page.getByRole('button', {name: '继续冒险'}).click();
+  await page.getByRole('button', {name:/^(暂不登录|继续冒险)/}).click();
   await expect(battle).toHaveAttribute('data-phase', 'ready');
   await expect(page.getByRole('alert')).toHaveCount(0);
   const restored = await (await request.get('/api/v1/state', {headers})).json() as GameState;

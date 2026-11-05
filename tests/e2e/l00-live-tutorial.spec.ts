@@ -13,7 +13,7 @@ async function openTutorial(page:Page,request:APIRequestContext,start=true){
   }
   expect(state.activeBattle?.stageId).toBe('l00_tutorial');
   await page.addInitScript(value=>localStorage.setItem('stray-kitty.session.v1',JSON.stringify(value)),session);
-  await page.goto('/');await page.getByRole('button',{name:/^继续冒险/}).click();
+  await page.goto('/');await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
   const battle=page.locator('section[aria-label="序章塔防战斗"]');
   if(!start)return battle;
   await page.getByTestId('battle-speed-toggle').click();await page.getByTestId('battle-play-toggle').click();

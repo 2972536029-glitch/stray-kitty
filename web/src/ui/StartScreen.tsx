@@ -6,9 +6,13 @@ import GameButton from './GameButton';
 export default function StartScreen({
   hasProgress,
   disabled,
+  signedIn,
+  onLogin,
   onStart
 }: {
   hasProgress: boolean;
+  signedIn: boolean;
+  onLogin: () => void;
   disabled: boolean;
   onStart: () => void;
 }) {
@@ -21,9 +25,10 @@ export default function StartScreen({
       <h1>小猫回家记</h1><h2>流浪猫王国</h2>
       <p>咪想回家。原来不是所有猫都有家。<strong>那就帮它们找到家。</strong></p>
       <div className="start-actions">
-        <GameButton className="start-play" icon="play" disabled={disabled} onClick={onStart}
-          label={hasProgress ? '继续冒险' : '开始冒险'} sub={hasProgress ? '沿着上次的猫爪印继续' : '从金枪鱼事件开始'}/>
+        <GameButton className="start-play" aria-label={signedIn?'继续冒险':'登录'} icon={signedIn?"play":"account"} disabled={disabled} onClick={signedIn?onStart:onLogin}
+          label={signedIn ? '继续冒险' : '登录'} sub={signedIn ? '沿着上次的猫爪印继续' : '登录账号，记住回家的路'}/>
       </div>
+      {!signedIn&&<button type="button" className="start-guest" aria-label="暂不登录" disabled={disabled} onClick={onStart}>暂不登录<span>{hasProgress?'接着本机旅程':'先去小巷看看'} ›</span></button>}
     </div>
   </section>;
 }

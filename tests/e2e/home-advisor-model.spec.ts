@@ -89,7 +89,7 @@ async function openHome(page: Page, fixture: string) {
     localStorage.setItem('stray-kitty.tutorial.home', 'done');
     localStorage.setItem('stray-kitty.hud.topbar', 'expanded');
   }, session);
-  await page.goto(origin);await page.getByRole('button', {name: '继续冒险'}).click();
+  await page.goto(origin);await page.getByRole('button', {name:/^(暂不登录|继续冒险)/}).click();
   await expect(page.getByRole('button', {name: '问阿策', exact: true})).toBeEnabled();
   await expect(dialog(page)).toHaveCount(0);
   const count = calls.length;

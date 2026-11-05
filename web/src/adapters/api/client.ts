@@ -44,12 +44,17 @@ export class HttpGameApi implements GameApiPort {
     if(!response.ok){const err=await response.json() as ApiErrorBody;throw new ApiError(err.error.code,err.error.message,response.status);}
     return response.json() as Promise<T>;
   }
-  registerAccount(username: string, password: string) {
-    return this.authRequest<AuthRegistration>('/register',{username,password});
+  async registerAccount(username: string, password: string) {
+    const result=await this.authRequest<AuthRegistration>('/register',{username,password});
+    if(this.session)this.cache.rememberAccount(this.session.playerId,result.username);
+    return result;
   }
-  loginAccount(username: string, password: string) {
-    return this.authRequest<Session>('/login',{username,password});
+  async loginAccount(username: string, password: string) {
+    const session=await this.authRequest<Session>('/login',{username,password});
+    this.cache.rememberAccount(session.playerId,username.trim().toLowerCase());
+    return session;
   }
+  accountName() {return this.cache.accountName(this.session?.playerId);}
   adoptSession(session: Session) {this.session=session;this.cache.write(session);}
   async createSession() {
     this.session=await this.request<Session>('/sessions',{method:'POST'});

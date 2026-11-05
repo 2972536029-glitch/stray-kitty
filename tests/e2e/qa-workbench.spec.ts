@@ -16,7 +16,7 @@ test.beforeAll(async () => {
 test.afterAll(async () => {if (disabledServer && disabledClosed) {const force = setTimeout(() => disabledServer?.kill('SIGKILL'), 3000);disabledServer.kill('SIGTERM');await disabledClosed;clearTimeout(force);}});
 
 async function enter(page: Page, url = '/') {
-  await page.goto(url);await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+  await page.goto(url);await page.getByRole('button', {name: /^(暂不登录|继续冒险)/}).click();
 }
 async function state(page: Page, request: APIRequestContext): Promise<GameState> {
   const token = await page.evaluate(() => JSON.parse(localStorage.getItem('stray-kitty.session.v1')!).token);
@@ -82,7 +82,7 @@ test('distant market cards open without forged positions and keyboard activation
   await page.getByRole('button', {name: '掷出骰子', exact: true}).click();
   await expect.poll(async () => (await state(page, request)).phase).not.toBe('event');
   await expect(page.getByRole('alert')).toHaveCount(0);
-  await page.reload();await page.getByRole('button', {name: '继续冒险'}).click();
+  await page.reload();await page.getByRole('button', {name:/^(暂不登录|继续冒险)/}).click();
   panel = await openQA(page);await panel.getByTestId('qa-restore').click();
   expect((await state(page, request)).storyNodeId).toBe('prologue_1');
 });

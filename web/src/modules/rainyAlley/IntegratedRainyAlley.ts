@@ -227,7 +227,53 @@ export class IntegratedRainyAlley {
     context.restore();
     if (this.debug) this.drawDebug(context, flags, debugState);
     context.restore();
+    if (debugState.phase === 'explore') this.drawInteractBubble(context, width, height);
     this.drawCheer(context, width, height);
+  }
+
+  private drawInteractBubble(context: CanvasRenderingContext2D, width: number, height: number) {
+    const near = this.nearby;
+    if (!near) return;
+    if (this.cheering()) return; // 欢呼气泡进行中让位，避免两层气泡叠在猫头顶
+    const view = this.imageView(width, height);
+    const registration = rainyAlleyRegistration;
+    const catX = view.padX + (registration.tx + this.position.x * registration.sx - view.x) * view.scale;
+    const catY = view.padY + (registration.ty + this.position.y * registration.sy - view.y) * view.scale;
+    const headY = catY - 24 * registration.sy * view.scale;
+    const bob = Math.sin(this.now / 380) * 2.2;
+    context.save();
+    context.font = '700 12px system-ui, sans-serif';
+    // 只画 [E] 键帽小气泡：交互物名称已由 drawMarkers 的 emoji 标签承担（“🐕 巷尾的老黄”），
+    // 猫头顶若再写一遍纯文字会与之重叠冲突；统一收成极简键帽，指向猫即可。
+    const keyWidth = context.measureText('E').width + 11;
+    const chipWidth = keyWidth + 12;
+    const chipHeight = 22;
+    const chipX = Math.min(Math.max(catX - chipWidth / 2, 8), Math.max(8, width - chipWidth - 8));
+    const chipY = Math.max(headY - chipHeight - 15 + bob, 6);
+    const tailX = Math.min(Math.max(catX, chipX + 8), chipX + chipWidth - 8);
+    // 深色底板 + 指向猫的小尖角，带轻微投影浮起感
+    context.shadowColor = 'rgba(6,14,18,.55)'; context.shadowBlur = 6; context.shadowOffsetY = 2;
+    context.fillStyle = 'rgba(13,26,30,.9)';
+    this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 5);
+    context.fill();
+    context.beginPath();
+    context.moveTo(tailX - 4.5, chipY + chipHeight);
+    context.lineTo(tailX + 4.5, chipY + chipHeight);
+    context.lineTo(tailX, chipY + chipHeight + 6.5);
+    context.closePath(); context.fill();
+    context.shadowBlur = 0; context.shadowOffsetY = 0;
+    context.strokeStyle = 'rgba(255,215,110,.6)'; context.lineWidth = 1.4;
+    this.roundRectPath(context, chipX, chipY, chipWidth, chipHeight, 5);
+    context.stroke();
+    // 居中的像素键帽 [E]
+    const keyX = chipX + 6, keyY = chipY + 4.5, keyH = 13;
+    context.fillStyle = '#f6ecd2';
+    this.roundRectPath(context, keyX, keyY, keyWidth, keyH, 3); context.fill();
+    context.strokeStyle = '#1d2b28'; context.lineWidth = 1.2;
+    this.roundRectPath(context, keyX, keyY, keyWidth, keyH, 3); context.stroke();
+    context.fillStyle = '#1d2b28'; context.textAlign = 'center'; context.textBaseline = 'middle';
+    context.fillText('E', keyX + keyWidth / 2, keyY + keyH / 2 + 0.5);
+    context.restore();
   }
 
   /** Front-facing resting pose, matching the cats' outline weight and pixel scale. */
@@ -383,7 +429,7 @@ export class IntegratedRainyAlley {
     context.translate(SQUEEZE_BOUNDS.right + 10, point.y);
     context.fillStyle = '#9adbd4'; context.strokeStyle = '#28494b'; context.lineWidth = 1.6;
     context.beginPath(); context.arc(0, 0, 7, 0, Math.PI * 2); context.fill(); context.stroke();
-    context.strokeStyle='#d4e0cc';context.lineWidth=1.2;context.beginPath();context.moveTo(-3,-2);context.lineTo(0,1);context.lineTo(3,-2);context.stroke();context.restore();
+    context.fillStyle = '#183638'; context.font = '700 10px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText('Q', 0, .5); context.restore();
   }
 
   private drawClimbMarkers(context: CanvasRenderingContext2D) {
@@ -399,7 +445,15 @@ export class IntegratedRainyAlley {
       context.translate(point.x - 23, point.y - 17);
       context.fillStyle = '#91d8d4'; context.strokeStyle = '#243f43'; context.lineWidth = 2;
       context.beginPath(); context.arc(0, 0, 8, 0, Math.PI * 2); context.fill(); context.stroke();
-      context.strokeStyle='#e6d9b6';context.lineWidth=1.2;context.beginPath();context.moveTo(-3,2);context.lineTo(0,-1);context.lineTo(3,2);context.stroke();
+      context.font = '700 11px system-ui, sans-serif'; context.textAlign = 'center'; context.textBaseline = 'middle';
+      context.fillStyle = '#183539'; context.fillText('C', 0, 0.5);
+      if (active) {
+        const label = 'C · 翻过木箱';
+        context.font = '700 11px system-ui, sans-serif';
+        context.fillStyle = 'rgba(13,26,30,.8)';
+        context.fillRect(-8, -29, context.measureText(label).width + 12, 17);
+        context.fillStyle = '#f7f2df'; context.textAlign = 'left'; context.fillText(label, -2, -20);
+      }
       context.restore();
     }
   }

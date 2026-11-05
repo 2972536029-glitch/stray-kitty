@@ -50,7 +50,7 @@ test.afterAll(async () => {if (child && closed) {const force = setTimeout(() => 
 
 async function open(page: Page, id: string) {
   await page.addInitScript(({origin, session}) => {if (location.origin === origin) {localStorage.setItem('stray-kitty.session.v1', JSON.stringify(session));localStorage.setItem('stray-kitty.tutorial.home','done');}}, {origin, session: sessions.get(id)!});
-  await page.goto(origin);await page.getByRole('button', {name: '继续冒险'}).click();
+  await page.goto(origin);await page.getByRole('button', {name:/^(暂不登录|继续冒险)/}).click();
   await expect(scene(page)).toHaveAttribute('data-rendered-scene', 'home');
   await expect(scene(page)).toHaveAttribute('data-home-artwork', 'ready');
 }
@@ -79,7 +79,7 @@ test('story overrides furniture, stages Momo before recruitment, stays directed 
   await page.screenshot({path: 'output/home-review/story-entrance.png'});
   await page.getByRole('button', {name: '继续故事'}).click();
   await expect(scene(page)).toHaveAttribute('data-home-beat', 'greenhouse_intro_4');
-  await page.reload();await page.getByRole('button', {name: '继续冒险'}).click();
+  await page.reload();await page.getByRole('button', {name:/^(暂不登录|继续冒险)/}).click();
   await expect(scene(page)).toHaveAttribute('data-home-control', 'story');
   await expect(scene(page)).toHaveAttribute('data-home-beat', 'greenhouse_intro_4');
   await page.getByRole('button', {name: /跳过剧情/}).click();
@@ -144,7 +144,7 @@ test('repairs update both views and placed furniture survives refresh', async ({
     if(id==='patch_windows'){
       await expect(scene(page)).toHaveAttribute('data-home-stage','1');
       await page.screenshot({path:'output/home-review/repair-in-place.png'});
-      await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+      await page.reload();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
       await expect(page.locator('[data-repair-id="patch_windows"]')).toHaveCount(0);
     }
   }
@@ -155,7 +155,7 @@ test('repairs update both views and placed furniture survives refresh', async ({
   }
   await page.screenshot({path:'output/home-review/repaired-greenhouse.png'});
   await expect(scene(page)).toHaveAttribute('data-home-stage', '3');
-  await page.reload();await page.getByRole('button', {name: '继续冒险'}).click();
+  await page.reload();await page.getByRole('button', {name:/^(暂不登录|继续冒险)/}).click();
   await expect(scene(page)).toHaveAttribute('data-home-stage', '3');
   await page.getByRole('button', {name: /^▧ 家具背包/}).click();
   const backpack=page.getByRole('region',{name:'家具背包 · 布置模式'});
@@ -185,7 +185,7 @@ test('phone can collapse home controls, view the full map and return without hor
 
 test('all four approved interior stages load through the real chapter checkpoints',async({page})=>{
   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
-  await page.goto('/');await page.getByRole('button',{name:/^(开始冒险|继续冒险)/}).click();
+  await page.goto('/');await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
   const fingerprints:string[]=[],floorBrightness:number[]=[];
   for(const [index,id] of ['greenhouse.home_1','greenhouse.home_2','greenhouse.home_3','finale.home'].entries()){
     await page.getByRole('button',{name:'验收工具',exact:true}).click();

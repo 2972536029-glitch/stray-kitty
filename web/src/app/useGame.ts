@@ -61,6 +61,7 @@ export function useGame() {
   }, [controller, port, store]);
   const resetSession = useCallback(() => {
     localStorage.removeItem('stray-kitty.session.v1');
+    localStorage.removeItem('stray-kitty.account.v1');
     localStorage.removeItem('stray-kitty.pending.v1');
     // “重新开始丢序章”的根因：服务端新会话本来就从头（prologue_1）开始，
     // 但序章开场动画与守护教学的“已完成”标记留在 localStorage 里，重开后被直接跳过。必须一并清空。
@@ -96,5 +97,5 @@ export function useGame() {
     finally {setBusy(false);}
   }, [port, store, initialize]);
   const pending = !!port.pending();
-  return {state, catalog, busy, error, pending, sessionUnavailable, startNewJourney, send, reportMove, skipDialogue, resetSession, retry, refresh, port, disabled: busy || pending};
+  return {state, catalog, busy, error, pending, accountName:port.accountName(), sessionUnavailable, startNewJourney, send, reportMove, skipDialogue, resetSession, retry, refresh, port, disabled: busy || pending};
 }

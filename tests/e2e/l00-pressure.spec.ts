@@ -116,7 +116,7 @@ for (const entry of cases) {
     await page.addInitScript(({origin,session})=>{if(location.origin===origin)localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));},{origin:fixtureOrigin,session});
     const battleCommands:string[]=[];
     page.on('request',request=>{if(request.url()===`${fixtureOrigin}/api/v1/commands`&&request.method()==='POST'){const type=request.postDataJSON().command?.type;if(type==='START_BATTLE'||type==='COMPLETE_BATTLE')battleCommands.push(type);}});
-    await page.goto(fixtureOrigin);await page.getByRole('button',{name:'继续冒险'}).click();
+    await page.goto(fixtureOrigin);await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
     const battle=page.locator('section[aria-label="序章塔防战斗"]');
     const difficulty=page.getByRole('status',{name:'本次战斗难度'});
     await expect(battle).toHaveAttribute('data-phase','ready');await expect(difficulty).toContainText(`${entry.label} · 新手教学`);
@@ -129,7 +129,7 @@ for (const entry of cases) {
     await expect(page.getByTestId('battle-energy-guard-compact')).toHaveAttribute('aria-valuenow',energy!);
     await expect(page.getByTestId('battle-open-bag')).toHaveCount(0);
     expect(await readSavedState()).toEqual(expectedState);
-    await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+    await page.reload();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
     await expect(battle).toHaveAttribute('data-phase','ready');await expect(difficulty).toContainText(`${entry.label} · 新手教学`);
     expect(await readSavedState()).toEqual(expectedState);expect(battleCommands).toEqual([]);
     await page.screenshot({path:testInfo.outputPath(`pressure-${entry.difficulty}-same-attempt.png`),fullPage:true});
