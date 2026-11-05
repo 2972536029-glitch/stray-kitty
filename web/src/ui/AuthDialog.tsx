@@ -1,12 +1,21 @@
 import {useState} from 'react';
 import type {GameApiPort} from '../core/ports';
 import Modal from './Modal';
+import './auth-dialog.css';
 
-// 小猫账号:注册把当前旅程绑定到用户名密码(进度原样保留),登录在任意设备取回。
-// 游客玩法不受影响——不注册也照常玩,账号只解决"换设备找回归档"。
-export default function AuthDialog({mode: initialMode, hasProgress, api, onLoggedIn, onClose, successLabel = '好的'}: {
-  mode: 'register' | 'login'; hasProgress: boolean; api: GameApiPort;
-  onLoggedIn: () => Promise<void> | void; onClose: () => void; successLabel?:string;
+export default function AuthDialog({
+  mode: initialMode,
+  api,
+  onLoggedIn,
+  onClose,
+  successLabel = '进入游戏'
+}: {
+  mode: 'register' | 'login';
+  hasProgress?: boolean;
+  api: GameApiPort;
+  onLoggedIn: () => Promise<void> | void;
+  onClose: () => void;
+  successLabel?: string;
 }) {
   const [mode, setMode] = useState(initialMode);
   const [username, setUsername] = useState('');
@@ -19,45 +28,143 @@ export default function AuthDialog({mode: initialMode, hasProgress, api, onLogge
   const submit = async () => {
     if (busy) return;
     setError('');
-    if (username.trim().length < 3 || username.trim().length > 24) {setError('用户名要 3~24 个字符，且不含空格。');return;}
-    if (password.length < 8 || password.length > 64) {setError('密码要 8~64 个字符。');return;}
-    if (mode === 'register' && password !== confirm) {setError('两次输入的密码不一致。');return;}
+    if (username.trim().length < 3 || username.trim().length > 24) {
+      setError('用户名需为 3~24 个字符，且不含空格');
+      return;
+    }
+    if (password.length < 8 || password.length > 64) {
+      setError('密码需为 8~64 个字符');
+      return;
+    }
+    if (mode === 'register' && password !== confirm) {
+      setError('两次输入的密码不一致');
+      return;
+    }
     setBusy(true);
     try {
       if (mode === 'register') {
         const result = await api.registerAccount(username.trim(), password);
         await onLoggedIn();
-        setDone(`账号「${result.username}」已保存这段旅程——换电脑或清缓存后，用登录就能找回。`);
+        setDone(`账号「${result.username}」注册成功，已绑定当前进度！`);
       } else {
         const session = await api.loginAccount(username.trim(), password);
         api.adoptSession(session);
         await onLoggedIn();
-        setDone('欢迎回来！旅程进度已取回。');
+        setDone('欢迎回来！旅程进度已同步。');
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : '出了点小问题，请再试一次。');
-    } finally {setBusy(false);}
+    } finally {
+      setBusy(false);
+    }
   };
 
-  return <Modal onClose={onClose} title={done ? '小猫账号' : mode === 'register' ? '把旅程存进账号' : '登录取回旅程'}>
-    {done ? <div className="auth-done">
-      <p>{done}</p>
-      <button className="primary-action-btn" onClick={onClose}>{successLabel}</button>
-    </div> : <form className="auth-form" onSubmit={e=>{e.preventDefault();void submit();}}>
-      <header><span className="eyebrow">A JOURNEY TO KEEP</span><h2>{mode === 'register' ? '把旅程存进账号' : '登录取回旅程'}</h2></header>
-      {mode === 'register' && hasProgress && <p className="muted">注册不会打断旅程——当前的进度会原样绑定到账号。</p>}
-      {mode === 'register' && !hasProgress && <p className="muted">新账号会保存当前旅程，之后可在其他设备登录继续。</p>}
-      {mode === 'login' && <p className="muted">在任何设备登录，都能取回绑定的旅程进度。</p>}
-      <label className="select-label">用户名<input value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" placeholder="3~24 个字符" disabled={busy}/></label>
-      <label className="select-label">密码<input type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} placeholder="至少 8 位" disabled={busy}/></label>
-      {mode === 'register' && <label className="select-label">再输一遍密码<input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password" disabled={busy}/></label>}
-      {error && <p className="error-text" role="alert">{error}</p>}
-      <div className="auth-actions">
-        <button type="submit" disabled={busy}>{busy ? '稍等…' : mode === 'register' ? '注册并保存进度' : '登录'}</button>
-        <button type="button" className="secondary" disabled={busy} onClick={() => {setMode(mode === 'register' ? 'login' : 'register');setError('');setConfirm('');}}>
-          {mode === 'register' ? '已有账号？去登录' : '还没有账号？去注册'}
-        </button>
-      </div>
-    </form>}
-  </Modal>;
+  return (
+    <Modal
+      onClose={onClose}
+      title={done ? '账号通知' : mode === 'register' ? '注册账号' : '账号登录'}
+      className="auth-dialog"
+    >
+      {done ? (
+        <div className="auth-success-card">
+          <div className="auth-success-icon" aria-hidden="true">🐾</div>
+          <p className="auth-success-msg">{done}</p>
+          <button type="button" className="auth-submit-btn" onClick={onClose}>
+            {successLabel}
+          </button>
+        </div>
+      ) : (
+        <form className="auth-card" onSubmit={e => { e.preventDefault(); void submit(); }}>
+          <div className="auth-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'login'}
+              className={`auth-tab-btn ${mode === 'login' ? 'active' : ''}`}
+              onClick={() => { setMode('login'); setError(''); setConfirm(''); }}
+            >
+              登 录
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'register'}
+              className={`auth-tab-btn ${mode === 'register' ? 'active' : ''}`}
+              onClick={() => { setMode('register'); setError(''); setConfirm(''); }}
+            >
+              注 册
+            </button>
+          </div>
+
+          <div className="auth-field">
+            <label className="auth-field-label" htmlFor="auth-username">用户名</label>
+            <input
+              id="auth-username"
+              className="auth-input"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              autoComplete="username"
+              placeholder="请输入用户名 (3~24位)"
+              disabled={busy}
+              autoFocus
+            />
+          </div>
+
+          <div className="auth-field">
+            <label className="auth-field-label" htmlFor="auth-password">密码</label>
+            <input
+              id="auth-password"
+              type="password"
+              className="auth-input"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+              placeholder="请输入密码 (至少8位)"
+              disabled={busy}
+            />
+          </div>
+
+          {mode === 'register' && (
+            <div className="auth-field">
+              <label className="auth-field-label" htmlFor="auth-confirm">确认密码</label>
+              <input
+                id="auth-confirm"
+                type="password"
+                className="auth-input"
+                value={confirm}
+                onChange={e => setConfirm(e.target.value)}
+                autoComplete="new-password"
+                placeholder="请再次输入密码"
+                disabled={busy}
+              />
+            </div>
+          )}
+
+          {error && (
+            <div className="auth-error-banner" role="alert">
+              <span>⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          <button type="submit" className="auth-submit-btn" disabled={busy}>
+            {busy ? '正在处理…' : mode === 'register' ? '立即注册' : '立即登录'}
+          </button>
+
+          <button
+            type="button"
+            className="auth-switch-link"
+            disabled={busy}
+            onClick={() => {
+              setMode(mode === 'register' ? 'login' : 'register');
+              setError('');
+              setConfirm('');
+            }}
+          >
+            {mode === 'register' ? '已有账号？点击去登录 ›' : '还没有账号？点击去注册 ›'}
+          </button>
+        </form>
+      )}
+    </Modal>
+  );
 }

@@ -16,15 +16,15 @@ html,body,#root{min-height:100%;width:100%}
 .app-shell[data-phase=battle] .game-viewport canvas{object-fit:contain}
 @media(max-aspect-ratio:4/3),(min-aspect-ratio:21/9){.game-viewport canvas{object-fit:contain}}
 .app-shell .topbar{position:absolute;z-index:5;top:18px;left:20px;right:20px;min-height:66px;margin:0;padding:10px 16px;gap:16px;box-shadow:0 4px 0 #24312e}
-.topbar .brand strong{font-size:16px;letter-spacing:1px}
-.topbar .brand small{font-size:8px}
+.topbar .brand strong{font-size:19px;letter-spacing:1px}
+.topbar .brand small{font-size:11px}
 .topbar .brand-mark{width:38px;height:38px;font-size:27px}
-.topbar .chapter-pill{font-size:10px;padding:8px 11px}
+.topbar .chapter-pill{font-size:14px;padding:6px 12px}
 .topbar .wallet{margin:0 0 0 auto;padding:0;gap:9px}
-.topbar .wallet>span{padding:7px 9px;font-size:10px;box-shadow:2px 2px 0 #526b50}
+.topbar .wallet>span{padding:7px 9px;font-size:12px;box-shadow:2px 2px 0 #526b50}
 .topbar .wallet b{font-size:16px;margin-left:5px}
 .topbar nav{gap:8px}
-.topbar nav button{font-size:11px;padding:9px 11px}
+.topbar nav button{font-size:15px;font-weight:700;padding:7px 13px}
 .journal-button{background:#594536;color:#f1e8d3}
 .world-toolbar{position:absolute;z-index:3;top:102px;left:22px;min-height:40px;padding:6px 11px;gap:24px;border:2px solid #594536;border-radius:3px;box-shadow:3px 3px 0 #24312e;background:#f1e8d3ed}
 .world-toolbar .quiet{padding:5px 7px}
