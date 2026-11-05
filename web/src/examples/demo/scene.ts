@@ -12,7 +12,7 @@ import {CanvasPainter} from '../../adapters/canvas/painter';
 import {FollowCamera, type CameraFrame} from '../../adapters/canvas/camera';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
 import {TunnelMap} from '../../modules/chapter4/TunnelMap';
-import {marketEntry, marketItems, marketPortals, marketRoadSigns, nearestMarketRoadSign, marketEAction, marketInteractionTarget, marketOptionalHint, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, marketExitAt, MARKET_EXIT_TRIGGER, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
+import {marketEntry, marketItems, marketPortals, marketRoadSigns, marketEAction, marketInteractionTarget, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, marketExitAt, MARKET_EXIT_TRIGGER, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 import {HOME_LAYOUT_ID, HOME_SIZE, HOME_RESIDENTS, HOME_ROAM_NODES, HOME_SHELTER_NODES, homeStage} from '../../modules/home/layout';
@@ -70,6 +70,21 @@ export class DemoScene {
     const top = bounds.top + (bounds.height - this.viewHeight * scale) / 2;
     return this.rainyAlley.explorationLabels(this.viewWidth, this.viewHeight, this.state.flags)
       .map(label => ({...label, x: left + label.x * scale, y: top + label.y * scale}));
+  }
+  /** 玻璃胶囊标签的只读数据源：仅暴露表现层组装所需字段，不含任何新计算逻辑。 */
+  marketLabelContext() {
+    return {
+      floor: this.marketFloor,
+      player: {x: this.x, y: this.y},
+      camera: this.marketCamera,
+      frame: this.marketCameraFrame(),
+      flags: this.state?.flags ?? [],
+      drawnEvents: this.state?.drawnEvents ?? [],
+      busy: this.marketTransition.active,
+      paused: this.pausedByUser || this.canvas.dataset.backgroundState === 'loading' || this.canvas.dataset.backgroundState === 'error',
+      canvas: this.canvas,
+      viewSize: {width: this.viewWidth, height: this.viewHeight}
+    };
   }
   private get tunnelMap() {return this.tunnelMapInstance ??= new TunnelMap();}
   private cityBackdrop: HTMLImageElement;
@@ -581,37 +596,14 @@ export class DemoScene {
         }
         this.onInspectHint?.(inspect);
       } else if (this.state.mapId === 'market') {
+        // 集市交互提示已全部由玻璃胶囊（MarketLabels）渲染；这里只保留近距上报、
+        // 随机区域事件触发与相机跟随，不再向旧版底部提示框喂送文案。
+        this.onInspectHint?.(null);
         const target=marketInteractionTarget(this.marketFloor,this.x,this.y,this.state.flags,this.state.drawnEvents??[]);
-        const nearCrow=target?.id==='market_crow_stall';
-        const nearPigeon=target?.id==='market_pigeon_perch';
-        const nearMomo=target?.id==='market_momo_trace';
         nearInteraction=!!target;
         this.onNear(!!target,target?.id,target?.label);
-
-        let inspect: string | null = null;
-        if (nearCrow) {
-          inspect = '【老黑羽的情报摊】一只戴着单片眼镜的老乌鸦打量着你们：“小猫咪，想要城北还是避难所的情报？”';
-        } else if (nearPigeon) {
-          inspect = '【咕咕大盗的传言棚】一只挂着红领巾的胖鸽子低声道：“听说冷冻库那边有黑影在抓走失的宠物猫……”';
-        } else if (Math.hypot(this.x - 420, this.y - 220) < 65) {
-          inspect = '【午夜风干鱼架】木架上晾晒着整齐的小鱼干，散发着诱人的海盐香味。';
-        } else if (Math.hypot(this.x - 130, this.y - 310) < 55) {
-          inspect = '【团子】“喵喵，集市里的鸟雀们消息很灵通，我们去打听一下吧！”';
-        }
-        if(nearMomo)inspect='E · 查看墨墨的踪迹';
-        this.onInspectHint?.(inspect);
-        const bossReady=this.state.flags.includes('market_crow_clue_completed')&&this.state.flags.includes('market_pigeon_clue_completed');
-        if(nearMomo)this.onInspectHint?.('E · 查看墨墨的踪迹');
-        const portal=marketPortals.filter(value=>!value.requiresFlag||this.state!.flags.includes(value.requiresFlag)).flatMap(value=>[{portal:value,point:value.a},{portal:value,point:value.b}]).filter(value=>value.point.layer===this.marketFloor&&Math.hypot(this.x-value.point.x,this.y-value.point.y)<=value.portal.radius).sort((a,b)=>Math.hypot(this.x-a.point.x,this.y-a.point.y)-Math.hypot(this.x-b.point.x,this.y-b.point.y))[0];
-        const portalDisplay=portal&&marketPortalDisplay(portal.portal,portal.point,this.marketFloor,this.x,this.y,this.state.flags);
-        if(portalDisplay?.active)this.onInspectHint?.(portalDisplay.label);
-        else if(!target&&this.marketFloor==='L0'&&Math.hypot(this.x-1310,this.y-169)<72&&!bossReady)this.onInspectHint?.('集市保卫战 · 需要先完成两条情报');
-        else if(!target&&this.marketFloor==='L0'&&Math.hypot(this.x-1365,this.y-78)<48&&!this.state.flags.includes('market_cleared'))this.onInspectHint?.('北街出口 · 请先完成集市保卫战');
-        const battleAction=marketEAction(this.marketFloor,this.x,this.y,this.state.flags,this.state.drawnEvents??[]);
-        if(battleAction?.type==='battle')this.onInspectHint?.('E · 开始集市保卫战');
-        else if(battleAction?.type==='hint')this.onInspectHint?.(battleAction.text);
-        const authoredFocus=!!target||!!portal||Math.hypot(this.x-1310,this.y-169)<=75||Math.hypot(this.x-1365,this.y-78)<=48;
-        if(!authoredFocus){const clueHint=marketOptionalHint(this.marketFloor,this.x,this.y,!!this.state.drawnEvents?.includes('node:momo_trail_event'));if(clueHint)this.onInspectHint?.(clueHint);}
+        const nearPortal=marketPortals.filter(value=>!value.requiresFlag||this.state!.flags.includes(value.requiresFlag)).some(value=>[value.a,value.b].some(point=>point.layer===this.marketFloor&&Math.hypot(this.x-point.x,this.y-point.y)<=value.radius));
+        const authoredFocus=!!target||nearPortal||Math.hypot(this.x-1310,this.y-169)<=75||Math.hypot(this.x-1365,this.y-78)<=48;
         if(!authoredFocus)for(const [id,floor,x,y] of [['market_random_r1','L0',652,632],['market_random_r2','L1',680,166],['market_random_r3','Lm1',975,429]] as const){
           const inside=this.marketFloor===floor&&Math.hypot(this.x-x,this.y-y)<42;
           if(!inside)this.marketZonesSeen.delete(id);else if(!this.marketZonesSeen.has(id)){this.marketZonesSeen.add(id);void this.onMarketZone?.(id,floor,{x:this.x,y:this.y});}
@@ -1074,9 +1066,8 @@ export class DemoScene {
     if(this.marketDebug){this.context.fillStyle='#fff0c4';this.context.font='11px monospace';this.context.fillText('QA collision diagnostics · press Y to copy last movement',frame.safe.x+8,Math.max(frame.safe.y+18,18));}
   }
   private drawMarketRoadSigns() {
-    const ctx=this.context,nearby=nearestMarketRoadSign(this.marketFloor,this.x,this.y);
+    const ctx=this.context;
     for(const sign of marketRoadSigns.filter(value=>value.floor===this.marketFloor)){
-      const close=nearby?.sign.id===sign.id&&nearby.distance<=sign.revealRadius;
       ctx.save();ctx.translate(sign.x,sign.y);
       // A compact timber signpost built from pixel-sized rectangles; it is visual only.
       ctx.fillStyle='rgba(12,18,22,.35)';ctx.fillRect(-12,9,24,4);
@@ -1084,10 +1075,7 @@ export class DemoScene {
       ctx.fillStyle='#302b2a';ctx.fillRect(-15,-15,30,17);ctx.fillStyle='#9a633e';ctx.fillRect(-13,-13,26,13);
       ctx.fillStyle='#d8a85d';ctx.fillRect(-12,-12,24,2);ctx.fillRect(-12,-2,24,1);
       ctx.fillStyle='#f5e3b2';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(sign.directions.includes('↑')||sign.directions.includes('↗')?'↑':sign.directions.includes('↓')?'↓':'→',0,-6);
-      if(close){
-        const alpha=Math.max(0,Math.min(1,(sign.revealRadius-nearby.distance)/40));
-        this.marketMarkers.labels.draw(ctx,`${sign.area} · ${sign.directions}`,-80,25,alpha*.8,false,true);
-      }
+      // 指路文字改由玻璃胶囊标签渲染（见 MarketLabels），木牌只保留像素剪影与箭头。
       ctx.restore();
     }
   }
@@ -1097,9 +1085,8 @@ export class DemoScene {
     for(const portal of marketPortals){
       for(const point of [portal.a,portal.b]){
         const display=marketPortalDisplay(portal,point,this.marketFloor,this.x,this.y,flags);if(!display?.visible)continue;
-        ctx.save();ctx.globalAlpha=display.alpha;ctx.beginPath();ctx.arc(point.x,point.y,9,0,Math.PI*2);ctx.fillStyle=display.active?'#73e1dd':'#91bab8';ctx.fill();ctx.strokeStyle='#102b38';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#10232b';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(portal.key.toUpperCase(),point.x,point.y);
-        if(display.active){ctx.globalAlpha=1;this.marketMarkers.labels.draw(ctx,display.label,point.x+70,point.y-25,1,false,true);}
-        ctx.restore();
+        // 旧版地面圆键（蓝圈 + F/C 字母）已删，只留站位椭圆光标作锚点；键位提示由玻璃胶囊（MarketLabels）渲染。
+        ctx.save();ctx.globalAlpha=display.alpha;ctx.strokeStyle=display.active?'#73e1dd':'#91bab8';ctx.lineWidth=display.active?1.6:1;ctx.setLineDash(display.active?[]:[3,3]);ctx.beginPath();ctx.ellipse(point.x,point.y+3,12,4,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.restore();
       }
     }
   }

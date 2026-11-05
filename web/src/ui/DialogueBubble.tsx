@@ -1,5 +1,5 @@
 import type {ReactNode} from 'react';
-import type {CatBreed} from '../adapters/canvas/pixelCat';
+import type {CatAppearance} from '../adapters/canvas/pixelCat';
 import PixelCat from './PixelCat';
 import './story-dialogue.css';
 
@@ -8,7 +8,7 @@ export interface SceneAnchor {x: number; y: number}
 
 interface Props {
   speaker: string;
-  breed?: CatBreed;
+  breed?: CatAppearance;
   kicker?: string;
   closing?: boolean;
   disabled?: boolean;
