@@ -49,6 +49,16 @@ func Incr(name string, tags ...string) {
 	m.Incr(name, tags...)
 }
 
+// Count records an amount, rather than the number of operations that changed it.
+// Like Incr it is fire-and-forget and a no-op before Init.
+func Count(name string, value int64, tags ...string) {
+	m := metrics()
+	if m == nil {
+		return
+	}
+	m.Count(name, value, tags...)
+}
+
 // Histogram 分布（p95 用）。未初始化时 no-op。
 func Histogram(name string, value float64, tags ...string) {
 	m := metrics()
@@ -74,6 +84,13 @@ func (m *Metrics) Incr(name string, tags ...string) {
 		return
 	}
 	_ = m.client.Incr(name, tags, 1)
+}
+
+func (m *Metrics) Count(name string, value int64, tags ...string) {
+	if m == nil || m.client == nil {
+		return
+	}
+	_ = m.client.Count(name, value, tags, 1)
 }
 
 func (m *Metrics) Histogram(name string, value float64, tags ...string) {

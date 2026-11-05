@@ -10,6 +10,7 @@ import (
 	"stray-kitty/server/internal/advisor"
 	"stray-kitty/server/internal/domain"
 	"stray-kitty/server/internal/repository"
+	"strings"
 	"time"
 )
 
@@ -54,6 +55,9 @@ func (g *Game) CreateSession() (string, string, error) {
 	}
 	p := &repository.Player{ID: id, State: domain.InitialState(g.Catalog.Version), Receipts: map[string]repository.Receipt{}, ReceiptOrder: []string{}}
 	err = g.Store.Create(Hash(token), p)
+	if err == nil {
+		g.observeStoryEntry(domain.GameState{}, p.State, false)
+	}
 	return id, token, err
 }
 func (g *Game) State(token string) (domain.GameState, error) {
@@ -82,7 +86,9 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 	raw, _ := json.Marshal(req)
 	sum := sha256.Sum256(raw)
 	fingerprint := hex.EncodeToString(sum[:])
-	return g.Store.Transact(Hash(token), func(p *repository.Player) (domain.CommandResponse, error) {
+	var before domain.GameState
+	var clueGateRejected bool
+	response, err := g.Store.TransactWithQA(Hash(token), strings.HasPrefix(req.Command.Type, "QA_"), func(p *repository.Player) (domain.CommandResponse, error) {
 		if p.State.ContentVersion != g.Catalog.Version {
 			return domain.CommandResponse{}, domain.Fail("CONTENT_VERSION_MISMATCH", "存档内容版本需要迁移", 409)
 		}
@@ -96,6 +102,9 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 		if p.State.Revision != *req.ExpectedRevision {
 			return domain.CommandResponse{}, domain.Fail("REVISION_CONFLICT", "进度已变化，请重新加载后操作", 409)
 		}
+		// Snapshot only observation fields; this cannot fail a game command
+		// and does not serialize the player's full receipt/history payload.
+		before = snapshotGameplayObservation(p.State)
 		g.prepareLottery(&p.State)
 		var applyErr error
 		if req.Command.Type == "QA_CHECKPOINT" || req.Command.Type == "QA_RESTORE" {
@@ -104,10 +113,14 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 			applyErr = g.apply(&p.State, req.Command)
 		}
 		if applyErr != nil {
+			clueGateRejected = isClueGateRejection(before, req.Command, applyErr)
 			return domain.CommandResponse{}, applyErr
 		}
 		g.prepareLottery(&p.State)
 		finishQAEventPreview(&p.State)
+		if req.Command.Type != "QA_RESTORE" && p.State.ActiveBattle != nil && isQAObservation(before, p.State, req.Command) {
+			p.State.ActiveBattle.QA = true
+		}
 		p.State.Revision++
 		response := domain.CommandResponse{State: p.State}
 		p.Receipts[key] = repository.Receipt{Fingerprint: fingerprint, Response: response}
@@ -118,6 +131,13 @@ func (g *Game) Execute(token, key string, req domain.CommandRequest) (domain.Com
 		}
 		return response, nil
 	})
+	if clueGateRejected {
+		observeClueGate(isQAObservation(before, before, req.Command))
+	}
+	if err == nil && !response.Replayed {
+		g.observeGameplay(before, response.State, req.Command)
+	}
+	return response, err
 }
 func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 	invalid := func() error { return domain.Fail("INVALID_COMMAND", "命令参数或目标无效", 400) }
@@ -219,6 +239,11 @@ func (g *Game) apply(s *domain.GameState, c domain.Command) error {
 			return err
 		}
 		if c.NodeID != s.StoryNodeID {
+			return invalid()
+		}
+		// Older clients omit optionId. Explicit selections must match the
+		// existing prologue attitude controls; arbitrary user tags never pass.
+		if c.OptionID != "" && !validStoryChoice(c.NodeID, c.OptionID) {
 			return invalid()
 		}
 		for _, n := range g.Catalog.Story {
@@ -610,7 +635,6 @@ func (g *Game) ApplyCharge(playerID string, txn domain.Txn, pack domain.Recharge
 		}
 		if txn.Status == "confirmed" {
 			p.State.Currencies["tuna"] += pack.TunaGranted
-			economyDelta("tuna", "gain", pack.TunaGranted)
 		}
 		domain.AppendTxn(&p.State, txn)
 		balance = p.State.Currencies["tuna"]

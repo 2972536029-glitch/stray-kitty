@@ -37,6 +37,9 @@ func logWithTrace(ctx context.Context, level slog.Level, msg string, args []any)
 			args = append(args, "session_id", ident.SessionID)
 		}
 	}
+	if qa, ok := ctx.Value(qaKey{}).(bool); ok {
+		args = append(args, "qa", qa)
+	}
 	traceID, spanID := traceIDs(ctx)
 	if traceID != "" {
 		args = append(args, "dd.trace_id", traceID, "dd.span_id", spanID)

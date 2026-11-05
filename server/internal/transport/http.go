@@ -67,6 +67,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			return
 		}
 		obs.Incr("kitty.session.started")
+		*r = *r.WithContext(obs.WithQA(obs.WithIdentity(r.Context(), id, service.LogSessionID(token)), false))
 		a.json(w, 201, map[string]string{"playerId": id, "token": token})
 	})
 	mux.HandleFunc("GET /api/v1/state", func(w http.ResponseWriter, r *http.Request) {
@@ -122,6 +123,19 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			return
 		}
 		var req domain.CommandRequest
+		// Classify only a known command enum from the bounded JSON envelope,
+		// before strict field validation, so rejected QA requests stay isolated.
+		var observedCommand struct {
+			Command struct {
+				Type string `json:"type"`
+			} `json:"command"`
+		}
+		if json.Unmarshal(body, &observedCommand) == nil {
+			switch observedCommand.Command.Type {
+			case "QA_CHECKPOINT", "QA_RESTORE", "QA_SIMULATE_VICTORY", "QA_SIMULATE_DEFEAT":
+				*r = *r.WithContext(obs.WithQA(r.Context(), true))
+			}
+		}
 		decoder := json.NewDecoder(strings.NewReader(string(body)))
 		decoder.DisallowUnknownFields()
 		if err = decoder.Decode(&req); err != nil {
@@ -185,29 +199,24 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 或 packId", 400))
 			return
 		}
-		// 会话底座:支付端点没有 Bearer,身份取自请求体 playerId(服务端生成的 ID,
-		// 只进日志;session_id 需要令牌派生,此处为空——obs 对空值跳过注入)。
-		ctx := obs.WithSession(r.Context(), req.PlayerID, "")
-		r = r.WithContext(ctx)
-		// 漏斗:通过校验、即将判定 = charge_attempt;declined 是漏斗终点之一,不是故障;
-		// 系统故障不是漏斗步,由 kitty.payment.charge{result:error} 监控覆盖。
-		obs.Incr("kitty.payment.funnel", "step:charge_attempt")
-		result, err := a.pay.Charge(ctx, req.PlayerID, req.PackID, req.CardNumber)
+		qaTag := a.paymentIdentity(r, req.PlayerID)
+		obs.Incr("kitty.payment.funnel", "step:charge_attempt", qaTag)
+		result, err := a.pay.Charge(r.Context(), req.PlayerID, req.PackID, req.CardNumber)
 		if err != nil {
-			obs.Incr("kitty.payment.charge", "result:"+domain.ClassifyFault(err))
+			obs.Incr("kitty.payment.charge", "result:"+domain.ClassifyFault(err), qaTag)
 			a.fail(w, r, err)
 			return
 		}
 		// declined 是正常业务(HTTP 200 + 治愈文案),与 success 同为支付结果,
 		// 只有 result:error(系统故障)进故障告警。
 		if result.Txn.Status == "declined" {
-			obs.Incr("kitty.payment.charge", "result:declined")
-			obs.Incr("kitty.payment.funnel", "step:charge_declined")
+			obs.Incr("kitty.payment.charge", "result:declined", qaTag)
 		} else {
-			obs.Incr("kitty.payment.charge", "result:success")
-			obs.Incr("kitty.payment.funnel", "step:charge_success")
+			obs.Incr("kitty.payment.charge", "result:success", qaTag)
 		}
-		obs.LogInfo(ctx, "payment charge", "pack_id", req.PackID, "status", result.Txn.Status, "txn_id", result.Txn.ID)
+		// Terminal funnel events are emitted once by the durable repository
+		// observer; retries can still produce a request log without recounting.
+		obs.LogInfo(r.Context(), "payment charge", "pack_id", req.PackID, "status", result.Txn.Status, "txn_id", result.Txn.ID)
 		resp := map[string]any{"txnId": result.Txn.ID, "pack": result.Pack, "status": result.Txn.Status, "tunaGranted": result.Pack.TunaGranted, "tunaBalance": result.TunaBalance}
 		if result.Txn.Status == "declined" {
 			resp["reason"] = result.Txn.Reason
@@ -221,6 +230,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 查询参数", 400))
 			return
 		}
+		a.paymentIdentity(r, playerID)
 		txns, err := a.pay.History(r.Context(), playerID)
 		if err != nil {
 			a.fail(w, r, err)
@@ -261,17 +271,20 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId 或 packId", 400))
 			return
 		}
-		ctx := obs.WithSession(r.Context(), req.PlayerID, "")
-		r = r.WithContext(ctx)
-		result, err := a.pay.Session(ctx, req.PlayerID, req.PackID)
+		qaTag := a.paymentIdentity(r, req.PlayerID)
+		result, err := a.pay.Session(r.Context(), req.PlayerID, req.PackID)
 		if err != nil {
-			obs.Incr("kitty.payment.session", "result:"+domain.ClassifyFault(err))
+			obs.Incr("kitty.payment.session", "result:"+domain.ClassifyFault(err), qaTag)
 			a.fail(w, r, err)
 			return
 		}
-		obs.Incr("kitty.payment.session", "result:success")
-		obs.Incr("kitty.payment.funnel", "step:session_created")
-		obs.LogInfo(ctx, "payment session", "pack_id", req.PackID, "provider", result.Provider)
+		obs.Incr("kitty.payment.session", "result:success", qaTag)
+		// Xsolla exposes checkout creation here, not the later card submission.
+		// It is the attempt boundary for this flow; only committed credit emits
+		// charge_success, so webhook retries cannot inflate the terminal step.
+		obs.Incr("kitty.payment.funnel", "step:session_created", qaTag)
+		obs.Incr("kitty.payment.funnel", "step:charge_attempt", qaTag)
+		obs.LogInfo(r.Context(), "payment session", "pack_id", req.PackID, "provider", result.Provider)
 		a.json(w, 200, result)
 	})
 	// 支付服务 webhook 收款后的内部入账口:仅集群内调用,INTERNAL_TOKEN 未配置时整个端点关闭。
@@ -304,6 +317,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, domain.Fail("INVALID_REQUEST", "缺少 playerId、txn 或 pack", 400))
 			return
 		}
+		a.paymentIdentity(r, req.PlayerID)
 		balance, err := a.game.ApplyCharge(req.PlayerID, req.Txn, req.Pack)
 		if err != nil {
 			a.fail(w, r, err)
@@ -353,6 +367,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			return
 		}
 		emit("success", "ok")
+		a.sessionIdentity(r, token)
 		a.json(w, 200, map[string]string{"playerId": playerID, "token": token})
 	})
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
@@ -399,6 +414,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		span.SetTag("http.method", r.Method)
 		span.SetTag("http.route", route)
 		span.SetTag("http.url", r.URL.Path)
+		r = r.WithContext(ctx)
 		sw := &obs.StatusWriter{ResponseWriter: w}
 		start := time.Now()
 		defer func() {
@@ -414,10 +430,10 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			}
 			obs.FinishWeb(span, status)
 			obs.HTTPMetrics(r.Method, route, status, durMS)
-			obs.LogInfo(ctx, "http request", "method", r.Method, "path", r.URL.Path, "route", route,
+			obs.LogInfo(r.Context(), "http request", "method", r.Method, "path", r.URL.Path, "route", route,
 				"status", status, "duration_ms", durMS, "request_id", id)
 		}()
-		mux.ServeHTTP(sw, r.WithContext(ctx))
+		mux.ServeHTTP(sw, r)
 	})
 }
 func (a *API) token(r *http.Request) (string, error) {
@@ -425,25 +441,27 @@ func (a *API) token(r *http.Request) (string, error) {
 	if !strings.HasPrefix(value, "Bearer ") || len(strings.TrimSpace(value[7:])) < 16 {
 		return "", domain.Fail("UNAUTHORIZED", "需要匿名会话令牌", 401)
 	}
-	return strings.TrimSpace(value[7:]), nil
+	token := strings.TrimSpace(value[7:])
+	// Identity lookup is observational: a failed lookup must not change the
+	// existing handler's validation order or its business error response.
+	a.sessionIdentity(r, token)
+	return token, nil
 }
 
-// withSessionCtx 在 Bearer 令牌形状合法且存档存在时,把玩家/会话标识放进请求 ctx,
-// obs 日志(ctx 版本)自动提取注入每条日志。session_id = service.Hash(token),与存档键
-// 同源(同一令牌恒定);player_id 取玩家记录 ID(稳定玩家身份,登录别名共享)。
-// player_id/session_id 只进日志、绝不进指标 tag(player_id 随玩家增长,低基数纪律);
-// 任何失败静默跳过——观测旁路绝不影响业务(no-op 纪律)。
+// withSessionCtx attaches server-resolved log identity even to requests whose
+// handler does not consume a token. It uses the lightweight identity lookup and
+// the log-domain session hash, never a full save copy or its storage key.
+// Failure is observational only and must not change the handler's response.
 func (a *API) withSessionCtx(ctx context.Context, r *http.Request) context.Context {
-	token, err := a.token(r)
+	value := r.Header.Get("Authorization")
+	if !strings.HasPrefix(value, "Bearer ") || len(strings.TrimSpace(value[7:])) < 16 {
+		return ctx
+	}
+	playerID, sessionID, qa, err := a.game.SessionIdentity(strings.TrimSpace(value[7:]))
 	if err != nil {
 		return ctx
 	}
-	sessionID := service.Hash(token)
-	player, err := a.game.Store.Get(sessionID)
-	if err != nil {
-		return ctx
-	}
-	return obs.WithSession(ctx, player.ID, sessionID)
+	return obs.WithQA(obs.WithIdentity(ctx, playerID, sessionID), qa)
 }
 
 // authCredentials 注册/登录共用的请求正文。
@@ -490,7 +508,7 @@ func (a *API) fail(w http.ResponseWriter, r *http.Request, err error) {
 
 func validateCommand(body []byte, kind string) error {
 	allowed := map[string][]string{
-		"ADVANCE_STORY":       {"nodeId"},
+		"ADVANCE_STORY":       {"nodeId", "optionId"},
 		"START_STORY":         {"nodeId"},
 		"INTERACT":            {"interactionId", "layer", "position"},
 		"REPORT_MOVE":         {"distance"},

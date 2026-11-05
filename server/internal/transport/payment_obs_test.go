@@ -33,6 +33,8 @@ func startUDPStatsd(t *testing.T) func() []string {
 	}
 	t.Cleanup(func() { pc.Close() })
 	t.Setenv("DD_DOGSTATSD_PORT_8125_ADDR", pc.LocalAddr().String())
+	t.Setenv("DD_TRACE_ENABLED", "false")
+	t.Setenv("DD_INSTRUMENTATION_TELEMETRY_ENABLED", "false")
 	obs.Init("kitty-test-m3")
 	t.Cleanup(obs.Shutdown)
 	return func() []string {
@@ -155,8 +157,11 @@ func TestSessionIdentityInLogs(t *testing.T) {
 	if !strings.Contains(out, "player_id="+created.PlayerID) {
 		t.Fatalf("state log missing player_id: %s", out)
 	}
-	if !strings.Contains(out, "session_id="+service.Hash(created.Token)) {
+	if !strings.Contains(out, "session_id="+service.LogSessionID(created.Token)) {
 		t.Fatalf("state log missing session_id: %s", out)
+	}
+	if strings.Contains(out, created.Token) || strings.Contains(out, service.Hash(created.Token)) {
+		t.Fatal("state log exposed bearer token or storage lookup hash")
 	}
 
 	buf.Reset()

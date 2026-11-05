@@ -4,7 +4,7 @@ export type GamePhase = 'dialogue' | 'explore' | 'event' | 'preparation' | 'batt
 export type BattleCarryId = 'lantern' | 'mirror' | 'bell' | 'box' | 'dog' | 'dove' | 'rats' | 'kitten';
 export interface BattleModifiers {shadowPressure: -1 | 0 | 1; situation?: 'detour' | 'forced_chase'; carry?: BattleCarryId}
 export interface BattleReport {leaks: number; bossDefeated: boolean; elitesDefeated?: number}
-export interface BattleAttempt {id: string; stageId: string; status: 'active' | 'won' | 'lost'; modifiers?: BattleModifiers; mainline?: boolean}
+export interface BattleAttempt {id: string; stageId: string; status: 'active' | 'won' | 'lost'; modifiers?: BattleModifiers; mainline?: boolean; qa?: boolean}
 export type EventTier = 'crit' | 'success' | 'partial' | 'fail';
 export interface EventReward {fish?: number; stamps?: number; clue?: number; material?: number}
 export interface EventOutcome {
@@ -35,7 +35,7 @@ export interface HomeDecor {id:string;objectId:string;stage:number;name:string;s
 export interface QACheckpoint {id: string; chapterId: string; title: string; phase: GamePhase; mapId: string; kind: 'story' | 'explore' | 'battle' | 'home' | 'event'; detail: string}
 export interface QATools {enabled: boolean; checkpoints: QACheckpoint[]}
 export type GameCommand =
-  | {type: 'ADVANCE_STORY'; nodeId: string}
+  | {type: 'ADVANCE_STORY'; nodeId: string; optionId?: 'proud' | 'honest'}
   | {type: 'START_STORY'; nodeId: string}
   | {type: 'INTERACT'; interactionId: string; layer?: string; position?: {x:number;y:number}}
   | {type: 'REPORT_MOVE'; distance: number}

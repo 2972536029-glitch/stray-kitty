@@ -44,6 +44,9 @@ type Attempt struct {
 	Supplies map[string]int `json:"supplies,omitempty"`
 	// Mainline identifies a chapter mission begun from its gated map trigger.
 	Mainline bool `json:"mainline,omitempty"`
+	// QA marks an observed synthetic attempt across settlement and return.
+	// It does not participate in gameplay rules or rewards.
+	QA bool `json:"qa,omitempty"`
 }
 type BattleReport struct {
 	Leaks          *int  `json:"leaks"`

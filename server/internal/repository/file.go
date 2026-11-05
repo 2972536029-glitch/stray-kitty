@@ -191,9 +191,17 @@ func (s *Store) TransactByPlayer(playerID string, fn func(*Player) error) error 
 		s.db.Players[hash] = old
 		return err
 	}
+	observeCommittedEconomy(old, p, false)
+	observeCommittedPayment(old, p)
 	return nil
 }
 func (s *Store) Transact(hash string, fn func(*Player) (domain.CommandResponse, error)) (domain.CommandResponse, error) {
+	return s.TransactWithQA(hash, false, fn)
+}
+
+// TransactWithQA preserves the normal transaction semantics and marks synthetic
+// command changes for observability. QA checkpoints are also detected from state.
+func (s *Store) TransactWithQA(hash string, qa bool, fn func(*Player) (domain.CommandResponse, error)) (domain.CommandResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	key, old := s.lookupSession(hash)
@@ -216,6 +224,7 @@ func (s *Store) Transact(hash string, fn func(*Player) (domain.CommandResponse, 
 		s.db.Players[key] = old
 		return domain.CommandResponse{}, err
 	}
+	observeCommittedEconomy(old, p, qa)
 	return response, nil
 }
 

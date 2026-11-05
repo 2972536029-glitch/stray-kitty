@@ -9,13 +9,15 @@ const speakers: Record<string, CatBreed> = {'喵喵': 'miaomiao', '团子': 'tua
 interface Props {
   node: StoryNode;
   disabled: boolean;
-  onNext: () => void;
+  onNext: (optionId?: 'proud' | 'honest') => void;
   eventResult?: ReactNode;
 }
 
 export default function DialoguePanel({node, disabled, onNext, eventResult}: Props) {
   const [attitude, setAttitude] = useState<'proud' | 'honest'>('proud');
   const [closing, setClosing] = useState(false);
+
+  const hasChoices = node.id === 'prologue_banter' || node.id === 'prologue_sneak';
 
   let displayText = node.text;
   if (node.id === 'prologue_banter') {
@@ -53,16 +55,17 @@ export default function DialoguePanel({node, disabled, onNext, eventResult}: Pro
     if (disabled || closing || advancing.current) return;
     advancing.current = true;
     setShown(displayText.length);
-    if (node.next) {onNext();return;}
+    const next = () => onNext(hasChoices ? attitude : undefined);
+    if (node.next) {next(); return;}
     setClosing(true);
-    exitTimer.current = window.setTimeout(onNext, 240);
+    exitTimer.current = window.setTimeout(next, 240);
   };
   const advanceRef = useRef(advance);
   advanceRef.current = advance;
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      if (event.repeat || document.querySelector('.prologue-overlay,.dice-ceremony,dialog[open]') || target?.closest('dialog,input,select,textarea,button,a,[contenteditable=true]')) return;
+      if (event.repeat || document.querySelector('.prologue-overlay,.dice-ceremony,dialog[open]') || target?.closest('dialog,input,select,textarea,button,a,[contenteditable=true]') || target?.isContentEditable) return;
       if (event.key === ' ' || event.key === 'Enter') {
         event.preventDefault();advanceRef.current();
       }
@@ -70,8 +73,6 @@ export default function DialoguePanel({node, disabled, onNext, eventResult}: Pro
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
-
-  const hasChoices = node.id === 'prologue_banter' || node.id === 'prologue_sneak';
 
   return <>
     {node.scene === 'poster' && <aside className="lost-poster" aria-label="寻猫启事"><b>寻猫启事</b><PixelCat size={100}/><strong>它叫喵喵。</strong><span>家里的蓝色饭碗，一直在等它。</span></aside>}

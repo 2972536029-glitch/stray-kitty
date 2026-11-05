@@ -8,6 +8,8 @@
 行为说明(与 monitors/apply-monitors.py 同款行为,可从 git 复现看板配置):
 - 按 title 在 org 内查已有看板:存在则 PUT 更新,不存在则 POST 创建
 - 默认应用脚本同目录全部 *.json(文件名即模块归属)
+- 模块一/三统一由 monitors/business-observability.json 维护，使用
+  monitors/apply-business-observability.py；勿在此目录重复定义同名看板。
 """
 import glob
 import json

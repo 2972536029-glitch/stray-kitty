@@ -233,8 +233,12 @@ func (c *Client) Reply(ctx context.Context, session string, input domain.Advisor
 			result, reason = "fallback", resp.Reason
 		}
 		scope := advisorScope(input.Scope, ctx)
-		obs.Incr("kitty.advisor.call", "result:"+result, "reason:"+reason, "scope:"+scope)
-		obs.Histogram("kitty.advisor.duration_ms", float64(time.Since(start).Microseconds())/1000, "result:"+result, "scope:"+scope)
+		source := "local"
+		if resp.Source == "model" {
+			source = "model"
+		}
+		obs.Incr("kitty.advisor.call", "result:"+result, "reason:"+reason, "scope:"+scope, "source:"+source, obs.QATag(ctx))
+		obs.Histogram("kitty.advisor.duration_ms", float64(time.Since(start).Microseconds())/1000, "result:"+result, "scope:"+scope, "source:"+source, obs.QATag(ctx))
 	}()
 
 	if c == nil || c.key == "" {

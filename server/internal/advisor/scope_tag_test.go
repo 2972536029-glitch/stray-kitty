@@ -16,6 +16,7 @@ func TestAdvisorScope(t *testing.T) {
 		{"battle", context.Background(), "battle"},
 		{"journey", context.Background(), "journey"},
 		{"journey", WithScope(context.Background(), "home"), "home"},
+		{"home", context.Background(), "unknown"},
 		{"explore_hint", context.Background(), "explore_hint"},
 		{"weird", context.Background(), "unknown"},
 	}

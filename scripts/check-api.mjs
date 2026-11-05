@@ -7,6 +7,12 @@ const spec=JSON.parse(fs.readFileSync('docs/openapi.json','utf8'));
 const validate=new Ajv2020({strict:false,allErrors:true}).compile({components:spec.components,$ref:'#/components/schemas/Catalog'});
 if(!validate(JSON.parse(fs.readFileSync('web/content/catalog.json','utf8'))))throw Error(JSON.stringify(validate.errors));
 const commandSchema=new Ajv2020({strict:false,allErrors:true}).compile({components:spec.components,$ref:'#/components/schemas/GameCommand'});
+for(const optionId of ['proud','honest']) {
+  if(!commandSchema({type:'ADVANCE_STORY',nodeId:'prologue_banter',optionId}))throw Error('Story attitude option rejected');
+}
+for(const optionId of ['arbitrary-user-input',42,null]) {
+  if(commandSchema({type:'ADVANCE_STORY',nodeId:'prologue_banter',optionId}))throw Error('Invalid story attitude accepted');
+}
 // 元规则:服务端白名单与 GameCommand oneOf 必须一致,防止加命令时契约漂移对 CI 不可见(issue #12)。
 const httpSource=fs.readFileSync('server/internal/transport/http.go','utf8');
 const allowedBlock=httpSource.slice(httpSource.indexOf('allowed := map[string][]string{'),httpSource.indexOf('required := map[string][]string{'));

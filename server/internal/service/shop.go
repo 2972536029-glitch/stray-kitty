@@ -40,7 +40,6 @@ func (g *Game) buyFurniture(s *domain.GameState, productID string) error {
 			return domain.Fail("INSUFFICIENT_CURRENCY", "猫爪邮票不足，完成救援可以获得更多", 409)
 		}
 		s.Currencies[p.CurrencyID] -= p.Price
-		economyDelta("stamps", "spend", p.Price)
 		s.Furniture = domain.Add(s.Furniture, p.FurnitureID)
 		s.LastResult = domain.Result{Message: "购买成功，家具已送达花房，可以选择位置摆放。", Outcome: p.FurnitureID}
 		return nil
