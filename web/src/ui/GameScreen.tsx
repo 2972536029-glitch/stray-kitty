@@ -158,7 +158,7 @@ export default function GameScreen({onHomeAdvisor,homeAdvisorDisabled,onHomeTuto
   const isHomeScene = state.chapterId !== 'prologue' && (state.phase === 'home' || (state.phase === 'dialogue' && node?.scene === 'home'));
   const homeTutorialVisible=state.phase==='home'&&topbarOpen&&!homeTutorialDone;
   useEffect(()=>{onHomeTutorialChange?.(homeTutorialVisible);return()=>onHomeTutorialChange?.(false);},[homeTutorialVisible,onHomeTutorialChange]);
-  return <div className="app-shell" data-home-editing={homeEditing||undefined} data-phase={state.phase} data-home-scene={isHomeScene || undefined}>
+  return <div className="app-shell" data-home-editing={homeEditing||undefined} data-phase={state.phase} data-home-scene={isHomeScene || undefined} data-opening-home={state.chapterId === 'prologue' && state.phase === 'dialogue' && node?.scene === 'home' || undefined}>
     {!homeEditing && <div className="topbar-sensor" aria-hidden="true" onMouseEnter={topbarHoverIn} onMouseLeave={topbarHoverOut}/>}
     <header className={`topbar${topbarOpen ? '' : ' topbar-collapsed'}`} onMouseEnter={topbarHoverIn} onMouseLeave={topbarHoverOut}><button className="brand" onClick={onTitle} aria-label="返回标题"><span className="brand-mark">ฅ</span><span><strong>小猫回家记</strong><small>流 浪 猫 王 国</small></span></button>
       <span className="chapter-pill">{finaleBattle ? '第五章 · 终局试玩' : tunnelBattle ? '第四章 · 地下通道试玩' : greenhouseBattle ? '第三章 · 废弃花房试玩' : marketBattle ? '第二章 · 集市防线战斗试玩' : tutorialBattle ? '序章 · 金枪鱼事件' : chapterBattle ? '第一章 · 陌生小巷' : chapter?.title}</span>

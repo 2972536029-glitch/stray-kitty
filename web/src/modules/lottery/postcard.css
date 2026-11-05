@@ -1,0 +1,37 @@
+.postal-postcard{container-type:size;isolation:isolate;background:#f7edd9;box-shadow:inset 0 0 28px #ae87521a,0 3px 12px #52371e22}
+.postal-postcard:before,.postal-postcard:after{display:none}
+.postal-postcard>:not(.postal-writing){pointer-events:none}
+.postal-postcard-art{position:absolute;inset:0;z-index:-1;overflow:hidden}.postal-postcard-art img{display:block;width:100%;height:100%;max-width:none;object-fit:fill}
+.postal-postcode{position:absolute;left:4.5%;top:7.5%;display:flex;flex-direction:column;gap:.8cqw;color:#aa614b}
+.postal-postcode-boxes{display:flex;gap:.65cqw}.postal-postcode-boxes i{display:block;width:3.5cqw;height:4.2cqw;border:.14cqw solid #b85e49;background:#fffaeb18}
+.postal-postcode small{font:1.05cqw/1.3 'SimSun',serif;letter-spacing:.15cqw;color:#a37f64}
+.postal-postcard .postal-card-letterhead{top:6%;left:43%;right:25%;gap:1cqw;text-align:center}
+.postal-postcard .postal-card-letterhead>span{font:3cqw/1.3 'KaiTi','STKaiti',serif;letter-spacing:.5cqw;color:#8c684b}
+.postal-postcard .postal-card-letterhead>small{font:.85cqw/1.4 monospace;letter-spacing:.15cqw;color:#aa8c70}
+.postal-card-divider{position:absolute;top:24%;bottom:23%;left:44%;width:1px;background:#b699714d}
+.postal-postcard .postal-postage{top:7%;right:5.5%;width:13cqw;height:16cqw;padding:1cqw .7cqw;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8cqw;background:linear-gradient(135deg,#d0d8bd,#b4c4aa);border:.55cqw dotted #f7edd9;outline:1px solid #a58e6f77;outline-offset:2px;transform:rotate(2deg);box-shadow:1px 3px 2px #806b4c24}
+.postal-postcard .postal-postage>small{font:1cqw/1.2 'SimSun',serif;letter-spacing:.2cqw;margin:0;color:#63795d}
+.postal-postcard .postal-postage>svg{width:5.7cqw;height:5.7cqw;margin:0;color:#718866}
+.postal-postcard .postal-postage>span{font:.8cqw/1.3 monospace;letter-spacing:.1cqw;color:#63755d}
+.postal-postage>b{position:absolute;right:1cqw;bottom:.8cqw;font:1.6cqw/1 Georgia,serif;color:#607358}
+.postal-postcard .postal-postmark{top:24%;right:15%;width:11cqw;height:11cqw;gap:.5cqw;border:.1cqw solid #997456a3;color:#967355;font:1.2cqw/1.3 'SimSun',serif;transform:rotate(-14deg);z-index:2;opacity:.65}
+.postal-postmark>svg{width:2.7cqw;height:2.7cqw}.postal-postmark>small{font:.8cqw/1.2 'SimSun',serif}
+.postal-postcard .postal-postmark:after{left:65%;top:38%;width:12cqw;height:2.7cqw;border-width:1px;box-shadow:0 .8cqw 0 -.75cqw #a27d5f}
+.postal-postcard .postal-address{top:25%;left:4.5%;right:60%;gap:1cqw;display:flex;flex-direction:column;color:#7e624a}
+.postal-postcard .postal-address>small{font:1cqw/1.3 'SimSun',serif;letter-spacing:.15cqw;color:#a88767}
+.postal-postcard .postal-address>p{margin:0;padding:.55cqw 0;border-bottom:1px solid #b69a7666;font:2.3cqw/1.35 'KaiTi','STKaiti',serif;letter-spacing:.15cqw}
+.postal-address p>span{font:1.2cqw/1 'SimSun',serif;margin-left:.8cqw;color:#a5896d}.postal-address p.postal-sender-line{font-size:1.6cqw;color:#a18b70}
+.postal-card-sender{position:absolute;right:5.5%;bottom:7%;display:flex;flex-direction:column;align-items:flex-end;gap:1cqw;color:#a98c6d}.postal-card-sender>span{font:1.1cqw/1.3 'SimSun',serif;letter-spacing:.15cqw}
+.postal-postcode.sender{position:static;flex-direction:row-reverse;align-items:center;gap:1cqw}.postal-postcode.sender i{width:2cqw;height:2.4cqw;border-width:.1cqw}.postal-postcode.sender small{font-size:.9cqw;letter-spacing:.08cqw}
+.postal-postcard .postal-card-caption{left:auto;right:5.5%;bottom:3.5%;margin:0;font:1cqw/1.4 'KaiTi','STKaiti',serif;letter-spacing:.14cqw;color:#a78c70;text-align:right}
+/* The drawing layer covers the complete paper, including its printed postal fields. */
+.postal-postcard .postal-writing{inset:0;z-index:20;border:0;box-shadow:none;background:none;pointer-events:auto}
+.postal-postcard .postal-writing:before,.postal-postcard .postal-writing:after{display:none}
+.postal-postcard .postal-writing-hint{inset:40% 6% 29% 46%;gap:1.2cqw;color:#aa9072}
+.postal-postcard .postal-writing-hint span{font:1.6cqw/1.5 'KaiTi','STKaiti',serif;letter-spacing:.2cqw}
+.postal-postcard .postal-writing-hint small{font:1cqw/1.5 'SimSun',serif;letter-spacing:.05cqw}
+.postal-postcard .postal-drawing-pen{left:68%;top:49%;width:8cqw;height:9.6cqw}
+.postal-postcard .postal-sent-stamp{z-index:30}
+.stage-drawing,.stage-sending{z-index:12}.stage-drawing .postal-paper,.stage-sending .postal-paper{z-index:2}
+.stage-drawing .postal-corner-stamps,.stage-sending .postal-corner-stamps{opacity:0}
+@media(max-width:800px){.postal-postcard .postal-card-letterhead>span{font-size:4cqw}.postal-postcard .postal-address>p{font-size:2.7cqw}.postal-postcard .postal-writing-hint span{font-size:2.2cqw}.postal-postcard .postal-writing-hint small{font-size:1.5cqw}}

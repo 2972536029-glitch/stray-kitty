@@ -18,11 +18,11 @@ $settings = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'release-settings.
 Assert-Config ($settings.namespace -eq 'cn-haozhe-wang') 'Unexpected target namespace in release settings.'
 Assert-Config ($settings.context -eq 'haozhe-wang@gcp-k8s-xsolla-school-experiments') 'Unexpected target cluster context.'
 Assert-Config ($document.apiVersion -eq 'v1' -and $document.kind -eq 'List') 'Expected a Kubernetes v1 List.'
-Assert-Config (@($document.items).Count -eq 8) 'Expected exactly: 2 PVC, 3 Deployments, 3 Services.'
+Assert-Config (@($document.items).Count -eq 9) 'Expected exactly: 3 PVC, 3 Deployments, 3 Services.'
 Assert-Config ($text -notmatch '\b(?:sk|glpat)-[A-Za-z0-9_-]{8,}') 'A possible credential value was found in the manifest.'
 
 $expectedNames = @{
-    PersistentVolumeClaim = @('stray-kitty-preview-data', 'stray-kitty-payment-data')
+    PersistentVolumeClaim = @('stray-kitty-preview-data', 'stray-kitty-payment-data', 'stray-kitty-tls-state')
     Deployment            = @('stray-kitty-game', 'stray-kitty-payment', 'stray-kitty-frontend')
     Service               = @('stray-kitty-game', 'stray-kitty-payment', 'stray-kitty-preview')
 }
@@ -84,13 +84,22 @@ Assert-Config ($services.lb.spec.type -eq 'LoadBalancer') 'Exactly the frontend 
 Assert-Config ($services.lb.spec.selector.'app.kubernetes.io/component' -eq 'frontend') 'The LoadBalancer must target the frontend.'
 Assert-Config ($null -eq $services.lb.spec.PSObject.Properties['loadBalancerIP']) 'Do not pin a public IP in the manifest.'
 
-# 3) 数据所有权:游戏只挂存档卷;支付只挂账本卷;前端无持久卷。
+# 3) 数据所有权:游戏只挂存档卷;支付只挂账本卷;前端只持久化证书与 ACME 状态。
 $gamePod = $deployments.game.spec.template.spec
 $paymentPod = $deployments.payment.spec.template.spec
 Assert-Config ($gamePod.volumes[0].persistentVolumeClaim.claimName -eq 'stray-kitty-preview-data') 'Game must mount the save PVC.'
 Assert-Config ($paymentPod.volumes[0].persistentVolumeClaim.claimName -eq 'stray-kitty-payment-data') 'Payment must mount its own ledger PVC.'
 $frontendVolumes = @($deployments.frontend.spec.template.spec.volumes | Where-Object { $_.PSObject.Properties['persistentVolumeClaim'] })
-Assert-Config ($frontendVolumes.Count -eq 0) 'Frontend is stateless and must not claim persistent storage.'
+Assert-Config ($frontendVolumes.Count -eq 2) 'Frontend must persist both installed TLS certificates and ACME account state.'
+foreach ($volume in $frontendVolumes) {
+    Assert-Config ($volume.name -in @('tls', 'acme') -and $volume.persistentVolumeClaim.claimName -eq 'stray-kitty-tls-state') 'Frontend may only mount its dedicated TLS state PVC.'
+}
+$frontendPod = $deployments.frontend.spec.template.spec
+$tlsMount = @($frontendPod.containers[0].volumeMounts | Where-Object name -eq 'tls')[0]
+Assert-Config ($tlsMount.readOnly -eq $true -and $tlsMount.subPath -eq 'certs') 'Nginx must read the installed certificates without write access.'
+$certbot = @($frontendPod.containers | Where-Object name -eq 'certbot')[0]
+$acmeMount = @($certbot.volumeMounts | Where-Object name -eq 'acme')[0]
+Assert-Config ($acmeMount.mountPath -eq '/acme' -and $acmeMount.subPath -eq 'acme' -and $certbot.command[2] -match '--config-home /acme') 'ACME configuration and private keys must use the persistent directory.'
 
 # 4) 游戏环境:指向支付 Service 的集群内地址;阿策密钥只允许可选 Secret 注入。
 $envByName = @{}

@@ -1,8 +1,16 @@
 import type {ParcelPool} from './types';
-import {paintParcelFurniture,parcelWidth,type ParcelArtwork} from './furnitureArt';
+import {paintParcelFurniture,parcelWidth,parcelFrame,type ParcelArtwork} from './furnitureArt';
+import {postalPresentation,previewTheme,type PreviewPlacement} from './presentationModel';
+
+export function collectionPreviewItems(pool:ParcelPool,layout=postalPresentation.layouts[previewTheme(pool.currency)]){
+  return pool.entries.map((entry,index)=>{const p=layout[entry.furnitureId],frame=parcelFrame(entry.furnitureId),width=parcelWidth(entry.furnitureId)*1.42*(p?.scale??1);
+    return {id:entry.furnitureId,x:p?.x??500,y:p?.y??500,width,height:frame?width*frame.height/frame.width:width,ground:index===4,wall:index===9||(pool.currency==='tuna'&&index===10)};
+  }).sort((a,b)=>Number(b.ground)-Number(a.ground)||a.y-b.y);
+}
+export function previewProjection(width:number,height:number){const fit=Math.min(width/1000,height/650);return {fit,x:(width-1000*fit)/2,y:(height-720*fit)/2};}
 
 /** A close room vignette: real furniture at a shared scale, styled display walls and floor. */
-export function paintCollectionPreview(ctx:CanvasRenderingContext2D,pool:ParcelPool,art:ParcelArtwork,room:HTMLImageElement,width=1000,height=720){
+export function paintCollectionPreview(ctx:CanvasRenderingContext2D,pool:ParcelPool,art:ParcelArtwork,room:HTMLImageElement,width=1000,height=720,layout?:Record<string,PreviewPlacement>){
   const moon=pool.currency==='tuna';
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.scale(width/1000,height/720);
   // Crop the original indoor materials; the facade and entrance never enter this photograph.
@@ -18,19 +26,10 @@ export function paintCollectionPreview(ctx:CanvasRenderingContext2D,pool:ParcelP
   const light=ctx.createRadialGradient(moon?720:320,moon?240:160,10,500,390,620);light.addColorStop(0,moon?'#c9dcf024':'#ffeac13d');light.addColorStop(1,'#ffffff00');ctx.fillStyle=light;ctx.fillRect(0,0,1000,720);
   if(moon){ctx.fillStyle='#eee1b1';ctx.beginPath();ctx.arc(727,75,29,0,Math.PI*2);ctx.fill();ctx.fillStyle='#314a60';ctx.beginPath();ctx.arc(739,66,26,0,Math.PI*2);ctx.fill();for(let i=0;i<22;i++){const x=310+(i*79)%650,y=28+(i*47)%132;ctx.fillStyle=i%3?'#d4ddcf88':'#ead6a6';ctx.fillRect(x,y,2,5);ctx.fillRect(x-2,y+2,6,1);}}
   ctx.restore();ctx.save();ctx.imageSmoothingEnabled=false;
-  const fit=Math.min(width/1000,height/650);ctx.translate((width-1000*fit)/2,(height-720*fit)/2);ctx.scale(fit,fit);
-  const ids=pool.entries.map(entry=>entry.furnitureId),scale=1.42;
-  const furniture=(i:number,x:number,y:number)=>paintParcelFurniture(ctx,ids[i],x,y,parcelWidth(ids[i])*scale,art);
-  furniture(4,465,634);
-  // Back wall: correspondence cabinet and work table; lounge to the left, reading nook to the right.
-  const layout=[
-    [9,437,222],[7,877,350],[6,674,378],[0,145,412],[1,291,552],
-    [5,408,467],[11,695,515],[2,862,619],[3,153,624],[8,661,658],
-    [10,moon?378:336,moon?235:627]
-  ];
-  for(const [i,x,y]of layout.sort((a,b)=>a[2]-b[2])){
-    if(i!==9&&!(moon&&i===10)){ctx.fillStyle='#3f352523';ctx.beginPath();ctx.ellipse(x,y-2,parcelWidth(ids[i])*scale*.38,7,0,0,Math.PI*2);ctx.fill();}
-    furniture(i,x,y);
+  const view=previewProjection(width,height);ctx.translate(view.x,view.y);ctx.scale(view.fit,view.fit);
+  for(const item of collectionPreviewItems(pool,layout)){
+    if(!item.wall&&!item.ground){ctx.fillStyle='#3f352523';ctx.beginPath();ctx.ellipse(item.x,item.y-2,item.width*.38,7,0,0,Math.PI*2);ctx.fill();}
+    paintParcelFurniture(ctx,item.id,item.x,item.y,item.width,art);
   }
   ctx.restore();
   const shade=ctx.createLinearGradient(0,height*.8,0,height);shade.addColorStop(0,'#23302d00');shade.addColorStop(1,'#23302d55');ctx.fillStyle=shade;ctx.fillRect(0,height*.8,width,height*.2);
