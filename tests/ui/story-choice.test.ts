@@ -6,9 +6,11 @@ import fs from 'node:fs';
 
 let browser: Browser;
 let bundle: string;
+let styles: string;
 test.before(async () => {
-  const result = await build({entryPoints:['tests/ui/story-choice.fixture.tsx'], bundle:true, write:false, format:'iife', jsx:'automatic', define:{'process.env.NODE_ENV':'"test"'}});
-  bundle = result.outputFiles[0].text;
+  const result = await build({entryPoints:['tests/ui/story-choice.fixture.tsx'], outfile:'story-choice.js', bundle:true, write:false, format:'iife', jsx:'automatic', define:{'process.env.NODE_ENV':'"test"'}});
+  bundle = result.outputFiles.find(file => file.path.endsWith('.js'))!.text;
+  styles = result.outputFiles.filter(file => file.path.endsWith('.css')).map(file => file.text).join('\n');
   const edge = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ?? (process.platform === 'win32' && fs.existsSync(edge) ? edge : undefined);
   browser = await chromium.launch({headless:true, executablePath});
@@ -18,6 +20,7 @@ test.after(async () => { await browser?.close(); });
 async function fixture(id: string, disabled = false): Promise<Page> {
   const page = await browser.newPage();
   await page.setContent('<div id="root"></div>');
+  await page.addStyleTag({content:styles});
   await page.addScriptTag({content:bundle});
   await page.evaluate(([node, isDisabled]) => (window as any).storyChoice.render(node, isDisabled), [id, disabled]);
   await page.getByRole('button', {name:'继续故事'}).waitFor();

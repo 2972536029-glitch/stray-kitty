@@ -35,6 +35,7 @@ import {chapterBackground, chapterBackgroundState, preloadChapterArtwork, retryC
 // Keep warehouse code in the entry bundle: an open tab must not request a
 // retired JavaScript chunk when story progression or QA first enters this map.
 import {WarehouseWalkMap, type WarehouseReviewOptions} from '../../modules/chapter5/WarehouseWalkMap';
+import prologueHomeArtwork from '../../ui/assets/opening/apartment-afternoon.png';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
 // 剧情接管之外，日常由共享家具动作、伙伴互动和漫步组成。
@@ -54,16 +55,18 @@ export class DemoScene {
   // Keep other chapters' image downloads out of the active map's loading path.
   private rainyAlleyInstance?: IntegratedRainyAlley;
   private tunnelMapInstance?: TunnelMap;
-  private topbarExpanded = false;
+  private menuInset = 42;
+  private hudObserver?: ResizeObserver;
   private get rainyAlley() {
     if (!this.rainyAlleyInstance) {
       this.rainyAlleyInstance = new IntegratedRainyAlley();
-      this.rainyAlleyInstance.setMinimapShift(this.topbarExpanded ? 62 : 0);
+      this.rainyAlleyInstance.setMinimapShift(this.menuInset);
     }
     return this.rainyAlleyInstance;
   }
   private get tunnelMap() {return this.tunnelMapInstance ??= new TunnelMap();}
   private cityBackdrop: HTMLImageElement;
+  private prologueHomeImage?: HTMLImageElement;
   private marketFloor: MarketFloor = 'L0';
   private readonly marketMarkers=new MarketEventMarkers();
   private marketCamera = new FollowCamera();
@@ -193,7 +196,7 @@ export class DemoScene {
   }
   private backgroundBlocked() {
     const status = this.backgroundStatus();
-    return status?.state === 'loading' || status?.state === 'error';
+    return status?.state === 'loading' || status?.state === 'error' || !!document.querySelector('.dice-ceremony,.explore-result-card');
   }
   retryBackground() {
     const status = this.backgroundStatus();
@@ -401,7 +404,19 @@ export class DemoScene {
     if(this.state?.phase!=='home'||this.state.chapterId==='prologue'||this.homeRenovating||(this.pausedByUser&&!this.homeEditing))return;
     event.preventDefault();this.homeZoom(event.deltaY<0?.15:-.15);
   };
+  private updateHudBounds = () => {
+    const bounds=this.canvas.getBoundingClientRect(),menu=document.querySelector('.fixed-game-menu')?.getBoundingClientRect();
+    if(!bounds.width||!bounds.height||!menu)return;
+    const cover=getComputedStyle(this.canvas).objectFit==='cover';
+    const scale=(cover?Math.max:Math.min)(bounds.width/this.viewWidth,bounds.height/this.viewHeight);
+    const originY=bounds.top+(bounds.height-this.viewHeight*scale)/2;
+    this.menuInset=Math.max(0,(menu.bottom+12-originY)/scale-10);
+    this.rainyAlleyInstance?.setMinimapShift(this.menuInset);
+  };
   start() {
+    this.hudObserver=new ResizeObserver(this.updateHudBounds);this.hudObserver.observe(this.canvas);
+    const menu=document.querySelector('.fixed-game-menu');if(menu)this.hudObserver.observe(menu);
+    this.updateHudBounds();
     window.addEventListener('keydown', this.keydown);
     window.addEventListener('keyup', this.keyup);
     window.addEventListener('blur', this.clearInput);
@@ -416,7 +431,7 @@ export class DemoScene {
     this.frame = requestAnimationFrame(this.tick);
   }
   destroy() {
-    this.destroyed = true;cancelAnimationFrame(this.frame);
+    this.destroyed = true;this.hudObserver?.disconnect();cancelAnimationFrame(this.frame);
     window.removeEventListener('keydown', this.keydown);
     window.removeEventListener('keyup', this.keyup);
     window.removeEventListener('blur', this.clearInput);
@@ -439,7 +454,7 @@ export class DemoScene {
     if (this.warehousePreview && (!this.state || this.state.mapId==='warehouse')) {
       this.holdForBackground();
       if(this.state)this.warehousePreview.syncState(this.state);
-      const active = !this.pausedByUser && document.visibilityState !== 'hidden' && (!this.state||this.state.phase==='explore');
+      const active = !this.pausedByUser && !this.backgroundBlocked() && document.visibilityState !== 'hidden' && (!this.state||this.state.phase==='explore');
       if (!active) this.clearInput();
       const dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));
       const dy = Number(this.keys.has('arrowdown') || this.keys.has('s') || this.held.has('down')) - Number(this.keys.has('arrowup') || this.keys.has('w') || this.held.has('up'));
@@ -499,7 +514,7 @@ export class DemoScene {
       this.attemptId = this.state.activeBattle.id;this.simulation = new DemoBattle(3, 2, !modifiers && this.state.flags.includes('event_success'), modifiers?.shadowPressure ?? 0);this.reported = false;
     }
     if (this.holdForBackground()) return;
-    const active = !this.pausedByUser && document.visibilityState !== 'hidden';
+    const active = !this.pausedByUser && !this.backgroundBlocked() && document.visibilityState !== 'hidden';
     if (!active) this.clearInput();
     if (mode === 'explore' && active && this.state.mapId==='market'&&this.marketTransition.active) {
       const transition=this.marketTransition.advance(delta);
@@ -512,7 +527,7 @@ export class DemoScene {
       const interactionId = interaction?.id ?? '';
       if (interactionId !== this.nearbyInteractionId) {
         this.nearbyInteractionId = interactionId;
-        this.onNear(!!interaction, interaction?.id, interaction ? `${interaction.label} · E` : undefined);
+        this.onNear(!!interaction, interaction?.id, interaction?.label);
         this.onInspectHint?.(null);
       }
       const climbPrompt = this.rainyAlley.climbPromptActive();
@@ -714,10 +729,6 @@ export class DemoScene {
   }
   // 对话气泡锚点：返回说话猫头顶在画布中的位置（不在场返回 null，走旁白字幕条）。
   // 顶栏展开态通知（雨巷）：小地图下移避让，收起时归位。
-  setTopbarExpanded(expanded:boolean){
-    this.topbarExpanded = expanded;
-    this.rainyAlleyInstance?.setMinimapShift(expanded?62:0);
-  }
   speakerAnchor(breed:CatBreed):{x:number;y:number}|null{
     const st=this.state;if(!st||st.phase==='battle')return null;
     if((st.phase==='home'||this.storyScene==='home')&&st.chapterId!=='prologue'){
@@ -758,31 +769,26 @@ export class DemoScene {
     this.rect(cx-25,cy-5,4,2,0xbfe9fb,.85);
     this.rect(cx+13,cy-7,6,2,0x6fc6f0,.6);                    // 右上弱高光（过渡）
   }
-  // 毛毯：完全平铺的扁毯——圆角毯身 + 暖色花纹内框 + 横向折痕 + 两端流苏，与立体猫窝拉开剪影差异。
+  // A soft woven blanket follows the floor plane, with a light binding and loose fringe.
   private blanket(cx:number,cy:number){
-    const base=0xe8b9a0, light=0xf5d9c2, warm=0xc98a6b, deep=0x9c6e60, fringe=0xb87f63;
-    this.pixelEllipse(cx,cy+11,33,4,0x24312e,.13);            // 极浅投影（贴地扁平，无厚度）
-    const w=66,h=16;
-    for(let dy=0;dy<h;dy++){
-      const inset=dy<2?2:dy>h-3?3:0;                          // 上下行收角 → 像素圆角矩形
-      this.rect(cx-w/2+inset,cy-h/2+dy,w-inset*2,1,base);
+    const h=30,top=cy-h/2;
+    this.pixelEllipse(cx,cy+14,42,4,0x403726,.14);
+    for(let row=0;row<h;row++){
+      const half=32+Math.floor(row*.28),left=cx-half,width=half*2;
+      this.rect(left,top+row,width,1,0x8d9270);
+      this.rect(left+2,top+row,width-4,1,row<2||row>h-3?0xeee0bd:0xd7c4a3);
+      if(row>3&&row<h-4){
+        this.rect(left+5,top+row,1,1,0xf4e8ca,.7);
+        this.rect(cx+half-6,top+row,1,1,0xf4e8ca,.7);
+        // Small woven checks, softened by the warm light rather than heavy outlines.
+        for(let x=left+9;x<cx+half-8;x+=7)if((Math.floor(row/3)+Math.floor((x-left)/7))%2===0)this.rect(x,top+row,3,1,0xb6b491,.4);
+      }
     }
-    this.rect(cx-w/2+4,cy-h/2+2,w-8,1,light,.7);              // 顶缘受光
-    this.rect(cx-w/2+4,cy+h/2-3,w-8,1,deep,.5);               // 底缘暗面
-    // 暖色花纹：内框描边一圈 + 中列菱形纹
-    this.rect(cx-w/2+5,cy-h/2+4,w-10,1,warm,.8);
-    this.rect(cx-w/2+5,cy+h/2-5,w-10,1,warm,.8);
-    this.rect(cx-w/2+5,cy-h/2+4,1,h-8,warm,.7);this.rect(cx+w/2-6,cy-h/2+4,1,h-8,warm,.7);
-    for(let i=-3;i<=3;i++)this.rect(cx+i*9-1,cy+((i%2)?-1:0),2,2,warm,.9);
-    this.rect(cx-2,cy-3,4,1,light,.9);                        // 花纹上高光
-    // 横向折痕：暗痕 + 各自 1px 亮脊，布料铺开的起伏
-    this.rect(cx-24,cy-2,22,1,deep,.45);this.rect(cx-24,cy-3,22,1,light,.5);
-    this.rect(cx+4,cy+3,20,1,deep,.4);this.rect(cx+4,cy+2,20,1,light,.45);
-    // 两端流苏：左右边缘交替双色短穗
-    for(let i=0;i<5;i++){
-      const fy=cy-h/2+3+i*3, c=i%2?fringe:light;
-      this.rect(cx-w/2-3,fy,3,1,c,.9);this.rect(cx-w/2-3,fy+1,2,1,c,.55);
-      this.rect(cx+w/2,fy,3,1,c,.9);this.rect(cx+w/2+1,fy+1,2,1,c,.55);
+    this.rect(cx-31,cy+8,62,1,0xf5e8c7,.75);
+    this.rect(cx-32,cy+11,64,1,0xb2a17c,.4);
+    for(let x=-34;x<=34;x+=5){
+      this.rect(cx+x,cy+15,2,3+(Math.abs(x)%3),0xe8d7b3);
+      this.rect(cx+x+1,cy+17,1,2,0xb6a37e,.6);
     }
   }
   private drawAlley(){
@@ -867,23 +873,30 @@ export class DemoScene {
     paintHomeFrontWall(ctx,this.state,this.homeArtwork);
     for(const object of homeObjects(this.state).filter(object=>object.front))paintHomeObject(ctx,object,this.homeArtwork);
     this.drawHomeFx(stage);this.drawHomeCarry();this.homeRenovation.paint(ctx);ctx.restore();
-    if(!this.homeRenovating)for(const cat of this.homeCats)if(cat.bubble&&cat.bubbleUntil>this.homeTime&&this.homeTime>=(cat.bubbleAt??0))this.drawSpeechBubble(view.x+cat.x*view.scale,view.y+cat.y*view.scale,cat.bubble);
     if(this.homeAssetError){ctx.save();ctx.fillStyle='#f5dfbf';ctx.font='14px sans-serif';ctx.fillText('花房素材加载失败，请刷新重试',view.viewport.x+15,view.viewport.y+40);ctx.restore();}
   }
   // 序章:喵喵原本的家,午后阳光与天蓝色饭碗(静态,不参与花房修缮系统)。
   private drawPrologueHome(){
-    this.rect(0,0,800,480,0xa6bba0);this.rect(110,65,580,350,0xd2d0ab);this.rect(100,61,600,18,0x688775);
-    for(let x=110;x<=690;x+=145)this.rect(x,78,8,230,0x799782);
-    this.rect(118,310,563,100,0xbba982);for(let y=320;y<410;y+=22)this.rect(118,y,563,2,0x9f916f,.6);
-    this.rect(270,88,260,173,0xb2c8b6);this.rect(395,88,8,173,0x7c9986);this.rect(270,164,260,8,0x7c9986);
-    this.rect(135,240,55,75,0x8f9c73);for(let i=0;i<5;i++)this.rect(130+i*13,210-(i%2)*18,14,45,0x6d8d6a);
-    this.cat(265,350);
-    // 晒着阳光的柔软毛毯（平铺毯身 + 花纹 + 折痕 + 流苏）与标志性天蓝色饭碗（立体透视碗口）。
-    this.blanket(267, 348);
-    this.bowl(335, 352);
-    this.graphics.fillStyle(0xfff0ad, 0.15);
-    this.graphics.fillCircle(280, 340, 70);
-    this.lamp(610,200);for(let i=0;i<8;i++)this.rect(145+i*70,98+(i%2)*6,5,9,0xf4d68e);
+    // Lazy load only for this scene, keeping the active chapter's download priority.
+    // No cat, blanket or bowl is baked into the environment plate.
+    if (!this.prologueHomeImage) {
+      this.prologueHomeImage = new Image();
+      this.prologueHomeImage.src = prologueHomeArtwork;
+    }
+    const image = this.prologueHomeImage, ctx = this.context;
+    ctx.save();ctx.globalAlpha = 1;ctx.fillStyle = '#5c5841';ctx.fillRect(0,0,800,480);
+    if (image.complete && image.naturalWidth > 0) {
+      const scale = Math.max(800 / image.naturalWidth, 480 / image.naturalHeight);
+      const width = Math.round(image.naturalWidth * scale), height = Math.round(image.naturalHeight * scale);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(image, Math.round((800-width)/2), Math.round((480-height)/2), width, height);
+    }
+    ctx.restore();
+    // Paint the ground textile before the cat so it never covers its body or paws.
+    this.blanket(265, 335);
+    this.pixelEllipse(265,334,22,3,0x403726,.16);
+    this.cat(265,332);
+    this.bowl(335, 334);
   }
   // —— 猫咪动态层:专属家具姿态优先,其余自由漫步 ——
   private ensureHomeCats(stage:number):HomeCatAgent[]{
@@ -1021,15 +1034,13 @@ export class DemoScene {
       this.drawPixelHeart(heart.x,heart.y-age*0.018,2,Math.max(0,1-age/1100));
     }
   }
-  private drawSpeechBubble(x:number,y:number,text:string){
-    const ctx=this.context,view=this.homeView().viewport;
-    ctx.save();ctx.globalAlpha=1;ctx.font='12px "Microsoft YaHei",sans-serif';
-    const maxWidth=Math.max(120,Math.min(420,view.width-24)),lines:string[]=[];let line='';
-    for(const char of text){if(ctx.measureText(line+char).width>maxWidth-20&&line){lines.push(line);line='';}line+=char;}if(line)lines.push(line);
-    const width=Math.min(maxWidth,Math.max(...lines.map(value=>ctx.measureText(value).width))+20),height=lines.length*18+14;
-    const bx=Math.max(view.x+6,Math.min(view.x+view.width-width-6,x-width/2)),by=Math.max(view.y+76,y-height-54);
-    ctx.fillStyle='#fff1d5';ctx.strokeStyle='#806b48';ctx.lineWidth=2;ctx.fillRect(bx,by,width,height);ctx.strokeRect(bx,by,width,height);
-    ctx.fillStyle='#493f31';lines.forEach((value,i)=>ctx.fillText(value,bx+10,by+21+i*18));ctx.restore();
+  homeSpeechBubbles(){
+    if(this.state?.phase!=='home'||this.homeEditing||this.homeRenovating)return [];
+    return this.homeCats.filter(cat=>cat.bubble&&cat.bubbleUntil>this.homeTime&&this.homeTime>=(cat.bubbleAt??0)).map(cat=>{
+      const head=residentWorldPoint(cat,this.homeTime,32,13),point=this.homeWorldToClient(head.x,head.y);
+      const alpha=Math.min(1,(cat.bubbleUntil-this.homeTime)/240,Math.max(0,(this.homeTime-(cat.bubbleAt??this.homeTime-180))/180));
+      return{id:cat.breed,name:CAT_NAMES[cat.breed],text:cat.bubble!,x:point.x,y:point.y,alpha};
+    });
   }
   private pokeHomeCat(cat:HomeCatAgent,x:number,y:number){
     const reaction=petCat(cat,this.homeTime);if(!reaction)return;

@@ -42,7 +42,8 @@ export default function AuthDialog({mode: initialMode, hasProgress, api, onLogge
     {done ? <div className="auth-done">
       <p>{done}</p>
       <button className="primary-action-btn" onClick={onClose}>好的</button>
-    </div> : <div className="auth-form">
+    </div> : <form className="auth-form" onSubmit={e=>{e.preventDefault();void submit();}}>
+      <header><span className="eyebrow">A JOURNEY TO KEEP</span><h2>{mode === 'register' ? '把旅程存进账号' : '登录取回旅程'}</h2></header>
       {mode === 'register' && hasProgress && <p className="muted">注册不会打断旅程——当前的进度会原样绑定到账号。</p>}
       {mode === 'register' && !hasProgress && <p className="muted">先开始旅程再来注册，账号保存的是进行中的进度。</p>}
       {mode === 'login' && <p className="muted">在任何设备登录，都能取回绑定的旅程进度。</p>}
@@ -51,11 +52,11 @@ export default function AuthDialog({mode: initialMode, hasProgress, api, onLogge
       {mode === 'register' && <label className="select-label">再输一遍密码<input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password" disabled={busy}/></label>}
       {error && <p className="error-text" role="alert">{error}</p>}
       <div className="auth-actions">
-        <button disabled={busy} onClick={() => void submit()}>{busy ? '稍等…' : mode === 'register' ? '注册并保存进度' : '登录'}</button>
+        <button type="submit" disabled={busy}>{busy ? '稍等…' : mode === 'register' ? '注册并保存进度' : '登录'}</button>
         <button type="button" className="secondary" disabled={busy} onClick={() => {setMode(mode === 'register' ? 'login' : 'register');setError('');setConfirm('');}}>
           {mode === 'register' ? '已有账号？去登录' : '还没有账号？去注册'}
         </button>
       </div>
-    </div>}
+    </form>}
   </Modal>;
 }

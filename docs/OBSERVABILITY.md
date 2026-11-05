@@ -97,7 +97,8 @@ span、指标、日志、K8s Deployment labels(`tags.datadoghq.com/*`)共用同�
   当前接口无法获知玩家真正提交卡号的时刻。成功/拒付在游戏存档首次追加对应充值流水
   后记终点，重复 credit 回调不重计，抽奖消费流水不计成支付成功。
 - 阿策 `scope` 为 `battle/journey/explore_hint/home/unknown`，空 scope 兼容为 battle；
-  当前家园实际使用 journey，home 为预留枚举。`source` 区分 model/local；既有
+  请求 scope 仍为 journey，但家园 phase 的服务端观测标签细分为 home，沿用主干口径。
+  `source` 区分 model/local；既有
   success/fallback 与有限 reason 标签保持兼容。
 - 看板里的主线触达/彩蛋揭示均为事件次数，不是去重玩家漏斗或留存率。支付完成可能跨
   时间窗口；样本积累前不设置猜测的转化率和经济健康阈值。
@@ -189,6 +190,30 @@ traceparent(后端 `DD_TRACE_PROPAGATION_STYLE=tracecontext,datadog` 接住)—�
 串到 kitty-api → kitty-paymentd 的后端 trace。SDK 从 npm 打包(官方 CDN 域名在国内网络不可达,
 旅行牛牛验证过的坑),动态 import 单独分包不占首包。
 
+### 6.1 业务埋点(模块二,`web/src/observability/actions.ts`)
+
+统一封装 `web/src/observability/actions.ts`:RUM 未初始化时全部 no-op,观测永不影响游戏;
+action 清单冻结于 `docs/biz-obs-module2-plan.md` §1,组件只调用封装函数,不直接散调 SDK。
+
+| action | 一句话说明(验收 #4) | 接线位置 |
+|---|---|---|
+| `continue_adventure_click` | 主界面点击「开始/继续冒险」,引导转化漏斗第一步(开始/继续都计,漏斗入口只有一个) | App.tsx `onStart` |
+| `chapter1_enter` | 进入第一章(章节 alley)即漏斗终点;含老玩家点「继续冒险」直接落回小巷的回场,每次会话只记一次 | App.tsx 章节 effect |
+| `dice_roll_duration` | 掷骰动画开始→揭晓的时长(ms,含等结算的翻滚续命),回答"动画是否过长" | DiceRollOverlay 揭晓时刻 |
+| `home_panel_open_duration` | 进入花房→本次花房时段首次成功打开「布置」面板(布置模式)的耗时(ms);离开花房重置 | App.tsx 花房计时 effect |
+| `recharge_entry_expose` / `recharge_entry_click` | 充值入口展示/点击;location 初版枚举 `topbar`(顶栏钱包)/`shop`(商店)/`parcels`(邮局),最终枚举待余尧确认(计划 §4) | GameScreen 顶栏钱包、ShopPanel、PostalJournal |
+| `feature_entry_use` | 顶栏四个玩法入口被使用,feature 枚举 `home`/`lottery`/`shop`/`advisor`(家园手册/猫爪邮局/猫国商店/问阿策) | GameScreen 顶栏 |
+| `ui_blocker` | UI 卡点分布。**未接线**:node 枚举待轩扬定义(计划 §4),口径对齐后接线 | 待定 |
+| `tutorial_step_done` | 教学关键步骤完成。**未接线**:step 枚举待齐雯定义(计划 §4),口径对齐后接线 | 待定 |
+| `first_active_move` | 引导后实战中首次主动换位的 delay_ms。**未接线**:依赖教学结束时机口径(随 tutorial 口径一起接) | 待定 |
+
+边界说明:标题界面(StartScreen)的商店入口不计入 `feature_entry_use`(标题页不属于玩法渗透范围);
+「回到花房」等章节导航不计入(是导航不是玩法入口)。
+看板 `[小猫回家记][业务-前端] 体验与渗透`(模块二独占,US5)按计划 §2 面板清单建,
+as-code:`dashboards/biz-module2.json`(apply 用模块三引入的 `dashboards/apply-dashboards.py`,
+按 title 幂等创建/更新;合并后 `DD_SITE=us5.datadoghq.com` + 有效 US5 key 执行)。
+监控「充值入口点击率下降」有基线前不建(计划 §3)。
+
 ## 7. 本地无 Datadog 运行
 
 不需要任何凭据:`docker compose -f deploy/compose.yaml up --build`(不带 profile)即可完整
@@ -266,4 +291,5 @@ RUM 激活见 §RUM(两步:UI 建 RUM 应用 → index.html 填 token,随下次�
 - 埋点/字段/分类维护由服务端负责;`kitty.command` 的 type 枚举扩展时同步本文档与 monitors。
 - 监控只能观察被实际触发的请求,不能单凭"没有报警"证明数据一致(幂等与对账由测试与回执表保障)。
 - `kitty.repo.state_size_bytes` 持续增长说明存档膨胀,需要规划裁剪或分档——这是本架构的已知边界。
-- 阈值复核、Slack 频道绑定是接入负责人的手工步骤;monitors.json 是唯一事实来源,改动走 git。
+- 阈值复核、Slack 频道绑定是接入负责人的手工步骤;基础设施定义以 `monitors/monitors.json` 为准，模块一/三业务定义以
+  `monitors/business-observability.json` 为准，模块二看板以 `dashboards/biz-module2.json` 为准；改动走 git。

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"stray-kitty/server/internal/advisor"
 	"stray-kitty/server/internal/domain"
 )
 
@@ -251,7 +252,12 @@ func (g *Game) adviseJourney(ctx context.Context, token string, input domain.Adv
 		return domain.AdvisorResponse{}, domain.Fail("INVALID_ADVISOR_REQUEST", "当前可见信息无效", 400)
 	}
 	input.Context = string(combined)
-	result := g.Advisor.Reply(ctx, Hash(token), input)
+	scope := "journey"
+	if before.Phase == "home" {
+		scope = "home"
+	}
+	// 阿策观测:家园场景的 journey 问答细分 scope=home;WithScope 只影响指标 tag。
+	result := g.Advisor.Reply(advisor.WithScope(ctx, scope), Hash(token), input)
 	if err := g.advisorSceneUnchanged(token, input.SceneKey, func(after domain.GameState) bool {
 		afterFingerprint, err := json.Marshal(g.advisorJourneyProgress(after))
 		return err == nil && string(afterFingerprint) == string(fingerprint)

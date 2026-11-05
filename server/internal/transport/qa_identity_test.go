@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http/httptest"
 	"path/filepath"
@@ -51,12 +52,26 @@ func TestQARequestsAndCheckpointLogsAreIsolated(t *testing.T) {
 		if w.Code != wantStatus {
 			t.Fatalf("%s: %d %s", path, w.Code, w.Body.String())
 		}
-		var entry map[string]any
-		if err := json.Unmarshal(bytes.TrimSpace(output.Bytes()), &entry); err != nil {
-			t.Fatalf("invalid access log %q: %v", output.String(), err)
+		decoder := json.NewDecoder(bytes.NewReader(output.Bytes()))
+		accessLogs := 0
+		for {
+			var entry map[string]any
+			if err := decoder.Decode(&entry); err == io.EOF {
+				break
+			} else if err != nil {
+				t.Fatalf("invalid request log %q: %v", output.String(), err)
+			}
+			// Both payment business logs and the ending HTTP access log must
+			// retain the same server-derived player/session/QA attribution.
+			if entry["qa"] != wantQA || entry["player_id"] != player || entry["session_id"] != service.LogSessionID(token) {
+				t.Fatalf("wrong QA identity for %s: %v", path, entry)
+			}
+			if entry["msg"] == "http request" {
+				accessLogs++
+			}
 		}
-		if entry["qa"] != wantQA || entry["player_id"] != player || entry["session_id"] != service.LogSessionID(token) {
-			t.Fatalf("wrong QA identity for %s: %v", path, entry)
+		if accessLogs != 1 {
+			t.Fatalf("expected one ending HTTP log for %s, got %d", path, accessLogs)
 		}
 	}
 	// Gate rejection and field rejection must still be identifiable as QA.

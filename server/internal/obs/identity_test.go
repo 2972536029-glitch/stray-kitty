@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"strings"
 	"testing"
 )
 
@@ -55,6 +56,31 @@ func TestLogQABooleanComesFromContext(t *testing.T) {
 		}
 		if got["qa"] != want {
 			t.Fatalf("qa log field is not the expected boolean: %v", got)
+		}
+	}
+}
+
+func TestIdentityEntryPointsShareOneCurrentIdentity(t *testing.T) {
+	var output bytes.Buffer
+	original := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&output, nil)))
+	t.Cleanup(func() { slog.SetDefault(original) })
+	for _, ctx := range []context.Context{
+		WithSession(WithIdentity(t.Context(), "old-player", "old-session"), "current-player", "current-session"),
+		WithIdentity(WithSession(t.Context(), "old-player", "old-session"), "current-player", "current-session"),
+	} {
+		output.Reset()
+		LogInfo(WithQA(ctx, true), "mixed identity APIs")
+		line := output.String()
+		if strings.Count(line, `"player_id"`) != 1 || strings.Count(line, `"session_id"`) != 1 || strings.Count(line, `"qa"`) != 1 {
+			t.Fatalf("identity fields are not single-valued: %s", line)
+		}
+		var got map[string]any
+		if err := json.Unmarshal(output.Bytes(), &got); err != nil {
+			t.Fatal(err)
+		}
+		if got["player_id"] != "current-player" || got["session_id"] != "current-session" || got["qa"] != true {
+			t.Fatalf("identity or QA context was lost: %s", line)
 		}
 	}
 }

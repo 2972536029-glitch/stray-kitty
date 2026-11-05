@@ -29,6 +29,7 @@ flowchart TD
 
 ```text
 stray-kitty/
+├─ dashboards/
 ├─ deploy/  部署模板
 │  ├─ team-preview/
 │  │  └─ k8s/
@@ -154,6 +155,7 @@ stray-kitty/
 │  │     │  ├─ parcels/  两套主题的二十四件独立透明家具组件
 │  │     │  └─ stages/  四阶段四十八件正向透明家具组件
 │  │     ├─ lottery/  通用邮寄拼贴手账底图与透明包裹开合图集
+│  │     │  └─ fonts/
 │  │     └─ night-market/
 │  └─ src/  运行代码
 │     ├─ adapters/  具体运行能力
@@ -204,6 +206,8 @@ stray-kitty/
 │     ├─ observability/
 │     ├─ shared/  通用工具 · 预留
 │     └─ ui/  界面与样式 · 轩扬
+│        └─ assets/
+│           └─ opening/
 ├─ .dockerignore  容器构建排除
 ├─ .env.example  非秘密环境变量示例
 ├─ .gitattributes  换行与二进制规则

@@ -214,6 +214,9 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		} else {
 			obs.Incr("kitty.payment.charge", "result:success", qaTag)
 		}
+		// Terminal funnel events are emitted once by the durable repository
+		// observer; retries can still produce a request log without recounting.
+		obs.LogInfo(r.Context(), "payment charge", "pack_id", req.PackID, "status", result.Txn.Status, "txn_id", result.Txn.ID)
 		resp := map[string]any{"txnId": result.Txn.ID, "pack": result.Pack, "status": result.Txn.Status, "tunaGranted": result.Pack.TunaGranted, "tunaBalance": result.TunaBalance}
 		if result.Txn.Status == "declined" {
 			resp["reason"] = result.Txn.Reason
@@ -281,6 +284,7 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		// charge_success, so webhook retries cannot inflate the terminal step.
 		obs.Incr("kitty.payment.funnel", "step:session_created", qaTag)
 		obs.Incr("kitty.payment.funnel", "step:charge_attempt", qaTag)
+		obs.LogInfo(r.Context(), "payment session", "pack_id", req.PackID, "provider", result.Provider)
 		a.json(w, 200, result)
 	})
 	// 支付服务 webhook 收款后的内部入账口:仅集群内调用,INTERNAL_TOKEN 未配置时整个端点关闭。
@@ -404,6 +408,9 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 		}
 		route := obs.SanitizeRoute(pattern)
 		span, ctx := obs.StartWebSpan(r.Context(), r.Header, "http.request", r.Method+" "+route)
+		// 会话底座:Bearer 鉴权请求把玩家/会话标识放进 ctx,obs 日志自动注入每条日志。
+		// 观测旁路 no-op 纪律:token 无效/存档缺失时静默跳过,业务响应不受任何影响。
+		ctx = a.withSessionCtx(ctx, r)
 		span.SetTag("http.method", r.Method)
 		span.SetTag("http.route", route)
 		span.SetTag("http.url", r.URL.Path)
@@ -439,6 +446,22 @@ func (a *API) token(r *http.Request) (string, error) {
 	// existing handler's validation order or its business error response.
 	a.sessionIdentity(r, token)
 	return token, nil
+}
+
+// withSessionCtx attaches server-resolved log identity even to requests whose
+// handler does not consume a token. It uses the lightweight identity lookup and
+// the log-domain session hash, never a full save copy or its storage key.
+// Failure is observational only and must not change the handler's response.
+func (a *API) withSessionCtx(ctx context.Context, r *http.Request) context.Context {
+	value := r.Header.Get("Authorization")
+	if !strings.HasPrefix(value, "Bearer ") || len(strings.TrimSpace(value[7:])) < 16 {
+		return ctx
+	}
+	playerID, sessionID, qa, err := a.game.SessionIdentity(strings.TrimSpace(value[7:]))
+	if err != nil {
+		return ctx
+	}
+	return obs.WithQA(obs.WithIdentity(ctx, playerID, sessionID), qa)
 }
 
 // authCredentials 注册/登录共用的请求正文。

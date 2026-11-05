@@ -1,0 +1,339 @@
+{
+  "version": 1,
+  "ui": {
+    "sidebarWidth": 185,
+    "poolTitleSize": 34,
+    "poolMetaSize": 15,
+    "paperRoughness": 24
+  },
+  "labels": {
+    "moss": {
+      "titleX": 55,
+      "titleY": 137,
+      "titleScale": 1,
+      "infoX": 29,
+      "infoY": 22
+    },
+    "moon": {
+      "titleX": 31,
+      "titleY": 27,
+      "titleScale": 0.95,
+      "infoX": 29,
+      "infoY": 22
+    }
+  },
+  "layouts": {
+    "moss": {
+      "moss_cottage": {
+        "x": 145,
+        "y": 412,
+        "scale": 1
+      },
+      "fern_lantern": {
+        "x": 291,
+        "y": 552,
+        "scale": 1
+      },
+      "acorn_library": {
+        "x": 862,
+        "y": 619,
+        "scale": 1
+      },
+      "leaf_swing": {
+        "x": 153,
+        "y": 624,
+        "scale": 1
+      },
+      "clover_rug": {
+        "x": 465,
+        "y": 634,
+        "scale": 1
+      },
+      "willow_sofa": {
+        "x": 408,
+        "y": 467,
+        "scale": 1
+      },
+      "herb_desk": {
+        "x": 674,
+        "y": 378,
+        "scale": 1
+      },
+      "letter_cabinet": {
+        "x": 877,
+        "y": 350,
+        "scale": 1
+      },
+      "sprout_planter": {
+        "x": 661,
+        "y": 658,
+        "scale": 1
+      },
+      "postmark_clock": {
+        "x": 437,
+        "y": 222,
+        "scale": 1
+      },
+      "wicker_basket": {
+        "x": 336,
+        "y": 627,
+        "scale": 1
+      },
+      "seedling_stool": {
+        "x": 695,
+        "y": 515,
+        "scale": 1
+      }
+    },
+    "moon": {
+      "luna_boat": {
+        "x": 145,
+        "y": 412,
+        "scale": 1
+      },
+      "orrery_lamp": {
+        "x": 291,
+        "y": 552,
+        "scale": 1
+      },
+      "tide_observatory": {
+        "x": 862,
+        "y": 619,
+        "scale": 1
+      },
+      "orbit_hammock": {
+        "x": 153,
+        "y": 624,
+        "scale": 1
+      },
+      "starmap_carpet": {
+        "x": 465,
+        "y": 634,
+        "scale": 1
+      },
+      "crescent_sofa": {
+        "x": 408,
+        "y": 467,
+        "scale": 1
+      },
+      "astral_desk": {
+        "x": 674,
+        "y": 378,
+        "scale": 1
+      },
+      "pearl_cabinet": {
+        "x": 877,
+        "y": 350,
+        "scale": 1
+      },
+      "nebula_planter": {
+        "x": 661,
+        "y": 658,
+        "scale": 1
+      },
+      "lunar_clock": {
+        "x": 437,
+        "y": 222,
+        "scale": 1
+      },
+      "comet_mobile": {
+        "x": 378,
+        "y": 235,
+        "scale": 1
+      },
+      "star_stool": {
+        "x": 695,
+        "y": 515,
+        "scale": 1
+      }
+    }
+  },
+  "elements": {
+    "postal-layout/postal-body.0/postal-aside.0": {
+      "x": 5,
+      "y": 49,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-header.0/postal-wallet.0/button.0": {
+      "x": -133,
+      "y": 39,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-header.0/postal-wallet.0/span.0": {
+      "x": -163,
+      "y": 41,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-header.0/nav.0": {
+      "x": -533,
+      "y": 31,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-body.0/postal-stage.0/postal-paper-stack.0/postal-paper.0/postal-suite.0/postal-preview-mount.0/postal-suite-heading.0": {
+      "x": 459,
+      "y": -236,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-header.0/postal-brand.0/span.0": {
+      "x": 2,
+      "y": 0,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-header.0/postal-brand.0": {
+      "x": 126,
+      "y": 66,
+      "scale": 1.55,
+      "rotation": 0
+    },
+    "postal-layout/postal-body.0/postal-aside.0/h2.0": {
+      "x": 52,
+      "y": 32,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-body.0/postal-aside.0/postal-pools.0/button.0": {
+      "x": 54,
+      "y": 28,
+      "scale": 1.05,
+      "rotation": 4
+    },
+    "postal-layout/postal-body.0/postal-aside.0/postal-pools.0/button.1": {
+      "x": 55,
+      "y": 49,
+      "scale": 1.05,
+      "rotation": 1
+    },
+    "postal-layout/postal-body.0/postal-aside.0/postal-preview-note.0": {
+      "x": 170,
+      "y": 209,
+      "scale": 2.4,
+      "rotation": -3
+    },
+    "postal-layout/postal-footer.0/postal-pity.0": {
+      "x": 521,
+      "y": -5,
+      "scale": 1.75,
+      "rotation": 0
+    },
+    "postal-layout/postal-footer.0/postal-actions.0/postal-ticket.0": {
+      "x": -161,
+      "y": -13,
+      "scale": 1.65,
+      "rotation": 0
+    },
+    "postal-layout/postal-footer.0/postal-actions.0/postal-ticket.1": {
+      "x": 33,
+      "y": -13,
+      "scale": 1.65,
+      "rotation": 0
+    },
+    "postal-layout/postal-body.0/postal-stage.0/postal-paper-stack.0/postal-corner-stamps.0/i.1": {
+      "x": 12,
+      "y": 97,
+      "scale": 3.1,
+      "rotation": 0
+    },
+    "postal-layout/postal-body.0/postal-stage.0/postal-paper-stack.0/postal-corner-stamps.0/i.0": {
+      "x": 0,
+      "y": 0,
+      "scale": 3.3,
+      "rotation": 0
+    },
+    "postal-layout/postal-body.0/postal-stage.0/postal-paper-stack.0/postal-paper.0/postal-suite.0/postal-preview-mount.0/postal-suite-register.0/span.1": {
+      "x": -44,
+      "y": -13,
+      "scale": 1.85,
+      "rotation": 0
+    },
+    "postal-layout/postal-header.0/nav.0/button.1": {
+      "x": 0,
+      "y": 0,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-header.0/nav.0/button.2": {
+      "x": 0,
+      "y": 0,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-header.0/postal-wallet.0/span.0/span.0": {
+      "x": 0,
+      "y": 0,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-body.0/postal-stage.0": {
+      "x": 0,
+      "y": 0,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-suite-heading.0/h3.0": {
+      "x": 146,
+      "y": -12,
+      "scale": 1.95,
+      "rotation": 0
+    },
+    "postal-layout/postal-body.0/postal-stage.0/postal-paper-stack.0/postal-paper.0/postal-suite.0": {
+      "x": 0,
+      "y": 0,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-header.0/nav.0/button.0": {
+      "x": 521,
+      "y": 759,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-footer.0/postal-info-links.0/button.0": {
+      "x": -97,
+      "y": -27,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-footer.0/postal-info-links.0/button.1": {
+      "x": -50,
+      "y": -31,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-journal-backdrop.0/img.0": {
+      "x": 0,
+      "y": 0,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-footer.0/postal-parcel-sprite.0/postal-parcel-frame.1/img.0": {
+      "x": 0,
+      "y": 0,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-balances.0/postal-balance-card.0": {
+      "x": -139,
+      "y": 6,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-balances.0/postal-balance-card.1": {
+      "x": -152,
+      "y": 6,
+      "scale": 1,
+      "rotation": 0
+    },
+    "postal-layout/postal-footer.0/postal-info-links.0/postal-rules-button.0": {
+      "x": -55,
+      "y": -21,
+      "scale": 1,
+      "rotation": 0
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import type {StoryNode} from '../contracts';
 import type {CatBreed} from '../adapters/canvas/pixelCat';
-import DialogueBubble, {type SceneAnchor} from './DialogueBubble';
+import DialogueBubble from './DialogueBubble';
 import PixelCat from './PixelCat';
 import {useEffect, useRef, useState, type ReactNode} from 'react';
 
@@ -10,13 +10,10 @@ interface Props {
   node: StoryNode;
   disabled: boolean;
   onNext: (optionId?: 'proud' | 'honest') => void;
-  onSkip?: () => void;
   eventResult?: ReactNode;
-  /** 询问场景：说话者是否在画面里、头顶在哪（不在场则走旁白字幕条）。 */
-  getSpeakerAnchor?: (breed: CatBreed) => SceneAnchor | null;
 }
 
-export default function DialoguePanel({node, disabled, onNext, onSkip, eventResult, getSpeakerAnchor}: Props) {
+export default function DialoguePanel({node, disabled, onNext, eventResult}: Props) {
   const [attitude, setAttitude] = useState<'proud' | 'honest'>('proud');
   const [closing, setClosing] = useState(false);
 
@@ -33,7 +30,7 @@ export default function DialoguePanel({node, disabled, onNext, onSkip, eventResu
       : '咕噜噜……本咪的小肚子突然有了强烈的想法。本咪只是身为领地之王，顺便下楼巡视两分钟。只尝一口，一口就回来，肯定不会迷路！';
   }
 
-  // 打字机：逐字浮出台词；点击/键盘会立刻补全（e2e 依赖“每次点击必发命令”，不能吞点击）。
+  // Typewriter text stays decorative: clicking the card always advances one node.
   const [shown, setShown] = useState(0);
   useEffect(() => {
     setShown(0);
@@ -46,30 +43,31 @@ export default function DialoguePanel({node, disabled, onNext, onSkip, eventResu
   }, [displayText]);
   const typing = shown < displayText.length;
 
-  // 出口节点（next 为空）或跳过剧情：先播放 240ms 淡出再真正推进，让气泡“缩放消失”。
+  const advancing = useRef(false);
+  const exitTimer = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (!disabled) {advancing.current = false;setClosing(false);}
+  }, [node.id, disabled]);
+  useEffect(() => () => window.clearTimeout(exitTimer.current), []);
+
+  // Both the full-card click and skip advance exactly one story node.
   const advance = () => {
-    if (disabled || closing) return;
+    if (disabled || closing || advancing.current) return;
+    advancing.current = true;
     setShown(displayText.length);
     const next = () => onNext(hasChoices ? attitude : undefined);
     if (node.next) {next(); return;}
     setClosing(true);
-    window.setTimeout(next, 240);
-  };
-  const skip = () => {
-    if (disabled || closing || !onSkip) return;
-    setClosing(true);
-    window.setTimeout(onSkip, 240);
+    exitTimer.current = window.setTimeout(next, 240);
   };
   const advanceRef = useRef(advance);
   advanceRef.current = advance;
-
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target?.closest('dialog') || target?.matches('input,select,textarea,button') || target?.isContentEditable) return;
-      if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        advanceRef.current();
+    const handleKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (event.repeat || document.querySelector('.prologue-overlay,.dice-ceremony,dialog[open]') || target?.closest('dialog,input,select,textarea,button,a,[contenteditable=true]') || target?.isContentEditable) return;
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();advanceRef.current();
       }
     };
     window.addEventListener('keydown', handleKey);
@@ -81,10 +79,10 @@ export default function DialoguePanel({node, disabled, onNext, onSkip, eventResu
     <DialogueBubble
       speaker={node.speaker}
       breed={speakers[node.speaker]}
-      getAnchor={getSpeakerAnchor}
-      avoid={['.lost-poster']}
-      refreshKey={`${node.id}:${attitude}`}
       closing={closing}
+      disabled={disabled}
+      onAdvance={advance}
+      onSkip={advance}
     >
       {hasChoices && (
         <div className="attitude-toggle" role="group" aria-label="猫咪态度">
@@ -106,16 +104,6 @@ export default function DialoguePanel({node, disabled, onNext, onSkip, eventResu
       )}
       {eventResult}
       <p key={node.id + attitude}>{displayText.slice(0, shown)}{typing && <i className="dialogue-caret" aria-hidden="true"/>}</p>
-      <div className="dialogue-actions">
-        {onSkip && (
-          <button type="button" className="skip-button" disabled={disabled || closing} onClick={skip} title="快速推进当前对话至出口（Space/Enter也可快速阅读）">
-            ⏩ 跳过剧情
-          </button>
-        )}
-        <button disabled={disabled || closing} onClick={advance} title="点击或按空格/回车继续">
-          {node.id === 'rescue_intro_10' ? '返回花房，准备前往仓库' : '继续故事'} <span aria-hidden="true">→</span>
-        </button>
-      </div>
     </DialogueBubble>
   </>;
 }

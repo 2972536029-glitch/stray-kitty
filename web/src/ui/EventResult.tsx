@@ -11,6 +11,6 @@ export default function EventResult({resolution, compact = false}: {resolution: 
   const pressure = outcome.tdMod?.shadowPressure ?? 0;
   return <div className={`event-resolution tier-${tier} ${compact ? 'compact' : ''}`} data-testid="event-resolution">
     <div className="resolution-dice"><div className="dice-pair"><Dice value={dice[0]}/><Dice value={dice[1]}/></div><div><span>{dice[0]} + {dice[1]} = <b>{dice[0] + dice[1]}</b></span><strong>{eventTiers.find(t => t.id === tier)?.label}</strong></div></div>
-    {!compact && <><p>{outcome.text}</p><div className="outcome-effects">{reward.map(([id, value]) => <span key={id}>{names[id as keyof typeof names]} +{value}</span>)}<span>黑影压力 {pressure > 0 ? '+1' : pressure < 0 ? '−1' : '不变'}</span>{outcome.situation && <span>{outcome.situation.kind === 'forced_chase' ? '紧急撤离' : '绕路前进'}</span>}{carryLabel && <span className="carry-chip">{carryLabel} · 下一场战斗可用</span>}</div></>}
+    {!compact && <><p>{outcome.text}</p><div className="outcome-effects">{reward.map(([id, value]) => <span key={id}>{names[id as keyof typeof names]} +{value}</span>)}{!!pressure && <span>黑影压力 {pressure > 0 ? `+${pressure}` : pressure}</span>}{outcome.situation && <span>{outcome.situation.kind === 'forced_chase' ? '紧急撤离' : '绕路前进'}</span>}{carryLabel && <span className="carry-chip">{carryLabel} · 下一场战斗可用</span>}</div></>}
   </div>;
 }

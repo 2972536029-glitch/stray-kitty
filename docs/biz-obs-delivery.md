@@ -2,7 +2,11 @@
 
 本文件对应 #18。配置保存在 `monitors/business-observability.json`，部署入口为
 `monitors/apply-business-observability.py`。配置与离线测试就位不等于已部署：
-本次未连接 Datadog、未创建线上看板/监控、未声称已有真实数据。
+2026-11-05 已通过 US5 只读连接核对用户手动导入的两张看板：
+[主线与玩法](https://us5.datadoghq.com/dashboard/b6t-avm-uyi/)（19 个组件）和
+[支付与经济](https://us5.datadoghq.com/dashboard/wbx-cm5-me5/)（12 个组件）。
+新埋点版本仍待合入、发布 preview 和真实数据验收；业务告警尚未创建或接管。
+MCP 组织写入权限关闭，当前资源变更由具有网页权限的成员手动执行。
 
 实现后的指标口径以 `docs/OBSERVABILITY.md` 的「#18 模块一、三业务指标」为准。
 战后返回检查发生于真正离开结果页/失败准备页的命令提交后，校验服务端预期区域和阶段；
@@ -65,6 +69,25 @@
 本次没有更改其他基础设施监控，也没有删除线上资源。若组织已有旧名和新名两条，脚本会
 在任何写入前报错，要求明确保留哪条；不会自行删除告警。子监控的消息无通知目标；三个
 主线告警沿用团队现有 Slack 接收人，线上应用后触发时会按该配置发送通知。
+
+### 与主干模块三实现合并
+
+主干 `8ebaf54` 已引入模块三基础埋点、`obs.WithSession` 和家园 scope。
+本交付保持这套日志接口及家园 `journey` 请求细分为 `scope:home` 的行为；身份只在一个
+context 字段中传递，支付终点和经济变动统一在持久化提交后记录，避免 service 入口与
+repository 出口重复计数。旧告警的 `purpose` 与 `owner:biz-module3` 标签继续保留。
+主干新增的支付转化、金枪鱼收支比两条占位阈值已从 `monitors/monitors.json` 默认发布列表
+移出，仅保留在 `pending_baselines` 待实测确认；旧发布器也不能提前部署这两条。
+
+经营看板只保留本文件对应 bundle 一个配置来源。原 `dashboards/biz-module3.json`
+迁入 `monitors/business-observability.json`，防止按标题发布的旧脚本覆盖已导入看板的
+preview/QA 过滤、金额数量口径和归属标记；模块二 `dashboards/biz-module2.json` 及其
+发布入口保留。业务配置测试同时检查不同发布入口之间没有同名资源定义。
+
+网页保存时，Datadog 可能将旧日志组件表示转换为 `list_stream`，并省略 timeseries 的
+可选 `aggregator` 字段。验收应核对日志查询/列、指标查询字符串、公式与标量 `sum`
+是否保持等价；COUNT 的 `.as_count()` 查询保留 SUM 时间聚合。不要把界面标准化
+产生的字段差异当成业务数据口径变化。
 
 ## 本地验证与应用
 

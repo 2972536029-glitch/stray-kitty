@@ -1,0 +1,60 @@
+/* Fixed controls sit directly on the scene, without a full-width glass panel. */
+.app-shell .topbar.fixed-game-menu,.app-shell[data-phase=battle] .topbar.fixed-game-menu {position:absolute;inset:max(8px,var(--safe-top,0px)) max(20px,var(--safe-right,0px)) auto max(20px,var(--safe-left,0px));display:flex;align-items:center;flex-wrap:nowrap;gap:24px;height:auto;min-height:68px;margin:0;padding:6px 0;background:none;border:0;border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;transform:none;opacity:1;transition:none}
+.app-shell .fixed-game-menu::before,.app-shell .fixed-game-menu::after {content:none}
+.app-shell .fixed-game-menu .brand {gap:12px;padding:0;background:none;border:0;box-shadow:none;text-shadow:0 2px 5px #06131d}
+.app-shell .fixed-game-menu .brand-mark {width:44px;height:44px;font-size:32px;background:none;border:0;border-radius:4px;box-shadow:none}
+.app-shell .fixed-game-menu .brand>span:last-child {display:block}
+.app-shell .fixed-game-menu .brand strong {font-size:34px;letter-spacing:2px;color:#fff0cf}
+.app-shell .fixed-game-menu .brand small {font-size:14px;letter-spacing:3px;color:#d6c7a5;margin-top:4px}
+.app-shell .fixed-game-menu .chapter-pill {display:flex;align-items:center;gap:14px;padding:0;min-width:0;background:none;border:0;box-shadow:none;backdrop-filter:none;color:#e7c991;font-size:20px;line-height:1.6;text-shadow:0 1px 4px #06131d;white-space:nowrap}
+.current-place {display:inline-block;padding-left:14px;border-left:1px solid #e5d3a35c;color:#d0d2bc;font-size:16px;font-weight:400}
+.app-shell .fixed-game-menu nav {display:flex;flex-wrap:nowrap;align-items:center;gap:9px;min-width:0;overflow-x:auto;scrollbar-width:none;margin-left:auto;padding:0;background:none}
+.app-shell .fixed-game-menu nav button {display:flex;align-items:center;justify-content:center;gap:7px;width:auto;height:auto;min-width:46px;min-height:46px;padding:10px 13px;border:1px solid transparent;border-radius:4px;background:transparent;color:#f5e6bf;box-shadow:none;backdrop-filter:none;font-size:17px;line-height:1.3;text-shadow:0 1px 4px #06131de6;flex-shrink:0;white-space:nowrap}
+.app-shell .fixed-game-menu nav button>span {display:inline}
+.app-shell .fixed-game-menu nav button:hover {transform:none;background:transparent;border-color:transparent;color:#ffe5aa;box-shadow:inset 0 -1px 0 #e4ca8d88}
+.app-shell .fixed-game-menu nav .dev-button {background:transparent;color:#ebd6a9;font-size:15px}
+.app-shell .topbar.fixed-game-menu nav button.dev-button {background:transparent;border-color:transparent;color:#ebd6a9;box-shadow:none}
+.app-shell .fixed-game-menu>.wallet {display:none}
+.app-shell[data-encounter-active] .fixed-game-menu {visibility:visible;pointer-events:auto}
+.app-shell[data-rolling] .fixed-game-menu {visibility:hidden;pointer-events:none}
+.app-shell[data-rolling] .tutorial-highlight {visibility:hidden;pointer-events:none}
+.settings-modal.game-modal {width:min(620px,calc(100vw - 36px));padding:26px 32px;max-height:calc(100dvh - 36px);overflow:auto}
+.settings-modal .settings-section {padding:16px 0;border-top:1px solid #a4916955}
+.settings-modal .settings-section h3 {font-size:17px;color:#65533b;margin:0 0 12px}
+.settings-modal .settings-section p {font-size:14px;line-height:1.8;color:#78735e;margin:10px 0 15px}
+.settings-modal .setting-row {margin:12px 0}
+.settings-modal .settings-actions {display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.settings-modal .settings-actions button,.settings-modal .settings-clear {font-size:14px;min-height:44px;padding:10px 15px;box-shadow:none}
+.settings-modal .settings-actions button:first-child {background:#536e5e;border:1px solid #465c49}
+.settings-modal .settings-clear {background:transparent;border:1px solid #a67d62;color:#92634e}
+.settings-modal .settings-reset-confirm {padding:10px 14px 14px;background:#b7775510;border:1px solid #b3856355;border-radius:3px}
+.settings-modal .settings-actions .settings-danger {background:#955e47;border-color:#814d3b;color:#fff1d2}
+.settings-modal .setting-row>span {font-size:14px}
+/* Override the generic dialog padding: the journal itself is the entire window. */
+dialog.game-modal.postal-journal {inset:0;margin:auto;width:min(1570px,calc(100vw - 38px));height:min(980px,calc(100dvh - 38px));max-width:none;max-height:calc(100dvh - 38px);padding:0;border:0;border-radius:8px;background:transparent;box-shadow:0 20px 85px #101c2866;overflow:hidden}
+dialog.game-modal.postal-journal>.modal-close {position:absolute;z-index:40;right:25px;top:24px;width:36px;height:36px;padding:0;display:grid;place-items:center;min-height:36px;background:#f6e9d0;color:#7e3e32;border:1px solid #bea588;border-radius:3px;box-shadow:0 2px 3px #6c493326;font-size:27px;line-height:1}
+@media(max-width:1550px) {
+  .app-shell .topbar.fixed-game-menu {gap:17px}
+  .app-shell .fixed-game-menu .brand strong {font-size:28px}
+  .app-shell .fixed-game-menu .chapter-pill {flex-direction:column;align-items:flex-start;gap:0;font-size:16px}
+  .current-place {font-size:14px;padding:0;border:0}
+  .app-shell .fixed-game-menu nav {gap:7px}
+  .app-shell .fixed-game-menu nav button {font-size:14px;padding:10px;gap:6px}
+}
+@media(max-width:1200px) and (min-height:601px) {
+  .app-shell .fixed-game-menu .chapter-pill {flex-direction:column;align-items:flex-start;gap:0}
+  .current-place {padding:0;border:0}
+}
+@media(max-width:950px),(max-height:600px) {
+  .app-shell .topbar.fixed-game-menu,.app-shell[data-phase=battle] .topbar.fixed-game-menu {inset:max(4px,var(--safe-top,0px)) max(12px,var(--safe-right,0px)) auto max(12px,var(--safe-left,0px));gap:12px;min-height:52px;padding:4px 0}
+  .app-shell .fixed-game-menu .brand {gap:8px}.app-shell .fixed-game-menu .brand strong {font-size:23px;letter-spacing:1px}.app-shell .fixed-game-menu .brand small {font-size:10px;letter-spacing:2px}
+  .app-shell .fixed-game-menu .brand-mark {width:34px;height:34px;font-size:26px}
+  .app-shell .fixed-game-menu .chapter-pill {display:flex;flex-direction:column;align-items:flex-start;gap:0;max-width:160px;font-size:13px;white-space:normal}
+  .current-place {padding:0;border:0;font-size:12px}
+  .app-shell .fixed-game-menu nav {gap:5px;min-width:0;overflow-x:auto;scrollbar-width:none}.app-shell .fixed-game-menu nav button {flex-shrink:0;width:44px;min-width:44px;height:44px;min-height:44px;padding:0;font-size:20px;gap:0}
+  .app-shell .fixed-game-menu nav button>span {display:none}.app-shell .fixed-game-menu nav .dev-button {font-size:18px}
+  .settings-modal.game-modal {padding:18px 24px;max-height:calc(100dvh - 24px)}
+  dialog.game-modal.postal-journal {width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100dvh - 16px)}
+  dialog.game-modal.postal-journal>.modal-close {top:16px;right:17px;width:32px;height:32px;min-height:32px;font-size:24px}
+}
+@media(max-width:700px) {.app-shell .fixed-game-menu .brand small {display:none}.app-shell .fixed-game-menu .brand strong {font-size:20px}.app-shell .fixed-game-menu .brand-mark {display:none}.app-shell .fixed-game-menu .chapter-pill {max-width:112px;font-size:12px}.current-place {font-size:11px}.app-shell .topbar.fixed-game-menu {gap:8px}}

@@ -63,7 +63,7 @@ pwsh -NoProfile -File deploy/team-preview-haozhe/Test-Offline.ps1
 
 | 服务 | Deployment | 职责 | 数据 |
 | --- | --- | --- | --- |
-| frontend | `stray-kitty-frontend` | nginx 托管 Vite 构建产物，`/api` 反代到 game | 无状态 |
+| frontend | `stray-kitty-frontend` | nginx 托管 Vite 构建产物，`/api` 反代到 game | 仅证书与 ACME 状态使用专用 PVC |
 | game | `stray-kitty-game` | 游戏 API（会话、剧情、家居、战斗、充值编排） | 存档 PVC（`game.json`） |
 | payment | `stray-kitty-payment` | 支付判定（4242 必成功 / 0000 必失败 / 其余温和拒绝）与权威账本 | 账本 PVC（`payments.json`） |
 
@@ -103,7 +103,7 @@ pwsh -NoProfile -File deploy/team-preview-haozhe/Test-Offline.ps1
 
 | 对象 | 名称 | 要点 |
 | --- | --- | --- |
-| PVC ×2 | `stray-kitty-preview-data` / `stray-kitty-payment-data` | 各 1Gi RWO，默认 StorageClass（`standard-rwo`，GCE 单分区盘 → 有分区亲和） |
+| PVC ×3 | `stray-kitty-preview-data` / `stray-kitty-payment-data` / `stray-kitty-tls-state` | 各 1Gi RWO，默认 StorageClass（`standard-rwo`，GCE 单分区盘 → 有分区亲和）；TLS 卷分别用 `certs`、`acme` 子目录保存已安装证书及签发账户、私钥与续期信息 |
 | Deployment ×3 | `stray-kitty-{game,payment,frontend}` | 单副本 Recreate、`revisionHistoryLimit: 3`（**滚动历史仅保留 3 版**，影响回滚深度）；非 root、只读根文件系统、禁特权提升、不挂 SA 令牌；game/payment 引用拉镜像 Secret |
 | Service ×3 | `stray-kitty-game` / `stray-kitty-payment`（ClusterIP）+ `stray-kitty-preview`（LoadBalancer，唯一公网口，指向 frontend） | 前端经 `PAYMENT_URL` 集群内 DNS 调支付 |
 
@@ -118,6 +118,8 @@ game 容器关键环境变量：`GAME_ADDR=0.0.0.0:8080`、`GAME_DATA_FILE=/data
 | frontend | — | `/healthz` | `/healthz` |
 
 即 game/payment 的 Pod 显示 `1/1 Ready` 时，kubelet 已持续通过其 `/readyz` 端点——部署后验证（第 8 节）可以此为基础分层展开。
+
+TLS 证书与 ACME 配置必须随发布保留：nginx 只读挂载 `certs`，签发进程显式指定 `--config-home /acme`。首次签发先验证 `www.starry-kitty.duckdns.org`，再签发包含主域与 www 的证书；续期同样先处理 www，避免 DuckDNS 的共享 TXT 记录互相覆盖。该组合也用于恢复已触发[同一域名组合签发限额](https://letsencrypt.org/docs/rate-limits/#new-certificates-per-exact-set-of-identifiers)的站点。已签发且未到续期时间时复用原证书，不重复下单。
 
 以上结构约束全部由 `Test-PreviewConfig.ps1` 离线断言（单副本 Recreate、ClusterIP 拓扑、PVC 归属、非 root、digest 镜像、清单中不得出现凭据样式字符串等），`Test-Offline.ps1` 另做负向用例（篡改清单必须被拒绝）。
 

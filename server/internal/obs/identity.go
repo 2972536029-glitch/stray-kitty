@@ -2,13 +2,7 @@ package obs
 
 import "context"
 
-type identityKey struct{}
 type qaKey struct{}
-
-type logIdentity struct {
-	playerID  string
-	sessionID string
-}
 
 // WithIdentity adds server-resolved identifiers to logs only. Callers must never
 // pass bearer tokens or copy these identifiers into metric tags.
@@ -16,7 +10,9 @@ func WithIdentity(ctx context.Context, playerID, sessionID string) context.Conte
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	return context.WithValue(ctx, identityKey{}, logIdentity{playerID: playerID, sessionID: sessionID})
+	// Both public entry points share one identity value. A later WithSession or
+	// WithIdentity call therefore replaces it rather than logging stale fields.
+	return WithSession(ctx, playerID, sessionID)
 }
 
 // WithQA records a server-derived test-state flag. Unlike player/session IDs,

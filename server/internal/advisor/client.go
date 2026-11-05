@@ -131,6 +131,42 @@ func local(reason string) domain.AdvisorResponse {
 	return domain.AdvisorResponse{Source: "local", Reason: reason}
 }
 
+// scopeKey 是阿策场景细分的 ctx key(包内私有):输入 scope 只有
+// battle/journey/explore_hint 三种,home 是家园场景下的 journey 问答,
+// 由 service 层按当前 phase 细分后经 WithScope 传入。
+type scopeKey struct{}
+
+// WithScope 给 ctx 附上阿策 scope 维度提示。观测旁路:只影响 kitty.advisor.call
+// 的 scope tag,不影响任何业务行为。
+func WithScope(ctx context.Context, scope string) context.Context {
+	if scope == "" {
+		return ctx
+	}
+	return context.WithValue(ctx, scopeKey{}, scope)
+}
+
+// advisorScope 把输入 scope 归一为指标枚举:battle/journey/explore_hint/home/unknown
+// (枚举冻结于 docs/biz-obs-module3-plan.md §1)。空输入沿用域校验的语义视为 battle;
+// 白名单外一律 unknown,不把任意字符串放进 tag。
+func advisorScope(scope string, ctx context.Context) string {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	switch scope {
+	case "", "battle":
+		return "battle"
+	case "explore_hint":
+		return "explore_hint"
+	case "journey":
+		if hint, ok := ctx.Value(scopeKey{}).(string); ok && hint == "home" {
+			return "home"
+		}
+		return "journey"
+	default:
+		return "unknown"
+	}
+}
+
 func (c *Client) acquire(session string) string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -193,7 +229,7 @@ func (c *Client) Reply(ctx context.Context, session string, input domain.Advisor
 		if resp.Source != "model" {
 			result, reason = "fallback", resp.Reason
 		}
-		scope := metricScope(input.Scope)
+		scope := advisorScope(input.Scope, ctx)
 		source := "local"
 		if resp.Source == "model" {
 			source = "model"
@@ -201,6 +237,7 @@ func (c *Client) Reply(ctx context.Context, session string, input domain.Advisor
 		obs.Incr("kitty.advisor.call", "result:"+result, "reason:"+reason, "scope:"+scope, "source:"+source, obs.QATag(ctx))
 		obs.Histogram("kitty.advisor.duration_ms", float64(time.Since(start).Microseconds())/1000, "result:"+result, "scope:"+scope, "source:"+source, obs.QATag(ctx))
 	}()
+
 	if c == nil || c.key == "" {
 		return local("not_configured")
 	}

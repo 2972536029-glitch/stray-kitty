@@ -27,6 +27,8 @@ func TestReplyMetricsUseBoundedScopeAndSource(t *testing.T) {
 			t.Fatalf("unexpected no-op fallback: %+v", result)
 		}
 	}
+	// home is a server-derived subdivision of journey, not a client scope.
+	client.Reply(WithScope(t.Context(), "home"), "private-home-session", domain.AdvisorRequest{Scope: "journey"})
 	client.Reply(obs.WithQA(t.Context(), true), "private-qa-session", domain.AdvisorRequest{Scope: "journey"})
 	obs.Shutdown() // flushes DogStatsD before assertions
 	var lines string

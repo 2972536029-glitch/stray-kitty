@@ -3,7 +3,7 @@ import {homeObjectDepth} from './spatial';
 import decor from '../../../content/home/decor.json' with { type: 'json' };
 import type {GameState} from '../../contracts';
 import type {CatBreed} from '../../adapters/canvas/pixelCat';
-import {HOME_SLOTS, homeStage, type HomePoint} from './layout';
+import {HOME_SLOTS, homeSlotPoint, homeStage, type HomePoint} from './layout';
 import {HOME_FRAMES, type HomeSprite} from './assets';
 import {PARCEL_ART, PARCEL_IDS, isParcelFurniture, parcelWidth} from '../lottery/furnitureArt';
 export type HomeAppearance=Pick<GameState,'flags'|'placements'> & Partial<Pick<GameState,'phase'|'storyNodeId'|'furniture'|'homeLayout'|'homeRepairs'>>;
@@ -27,7 +27,7 @@ export function homeInventory(state:HomeAppearance):HomeItem[]{
   const owned=state.furniture??Object.values(state.placements);
   for(const id of owned){
     const appearance=furnitureSprites[id];if(!appearance)continue;
-    const slot=Object.keys(state.placements).find(slot=>state.placements[slot]===id),point=HOME_SLOTS[slot??'']??{x:820,y:540};
+    const slot=Object.keys(state.placements).find(slot=>state.placements[slot]===id),point=homeSlotPoint(slot??'',stage)??{x:820,y:540};
     const locked=!!slot&&['beam','sun_spot'].includes(slot)&&stage<3;
     const sprite=id==='cardboard_nest'&&stage>=2?'s2.nest':appearance.sprite;
     const layoutKey='furniture:'+id,override=state.homeLayout?.[layoutKey];

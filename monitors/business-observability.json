@@ -213,7 +213,8 @@
           "managed-by:stray-kitty-biz-obs",
           "definition:payment-declined",
           "role:alert",
-          "purpose:payment-business"
+          "purpose:payment-business",
+          "owner:biz-module3"
         ]
       },
       "adopt_names": [
@@ -245,7 +246,8 @@
           "managed-by:stray-kitty-biz-obs",
           "definition:advisor-fallback",
           "role:alert",
-          "purpose:advisor-fallback"
+          "purpose:advisor-fallback",
+          "owner:biz-module3"
         ]
       },
       "adopt_names": [

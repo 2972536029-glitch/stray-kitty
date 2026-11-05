@@ -12,7 +12,7 @@ import {HomeMemories} from '../../ui/HomePanel';
 import './hub.css';
 
 export type HomeHubTab='overview'|'parcels'|'shop'|'depart'|'warehouse'|'recharge';
-const titles:Record<HomeHubTab,string>={overview:'家园手册',parcels:'猫爪邮局',shop:'猫国商店',depart:'章节地图',warehouse:'家园仓库',recharge:'金枪鱼补给小站'};
+const titles:Record<HomeHubTab,string>={overview:'家园手册',parcels:'猫爪邮局',shop:'猫咪补给站',depart:'章节地图',warehouse:'家园仓库',recharge:'金枪鱼补给小站'};
 const stageNames=['漏雨避雨处','简易庇护所','原木温室','王国庆典'];
 interface Props {state:GameState;catalog:Catalog;tab:HomeHubTab;locked:boolean;busy:boolean;error:string;onDecorate:()=>void;onClose:()=>void;onRetry:()=>void;journal:ReactNode;children:ReactNode}
 export function HomeFurniturePreview({item,art}:{item:HomeItem;art?:HomeArtwork}){

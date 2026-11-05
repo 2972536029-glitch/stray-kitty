@@ -1,5 +1,7 @@
 """Offline regression tests for mutation safety and business-query semantics."""
 import copy
+import json
+from pathlib import Path
 import unittest
 
 from biz_observability import DefinitionError, MANAGED, deploy, find_existing, load_bundle, validate_bundle
@@ -59,6 +61,22 @@ class FakeDatadog:
 class BusinessObservabilityTests(unittest.TestCase):
     def setUp(self):
         self.bundle = load_bundle()
+
+    def test_independent_publishers_cannot_recreate_or_overwrite_business_resources(self):
+        root = Path(__file__).resolve().parent.parent
+        titles = {spec['payload']['title'] for spec in self.bundle['dashboards']}
+        for path in (root / 'dashboards').glob('*.json'):
+            payload = json.loads(path.read_text(encoding='utf-8-sig'))
+            self.assertNotIn(payload['title'], titles, f'Duplicate dashboard publisher: {path.name}')
+        names = {spec['payload']['name'] for spec in self.bundle['monitors']}
+        names.update(name for spec in self.bundle['monitors'] for name in spec.get('adopt_names', []))
+        # A pending definition must not become deployable through the legacy
+        # publisher, including any names recorded for later adoption.
+        names.update(spec['name'] for spec in self.bundle['pending_baselines'])
+        names.update(name for spec in self.bundle['pending_baselines'] for name in spec.get('adopt_names', []))
+        legacy = json.loads((root / 'monitors' / 'monitors.json').read_text(encoding='utf-8-sig'))
+        for monitor in legacy:
+            self.assertNotIn(monitor['name'], names, 'Legacy publisher must not publish adopted or pending monitors')
 
     def test_deployment_adopts_legacy_monitors_and_reruns_without_duplicates(self):
         client = FakeDatadog(self.bundle, legacy=True)

@@ -77,16 +77,16 @@ test('postal journal fits one window; drawing auto-sends, unopened furniture sta
   await counterFits(page);await page.screenshot({path:'output/parcel-design/capsule-result.png'});await office.getByRole('button',{name:'布置这件家具 ›',exact:true}).click();const backpack=page.getByRole('region',{name:'家具背包 · 布置模式'});
   await backpack.getByRole('button',{name:'放到场景中央'}).click();await backpack.getByRole('button',{name:/保存布置/}).click();await expect(backpack).not.toBeVisible();
   await openToolbar(page);
-  await page.getByRole('button',{name:'猫国商店',exact:true}).click();let shop=page.getByRole('dialog',{name:'猫国商店',exact:true});
+  await page.getByRole('button',{name:'猫咪补给站',exact:true}).click();let shop=page.getByRole('dialog',{name:'猫咪补给站',exact:true});
   await shop.getByTestId('claim-daily_wish').click();await expect(shop.getByTestId('claim-daily_wish')).toHaveText('已签收');
   await shop.getByTestId('claim-daily_letter').click();await expect(shop.getByTestId('claim-daily_letter')).toHaveText('已签收');
-  await shop.getByRole('button',{name:'关闭猫国商店',exact:true}).click();
+  await shop.getByRole('button',{name:'关闭猫咪补给站',exact:true}).click();
   await expect.poll(async()=>JSON.parse((await page.locator('.game-viewport canvas').getAttribute('data-home-cats'))!).find((c:{breed:string})=>c.breed==='diandian')?.pose).toBe('perch');
   await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();await openToolbar(page);await page.getByRole('button',{name:'猫爪邮局',exact:true}).click();
-  await expect(postOffice(page).getByRole('button',{name:/家具图鉴/})).toContainText('12/12');await expect(postOffice(page).getByTestId('claim-daily_letter')).toHaveCount(0);
+  await expect(postOffice(page).getByRole('button',{name:/家具图鉴/})).toHaveAccessibleName(/已收藏 12\/12/);await expect(postOffice(page).getByTestId('claim-daily_letter')).toHaveCount(0);
   await page.setViewportSize({width:1366,height:768});await counterFits(page);await page.screenshot({path:'output/parcel-design/capsule-desktop-1366.png'});
   const headers={Authorization:`Bearer ${sessions.get('free')!.token}`},before=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
-  await postOffice(page).getByRole('button',{name:/收据/}).click();const receipts=page.getByRole('dialog',{name:'包裹收据',exact:true});await expect(receipts.locator('.gacha-receipts li')).toHaveCount(1);await receipts.getByRole('button',{name:'查看结果 ›'}).click();await expect(postOffice(page).locator('.parcel-result-copy')).toContainText('苗苗软垫凳');const after=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;expect(after.revision).toBe(before.revision);expect(after.currencies).toEqual(before.currencies);expect(after.lottery!.history).toHaveLength(1);expect(errors).toEqual([]);
+  await postOffice(page).locator('.postal-rules-button').click();const receipts=page.getByRole('dialog',{name:'邮局规则与收据',exact:true});await receipts.getByRole('button',{name:/包裹收据/}).click();await expect(receipts.locator('.gacha-receipts li')).toHaveCount(1);await receipts.getByRole('button',{name:'查看结果 ›'}).click();await expect(postOffice(page).locator('.parcel-result-copy')).toContainText('苗苗软垫凳');const after=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;expect(after.revision).toBe(before.revision);expect(after.currencies).toEqual(before.currencies);expect(after.lottery!.history).toHaveLength(1);expect(errors).toEqual([]);
 });
 
 test('insufficient tuna opens recharge, declined and successful demo payments, retry recovers without a second charge',async({page,request})=>{

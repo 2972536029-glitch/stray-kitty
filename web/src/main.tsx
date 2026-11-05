@@ -6,6 +6,8 @@ import './ui/theme-cozy.css';
 import './ui/layout-viewport.css';
 import './ui/layout-battle.css';
 import './ui/mobile-landscape.css';
+import './ui/opening-scenes.css';
+import './ui/game-menu.css';
 import {initRUM} from './observability/rum';
 void initRUM();
 const WarehouseWalkPreview = import.meta.env.DEV ? lazy(() => import('./modules/chapter5/WarehouseWalkPreview')) : null;

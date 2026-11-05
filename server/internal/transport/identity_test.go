@@ -64,6 +64,10 @@ func TestBusinessLogsResolvePlayerAndSessionWithoutTokens(t *testing.T) {
 	assertIdentity(player, loginToken)
 	request("GET", "/api/v1/state", "", loginToken, 200)
 	assertIdentity(player, loginToken)
+	// Middleware also observes authenticated requests whose handler does not
+	// parse a token; it must use the same opaque log-session identity.
+	request("GET", "/healthz", "", loginToken, 200)
+	assertIdentity(player, loginToken)
 	request("GET", "/api/v1/state", "", "invalid-bearer-token", 401)
 	if strings.Contains(output.String(), "player_id") || strings.Contains(output.String(), "session_id") {
 		t.Fatal("invalid bearer was attributed to a player")
