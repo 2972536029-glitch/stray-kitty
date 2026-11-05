@@ -129,6 +129,7 @@ stray-kitty/
 │  ├─ e2e/  浏览器流程
 │  └─ ui/
 ├─ tools/
+│  ├─ attack-fx-preview/
 │  └─ map-review/
 │     ├─ chapter1-events/
 │     ├─ chapter2/

@@ -1,9 +1,10 @@
+import {getDragRangeCat} from '../shared/dragRangePreview';
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent} from 'react';
 import type {BattleContext, BattleResult} from './types';
 import type {CatId, CombatAction, CombatCatState, CombatPhase, CombatState, Position} from './state';
 import {PrologueBattle} from './runtime';
-import {getBattleSpeed, getDeployedCatCount} from './engine';
+import {getBattleSpeed, getDeployedCatCount, validatePlacement} from './engine';
 import {getAdvice} from './advisor';
 import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
@@ -19,6 +20,7 @@ import {whenSceneArtReady} from '../scene-art';
 import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
 import {BattleResultScreen} from '../BattleResultScreen';
 import {useBattleBoardFit} from '../useBattleBoardFit';
+import {useBattleDragPreview} from '../shared/useBattleDragPreview';
 import {getSkillTooltipPosition} from '../skillTooltipPosition';
 import type {AnimationBook, CatKind, CatPose} from './painter';
 import './battle.css';
@@ -30,7 +32,7 @@ interface Props {
   /** Notify the host at battle end; the host still waits for player confirmation before settlement. */
   autoComplete?:boolean;
 }
-interface Drag {catId:CatId;pointerId:number;startX:number;startY:number;x:number;y:number}
+interface Drag {catId:CatId;pointerId:number;startX:number;startY:number;x:number;y:number;moved:boolean}
 const phaseNames:Record<CombatPhase,string>={ready:'序章 · 守住回家的路',hero_danger:'迷路的金吉拉',caster_rescue:'布偶赶来救援',teach_position:'全棋盘自由调动',teach_move:'阻挡黑影',teach_live_move:'边战斗，边换位',teach_energy:'准备迎战',skill_charge:'观察伙伴积攒能量',teach_guard_skill:'开启罐盖护盾',teach_caster_skill:'为星绒绽放选择落点',battle:'一起守住防线',won:'伙伴们守住了小巷',failed:'本次守线结束'};
 const guides:Partial<Record<CombatPhase,{step:number;title:string;text:string}>>={
   teach_position:{step:1,title:'伙伴可以全场移动',text:'按住绒绒，拖到任意蓝格。战斗开始后也能随时换位。'},
@@ -48,6 +50,9 @@ function CatPortrait({kind,pose='idle',size=64}:{kind:CatKind;pose?:CatPose;size
   useEffect(()=>{const ctx=ref.current?.getContext('2d');if(ctx){ctx.clearRect(0,0,96,96);drawCat(ctx,kind,0,0,96,pose);}},[kind,pose]);
   return <canvas className="btl-portrait" width={96} height={96} ref={ref} style={{width:size,height:size}} role="img" aria-label={`${kind==='hero'?'金吉拉':kind==='caster'?'布偶':kind==='guard'?'奶牛盾猫':'三花军师'}${pose==='sleep'?'，蜷缩':''}`}/>;
 }
+// The prologue places its 76px combat sprite at (12,20) within a 100px cell.
+// Preserve that silhouette and anchor in the shared preview's 80px canvas.
+function drawPrologueDragCat(ctx:CanvasRenderingContext2D,id:CatId){drawCat(ctx,id,9.6,16,60.8);}
 export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,autoComplete=false}:Props){
   const [runtime]=useState(()=>new PrologueBattle({mode:'tutorial'}));
   const [game,setGame]=useState<CombatState|null>(null);
@@ -73,6 +78,9 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const attemptRef=useRef(context.attempt.id);attemptRef.current=context.attempt.id;
   const inspectedCat=game?.inspectedCatId??null;
   const boardRef=useRef<HTMLDivElement>(null),canvasRef=useRef<HTMLCanvasElement>(null),scrollRef=useRef<HTMLDivElement>(null);
+  const dragging=drag?.moved?drag.catId:null;
+  const dragTarget=drag?boardPosition(drag.x,drag.y):null;
+  const dragPreview=useBattleDragPreview<CatId>({boardRef,columns:7,rows:3,activeCatId:dragging,drawCat:drawPrologueDragCat});
   const battlefieldRef=useRef<HTMLDivElement>(null),menuRef=useRef<HTMLDivElement>(null),tooltipRef=useRef<HTMLDivElement>(null);
   const fittedWidth=useBattleBoardFit(scrollRef,7,3);
   const boardWidth=overview?fittedWidth:Math.max(700,Math.round((fittedWidth??560)*1.25));
@@ -88,7 +96,8 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   function clearPointers(){
     const pointerId=aimPointerRef.current;aimPointerRef.current=null;
     if(pointerId!==null&&boardRef.current?.hasPointerCapture(pointerId))boardRef.current.releasePointerCapture(pointerId);
-    dragRef.current=null;setDrag(null);setAimOutside(false);
+    if(dragRef.current?.moved)suppressClick.current=true;
+    dragRef.current=null;dragPreview.clear();setDrag(null);setAimOutside(false);holdRef.current=chatOpen;
   }
   function closeInspection(){
     if(runtime.getSnapshot()?.inspectedCatId)runtime.dispatch({type:'CLOSE_INSPECTION'});
@@ -111,12 +120,21 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   useEffect(()=>{if(paused){if(runtime.getSnapshot()?.skillAim)runtime.dispatch({type:'CANCEL_SKILL'});closeInspection();clearPointers();setMoveSelection(null);}runtime.pause(paused||document.hidden);},[runtime,paused,context.attempt.id]);
   useEffect(()=>{if(autoComplete&&!paused&&!submitted&&(game?.phase==='won'||game?.phase==='failed'))runtime.complete();},[autoComplete,paused,submitted,game?.phase,game?.externallyPaused,runtime]);
   useEffect(()=>{
-    const paint=()=>{if(game&&canvasRef.current){const ctx=canvasRef.current.getContext('2d');if(ctx)paintBattle(ctx,game,selected,animationRef.current);}};
+    const current=dragRef.current;if(!current||!game)return;
+    const cat=game.cats.find(candidate=>candidate.id===current.catId);
+    // Live-movement teaching keeps ticking. A retired cat's capture button can
+    // unmount before lostpointercapture reaches it, so state also owns cleanup.
+    if(game.phase==='won'||game.phase==='failed'||!cat||cat.status!=='active'||cat.x<0||cat.y<0){
+      clearPointers();setMoveSelection(null);
+    }
+  },[game?.cats,game?.phase]);
+  useLayoutEffect(()=>{
+    const paint=()=>{if(game&&canvasRef.current){const ctx=canvasRef.current.getContext('2d');if(ctx)paintBattle(ctx,game,selected,animationRef.current,dragging,dragTarget);}};
     paint();return whenSceneArtReady(paint);
-  },[game,selected]);
+  },[game,selected,dragging,dragTarget?.x,dragTarget?.y]);
   useEffect(()=>{const log=chatLogRef.current;if(log)log.scrollTop=log.scrollHeight;},[advisorChat.messages,advisorChat.loading,advisorChat.notice,chatOpen]);
   useEffect(()=>{
-    const cancel=(event:KeyboardEvent)=>{if(event.key!=='Escape')return;if(runtime.getSnapshot()?.skillAim){event.preventDefault();runtime.dispatch({type:'CANCEL_SKILL'});clearPointers();}else if(inspectedRef.current){event.preventDefault();closeInspection();}else setMoveSelection(null);};
+    const cancel=(event:KeyboardEvent)=>{if(event.key!=='Escape')return;if(dragRef.current){event.preventDefault();clearPointers();return;}if(runtime.getSnapshot()?.skillAim){event.preventDefault();runtime.dispatch({type:'CANCEL_SKILL'});clearPointers();}else if(inspectedRef.current){event.preventDefault();closeInspection();}else setMoveSelection(null);};
     const cancelWithMouse=(event:MouseEvent)=>{if(!runtime.getSnapshot()?.skillAim)return;event.preventDefault();runtime.dispatch({type:'CANCEL_SKILL'});clearPointers();};
     document.addEventListener('keydown',cancel);document.addEventListener('contextmenu',cancelWithMouse);
     return()=>{document.removeEventListener('keydown',cancel);document.removeEventListener('contextmenu',cancelWithMouse);};
@@ -164,12 +182,12 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const selectedCat=game.cats.find(cat=>cat.id===selected&&cat.status==='active'&&cat.combatant);
   const inspected=game.cats.find(cat=>cat.id===inspectedCat&&cat.status==='active'&&cat.combatant);
   const inspectedSkill=inspected&&inspected.id!=='hero'?SKILLS[inspected.id]:null;
-  const attackCells=selectedCat?getAttackCells(selectedCat):[];
+  const rangeCat=getDragRangeCat(selectedCat,dragging,dragTarget,(cat,target)=>!validatePlacement(game,cat,target.x,target.y,true));
+  const attackCells=rangeCat&&!aim?getAttackCells(rangeCat):[];
   const skillCells=aimCat?getSkillCells(aimCat,aim?.target):[];
   const freeCombatMovement=isBattle||game.phase==='skill_charge'||game.phase==='teach_live_move';
   const movementLesson=game.phase==='teach_move'||game.phase==='teach_position'||game.phase==='teach_live_move';
   const movementPhase=freeCombatMovement||movementLesson;
-  const dragTarget=drag?boardPosition(drag.x,drag.y):null;
   const skillsIntroduced=['teach_energy','skill_charge','teach_guard_skill','teach_caster_skill','battle','won','failed'].includes(game.phase);
   const dispatch=(action:CombatAction)=>{
     if(blocked)return;
@@ -217,16 +235,19 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   }
   function pointerDown(event:ReactPointerEvent<HTMLButtonElement>,cat:CombatCatState){
     event.stopPropagation();
-    if(!canMove(cat)||event.button!==0)return;
+    if(!canMove(cat)||event.button!==0||dragRef.current)return;
     closeInspection();
     event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);suppressClick.current=false;suppressBoardClick.current=false;setSelected(cat.id);
-    const next={catId:cat.id,pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,x:event.clientX,y:event.clientY};
+    const next={catId:cat.id,pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,x:event.clientX,y:event.clientY,moved:false};
+    dragPreview.begin(cat.id,event.clientX,event.clientY,cat);
     dragRef.current=next;holdRef.current=game?.phase!=='teach_live_move';setDrag(next);
   }
   function pointerMove(event:ReactPointerEvent<HTMLButtonElement>){
     const current=dragRef.current;if(!current||current.pointerId!==event.pointerId)return;
-    if(Math.hypot(event.clientX-current.startX,event.clientY-current.startY)>7)setMoveSelection(null);
-    const next={...current,x:event.clientX,y:event.clientY};dragRef.current=next;setDrag(next);
+    dragPreview.move(event.clientX,event.clientY);
+    const moved=current.moved||Math.hypot(event.clientX-current.startX,event.clientY-current.startY)>7;
+    if(moved)setMoveSelection(null);
+    const next={...current,x:event.clientX,y:event.clientY,moved};dragRef.current=next;setDrag(next);
   }
   function boardPosition(clientX:number,clientY:number):Position|null{
     const rect=boardRef.current?.getBoundingClientRect();
@@ -235,11 +256,10 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   }
   function finishDrag(event:ReactPointerEvent<HTMLButtonElement>,cancel=false){
     const current=dragRef.current;if(!current||current.pointerId!==event.pointerId)return;
-    const moved=Math.hypot(event.clientX-current.startX,event.clientY-current.startY)>7;
+    const moved=current.moved||Math.hypot(event.clientX-current.startX,event.clientY-current.startY)>7;
     const position=boardPosition(event.clientX,event.clientY);
     if(!cancel&&moved&&!blocked&&position)place(current.catId,position.x,position.y);
-    suppressClick.current=moved&&!cancel;dragRef.current=null;holdRef.current=chatOpen;setDrag(null);
-    window.setTimeout(()=>{suppressClick.current=false;},0);
+    suppressClick.current=moved;dragRef.current=null;dragPreview.clear();holdRef.current=chatOpen;setDrag(null);
     if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
   }
   function previewAt(position:Position|null){
@@ -309,7 +329,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     }else dispatch({type:'PAUSE'});
   }
   function ask(text:string){if(!aim&&advisorChat.ask(text))setQuestion('');}
-  const moveHandlers=(cat:CombatCatState)=>({onPointerDown:(event:ReactPointerEvent<HTMLButtonElement>)=>pointerDown(event,cat),onPointerMove:pointerMove,onPointerUp:(event:ReactPointerEvent<HTMLButtonElement>)=>finishDrag(event),onPointerCancel:(event:ReactPointerEvent<HTMLButtonElement>)=>finishDrag(event,true),onLostPointerCapture:()=>{if(dragRef.current?.catId===cat.id){dragRef.current=null;holdRef.current=chatOpen;setDrag(null);}}});
+  const moveHandlers=(cat:CombatCatState)=>({onPointerDown:(event:ReactPointerEvent<HTMLButtonElement>)=>pointerDown(event,cat),onPointerMove:pointerMove,onPointerUp:(event:ReactPointerEvent<HTMLButtonElement>)=>finishDrag(event),onPointerCancel:(event:ReactPointerEvent<HTMLButtonElement>)=>finishDrag(event,true),onLostPointerCapture:(event:ReactPointerEvent<HTMLButtonElement>)=>{if(dragRef.current?.pointerId===event.pointerId){if(dragRef.current.moved)suppressClick.current=true;dragRef.current=null;dragPreview.clear();holdRef.current=chatOpen;setDrag(null);}}});
   const proactive=guide?.text??(game.phase==='won'?'守住了！点击完成战斗，查看本次结果。':`现在是${difficulty.label}实战。斑斑挡 2 只，绒绒在旁边支援；能量满后记得挑时机用技能。`);
   const retired=game.cats.filter(cat=>cat.combatant&&cat.status==='retired');
   const guideCat=game.phase==='teach_live_move'?(moveSelection??selectedCat?.id??active.find(cat=>cat.combatant)?.id??'caster'):game.phase==='teach_position'?'caster':game.phase==='teach_move'||game.phase==='teach_guard_skill'?'guard':'caster';
@@ -363,7 +383,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
             </button>;
           })}</div>
           {inspected&&<button className="btl-inspect-dismiss" aria-label="关闭猫咪菜单并返回战场" data-testid="battle-dismiss-cat-menu" onClick={closeInspection}/>}
-          {active.map(cat=><button key={cat.id} className={`btl-unit${cat.id==='hero'?' btl-hero-unit':''}${selected===cat.id?' btl-selected':''}${cat.combatant&&cat.energy>=CONFIG.MAX_ENERGY?' btl-energy-halo':''}${game.phase==='teach_move'&&cat.id==='guard'||skillTeaching(cat)&&inspectedCat!==cat.id&&!aim?' btl-focus':''}`} style={{left:`${cat.x/7*100}%`,top:`${cat.y/3*100}%`}} aria-label={`${cat.name}，${cat.breed}，体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}，${cellName(cat)}，${cat.combatant?`阻挡 ${cat.blockedCount} / ${cat.maxBlocks}，能量 ${Math.floor(cat.energy)} / 100${cat.shield>0?`，护盾 ${Math.ceil(cat.shield)}`:''}`:'固定指挥，不攻击，不可移动'}`} data-testid={`battle-cat-${cat.id}`} disabled={!selectable(cat)} onClick={()=>catClick(cat)} {...moveHandlers(cat)}><span className="btl-unit-name">{cat.name}{cat.combatant&&<small>挡 {cat.blockedCount}/{cat.maxBlocks}</small>}</span><CatHealth cat={cat}/>{cat.combatant&&<CatEnergy cat={cat} compact/>}{cat.shield>0&&<span className="btl-unit-shield">盾 {Math.ceil(cat.shield)}</span>}</button>)}
+          {active.map(cat=><button key={cat.id} className={`btl-unit${cat.id==='hero'?' btl-hero-unit':''}${selected===cat.id?' btl-selected':''}${cat.combatant&&cat.energy>=CONFIG.MAX_ENERGY?' btl-energy-halo':''}${game.phase==='teach_move'&&cat.id==='guard'||skillTeaching(cat)&&inspectedCat!==cat.id&&!aim?' btl-focus':''}`} style={{left:`${cat.x/7*100}%`,top:`${cat.y/3*100}%`,opacity:dragging===cat.id?0:undefined}} aria-label={`${cat.name}，${cat.breed}，体力 ${Math.ceil(cat.hp)} / ${cat.maxHp}，${cellName(cat)}，${cat.combatant?`阻挡 ${cat.blockedCount} / ${cat.maxBlocks}，能量 ${Math.floor(cat.energy)} / 100${cat.shield>0?`，护盾 ${Math.ceil(cat.shield)}`:''}`:'固定指挥，不攻击，不可移动'}`} data-testid={`battle-cat-${cat.id}`} data-x={cat.x} data-y={cat.y} data-dragging={dragging===cat.id} disabled={!selectable(cat)} onClick={event=>{if(event.detail===0)suppressClick.current=false;catClick(cat);}} {...moveHandlers(cat)}><span className="btl-unit-name">{cat.name}{cat.combatant&&<small>挡 {cat.blockedCount}/{cat.maxBlocks}</small>}</span><CatHealth cat={cat}/>{cat.combatant&&<CatEnergy cat={cat} compact/>}{cat.shield>0&&<span className="btl-unit-shield">盾 {Math.ceil(cat.shield)}</span>}</button>)}
           {game.enemies.filter(enemy=>enemy.x>=0&&enemy.x<=CONFIG.VISIBLE_MAX_X).map(enemy=><span key={enemy.id} className="btl-live-enemy" data-testid={`battle-enemy-${enemy.id}`} data-cell={cellName({x:Math.min(6,Math.max(0,Math.round(enemy.x))),y:Math.round(enemy.y)})} aria-label={`${enemy.name}，体力 ${Math.ceil(enemy.hp)}`} style={{left:`${enemy.x/7*100}%`,top:`${enemy.y/3*100}%`,width:'14.285714%',height:'33.33333%',position:'absolute',pointerEvents:'none'}}/>)}
           {inspected&&inspectedSkill&&<>
             <div className="btl-cat-menu" ref={menuRef} role="group" aria-label={`${inspected.name}的技能菜单，查看时临时半速，教学和手动暂停优先`} data-testid="battle-cat-menu" style={{left:inspected.x<3?`calc(${(inspected.x+1)/7*100}% + 3px)`:`calc(${inspected.x/7*100}% - 95px)`,top:`clamp(6px, calc(${(inspected.y+.5)/3*100}% - 46px), calc(100% - 98px))`}} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}>
@@ -394,7 +414,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     <div className="btl-controls"><p role="status">{blocked?'战斗已暂停。':game.lastAction?.type==='INSPECT_CAT'&&!inspectedCat?speedStatus:game.lastAction?.reason??'先观察喵喵的遭遇，伙伴很快就会赶来。'}{!blocked&&(game.paused||chatOpen||aim||inspectedCat)&&<small>{speedStatus}</small>}</p></div>
     {chatOpen&&<section className="btl-chat" aria-label="军师阿策聊天"><div className="btl-panel-heading"><span><strong>阿策的战术小纸条</strong><small>当前战况 · 模型建议 / 本地兜底</small></span><button className="btl-quiet" disabled={blocked} onClick={()=>setChatOpen(false)}>收起聊天</button></div><div className="btl-chat-log" aria-live="polite" aria-busy={advisorChat.loading} ref={chatLogRef}><article><strong>阿策 · 军师喵</strong><p>我会陪你观察战场。先完成站位和技能教学，之后可以问我怎么摆阵、怎样蓄能、伙伴退场后怎么办。</p></article><AdvisorChatMessages {...advisorChat}/></div><div className="btl-suggestions">{['现在怎么摆阵？','伙伴退场怎么办？','怎样蓄能？','猫咪有什么能力？'].map(text=><button key={text} disabled={blocked||advisorChat.loading} onClick={()=>ask(text)}>{text}</button>)}</div><form onSubmit={event=>{event.preventDefault();ask(question);}}><label className="btl-sr-only" htmlFor="battle-question">询问军师</label><input id="battle-question" value={question} disabled={blocked||advisorChat.loading} onChange={event=>setQuestion(event.target.value)} maxLength={500} placeholder="问问阵型、退场、蓄能或猫咪能力……"/><button disabled={blocked||advisorChat.loading||!question.trim()}>{advisorChat.loading?'思考中…':'询问'}</button></form></section>}
     {terminal&&!autoComplete&&<BattleResultScreen outcome={game.phase==='won'?'won':'lost'} stageName={context.stage.name} busy={blocked} onContinue={()=>runtime.complete()}/>}
-    {drag&&Math.hypot(drag.x-drag.startX,drag.y-drag.startY)>7&&<div className="btl-drag-ghost" style={{left:drag.x,top:drag.y}}><CatPortrait kind={drag.catId} size={70}/></div>}
+    {dragPreview.preview}
   </section>;
 }
 

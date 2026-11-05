@@ -1,8 +1,11 @@
+import {getDragRangeCat} from '../shared/dragRangePreview';
 import {paintCarryAnchor} from '../carry-painter';
+import {paintBasicAttack} from '../shared/basicAttackPainter';
+import {getBossAttackMotion} from '../shared/bossAttackMotion';
 import {drawCat} from '../l00/painter';
 import {drawChapterCat} from '../chapter/painter';
 import {CELLS, MAP} from './config';
-import {getAttackCells, getSkillCells} from './engine';
+import {getAttackCells, getDeployError, getSkillCells} from './engine';
 import type {MarketCatId, MarketState, Position} from './types';
 import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
 import {paintMarketObstacleScenery} from '../scene-market-obstacles';
@@ -16,7 +19,7 @@ export const obstacleCell=(x:number,y:number)=>MAP.obstacles.some(cell=>cell.x==
 const rect=(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h);};
 const blocks=(ctx:CanvasRenderingContext2D,color:string,points:number[][])=>{for(const [x,y,w,h] of points)rect(ctx,x,y,w,h,color);};
 
-function drawMarketCat(ctx:CanvasRenderingContext2D,id:MarketCatId,x:number,y:number,size:number,attacking:boolean){
+export function drawMarketCat(ctx:CanvasRenderingContext2D,id:MarketCatId,x:number,y:number,size:number,attacking=false){
   if(id!=='bruiser'&&id!=='controller'){drawChapterCat(ctx,id,x,y,size,false,attacking);return;}
   const fighter=id==='bruiser',fur=fighter?'#b48c69':'#c7d3d2',light=fighter?'#e4c89d':'#f2f0df',patch=fighter?'#745b48':'#8dabad';
   ctx.save();ctx.translate(x+(attacking?1:0),y);ctx.scale(size/32,size/32);
@@ -39,12 +42,15 @@ function drawMarketCat(ctx:CanvasRenderingContext2D,id:MarketCatId,x:number,y:nu
 function drawBoss(ctx:CanvasRenderingContext2D,state:MarketState){
   const boss=state.boss;if(boss.phase==='defeated')return;
   const windup=boss.phase==='windup',recover=boss.phase==='recovery';
-  const hit=state.effects.find(effect=>effect.kind==='boss-attack');
-  const jab=hit?Math.sin(Math.PI*(1-Math.min(1,hit.remaining/.4))):0;
+  const hit=boss.phase==='idle'?state.effects.find(effect=>effect.kind==='boss-attack'):undefined;
+  const motion=getBossAttackMotion(hit?.remaining);
+  const aimX=hit?(hit.to.x+.5)-(boss.x+boss.width/2):-1;
+  const aimY=hit?(hit.to.y+.5)-(boss.y+boss.height/2):0;
+  const aimLength=Math.max(.01,Math.hypot(aimX,aimY)),direction=aimX>0?1:-1;
   ctx.save();ctx.translate(boss.x*CELL,boss.y*CELL);
   blocks(ctx,'#223a343b',[[16,68,48,5],[23,73,33,2]]);
   const sway=windup?Math.sin(state.elapsed*12)*1.5:Math.sin(state.elapsed*2);
-  ctx.translate(sway-jab*4,recover?4:0);
+  ctx.translate(sway,recover?4:0);
   blocks(ctx,SCENE_INK.enemy,[[24,15,29,13],[20,27,37,21],[16,48,45,17],[21,64,13,6],[44,64,13,6]]);
   blocks(ctx,SCENE_INK.enemyLight,[[26,17,25,4],[21,30,5,26],[52,35,5,23]]);
   blocks(ctx,SCENE_INK.gold,[[28,29,7,3],[44,29,7,3]]);
@@ -67,18 +73,37 @@ function drawBoss(ctx:CanvasRenderingContext2D,state:MarketState){
     blocks(ctx,'#d1bb80',[[11,23,1,3],[10,12,3,1]]);
     ctx.strokeStyle='#687b88';ctx.lineWidth=2;ctx.beginPath();ctx.arc(12,28,18,Math.PI*.65,Math.PI*1.9);ctx.stroke();
   }else{
-    blocks(ctx,'#85714d',[[11-jab*5,24,4,40],[8-jab*5,19,10,4]]);
-    blocks(ctx,'#b4a16c',[[5-jab*5,27,17,19],[8-jab*5,24,11,3]]);
-    blocks(ctx,'#f0d68a',[[9-jab*5,30,9,12],[11-jab*5,28,5,16]]);
-    blocks(ctx,'#6a6049',[[7-jab*5,29,2,14],[18-jab*5,29,2,14],[8-jab*5,35,11,1]]);
-    blocks(ctx,'#f8e9b9',[[12-jab*5,30,2,4],[12-jab*5,37,2,4],[9-jab*5,25,8,1]]);
-    blocks(ctx,'#c4b283',[[8-jab*5,44,11,1],[12-jab*5,48,1,12]]);
+    // The lamp and its gripping arm move independently of the keeper's body:
+    // retract behind the elbow, thrust toward the struck cat, then recover.
+    const lampX=-direction*9*motion.pull+(aimX/aimLength*25+Math.max(0,aimX/aimLength)*23)*motion.strike;
+    const lampY=-8*motion.pull+(aimY/aimLength*18-4)*motion.strike;
+    const angle=direction*(-.22*motion.pull+.55*motion.strike);
+    const handX=14+lampX-Math.cos(angle)+2*Math.sin(angle);
+    const handY=45+lampY-Math.sin(angle)-2*Math.cos(angle);
+    if(hit){
+      ctx.save();ctx.lineCap='square';ctx.lineJoin='bevel';
+      ctx.beginPath();ctx.moveTo(23,35);
+      ctx.lineTo(21-direction*7*motion.pull+(handX-21)*.45,44-12*motion.pull);
+      ctx.lineTo(handX,handY);
+      ctx.strokeStyle=SCENE_INK.enemy;ctx.lineWidth=10;ctx.stroke();
+      ctx.strokeStyle='#83958c';ctx.lineWidth=4;ctx.stroke();
+      blocks(ctx,'#b5c6b4',[[handX-3,handY-3,7,6]]);
+      ctx.restore();
+    }
+    ctx.save();ctx.translate(14+lampX,45+lampY);ctx.rotate(angle);ctx.translate(-14,-45);
+    blocks(ctx,'#85714d',[[11,24,4,40],[8,19,10,4]]);
+    blocks(ctx,'#b4a16c',[[5,27,17,19],[8,24,11,3]]);
+    blocks(ctx,'#f0d68a',[[9,30,9,12],[11,28,5,16]]);
+    blocks(ctx,'#6a6049',[[7,29,2,14],[18,29,2,14],[8,35,11,1]]);
+    blocks(ctx,'#f8e9b9',[[12,30,2,4],[12,37,2,4],[9,25,8,1]]);
+    blocks(ctx,'#c4b283',[[8,44,11,1],[12,48,1,12]]);
+    ctx.restore();
     if(recover){ctx.strokeStyle='#b8ab7a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(13,37,17,0,Math.PI);ctx.stroke();}
   }
   ctx.restore();
 }
 
-export function paintMarket(ctx:CanvasRenderingContext2D,state:MarketState,selected:MarketCatId|null,moveTarget:Position|null){
+export function paintMarket(ctx:CanvasRenderingContext2D,state:MarketState,selected:MarketCatId|null,moveTarget:Position|null,hiddenCatId?:MarketCatId|null){
   ctx.clearRect(0,0,BOARD_WIDTH,BOARD_HEIGHT);ctx.imageSmoothingEnabled=false;ctx.save();
   ctx.beginPath();ctx.rect(0,0,BOARD_WIDTH,BOARD_HEIGHT);ctx.clip();
   for(const position of CELLS){
@@ -96,7 +121,7 @@ export function paintMarket(ctx:CanvasRenderingContext2D,state:MarketState,selec
   if(state.boss.phase!=='defeated')rect(ctx,MAP.boss.x*CELL+3,MAP.boss.y*CELL+3,CELL-6,CELL-6,'#66546f38');
   drawCat(ctx,'hero',8,MAP.goal.y*CELL+11,62);
   paintCarryAnchor(ctx,state.carry,CELL,mapCell);
-  const selectedCat=state.cats.find(cat=>cat.id===selected&&cat.status==='active');
+  const selectedCat=getDragRangeCat(state.cats.find(cat=>cat.id===selected&&cat.status==='active'),hiddenCatId,moveTarget,(cat,target)=>!getDeployError(state,cat.id,target));
   if(selectedCat&&!state.aim){ctx.fillStyle='#8ee2cb30';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;for(const p of getAttackCells(selectedCat)){ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);ctx.strokeRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);}}
   if(state.aim){
     ctx.fillStyle='#8ee2cb38';for(const p of CELLS)if(!obstacleCell(p.x,p.y))ctx.fillRect(p.x*CELL+4,p.y*CELL+4,CELL-8,CELL-8);
@@ -122,7 +147,7 @@ export function paintMarket(ctx:CanvasRenderingContext2D,state:MarketState,selec
     rect(ctx,1,-6,36,4,'#243741');rect(ctx,1,-6,36*enemy.hp/enemy.maxHp,4,'#efc58a');ctx.restore();
   }
   for(const cat of state.cats){
-    if(cat.status!=='active')continue;const x=cat.x*CELL,y=cat.y*CELL;
+    if(cat.status!=='active'||cat.id===hiddenCatId)continue;const x=cat.x*CELL,y=cat.y*CELL;
     if(cat.id===selected){ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;ctx.strokeRect(x+4,y+4,CELL-8,CELL-8);}
     drawMarketCat(ctx,cat.id,x+9,y+7,62,cat.cooldown>.5);
     if(cat.shield>0){ctx.strokeStyle='#8dd7e4';ctx.fillStyle='#8dd7e424';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x+40,y+42,31,29,0,0,Math.PI*2);ctx.fill();ctx.stroke();}
@@ -134,7 +159,7 @@ export function paintMarket(ctx:CanvasRenderingContext2D,state:MarketState,selec
   for(const effect of state.effects){
     ctx.save();ctx.globalAlpha=Math.min(1,effect.remaining*3);
     if(effect.kind==='attack'||effect.kind==='boss-attack'){
-      ctx.strokeStyle=effect.kind==='attack'?SCENE_INK.gold:SCENE_INK.danger;ctx.lineWidth=effect.kind==='attack'?2:4;ctx.beginPath();ctx.moveTo((effect.from.x+.5)*CELL,(effect.from.y+.5)*CELL);ctx.lineTo((effect.to.x+.5)*CELL,(effect.to.y+.5)*CELL);ctx.stroke();
+      paintBasicAttack(ctx,effect,{cellSize:CELL,boss:state.boss,theme:'market'});
     }else if(effect.kind==='heal'||effect.kind==='shield'){
       const x=(effect.to.x+.5)*CELL,y=(effect.to.y+.4)*CELL;blocks(ctx,effect.kind==='heal'?'#a9e0a8':'#a0e3ed',[[x-11,y-2,22,4],[x-2,y-11,4,22]]);
     }else for(const p of effect.cells??[effect.to]){

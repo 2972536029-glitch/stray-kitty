@@ -1,9 +1,13 @@
-import type {CatId, CombatState} from './state';
+import {getDragRangeCat} from '../shared/dragRangePreview';
+import type {CatId, CombatState, Position} from './state';
+import {validatePlacement} from './engine';
 import {COMMANDER_POSITION, SPAWN_POINTS, isSpawnCell} from './config';
 import {getAttackCells, getSkillCells, getSkillTargetCells} from './ranges';
 import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
+import {paintBasicAttack} from '../shared/basicAttackPainter';
 
 export type CatKind = CatId | 'advisor';
+
 export type CatPose = 'idle' | 'attack' | 'hurt' | 'sleep';
 type Palette = {fur: string; light: string; shade: string; patch: string; eye: string; accent: string};
 const palettes: Record<CatKind, Palette> = {
@@ -67,7 +71,7 @@ export function drawCat(ctx:CanvasRenderingContext2D,kind:CatKind,x:number,y:num
 
 export interface CatAnimation {attacks:number;damage:number;attackAt:number;hurtAt:number}
 export type AnimationBook = Map<CatId,CatAnimation>;
-export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selected:CatId|null,animations:AnimationBook){
+export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selected:CatId|null,animations:AnimationBook,hiddenCatId?:CatId|null,moveTarget:Position|null=null){
   ctx.clearRect(0,0,700,300);ctx.imageSmoothingEnabled=false;
   const boardCell=(x:number,y:number)=>x>=0&&x<7&&y>=0&&y<3;
   for(let y=0;y<3;y++)for(let x=0;x<7;x++){
@@ -83,7 +87,7 @@ export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selec
     ctx.fillStyle=SCENE_INK.danger;
     blocks(ctx,ctx.fillStyle as string,[[x+76,y+39,4,22],[x+72,y+43,4,14],[x+68,y+47,4,6]]);ctx.restore();
   }
-  const selectedCat=state.cats.find(c=>c.id===selected&&c.status==='active'&&c.combatant);
+  const selectedCat=getDragRangeCat(state.cats.find(c=>c.id===selected&&c.status==='active'&&c.combatant),hiddenCatId,moveTarget,(cat,target)=>!validatePlacement(state,cat,target.x,target.y,true));
   if(selectedCat&&!state.skillAim){
     ctx.save();ctx.fillStyle='#8ee2cb30';ctx.strokeStyle=SCENE_INK.selected;ctx.lineWidth=2;
     for(const cell of getAttackCells(selectedCat)){ctx.fillRect(cell.x*100+5,cell.y*100+5,90,90);ctx.strokeRect(cell.x*100+5.5,cell.y*100+5.5,89,89);}
@@ -117,6 +121,7 @@ export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selec
     if(!animation){animation={attacks:cat.attacks,damage:cat.damageTaken,attackAt:-10,hurtAt:-10};animations.set(cat.id,animation);}
     if(animation.attacks!==cat.attacks){animation.attacks=cat.attacks;animation.attackAt=state.time;}
     if(animation.damage!==cat.damageTaken){animation.damage=cat.damageTaken;animation.hurtAt=state.time;}
+    if(cat.id===hiddenCatId)continue;
     const attacking=state.time-animation.attackAt<.4;const hurting=state.time-animation.hurtAt<.25;
     const x=(cat.x+.5)*100,y=(cat.y+.5)*100;
     const size=cat.id==='hero'?64:76;
@@ -124,8 +129,10 @@ export function paintBattle(ctx:CanvasRenderingContext2D,state:CombatState,selec
     if(cat.shield>0){ctx.save();ctx.strokeStyle='#8dd7e4';ctx.fillStyle='#8dd7e424';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y+8,38,36,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();}
   }
   for(const shot of state.projectiles){
-    const t=1-shot.ttl/shot.maxTtl,x=(shot.x+(shot.tx-shot.x)*t+.5)*100,y=(shot.y+(shot.ty-shot.y)*t+.5)*100;
-    blocks(ctx,SCENE_INK.gold,[[x-7,y-2,14,4],[x-2,y-7,4,14]]);pixel(ctx,x-2,y-2,4,4,'#fff6c6');
+    const from={x:shot.x,y:shot.y,id:shot.kind==='starlight'?'caster':'guard'};
+    ctx.save();ctx.globalAlpha=Math.min(1,shot.ttl/shot.maxTtl*2);
+    paintBasicAttack(ctx,{kind:'attack',from,to:{x:shot.tx,y:shot.ty},remaining:.4*shot.ttl/shot.maxTtl},{cellSize:100,theme:'alley'});
+    ctx.restore();
   }
   for(const effect of state.effects){
     if(effect.kind==='skill-area'){

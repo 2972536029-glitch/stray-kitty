@@ -284,7 +284,7 @@ function advanceLiveTutorial(state: CombatState) {
 }
 function response(state: CombatState, action: {type: string}, ok: boolean, reason: string) { state.lastAction = { id: ++state.sequence, type: action.type, ok, reason }; return state; }
 const reject = (state: CombatState, action: {type: string}, reason: string) => response(copy(state), action, false, reason);
-function validatePlacement(state: CombatState, cat: CombatCatState, x: number, y: number, allowSwap: boolean) {
+export function validatePlacement(state: CombatState, cat: CombatCatState, x: number, y: number, allowSwap: boolean) {
   if (!inGrid(x, y)) return '请放在 3 行 × 7 列战斗区的完整格子内。';
   if (x === CONFIG.GOAL_X && y === CONFIG.GOAL_Y) return 'B1 是喵喵的固定指挥格与敌人终点，不能部署、移动或交换战斗猫。';
   if (isSpawnCell(x, y)) return 'B7 是黑影出怪口，不能部署、移动或交换战斗猫。';
