@@ -154,7 +154,9 @@ action 清单冻结于 `docs/biz-obs-module2-plan.md` §1,组件只调用封装�
 
 边界说明:标题界面(StartScreen)的商店入口不计入 `feature_entry_use`(标题页不属于玩法渗透范围);
 「回到花房」等章节导航不计入(是导航不是玩法入口)。
-看板 `[小猫回家记][业务-前端] 体验与渗透`(模块二独占,US5)按计划 §2 面板清单建;
+看板 `[小猫回家记][业务-前端] 体验与渗透`(模块二独占,US5)按计划 §2 面板清单建,
+as-code:`dashboards/biz-module2.json`(apply 用模块三引入的 `dashboards/apply-dashboards.py`,
+按 title 幂等创建/更新;合并后 `DD_SITE=us5.datadoghq.com` + 有效 US5 key 执行)。
 监控「充值入口点击率下降」有基线前不建(计划 §3)。
 
 ## 7. 本地无 Datadog 运行
