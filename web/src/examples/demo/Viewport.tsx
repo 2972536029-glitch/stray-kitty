@@ -5,6 +5,7 @@ import {CanvasViewport} from '../../adapters/canvas/CanvasViewport';
 import {DemoScene} from './scene';
 import type {ChapterBackgroundStatus} from '../../modules/map/artwork';
 import TouchControls from '../../ui/TouchControls';
+import AlleyLabels from '../../modules/rainyAlley/AlleyLabels';
 
 interface Props {
   onHomeAdvisor?:()=>void;
@@ -29,6 +30,7 @@ interface Props {
 
 export function Viewport(props: Props) {
   const scene = useRef<DemoScene | null>(null);
+  const [activeScene, setActiveScene] = useState<DemoScene | null>(null);
   const [background, setBackground] = useState<ChapterBackgroundStatus | null>(null);
   const latest = useRef(props);latest.current = props;
   useEffect(() => {
@@ -54,11 +56,12 @@ export function Viewport(props: Props) {
     runtime.onHomeAdvisor=()=>latest.current.onHomeAdvisor?.();
     runtime.state = latest.current.state;runtime.pausedByUser = latest.current.paused;runtime.storyScene = latest.current.storyNode?.scene;runtime.storyNode = latest.current.storyNode;runtime.randomEligible = latest.current.randomEligible ?? true;scene.current = runtime;
     runtime.start();
+    setActiveScene(runtime);
     latest.current.onWarehouseClimbReady?.(()=>runtime.climbWarehouse());
     latest.current.onSceneReady?.(runtime);
     // CanvasViewport 只认 destroy；在这里补一次 onSceneReady(null) 的通知。
     return {destroy() {runtime.destroy();scene.current = null;latest.current.onSceneReady?.(null);}};
-  }}/>{props.state.phase === 'explore' && <TouchControls disabled={props.paused || background?.state === 'loading' || background?.state === 'error'} mapId={props.state.mapId}
+  }}/>{activeScene && props.state.phase === 'explore' && props.state.mapId === 'alley' && <AlleyLabels scene={activeScene}/>}{props.state.phase === 'explore' && <TouchControls disabled={props.paused || background?.state === 'loading' || background?.state === 'error'} mapId={props.state.mapId}
     onDirection={(direction, held) => scene.current?.setDirection(direction, held)} onAction={action => scene.current?.performAction(action)}/>}
   {background && (background.state === 'loading' || background.state === 'error') && <div className="map-loading-panel" role={background.state === 'error' ? 'alert' : 'status'}>
     <div><span aria-hidden="true">ฅ</span><p>{background.state === 'error' ? '地图暂时没打开' : '正在打开地图……'}</p>

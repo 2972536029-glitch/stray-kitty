@@ -61,6 +61,16 @@ export class DemoScene {
     }
     return this.rainyAlleyInstance;
   }
+  alleyExplorationLabels() {
+    if (this.state?.phase !== 'explore' || this.state.mapId !== 'alley' || this.pausedByUser || this.backgroundBlocked()) return [];
+    const bounds = this.canvas.getBoundingClientRect();
+    const fit = getComputedStyle(this.canvas).objectFit === 'cover' ? Math.max : Math.min;
+    const scale = fit(bounds.width / this.viewWidth, bounds.height / this.viewHeight);
+    const left = bounds.left + (bounds.width - this.viewWidth * scale) / 2;
+    const top = bounds.top + (bounds.height - this.viewHeight * scale) / 2;
+    return this.rainyAlley.explorationLabels(this.viewWidth, this.viewHeight, this.state.flags)
+      .map(label => ({...label, x: left + label.x * scale, y: top + label.y * scale}));
+  }
   private get tunnelMap() {return this.tunnelMapInstance ??= new TunnelMap();}
   private cityBackdrop: HTMLImageElement;
   private prologueHomeImage?: HTMLImageElement;

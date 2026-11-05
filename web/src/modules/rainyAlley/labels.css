@@ -1,0 +1,39 @@
+@font-face {
+  font-family:"Alley Noto Sans SC";
+  src:url('/assets/fonts/alley-noto-sans-sc-semibold.woff') format('woff');
+  font-style:normal;
+  font-weight:600;
+  font-display:swap;
+}
+.alley-label-layer {position:fixed;inset:0;z-index:4;pointer-events:none}
+.alley-label-anchor {position:absolute;top:0;left:0;width:max-content;max-width:calc(100vw - 24px);opacity:0;transition:opacity .24s ease;pointer-events:none}
+.alley-glass-label,.alley-glass-label:disabled,.alley-glass-label:hover {
+  position:relative;display:flex;align-items:center;justify-content:center;gap:12px;
+  min-height:44px;max-width:100%;padding:8px 15px;border:1px solid #e3f3e23d;border-radius:20px;
+  background:linear-gradient(155deg,#d7eee510,#accbc302 48%,#92c8ce08),#112c393d;
+  color:#fff2d8;opacity:1;font:600 20px/1.4 "Alley Noto Sans SC","Noto Sans SC",sans-serif;
+  text-shadow:0 1px 3px #061923cc;letter-spacing:.1px;
+  box-shadow:inset 0 1px 0 #f8ffe42b,inset 0 -1px 0 #0618252b,0 4px 16px #03121d20;
+  backdrop-filter:blur(5px) saturate(1.1);-webkit-backdrop-filter:blur(5px) saturate(1.1);
+  transform:translateY(3px) scale(.97);transition:transform .32s cubic-bezier(.2,.8,.2,1),border-color .2s,background-color .2s;
+  overflow:hidden;cursor:default;pointer-events:none;
+}
+.alley-glass-label::before {content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:radial-gradient(ellipse at var(--glass-light-x,22%) 0%,#fffbd514,transparent 65%)}
+.alley-label-anchor[data-visible=true] .alley-glass-label {transform:translateY(0) scale(1);animation:alley-glass-arrive .48s cubic-bezier(.22,1,.36,1)}
+.alley-label-anchor[data-visible=true] .alley-glass-label:not(:disabled) {pointer-events:auto;cursor:pointer}
+.alley-label-anchor[data-visible=true] .alley-glass-label:not(:disabled):hover {border-color:#eee5b86b;background-color:#193e4b57;transform:translateY(-1px)}
+.alley-glass-label:focus-visible {outline:2px solid #ffe6a4;outline-offset:4px}
+.alley-label-anchor[data-visible=true] .alley-glass-label:not(:disabled):active {transform:scale(.97)}
+.alley-label-text {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.alley-shortcut {display:grid;grid-template-columns:0fr;opacity:0;margin-left:-12px;transition:grid-template-columns .42s cubic-bezier(.22,1,.36,1),margin-left .42s cubic-bezier(.22,1,.36,1),opacity .24s;flex-shrink:0}
+.alley-shortcut[data-active=true] {grid-template-columns:1fr;opacity:1;margin-left:0}
+.alley-shortcut>span {min-width:0;overflow:hidden}
+.alley-glass-label kbd {display:grid;place-items:center;min-width:29px;height:29px;padding:0 5px;border:1px solid #e8eadb52;border-radius:9px;background:linear-gradient(#eff3de1a,#b6d0c109);color:#fff0c9;box-shadow:inset 0 1px 0 #ffffff1c;font:inherit;line-height:1;flex-shrink:0}
+.alley-objective-light {width:5px;height:5px;border-radius:50%;background:#efce8a;box-shadow:0 0 7px #edc87788;flex-shrink:0}
+.alley-glass-label[data-objective] {border-color:#dfce8e59}
+.app-shell[data-phase=explore][data-map=alley] .world-footer :is(p,button) {font:600 20px/1.5 "Alley Noto Sans SC","Noto Sans SC",sans-serif}
+.app-shell[data-phase=explore][data-map=alley]:has(.alley-label-layer) .world-footer:has(.inspect-hint):not(:has(.home-return-button)) {display:none}
+@keyframes alley-glass-arrive {0%{transform:translateY(6px) scale(.95)}70%{transform:translateY(-.5px) scale(1.008)}100%{transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce) {.alley-label-anchor,.alley-glass-label,.alley-shortcut {transition:none}.alley-label-anchor[data-visible=true] .alley-glass-label {animation:none}.alley-glass-label,.alley-glass-label:hover {transform:none}}
+@media(prefers-reduced-transparency:reduce) {.alley-glass-label,.alley-glass-label:hover,.alley-glass-label:disabled {background:#142d39;backdrop-filter:none;-webkit-backdrop-filter:none}}
+@supports not (backdrop-filter:blur(1px)) {.alley-glass-label,.alley-glass-label:hover,.alley-glass-label:disabled {background:#142d39f5}}
