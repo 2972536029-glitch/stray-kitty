@@ -1,5 +1,4 @@
 import {paintCarryAnchor} from '../carry-painter';
-import {paintBossRetreatLabel} from '../boss-retreat-label';
 import {paintSceneEdge, paintSceneTile, SCENE_INK} from '../scene-art';
 import {paintGreenhouseObstacleScenery} from '../scene-garden-alley-obstacles';
 import {drawCat} from '../l00/painter';
@@ -91,7 +90,7 @@ export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseSta
   ctx.beginPath();for(const p of CELLS)ctx.rect(p.x*CELL,p.y*CELL,CELL,CELL);ctx.clip();
   for(const p of CELLS){
     const goal=p.x===MAP.goal.x&&p.y===MAP.goal.y,obstacle=obstacleCell(p.x,p.y);
-    paintSceneTile(ctx,'greenhouse',p.x,p.y,CELL,{goal,obstacle,spawn:MAP.spawns.some(cell=>cell.x===p.x&&cell.y===p.y),boss:MAP.bossCells.some(cell=>cell.x===p.x&&cell.y===p.y)});
+    paintSceneTile(ctx,'greenhouse',p.x,p.y,CELL,{goal,obstacle,spawn:MAP.spawns.some(cell=>cell.x===p.x&&cell.y===p.y),boss:state.boss.phase!=='defeated'&&MAP.bossCells.some(cell=>cell.x===p.x&&cell.y===p.y)});
     if(!obstacle)paintSceneEdge(ctx,'greenhouse',p.x,p.y,CELL,mapCell);
   }
   paintGreenhouseObstacleScenery(ctx);
@@ -99,9 +98,8 @@ export function paintGreenhouse(ctx:CanvasRenderingContext2D,state:GreenhouseSta
     const x=p.x*CELL,y=p.y*CELL;ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.strokeRect(x+5,y+5,CELL-10,CELL-10);
     blocks(ctx,SCENE_INK.danger,p.y===5?[[x+37,y+25,7,4],[x+33,y+29,15,4],[x+29,y+33,23,4]]:[[x+45,y+24,4,23],[x+41,y+28,4,15],[x+37,y+32,4,7]]);
   }
-  for(const p of MAP.bossCells)rect(ctx,p.x*CELL+3,p.y*CELL+3,CELL-6,CELL-6,'#e0b26c17');
-  ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;ctx.strokeRect(state.boss.x*CELL+4,state.boss.y*CELL+4,2*CELL-8,2*CELL-8);
-  if(state.boss.phase==='defeated')paintBossRetreatLabel(ctx,'荆冠首领已退去',MAP.boss.x*CELL,MAP.boss.y*CELL,2*CELL,2*CELL);
+  if(state.boss.phase!=='defeated')for(const p of MAP.bossCells)rect(ctx,p.x*CELL+3,p.y*CELL+3,CELL-6,CELL-6,'#e0b26c17');
+  ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;if(state.boss.phase!=='defeated')ctx.strokeRect(state.boss.x*CELL+4,state.boss.y*CELL+4,2*CELL-8,2*CELL-8);
   drawCat(ctx,'hero',8,MAP.goal.y*CELL+11,62);
   paintCarryAnchor(ctx,state.carry,CELL,mapCell);
   const chosen=state.cats.find(cat=>cat.id===selected&&cat.status==='active');

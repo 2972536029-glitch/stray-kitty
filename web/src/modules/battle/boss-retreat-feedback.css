@@ -1,0 +1,43 @@
+.battle-boss-retreat {
+  position: absolute;
+  z-index: 5;
+  transform: translate(-50%, -50%);
+  pointer-events: none !important;
+  white-space: nowrap;
+  animation: boss-retreat-rise 2.6s ease-out both;
+}
+.battle-boss-retreat * { pointer-events: none !important; }
+.boss-retreat-text {
+  position: relative;
+  color: #fff1c9;
+  font: 700 clamp(13px, 1.25vw, 18px)/1.5 "Microsoft YaHei", sans-serif;
+  text-shadow: -1px -1px 0 #142f2e, 1px -1px 0 #142f2e, -1px 1px 0 #142f2e, 1px 1px 0 #142f2e, 0 2px 5px #102421;
+}
+.boss-retreat-smoke { position: absolute; inset: -4px 0; }
+.boss-retreat-smoke i {
+  position: absolute;
+  left: 15%;
+  bottom: -8px;
+  width: 25px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #d6e1d566, #b8ccc222 55%, transparent 75%);
+  animation: boss-retreat-wisp 2.6s ease-out both;
+}
+.boss-retreat-smoke i:nth-child(2) { left: 44%; bottom: -3px; animation-delay: 100ms; }
+.boss-retreat-smoke i:nth-child(3) { left: 71%; bottom: -11px; animation-delay: 200ms; }
+@keyframes boss-retreat-rise {
+  0% { opacity: 1; translate: 0 0; }
+  30% { opacity: 1; }
+  65% { opacity: .65; }
+  100% { opacity: 0; translate: 5px -58px; }
+}
+@keyframes boss-retreat-wisp {
+  0% { opacity: 0; scale: .6; translate: 0 0; }
+  20% { opacity: .7; }
+  100% { opacity: 0; scale: 2; translate: -8px -25px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-boss-retreat { animation: none !important; }
+  .boss-retreat-smoke { display: none; }
+}

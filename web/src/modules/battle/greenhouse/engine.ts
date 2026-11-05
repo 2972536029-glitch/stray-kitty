@@ -18,8 +18,10 @@ export function isPlayableCell(position: Position): boolean {return geometry.isP
 /** Four boss cells share one target and one HP pool; minions may cross the footprint. */
 export function getBossCells(boss: Pick<GreenhouseBoss, 'x' | 'y' | 'width' | 'height'>): Position[] {return footprintCells(boss);}
 export function getBossDistance(boss: GreenhouseBoss, target: Position): number {return footprintDistance(boss, target);}
-export function isDeployableCell(position: Position): boolean {
-  return isPlayableCell(position) && !same(position, MAP.goal) && !MAP.bossCells.some(cell => same(cell, position)) && !MAP.spawns.some(cell => same(cell, position));
+export function isDeployableCell(position: Position, state?: Pick<GreenhouseState, 'boss'>): boolean {
+  return isPlayableCell(position) && !same(position, MAP.goal)
+    && (state?.boss.phase === 'defeated' || !MAP.bossCells.some(cell => same(cell, position)))
+    && !MAP.spawns.some(cell => same(cell, position));
 }
 export function getAttackCells(cat: GreenhouseCat): Position[] {return geometry.attackCells(cat);}
 export function getSkillCells(cat: GreenhouseCat, target?: Position | null): Position[] {
@@ -35,7 +37,7 @@ export function getDeployError(state: GreenhouseState, catId: GreenhouseCatId, t
   if (state.aim) return '请先完成或取消技能瞄准。';
   if (!isGreenhouseCell(target)) return '这里没有可用地格。';
   if (isObstacle(target)) return '花架和杂物占用了这个位置。';
-  if (!isDeployableCell(target)) return '保护点、刷怪口和首领位置不能部署。';
+  if (!isDeployableCell(target, state)) return '保护点、刷怪口和仍在场的首领位置不能部署。';
   if (cat.status !== 'active') return '这位伙伴已经退场，本场不能重新上阵。';
   if (state.enemies.some(enemy => inCells(enemy, [target]))) return '这格有黑影，暂时不能移动过去。';
   const occupant = state.cats.find(other => other.id !== catId && other.status === 'active' && same(other, target));
@@ -53,7 +55,7 @@ export function getGreenhouseAdvice(state: GreenhouseState): string {
     ? '墨墨能量已满，巡光护行可以清掉全部已生成荆棘并给在场伙伴加盾。'
     : '荆棘已落地，每秒伤害持续六秒。危险格仍可移动进入，但先在外等待，消失后再回原位。';
   if (state.cats.some(cat => cat.status === 'retired')) return '体力归零的伙伴本场不能返回。墨墨只能提供护盾，不能治疗或复活。';
-  if (state.boss.phase === 'defeated') return '首领倒下，预告与荆棘已消散；仍需守完余下小怪波次。';
+  if (state.boss.phase === 'defeated') return '首领原占格已可部署；首领倒下，预告与荆棘已消散；仍需守完余下小怪波次。';
   return '缺口不是地格，三条路线会绕开花架。每模拟秒积攒 5 能量；墨墨用护盾保护在场伙伴，栗栗与斑斑守住两路。';
 }
 function log(state: GreenhouseState, text: string): void {

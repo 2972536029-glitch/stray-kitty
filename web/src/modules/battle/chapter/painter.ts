@@ -1,5 +1,4 @@
 import {paintCarryAnchor} from '../carry-painter';
-import {paintBossRetreatLabel} from '../boss-retreat-label';
 import {drawCat} from '../l00/painter';
 import type {ChapterState, ChapterCat, ChapterCatId as CatId, Position} from './types';
 import {getAttackCells, getBossCells, getSkillCells} from './engine';
@@ -105,14 +104,13 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
     if(p.y===0){pixelBlocks(ctx,SCENE_INK.danger,[[bx+29,by+30,23,4],[bx+33,by+34,15,4],[bx+37,by+38,7,4]]);}
     else pixelBlocks(ctx,SCENE_INK.danger,[[bx+50,by+29,4,23],[bx+46,by+33,4,15],[bx+42,by+37,4,7]]);
   }
-  // One footprint spans four logical cells; one boss sprite and one HP pool occupy it.
-  ctx.save();ctx.fillStyle='#b77d6730';ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;
-  for(const cell of getBossCells(state.boss))ctx.fillRect(cell.x*CELL+3,cell.y*CELL+3,CELL-6,CELL-6);
-  ctx.strokeRect(state.boss.x*CELL+4,state.boss.y*CELL+4,state.boss.width*CELL-8,state.boss.height*CELL-8);
-  if(state.boss.phase==='defeated'){
-    paintBossRetreatLabel(ctx,'首领已退去',state.boss.x*CELL,state.boss.y*CELL,state.boss.width*CELL,state.boss.height*CELL);
+  // Once the boss leaves, its footprint is ordinary floor again.
+  if(state.boss.phase!=='defeated'){
+    ctx.save();ctx.fillStyle='#b77d6730';ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=2;
+    for(const cell of getBossCells(state.boss))ctx.fillRect(cell.x*CELL+3,cell.y*CELL+3,CELL-6,CELL-6);
+    ctx.strokeRect(state.boss.x*CELL+4,state.boss.y*CELL+4,state.boss.width*CELL-8,state.boss.height*CELL-8);
+    ctx.restore();
   }
-  ctx.restore();
   drawCat(ctx,'hero',10,3*CELL+13,58);
   paintCarryAnchor(ctx,state.carry,CELL,mapCell);
   const cat=state.cats.find(c=>c.id===selected&&c.status==='active');
@@ -163,7 +161,8 @@ export function paintChapter(ctx:CanvasRenderingContext2D,state:ChapterState,sel
       const flash=10+progress*10;ctx.strokeStyle=SCENE_INK.danger;ctx.lineWidth=2;ctx.beginPath();
       ctx.moveTo(tx-flash,ty-flash);ctx.lineTo(tx+flash,ty+flash);ctx.moveTo(tx+flash,ty-flash);ctx.lineTo(tx-flash,ty+flash);ctx.stroke();
     }else if(fx.kind==='attack'){
-      const center=(p:Position)=>p.x===state.boss.x&&p.y===state.boss.y?{x:state.boss.x+state.boss.width/2-.5,y:state.boss.y+state.boss.height/2-.5}:p;
+      // Cleared boss cells can now contain cats or minions; use their real tile.
+      const center=(p:Position)=>state.boss.phase!=='defeated'&&p.x===state.boss.x&&p.y===state.boss.y?{x:state.boss.x+state.boss.width/2-.5,y:state.boss.y+state.boss.height/2-.5}:p;
       const from=center(fx.from),to=center(fx.to);
       ctx.strokeStyle=SCENE_INK.gold;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo((from.x+.5)*CELL,(from.y+.5)*CELL);ctx.lineTo((to.x+.5)*CELL,(to.y+.5)*CELL);ctx.stroke();
     }else if(fx.kind==='heal'||fx.kind==='shield'){

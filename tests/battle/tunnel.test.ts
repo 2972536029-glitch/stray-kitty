@@ -24,7 +24,7 @@ function enemy(route:TunnelRouteId,extra:Partial<TunnelEnemy>={}):TunnelEnemy {
 test('tunnel has 37 real cells, 9 blocking obstacles, an open A1 detour and 20 legal deployment cells',()=>{
   const state=createTunnelBattle();assert.equal(state.stageId,'tunnel_boss');assert.equal(CELLS.length,37);
   assert.deepEqual(Array.from({length:5},(_,y)=>CELLS.filter(cell=>cell.y===y).map(cell=>cell.x+1)),[[1,2,3,4,5,6,7,8],[1,2,3,4,5,6,7,8],[1,2,3,4,5,6,7,8],[1,2,3,4,5,6,7,8],[4,5,6,7,8]]);
-  assert.equal(CELLS.filter(isDeployableCell).length,20);assert.equal(cellName(MAP.goal),'C2');
+  assert.equal(CELLS.filter(cell => isDeployableCell(cell)).length,20);assert.equal(cellName(MAP.goal),'C2');
   assert.deepEqual(MAP.obstacles.map(cellName),['A3','A7','A8','B2','C8','D1','D2','E7','E8']);
   assert.deepEqual(MAP.spawns.map(cellName),['A2','B8','D8']);assert.equal(isPlayableCell({x:0,y:0}),true);
   assert.deepEqual(getBossCells(state.boss).map(cellName),['C6','C7','D6','D7']);
