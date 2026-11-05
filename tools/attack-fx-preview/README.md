@@ -41,6 +41,19 @@ node tools/attack-fx-preview/drag-server.mjs
 
 ## 验证边界
 
+### 小猫身体与手部动作
+
+在待验版本仓库启动 `node tools/attack-fx-preview/server.mjs 8190`，打开 `http://127.0.0.1:8190/tools/attack-fx-preview/paw-study.html`。近景页展示八种出手角色，身体前探与局部手势共用原有 0.4 秒展示周期，可暂停、重播或拖动进度。
+
+像素对比需要先在改动前的独立 checkout 启动 8184 预览服务，再从待验版本仓库运行以下命令。原版服务地址可用 `KITTY_PAW_BASELINE_URL` 指定；待验服务地址可用 `KITTY_PAW_PREVIEW_URL` 指定（均使用以 `/tools/attack-fx-preview/` 结尾的完整 URL）。这两个脚本复用已启动的服务，不负责启动或关闭服务。
+
+```sh
+node tools/attack-fx-preview/paw-baseline.mjs test-results/cat-body-paw/idle-baseline
+node tools/attack-fx-preview/paw-verify.mjs test-results/cat-body-paw
+```
+
+验证覆盖 28 个章节／小猫绘制变体：原版静止像素、动作起止复位、眼鼻跟随身体位移、独立手势、暂停和状态不变，以及五章战场绘制。输出分帧截图与近景视频；它不替代完整战斗通关。
+
 视觉页面使用固定攻击快照；首领方向探针会构造额外方向，仅验证绘制数学，不代表实际引擎会选择那些目标。拖动验证使用真实组件与指针事件；序章生命周期和范围专项会在独立测试内存中设置阶段、退场或终局，便于重复覆盖边界。它们不更改生产数值，也不代替完整关卡通关、线上部署或存档验收。
 
 输出中的 `verification.json` 记录通过项、失败和错误，截图及视频用于人工核对视觉结果。涉及本次功能的测试通过后，再按团队发布流程进行线上验收。
