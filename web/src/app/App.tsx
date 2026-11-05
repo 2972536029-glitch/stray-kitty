@@ -30,6 +30,7 @@ import type {GameCommand} from '../contracts';
 import HomeAdvisor from '../modules/advisor/HomeAdvisor';
 import {homeAdvisorBlock, type HomeAdvisorActivity} from '../modules/advisor/home-presentation';
 import {preloadChapterArtwork, preloadClassicChapterArtwork} from '../modules/map/artwork';
+import {trackContinueAdventure, trackChapter1Enter, trackHomePanelOpen} from '../observability/actions';
 
 export default function App() {
   const portraitPhone = usePortraitPhone();
@@ -127,6 +128,30 @@ export default function App() {
       homeChimed.current = true;
     }
   }, [state?.phase]);
+  // 模块二业务埋点:进入第一章(章节 alley)即转化漏斗终点,每次会话一次;
+  // 老玩家点「继续冒险」直接落回小巷(无序章)时也补记,保证漏斗两步成对出现。
+  const chapter1Tracked = useRef(false);
+  useEffect(() => {
+    if (chapter1Tracked.current || !entered || state?.chapterId !== 'alley') return;
+    chapter1Tracked.current = true;
+    trackChapter1Enter();
+  }, [entered, state?.chapterId]);
+  // 模块二业务埋点:进入花房(家园相位)开始计时,本次花房时段内首次打开「布置」面板即上报
+  // 进入花房→打开面板的耗时;离开花房重置,同时段后续打开不重复计。
+  const homeSince = useRef<number | null>(null);
+  const homePanelTracked = useRef(false);
+  useEffect(() => {
+    if (!entered || state?.phase !== 'home') {homeSince.current = null;return;}
+    if (homeSince.current === null) homeSince.current = performance.now();
+    homePanelTracked.current = false;
+  }, [entered, state?.phase]);
+  useEffect(() => {
+    if (homeSince.current === null || homePanelTracked.current) return;
+    if (overlay === 'decorate') {
+      trackHomePanelOpen(performance.now() - homeSince.current);
+      homePanelTracked.current = true;
+    }
+  }, [overlay]);
   const rainyPosition = useRef<{x: number; y: number} | undefined>(undefined);
   const tunnelPosition = useRef<{x: number; y: number} | undefined>(undefined);
   const warehousePosition = useRef<{floor:'L0'|'L1';point:{x:number;y:number}} | undefined>(undefined);
@@ -196,7 +221,7 @@ export default function App() {
     {error && overlay !== 'shop' && overlay !== 'parcels' && overlay !== 'qa' && overlay !== 'decorate' && overlay !== 'home' && <div className="error-banner" role="alert">{error}<button disabled={busy} onClick={() => void retry()}>重试上次操作</button>{sessionUnavailable && state && <button disabled={busy} onClick={() => void startNewJourney()}>开始新旅程（保留旧会话记录）</button>}</div>}
     {!state || !catalog ? <main className="loading-card"><span className="brand-mark">ฅ</span><h1>{busy ? '正在寻找熟悉的气味……' : '旅程暂时停在这里'}</h1><p>{busy ? '正在打开小巷和你的旅程记录。' : '请确认本地服务已启动，然后重试。'}</p>{!busy && <><button onClick={() => void retry()}>重新连接</button>{sessionUnavailable && <button onClick={() => void startNewJourney()}>开始新旅程（保留旧会话记录）</button>}</>}</main>
       : <>
-        {!entered && <StartScreen hasProgress={state.revision > 0} disabled={disabled} onStart={() => setEntered(true)} onShop={() => setOverlay('shop')} onReset={resetSession} onAuth={() => setOverlay('auth')}/>}
+        {!entered && <StartScreen hasProgress={state.revision > 0} disabled={disabled} onStart={() => {trackContinueAdventure();setEntered(true);}} onShop={() => setOverlay('shop')} onReset={resetSession} onAuth={() => setOverlay('auth')}/>}
         {/* Keep an active battle mounted and paused behind the title, so returning does not restart its attempt. */}
         {(entered || state.phase === 'battle') && <div hidden={!entered}>
           <GameScreen onHomeAdvisor={()=>{if(!homeAdvisorBlocked&&!homeScene?.homeRenovating)setHomeAdvisorOpen(true);}} homeAdvisorDisabled={!!homeAdvisorBlocked} onHomeTutorialChange={setHomeTutorialOpen} onHomeManual={()=>openHome()} homeEditing={overlay==='decorate'} state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay || !!inspection} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} topExpanded={topExpanded} onToggleTopbar={toggleTopbar} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} onSkip={skipDialogue} qaOpen={overlay === 'qa'} onQA={() => setOverlay('qa')} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onPause={() => setPaused(!paused)} onMap={() => state.phase==='home'?openHome('depart'):setOverlay('map')} onShop={() => state.phase==='home'?openHome('shop'):setOverlay('shop')} onParcels={() => state.phase==='home'?openHome('parcels'):setOverlay('parcels')} onRecharge={() => openRecharge()} onSettings={() => setOverlay('settings')} onWarehouse={()=>openHome('warehouse')} onDecorate={()=>openDecorate()} onTitle={() => {setEntered(false);setPaused(false);}} speakerAnchor={getSpeakerAnchor}>

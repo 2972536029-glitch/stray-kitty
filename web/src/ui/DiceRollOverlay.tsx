@@ -3,6 +3,7 @@ import type {EventResolution} from '../contracts';
 import {Dice} from './DiceEvent';
 import {eventTiers} from '../modules/events/presentation';
 import {playSound} from './soundEffects';
+import {trackDiceRollDuration} from '../observability/actions';
 import './dice-overlay.css';
 
 // 仪式节奏：亮相(.36s) + 起手(.52s) + 至少完整翻滚一轮(1.6s)后才揭晓。
@@ -36,11 +37,13 @@ export default function DiceRollOverlay({resolution, startedAt, onClose}: {resol
     return () => clearTimeout(timer);
   }, [resolution, startedAt]);
 
-  // 揭晓只响一声：好结果叮咚、坏结果委屈的喵。
+  // 揭晓只响一声：好结果叮咚、坏结果委屈的喵。模块二埋点:揭晓即记录掷骰动画时长
+  // (开始→揭晓,含等结算的翻滚续命时间),复用响声的一次性守卫,每次掷骰只记一次。
   const soundedRef = useRef(false);
   useEffect(() => {
     if (phase !== 'reveal' || soundedRef.current) return;
     soundedRef.current = true;
+    trackDiceRollDuration(performance.now() - startedAt);
     playSound(good ? 'chime' : 'meow');
   }, [phase, good]);
 

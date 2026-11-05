@@ -3,6 +3,7 @@ import type {Catalog,GameCommand,GameState} from '../../contracts';
 import type {ParcelDraw} from './types';
 import Modal from '../../ui/Modal';
 import {playSound} from '../../ui/soundEffects';
+import {trackRechargeEntryExpose, trackRechargeEntryClick} from '../../observability/actions';
 import {ThemePreview} from './ParcelArt';
 import {poolStatus} from './model';
 import CapsuleCollection from './CapsuleCollection';
@@ -28,6 +29,8 @@ function restore(state:GameState):Saved|null{
   }catch{return null;}
 }
 export default function PostalJournal({state,catalog,disabled,retryDisabled,error,initialPool,onPool,onCommand,onRetry,onClose,onRecharge,onPlace}:Props){
+  // 模块二埋点:邮局面板每次打开计一次充值入口曝光;两处充值按钮(顶部罐头+、底部去补给小站)同属邮局位置。
+  useEffect(() => {trackRechargeEntryExpose('parcels');}, []);
   const [saved]=useState(()=>restore(state));
   const [selected,setSelected]=useState(saved?.poolId??initialPool??catalog.pools[0]?.id),[sheet,setSheet]=useState<'collection'|'history'|'rules'|null>(null);
   const [stage,setStage]=useState<Stage>(saved?'parcels':'preview'),[count,setCount]=useState<1|10>(saved?.ids.length===10?10:1),[stroke,setStroke]=useState<StrokePoint[]>(saved?.stroke??[]);
@@ -62,7 +65,7 @@ export default function PostalJournal({state,catalog,disabled,retryDisabled,erro
   return <Modal title="猫爪邮局" onClose={()=>{if(!inFlight)onClose();}} className="postal-journal">
     <div className="postal-layout" data-stage={stage}>
       <PostalJournalBackdrop/>
-      <header className="postal-header"><div className="postal-brand"><PostalMark/><span>猫爪邮局<small>PAW POST · LITTLE DELIVERIES</small></span></div><div className="postal-wallet"><span>邮票 <b>{state.currencies.stamp??0}</b></span><button disabled={active||disabled} onClick={onRecharge}>罐头 <b>{state.currencies.tuna??0}</b> ＋</button></div><nav aria-label="邮局资料"><button disabled={active||disabled} onClick={()=>setSheet('collection')}>家具图鉴 <small>{owned}/{pool.entries.length}</small></button><button disabled={active||disabled} onClick={()=>setSheet('history')}>收据</button><button disabled={active||disabled} onClick={()=>setSheet('rules')}>规则</button></nav></header>
+      <header className="postal-header"><div className="postal-brand"><PostalMark/><span>猫爪邮局<small>PAW POST · LITTLE DELIVERIES</small></span></div><div className="postal-wallet"><span>邮票 <b>{state.currencies.stamp??0}</b></span><button disabled={active||disabled} onClick={() => {trackRechargeEntryClick('parcels');onRecharge();}}>罐头 <b>{state.currencies.tuna??0}</b> ＋</button></div><nav aria-label="邮局资料"><button disabled={active||disabled} onClick={()=>setSheet('collection')}>家具图鉴 <small>{owned}/{pool.entries.length}</small></button><button disabled={active||disabled} onClick={()=>setSheet('history')}>收据</button><button disabled={active||disabled} onClick={()=>setSheet('rules')}>规则</button></nav></header>
       <div className="postal-body"><aside className="postal-aside"><span className="postal-kicker">A LITTLE LETTER TO HOME</span><h2>{heading}</h2><span className="postal-underline" aria-hidden="true"/><div className="postal-pools" role="tablist" aria-label="家具卡池" aria-orientation="vertical">{catalog.pools.map(p=><button key={p.id} role="tab" id={`postal-tab-${p.id}`} aria-selected={p.id===pool.id} aria-controls="postal-stage" disabled={active||disabled} onClick={()=>changePool(p.id)}><span>{p.currency==='stamp'?'日常来信':'特别来信'}</span><b>{p.theme}</b><small>{p.cost} {p.currency==='tuna'?'罐头':'邮票'} / 份</small></button>)}</div><CollectionPolaroid key={pool.id} pool={pool} catalog={catalog} owned={state.furniture}/></aside>
       <main id="postal-stage" className={`postal-stage stage-${stage}`} role="tabpanel" aria-labelledby={`postal-tab-${pool.id}`}>
         <div className="postal-paper-stack"><span className="postal-paper-back" aria-hidden="true"/><section className="postal-paper">
@@ -71,7 +74,7 @@ export default function PostalJournal({state,catalog,disabled,retryDisabled,erro
           {draws.length>0&&stage!=='sending'&&<div className="postal-delivery-stage"><ParcelDelivery draws={draws} opened={opened} opening={opening} focused={focused} catalog={catalog} disabled={disabled} onOpen={openParcel} onDismiss={()=>{setFocused(null);setStage('parcels');}} onPlace={id=>void onPlace(id,'')}/></div>}
         </section><span className="postal-corner-stamps" aria-hidden="true"><i/><i/></span></div>
       </main></div>
-      <footer className="postal-footer"><div className="postal-pity" role="status">{status.missing.length===0?'全套已集齐 · 重复家具转为修缮材料':status.guaranteed?'暖心保底 · 下一份必得未拥有家具':`最多再 ${status.untilNew} 次，遇见一件新家具`}<small>{active?'自由涂画，只为这一刻的小小仪式。':notice}</small>{!active&&balance<pool.cost&&pool.currency==='tuna'&&<button onClick={onRecharge}>去补给小站 ›</button>}</div>
+      <footer className="postal-footer"><div className="postal-pity" role="status">{status.missing.length===0?'全套已集齐 · 重复家具转为修缮材料':status.guaranteed?'暖心保底 · 下一份必得未拥有家具':`最多再 ${status.untilNew} 次，遇见一件新家具`}<small>{active?'自由涂画，只为这一刻的小小仪式。':notice}</small>{!active&&balance<pool.cost&&pool.currency==='tuna'&&<button onClick={() => {trackRechargeEntryClick('parcels');onRecharge();}}>去补给小站 ›</button>}</div>
         <div className="postal-actions">{stage==='preview'?<>{([1,10] as const).map(n=><button key={n} className={`postal-ticket ${n===1?'primary':''}`} data-testid={n===1?'parcel-draw':'parcel-draw-ten'} disabled={disabled||!atHome||status.locked||balance<pool.cost*n} onClick={()=>begin(n)}><span>寄出{n===1?'一':'十'}份</span><small>{currency} ×{pool.cost*n}</small></button>)}</>
         :stage==='drawing'?<>{stroke.length>0&&<button className="postal-text-button" onClick={()=>setStroke([])}>↶ 重画</button>}<button className="postal-text-button" onClick={()=>{setStage('preview');setStroke([]);}}>取消</button><div className="postal-auto-note"><span>画完松开，自动寄出</span><small>{count} 份包裹 · {pool.cost*count} {currency}</small></div><button className="postal-ticket" data-testid="postcard-skip" onClick={()=>void send()} disabled={disabled}>跳过涂画，直接寄出</button></>
         :inFlight?<span className="postal-sending" role="status">{stage==='sending'?'盖上邮戳，把期待寄出去…':stage==='arriving'?'包裹送达，轻轻放好…':'纸绳松开，惊喜就要出现…'}</span>
