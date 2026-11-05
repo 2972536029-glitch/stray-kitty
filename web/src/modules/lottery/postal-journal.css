@@ -279,6 +279,13 @@ dialog.postal-journal{inset:0;margin:auto;width:min(1390px,calc(100vw - 38px));h
 .postal-wallet>button:disabled{opacity:1;filter:none}
 .postal-actions>.postal-ticket[data-testid^=parcel-draw]{height:var(--postal-draw-button-height,48px);min-height:var(--postal-draw-button-height,48px);box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px 19px;line-height:1.2}
 .postal-actions>.postal-ticket[data-testid^=parcel-draw] small{margin:0;line-height:1.2}
+.postal-layout{padding-bottom:44px}
+.postal-footer{min-height:108px}
+.postal-footer:before{content:'';flex:1;max-width:31%;pointer-events:none}
+.postal-actions>.postal-pity{position:absolute;left:var(--postal-action-center-x,50%);top:calc(var(--postal-action-center-y,50%) + 46px);transform:translateX(-50%);width:max-content;max-width:580px;padding:0;color:#674d37;font-size:calc(14px / var(--postal-viewport-fit,1));line-height:1.45;text-align:center}
+.postal-actions>.postal-pity small{margin:2px 0 0;font-size:calc(12px / var(--postal-viewport-fit,1));line-height:1.4}
+.postal-actions>.postal-pity button{margin-left:9px;padding:0;font-size:12px}
+@media(max-width:800px){.postal-footer:before{display:none}.postal-footer{padding-bottom:30px}.postal-actions>.postal-pity{max-width:calc(100vw - 90px);font-size:12px}}
 .postal-info-links{position:absolute;right:124px;bottom:16px;display:flex;gap:17px;align-items:center;z-index:12}
 .postal-journal .postal-info-links button{padding:5px 2px;background:none;box-shadow:none;border:0;border-bottom:1px dashed #a88b6970;border-radius:0;font-size:15px;line-height:1.4;color:#7b5d43}
 .postal-info-links button:hover{color:var(--post-red);transform:translateY(-1px)}

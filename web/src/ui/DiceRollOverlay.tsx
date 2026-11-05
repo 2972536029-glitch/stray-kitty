@@ -27,7 +27,7 @@ type Particle = {className?: string} & CSSProperties & Record<`--${string}`, str
 // —— 仪式专用 3D 骰（纯视觉，本地实现；事件卡内的小骰继续用共享的 Dice.tsx）：
 //    preserve-3d 立方体，六个面各自雕点数。 ——
 const DOTS: Record<number, number[]> = {1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]};
-// 落定时把目标面转到正对镜头的附加转角（720/1080 整周翻滚之外再补的角度）。
+// 目标面的附加转角；外层共享俯视角将该面朝上展示。
 const FACE_TURNS: Record<number, {fx: string; fy: string}> = {
   1: {fx: '0deg', fy: '0deg'},
   2: {fx: '-90deg', fy: '0deg'},
@@ -42,10 +42,12 @@ function Dice3D({value = 1}: {value?: number}) {
   return <div className="die3d" role="img" aria-label={`骰子 ${value} 点`}>
     <span className="die3d-shadow" aria-hidden="true"/>
     <div className="die3d-squash">
-      <div className="die3d-cube" style={{'--fx': turn.fx, '--fy': turn.fy} as CSSProperties}>
-        {[1, 2, 3, 4, 5, 6].map(v => <div key={v} className={`die3d-face f${v}`} aria-hidden="true">
-          {Array.from({length: 9}, (_, i) => <i key={i} className={(DOTS[v] ?? DOTS[1]).includes(i) ? 'on' : ''}/>)}
-        </div>)}
+      <div className="dice-top-view">
+        <div className="die3d-cube" style={{'--fx': turn.fx, '--fy': turn.fy} as CSSProperties}>
+          {[1, 2, 3, 4, 5, 6].map(v => <div key={v} className={`die3d-face f${v}`} aria-hidden="true">
+            {Array.from({length: 9}, (_, i) => <i key={i} className={(DOTS[v] ?? DOTS[1]).includes(i) ? 'on' : ''}/>)}
+          </div>)}
+        </div>
       </div>
     </div>
   </div>;

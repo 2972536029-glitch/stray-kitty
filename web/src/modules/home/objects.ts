@@ -21,8 +21,12 @@ export interface HomeItem extends HomeObject {stored:boolean;name:string;categor
 export function homeInventory(state:HomeAppearance):HomeItem[]{
   const stage=homeStage(state),items:HomeItem[]=[];
   for(const d of decor.filter(d=>d.stage===stage)){
-    const override=state.homeLayout?.[d.id],kind=d.kind as HomeObjectKind;
-    items.push({id:d.objectId,layoutKey:d.id,sprite:d.sprite as HomeSprite,x:d.x,y:d.y,width:d.width,kind,front:'front' in d&&d.front,wall:'wall' in d&&d.wall,solid:['plant','storage','workbench','nest','castle','hammock','tower'].includes(kind),name:d.name,category:furnitureCategory(d.id,true),stored:!!(d.replacementSlot&&state.placements[d.replacementSlot]),...override});
+    // A player's arrangement follows the same furnishing through later repairs.
+    // An explicit current-stage edit takes precedence over an inherited one.
+    const earlier=stage>=3?decor.filter(previous=>previous.stage<stage&&previous.objectId===d.objectId).sort((a,b)=>b.stage-a.stage).find(previous=>state.homeLayout?.[previous.id]):undefined;
+    const override=state.homeLayout?.[d.id]??(earlier?state.homeLayout?.[earlier.id]:undefined),kind=d.kind as HomeObjectKind;
+    const storedByDefault='storedByDefault' in d&&d.storedByDefault===true;
+    items.push({id:d.objectId,layoutKey:d.id,sprite:d.sprite as HomeSprite,x:d.x,y:d.y,width:d.width,kind,front:'front' in d&&d.front,wall:'wall' in d&&d.wall,solid:['plant','storage','workbench','nest','castle','hammock','tower'].includes(kind),name:d.name,category:furnitureCategory(d.id,true),stored:storedByDefault||!!(d.replacementSlot&&state.placements[d.replacementSlot]),...override});
   }
   const owned=state.furniture??Object.values(state.placements);
   for(const id of owned){

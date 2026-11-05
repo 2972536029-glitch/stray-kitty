@@ -34,9 +34,9 @@ interface Props {
   onJournal: () => void;
   qaOpen: boolean; onQA: () => void;
   onCommand: (command: GameCommand) => void; onInteract: (interactionId?: string) => void;
-  onPause: () => void; onMap: () => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onSettings: () => void; onWarehouse: () => void; onDecorate: () => void; onTitle: () => void; children: ReactNode;
+  onPause: () => void; onMap: () => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onSettings: () => void; onDecorate: () => void; onTitle: () => void; children: ReactNode;
 }
-export default function GameScreen({onHomeAdvisor: _onHomeAdvisor,homeAdvisorDisabled: _homeAdvisorDisabled,onHomeTutorialChange,homeEditing,onHomeManual,state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, onJournal, qaOpen, onQA, onCommand, onInteract, onPause, onMap, onShop, onParcels, onRecharge, onSettings, onWarehouse, onDecorate, onTitle, children}: Props) {
+export default function GameScreen({onHomeAdvisor: _onHomeAdvisor,homeAdvisorDisabled: _homeAdvisorDisabled,onHomeTutorialChange,homeEditing,onHomeManual,state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, onJournal, qaOpen, onQA, onCommand, onInteract, onPause, onMap, onShop, onParcels, onRecharge, onSettings, onDecorate, onTitle, children}: Props) {
   const touchDevice = useTouchDevice();
   // 首次进入守护准备时的教学高亮；完成后记在本地，不再打扰。
   const [battleTutorialDone, setBattleTutorialDone] = useState(() => {try {return localStorage.getItem('stray-kitty.tutorial.battle') === 'done';} catch {return true;}});
@@ -115,7 +115,7 @@ export default function GameScreen({onHomeAdvisor: _onHomeAdvisor,homeAdvisorDis
         <button className="parcel-button" aria-label="猫爪邮局" aria-haspopup="dialog" onClick={() => {trackFeatureEntry('lottery');onParcels();}}>✉ <span>邮局</span></button>
         <button className="shop-button" aria-label="猫咪补给站" aria-haspopup="dialog" onClick={() => {trackFeatureEntry('shop');onShop();}}>▣ <span>补给</span></button>
         <button className="map-button" aria-label="章节地图" aria-haspopup="dialog" onClick={onMap}>▦ <span>地图</span></button>
-        {state.phase==='home'&&<><button className="warehouse-button" aria-label="家园仓库" data-tip="打开家园仓库：出战携带清单" aria-haspopup="dialog" disabled={disabled} onClick={onWarehouse}>▤ <span>仓库</span></button><button className="home-decorate-button" aria-label="布置家具" data-tip="进入家具布置模式：移动 / 收回 / 重新摆放家具" disabled={disabled} onClick={onDecorate}>▧ <span>布置</span></button></>}
+        {state.phase==='home'&&<button className="home-decorate-button" aria-label="布置家具" data-tip="进入家具布置模式：移动 / 收回 / 重新摆放家具" disabled={disabled} onClick={onDecorate}>▧ <span>布置</span></button>}
         {state.phase !== 'battle' && <button className="settings-button" aria-label="游戏设置" onClick={onSettings}>⚙ <span>设置</span></button>}{isDevelopment&&<button className="dev-button" aria-label="验收工具" aria-haspopup="dialog" aria-expanded={qaOpen} onClick={onQA}>🛠️ <span>验收</span></button>}
       </nav></header>
     <main><h1 className="visually-hidden">一只猫的旅程，一群猫的家。</h1>

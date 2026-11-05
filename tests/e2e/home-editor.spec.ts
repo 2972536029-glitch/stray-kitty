@@ -133,13 +133,13 @@ test('far furniture and transparent cat margins never pet or summon cats; actual
 test('independent toolbar modules open centered windows, keep journey in the manual and settings separate',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await open(page,'home-hub');await editor(page).getByRole('button',{name:'取消布置',exact:true}).click();
   await expect(page.locator('.home-controls,.home-backpack-entry')).toHaveCount(0);
-  await showTools(page);const toolbar=page.locator('.topbar');for(const name of ['家园手册','猫爪邮局','猫咪补给站','章节地图','家园仓库','布置家具','游戏设置'])await expect(toolbar.getByRole('button',{name,exact:true})).toBeVisible();
+  await showTools(page);const toolbar=page.locator('.topbar');for(const name of ['家园手册','猫爪邮局','猫咪补给站','章节地图','布置家具','游戏设置'])await expect(toolbar.getByRole('button',{name,exact:true})).toBeVisible();
   await expect(toolbar.locator('.wallet')).toHaveCount(0);await expect(toolbar.getByRole('button',{name:/充值|金枪鱼|我的花房/})).toHaveCount(0);
   await page.screenshot({path:'output/home-editor/home-toolbar.png',animations:'disabled'});
   await openTool(page,'家园手册');const hub=page.getByRole('dialog',{name:'家园手册',exact:true}),bounds=(await hub.boundingBox())!,size=page.viewportSize()!;
   expect(Math.abs(bounds.x+bounds.width/2-size.width/2)).toBeLessThan(2);expect(Math.abs(bounds.y+bounds.height/2-size.height/2)).toBeLessThan(2);expect(bounds.width).toBeGreaterThan(1000);expect(bounds.height).toBeGreaterThan(650);
   await expect(hub.locator('.home-hub-wallet,.home-hub-sidebar')).toHaveCount(0);await expect(hub.locator('.home-map canvas')).toHaveAttribute('data-artwork','ready');
-  const categories=(await hub.getByRole('navigation',{name:'家园手册分类'}).boundingBox())!,copy=(await hub.getByText('看看我们的家，慢慢长成喜欢的样子。',{exact:true}).boundingBox())!;expect(categories.x+categories.width).toBeLessThan(copy.x);
+  await expect(hub.getByRole('navigation',{name:'家园手册分类'})).toBeVisible();
   await page.screenshot({path:'output/home-editor/home-hub-overview.png',animations:'disabled'});
   await hub.getByRole('button',{name:'旅程记录',exact:true}).click();await expect(hub.getByRole('region',{name:'旅程记录'})).toBeVisible();await expect(hub.getByText('现在的小目标', {exact:true})).toBeVisible();
   await expect(hub.getByRole('region',{name:'旅程记录'}).getByText('一路上的伙伴',{exact:true})).toHaveCount(0);
@@ -155,7 +155,7 @@ test('independent toolbar modules open centered windows, keep journey in the man
   await page.keyboard.press('Escape');await openTool(page,'猫咪补给站');shop=page.getByRole('dialog',{name:'猫咪补给站',exact:true});await expect(shop.getByTestId('claim-daily_letter')).toBeDisabled();await expect(shop.getByTestId('shop-stamps')).toHaveText('12');
   await page.keyboard.press('Escape');await openTool(page,'章节地图');const chapters=page.getByRole('dialog',{name:'章节地图',exact:true});await expect(chapters.getByRole('region',{name:'猫爪地图',exact:true})).toBeVisible();await expect(chapters.locator('.home-map')).toHaveCount(0);
   await page.screenshot({path:'output/home-editor/home-hub-chapters.png',animations:'disabled'});
-  await page.keyboard.press('Escape');await openTool(page,'家园仓库');await expect(page.getByRole('dialog',{name:'家园仓库',exact:true}).getByRole('region',{name:'家园仓库与出战补给',exact:true})).toBeVisible();
+  await page.keyboard.press('Escape');await openTool(page,'猫咪补给站');await page.getByRole('button',{name:'随身物资',exact:true}).click();await expect(page.getByRole('region',{name:'随身物资',exact:true})).toBeVisible();await expect(page.locator('.topbar').getByRole('button',{name:'家园仓库',exact:true})).toHaveCount(0);
   await page.keyboard.press('Escape');await openTool(page,'游戏设置');const settings=page.getByRole('dialog',{name:'游戏设置',exact:true});await expect(settings.getByRole('slider',{name:'背景音乐音量'})).toBeVisible();await expect(page.locator('dialog.home-hub')).toHaveCount(0);await expect(settings.getByRole('button',{name:/猫爪邮局|猫咪补给站|家园仓库|布置/})).toHaveCount(0);
   await page.keyboard.press('Escape');expect(errors).toEqual([]);
 });

@@ -20,8 +20,8 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
   const [base,setBase]=useState(()=>structuredClone(state));
   const [draft,setDraft]=useState<HomeDraft>(()=>structuredClone(state.homeLayout??{}));
   const [undo,setUndo]=useState<HomeDraft[]>([]),[redo,setRedo]=useState<HomeDraft[]>([]);
-  const [selection,setSelection]=useState(initialFurniture?'furniture:'+initialFurniture:'');
-  const [filter,setFilter]=useState('bag'),[query,setQuery]=useState('');
+  const [selection,setSelection]=useState(initialFurniture?(initialFurniture.startsWith('stage:')?initialFurniture:'furniture:'+initialFurniture):'');
+  const [filter,setFilter]=useState(()=>selection&&homeInventory(state).some(item=>item.layoutKey===selection&&!item.stored)?'scene':'bag'),[query,setQuery]=useState('');
   const [category,setCategory]=useState<FurnitureCategory|'all'>('all');
   const [bagOpen,setBagOpen]=useState(true);
   const [art,setArt]=useState<HomeArtwork>(),[artError,setArtError]=useState('');

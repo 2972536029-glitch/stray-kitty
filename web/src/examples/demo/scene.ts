@@ -16,7 +16,7 @@ import {marketEntry, marketItems, marketPortals, marketRoadSigns, marketEAction,
 import {measureMarketCameraFrame} from '../../modules/nightMarket/camera';
 import {MarketTransitionController} from '../../modules/nightMarket/transitions';
 import {HOME_LAYOUT_ID, HOME_SIZE, HOME_RESIDENTS, HOME_ROAM_NODES, HOME_SHELTER_NODES, homeStage} from '../../modules/home/layout';
-import {homeAppearanceKey, paintHomestead, paintHomeStructure, paintHomeObject, paintHomeFrontWall, paintHomeWeather, homeObjects} from '../../modules/home/painter';
+import {homeAppearanceKey, paintHomestead, paintHomeStructure, paintHomeSurroundings, paintHomeObject, paintHomeFrontWall, paintHomeWeather, homeObjects} from '../../modules/home/painter';
 import {loadHomeArtwork, HOME_FRAMES, type HomeArtwork} from '../../modules/home/assets';
 import {paintResident,residentContains,residentWorldPoint} from '../../modules/home/catPainter';
 import {homeObjectOpaqueAt} from '../../modules/home/picking';
@@ -833,7 +833,7 @@ export class DemoScene {
     }
     if(this.homeEditing){
       const {state,selection,valid,hover}=this.homeEditing,ctx=this.context,view=this.homeView();
-      ctx.save();ctx.fillStyle='#13262e';ctx.fillRect(0,0,this.viewWidth,this.viewHeight);
+      ctx.save();paintHomeSurroundings(ctx,state,this.viewWidth,this.viewHeight);
       ctx.beginPath();ctx.rect(view.viewport.x,view.viewport.y,view.viewport.width,view.viewport.height);ctx.clip();
       ctx.translate(view.x,view.y);ctx.scale(view.scale,view.scale);paintHomestead(ctx,state,this.homeArtwork);
       // 悬浮（细描边）与选中（虚线金框）分开画：悬浮提示“这件可抓取”，选中承载有效/无效状态。
@@ -852,7 +852,7 @@ export class DemoScene {
       this.homeBackdropKey=key;
     }
     const view=this.homeView(),ctx=this.context;
-    ctx.save();ctx.fillStyle='#13262e';ctx.fillRect(0,0,this.viewWidth,this.viewHeight);
+    ctx.save();paintHomeSurroundings(ctx,this.state,this.viewWidth,this.viewHeight);
     ctx.beginPath();ctx.rect(view.viewport.x,view.viewport.y,view.viewport.width,view.viewport.height);ctx.clip();
     ctx.translate(view.x,view.y);ctx.scale(view.scale,view.scale);
     ctx.drawImage(this.homeBackdrop,0,0);

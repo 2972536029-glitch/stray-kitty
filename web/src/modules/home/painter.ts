@@ -6,6 +6,26 @@ export function homeAppearanceKey(state:HomeAppearance):string {
   return JSON.stringify(state.homeLayout??{})+'|'+(state.homeRepairs??[]).join(',')+'|'+homeStage(state)+'|'+Object.entries(state.placements).sort(([a],[b])=>a.localeCompare(b)).map(([slot,id])=>slot+':'+id).join('|');
 }
 function filterFor(stage:number){return stage===1?'saturate(.3) brightness(.58)':stage===2?'saturate(.7) brightness(.83)':stage===4?'saturate(1.04) brightness(1.03)':'none';}
+/** Distant garden colours continue around the curved roof, without a solid mat. */
+export function paintHomeSurroundings(ctx:CanvasRenderingContext2D,state:HomeAppearance,width:number,height:number){
+  const stage=homeStage(state),bright=stage>=3||state.homeRepairs?.includes('restore_skylight');
+  ctx.save();
+  const sky=ctx.createLinearGradient(0,0,0,height);
+  sky.addColorStop(0,bright?'#c4ddd1':stage===2?'#8baba0':'#546f72');
+  sky.addColorStop(.5,bright?'#92b29a':'#637f70');sky.addColorStop(1,'#405e4b');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,width,height);
+  const pixel=Math.max(3,Math.round(width/280));
+  for(let layer=0;layer<3;layer++){
+    ctx.fillStyle=['#a8bd91','#7f9c78','#5e805f'][layer];ctx.globalAlpha=bright?.65:.35;
+    for(let i=0;i<38;i++){
+      const x=((i*137+layer*59)%1672)/1672*width,y=((i*53+layer*31)%200)/941*height;
+      const size=(3+(i+layer)%5)*pixel;
+      ctx.fillRect(Math.round(x/pixel)*pixel,Math.round(y/pixel)*pixel,size,size*.7);
+      ctx.fillRect(Math.round(x/pixel)*pixel+pixel,Math.round(y/pixel)*pixel-pixel,size-2*pixel,size*.8);
+    }
+  }
+  ctx.restore();
+}
 export function drawHomeSprite(ctx:CanvasRenderingContext2D,art:HomeArtwork,sprite:HomeSprite,x:number,y:number,width:number){
   const frame=HOME_FRAMES[sprite],height=width*frame.height/frame.width;
   ctx.drawImage(art[frame.sheet],frame.x,frame.y,frame.width,frame.height,Math.round(x-width/2),Math.round(y-height),width,height);
@@ -21,7 +41,14 @@ export function paintHomeStructure(ctx:CanvasRenderingContext2D,state:HomeAppear
   ctx.fillStyle='#13262e';ctx.fillRect(0,0,HOME_SIZE.width,HOME_SIZE.height);
   if(!art){ctx.fillStyle='#d4c398';ctx.font='24px sans-serif';ctx.fillText('正在打开花房……',HOME_SIZE.width/2-100,HOME_SIZE.height/2);ctx.restore();return;}
   const repairs=state.homeRepairs??[],sunlight=repairs.includes('restore_skylight');
-  ctx.filter=filterFor(sunlight?Math.max(3,stage):stage);ctx.drawImage(art.base,0,0,HOME_SIZE.width,HOME_SIZE.height);
+  paintHomeSurroundings(ctx,state,HOME_SIZE.width,HOME_SIZE.height);
+  // The original plate has navy outside its roof silhouette. Keep the building
+  // intact while revealing the garden behind those two exterior corners.
+  ctx.save();ctx.beginPath();ctx.moveTo(128,0);ctx.lineTo(88,43);ctx.lineTo(48,89);ctx.lineTo(17,133);ctx.lineTo(0,161);
+  ctx.lineTo(0,HOME_SIZE.height);ctx.lineTo(HOME_SIZE.width,HOME_SIZE.height);ctx.lineTo(HOME_SIZE.width,161);
+  ctx.lineTo(HOME_SIZE.width-17,133);ctx.lineTo(HOME_SIZE.width-48,89);ctx.lineTo(HOME_SIZE.width-88,43);ctx.lineTo(HOME_SIZE.width-128,0);ctx.closePath();ctx.clip();
+  ctx.filter=filterFor(sunlight?Math.max(3,stage):stage);ctx.drawImage(art.base,0,0,HOME_SIZE.width,HOME_SIZE.height);ctx.restore();
+  ctx.filter=filterFor(sunlight?Math.max(3,stage):stage);
   if(stage<=2&&!sunlight){
     const source=HOME_FRAMES[stage===1&&!repairs.includes('patch_windows')?'window.broken':'window.patched'];
     for(const panel of HOME_REPAIR_PANELS)ctx.drawImage(art.atlas,source.x,source.y,source.width,source.height,panel.x,panel.y,panel.width,panel.height);
