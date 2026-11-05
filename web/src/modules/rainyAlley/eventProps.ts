@@ -16,24 +16,21 @@ export function eventPropAtlas() {
     // Weathered metal, linen and faded green sit in the scene rather than floating like UI icons.
     const edge='#302c2b',wood='#d4b29b',light='#f4dfbf';
     if(id==='alley_puddle_reflection') {
-      rect('#284653',4,26,30,6);rect('#284653',8,24,22,10);rect('#4b9d9c',6,26,28,4);rect('#658f90',10,25,18,7);
-      rect('#9bb9b6',7,27,7,1);rect('#c1d6cb',23,28,8,1);rect('#b1e1d0',11,33,9,1);
-      // Broken reflection rather than an upright second cat.
-      rect('#7dabad',17,27,8,3);rect('#b6c7b6',16,27,2,2);rect('#b6c7b6',23,27,2,2);rect('#86cfc2',18,30,6,2);
+      // Flat, broken rain reflections, without an upright icon silhouette.
+      rect('#142c37aa',5,28,29,4);rect('#294853',3,29,32,2);rect('#50717a',7,27,22,1);
+      rect('#a99864',12,28,4,1);rect('#d4bd7c',20,29,7,1);rect('#62878e',8,30,10,1);rect('#7aa4a4',23,31,6,1);
     } else if(id==='alley_empty_fish_can') {
-      rect('rgba(8,16,20,.38)',8,31,24,4);rect(edge,10,21,21,11);rect('#647a78',11,22,19,8);
-      rect('#c3c6ad',11,21,18,2);rect('#233b42',13,23,14,3);rect('#8da29a',12,27,16,3);
-      rect('#c0ac78',16,27,8,2);rect('#fff3d5',18,27,2,1);rect('#f5e6ce',12,30,15,1);
-      // Open, bent lid on the left: readable silhouette and one cool highlight.
-      rect(edge,6,16,7,9);rect('#b2cbb7',7,17,5,7);rect('#e0f2d4',7,17,2,5);rect('#708e83',11,19,1,5);
-      rect('#514435',29,29,3,3);
+      rect('#08101455',8,31,24,3);rect(edge,10,23,21,9);rect('#526864',11,24,19,7);
+      rect('#a1aa94',11,22,18,2);rect('#1d3337',13,24,14,3);rect('#8d977b',12,28,16,3);
+      rect('#bba477',17,28,7,2);rect('#506353',18,28,3,1);rect('#c6bfa0',12,31,15,1);
+      rect(edge,6,20,7,7);rect('#9fa88e',7,21,5,5);rect('#d5cfad',7,21,2,3);rect('#647c6e',11,23,1,3);
     } else if(id==='alley_fish_dry') {
-      rect('rgba(8,16,20,.36)',5,30,29,4);rect('#705464',5,29,28,2);
-      const fish=(x:number,y:number)=>{rect(edge,x+4,y-1,14,7);rect(edge,x,y,4,5);rect('#d2817a',x+4,y,13,5);rect('#ffd0af',x+7,y,8,2);rect('#965867',x+7,y+4,9,1);rect('#eaa88e',x+1,y+1,4,3);rect('#252c2c',x+15,y+1,1,1);rect('#fff0c7',x+8,y+2,1,2);rect('#fff0c7',x+11,y+2,1,2);};
-      fish(6,21);fish(12,28);rect('#c6dac6',6,18,24,1);rect('#8fae9b',9,18,1,4);rect('#8fae9b',25,18,1,4);
+      rect('#14201e55',6,31,28,3);rect('#8c8062',5,24,29,8);rect('#b9ac87',6,25,27,6);rect('#d3c39c',7,25,25,1);
+      const fish=(x:number,y:number)=>{rect('#4b3e30',x+4,y-1,14,6);rect('#705539',x,y,4,4);rect('#aa7e49',x+4,y,13,4);rect('#d1ac6d',x+7,y,8,1);rect('#715039',x+7,y+3,8,1);rect('#bd965b',x+1,y+1,4,2);rect('#292e27',x+15,y+1,1,1);};
+      fish(6,22);fish(12,28);
     } else if(id==='alley_crate') {
       rect('rgba(8,16,20,.4)',4,32,32,4);
-      // Diandian peeking over a battered box. Uses the same character painter.
+      // Atlas fallback; the live rescue vignette uses the larger cached sprite below.
       c.save();c.beginPath();c.rect(8,7,25,17);c.clip();c.translate(7,4);c.scale(.4,.4);drawPixelCat(c,'diandian','worried');c.restore();
       rect(edge,7,23,27,12);rect(wood,8,24,25,9);rect('#e3c5a7',8,24,17,8);rect('#947485',27,25,6,8);
       rect(edge,3,19,11,6);rect('#dfb8a2',4,20,9,4);rect(edge,27,19,10,6);rect(light,28,20,8,4);
@@ -44,22 +41,39 @@ export function eventPropAtlas() {
       rect('#67624d',16,13,9,8);rect('#67624d',15,11,3,5);rect('#67624d',22,11,3,5);rect('#f0e5ce',18,17,1,1);rect('#f0e5ce',22,17,1,1);
       rect('#89785a',13,24,13,1);rect('#b19d75',15,27,9,1);rect('#d5757c',19,5,3,3);rect('#ffc6b0',19,5,1,1);
     } else if(id==='alley_scratch_marks') {
-      // Mint-lit claw scores and stone chips keep the clue visible against warm walls.
-      rect('rgba(18,27,31,.25)',8,21,24,13);
-      for(const [x,y,h] of [[12,15,14],[18,13,15],[24,16,13]]){rect('#374b4a',x,y,2,h);rect('#9ba990',x+2,y,1,h-2);rect('#6b9f91',x+1,y+h,2,2);rect('#c4cab2',x+3,y+1,1,4);}
-      rect('#bcddc1',11,32,3,1);rect('#89ae9c',26,31,2,2);rect('#e2f5ce',19,33,2,1);
+      for(const [x,y,h] of [[12,18,12],[18,16,13],[24,19,11]]){rect('#253e40',x,y,2,h);rect('#879483',x+2,y,1,h-2);rect('#5f7873',x+1,y+h,2,1);}
     } else {
-      rect('rgba(8,16,20,.4)',3,32,33,4);rect(edge,5,23,29,11);rect('#55644f',6,24,27,8);rect('#9d9c7c',7,24,24,2);
-      rect(edge,8,15,24,11);rect('#8c8c6c',9,16,22,8);rect('#c8bb99',10,16,19,2);rect('#696e53',12,20,19,3);
-      rect('#a3cbb8',10,17,3,8);rect('#e7efce',10,18,3,1);rect('#e7efce',10,21,3,1);
-      rect('#575b46',24,24,6,8);rect('#a79f7c',24,25,4,1);rect('#454b3c',8,31,16,1);rect('#d0b1a8',8,33,2,2);rect('#d0b1a8',13,33,2,1);
+      rect('#16221e55',4,32,31,3);rect(edge,6,24,27,9);rect('#6f7056',7,25,25,7);rect('#a7a081',8,25,23,2);
+      rect('#474f40',8,21,23,5);rect('#c2b18c',7,19,24,5);rect('#d7c5a0',8,19,22,1);rect('#897f61',10,22,19,2);
+      rect('#7e886e',11,20,2,11);rect('#b6b896',11,21,2,1);rect('#b6b896',11,27,2,1);rect('#3f4d3d',8,31,22,1);
     }
     c.restore();
   }
   return atlas;
 }
 
+let rescueCrate:HTMLCanvasElement|undefined;
+function rescueCrateSprite() {
+  if(rescueCrate)return rescueCrate;
+  rescueCrate=document.createElement('canvas');rescueCrate.width=64;rescueCrate.height=68;
+  const c=rescueCrate.getContext('2d')!;c.imageSmoothingEnabled=false;
+  const r=(color:string,x:number,y:number,w:number,h:number)=>{c.fillStyle=color;c.fillRect(x,y,w,h);};
+  r('#101c2066',6,61,53,5);r('#554334',8,36,48,26);r('#94754e',10,38,44,22);
+  c.save();c.translate(8,0);c.scale(.75,.75);drawPixelCat(c,'diandian','worried');c.restore();
+  // Flaps sit behind the kitten's paws; a worn front panel hides the lower body.
+  r('#493b2c',3,34,17,8);r('#bc9d68',4,35,15,5);r('#e0c393',4,35,15,1);
+  r('#493b2c',45,34,16,8);r('#ba9762',46,35,14,5);r('#e0c393',46,35,14,1);
+  r('#493b2c',9,40,47,23);r('#b99a6a',10,41,45,20);r('#cfb17f',11,42,33,17);r('#977446',45,42,9,18);
+  r('#e0c99e',11,41,43,2);r('#786044',30,44,2,16);r('#b8af85',28,44,5,12);r('#d7c5a1',29,45,2,9);
+  r('#8e734e',14,55,10,1);r('#8e734e',14,58,7,1);r('#e2d1b0',18,37,8,5);r('#e2d1b0',39,37,8,5);r('#8a7963',18,41,8,1);r('#8a7963',39,41,8,1);
+  return rescueCrate;
+}
+
 export function paintEventProp(c:CanvasRenderingContext2D,id:string,x:number,y:number,scale=1,completed=false) {
+  if(id==='alley_crate'){
+    const top=completed?34:0;c.save();c.imageSmoothingEnabled=false;
+    c.drawImage(rescueCrateSprite(),0,top,64,68-top,Math.round(x-32*scale),Math.round(y-(63-top)*scale),64*scale,(68-top)*scale);c.restore();return;
+  }
   const i=propIds.indexOf(id as typeof propIds[number]);if(i<0)return;
   c.save();c.imageSmoothingEnabled=false;
   const top=id==='alley_crate'&&completed?19:0;

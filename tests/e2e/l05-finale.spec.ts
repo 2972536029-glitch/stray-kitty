@@ -37,7 +37,7 @@ test.afterAll(async()=>{if(child&&closed){const force=setTimeout(()=>child?.kill
 
 async function openFixture(page:Page,id:string){
   await page.addInitScript(({origin,session})=>{if(location.origin===origin)localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));},{origin,session:sessions.get(id)!});
-  await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();
+  await page.goto(origin);await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
 }
 for(const entry of cases.filter(value=>['low','medium','high'].includes(value.id))){
   test(`L05 ${entry.id}: real six-cat controls finish ten waves, a giant boss, two elites and fixed reinforcements without changing item inventory`,async({page,request},info)=>{
@@ -74,7 +74,7 @@ for(const entry of cases.filter(value=>['low','medium','high'].includes(value.id
     const headers={Authorization:`Bearer ${sessions.get(entry.id)!.token}`};
     const before=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
     const attempt=await page.getByTestId('finale-battle').getAttribute('data-attempt-id');
-    await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+    await page.reload();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
     await expect(page.getByTestId('finale-battle')).toHaveAttribute('data-attempt-id',attempt!);
     const actions=await playFinaleVisibleControls(page,info);
     await expect(page.getByRole('button',{name:'返回家园 →'})).toBeVisible();
@@ -91,7 +91,7 @@ for(const entry of cases.filter(value=>['low','medium','high'].includes(value.id
     await page.screenshot({path:info.outputPath(`l05-${entry.id}-won.png`),fullPage:true});
     await page.getByRole('button',{name:'返回家园 →'}).click();await openHomeBattleTrials(page);
     await expect(page.getByTestId('finale-enter')).toBeVisible();
-    await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+    await page.reload();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
     expect((await(await request.get(origin+'/api/v1/state',{headers})).json()).inventory).toEqual(state.inventory);
     await info.attach('real-controls-result',{contentType:'application/json',body:JSON.stringify({difficulty:entry.id,...actions,commands,inventory:state.inventory})});
   });
@@ -117,7 +117,7 @@ test('L05 has no bag or item loadout, preserves pause/title and retreats to retr
   expect(await page.getByTestId('finale-battle').getAttribute('data-elapsed')).toBe(pausedTime);
   expect(await page.getByTestId('finale-cat-guard').getAttribute('data-energy')).toBe(energy);
   await page.getByRole('button',{name:'收起聊天'}).click();
-  await page.getByRole('button',{name:'返回标题',exact:true}).click();await page.getByRole('button',{name:'继续冒险'}).click();
+  await page.getByRole('button',{name:'返回标题',exact:true}).click();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
   await expect(page.getByTestId('finale-battle')).toHaveAttribute('data-attempt-id',entered.activeBattle!.id);
   await page.getByTestId('finale-retreat').click();await page.getByTestId('finale-confirm-retreat').click();await confirmBattleResult(page,'lost');
   await expect(page.getByRole('button',{name:'调整防线，再试一次'})).toBeVisible();

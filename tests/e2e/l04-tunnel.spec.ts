@@ -45,7 +45,7 @@ test.afterAll(async()=>{if(child&&closed){const force=setTimeout(()=>child?.kill
 
 async function openFixture(page:Page,id:string){
   await page.addInitScript(({origin,session})=>{if(location.origin===origin)localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));},{origin,session:sessions.get(id)!});
-  await page.goto(origin);await page.getByRole('button',{name:'继续冒险'}).click();
+  await page.goto(origin);await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
 }
 test('L04 navigation: Chapter 1 and Chapter 4 map entries select their real scenes and allow movement',async({page,request})=>{
   const headers={Authorization:`Bearer ${sessions.get('navigation')!.token}`},assets:string[]=[];
@@ -136,7 +136,7 @@ for(const entry of cases.filter(value=>!['retreat','navigation','battle-route','
     const headers={Authorization:`Bearer ${sessions.get(entry.id)!.token}`};
     const before=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
     const attempt=await page.getByTestId('tunnel-battle').getAttribute('data-attempt-id');
-    await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+    await page.reload();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
     await expect(page.getByTestId('tunnel-battle')).toHaveAttribute('data-attempt-id',attempt!);
     const actions=await playVisibleControls(page,info);
     await expect(page.getByRole('button',{name:'返回家园 →'})).toBeVisible();
@@ -153,7 +153,7 @@ for(const entry of cases.filter(value=>!['retreat','navigation','battle-route','
     await page.screenshot({path:info.outputPath(`l04-${entry.id}-won.png`),fullPage:true});
     await page.getByRole('button',{name:'返回家园 →'}).click();await openHomeBattleTrials(page);
     await expect(page.getByTestId('tunnel-enter')).toBeVisible();
-    await page.reload();await page.getByRole('button',{name:'继续冒险'}).click();
+    await page.reload();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
     expect((await(await request.get(origin+'/api/v1/state',{headers})).json()).inventory).toEqual(state.inventory);
     await info.attach('real-controls-result',{contentType:'application/json',body:JSON.stringify({difficulty:entry.id,...actions,commands,inventory:state.inventory})});
   });
@@ -179,7 +179,7 @@ test('L04 has no bag or item loadout, preserves pause/title and retreats to retr
   expect(await page.getByTestId('tunnel-battle').getAttribute('data-elapsed')).toBe(pausedTime);
   expect(await page.getByTestId('tunnel-cat-guard').getAttribute('data-energy')).toBe(energy);
   await page.getByRole('button',{name:'收起聊天'}).click();
-  await page.getByRole('button',{name:'返回标题',exact:true}).click();await page.getByRole('button',{name:'继续冒险'}).click();
+  await page.getByRole('button',{name:'返回标题',exact:true}).click();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
   await expect(page.getByTestId('tunnel-battle')).toHaveAttribute('data-attempt-id',entered.activeBattle!.id);
   await page.getByTestId('tunnel-retreat').click();await page.getByTestId('tunnel-confirm-retreat').click();await confirmBattleResult(page,'lost');
   await expect(page.getByRole('button',{name:'调整防线，再试一次'})).toBeVisible();

@@ -36,7 +36,7 @@ export default function App() {
   const portraitPhone = usePortraitPhone();
   const warehouseReview = import.meta.env.DEV && new URLSearchParams(window.location.search).has('warehouseQA');
   const game = useGame();
-  const {state, catalog, send, reportMove, busy, pending, error, disabled, retry, skipDialogue, sessionUnavailable, startNewJourney, resetSession, refresh, port} = game;
+  const {state, catalog, send, reportMove, busy, pending, error, disabled, retry, skipDialogue, accountName, sessionUnavailable, startNewJourney, resetSession, refresh, port} = game;
   const storyScene = state && catalog ? currentStory(catalog, state)?.scene : undefined;
   const artworkMap = state?.phase === 'home' || (state?.phase === 'dialogue' && storyScene === 'home') ? 'greenhouse' : state?.mapId;
   // Chapters 1/2/4 use their original early warming, even during the prologue.
@@ -59,6 +59,8 @@ export default function App() {
     return next?'advisor':current==='advisor'?null:current;
   }),[]);
   useEffect(()=>{if(!entered||state?.phase!=='home')setOverlay(current=>current==='advisor'?null:current);},[entered,state?.phase]);
+  const authReturn=useRef<'title'|'settings'>('settings'),authSucceeded=useRef(false);
+  const openAuth=(mode:'login'|'register',from:'title'|'settings')=>{authReturn.current=from;authSucceeded.current=false;setAuthMode(mode);setOverlay('auth');};
   const [authMode,setAuthMode] = useState<'login'|'register'>('login');
   const [homeTab,setHomeTab]=useState<HomeHubTab>('overview');
   const openHome=(tab:HomeHubTab='overview')=>{setHomeTab(tab);setOverlay('home');};
@@ -193,7 +195,7 @@ export default function App() {
     {error && overlay !== 'shop' && overlay !== 'parcels' && overlay !== 'qa' && overlay !== 'decorate' && overlay !== 'home' && <div className="error-banner" role="alert">{error}<button disabled={busy} onClick={() => void retry()}>重试上次操作</button>{sessionUnavailable && state && <button disabled={busy} onClick={() => void startNewJourney()}>开始新旅程（保留旧会话记录）</button>}</div>}
     {!state || !catalog ? <main className="loading-card"><span className="brand-mark">ฅ</span><h1>{busy ? '正在寻找熟悉的气味……' : '旅程暂时停在这里'}</h1><p>{busy ? '正在打开小巷和你的旅程记录。' : '请确认本地服务已启动，然后重试。'}</p>{!busy && <><button onClick={() => void retry()}>重新连接</button>{sessionUnavailable && <button onClick={() => void startNewJourney()}>开始新旅程（保留旧会话记录）</button>}</>}</main>
       : <>
-        {!entered && <StartScreen hasProgress={state.revision > 0} disabled={disabled} onStart={() => {trackContinueAdventure();setEntered(true);}}/>}
+        {!entered && <StartScreen signedIn={!!accountName} onLogin={()=>openAuth('login','title')} hasProgress={state.revision > 0} disabled={disabled} onStart={() => {trackContinueAdventure();setEntered(true);}}/>}
         {/* Keep an active battle mounted and paused behind the title, so returning does not restart its attempt. */}
         {(entered || state.phase === 'battle') && <div hidden={!entered}>
           <GameScreen onHomeAdvisor={()=>{if(!homeAdvisorBlocked&&!homeScene?.homeRenovating)setHomeAdvisorOpen(true);}} homeAdvisorDisabled={!!homeAdvisorBlocked} onHomeTutorialChange={setHomeTutorialOpen} onHomeManual={()=>openHome()} homeEditing={overlay==='decorate'} state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay || !!inspection} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} qaOpen={overlay === 'qa'} onQA={() => setOverlay('qa')} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onPause={() => setPaused(!paused)} onMap={() => state.phase==='home'?openHome('depart'):setOverlay('map')} onShop={() => state.phase==='home'?openHome('shop'):setOverlay('shop')} onParcels={() => setOverlay('parcels')} onRecharge={() => openRecharge()} onSettings={() => setOverlay('settings')} onWarehouse={()=>openHome('warehouse')} onDecorate={()=>openDecorate()} onTitle={() => {setEntered(false);setPaused(false);}}>
@@ -226,9 +228,9 @@ export default function App() {
     {state && catalog && (overlay === 'parcels' || overlay === 'home' && homeTab === 'parcels') && <ParcelDialog state={state} catalog={catalog} disabled={disabled} retryDisabled={busy} error={error} initialPool={parcelPool} onPool={setParcelPool} onCommand={send} onRetry={() => void retry()} onClose={() => setOverlay(null)} onRecharge={() => openRecharge(true)} onPlace={async(furnitureId)=>{openDecorate(furnitureId);return true;}}/>}
     {state && catalog && overlay === 'recharge' && (catalog.rechargePacks?.length ?? 0) > 0 && <RechargeDialog playerId={port.playerId()} packs={catalog.rechargePacks!} tuna={state.currencies.tuna ?? 0} api={port} onCharged={refresh} onClose={() => {setOverlay(rechargeReturn.current);rechargeReturn.current=null;}}/>}
     {state && overlay === 'warehouse' && <WarehousePanel chapterId={state.chapterId} onClose={() => setOverlay(null)} onConfirm={value => {console.log('[家园仓库] 确认携带清单', value);setLoadout(value);setOverlay(null);}}/>}
-    {overlay === 'settings' && <SettingsPanel disabled={disabled} onLogin={()=>{setAuthMode('login');setOverlay('auth');}} onRegister={()=>{setAuthMode('register');setOverlay('auth');}} onReset={resetSession} musicVolume={musicVolume} sfxVolume={sfxVolume} onMusicVolume={value => {setMusicVolume(value);localStorage.setItem('stray-kitty.audio.music', String(value));}} onSfxVolume={value => {setSfxVolume(value);localStorage.setItem('stray-kitty.audio.sfx', String(value));}} onClose={() => setOverlay(null)}/>}
+    {overlay === 'settings' && <SettingsPanel disabled={disabled} onLogin={()=>openAuth('login','settings')} onRegister={()=>openAuth('register','settings')} onReset={resetSession} musicVolume={musicVolume} sfxVolume={sfxVolume} onMusicVolume={value => {setMusicVolume(value);localStorage.setItem('stray-kitty.audio.music', String(value));}} onSfxVolume={value => {setSfxVolume(value);localStorage.setItem('stray-kitty.audio.sfx', String(value));}} onClose={() => setOverlay(null)}/>}
     {loadout && <div className="visually-hidden" aria-live="polite">已确认暖心罐罐 {loadout.inventoryItems.warmCan} 份，蹦蹦冻干 {loadout.inventoryItems.freezeDry} 份；尚未锁定或扣除库存。</div>}
-    {state && overlay === 'auth' && <AuthDialog mode={authMode} hasProgress={state.revision > 0} api={port} onLoggedIn={async () => {await refresh();setEntered(false);}} onClose={() => setOverlay('settings')}/>}
+    {state && overlay === 'auth' && <AuthDialog mode={authMode} hasProgress={state.revision > 0} api={port} successLabel={authReturn.current==='title'?'进入冒险':'好的'} onLoggedIn={async () => {await refresh();authSucceeded.current=true;setEntered(false);}} onClose={() => {setOverlay(authReturn.current==='title'?null:'settings');if(authReturn.current==='title'&&authSucceeded.current){trackContinueAdventure();setEntered(true);}}}/>}
     <MobileViewport portrait={portraitPhone}/>
   </>;
 }

@@ -42,7 +42,7 @@ for (const [checkpoint, scene, artwork] of chapters.slice(0, 3)) {
     const canvas = page.locator('.game-viewport canvas');
     try {
       await page.goto('/', {waitUntil: 'domcontentloaded'});
-      await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+      await page.getByRole('button', {name: /^(暂不登录|继续冒险)/}).click();
       await expect(canvas).toHaveAttribute('data-background-state', 'loading');
       await expect(page.getByRole('status').filter({hasText: '正在打开地图'})).toBeVisible();
       const position = [await canvas.getAttribute('data-player-x'), await canvas.getAttribute('data-player-y')];
@@ -74,7 +74,7 @@ test('failed classic-map downloads show retry and recover without refreshing or 
   page.on('pageerror', error => errors.push(error.message));
   await page.route(/rainy-alley-background-clean.*\.(?:webp|png)/, route => failing ? route.abort('failed') : route.continue());
   await page.goto('/');
-  await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+  await page.getByRole('button', {name: /^(暂不登录|继续冒险)/}).click();
   const canvas = page.locator('.game-viewport canvas');
   await expect(canvas).toHaveAttribute('data-background-state', 'error');
   await expect(page.getByRole('alert').filter({hasText: '地图暂时没打开'})).toBeVisible();
@@ -98,7 +98,7 @@ for (const [checkpoint, scene, artwork, source, floorCount] of chapters) {
     await page.route(new RegExp(artwork + '.*\\.webp'), async route => {await gate;await route.continue();});
     try {
       await page.goto('/', {waitUntil: 'domcontentloaded'});
-      await expect(page.getByRole('button', {name: /^(开始冒险|继续冒险)/})).toBeVisible();
+      await expect(page.getByRole('button', {name: /^(暂不登录|继续冒险)/})).toBeVisible();
       await expect.poll(() => requests.length).toBe(1);
       expect(requests.filter(url => url.includes(artwork))).toHaveLength(1);
       expect(requests.some(url => url.includes('warehouse'))).toBe(false);
@@ -107,7 +107,7 @@ for (const [checkpoint, scene, artwork, source, floorCount] of chapters) {
     await expect.poll(() => requests.length).toBe(scene === 'home' ? 7 : 6);
     const chapterPrefix = scene === 'night-market' ? 'night_market_' : scene === 'chapter4-tunnel' ? 'chapter4_' : artwork;
     await expect.poll(() => requests.filter(url => url.includes(chapterPrefix)).length).toBe(floorCount);
-    await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+    await page.getByRole('button', {name: /^(暂不登录|继续冒险)/}).click();
     const canvas = page.locator('.game-viewport canvas');
     await expect(canvas).toHaveAttribute('data-rendered-scene', scene);
     await expect(canvas).toHaveAttribute('data-painted-background', /\.webp$/);
@@ -145,7 +145,7 @@ for (const [checkpoint, scene, artwork, source, floorCount] of chapters) {
     page.on('pageerror', error => errors.push(error.message));
     await page.route(new RegExp(artwork + '.*\\.webp'), route => route.abort('failed'));
     await page.goto('/');
-    await page.getByRole('button', {name: /^(开始冒险|继续冒险)/}).click();
+    await page.getByRole('button', {name: /^(暂不登录|继续冒险)/}).click();
     const canvas = page.locator('.game-viewport canvas');
     await expect(canvas).toHaveAttribute('data-painted-background', /\.png$/);
     if (scene === 'home') await expect(canvas).toHaveAttribute('data-home-artwork', 'ready');

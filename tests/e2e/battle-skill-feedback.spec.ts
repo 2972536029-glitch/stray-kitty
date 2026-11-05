@@ -37,7 +37,7 @@ async function openChapter(page:Page,chapter:typeof chapters[number]){
   expect(checkpoint.qaCheckpointId).toBe(checkpoints[chapter]);
   expect(checkpoint.activeBattle?.stageId).toBe(stageIds[chapter]);
   await page.addInitScript(({origin,session})=>{if(location.origin===origin)localStorage.setItem('stray-kitty.session.v1',JSON.stringify(session));},{origin,session});
-  await page.goto(origin);await page.getByRole('button',{name:/^继续冒险/}).click();
+  await page.goto(origin);await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
   await expect(page.getByTestId(`${chapter}-battle`)).toHaveAttribute('data-phase','ready');
 }
 async function openTutorial(page:Page,request:APIRequestContext){
@@ -50,7 +50,7 @@ async function openTutorial(page:Page,request:APIRequestContext){
   }
   expect(state.activeBattle?.stageId).toBe('l00_tutorial');
   await page.addInitScript(value=>localStorage.setItem('stray-kitty.session.v1',JSON.stringify(value)),session);
-  await page.goto('/');await page.getByRole('button',{name:/^继续冒险/}).click();
+  await page.goto('/');await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
 }
 async function move(page:Page,cat:Locator,cell:Locator){
   await cat.scrollIntoViewIfNeeded();const from=await cat.boundingBox(),to=await cell.boundingBox();expect(from).toBeTruthy();expect(to).toBeTruthy();

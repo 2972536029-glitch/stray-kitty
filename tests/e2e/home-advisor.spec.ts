@@ -7,14 +7,14 @@ async function enterHome(page: Page, request: APIRequestContext) {
     localStorage.setItem('stray-kitty.hud.topbar', 'expanded');
   });
   await page.goto('/');
-  await expect(page.getByRole('button', {name: /^(开始冒险|继续冒险)/})).toBeVisible();
+  await expect(page.getByRole('button', {name: /^(暂不登录|继续冒险)/})).toBeVisible();
   const token = await page.evaluate(() => JSON.parse(localStorage.getItem('stray-kitty.session.v1')!).token as string);
   const headers = {Authorization: `Bearer ${token}`};
   const before = await (await request.get('/api/v1/state', {headers})).json() as GameState;
   const moved = await request.post('/api/v1/commands', {headers: {...headers, 'Idempotency-Key': crypto.randomUUID()},
     data: {expectedRevision: before.revision, command: {type: 'QA_CHECKPOINT', checkpointId: 'greenhouse.home_2'}}});
   expect(moved.ok(), await moved.text()).toBe(true);
-  await page.reload();await page.getByRole('button', {name: '继续冒险'}).click();
+  await page.reload();await page.getByRole('button', {name:/^(暂不登录|继续冒险)/}).click();
   await expect(page.getByRole('button', {name: '问阿策', exact: true})).toBeEnabled();
   return {headers, token};
 }

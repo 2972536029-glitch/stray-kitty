@@ -35,10 +35,10 @@
   color:#f0e0b9;font-size:clamp(24px,2vw,34px);letter-spacing:.38em;
 }
 .opening-title .start-title>p {
-  width:min(680px,100%);margin:26px auto 24px;padding:16px 24px;background:#eee2c9f2;
-  border:2px solid #73634d;box-shadow:3px 3px 0 #0d2531;color:#4b493e;font-size:clamp(16px,1.15vw,21px);line-height:1.9;
+  width:min(680px,100%);margin:26px auto 24px;padding:4px 0;background:none;
+  border:0;box-shadow:none;color:#f4e4bd;font-size:clamp(17px,1.25vw,22px);line-height:1.9;text-shadow:0 2px 5px #0b1d2a,0 0 20px #0b1d2a;letter-spacing:1px;
 }
-.opening-title .start-title>p strong {color:#945e42;font-weight:700}
+.opening-title .start-title>p strong {display:block;color:#efc48f;font-weight:500;font-size:1.12em;letter-spacing:3px;margin-top:5px}
 .opening-title .start-actions {display:grid;grid-template-columns:1fr;width:min(360px,100%);gap:14px;justify-content:initial;padding:0;margin:0 auto}
 .opening-title .start-actions:has(.start-reset) {grid-template-columns:repeat(3,minmax(0,1fr));width:min(720px,100%)}
 .opening-title .start-actions .game-button {
@@ -199,3 +199,6 @@
   .opening-title .start-cats .pixel-cat,.opening-stars i,.opening-prologue .prologue-cat,.opening-prologue .prologue-cat-bob,.prologue-pixel-rain {animation:none}
   .opening-prologue .prologue-plate,.opening-title .game-button {transition:none}
 }
+
+.opening-title .start-guest,.opening-title .start-guest:hover {display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:44px;margin:8px auto 0;padding:5px 10px;border:0;background:none;box-shadow:none;color:#e4d7b6;font-size:14px;font-weight:400;letter-spacing:1px;text-shadow:0 2px 4px #0b1d2a;transform:none}
+.opening-title .start-guest span {color:#c4c4ac;font-size:12px}
