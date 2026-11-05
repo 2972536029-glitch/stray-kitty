@@ -5,7 +5,7 @@ import {rainyAlleyObjectEligible, rainyAlleyRegistration, rainyAlleySource, type
 import {findPath, sweepMove} from './collision';
 import {paintSqueezePassage} from './squeezePainter';
 import {paintEventProp} from './eventProps';
-import {RainyEventLabels, EVENT_PROP_SCALE, rainyEventObjective} from './eventLabels';
+import {RainyEventLabels, EVENT_PROP_SCALE} from './eventLabels';
 import {chapterBackground} from '../map/artwork';
 import {
   rainyAlleyFieldClosed, rainyAlleyFieldOpen, rainyAlleyGeometryClosed, rainyAlleyGeometryOpen,
@@ -56,9 +56,6 @@ export class IntegratedRainyAlley {
   private zoom = 1;
   private now = 0;
   private readonly eventLabels = new RainyEventLabels();
-  // Measured top-menu clearance, in logical canvas pixels.
-  private minimapShift = 0;
-  private minimapShiftTarget = 0;
   // 老黄的交互欢呼计时。
   private cheerStart = 0;
   private cheerUntil = 0;
@@ -172,21 +169,13 @@ export class IntegratedRainyAlley {
     this.updateNearby(flags);
     this.updateZones(flags, onZoneEntry);
     this.followCamera(deltaSeconds);
-    // 顶栏展开时小地图让位：目标位移与当前位移做指数缓动，与 CSS 滑出动画同一节奏感。
-    this.minimapShift += (this.minimapShiftTarget - this.minimapShift) * Math.min(1, deltaSeconds * 9);
     return Math.hypot(this.position.x - previous.x, this.position.y - previous.y);
   }
-
-  /** 顶栏展开态通知：小地图整体下移避让（传 0 复位）。 */
-  setMinimapShift(shift: number) {this.minimapShift = this.minimapShiftTarget = Math.max(0,shift);}
 
   click(clientX: number, clientY: number, bounds: DOMRect, canvasWidth: number, canvasHeight: number, cover: boolean) {
     const scale = (cover ? Math.max : Math.min)(bounds.width / canvasWidth, bounds.height / canvasHeight);
     const screenX = (clientX - bounds.left - (bounds.width - canvasWidth * scale) / 2) / scale;
     const screenY = (clientY - bounds.top - (bounds.height - canvasHeight * scale) / 2) / scale;
-    // 小地图区域不作为寻路点击目标。
-    const mini = this.minimapRect(canvasWidth, canvasHeight);
-    if (screenX >= mini.x - 4 && screenX <= mini.x + mini.width + 4 && screenY >= mini.y - 4 && screenY <= mini.y + mini.height + 4) return;
     const view = this.imageView(canvasWidth, canvasHeight);
     const imageX = view.x + (screenX - view.padX) / view.scale;
     const imageY = view.y + (screenY - view.padY) / view.scale;
@@ -239,7 +228,6 @@ export class IntegratedRainyAlley {
     if (this.debug) this.drawDebug(context, flags, debugState);
     context.restore();
     this.drawCheer(context, width, height);
-    this.drawMinimap(context, width, height, flags);
   }
 
   /** Front-facing resting pose, matching the cats' outline weight and pixel scale. */
@@ -430,40 +418,6 @@ export class IntegratedRainyAlley {
   /** Use the surrounding PNG's facade textures; collision and squeeze endpoints stay authored. */
   private drawSqueezeOverlay(context: CanvasRenderingContext2D) {
     paintSqueezePassage(context, this.background, SQUEEZE_BOUNDS, SQUEEZE_OPENING_WIDTH);
-  }
-
-  /** 右上角像素风小地图：整图概览 + 交互点 + 当前取景框 + 闪烁的玩家位置。画在屏幕坐标，不随世界镜头移动。 */
-  private minimapRect(width: number, _height: number) {
-    const mapWidth=Math.min(112,width*.2),mapHeight=mapWidth*rainyAlleyRegistration.worldHeight/rainyAlleyRegistration.worldWidth+16;
-    return {x:width-mapWidth-10,y:10+this.minimapShift,width:mapWidth,height:mapHeight};
-  }
-
-  private drawMinimap(context:CanvasRenderingContext2D,width:number,height:number,flags:readonly string[]) {
-    const mini=this.minimapRect(width,height);if(mini.y+mini.height>height*.72)return;
-    const inner={x:mini.x+4,y:mini.y+16,width:mini.width-8,height:mini.height-20},reg=rainyAlleyRegistration;
-    context.save();context.fillStyle='#142a31f2';context.strokeStyle='#b6a079aa';context.lineWidth=.7;
-    this.roundRectPath(context,mini.x,mini.y,mini.width,mini.height,3);context.fill();context.stroke();
-    context.fillStyle='#ead8b2';context.font='500 7px Microsoft YaHei, sans-serif';context.textAlign='left';context.textBaseline='middle';context.fillText('雨巷简图',mini.x+7,mini.y+8);
-    context.fillStyle='#b6b69b';context.font='6px Georgia, serif';context.textAlign='right';context.fillText('N ↑',mini.x+mini.width-7,mini.y+8);
-    context.save();context.beginPath();context.rect(inner.x,inner.y,inner.width,inner.height);context.clip();
-    if(this.background.complete&&this.background.naturalWidth)context.drawImage(this.background,reg.tx,reg.ty,reg.worldWidth*reg.sx,reg.worldHeight*reg.sy,inner.x,inner.y,inner.width,inner.height);
-    context.fillStyle='#102b3bad';context.fillRect(inner.x,inner.y,inner.width,inner.height);
-    const scale=inner.width/reg.worldWidth;context.translate(inner.x,inner.y);context.scale(scale,scale);
-    const geometry=this.gateOpen?rainyAlleyGeometryOpen:rainyAlleyGeometryClosed;
-    context.fillStyle='#efdcb826';context.strokeStyle='#ddc78e66';context.lineWidth=.45/scale;
-    for(const polygon of geometry.walkable){polygonPath(context,polygon);context.fill();context.stroke();}
-    const objective=rainyEventObjective(flags);
-    for(const object of rainyAlleySource.objects.fixed){
-      if(!rainyAlleyObjectEligible(object,flags))continue;
-      context.fillStyle=object.id===objective?'#f5d18a':'#c4cfb5';
-      context.beginPath();context.arc(object.x,object.y,(object.id===objective?1.8:1.1)/scale,0,Math.PI*2);context.fill();
-    }
-    context.strokeStyle='#f2e0b78c';context.lineWidth=.6/scale;context.setLineDash([2/scale,2/scale]);
-    context.strokeRect(this.camera.x,this.camera.y,cameraSize.width/this.zoom,cameraSize.height/this.zoom);context.setLineDash([]);
-    context.fillStyle='#f5deb12e';context.beginPath();context.arc(this.position.x,this.position.y,5/scale,0,Math.PI*2);context.fill();
-    context.fillStyle='#fff0ce';context.strokeStyle='#886c44';context.lineWidth=.7/scale;
-    context.beginPath();context.arc(this.position.x,this.position.y,2.4/scale,0,Math.PI*2);context.fill();context.stroke();
-    context.restore();context.restore();
   }
 
   private drawDebug(context: CanvasRenderingContext2D, _flags: readonly string[], debugState: DebugState) {

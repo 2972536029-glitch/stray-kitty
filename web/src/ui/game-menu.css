@@ -13,7 +13,7 @@
 .app-shell .fixed-game-menu nav button>span {display:inline}
 .app-shell .fixed-game-menu nav button:hover {transform:none;background:transparent;border-color:transparent;color:#ffe5aa;box-shadow:inset 0 -1px 0 #e4ca8d88}
 .app-shell .fixed-game-menu nav .dev-button {background:transparent;color:#ebd6a9;font-size:15px}
-.app-shell .topbar.fixed-game-menu nav button.dev-button {background:transparent;border-color:transparent;color:#ebd6a9;box-shadow:none}
+.app-shell .topbar.fixed-game-menu nav button.dev-button {background:transparent!important;border-color:transparent;color:#ebd6a9!important;box-shadow:none}
 .app-shell .fixed-game-menu>.wallet {display:none}
 .app-shell[data-encounter-active] .fixed-game-menu {visibility:visible;pointer-events:auto}
 .app-shell[data-rolling] .fixed-game-menu {visibility:hidden;pointer-events:none}
@@ -58,3 +58,7 @@ dialog.game-modal.postal-journal>.modal-close {position:absolute;z-index:40;righ
   dialog.game-modal.postal-journal>.modal-close {top:16px;right:17px;width:32px;height:32px;min-height:32px;font-size:24px}
 }
 @media(max-width:700px) {.app-shell .fixed-game-menu .brand small {display:none}.app-shell .fixed-game-menu .brand strong {font-size:20px}.app-shell .fixed-game-menu .brand-mark {display:none}.app-shell .fixed-game-menu .chapter-pill {max-width:112px;font-size:12px}.current-place {font-size:11px}.app-shell .topbar.fixed-game-menu {gap:8px}}
+
+/* The old phase-specific glass style has higher specificity than .topbar alone. */
+.app-shell:not([data-phase=battle]) .topbar.fixed-game-menu,.app-shell[data-phase=battle] .topbar.fixed-game-menu {background:none;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+.app-shell .topbar.fixed-game-menu :is(.brand,.brand-mark,.chapter-pill,nav,nav button) {backdrop-filter:none;-webkit-backdrop-filter:none}
