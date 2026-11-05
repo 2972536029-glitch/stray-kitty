@@ -64,5 +64,5 @@ export function Viewport(props: Props) {
     <div><span aria-hidden="true">ฅ</span><p>{background.state === 'error' ? '地图暂时没打开' : '正在打开地图……'}</p>
       {background.state === 'error' ? <button onClick={()=>scene.current?.retryBackground()}>重新加载地图</button> : <small>路铺好后，小猫就可以出发了。</small>}
     </div>
-  </div>}{home && <div className="home-camera-controls" aria-label="花房视角"><button disabled={props.paused} aria-label="放大花房" onClick={()=>scene.current?.homeZoom(.35)}>＋</button><button disabled={props.paused} aria-label="缩小花房" onClick={()=>scene.current?.homeZoom(-.35)}>－</button><button disabled={props.paused} onClick={()=>scene.current?.homeZoom(0)}>花房全景</button><span>按住空白处拖动画面 · 拖猫咪去互动</span></div>}</>;
+  </div>}{home && <div className="home-camera-controls" aria-label="花房视角"><button disabled={props.paused} aria-label="放大花房" onClick={()=>scene.current?.homeZoom(.35)}>＋</button><button disabled={props.paused} aria-label="缩小花房" onClick={()=>scene.current?.homeZoom(-.35)}>－</button><button disabled={props.paused} onClick={()=>scene.current?.homeZoom(0)}>花房全景</button></div>}</>;
 }

@@ -133,7 +133,7 @@ test('far furniture and transparent cat margins never pet or summon cats; actual
 test('independent toolbar modules open centered windows, keep journey in the manual and settings separate',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await open(page,'home-hub');await editor(page).getByRole('button',{name:'取消布置',exact:true}).click();
   await expect(page.locator('.home-controls,.home-backpack-entry')).toHaveCount(0);
-  await showTools(page);const toolbar=page.locator('.topbar');for(const name of ['家园手册','猫爪邮局','猫国商店','章节地图','家园仓库','布置家具','游戏设置'])await expect(toolbar.getByRole('button',{name,exact:true})).toBeVisible();
+  await showTools(page);const toolbar=page.locator('.topbar');for(const name of ['家园手册','猫爪邮局','猫咪补给站','章节地图','家园仓库','布置家具','游戏设置'])await expect(toolbar.getByRole('button',{name,exact:true})).toBeVisible();
   await expect(toolbar.locator('.wallet')).toHaveCount(0);await expect(toolbar.getByRole('button',{name:/充值|金枪鱼|我的花房/})).toHaveCount(0);
   await page.screenshot({path:'output/home-editor/home-toolbar.png',animations:'disabled'});
   await openTool(page,'家园手册');const hub=page.getByRole('dialog',{name:'家园手册',exact:true}),bounds=(await hub.boundingBox())!,size=page.viewportSize()!;
@@ -145,18 +145,18 @@ test('independent toolbar modules open centered windows, keep journey in the man
   await expect(hub.getByRole('region',{name:'旅程记录'}).getByText('一路上的伙伴',{exact:true})).toHaveCount(0);
   await hub.getByRole('button',{name:'猫咪伙伴',exact:true}).click();await expect(hub.locator('.home-hub-cats article')).toHaveCount(4);
   await expect(hub.getByText('一路上的伙伴',{exact:true})).toBeVisible();await expect(hub.locator('.home-hub-cats article p').first()).toHaveText(catalog.cats[0].description);
-  await page.keyboard.press('Escape');await openTool(page,'猫国商店');let shop=page.getByRole('dialog',{name:'猫国商店',exact:true});await expect(shop.getByRole('region',{name:'来信与猫咪心愿',exact:true})).toBeVisible();await expect(shop.locator('.shop-grid,.shop-item')).toHaveCount(0);
+  await page.keyboard.press('Escape');await openTool(page,'猫咪补给站');let shop=page.getByRole('dialog',{name:'猫咪补给站',exact:true});await expect(shop.getByRole('region',{name:'来信与猫咪心愿',exact:true})).toBeVisible();await expect(shop.locator('.shop-grid,.shop-item')).toHaveCount(0);
   await shop.getByTestId('claim-daily_letter').click();await expect(shop.getByTestId('shop-stamps')).toHaveText('11');await expect(shop.getByTestId('claim-daily_letter')).toBeDisabled();
   await shop.getByTestId('claim-daily_wish').click();await expect(shop.getByTestId('shop-stamps')).toHaveText('12');await page.screenshot({path:'output/home-editor/home-shop-wishes.png',animations:'disabled'});
   await page.keyboard.press('Escape');await openTool(page,'猫爪邮局');const postal=page.getByRole('dialog',{name:'猫爪邮局',exact:true});await expect(postal.getByRole('region',{name:'猫爪邮局',exact:true})).toBeVisible();await expect(page.locator('dialog[open]')).toHaveCount(1);
   await expect(postal.locator('.parcel-wallet>span b')).toHaveText('12');await expect(postal.getByRole('region',{name:'来信与猫咪心愿',exact:true})).toHaveCount(0);
   await postal.getByRole('button',{name:/家具图鉴/}).click();const detail=page.getByRole('dialog',{name:'苔叶来信家具图鉴',exact:true});await expect(detail).toBeVisible();await expect(page.locator('dialog[open]')).toHaveCount(2);await page.keyboard.press('Escape');await expect(detail).toHaveCount(0);await expect(postal).toBeVisible();
   await postal.locator('.parcel-wallet button').click();const recharge=page.getByRole('dialog',{name:'金枪鱼补给小站',exact:true});await expect(recharge.getByRole('region',{name:'金枪鱼补给小站',exact:true})).toBeVisible();await expect(recharge.locator('.pack-card')).toHaveCount(3);
-  await page.keyboard.press('Escape');await openTool(page,'猫国商店');shop=page.getByRole('dialog',{name:'猫国商店',exact:true});await expect(shop.getByTestId('claim-daily_letter')).toBeDisabled();await expect(shop.getByTestId('shop-stamps')).toHaveText('12');
+  await page.keyboard.press('Escape');await openTool(page,'猫咪补给站');shop=page.getByRole('dialog',{name:'猫咪补给站',exact:true});await expect(shop.getByTestId('claim-daily_letter')).toBeDisabled();await expect(shop.getByTestId('shop-stamps')).toHaveText('12');
   await page.keyboard.press('Escape');await openTool(page,'章节地图');const chapters=page.getByRole('dialog',{name:'章节地图',exact:true});await expect(chapters.getByRole('region',{name:'猫爪地图',exact:true})).toBeVisible();await expect(chapters.locator('.home-map')).toHaveCount(0);
   await page.screenshot({path:'output/home-editor/home-hub-chapters.png',animations:'disabled'});
   await page.keyboard.press('Escape');await openTool(page,'家园仓库');await expect(page.getByRole('dialog',{name:'家园仓库',exact:true}).getByRole('region',{name:'家园仓库与出战补给',exact:true})).toBeVisible();
-  await page.keyboard.press('Escape');await openTool(page,'游戏设置');const settings=page.getByRole('dialog',{name:'声音设置',exact:true});await expect(settings.getByRole('slider',{name:'背景音乐音量'})).toBeVisible();await expect(page.locator('dialog.home-hub')).toHaveCount(0);await expect(settings.getByRole('button',{name:/猫爪邮局|猫国商店|家园仓库|布置/})).toHaveCount(0);
+  await page.keyboard.press('Escape');await openTool(page,'游戏设置');const settings=page.getByRole('dialog',{name:'游戏设置',exact:true});await expect(settings.getByRole('slider',{name:'背景音乐音量'})).toBeVisible();await expect(page.locator('dialog.home-hub')).toHaveCount(0);await expect(settings.getByRole('button',{name:/猫爪邮局|猫咪补给站|家园仓库|布置/})).toHaveCount(0);
   await page.keyboard.press('Escape');expect(errors).toEqual([]);
 });
 

@@ -14,14 +14,14 @@ export function residentTransform(cat:LifeCat,time:number,held=false){
   const jump=-(cat.scriptedHeight??0)+(cat.startledUntil>time?-Math.sin((cat.startledUntil-time)/650*Math.PI)*6:0);
   let x=cat.x,y=cat.y+jump,sx=1,sy=1,angle=0;
   if(cat.action==='walk')y-=Math.abs(Math.sin(t*3))*3;
-  if(sleeping){sy=.6;sx=1.06;angle=Math.sin(t*.3)*.025;}
-  else if(pose==='belly'){angle=Math.PI/2+Math.sin(t)*.05;sx=.8;sy=.9;y-=19;}
-  else if(pose==='knead'){sy=.78;y+=Math.sin(t*2);}
-  else if(pose==='castle_peek'){sx=.7;sy=.7;y+=3;}
-  else if(pose==='bowl_eat'){sy=.8;angle=cat.facing*(.12+Math.sin(t*1.6)*.06);y+=Math.sin(t*2)*2;}
+  if(sleeping){angle=-Math.PI/2+Math.sin(t*.3)*.025;x+=8;y-=18;}
+  else if(pose==='belly'){angle=Math.PI/2+Math.sin(t)*.05;x-=8;y-=18;}
+  else if(pose==='knead'){y+=Math.sin(t*2);}
+  else if(pose==='castle_peek'){y+=3;}
+  else if(pose==='bowl_eat'){angle=cat.facing*(.1+Math.sin(t*1.6)*.04);y+=Math.sin(t*2)*2;}
   else if(pose==='scratch'){angle=cat.facing*-.12;y-=Math.max(0,Math.sin(t*3))*3;}
-  else if(pose==='groom_self'||kind==='groom'){angle=cat.facing*Math.sin(t*1.3)*.13;sy=.9;}
-  else if(pose==='stretch'){sx=1.12;sy=.78;y+=Math.sin(t)*2;}
+  else if(pose==='groom_self'||kind==='groom'){angle=cat.facing*Math.sin(t*1.3)*.13;}
+  else if(pose==='stretch'){angle=cat.facing*Math.sin(t)*.07;y+=Math.sin(t)*2;}
   else if(pose==='sniff'||pose==='investigate'){angle=cat.facing*Math.sin(t)*.08;x+=Math.sin(t)*3;}
   else if(pose==='watch'){y-=2+Math.sin(t)*2;}
   if(kind==='nose')x+=cat.facing*Math.max(0,Math.sin(t))*3;

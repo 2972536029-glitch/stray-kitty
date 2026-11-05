@@ -97,9 +97,9 @@ test('真实浏览器贯通序章救援与家园闭环、集市事件验收和�
  await expect(page.getByLabel('寻猫启事')).toBeVisible();await page.screenshot({path:'output/preview/poster.png',fullPage:true});await finishDialogue(page);
  await expect(page.getByRole('heading',{name:'整理我们的家'})).toBeVisible();await expect(page.getByTestId('stamps')).toHaveText('2');
  await page.getByRole('button',{name:'避雨角落'}).click();
- await page.getByRole('button',{name:'猫国商店',exact:true}).click();const shop=page.getByRole('dialog',{name:'猫国商店'});
+ await page.getByRole('button',{name:'猫咪补给站',exact:true}).click();const shop=page.getByRole('dialog',{name:'猫咪补给站'});
  await page.screenshot({path:'output/preview/shop.png',fullPage:true});await expect(shop.getByRole('button',{name:'蓝色饭碗随剧情免费赠送'})).toBeDisabled();
- await shop.getByRole('button',{name:'关闭猫国商店'}).click();await expect(page.getByTestId('stamps')).toHaveText('2');
+ await shop.getByRole('button',{name:'关闭猫咪补给站'}).click();await expect(page.getByTestId('stamps')).toHaveText('2');
  await page.getByRole('button',{name:'选择家具'}).click();await page.getByRole('option',{name:'柔软毛毯'}).click();await page.getByRole('button',{name:'窗边'}).click();
  await page.reload();await enterGame(page);await expect(page.getByRole('heading',{name:'整理我们的家'})).toBeVisible();
  await expect(page.getByRole('button',{name:'避雨角落'})).toContainText('纸箱猫窝');await expect(page.getByTestId('stamps')).toHaveText('2');
@@ -161,10 +161,10 @@ test('窄屏首屏没有水平溢出且故事可操作',async({page})=>{
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await page.screenshot({path:'output/preview/mobile-start.png',fullPage:true});
  await enterGame(page);await expect(page.getByRole('button',{name:'继续故事'})).toBeVisible();await page.getByRole('button',{name:'继续故事'}).click();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await page.screenshot({path:'output/preview/mobile.png',fullPage:true});
- // 自隐 HUD 在窄屏默认收起,先展开顶栏才能点到猫国商店;溢出断言在此之前已完成,不受影响。
- const shopButton=page.getByRole('button',{name:'猫国商店',exact:true});
+ // 自隐 HUD 在窄屏默认收起,先展开顶栏才能点到猫咪补给站;溢出断言在此之前已完成,不受影响。
+ const shopButton=page.getByRole('button',{name:'猫咪补给站',exact:true});
  if(!await shopButton.isVisible())await page.getByRole('button',{name:'展开顶部信息栏（可拖拽）'}).click();
- await shopButton.click();const shop=page.getByRole('dialog',{name:'猫国商店'});await expect(shop).toBeVisible();
+ await shopButton.click();const shop=page.getByRole('dialog',{name:'猫咪补给站'});await expect(shop).toBeVisible();
  expect(await shop.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);await page.screenshot({path:'output/preview/mobile-shop.png',fullPage:true});
 });
 
@@ -215,8 +215,8 @@ test('新版美术资源可加载，矮屏菜单与新增剧情态度可操作',
   const bounds=(await play.boundingBox())!;expect(bounds.y).toBeGreaterThanOrEqual(0);expect(bounds.y+bounds.height).toBeLessThanOrEqual(viewport.height);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:`output/preview/start-${viewport.width}x${viewport.height}.png`,fullPage:true});
-  const shopButton=page.getByRole('button',{name:'猫国商店'});await shopButton.scrollIntoViewIfNeeded();await shopButton.click();
-  await expect(page.getByRole('dialog',{name:'猫国商店'})).toBeVisible();await page.getByRole('button',{name:'关闭猫国商店'}).click();
+  const shopButton=page.getByRole('button',{name:'猫咪补给站'});await shopButton.scrollIntoViewIfNeeded();await shopButton.click();
+  await expect(page.getByRole('dialog',{name:'猫咪补给站'})).toBeVisible();await page.getByRole('button',{name:'关闭猫咪补给站'}).click();
   await enterGame(page);await expect(page.locator('[data-renderer="canvas2d"] canvas')).toBeVisible();
   await page.getByRole('button',{name:'旅程记录',exact:true}).click();
   await expect(page.getByRole('dialog',{name:'旅程记录'}).locator('.cat-entry').getByRole('img',{name:'橘猫 · 团子'})).toBeVisible();
@@ -242,8 +242,8 @@ test('场景铺满窗口，商店居中且旅程记录可关闭',async({page})=>
   await expect(page.getByRole('dialog',{name:'旅程记录'})).toBeVisible();await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog',{name:'旅程记录'})).toHaveCount(0);await expect(journalButton).toBeFocused();
   await page.screenshot({path:`output/preview/fullscreen-${viewport.width}x${viewport.height}.png`,fullPage:true});
-  await page.getByRole('button',{name:'返回标题'}).click();await page.locator('.start-actions').getByRole('button',{name:'猫国商店'}).click();
-  const shop=page.getByRole('dialog',{name:'猫国商店'});await expect(shop).toBeVisible();await expect(page.locator('.start-title')).toBeHidden();
+  await page.getByRole('button',{name:'返回标题'}).click();await page.locator('.start-actions').getByRole('button',{name:'猫咪补给站'}).click();
+  const shop=page.getByRole('dialog',{name:'猫咪补给站'});await expect(shop).toBeVisible();await expect(page.locator('.start-title')).toBeHidden();
   const bounds=(await shop.boundingBox())!;
   expect(Math.abs(bounds.x+bounds.width/2-viewport.width/2)).toBeLessThan(1);
   expect(Math.abs(bounds.y+bounds.height/2-viewport.height/2)).toBeLessThan(1);

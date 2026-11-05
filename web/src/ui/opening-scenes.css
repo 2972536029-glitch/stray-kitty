@@ -16,33 +16,33 @@
 .opening-title .xsolla-wordmark {font-size:23px;letter-spacing:-1px}
 .opening-title .xsolla-wordmark span {font-size:10px;letter-spacing:2px;color:#c6bb9a}
 .opening-title .start-brand>small {font-size:8px;letter-spacing:1.5px;padding-left:18px;border-color:#9b947563}
-.opening-title .start-title {width:min(900px,100%);max-height:none;padding:0;overflow:visible;text-align:center;display:block}
+.opening-title .start-title {width:min(1100px,100%);max-height:none;padding:0;overflow:visible;text-align:center;display:block}
 .opening-title .start-cats {justify-content:center;align-items:flex-end;gap:5px;margin:0 auto 11px}
 .opening-title .start-cats .pixel-cat {width:96px!important;height:96px!important;filter:drop-shadow(0 5px 0 #09191b70);animation:opening-cat-idle 3s steps(2,end) infinite}
 .opening-title .start-cats .pixel-cat:nth-child(2) {width:144px!important;height:144px!important;transform:none;animation-delay:-1s}
 .opening-title .start-cats .pixel-cat:last-child {animation-delay:-2s}
 .opening-title .start-title>.eyebrow {
   display:inline-block;padding:6px 12px;border:1px solid #86916d;box-shadow:3px 3px 0 #0c202b;
-  background:#263f43e8;color:#dfd5b3;font-size:9px;letter-spacing:2px;
+  background:#263f43e8;color:#dfd5b3;font-size:12px;letter-spacing:2px;
 }
 .opening-title .start-title h1 {
-  margin:15px 0 10px;font-size:clamp(43px,5.2vw,70px);line-height:1.15;letter-spacing:.09em;
+  margin:15px 0 10px;font-size:clamp(56px,6.2vw,108px);line-height:1.15;letter-spacing:.09em;
   color:#f5e6c6;-webkit-text-stroke:2px #26352f;text-shadow:3px 4px 0 #826c48,6px 7px 0 #0b1b1c;
 }
 .opening-title .start-title h2 {
   display:inline-block;transform:none;margin:0;padding:6px 17px 7px;
   background:#324e59ed;box-shadow:3px 3px 0 #b19259;border:1px solid #89927b;
-  color:#f0e0b9;font-size:22px;letter-spacing:.38em;
+  color:#f0e0b9;font-size:clamp(24px,2vw,34px);letter-spacing:.38em;
 }
 .opening-title .start-title>p {
-  width:min(620px,100%);margin:21px auto 19px;padding:10px 17px;background:#eee2c9f2;
-  border:2px solid #73634d;box-shadow:3px 3px 0 #0d2531;color:#4b493e;font-size:12px;line-height:1.9;
+  width:min(680px,100%);margin:26px auto 24px;padding:16px 24px;background:#eee2c9f2;
+  border:2px solid #73634d;box-shadow:3px 3px 0 #0d2531;color:#4b493e;font-size:clamp(16px,1.15vw,21px);line-height:1.9;
 }
 .opening-title .start-title>p strong {color:#945e42;font-weight:700}
-.opening-title .start-actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:min(530px,100%);gap:14px;justify-content:initial;padding:0;margin:0 auto}
+.opening-title .start-actions {display:grid;grid-template-columns:1fr;width:min(360px,100%);gap:14px;justify-content:initial;padding:0;margin:0 auto}
 .opening-title .start-actions:has(.start-reset) {grid-template-columns:repeat(3,minmax(0,1fr));width:min(720px,100%)}
 .opening-title .start-actions .game-button {
-  width:100%;max-width:none;min-height:68px;flex:none;padding:12px 17px;gap:12px;
+  width:100%;max-width:none;min-height:84px;flex:none;padding:12px 17px;gap:12px;
   clip-path:none;border:2px solid #899575;border-radius:2px;color:#f4e7c8;
   box-shadow:inset 0 2px 0 #fff4c315,0 4px 0 #101f2b;
 }
@@ -51,8 +51,8 @@
 .opening-title .start-actions .start-shop {background:#2d4842eb;border-color:#829573}
 .opening-title .start-actions .start-reset {background:#293a46eb;border-color:#7d897a;color:#ddd6bc}
 .opening-title .start-actions b {font-size:15px;letter-spacing:1px}
-.opening-title .start-actions .start-play b {font-size:18px;letter-spacing:1px}
-.opening-title .start-actions small {font-size:10px;line-height:1.6;margin-top:4px;color:#e0d6ba}
+.opening-title .start-actions .start-play b {font-size:25px;letter-spacing:1px}
+.opening-title .start-actions small {font-size:13px;line-height:1.6;margin-top:4px;color:#e0d6ba}
 .opening-title .start-actions .start-reset small {color:#abb8ae}
 .opening-title .game-button-icon,.opening-title .game-button-icon svg {width:21px;height:21px}
 .opening-title .start-actions .game-button:hover:not(:disabled) {filter:brightness(1.12);transform:translateY(-2px)}
@@ -120,15 +120,6 @@
 .opening-prologue .prologue-skip:hover {background:#2b4945}
 .opening-prologue .prologue-skip:focus-visible {outline:2px solid #f6d899;outline-offset:4px}
 
-/* Only the original home's dialogue adopts the small, square timber frame. */
-.app-shell[data-opening-home] .dialogue-bubble {border-radius:2px;background:#f6e9cbee;backdrop-filter:none;border:2px solid #68523c;box-shadow:inset 0 0 0 2px #fff5dc,0 0 0 2px #bba076,5px 6px 0 #332d2559;padding:12px 16px}
-.app-shell[data-opening-home] .dialogue-avatar {border-radius:1px;border:2px solid #b49e75;background:#e1caa1;box-shadow:inset 0 0 0 2px #f2dfb9}
-.app-shell[data-opening-home] .dialogue-who b {border-radius:1px;color:#fff0cc;background:#786341;border:1px solid #a99162;padding:4px 10px;font-size:13px;letter-spacing:2px;text-shadow:1px 1px #4c3f2a;box-shadow:2px 2px #bfab82}
-.app-shell[data-opening-home] .dialogue-copy p {font-size:14px;line-height:1.9;color:#443c30;min-height:3.8em}
-.app-shell[data-opening-home] .dialogue-actions button {border-radius:1px;border:1px solid #aa9570;background:#eddbb6;box-shadow:2px 2px 0 #bfaa7e;color:#655136;padding:6px 11px}
-.app-shell[data-opening-home] .dialogue-actions button:hover:not(:disabled) {background:#f9ebcb;box-shadow:2px 2px 0 #a78a5b}
-.app-shell[data-opening-home] .dialogue-tail b,.app-shell[data-opening-home] .dialogue-tail small {background:#f2e4c3;border-color:#68523c;border-radius:0}
-
 @media(max-width:850px) {
   .opening-title .start-brand>small {display:none}
 }
@@ -152,7 +143,6 @@
   .opening-prologue .prologue-skip {right:18px;top:18px;min-height:42px}
   .opening-prologue .prologue-stage {width:calc(100% - 32px);bottom:25px;padding:17px 15px;gap:12px}
   .opening-prologue .prologue-text {font-size:17px}
-  .app-shell[data-opening-home] .dialogue-copy p {font-size:13px}
 }
 @media(min-width:561px) and (max-height:760px) {
   .start-screen.opening-title {padding-top:74px;padding-bottom:50px}
@@ -204,8 +194,6 @@
   .opening-prologue .prologue-text {font-size:15px;line-height:1.6;min-height:1.6em}
   .opening-prologue .prologue-brand {font-size:8px}
   .opening-prologue .prologue-hint {font-size:8px}
-  .app-shell[data-opening-home] .dialogue-bubble-caption {top:16px;bottom:auto;left:auto;right:16px;transform:none;width:min(550px,calc(100% - 240px));padding:10px 12px;max-height:calc(100% - 32px);overflow:auto}
-  .app-shell[data-opening-home] .dialogue-copy p {font-size:12px;line-height:1.75;min-height:0}
 }
 @media(prefers-reduced-motion:reduce) {
   .opening-title .start-cats .pixel-cat,.opening-stars i,.opening-prologue .prologue-cat,.opening-prologue .prologue-cat-bob,.prologue-pixel-rain {animation:none}
