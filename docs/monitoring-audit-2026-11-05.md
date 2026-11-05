@@ -29,22 +29,37 @@
   - 23526682(旧阿策降级)
 - **归属**:观测负责人。⚠️ 删除前确认这两条当前状态(拒付率此前因本机 e2e 数据处于 Alert,删除前先看是否有未处理的告警上下文)。
 
-## 问题 4|P1 · kitty.payment.charge 在 preview 从未上报(根因已修正,2026-11-05 晚)
+## 问题 4|P1 · kitty.payment.charge 在 preview 缺失(第三次修正,根因=支付形态的观测盲区)
 
-- (原判断:preview 上还没人走过充值流程)——**已被数据推翻**:充值流程确实走通了——
-  `kitty.payment.funnel`(模块三新埋点)在 preview 正常上报:charge_attempt 3 次、charge_success 1 次;
-  前端 RUM 也记到 10 次 recharge_entry_click。
-- **矛盾实锤(本地实验)**:本地起 game + 假 DogStatsD 监听器,走一次充值(success+declined 双路径),
-  UDP 捕获显示 **kitty.payment.charge 与 kitty.payment.funnel 同时发出**——代码层 charge 埋点完全正常。
-- **矛盾保留在中间层**:preview 上同一函数相邻两行的两个指标,funnel 到了 US5,charge 没到——
-  问题锁定在 **Datadog Agent(US5 的接收层)或 intake**。两个候选解释:
-  1. org custom metrics 额度/新指标拒收(班级共享 org 全员上报,额度满时新指标被 intake 拒收);
-  2. Agent 的 DogStatsD 拒收(tag 数/长度/解析)——查 Agent 日志与 DogStatsD 状态段:
-     kubectl -n cn-haozhe-wang exec <agent-pod> -- agent status(需要 namespace 权限,找浩哲)。
-- **监控的务实修正(立即可做)**:kitty.payment.charge 短期内不可依赖——两条支付监控的查询
-  改用有数据的 funnel 指标:拒付率 = funnel{step:charge_declined} / funnel{step:charge_attempt};
-  支付错误条挂起等 charge 指标恢复;待指标恢复后再切回 charge 形态(信息更全)。
-- **归属**:Agent 日志排查需要 namespace 权限(浩哲);intake 层排查需要 org 管理员(老师)。
+- ~~判断 1:preview 上还没人走过充值流程~~ 已推翻:funnel 上报 charge_attempt ×3、charge_success ×1;RUM 记到 10 次充值入口点击。
+- ~~判断 2:Agent/intake 丢失 charge 指标~~ 本地 UDP 实验实锤代码层 charge 与 funnel 同时发出,且 preview 的 funnel 到了 US5——同流不同命无法用"额度拒收"解释。
+- **第三次修正(2026-11-05 深夜,整合人核验):preview 的支付形态是 Xsolla 沙盒直付**
+  (公网 config 实测 `{"provider":"xsolla","sandbox":true}`),而 `kitty.payment.charge{result}`
+  埋点**只挂在 mock 卡编排出口**(transport 的 /api/payment/charge 分支)。
+  Xsolla 跳转直付的路径是:session 创建 → 跳转沙盒页 → 异步 webhook → credit 入账——
+  **全程不经过 charge 编排端点**,charge(result) 自然不发。这不是埋错,是**指标天生只覆盖 mock 路径**。
+
+### 支付观测覆盖矩阵(两种路径)
+
+| 支付环节 | mock 卡路径 | Xsolla 沙盒直付路径 |
+|---|---|---|
+| 入口曝光/点击 | 前端 RUM(模块二) | 前端 RUM(模块二) |
+| 发起(会话/编排) | funnel{step:charge_attempt} ✅ | funnel{step:charge_attempt} ✅(走 charge 编排)或 payment.session |
+| **支付尝试(用户在渠道页操作)** | 同步判定,charge{result} ✅ | **无观测点**(Xsolla 外部页不可埋,只能靠 webhook 结果反推)⚠️ |
+| 支付结果(webhook/同步) | mock 形态无 webhook,charge{result} ✅ | kitty.payment.webhook ✅ |
+| 入账 | ApplyCharge → funnel terminal ✅ | 同 ✅ |
+
+### 结论与建议
+
+1. **charge{result} 监控只对 mock 路径有效**——preview(Xsolla 形态)下这两条支付监控
+   (拒付率/支付错误)即使有数据也只统计卡号支付,不反映沙盒直付。
+   **建议:支付监控统一改用 funnel 形态**(charge_attempt 为分母、charge_success+declined 为分子,
+   两条路径都覆盖),这是有数据的指标;
+2. **Xsolla 直付的"支付尝试"观测缺口**:用户跳到沙盒页后是否支付,只能等 webhook——
+   如需观测"跳转后放弃率",要前端在跳转返回时补 action(模块二范围);
+3. **charge{result} 埋点保留**:mock 路径(测试/演示卡)仍是有效观测;
+4. 两条支付监控的查询改 funnel 形态后(工作:monitors 定义+US5 更新,观测负责人执行),
+   拒付率监控即可用真实 preview 数据评估。
 
 ## 问题 5|已确认 · 主线看板不会被覆盖回平铺
 
@@ -62,7 +77,7 @@
 | 优先级 | 问题 | 动作 | 谁执行 |
 |---|---|---|---|
 | P1 | 问题 3 | 删除旧副本 23526678 / 23526682(重复告警) | 观测负责人 |
-| P1 | 问题 4 | 根因已修正:charge 埋点本地实锤正常;preview 的 Agent/intake 丢失该指标——需浩哲查 Agent 日志、或管理员查 intake 拒收;监控临时改用 funnel 形态 | 浩哲/管理员 |
+| P1 | 问题 4 | **三修定案**:preview 是 Xsolla 沙盒直付形态,charge{result} 埋点只覆盖 mock 卡路径——支付监控改用 funnel 形态(有数据),Xsolla 尝试缺口列模块二后续 | 观测负责人改监控定义 |
 | P1 | 问题 1 | 删除 4 条孤儿子监控 | 观测负责人 |
 | P3 | 问题 6 | 删除 probe 残留 23553199 | 观测负责人 |
 | — | 问题 2 | 无需动作(设计性延后,记入待办:基线积累后创建) | — |
