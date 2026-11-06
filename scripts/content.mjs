@@ -17,6 +17,11 @@ export function validateContent(c) {
   const furnishingCategories=['wall','decor','table','bed','seat','storage','plant','rug','lighting','toy'];
   for(const item of c.furniture)if(!furnishingCategories.includes(item.category)||!Number.isSafeInteger(item.widthCm)||item.widthCm<10||item.widthCm>250)errors.push(`furniture size/category invalid: ${item.id}`);
   for(const item of c.homeDecor)if(!furnishingCategories.includes(item.category))errors.push(`stage furniture category invalid: ${item.id}`);
+  for(const d of c.homeDecor){
+    const a=d.acquisition;
+    if(a&&(!d.storedByDefault||!a.description||!['craft','gift'].includes(a.kind)||a.kind==='craft'&&(!Number.isSafeInteger(a.material)||a.material<1)||a.kind==='gift'&&(d.stage!==4||a.material!==undefined)))errors.push(`home acquisition invalid: ${d.id}`);
+    if(d.renovatedFrom&&!c.homeDecor.some(p=>p.stage<d.stage&&p.objectId===d.renovatedFrom&&p.category===d.category))errors.push(`home renovation category invalid: ${d.id}`);
+  }
   const repairIds=new Set();
   for(const r of c.renovations){
     const earlier=new Set(),total={};

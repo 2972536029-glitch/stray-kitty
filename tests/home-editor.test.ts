@@ -14,13 +14,21 @@ test('every default stage furnishing is editable, including hanging and front wa
   }
 });
 
-test('later repairs unlock optional furnishings in the bag and preserve saved arrangements across stages',()=>{
+test('repairs keep ten matching essentials; optional furnishings need acquisition and saved arrangements persist',()=>{
   const timber:HomeAppearance={flags:['greenhouse_fortified_full'],placements:{},furniture:['moon_hammock']};
   const celebration:HomeAppearance={...timber,flags:['kingdom_founded']};
   assert.equal(homeObjects(timber).length,10);
-  assert.equal(homeObjects(celebration).length,13);
-  assert.equal(homeInventory(timber).filter(item=>item.stored&&!item.furnitureId).length,15);
-  assert.equal(homeInventory(celebration).filter(item=>item.stored&&!item.furnitureId).length,20);
+  assert.equal(homeObjects(celebration).length,10);
+  assert.equal(homeInventory(timber).filter(item=>item.stored&&!item.furnitureId).length,0);
+  assert.equal(homeInventory(celebration).filter(item=>item.stored&&!item.furnitureId).length,0);
+  assert.equal(homeInventory(timber,true).filter(item=>item.owned===false).length,15);
+  assert.equal(homeInventory(celebration,true).filter(item=>item.owned===false).length,24);
+  const crafted=homeInventory({...timber,homeDecorOwned:['citrus-tree']}).find(item=>item.id==='citrus-tree')!;
+  assert.equal(crafted.stored,true);
+  assert.equal(crafted.owned,true);
+  const repaired=homeInventory({...timber,homeLayout:{'stage:2:supply-crate':{x:500,y:550,stored:false}}}).find(item=>item.id==='food-storage')!;
+  assert.equal(repaired.x,500);
+  assert.equal(repaired.y,550);
   const edited:HomeAppearance={...timber,homeLayout:{
     'stage:3:reading-hammock':{x:460,y:625,stored:false},
     'stage:3:cat-tower':{x:1400,y:450,stored:true},

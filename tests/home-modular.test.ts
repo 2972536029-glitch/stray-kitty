@@ -79,8 +79,9 @@ test('repair stages have distinct furnishing schemes, and owned items no longer 
   assert.ok(stages[0].every(object=>object.sprite.startsWith('s1.')||object.sprite==='botany.dryvine'));
   assert.ok(stages[1].every(object=>object.sprite.startsWith('s2.')));
   assert.equal(stages[2].find(o=>o.id==='workbench')?.sprite,'s3.bench');
-  assert.equal(stages[3].find(o=>o.id==='workbench')?.sprite,'s4.banquet');
-  assert.ok(stages[3].some(o=>o.id==='gifts'));
+  assert.equal(stages[3].find(o=>o.id==='workbench')?.sprite,'s3.bench');
+  assert.ok(!stages[3].some(o=>o.id==='gifts'));
+  assert.ok(homeInventory({flags:['kingdom_founded'],placements:{}},true).some(o=>o.id==='gifts'&&o.owned===false));
   const furniture=JSON.parse(fs.readFileSync('web/content/home/furniture.json','utf8')) as {id:string}[];
   const sprites=furniture.map(({id})=>homeObjects({flags:['greenhouse_fortified_full'],placements:{sun_spot:id}}).find(o=>o.furnitureId===id)!.sprite);
   assert.equal(new Set(sprites).size,furniture.length,'every catalogue item has its own drawing');

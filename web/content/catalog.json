@@ -7556,7 +7556,8 @@
       "width": 212,
       "kind": "workbench",
       "replacementSlot": "desk",
-      "category": "table"
+      "category": "table",
+      "description": "沿用修补工作台的位置，修整桌板、加固桌脚，继续作为园艺和修缮的工作角。"
     },
     {
       "id": "stage:3:food-storage",
@@ -7569,7 +7570,9 @@
       "width": 139,
       "kind": "storage",
       "replacementSlot": "cabinet",
-      "category": "storage"
+      "category": "storage",
+      "description": "将原来的木质补给箱加固封好，留作存放猫粮的收纳箱。",
+      "renovatedFrom": "supply-crate"
     },
     {
       "id": "stage:3:cat-tower",
@@ -7581,7 +7584,9 @@
       "y": 455,
       "width": 136,
       "kind": "tower",
-      "category": "toy"
+      "category": "toy",
+      "description": "沿用麻绳磨爪坡的玩耍区域，加固木架后成为可攀爬的猫爬架。",
+      "renovatedFrom": "scratching-ramp"
     },
     {
       "id": "stage:3:north-herbs",
@@ -7594,7 +7599,9 @@
       "width": 167,
       "kind": "plant",
       "replacementSlot": "wall_clock",
-      "category": "plant"
+      "category": "plant",
+      "description": "把初生幼苗槽养护成香草种植台，保留原来的种植角。",
+      "renovatedFrom": "young-plants"
     },
     {
       "id": "stage:3:citrus-tree",
@@ -7608,7 +7615,12 @@
       "width": 116,
       "kind": "plant",
       "replacementSlot": "planter",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "craft",
+        "material": 4,
+        "description": "用探索收集的材料制作花盆，移栽一株柠檬树。"
+      }
     },
     {
       "id": "stage:3:south-flowers",
@@ -7621,7 +7633,12 @@
       "y": 716,
       "width": 167,
       "kind": "plant",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "craft",
+        "material": 3,
+        "description": "用旧木料制作长花槽，补种彩色花朵。"
+      }
     },
     {
       "id": "stage:3:west-plant-stand",
@@ -7634,7 +7651,12 @@
       "y": 478,
       "width": 109,
       "kind": "plant",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "craft",
+        "material": 4,
+        "description": "用收集的木料搭起多层育苗架。"
+      }
     },
     {
       "id": "stage:3:north-vines",
@@ -7647,7 +7669,13 @@
       "width": 65,
       "kind": "decor",
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "storedByDefault": true,
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作攀爬支架，让常春藤沿窗框生长。"
+      }
     },
     {
       "id": "stage:3:west-vines",
@@ -7661,7 +7689,12 @@
       "width": 68,
       "kind": "decor",
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作花藤挂架，为墙边补上开花藤蔓。"
+      }
     },
     {
       "id": "stage:3:east-vines",
@@ -7675,7 +7708,12 @@
       "width": 65,
       "kind": "decor",
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作另一组常春藤挂架，可自由选择墙面布置。"
+      }
     },
     {
       "id": "stage:3:hanging-fern",
@@ -7689,7 +7727,12 @@
       "width": 71,
       "kind": "decor",
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作悬挂花篮，种下一丛蕨草。"
+      }
     },
     {
       "id": "stage:3:garden-handcart",
@@ -7703,7 +7746,12 @@
       "width": 133,
       "kind": "storage",
       "replacementSlot": "courtyard",
-      "category": "storage"
+      "category": "storage",
+      "acquisition": {
+        "kind": "craft",
+        "material": 5,
+        "description": "用木料和旧轮子修出一辆园艺推车。"
+      }
     },
     {
       "id": "stage:3:crate-shelf",
@@ -7715,11 +7763,11 @@
       "y": 379,
       "width": 119,
       "kind": "storage",
-      "category": "storage"
+      "category": "storage",
+      "description": "修补后继续使用的补给架，日常物资仍放在熟悉的位置。"
     },
     {
       "id": "stage:3:stool-seedling",
-      "storedByDefault": true,
       "objectId": "stool-seedling",
       "stage": 3,
       "name": "幼苗小木凳",
@@ -7728,7 +7776,8 @@
       "y": 553,
       "width": 82,
       "kind": "plant",
-      "category": "plant"
+      "category": "plant",
+      "description": "从简易庇护所留下的小木凳和幼苗，修好后继续养护。"
     },
     {
       "id": "stage:3:work-lantern",
@@ -7740,7 +7789,8 @@
       "y": 365,
       "width": 48,
       "kind": "decor",
-      "category": "lighting"
+      "category": "lighting",
+      "description": "原来的铁皮灯擦拭修好后继续照明，不随翻修更换。"
     },
     {
       "id": "stage:3:round-bed",
@@ -7753,7 +7803,12 @@
       "y": 505,
       "width": 112,
       "kind": "blanket",
-      "category": "bed"
+      "category": "bed",
+      "acquisition": {
+        "kind": "craft",
+        "material": 4,
+        "description": "用布料和软垫缝制一张额外的小窝。"
+      }
     },
     {
       "id": "stage:3:west-leaf-tub",
@@ -7766,7 +7821,12 @@
       "y": 701,
       "width": 105,
       "kind": "plant",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作木花桶，移栽阔叶绿植。"
+      }
     },
     {
       "id": "stage:3:red-geraniums",
@@ -7780,7 +7840,12 @@
       "width": 82,
       "kind": "plant",
       "replacementSlot": "courtyard",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "用探索材料换盆栽种一簇天竺葵。"
+      }
     },
     {
       "id": "stage:3:herb-tub",
@@ -7793,7 +7858,12 @@
       "y": 552,
       "width": 78,
       "kind": "plant",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作小花盆，分栽种植角的香草。"
+      }
     },
     {
       "id": "stage:3:wall-ivy",
@@ -7808,7 +7878,12 @@
       "kind": "decor",
       "front": true,
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作前墙挂架，为入口旁补上垂藤。"
+      }
     },
     {
       "id": "stage:3:south-east-ivy",
@@ -7823,7 +7898,12 @@
       "kind": "decor",
       "front": true,
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作另一组前墙挂架，补上垂藤。"
+      }
     },
     {
       "id": "stage:3:shelter",
@@ -7836,7 +7916,8 @@
       "width": 162,
       "kind": "castle",
       "replacementSlot": "corner",
-      "category": "bed"
+      "category": "bed",
+      "description": "沿用纸箱屋的休息区域，加固为更挡风的小窝。"
     },
     {
       "id": "stage:3:feeding-corner",
@@ -7849,7 +7930,8 @@
       "width": 75,
       "kind": "bowls",
       "replacementSlot": "window",
-      "category": "decor"
+      "category": "decor",
+      "description": "伙伴们一直使用的双食碗，翻修后仍保留这处用餐角。"
     },
     {
       "id": "stage:3:reading-hammock",
@@ -7863,7 +7945,12 @@
       "width": 170,
       "kind": "hammock",
       "replacementSlot": "beam",
-      "category": "bed"
+      "category": "bed",
+      "acquisition": {
+        "kind": "craft",
+        "material": 5,
+        "description": "用绳索和织物编好吊床，再添一个安静的休息角。"
+      }
     },
     {
       "id": "stage:3:sun-bedding",
@@ -7876,7 +7963,9 @@
       "width": 133,
       "kind": "blanket",
       "replacementSlot": "sun_spot",
-      "category": "bed"
+      "category": "bed",
+      "description": "延续干草软窝的休息用途，补好的旧毛毯仍是熟悉的睡处。",
+      "renovatedFrom": "straw"
     },
     {
       "id": "stage:4:food-storage",
@@ -7889,7 +7978,9 @@
       "width": 139,
       "kind": "storage",
       "replacementSlot": "cabinet",
-      "category": "storage"
+      "category": "storage",
+      "description": "将原来的木质补给箱加固封好，留作存放猫粮的收纳箱。",
+      "renovatedFrom": "supply-crate"
     },
     {
       "id": "stage:4:cat-tower",
@@ -7901,7 +7992,9 @@
       "y": 455,
       "width": 136,
       "kind": "tower",
-      "category": "toy"
+      "category": "toy",
+      "description": "沿用麻绳磨爪坡的玩耍区域，加固木架后成为可攀爬的猫爬架。",
+      "renovatedFrom": "scratching-ramp"
     },
     {
       "id": "stage:4:north-herbs",
@@ -7914,7 +8007,9 @@
       "width": 167,
       "kind": "plant",
       "replacementSlot": "wall_clock",
-      "category": "plant"
+      "category": "plant",
+      "description": "把初生幼苗槽养护成香草种植台，保留原来的种植角。",
+      "renovatedFrom": "young-plants"
     },
     {
       "id": "stage:4:citrus-tree",
@@ -7928,7 +8023,12 @@
       "width": 116,
       "kind": "plant",
       "replacementSlot": "planter",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "craft",
+        "material": 4,
+        "description": "用探索收集的材料制作花盆，移栽一株柠檬树。"
+      }
     },
     {
       "id": "stage:4:south-flowers",
@@ -7941,7 +8041,12 @@
       "y": 716,
       "width": 167,
       "kind": "plant",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "craft",
+        "material": 3,
+        "description": "用旧木料制作长花槽，补种彩色花朵。"
+      }
     },
     {
       "id": "stage:4:west-plant-stand",
@@ -7954,7 +8059,12 @@
       "y": 478,
       "width": 109,
       "kind": "plant",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "craft",
+        "material": 4,
+        "description": "用收集的木料搭起多层育苗架。"
+      }
     },
     {
       "id": "stage:4:north-vines",
@@ -7967,7 +8077,13 @@
       "width": 65,
       "kind": "decor",
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "storedByDefault": true,
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作攀爬支架，让常春藤沿窗框生长。"
+      }
     },
     {
       "id": "stage:4:west-vines",
@@ -7981,7 +8097,12 @@
       "width": 68,
       "kind": "decor",
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作花藤挂架，为墙边补上开花藤蔓。"
+      }
     },
     {
       "id": "stage:4:east-vines",
@@ -7995,7 +8116,12 @@
       "width": 65,
       "kind": "decor",
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作另一组常春藤挂架，可自由选择墙面布置。"
+      }
     },
     {
       "id": "stage:4:hanging-fern",
@@ -8009,7 +8135,12 @@
       "width": 71,
       "kind": "decor",
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作悬挂花篮，种下一丛蕨草。"
+      }
     },
     {
       "id": "stage:4:garden-handcart",
@@ -8023,7 +8154,12 @@
       "width": 133,
       "kind": "storage",
       "replacementSlot": "courtyard",
-      "category": "storage"
+      "category": "storage",
+      "acquisition": {
+        "kind": "craft",
+        "material": 5,
+        "description": "用木料和旧轮子修出一辆园艺推车。"
+      }
     },
     {
       "id": "stage:4:crate-shelf",
@@ -8035,11 +8171,11 @@
       "y": 379,
       "width": 119,
       "kind": "storage",
-      "category": "storage"
+      "category": "storage",
+      "description": "修补后继续使用的补给架，日常物资仍放在熟悉的位置。"
     },
     {
       "id": "stage:4:stool-seedling",
-      "storedByDefault": true,
       "objectId": "stool-seedling",
       "stage": 4,
       "name": "幼苗小木凳",
@@ -8048,7 +8184,8 @@
       "y": 553,
       "width": 82,
       "kind": "plant",
-      "category": "plant"
+      "category": "plant",
+      "description": "从简易庇护所留下的小木凳和幼苗，修好后继续养护。"
     },
     {
       "id": "stage:4:work-lantern",
@@ -8060,7 +8197,8 @@
       "y": 365,
       "width": 48,
       "kind": "decor",
-      "category": "lighting"
+      "category": "lighting",
+      "description": "原来的铁皮灯擦拭修好后继续照明，不随翻修更换。"
     },
     {
       "id": "stage:4:round-bed",
@@ -8073,7 +8211,12 @@
       "y": 505,
       "width": 112,
       "kind": "blanket",
-      "category": "bed"
+      "category": "bed",
+      "acquisition": {
+        "kind": "craft",
+        "material": 4,
+        "description": "用布料和软垫缝制一张额外的小窝。"
+      }
     },
     {
       "id": "stage:4:west-leaf-tub",
@@ -8086,7 +8229,12 @@
       "y": 701,
       "width": 105,
       "kind": "plant",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作木花桶，移栽阔叶绿植。"
+      }
     },
     {
       "id": "stage:4:red-geraniums",
@@ -8100,7 +8248,12 @@
       "width": 82,
       "kind": "plant",
       "replacementSlot": "courtyard",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "用探索材料换盆栽种一簇天竺葵。"
+      }
     },
     {
       "id": "stage:4:herb-tub",
@@ -8113,7 +8266,12 @@
       "y": 552,
       "width": 78,
       "kind": "plant",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作小花盆，分栽种植角的香草。"
+      }
     },
     {
       "id": "stage:4:wall-ivy",
@@ -8128,7 +8286,12 @@
       "kind": "decor",
       "front": true,
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作前墙挂架，为入口旁补上垂藤。"
+      }
     },
     {
       "id": "stage:4:south-east-ivy",
@@ -8143,20 +8306,26 @@
       "kind": "decor",
       "front": true,
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "acquisition": {
+        "kind": "craft",
+        "material": 2,
+        "description": "制作另一组前墙挂架，补上垂藤。"
+      }
     },
     {
       "id": "stage:4:workbench",
       "objectId": "workbench",
       "stage": 4,
-      "name": "庆典长餐桌",
-      "sprite": "s4.banquet",
+      "name": "原木园艺台",
+      "sprite": "s3.bench",
       "x": 815,
       "y": 385,
-      "width": 246,
+      "width": 212,
       "kind": "workbench",
       "replacementSlot": "desk",
-      "category": "table"
+      "category": "table",
+      "description": "沿用修补工作台的位置，修整桌板、加固桌脚，继续作为园艺和修缮的工作角。"
     },
     {
       "id": "stage:4:welcome-left",
@@ -8169,7 +8338,11 @@
       "y": 726,
       "width": 119,
       "kind": "decor",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "gift",
+        "description": "完成终章后，街坊为猫咪王国送来的庆典礼物，可逐件领取。"
+      }
     },
     {
       "id": "stage:4:welcome-right",
@@ -8182,7 +8355,11 @@
       "y": 725,
       "width": 128,
       "kind": "plant",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "gift",
+        "description": "完成终章后，街坊为猫咪王国送来的庆典礼物，可逐件领取。"
+      }
     },
     {
       "id": "stage:4:entry-rug",
@@ -8195,7 +8372,11 @@
       "y": 723,
       "width": 201,
       "kind": "blanket",
-      "category": "rug"
+      "category": "rug",
+      "acquisition": {
+        "kind": "gift",
+        "description": "完成终章后，街坊为猫咪王国送来的庆典礼物，可逐件领取。"
+      }
     },
     {
       "id": "stage:4:gifts",
@@ -8208,7 +8389,12 @@
       "width": 128,
       "kind": "storage",
       "replacementSlot": "cabinet",
-      "category": "storage"
+      "category": "storage",
+      "storedByDefault": true,
+      "acquisition": {
+        "kind": "gift",
+        "description": "完成终章后，街坊为猫咪王国送来的庆典礼物，可逐件领取。"
+      }
     },
     {
       "id": "stage:4:celebration-flowers",
@@ -8222,7 +8408,11 @@
       "width": 139,
       "kind": "plant",
       "replacementSlot": "planter",
-      "category": "plant"
+      "category": "plant",
+      "acquisition": {
+        "kind": "gift",
+        "description": "完成终章后，街坊为猫咪王国送来的庆典礼物，可逐件领取。"
+      }
     },
     {
       "id": "stage:4:celebration-banner",
@@ -8235,7 +8425,11 @@
       "y": 564,
       "width": 68,
       "kind": "decor",
-      "category": "decor"
+      "category": "decor",
+      "acquisition": {
+        "kind": "gift",
+        "description": "完成终章后，街坊为猫咪王国送来的庆典礼物，可逐件领取。"
+      }
     },
     {
       "id": "stage:4:entry-wreath",
@@ -8249,7 +8443,12 @@
       "kind": "decor",
       "front": true,
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "storedByDefault": true,
+      "acquisition": {
+        "kind": "gift",
+        "description": "完成终章后，街坊为猫咪王国送来的庆典礼物，可逐件领取。"
+      }
     },
     {
       "id": "stage:4:ceiling-bunting",
@@ -8262,7 +8461,12 @@
       "width": 374,
       "kind": "decor",
       "wall": true,
-      "category": "wall"
+      "category": "wall",
+      "storedByDefault": true,
+      "acquisition": {
+        "kind": "gift",
+        "description": "完成终章后，街坊为猫咪王国送来的庆典礼物，可逐件领取。"
+      }
     },
     {
       "id": "stage:4:shelter",
@@ -8275,7 +8479,8 @@
       "width": 162,
       "kind": "castle",
       "replacementSlot": "corner",
-      "category": "bed"
+      "category": "bed",
+      "description": "沿用纸箱屋的休息区域，加固为更挡风的小窝。"
     },
     {
       "id": "stage:4:feeding-corner",
@@ -8288,7 +8493,8 @@
       "width": 75,
       "kind": "bowls",
       "replacementSlot": "window",
-      "category": "decor"
+      "category": "decor",
+      "description": "伙伴们一直使用的双食碗，翻修后仍保留这处用餐角。"
     },
     {
       "id": "stage:4:reading-hammock",
@@ -8302,7 +8508,12 @@
       "width": 170,
       "kind": "hammock",
       "replacementSlot": "beam",
-      "category": "bed"
+      "category": "bed",
+      "acquisition": {
+        "kind": "craft",
+        "material": 5,
+        "description": "用绳索和织物编好吊床，再添一个安静的休息角。"
+      }
     },
     {
       "id": "stage:4:sun-bedding",
@@ -8315,7 +8526,27 @@
       "width": 133,
       "kind": "blanket",
       "replacementSlot": "sun_spot",
-      "category": "bed"
+      "category": "bed",
+      "description": "延续干草软窝的休息用途，补好的旧毛毯仍是熟悉的睡处。",
+      "renovatedFrom": "straw"
+    },
+    {
+      "id": "stage:4:celebration-table",
+      "objectId": "celebration-table",
+      "stage": 4,
+      "name": "庆典长餐桌",
+      "sprite": "s4.banquet",
+      "x": 815,
+      "y": 385,
+      "width": 246,
+      "kind": "workbench",
+      "category": "table",
+      "storedByDefault": true,
+      "acquisition": {
+        "kind": "craft",
+        "material": 5,
+        "description": "另做一张庆典餐桌，原来的园艺工作台继续保留。"
+      }
     }
   ]
 }

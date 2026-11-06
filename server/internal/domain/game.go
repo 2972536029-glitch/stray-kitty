@@ -99,6 +99,7 @@ type GameState struct {
 	Lottery        *LotteryState            `json:"lottery,omitempty"`
 	HomeLayout     map[string]HomePlacement `json:"homeLayout,omitempty"`
 	HomeRepairs    []string                 `json:"homeRepairs,omitempty"`
+	HomeDecorOwned []string                 `json:"homeDecorOwned,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -118,6 +119,7 @@ func AppendTxn(s *GameState, t Txn) {
 
 type Command struct {
 	RepairID      string             `json:"repairId,omitempty"`
+	DecorID       string             `json:"decorId,omitempty"`
 	Changes       []HomeLayoutChange `json:"changes,omitempty"`
 	Type          string             `json:"type"`
 	NodeID        string             `json:"nodeId,omitempty"`

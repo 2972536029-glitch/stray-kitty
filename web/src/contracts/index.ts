@@ -25,13 +25,14 @@ export interface GameState {
   lottery?: LotteryState;
   homeLayout?: Record<string, HomePlacement>;
   homeRepairs?: string[];
+  homeDecorOwned?: string[];
   alleyBattleReturn?: {x: number; y: number};
   lastResult: {draw?: ParcelDraw; draws?: ParcelDraw[]; message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string};
   qaCheckpointId?: string;
 }
 export interface HomePlacement {x:number;y:number;stored:boolean}
 export interface HomeLayoutChange extends HomePlacement {key:string}
-export interface HomeDecor {id:string;objectId:string;stage:number;name:string;sprite:string;category?:FurnitureCategory;x:number;y:number;width:number;kind:string;front?:boolean;wall?:boolean;replacementSlot?:string;storedByDefault?:boolean}
+export interface HomeDecor {id:string;objectId:string;stage:number;name:string;sprite:string;category?:FurnitureCategory;x:number;y:number;width:number;kind:string;front?:boolean;wall?:boolean;replacementSlot?:string;storedByDefault?:boolean;renovatedFrom?:string;description?:string;acquisition?:{kind:'craft'|'gift';material?:number;description:string}}
 export interface QACheckpoint {id: string; chapterId: string; title: string; phase: GamePhase; mapId: string; kind: 'story' | 'explore' | 'battle' | 'home' | 'event'; detail: string}
 export interface QATools {enabled: boolean; checkpoints: QACheckpoint[]}
 export type GameCommand =
@@ -51,6 +52,7 @@ export type GameCommand =
   | {type: 'EXIT_MARKET'; layer: string; position: {x:number;y:number}}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
   | {type: 'SAVE_HOME_LAYOUT'; changes: HomeLayoutChange[]}
+  | {type: 'ACQUIRE_HOME_DECOR'; decorId: string}
   | {type: 'DRAW_FURNITURE'; poolId: string; count?: 1 | 10}
   | {type: 'CLAIM_PARCEL_REWARD'; rewardId: string}
   | {type: 'BUY_FURNITURE'; productId: string}

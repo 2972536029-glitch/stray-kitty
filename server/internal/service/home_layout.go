@@ -67,6 +67,9 @@ func (g *Game) saveHomeLayout(s *domain.GameState, changes []domain.HomeLayoutCh
 		} else {
 			for _, d := range g.Catalog.HomeDecor {
 				if d.ID == c.Key && d.Stage == homeStage(s) {
+					if !g.ownsHomeDecor(s, d) {
+						return domain.Fail("NOT_OWNED", "请先在家具收藏中制作或领取这件家具", 409)
+					}
 					width = d.Width
 					wall = d.Wall
 					found = true
