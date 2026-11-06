@@ -1,6 +1,8 @@
 import {TunnelEventMarkers,nearbyLockedTunnelEvent,type TunnelMarkerState} from './eventMarkers';
 import {drawTunnelExitBarrier,tunnelBossAt,tunnelExitBlockerPolygon} from './battleExit';
 import {drawPixelCat} from '../../adapters/canvas/pixelCat';
+import {coveredImageOrigin} from '../../adapters/canvas/resolution';
+import {chapterDisplayArtwork} from '../map/enhanced-artwork';
 import mapData from '../../../../level_design/chapter4/data/chapter4.map.json' with { type: 'json' };
 import lighting from '../../../../level_design/chapter4/data/chapter4.lighting.json' with { type: 'json' };
 import {chapterBackground, preloadChapterArtwork} from '../map/artwork';
@@ -42,6 +44,7 @@ function reachableSpawn(mask: TunnelWalkableMask, point: Point) {
 }
 
 export class TunnelMap {
+  private renderDensity = {x: 1, y: 1};
   private readonly maskImages: Record<Layer, HTMLImageElement> = {L0: new Image(), Lm1: new Image()};
   private readonly maskReady: Promise<Record<Layer, TunnelWalkableMask>>;
   private masks: Record<Layer, TunnelWalkableMask> | null = null;
@@ -91,14 +94,14 @@ export class TunnelMap {
   positionNow() {return {...this.position};}
   explorationLabels(width: number, height: number, flags: readonly string[], drawnEvents: readonly string[]): GlassLabel[] {
     if (!this.isReady || !this.labelsVisible || this.movement) return [];
-    const scale = Math.min(width / camera.width, height / camera.height);
+    const view = this.imageView(width, height);
     const labels = tunnelExplorationLabels(this.markerState(flags, drawnEvents));
     if (this.traversalFeedback && !this.nearby && !this.eventHint) labels.push({
       id: 'traversal-feedback', text: this.traversalFeedback, x: this.position.x, y: this.position.y - 32, alpha: 1
     });
     return labels.map(label => ({...label,
-      x: (width - camera.width * scale) / 2 + (label.x - this.cameraPosition.x) * scale,
-      y: (height - camera.height * scale) / 2 + (label.y - this.cameraPosition.y) * scale
+      x: view.x + label.x * view.scale,
+      y: view.y + label.y * view.scale
     }));
   }
   setCollisionVisible(value: boolean) {this.collisionVisible = value;}
@@ -193,13 +196,26 @@ export class TunnelMap {
     this.cameraPosition.x += (target.x - this.cameraPosition.x) * blend; this.cameraPosition.y += (target.y - this.cameraPosition.y) * blend;
   }
 
+  private imageView(width: number, height: number) {
+    const scale = Math.min(width / camera.width, height / camera.height);
+    const x = (width - camera.width * scale) / 2 - this.cameraPosition.x * scale;
+    const y = (height - camera.height * scale) / 2 - this.cameraPosition.y * scale;
+    return {scale,
+      x: coveredImageOrigin(x, WIDTH * scale, width, this.renderDensity.x),
+      y: coveredImageOrigin(y, HEIGHT * scale, height, this.renderDensity.y)
+    };
+  }
+
   draw(context: CanvasRenderingContext2D, width: number, height: number, flags: readonly string[], drawnEvents: readonly string[] = []) {
     context.save(); context.globalAlpha = 1; context.globalCompositeOperation = 'source-over';
+    context.imageSmoothingEnabled = false;
+    const transform = context.getTransform();this.renderDensity = {x: transform.a, y: transform.d};
     context.fillStyle = '#100f14'; context.fillRect(0, 0, width, height);
-    const scale = Math.min(width / camera.width, height / camera.height);
-    const offsetX = (width - camera.width * scale) / 2, offsetY = (height - camera.height * scale) / 2;
-    context.translate(offsetX, offsetY); context.scale(scale, scale); context.translate(-this.cameraPosition.x, -this.cameraPosition.y);
-    const art = chapterBackground('tunnel', this.floor); if (art.complete && art.naturalWidth) context.drawImage(art, 0, 0, WIDTH, HEIGHT);
+    const view = this.imageView(width, height);
+    context.translate(view.x, view.y);context.scale(view.scale, view.scale);
+    const art = chapterDisplayArtwork('tunnel', this.floor, chapterBackground('tunnel', this.floor));
+    context.canvas.dataset.mapArtwork = art.src.includes('enhanced-v1') ? 'enhanced' : 'original';
+    if (art.complete && art.naturalWidth) context.drawImage(art, 0, 0, WIDTH, HEIGHT);
     if (this.floor === 'L0') drawTunnelExitBarrier(context);
     if (this.collisionVisible) {
       context.save(); context.globalAlpha = .45;
@@ -218,16 +234,16 @@ export class TunnelMap {
       }
       context.restore();
     }
-    this.drawLighting(context);
+    this.drawLighting(context, view, width, height);
     this.drawMarkers(context, flags, drawnEvents);
     this.drawCat(context);
     context.restore();
   }
-  private drawLighting(context: CanvasRenderingContext2D) {
+  private drawLighting(context: CanvasRenderingContext2D, view: {x: number; y: number; scale: number}, width: number, height: number) {
     const lamps = (lighting.lamps as Record<Layer, Array<{x:number;y:number;radius:number}>>)[this.floor];
     const darkness = context.createRadialGradient(this.position.x, this.position.y, 26, this.position.x, this.position.y, lighting.playerRadius[this.floor]);
     darkness.addColorStop(0, `rgba(3,5,12,0)`); darkness.addColorStop(.55, `rgba(3,5,12,${lighting.baseOpacity[this.floor] * .38})`); darkness.addColorStop(1, `rgba(3,5,12,${lighting.baseOpacity[this.floor]})`);
-    context.save(); context.globalCompositeOperation = 'source-over'; context.fillStyle = darkness; context.fillRect(this.cameraPosition.x, this.cameraPosition.y, camera.width, camera.height);
+    context.save(); context.globalCompositeOperation = 'source-over'; context.fillStyle = darkness; context.fillRect(-view.x / view.scale, -view.y / view.scale, width / view.scale, height / view.scale);
     for (const lamp of lamps) {
       const glow = context.createRadialGradient(lamp.x, lamp.y, 10, lamp.x, lamp.y, lamp.radius);
       glow.addColorStop(0, 'rgba(255,190,90,.24)'); glow.addColorStop(.5, 'rgba(255,175,75,.1)'); glow.addColorStop(1, 'rgba(255,155,45,0)');

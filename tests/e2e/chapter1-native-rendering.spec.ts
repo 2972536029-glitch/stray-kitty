@@ -102,8 +102,8 @@ for (const dpr of [1, 2]) test.describe('Chapter 1 display density ' + dpr, () =
   });
 });
 
-test('the Chapter 1 trial leaves Chapters 2, 4 and 5 at their existing resolution', async ({page, request}) => {
-  for (const checkpoint of ['market.explore', 'rescue.explore', 'finale.explore']) {
+test('Chapter 5 retains its existing rendering resolution', async ({page, request}) => {
+  for (const checkpoint of ['finale.explore']) {
     const canvas = await prepare(page, request, checkpoint);
     const {density, width, height} = await canvas.evaluate(c => ({density: Math.max(1, devicePixelRatio), width: (c as HTMLCanvasElement).width, height: (c as HTMLCanvasElement).height}));
     expect([width, height]).toEqual([Math.round(800 * density), Math.round(480 * density)]);

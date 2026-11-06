@@ -16,9 +16,10 @@ export function alignToDevicePixel(offset: number, pixelsPerUnit: number) {
 }
 
 /** Keep the aligned artwork inside its edges without changing the camera's zoom. */
-export function coveredImageOrigin(offset: number, imageSize: number, viewportSize: number, pixelsPerUnit: number) {
-  if (imageSize < viewportSize) return alignToDevicePixel((viewportSize - imageSize) / 2, pixelsPerUnit);
+export function coveredImageOrigin(offset: number, imageSize: number, viewportSize: number, pixelsPerUnit: number, viewportStart = 0) {
+  if (imageSize < viewportSize) return alignToDevicePixel(viewportStart + (viewportSize - imageSize) / 2, pixelsPerUnit);
   // Round the lower bound inward so snapping cannot expose a fractional edge.
-  const minimum = Math.ceil((viewportSize - imageSize) * pixelsPerUnit) / pixelsPerUnit;
-  return Math.max(minimum, Math.min(0, alignToDevicePixel(offset, pixelsPerUnit)));
+  const minimum = Math.ceil((viewportStart + viewportSize - imageSize) * pixelsPerUnit) / pixelsPerUnit;
+  const maximum = Math.floor(viewportStart * pixelsPerUnit) / pixelsPerUnit;
+  return Math.max(minimum, Math.min(maximum, alignToDevicePixel(offset, pixelsPerUnit)));
 }
