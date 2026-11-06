@@ -1,7 +1,7 @@
 import {useCallback} from 'react';
 import type {DemoScene} from '../../examples/demo/scene';
 import type {GameState} from '../../contracts';
-import GlassLabels, {type GlassLabel} from '../../ui/GlassLabels';
+import GlassLabels, {type GlassLabel, type GlassLabelKey} from '../../ui/GlassLabels';
 import {marketEAction, marketInteractionTarget, marketPortalDisplay, marketPortals, marketRoadSigns} from './map';
 import {marketEventAppearance, marketEventObjective, marketFixedEvents} from './eventLabels';
 import {iconScale} from './eventProps';
@@ -50,21 +50,20 @@ function assembleMarketLabels(scene: DemoScene, state: GameState): GlassLabel[] 
       const distance = Math.hypot(player.x - point.x, player.y - point.y);
       labels.push({
         id: `portal:${portal.id}:${side}`,
-        text: display.label.split(' · ')[1] ?? display.label,
+        text: display.label.replace(/^[CF] · /, ''),
         key: display.active ? portal.key : undefined,
         ...project(point.x, point.y - 14),
         alpha: display.active ? 1 : clamp01((90 - distance) / 30)
       });
     }
   }
-  // 路标：文字沿用木牌数据（area · directions），渐显节奏与暗道入口胶囊一致（/30 渐入），
-  // 无键位徽标——指路是信息提示，F/C 交互始终由传送门胶囊负责。
+  // 路标只保留地点名；操作与方向由附近的传送门胶囊说明，避免重复 F/C 提示。
   for (const sign of marketRoadSigns) {
     if (sign.floor !== floor) continue;
     const distance = Math.hypot(player.x - sign.x, player.y - sign.y);
     labels.push({
       id: `sign:${sign.id}`,
-      text: `${sign.area} · ${sign.directions}`,
+      text: sign.area,
       ...project(sign.x, sign.y - 24),
       alpha: clamp01((sign.revealRadius - distance) / 30)
     });
@@ -75,6 +74,6 @@ function assembleMarketLabels(scene: DemoScene, state: GameState): GlassLabel[] 
 /** 午夜集市的玻璃胶囊标签：数据适配在组件层完成，不侵入场景核心逻辑。 */
 export default function MarketLabels({scene, state}: {scene: DemoScene; state: GameState}) {
   const getLabels = useCallback(() => assembleMarketLabels(scene, state), [scene, state]);
-  const onAction = useCallback((key: 'e' | 'c' | 'f' | 'q') => scene.performAction(key), [scene]);
+  const onAction = useCallback((key: GlassLabelKey) => scene.performAction(key), [scene]);
   return <GlassLabels getLabels={getLabels} onAction={onAction}/>;
 }

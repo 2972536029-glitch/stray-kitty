@@ -3,6 +3,16 @@ import {tunnelEventCompleted,tunnelPortalDisplay,type tunnelConnections} from '.
 type Point={x:number;y:number};
 type BaselineRuntime={cameraPosition:Point;surface:string;floor:string;labelsVisible:boolean;connections:()=>ReturnType<typeof tunnelConnections>;drawLabel:(context:CanvasRenderingContext2D,label:string,point:Point,movement:boolean)=>void};
 const camera={width:1066,height:640};
+// Historical canvas labels belong only to this before/after review.
+export function drawBaselineLabel(this: Pick<BaselineRuntime, 'cameraPosition'>, context: CanvasRenderingContext2D, label: string, point: Point, movement: boolean) {
+  context.font = `${movement ? 12 : 13}px "Microsoft YaHei",system-ui,sans-serif`;
+  const width = context.measureText(label).width + 12, height = movement ? 20 : 21;
+  const x = Math.max(this.cameraPosition.x + 4, Math.min(point.x + 15, this.cameraPosition.x + camera.width - width - 4));
+  const y = Math.max(this.cameraPosition.y + 40, point.y - 23);
+  context.fillStyle = 'rgba(16,28,38,.92)'; context.fillRect(x, y, width, height);
+  context.strokeStyle = '#f2e4c4'; context.lineWidth = 1; context.strokeRect(x + .5, y + .5, width - 1, height - 1);
+  context.fillStyle = '#fff0c4'; context.textAlign = 'left'; context.textBaseline = 'middle'; context.fillText(label, x + 6, y + height / 2);
+}
 export function drawBaselineMarkers(this: BaselineRuntime, context: CanvasRenderingContext2D, flags: readonly string[], drawnEvents: readonly string[]) {
     const inView = (point: Point) => point.x >= this.cameraPosition.x - 16 && point.x <= this.cameraPosition.x + camera.width + 16 && point.y >= this.cameraPosition.y - 16 && point.y <= this.cameraPosition.y + camera.height + 16;
     // Random encounters are invisible area triggers, as in Chapters 1 and 2.

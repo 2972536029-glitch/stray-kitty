@@ -35,6 +35,7 @@ import {chapterBackground, chapterBackgroundState, preloadChapterArtwork, retryC
 // Keep warehouse code in the entry bundle: an open tab must not request a
 // retired JavaScript chunk when story progression or QA first enters this map.
 import {WarehouseWalkMap, type WarehouseReviewOptions} from '../../modules/chapter5/WarehouseWalkMap';
+import type {GlassLabel} from '../../ui/GlassLabels';
 import prologueHomeArtwork from '../../ui/assets/opening/apartment-afternoon.png';
 
 // 原生 Canvas 参考场景；地图与塔防模块可分别替换此样例。
@@ -70,6 +71,18 @@ export class DemoScene {
     const top = bounds.top + (bounds.height - this.viewHeight * scale) / 2;
     return this.rainyAlley.explorationLabels(this.viewWidth, this.viewHeight, this.state.flags)
       .map(label => ({...label, x: left + label.x * scale, y: top + label.y * scale}));
+  }
+  chapterExplorationLabels(mapId: 'tunnel' | 'warehouse'): GlassLabel[] {
+    if (this.state?.phase !== 'explore' || this.state.mapId !== mapId || this.pausedByUser || this.backgroundBlocked()) return [];
+    const labels = mapId === 'tunnel'
+      ? this.tunnelMap.explorationLabels(this.viewWidth, this.viewHeight, this.state.flags, this.state.drawnEvents ?? [])
+      : this.warehousePreview?.explorationLabels(this.viewWidth, this.viewHeight) ?? [];
+    const bounds = this.canvas.getBoundingClientRect();
+    const fit = getComputedStyle(this.canvas).objectFit === 'cover' ? Math.max : Math.min;
+    const scale = fit(bounds.width / this.viewWidth, bounds.height / this.viewHeight);
+    const left = bounds.left + (bounds.width - this.viewWidth * scale) / 2;
+    const top = bounds.top + (bounds.height - this.viewHeight * scale) / 2;
+    return labels.map(label => ({...label, x: left + label.x * scale, y: top + label.y * scale}));
   }
   /** 玻璃胶囊标签的只读数据源：仅暴露表现层组装所需字段，不含任何新计算逻辑。 */
   marketLabelContext() {
@@ -481,7 +494,7 @@ export class DemoScene {
       this.canvas.dataset.playerX = point.x.toFixed(2); this.canvas.dataset.playerY = point.y.toFixed(2);
       this.canvas.dataset.floor=this.warehousePreview.layer;
       this.onWarehousePosition?.(this.warehousePreview.layer,point);
-      const target=this.warehousePreview.nearTarget;this.onNear(!!target,target?.id,target?.label);this.onInspectHint?.(this.warehousePreview.hint);
+      const target=this.warehousePreview.nearTarget;this.onNear(!!target,target?.id,target?.label);
       return;
     }
     if (!this.state) return;
@@ -568,7 +581,6 @@ export class DemoScene {
         this.nearbyInteractionId = id;
         this.onNear(!!target, id || undefined, target?.label);
       }
-      this.onInspectHint?.(this.tunnelMap.hint);
       this.onWorldPosition?.(this.tunnelMap.positionNow());
     } else if (mode === 'explore' && active) {
       let dx = Number(this.keys.has('arrowright') || this.keys.has('d') || this.held.has('right')) - Number(this.keys.has('arrowleft') || this.keys.has('a') || this.held.has('left'));

@@ -5,6 +5,9 @@ import geometry from '../../../level_design/chapter5/source/v07/warehouse_geomet
 import {WarehouseMarkerPreview,fixedPoints,names,optionalInvestigationHint,type Point,type Floor,type MarkerState} from './markers';
 import {cell,propKeys,warehousePropAtlas} from './propAtlas';
 import {baselineBlockers,replacementIds,type ReviewObstacle} from './obstacles';
+import {createElement} from 'react';
+import {createRoot} from 'react-dom/client';
+import GlassLabels from '../../../web/src/ui/GlassLabels';
 
 // Isolated adapter: only the preview's marker drawing and local state change.
 // Production geometry, render order, lighting, movement and target selection run unchanged.
@@ -13,6 +16,7 @@ const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const checked=(id:string)=>get<HTMLInputElement>(id).checked;
 const canvas=get<HTMLCanvasElement>('map'),ctx=canvas.getContext('2d')!,map=new WarehouseWalkMap(),view=map as unknown as ReviewRuntime;
 const baseline=drawBaselineMarkers.bind(view as unknown as ThisParameterType<typeof drawBaselineMarkers>),markers=new WarehouseMarkerPreview(),keys=new Set<string>();
+const opacity=new Map<string,number>();
 const lampIds=['entry_lamp','central_spotlight','secondary_lamp'];
 const flags=new Set<string>(),completed=new Set<string>();
 let originalObstacles:ReviewObstacle[]=[],candidateObstacles:ReviewObstacle[]=[];
@@ -25,7 +29,7 @@ function sync(){
   get('lights').textContent=lampIds.every(id=>flags.has(id))?'全部关灯':'全部开灯';
 }
 function markerState():MarkerState{return {floor:map.layer,position:map.positionNow(),flags,drawn:new Set([...completed,...(checked('optionalDone')?['node:warehouse_lookout','node:warehouse_light_crate']:[])]),near:map.nearTarget};}
-view.drawMarkers=c=>candidate&&!originalWhileHeld?markers.draw(c,markerState(),now,checked('names')):baseline(c);
+view.drawMarkers=c=>candidate&&!originalWhileHeld?markers.draw(c,markerState()):baseline(c);
 function notify(text:string){get('feedback').textContent=text;get('feedback').style.display='block';feedbackUntil=performance.now()+3200;}
 function focusPoint(floor:Floor,point:Point){
   if(!map.isReady)return;
@@ -53,6 +57,18 @@ function interact(){
     notify('已到达原隔间出口。此页不推进结局或写入存档。');
   }else{completed.add('node:'+target.id);sync();notify(`${names[target.id]} · 已模拟调查（仅预览，不结算事件卡或骰子）。`);}
 }
+const labelRoot=document.createElement('div');document.body.append(labelRoot);
+createRoot(labelRoot).render(createElement(GlassLabels,{
+  getLabels:()=>{
+    if(!initialized||!candidate||originalWhileHeld)return [];
+    const bounds=canvas.getBoundingClientRect(),base=Math.min(size.width/1066,size.height/640);
+    const left=bounds.left+(size.width-1066*base)/2+533*base*(1-zoom),top=bounds.top+(size.height-640*base)/2+320*base*(1-zoom);
+    const labels=map.explorationLabels(1066,640);
+    opacity.clear();for(const label of labels)opacity.set(label.id,label.alpha);
+    return labels.map(label=>({...label,x:left+label.x*base*zoom,y:top+label.y*base*zoom,alpha:checked('names')?1:label.alpha}));
+  },
+  onAction:key=>{if(key==='e')interact();else if(key==='c')map.climb();}
+}));
 function setMode(value:boolean){candidate=value;get('candidate').classList.toggle('selected',value);get('baseline').classList.toggle('selected',!value);get('badge').textContent=value?'新图标 · 浮动名称':'原有标记 · 对照';canvas.focus();}
 get('candidate').onclick=()=>setMode(true);get('baseline').onclick=()=>setMode(false);
 get('progress').onchange=()=>{sync();canvas.focus();};get('optionalDone').onchange=()=>{sync();canvas.focus();};
@@ -88,13 +104,13 @@ function frame(time:number){
   const d=devicePixelRatio||1,base=Math.min(size.width/1066,size.height/640),x=(size.width-1066*base)/2,y=(size.height-640*base)/2;
   ctx.setTransform(d,0,0,d,0,0);ctx.fillStyle='#09171e';ctx.fillRect(0,0,size.width,size.height);ctx.save();ctx.beginPath();ctx.rect(x,y,1066*base,640*base);ctx.clip();
   ctx.translate(x+533*base,y+320*base);ctx.scale(base*zoom,base*zoom);ctx.translate(-533,-320);map.draw(ctx,1066,640,dt);ctx.restore();
-  const near=map.nearTarget,p=map.positionNow();get('movementHint').textContent=near?.label??'';get('movementHint').hidden=!near;
-  const extra=candidate&&!originalWhileHeld?optionalInvestigationHint(markerState()):null;get('optionalHint').textContent=extra??'';get('optionalHint').hidden=!extra;
+  const near=map.nearTarget,p=map.positionNow();get('movementHint').textContent=near?.label??'';get('movementHint').hidden=candidate&&!originalWhileHeld||!near;
+  get('optionalHint').hidden=true;
   get('status').textContent=`${map.layer==='L1'?'L1 · 货架与栈道':'L0 · 仓库地面'}\n位置 (${Math.round(p.x)}, ${Math.round(p.y)})\n${near?'附近：'+near.label:'靠近物件后按 E；货架连接按 C'}\n灯光 ${lampIds.filter(id=>flags.has(id)).length} / 3 · ${flags.has('finale_boss_victory')?'战后出口已解锁':'仓库防线尚未完成'}`;
   if(feedbackUntil&&time>feedbackUntil){get('feedback').style.display='none';feedbackUntil=0;}
   canvas.dataset.ready=String(initialized&&map.isReady);requestAnimationFrame(frame);
 }
 await map.ready();candidateObstacles=view.records;originalObstacles=baselineBlockers(candidateObstacles);const params=new URLSearchParams(location.search);if(params.get('progress')==='victory')get<HTMLSelectElement>('progress').value='victory';if(params.get('lights')==='on')for(const id of lampIds)flags.add(id);
 sync();initialized=true;focus(params.get('focus')??'entry');
-Object.assign(window,{warehouseIconReview:{focus,focusPoint,setMode,getState:()=>({floor:map.layer,cat:map.positionNow(),near:map.nearTarget,climbing:!!view.climbing,flags:[...flags],drawn:[...completed],labelOpacity:Object.fromEntries(markers.opacity),optionalHint:optionalInvestigationHint(markerState()),candidate,ready:initialized&&map.isReady,atlasBytes:warehousePropAtlas().width*warehousePropAtlas().height*4,obstacles:candidateObstacles.filter(r=>replacementIds.includes(r.solidId)).map(r=>({id:r.solidId,collision:r.collisionRect,assets:r.components.map(c=>c.sourceSprite)})),randomEventsEnabled:false}),points:fixedPoints,climbs:geometry.climbs}});
+Object.assign(window,{warehouseIconReview:{focus,focusPoint,setMode,getState:()=>({floor:map.layer,cat:map.positionNow(),near:map.nearTarget,climbing:!!view.climbing,flags:[...flags],drawn:[...completed],labelOpacity:Object.fromEntries(opacity),optionalHint:optionalInvestigationHint(markerState()),candidate,ready:initialized&&map.isReady,atlasBytes:warehousePropAtlas().width*warehousePropAtlas().height*4,obstacles:candidateObstacles.filter(r=>replacementIds.includes(r.solidId)).map(r=>({id:r.solidId,collision:r.collisionRect,assets:r.components.map(c=>c.sourceSprite)})),randomEventsEnabled:false}),points:fixedPoints,climbs:geometry.climbs}});
 requestAnimationFrame(frame);

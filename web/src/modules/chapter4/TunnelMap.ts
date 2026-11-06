@@ -9,6 +9,8 @@ import l0MaskUrl from '../../../../level_design/chapter4/collision/chapter4_L0_w
 import lm1MaskUrl from '../../../../level_design/chapter4/collision/chapter4_Lminus1_walkable.png?url';
 import {TunnelWalkableMask} from './TunnelWalkableMask';
 import {tunnelConnections, tunnelEventCompleted, tunnelPortalDisplay} from './navigation';
+import {tunnelExplorationLabels} from './explorationLabels';
+import type {GlassLabel} from '../../ui/GlassLabels';
 import {raisedRidgeMask, raisedSurfacePolygons, tunnelClimbSurface, tunnelGroundMask, tunnelSurfaceConnections, tunnelSurfaces, type TunnelSurface} from './surfaces';
 
 type Layer = 'L0' | 'Lm1';
@@ -87,11 +89,23 @@ export class TunnelMap {
   get hint() {return this.movement ? null : this.nearby?.label ?? this.eventHint ?? this.traversalFeedback ?? this.traversalHint;}
   get nearTarget() {return this.nearby;}
   positionNow() {return {...this.position};}
+  explorationLabels(width: number, height: number, flags: readonly string[], drawnEvents: readonly string[]): GlassLabel[] {
+    if (!this.isReady || !this.labelsVisible || this.movement) return [];
+    const scale = Math.min(width / camera.width, height / camera.height);
+    const labels = tunnelExplorationLabels(this.markerState(flags, drawnEvents));
+    if (this.traversalFeedback && !this.nearby && !this.eventHint) labels.push({
+      id: 'traversal-feedback', text: this.traversalFeedback, x: this.position.x, y: this.position.y - 32, alpha: 1
+    });
+    return labels.map(label => ({...label,
+      x: (width - camera.width * scale) / 2 + (label.x - this.cameraPosition.x) * scale,
+      y: (height - camera.height * scale) / 2 + (label.y - this.cameraPosition.y) * scale
+    }));
+  }
   setCollisionVisible(value: boolean) {this.collisionVisible = value;}
   toggleLabels() {this.labelsVisible = !this.labelsVisible;}
   toggleCollision() {this.collisionVisible = !this.collisionVisible;}
   reset() {
-    this.eventMarkers.reset(); this.eventHint = null;
+    this.eventHint = null;
     this.traversalFeedback = null; this.traversalFeedbackMs = 0;
     if (this.masks) this.position = reachableSpawn(this.masks.L0, {x: 845, y: 135});
     this.floor = 'L0'; this.surface = 'ground'; this.movement = null; this.nearby = null; this.traversalHint = null; this.keys.clear(); this.zonesInside.clear(); this.updateCamera(0);
@@ -206,7 +220,6 @@ export class TunnelMap {
     }
     this.drawLighting(context);
     this.drawMarkers(context, flags, drawnEvents);
-    if (this.traversalFeedback && !this.movement && !this.nearby && !this.eventHint) this.drawLabel(context, this.traversalFeedback, this.position, true);
     this.drawCat(context);
     context.restore();
   }
@@ -223,20 +236,11 @@ export class TunnelMap {
     context.restore();
   }
   private drawMarkers(context: CanvasRenderingContext2D, flags: readonly string[], drawnEvents: readonly string[]) {
-    this.eventMarkers.draw(context,this.markerState(flags,drawnEvents),performance.now(),false,this.labelsVisible);
+    this.eventMarkers.draw(context,this.markerState(flags,drawnEvents));
+    if (!this.collisionVisible) return;
     context.save(); context.fillStyle = 'rgba(16,28,38,.9)'; context.fillRect(this.cameraPosition.x + 12, this.cameraPosition.y + 42, 154, 25);
     context.fillStyle = '#fff0c4'; context.font = '13px "Microsoft YaHei",system-ui,sans-serif'; context.textAlign = 'left'; context.textBaseline = 'middle';
     context.fillText(this.floor === 'L0' ? 'L0 · 主暗渠' : 'L−1 · 下层排水道', this.cameraPosition.x + 20, this.cameraPosition.y + 54.5); context.restore();
-  }
-  private drawLabel(context: CanvasRenderingContext2D, label: string, point: Point, movement: boolean) {
-    context.font = `${movement ? 12 : 13}px "Microsoft YaHei",system-ui,sans-serif`;
-    const width = context.measureText(label).width + 12, height = movement ? 20 : 21;
-    // Keep readable labels inside the camera, including events at the edge.
-    const x = Math.max(this.cameraPosition.x + 4, Math.min(point.x + 15, this.cameraPosition.x + camera.width - width - 4));
-    const y = Math.max(this.cameraPosition.y + 40, point.y - 23);
-    context.fillStyle = movement ? 'rgba(16,28,38,.92)' : 'rgba(16,28,38,.9)'; context.fillRect(x, y, width, height);
-    context.strokeStyle = '#f2e4c4'; context.lineWidth = 1; context.strokeRect(x + .5, y + .5, width - 1, height - 1);
-    context.fillStyle = '#fff0c4'; context.textAlign = 'left'; context.textBaseline = 'middle'; context.fillText(label, x + 6, y + height / 2);
   }
   private drawCat(context: CanvasRenderingContext2D) {
     context.save();

@@ -1,7 +1,6 @@
 import {useEffect, useRef, useState, type ReactNode} from 'react';
 import type {Catalog, EventResolution, GameCommand, GameState} from '../contracts';
 import {currentStory, objective} from '../core/story';
-import {warehouseOptionalInvestigationHint} from '../modules/chapter5/eventHints';
 import PixelCat from './PixelCat';
 import DialoguePanel from './DialoguePanel';
 import DiceEvent, {Dice} from './DiceEvent';
@@ -36,8 +35,10 @@ interface Props {
   onCommand: (command: GameCommand) => void; onInteract: (interactionId?: string) => void;
   onPause: () => void; onMap: () => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onSettings: () => void; onDecorate: () => void; onTitle: () => void; children: ReactNode;
 }
-export default function GameScreen({onHomeAdvisor: _onHomeAdvisor,homeAdvisorDisabled: _homeAdvisorDisabled,onHomeTutorialChange,homeEditing,onHomeManual,state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint, journalOpen, onJournal, qaOpen, onQA, onCommand, onInteract, onPause, onMap, onShop, onParcels, onRecharge, onSettings, onDecorate, onTitle, children}: Props) {
+export default function GameScreen({onHomeAdvisor: _onHomeAdvisor,homeAdvisorDisabled: _homeAdvisorDisabled,onHomeTutorialChange,homeEditing,onHomeManual,state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint: suppliedInspectHint, journalOpen, onJournal, qaOpen, onQA, onCommand, onInteract, onPause, onMap, onShop, onParcels, onRecharge, onSettings, onDecorate, onTitle, children}: Props) {
   const touchDevice = useTouchDevice();
+  const glassLabels = ['alley', 'market', 'tunnel', 'warehouse'].includes(state.mapId);
+  const inspectHint = state.phase === 'explore' && glassLabels && state.mapId !== 'alley' ? null : suppliedInspectHint;
   // 首次进入守护准备时的教学高亮；完成后记在本地，不再打扰。
   const [battleTutorialDone, setBattleTutorialDone] = useState(() => {try {return localStorage.getItem('stray-kitty.tutorial.battle') === 'done';} catch {return true;}});
   const [homeTutorialDone, setHomeTutorialDone] = useState(() => {try {return localStorage.getItem('stray-kitty.tutorial.home') === 'done';} catch {return true;}});
@@ -89,16 +90,16 @@ export default function GameScreen({onHomeAdvisor: _onHomeAdvisor,homeAdvisorDis
     return () => window.clearTimeout(timer);
   }, [state.phase, state.mapId]);
   const interactionTarget = state.phase === 'explore' && near && nearTarget && !ceremony && !showExploreResult ? nearTarget : null;
-  const warehouseOptionalHint=warehouseOptionalInvestigationHint(state,near&&nearTarget?nearTarget.id:undefined);
   const homeButtonVisible = state.phase === 'explore' && state.flags.includes('lost_poster_found') && state.flags.includes('alley_rescued') && state.mapId !== 'market';
   const hintHidden = state.phase === 'explore' && introHintDone && !inspectHint && !homeButtonVisible;
   // 沉浸化：底部提示只保留真正有用的引导（战斗说明/章节目标/操作教学），删除“每次相遇，都可能成为回家路上的一点光。”常驻兜底。
   const footerGuideText = finaleBattle && state.phase === 'battle' ? '躲开预告的横扫与坠击，选择护卫与首领的攻击顺序。十波清完、两精英与九格首领全部击败后获胜；援军固定支援，主力仍需你的指挥。' : tunnelBattle && state.phase === 'battle' ? '保护 C2 的喵喵；断灯时可用墨墨夜视恢复视野并为全队加盾。守完八波并击败首领；打开地图、商店或返回标题会暂停战斗。' : greenhouseBattle && state.phase === 'battle' ? '沿花房的不规则通路布阵，守住 B1；守完八波并击败四格首领。打开地图、商店或返回标题会暂停战斗。' : marketBattle && state.phase === 'battle' ? '点选伙伴查看与释放技能；守完八波并击败集市首领。打开地图、商店或返回标题会暂停战斗。' : chapterBattle && state.phase === 'battle' ? '点场上的猫查看和释放技能，守住 A4 与右侧两处巷口；守完八波并击败首领。打开地图、商店或返回标题会暂停战斗。' : (explorationFooterText(state.phase, state.mapId, catalog.tutorials.find(t => t.phase === state.phase)?.text, objective(state)) ?? '');
   // 没有任何要展示的内容时整条 world-footer 不再渲染（连同 DOM 一起消失，不留空壳长条）。
-  const footerVisible = (!!inspectHint && state.phase === 'explore') || !!footerGuideText || homeButtonVisible;
+  const capsuleOnlyHints = state.phase === 'explore' && ['market', 'tunnel', 'warehouse'].includes(state.mapId);
+  const footerVisible = (!capsuleOnlyHints && ((!!inspectHint && state.phase === 'explore') || !!footerGuideText)) || homeButtonVisible;
   // 教学期（进场 3 秒）结束后，探索阶段不再回落到“方向键 / WASD”类兜底教学文案：
   // 否则离开交互物时 <p key> 变化重挂、把兜底字重新点亮 6 秒，看起来像提示“变成”了移动教学（所有地图一致修掉）。
-  const footerTextVisible = (!!inspectHint && state.phase === 'explore') || (!!footerGuideText && (state.phase !== 'explore' || !introHintDone));
+  const footerTextVisible = !capsuleOnlyHints && ((!!inspectHint && state.phase === 'explore') || (!!footerGuideText && (state.phase !== 'explore' || !introHintDone)));
   const displayedGuide = touchDevice && state.phase === 'explore' ? '左手拖动摇杆移动 · 右手点击互动，攀爬或穿过障碍' : footerGuideText;
   const displayedInspectHint = touchDevice ? inspectHint?.replace(/C\s*·\s*/g, '点击「攀爬」· ').replace(/Q\s*·\s*/g, '点击「钻缝」· ').replace('松开移动键，再轻按 Q', '松开摇杆，再点「钻缝」').replace(/按\s*E/g, '点击「互动」') : inspectHint;
   // Count the wallet entry only when the current layout actually displays it.
@@ -142,8 +143,8 @@ export default function GameScreen({onHomeAdvisor: _onHomeAdvisor,homeAdvisorDis
           {state.phase === 'settlement' && !standaloneBattle && state.activeBattle?.stageId !== 'l00_tutorial' && <section className="event-card rescue-card"><span className="eyebrow">{state.lastResult.outcome === 'won' ? 'A SAFE WAY HOME' : 'TRY A LITTLE DIFFERENTLY'}</span><div className="rescue-cats"><PixelCat size={90} mood="brave"/>{state.cats.includes('diandian') && <PixelCat breed="diandian" size={80}/>}<PixelCat breed="tuanzi" size={86}/></div><h2>{state.lastResult.outcome === 'won' ? activeStage === 'alley_boss' ? '深巷里的黑影散去了' : '回家的路，也是救援的开始。' : '再一起想想办法。'}</h2><p>{state.lastResult.message}</p>{state.lastResult.firstClear && state.lastResult.stageId === 'alley_rescue' && <p className="reward-note">点点加入 · 纸箱猫窝<br/>✦ 猫爪邮票 ×2 · ◆ 材料 ×3</p>}<button disabled={disabled} onClick={() => onCommand({type: 'CONTINUE'})}>{state.lastResult.outcome === 'won' ? '带伙伴回家 →' : '调整防线，再试一次'}</button></section>}
           {state.phase === 'settlement' && standaloneBattle && <section className="event-card rescue-card"><span className="eyebrow">{finaleBattle ? 'L05 · LIGHT THE WAY HOME' : tunnelBattle ? 'L04 · UNDERGROUND TUNNEL' : greenhouseBattle ? 'L03 · ABANDONED GREENHOUSE' : 'L02 · MIDNIGHT MARKET'}</span><h2>{state.lastResult.outcome === 'won' ? finaleBattle ? '所有的光，终于照亮归途' : tunnelBattle ? '暗道的归路守住了' : greenhouseBattle ? '花房的归路守住了' : '集市的灯火守住了' : finaleBattle ? '伙伴们还在，重新安排终局防线' : tunnelBattle ? '再调整一次暗道防线' : greenhouseBattle ? '再调整一次花房防线' : '再调整一次集市防线'}</h2><p>{state.lastResult.message}</p><button data-testid={finaleBattle ? 'finale-continue' : tunnelBattle ? 'tunnel-continue' : greenhouseBattle ? 'greenhouse-continue' : 'market-continue'} disabled={disabled} onClick={() => onCommand({type: 'CONTINUE'})}>{state.lastResult.outcome === 'won' ? state.mapId==='warehouse'?'返回仓库 →':'返回家园 →' : '调整防线，再试一次'}</button></section>}
           {showExploreResult && resolution && <section className="event-card encounter-sheet encounter-portrait encounter-result explore-result-card"><header className="encounter-heading"><span>相遇之后</span><h2>{catalog.events.find(e => e.id === resolution.eventId)?.title}</h2></header><EventResult resolution={resolution}/><button disabled={disabled} onClick={() => {setDismissedResult(resolutionKey);arrivedFromEvent.current = false;}}>继续赶路 →</button></section>}
-          {/* 小巷与集市的 E 提示统一由玻璃胶囊标签渲染，不再叠放居中交互坞。 */}
-          {!['alley', 'market'].includes(state.mapId) && interactionTarget && <InteractionDock target={interactionTarget} touch={touchDevice} disabled={disabled} hint={warehouseOptionalHint ?? (interactionTarget.id==='alley_dog_friend_point'?'它抬眼看了看你，尾巴轻轻拍着石板。':undefined)} onInteract={onInteract}/>}
+          {/* 四张探索地图共用玻璃胶囊，移除重复交互坞与额外按键提示。 */}
+          {!glassLabels && interactionTarget && <InteractionDock target={interactionTarget} touch={touchDevice} disabled={disabled} onInteract={onInteract}/>}
           {paused && <div className="pause-label"><span>旅程已暂停</span><button onClick={onPause}>继续旅程</button></div>}
         </div>
         {footerVisible && <div className={`world-footer${hintHidden ? ' hint-idle' : ''}`}>

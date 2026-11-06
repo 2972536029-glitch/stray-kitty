@@ -1,7 +1,8 @@
 import {useEffect, useRef, useState} from 'react';
 import './glass-labels.css';
 
-export type GlassLabelKey = 'e' | 'c' | 'f' | 'q';
+export type GlassLabelKey = 'e' | 'c' | 'f' | 'q' | ' ';
+const keyName = (key?: GlassLabelKey) => key === ' ' ? 'Space' : key?.toUpperCase() ?? '';
 
 export interface GlassLabel {
   id: string;
@@ -22,7 +23,7 @@ type RenderedLabel = GlassLabel & {guardedKey?: GlassLabelKey};
 const KEY_GUARD_MS = 500;
 
 /**
- * 玻璃胶囊交互标签（陌生小巷 / 午夜集市共用）。
+ * 四张探索地图共用的玻璃胶囊交互标签。
  * 负责 rAF 跟随、视口钳制与按键锁存；数据组装由调用方通过 getLabels 注入。
  */
 export default function GlassLabels({getLabels, onAction}: {getLabels: () => GlassLabel[]; onAction: (key: GlassLabelKey) => void}) {
@@ -84,7 +85,7 @@ export default function GlassLabels({getLabels, onAction}: {getLabels: () => Gla
     <div className="alley-label-anchor" key={label.id} data-label={label.id} data-visible="false">
       <button className="alley-glass-label" type="button" data-objective={label.objective || undefined}
         disabled={!label.key} tabIndex={label.key ? 0 : -1}
-        aria-label={label.key ? `${label.text}（${label.key.toUpperCase()}）` : label.text}
+        aria-label={label.key ? `${label.text}（${keyName(label.key)}）` : label.text}
         onPointerMove={event => {
           const bounds = event.currentTarget.getBoundingClientRect();
           event.currentTarget.style.setProperty('--glass-light-x', `${(event.clientX - bounds.left) / bounds.width * 100}%`);
@@ -95,7 +96,7 @@ export default function GlassLabels({getLabels, onAction}: {getLabels: () => Gla
         <span className="alley-label-text">{label.text}</span>
         <span className="alley-shortcut" data-active={!!label.key} aria-hidden={!label.key}>
           {/* 锁存期内显示旧按键随胶囊一起收起；无按键时留空，绝不回退成「E」。 */}
-          <span><kbd>{(label.key ?? label.guardedKey)?.toUpperCase() ?? ''}</kbd></span>
+          <span><kbd>{keyName(label.key ?? label.guardedKey)}</kbd></span>
         </span>
       </button>
     </div>
