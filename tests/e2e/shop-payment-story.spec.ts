@@ -162,10 +162,10 @@ for(const viewport of [{width:1600,height:900},{width:1366,height:768},{width:25
   await prepare(page,request);await toolbar(page);await page.getByRole('button',{name:'猫咪补给站',exact:true}).click();await page.getByRole('button',{name:/罐头.*前往补给小站/}).click();
   const dialog=recharge(page);await expect(dialog.locator('.pack-card')).toHaveCount(3);
   expect(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
-  expect(await dialog.locator('.pack-card strong').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(22);
-  expect(await dialog.locator('.pack-quantity').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(28);
+  expect(await dialog.locator('.pack-card strong').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(20);
+  expect(await dialog.locator('.pack-quantity').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(26);
   await dialog.getByRole('button',{name:'前往支付 ¥6.00',exact:true}).scrollIntoViewIfNeeded();await expect(dialog.getByRole('button',{name:'前往支付 ¥6.00',exact:true})).toBeInViewport();
-  const footer=(await dialog.locator('.recharge-dialog>footer').boundingBox())!,frame=(await dialog.boundingBox())!;
+  const footer=(await dialog.locator('.recharge-content>footer').boundingBox())!,frame=(await dialog.boundingBox())!;
   expect(frame.y+frame.height-footer.y-footer.height).toBeLessThan(40);
   await page.screenshot({path:info.outputPath('recharge-layout.png')});
 });

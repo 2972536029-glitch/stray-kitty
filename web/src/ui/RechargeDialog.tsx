@@ -2,6 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import type {ChargeResponse, PaymentConfig, PaymentTxn, RechargePack} from '../contracts';
 import type {GameApiPort} from '../core/ports';
 import Modal from './Modal';
+import WindowHeading from './WindowHeading';
 import RewardNotice from './RewardNotice';
 import './recharge.css';
 
@@ -72,8 +73,10 @@ export default function RechargeDialog({playerId, packs, tuna, api, onCharged, o
       setBusy(false);
     }
   };
-  return <Modal title="金枪鱼补给小站" onClose={onClose} className="recharge-dialog">
-    <header className="recharge-summary"><div><h2>金枪鱼补给小站</h2><p>为花房添置心仪的家具</p></div><div className="recharge-balance"><span>我的罐头</span><b>🥫 {tuna}</b></div></header>
+  return <Modal variant="paper" title="金枪鱼补给小站" onClose={onClose} className="recharge-dialog">
+    <WindowHeading title="金枪鱼补给小站" icon="supply"/>
+    <div className="window-content recharge-content">
+    <div className="recharge-summary"><p>为花房添置心仪的家具</p><div className="recharge-balance" aria-label={`罐头余额 ${tuna}`}><b>🥫 {tuna}</b></div></div>
     <div className="recharge-grid">{packs.map(p => <button type="button" key={p.id} className={`pack-card ${p.id === selected ? 'selected' : ''}`} aria-pressed={p.id === selected} disabled={busy} onClick={() => {setSelected(p.id);setResult(null);setError('');}}>
       <span className="pack-icon" aria-hidden="true">{p.id === 'pack_small' ? '🥫' : p.id === 'pack_medium' ? '🧺' : '📦'}</span>
       <strong>{p.name}</strong>
@@ -107,5 +110,6 @@ export default function RechargeDialog({playerId, packs, tuna, api, onCharged, o
           </li>)}</ul>}
     </details>
     <footer>{xsolla?'沙盒支付':'演示支付'} · 不产生真实扣款</footer>
+    </div>
   </Modal>;
 }

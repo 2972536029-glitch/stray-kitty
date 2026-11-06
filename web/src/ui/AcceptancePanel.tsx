@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
 import type {Catalog, GameCommand, GameState, QATools} from '../contracts';
 import {QA_CHAPTERS, QA_PHASE_LABELS, qaCurrentActions} from '../modules/qa/flow';
 import Modal from './Modal';
+import WindowHeading from './WindowHeading';
 import {HomeBattleTrials} from './HomePanel';
 import './acceptance.css';
 
@@ -33,8 +34,9 @@ export default function AcceptancePanel({state, catalog, busy, pending, error, l
   const locked = busy || pending;
   const activeStage = catalog.stages.find(stage => stage.id === state.activeBattle?.stageId)?.name;
   const currentEvent = catalog.events.find(item => item.id === state.pendingEventId)?.title;
-  return <Modal title="流程验收" onClose={onClose} className="acceptance-panel">
-    <header><span className="eyebrow">PLAY THROUGH THE JOURNEY</span><h2>按旅程验收</h2><p>先选章节，再选要检查的节点。进入节点会准备对应测试进度，可随时返回验收前的进度。</p></header>
+  return <Modal variant="paper" title="流程验收" onClose={onClose} className="acceptance-panel">
+    <WindowHeading title="流程验收" icon="acceptance" description="选择章节和节点进行检查，可随时返回验收前的进度。"/>
+    <div className="window-content qa-content">
     <section className="qa-current" aria-label="当前游戏进度">
       <div><span className="eyebrow">{state.qaCheckpointId ? '验收进度' : '当前进度'}</span><h3>{current?.label} · {current?.title}</h3><p>{QA_PHASE_LABELS[state.phase]}{activeStage ? ` · ${activeStage}` : currentEvent ? ` · ${currentEvent}` : ''}</p></div>
       <button className="secondary" onClick={onClose}>回到场景继续验收</button>
@@ -52,5 +54,6 @@ export default function AcceptancePanel({state, catalog, busy, pending, error, l
     </section>
     {state.phase==='home' && tools?.enabled && <HomeBattleTrials state={state} disabled={locked} onCommand={c=>void onCommand(c)}/>}
     <details className="qa-diagnostics"><summary>查看状态详情</summary><dl><dt>阶段 / 地图</dt><dd>{state.phase} / {state.mapId}</dd><dt>剧情节点</dt><dd>{state.storyNodeId || '无'}</dd><dt>验收节点</dt><dd>{state.qaCheckpointId || '未进入验收进度'}</dd><dt>存档版本</dt><dd>{state.revision}</dd></dl><p>{state.lastResult.message}</p></details>
+    </div>
   </Modal>;
 }

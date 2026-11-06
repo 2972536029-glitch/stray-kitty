@@ -11,8 +11,9 @@ export function useDesktopUiScale() {
       root.dataset.desktopUi='true';
       root.style.setProperty('--desktop-ui-scale',String(scale));
       root.style.setProperty('--desktop-panel-scale',String(Math.max(.75,scale)));
+      root.style.setProperty('--desktop-window-scale',String(Math.max(8/9,scale)));
     };
     update();window.addEventListener('resize',update);desktop.addEventListener('change',update);
-    return()=>{window.removeEventListener('resize',update);desktop.removeEventListener('change',update);delete root.dataset.desktopUi;root.style.removeProperty('--desktop-ui-scale');root.style.removeProperty('--desktop-panel-scale');};
+    return()=>{window.removeEventListener('resize',update);desktop.removeEventListener('change',update);delete root.dataset.desktopUi;root.style.removeProperty('--desktop-ui-scale');root.style.removeProperty('--desktop-panel-scale');root.style.removeProperty('--desktop-window-scale');};
   },[]);
 }

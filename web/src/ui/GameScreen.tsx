@@ -3,6 +3,7 @@ import type {Catalog, EventResolution, GameCommand, GameState} from '../contract
 import {currentStory, objective} from '../core/story';
 import PixelCat from './PixelCat';
 import GameIcon from './GameIcon';
+import WindowHeading from './WindowHeading';
 import DialoguePanel from './DialoguePanel';
 import DiceEvent, {Dice} from './DiceEvent';
 import DiceRollOverlay from './DiceRollOverlay';
@@ -155,7 +156,7 @@ export default function GameScreen({onSkipDialogue,onHomeAdvisor: _onHomeAdvisor
         </div>}
       </section></div>
     </main>
-    {journalOpen && <Modal title="旅程记录" onClose={onJournal} className="journey-modal"><header><span className="eyebrow">OUR LITTLE JOURNEY</span><h2>旅程记录</h2></header><JourneyRecord state={state} busy={busy} pending={pending}/></Modal>}
+    {journalOpen && <Modal variant="paper" title="旅程记录" onClose={onJournal} className="journey-modal"><WindowHeading title="旅程记录" icon="journal"/><div className="window-content"><JourneyRecord state={state} busy={busy} pending={pending}/></div></Modal>}
     {ceremony && <DiceRollOverlay title={ceremony.title} resolution={ceremonyResolution} startedAt={ceremony.startedAt} onClose={() => setCeremony(null)}/>}
   </div>;
 }

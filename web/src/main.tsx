@@ -9,6 +9,7 @@ import './ui/mobile-landscape.css';
 import './ui/opening-scenes.css';
 import './ui/game-menu.css';
 import './ui/desktop-scale.css';
+import './ui/window-system.css';
 import {initRUM} from './observability/rum';
 void initRUM();
 const WarehouseWalkPreview = import.meta.env.DEV ? lazy(() => import('./modules/chapter5/WarehouseWalkPreview')) : null;
