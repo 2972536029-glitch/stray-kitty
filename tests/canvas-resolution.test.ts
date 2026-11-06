@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {alignToDevicePixel, canvasResolution} from '../web/src/adapters/canvas/resolution';
+import {alignToDevicePixel, canvasResolution, coveredImageOrigin} from '../web/src/adapters/canvas/resolution';
 
 test('native cover rendering supplies physical display pixels without changing the logical aspect', () => {
   assert.deepEqual(canvasResolution(800, 480, 1600, 900, 1, 'cover', true), {width: 1600, height: 960});
@@ -27,5 +27,19 @@ test('pixel alignment moves only the drawing origin by at most half a physical p
     const aligned = alignToDevicePixel(offset, density);
     assert.ok(Math.abs(aligned * density - Math.round(aligned * density)) < 1e-9);
     assert.ok(Math.abs(aligned - offset) <= .5 / density + 1e-9);
+  }
+});
+
+test('artwork bounds hide blank margins at every edge, zoom and display density', () => {
+  for (const density of [1, 1.25, 2]) for (const zoom of [.8, 1, 1.75]) {
+    const scale = Math.min(800 / (530 * 1.425 / zoom), 480 / (325 * 1.345 / zoom));
+    for (const [image, viewport] of [[1672 * scale, 800], [941 * scale, 480]]) {
+      for (const offset of [150.25, 0, -256.347, viewport - image - 200]) {
+        const aligned = coveredImageOrigin(offset, image, viewport, density);
+        assert.ok(aligned <= 0, 'no blank margin at the leading edge');
+        assert.ok(aligned + image >= viewport, 'no blank margin at the trailing edge');
+        assert.ok(Math.abs(aligned * density - Math.round(aligned * density)) < 1e-9);
+      }
+    }
   }
 });

@@ -25,14 +25,15 @@ for (const dpr of [1, 2]) test.describe('Chapter 1 display density ' + dpr, () =
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.addInitScript(() => {
-      const samples: {a: number; d: number; e: number; f: number}[] = [];
+      const samples: {a: number; d: number; e: number; f: number; right: number; bottom: number}[] = [];
       Object.assign(window, {alleyRenderSamples: samples});
       const original = CanvasRenderingContext2D.prototype.drawImage;
       CanvasRenderingContext2D.prototype.drawImage = function(...args: Parameters<typeof original>) {
         const source = args[0];
         // The full map, excluding the squeeze passage's cropped facade textures.
         if (args.length === 5 && source instanceof HTMLImageElement && source.src.includes('rainy-alley-background-clean') && this.canvas.closest('.game-viewport')) {
-          const {a, d, e, f} = this.getTransform();samples.push({a, d, e, f});
+          const {a, d, e, f} = this.getTransform();
+          samples.push({a, d, e, f, right: e + a * Number(args[3]), bottom: f + d * Number(args[4])});
           if (samples.length > 120) samples.shift();
         }
         return original.apply(this, args);
@@ -43,6 +44,31 @@ for (const dpr of [1, 2]) test.describe('Chapter 1 display density ' + dpr, () =
     await expect(canvas).toHaveAttribute('height', String(960 * dpr));
     await expect(canvas).toHaveAttribute('data-logical-width', '800');
     await expect(canvas).toHaveAttribute('data-logical-height', '480');
+    const expectCovered = async () => {
+      const expectedScale = Math.min(800 / (530 * 1.425), 480 / (325 * 1.345)) * Number(await canvas.getAttribute('width')) / 800;
+      await expect.poll(() => page.evaluate(() => (window as unknown as {alleyRenderSamples: {a: number}[]}).alleyRenderSamples.at(-1)?.a ?? 0)).toBeCloseTo(expectedScale, 4);
+      const painted = await page.evaluate(() => (window as unknown as {alleyRenderSamples: {e: number; f: number; right: number; bottom: number}[]}).alleyRenderSamples.at(-1));
+      expect(painted).toBeDefined();
+      expect(painted!.e).toBeLessThanOrEqual(.001);
+      expect(painted!.f).toBeLessThanOrEqual(.001);
+      expect(painted!.right).toBeGreaterThanOrEqual(Number(await canvas.getAttribute('width')) - .001);
+      expect(painted!.bottom).toBeGreaterThanOrEqual(Number(await canvas.getAttribute('height')) - .001);
+    };
+    // Spawn sits against the world edge where registration previously left a blank strip.
+    await expectCovered();
+    const beforeClickY = Number(await canvas.getAttribute('data-player-y'));
+    const clickTarget = await canvas.evaluate(c => {
+      const canvas = c as HTMLCanvasElement, bounds = canvas.getBoundingClientRect();
+      const fit = getComputedStyle(canvas).objectFit === 'cover' ? Math.max : Math.min;
+      const scale = fit(bounds.width / canvas.width, bounds.height / canvas.height);
+      const drawn = (window as unknown as {alleyRenderSamples: {a: number; d: number; e: number; f: number}[]}).alleyRenderSamples.at(-1)!;
+      return {
+        x: bounds.left + (bounds.width - canvas.width * scale) / 2 + (drawn.e + drawn.a * (-51 + Number(canvas.dataset.playerX) * 1.425)) * scale,
+        y: bounds.top + (bounds.height - canvas.height * scale) / 2 + (drawn.f + drawn.d * (-83 + (Number(canvas.dataset.playerY) - 12) * 1.345)) * scale,
+      };
+    });
+    await page.mouse.click(clickTarget.x, clickTarget.y);
+    await expect.poll(async () => Number(await canvas.getAttribute('data-player-y'))).toBeLessThan(beforeClickY - 6);
     // Walk out of the entrance's collision corner before testing camera motion.
     const element = await canvas.elementHandle();
     await canvas.focus();await page.keyboard.down('ArrowUp');
@@ -71,6 +97,7 @@ for (const dpr of [1, 2]) test.describe('Chapter 1 display density ' + dpr, () =
     await expect(canvas).toHaveAttribute('height', String(801 * dpr));
     expect([await canvas.getAttribute('data-player-x'), await canvas.getAttribute('data-player-y')]).toEqual(position);
     await expect(page.locator('.alley-label-layer')).toHaveCount(1);
+    await expectCovered();
     expect(errors).toEqual([]);
   });
 });
