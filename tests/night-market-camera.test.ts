@@ -1,9 +1,27 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {cameraFrameFor, displayedCanvasRect, FollowCamera, type CameraRect} from '../web/src/adapters/canvas/camera';
+import {cameraFrameFor, displayedCanvasRect, FollowCamera, pixelAlignedCameraPosition, type CameraRect} from '../web/src/adapters/canvas/camera';
 
 const viewport:CameraRect={x:0,y:0,width:800,height:480};
 const safe:CameraRect={x:32,y:96,width:736,height:300};
+
+test('presentation camera stays on physical pixels and covers cropped viewport edges', () => {
+  const frame = cameraFrameFor({x:13.37,y:15.2,width:780,height:450},safe);
+  for (const dpr of [1,1.25,2]) for (const point of [{x:0,y:0},{x:321.123,y:122.543},{x:1672,y:941}]) {
+    const original = {...point}, scale = frame.scale;
+    const draw = pixelAlignedCameraPosition(point,frame,1672,941,{x:2*dpr,y:2*dpr});
+    const x = frame.viewport.x - draw.x * scale, y = frame.viewport.y - draw.y * scale;
+    assert.ok(Math.abs(x*2*dpr-Math.round(x*2*dpr))<1e-9);
+    assert.ok(Math.abs(y*2*dpr-Math.round(y*2*dpr))<1e-9);
+    assert.ok(x<=frame.viewport.x&&y<=frame.viewport.y);
+    assert.ok(x+1672*scale>=frame.viewport.x+frame.viewport.width);
+    assert.ok(y+941*scale>=frame.viewport.y+frame.viewport.height);
+    assert.deepEqual(point,original);assert.equal(frame.scale,scale);
+    const camera=Object.assign(new FollowCamera(),draw), marker={x:700,y:500};
+    const restored=camera.screenToWorld(camera.worldToScreen(marker,frame),frame);
+    assert.ok(Math.abs(restored.x-marker.x)<1e-9&&Math.abs(restored.y-marker.y)<1e-9);
+  }
+});
 
 test('follow camera eases toward the cat and places it in the safe gameplay area',()=>{
   const frame=cameraFrameFor(viewport,safe),camera=new FollowCamera();

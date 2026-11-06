@@ -1,3 +1,5 @@
+import {coveredImageOrigin} from './resolution';
+
 export interface CameraRect {x:number;y:number;width:number;height:number}
 export interface CameraPoint {x:number;y:number}
 export interface CameraFrame {
@@ -28,6 +30,14 @@ export function displayedCanvasRect(boxWidth:number,boxHeight:number,logicalWidt
 export function cameraFrameFor(viewport:CameraRect,safe:CameraRect,targetWorldArea=900*520,worldWidth=1672,worldHeight=941):CameraFrame {
   const scale=Math.max(Math.sqrt(viewport.width*viewport.height/targetWorldArea),viewport.width/worldWidth,viewport.height/worldHeight);
   return {viewport,safe,scale,worldViewWidth:viewport.width/scale,worldViewHeight:viewport.height/scale};
+}
+
+/** Presentation only: keep simulation smoothing, camera scale and projection intact. */
+export function pixelAlignedCameraPosition(position: CameraPoint, frame: CameraFrame, worldWidth: number, worldHeight: number, density: CameraPoint): CameraPoint {
+  const {viewport, scale} = frame;
+  const x = coveredImageOrigin(viewport.x - position.x * scale, worldWidth * scale, viewport.width, density.x, viewport.x);
+  const y = coveredImageOrigin(viewport.y - position.y * scale, worldHeight * scale, viewport.height, density.y, viewport.y);
+  return {x: (viewport.x - x) / scale, y: (viewport.y - y) / scale};
 }
 
 export class FollowCamera {

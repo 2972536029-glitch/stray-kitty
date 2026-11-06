@@ -38,7 +38,7 @@ export function Viewport(props: Props) {
   useEffect(() => {
     if (scene.current) {scene.current.state = props.state;scene.current.pausedByUser = props.paused;scene.current.storyScene = props.storyNode?.scene;scene.current.storyNode = props.storyNode;scene.current.randomEligible = props.randomEligible ?? true;}
   }, [props.state, props.paused, props.storyNode, props.randomEligible]);
-  return <><CanvasViewport nativeResolution={props.state.chapterId === 'alley' && props.state.mapId === 'alley'} label={props.state.phase === 'battle' ? '三路守护战场：点击格子布置光源' : props.state.phase === 'home' ? '花房家园俯视场景，拖动查看，点击小猫或家具互动' : props.state.phase === 'dialogue' ? '剧情场景，小猫跟随当前故事行动' : '猫咪俯视探索场景，使用方向键或 WASD 移动'} createRuntime={canvas => {
+  return <><CanvasViewport nativeResolution={(props.state.chapterId === 'alley' && props.state.mapId === 'alley') || props.state.mapId === 'market' || props.state.mapId === 'tunnel'} label={props.state.phase === 'battle' ? '三路守护战场：点击格子布置光源' : props.state.phase === 'home' ? '花房家园俯视场景，拖动查看，点击小猫或家具互动' : props.state.phase === 'dialogue' ? '剧情场景，小猫跟随当前故事行动' : '猫咪俯视探索场景，使用方向键或 WASD 移动'} createRuntime={canvas => {
     const runtime = new DemoScene(
       canvas,
       (near, id, label) => latest.current.onNear(near, id, label),

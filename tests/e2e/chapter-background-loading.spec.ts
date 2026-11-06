@@ -113,7 +113,8 @@ for (const [checkpoint, scene, artwork, source, floorCount] of chapters) {
     await expect(canvas).toHaveAttribute('data-painted-background', /\.webp$/);
     if (scene === 'home') await expect(canvas).toHaveAttribute('data-home-artwork', 'ready');
     if (checkpoint === 'alley.explore') await expect(canvas).toHaveAttribute('data-alley-artwork', 'enhanced');
-    expect(requests.filter(url => !url.includes('/assets/home/')).length).toBe(floorCount + (checkpoint === 'alley.explore' ? 1 : 0));
+    else if (scene !== 'home') await expect(canvas).toHaveAttribute('data-map-artwork', 'enhanced');
+    expect(requests.filter(url => !url.includes('/assets/home/')).length).toBe(floorCount + (scene !== 'home' ? 1 : 0));
 
     const delivered = requests.find(url => url.includes(artwork))!;
     expect(statSync('web/src/modules/map/assets/' + artwork + '.lossless.webp').size).toBeLessThan(statSync(source).size);

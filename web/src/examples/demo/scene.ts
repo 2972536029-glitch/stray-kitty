@@ -9,7 +9,8 @@ import {drawPixelCat,type CatBreed} from '../../adapters/canvas/pixelCat';
 import {DemoBattle} from './battle';
 import type {Direction} from '../../adapters/platform/input';
 import {CanvasPainter} from '../../adapters/canvas/painter';
-import {FollowCamera, type CameraFrame} from '../../adapters/canvas/camera';
+import {FollowCamera, pixelAlignedCameraPosition, type CameraFrame} from '../../adapters/canvas/camera';
+import {chapterDisplayArtwork} from '../../modules/map/enhanced-artwork';
 import {IntegratedRainyAlley} from '../../modules/rainyAlley/IntegratedRainyAlley';
 import {TunnelMap} from '../../modules/chapter4/TunnelMap';
 import {marketEntry, marketItems, marketPortals, marketRoadSigns, marketEAction, marketInteractionTarget, marketPortalDisplay, marketTransitionAt, marketNearestBoundary, marketExitAt, MARKET_EXIT_TRIGGER, nightMarketSpatial, sweepMarketMove, type MarketFloor} from '../../modules/nightMarket/map';
@@ -89,7 +90,7 @@ export class DemoScene {
     return {
       floor: this.marketFloor,
       player: {x: this.x, y: this.y},
-      camera: this.marketCamera,
+      camera: this.marketDrawingCamera(),
       frame: this.marketCameraFrame(),
       flags: this.state?.flags ?? [],
       drawnEvents: this.state?.drawnEvents ?? [],
@@ -105,6 +106,7 @@ export class DemoScene {
   private marketFloor: MarketFloor = 'L0';
   private readonly marketMarkers=new MarketEventMarkers();
   private marketCamera = new FollowCamera();
+  private marketRenderCamera = new FollowCamera();
   private marketTransition = new MarketTransitionController();
   private marketTransitionHeight = 0;
   private marketFrame: CameraFrame | null = null;
@@ -1067,11 +1069,18 @@ export class DemoScene {
     }else {cat.bubble=chooseLine(cat,'furniture:waiting',['这里有伙伴啦，我先在旁边等一会儿。','先给你玩，等会儿再轮到我。','不挤不挤，旁边也能看见大家。'],this.homeTime);cat.bubbleAt=this.homeTime;cat.bubbleUntil=this.homeTime+3000;}
   }
   private marketCameraFrame() {return this.marketFrame??measureMarketCameraFrame(this.canvas,this.viewWidth,this.viewHeight);}
+  private marketDrawingCamera() {
+    Object.assign(this.marketRenderCamera, pixelAlignedCameraPosition(this.marketCamera, this.marketCameraFrame(), 1672, 941, {
+      x: this.canvas.width / this.viewWidth, y: this.canvas.height / this.viewHeight
+    }));
+    return this.marketRenderCamera;
+  }
   private snapMarketCamera() {this.marketCamera.snap({x:this.x,y:this.y},this.marketCameraFrame(),1672,941);}
   private drawMarket() {
     preloadChapterArtwork('market');
-    const image=chapterBackground('market', this.marketFloor);
-    const frame=this.marketCameraFrame(),camera=this.marketCamera;
+    const image=chapterDisplayArtwork('market', this.marketFloor, chapterBackground('market', this.marketFloor));
+    this.canvas.dataset.mapArtwork=image.src.includes('enhanced-v1')?'enhanced':'original';
+    const frame=this.marketCameraFrame(),camera=this.marketDrawingCamera();
     this.context.save();
     this.context.fillStyle='#181f2b';this.context.fillRect(0,0,this.viewWidth,this.viewHeight);
     this.context.beginPath();this.context.rect(frame.viewport.x,frame.viewport.y,frame.viewport.width,frame.viewport.height);this.context.clip();
