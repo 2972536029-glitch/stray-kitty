@@ -68,3 +68,16 @@ dialog.supply-panel[open],dialog.chapter-map[open]{display:flex;flex-direction:c
 .home-hub .supply-header{display:none}
 .supply-panel:not(.embedded-modal) .supply-toolbar{padding-top:18px}
 @media(max-width:760px){.supply-toolbar{flex-wrap:wrap;gap:14px}.supply-toolbar .panel-tabs{gap:8px}.supply-toolbar .panel-tabs button{font-size:16px;padding:9px 14px}.supply-panel .shop-wallets{gap:8px}.supply-panel .postal-currency-icon{width:28px;height:28px}}
+
+.chapter-map-header>div{display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+.chapter-location{display:flex;align-items:center;gap:12px;padding:10px 18px;background:#365844;border:1px solid #365844;border-radius:6px;color:#fff2cb}
+.chapter-location>span{font-size:34px;line-height:1}
+.chapter-location small{display:block;font-size:15px;color:#e1d6ac;margin-bottom:3px}
+.chapter-location strong{font-size:23px;font-weight:600}
+.chapter-map .map-stop.current{background:#365844;border:2px solid #d1b36f;box-shadow:inset 5px 0 0 #e5c36f;outline:0}
+.chapter-map .current .chapter-stop-copy h3{color:#fff4d9}
+.chapter-map .current .chapter-stop-copy p{color:#e3e5ce}
+.chapter-map .current .chapter-status{background:#eed49a;color:#354f3b;border-radius:4px;padding:6px 11px;font-size:17px;font-weight:700}
+.chapter-map .current>button{background:#fff2d0;color:#365844;border-color:#fff2d0}
+.chapter-cover img{image-rendering:auto}
+@media(max-width:760px){.chapter-location{padding:8px 12px}.chapter-location strong{font-size:20px}.chapter-location small{font-size:14px}.chapter-stop-copy>div{gap:8px}.chapter-map .current .chapter-status{font-size:15px}}

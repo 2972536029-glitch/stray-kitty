@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url';
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const files = {chapters:'story/chapters', story:'story/nodes', maps:'maps/maps', events:'events/events', eventsBalance:'events/balance', cats:'cats/cats', stages:'battles/stages', furniture:'home/furniture', slots:'home/slots', renovations:'home/renovations', items:'items/items', pools:'lottery/pools', parcelRewards:'lottery/rewards', products:'shop/products', rechargePacks:'economy/recharge-packs', tutorials:'tutorials/steps', assets:'assets/manifest'};
 files.homeDecor='home/decor';
+files.homeSurfaces='home/surfaces';
 export function readCatalog() {
   return {version:'2026.10.22.1', ...Object.fromEntries(Object.entries(files).map(([key, file]) => [key, JSON.parse(fs.readFileSync(path.join(root, 'web/content', file+'.json'), 'utf8'))]))};
 }
@@ -14,6 +15,7 @@ export function validateContent(c) {
     if (ids.some(id=>!id) || new Set(ids).size!==ids.length) errors.push(`${key}: missing/duplicate ID`);
   }
   const has=(key,id)=>c[key].some(x=>x.id===id);
+  for(const item of c.homeSurfaces)if(!['wallpaper','floor'].includes(item.kind)||!['original','moss','moon'].includes(item.style)||!item.name||!item.description||!item.default&&(!has('pools',item.poolId)||!Number.isInteger(item.requiredOwned)||item.requiredOwned<1||item.requiredOwned>c.pools.find(p=>p.id===item.poolId)?.entries.length))errors.push(`home surface invalid: ${item.id}`);
   const furnishingCategories=['wall','decor','table','bed','seat','storage','plant','rug','lighting','toy'];
   for(const item of c.furniture)if(!furnishingCategories.includes(item.category)||!Number.isSafeInteger(item.widthCm)||item.widthCm<10||item.widthCm>250)errors.push(`furniture size/category invalid: ${item.id}`);
   for(const item of c.homeDecor)if(!furnishingCategories.includes(item.category))errors.push(`stage furniture category invalid: ${item.id}`);

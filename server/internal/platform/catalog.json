@@ -8548,5 +8548,59 @@
         "description": "另做一张庆典餐桌，原来的园艺工作台继续保留。"
       }
     }
+  ],
+  "homeSurfaces": [
+    {
+      "id": "original_wall",
+      "kind": "wallpaper",
+      "name": "原砖墙",
+      "style": "original",
+      "description": "保留花房原有红砖和铁艺骨架。",
+      "default": true
+    },
+    {
+      "id": "original_floor",
+      "kind": "floor",
+      "name": "原木地板",
+      "style": "original",
+      "description": "保留原木纹理与修补痕迹。",
+      "default": true
+    },
+    {
+      "id": "moss_wall",
+      "kind": "wallpaper",
+      "name": "苔绿叶纹护墙",
+      "style": "moss",
+      "description": "苔绿色护墙上缀着细小叶纹，与苔叶家具相衬。",
+      "poolId": "moss_letters",
+      "requiredOwned": 6
+    },
+    {
+      "id": "moss_floor",
+      "kind": "floor",
+      "name": "暖橡木地板",
+      "style": "moss",
+      "description": "浅暖橡木保留细密木纹，让花房更明亮。",
+      "poolId": "moss_letters",
+      "requiredOwned": 12
+    },
+    {
+      "id": "moon_wall",
+      "kind": "wallpaper",
+      "name": "月海星纹墙纸",
+      "style": "moon",
+      "description": "深蓝墙纸点缀月亮与星纹，铺在玻璃窗下的内墙。",
+      "poolId": "moonsea_observatory",
+      "requiredOwned": 6
+    },
+    {
+      "id": "moon_floor",
+      "kind": "floor",
+      "name": "月灰木地板",
+      "style": "moon",
+      "description": "柔和月灰色木地板，与月海家具的蓝金色相呼应。",
+      "poolId": "moonsea_observatory",
+      "requiredOwned": 12
+    }
   ]
 }

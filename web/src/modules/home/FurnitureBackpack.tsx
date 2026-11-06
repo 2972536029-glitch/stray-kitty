@@ -1,8 +1,9 @@
 import {useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
-import type {Catalog,GameCommand,GameState} from '../../contracts';
+import type {Catalog,GameCommand,GameState,HomeSurfaces} from '../../contracts';
 import type {DemoScene} from '../../examples/demo/scene';
 import {HOME_FRAMES,loadHomeArtwork,type HomeArtwork} from './assets';
-import {homeStage} from './layout';
+import SurfacePreview from './SurfacePreview';
+import {HOME_SURFACES,homeSurfaceSelection,ownsHomeSurface} from './surfaces';
 import {homeInventory,type HomeItem} from './objects';
 import {drawHomeSprite} from './painter';
 import {homeHit,homeLayoutChanges,validHomePosition,type HomeDraft} from './editor';
@@ -10,6 +11,7 @@ import {FURNITURE_CATEGORIES,type FurnitureCategory} from './furnishings';
 import './backpack.css';
 
 interface Props {scene:DemoScene;state:GameState;catalog:Catalog;busy:boolean;pending:boolean;error:string;initialFurniture?:string;onSave:(c:GameCommand)=>Promise<boolean>;onRetry:()=>void;onClose:()=>void}
+type Snapshot={layout:HomeDraft;surfaces:HomeSurfaces};
 type Drag={key:string;pointer:number;start:{x:number;y:number};offset:{x:number;y:number};point?:{x:number;y:number};moved:boolean;inside:boolean};
 function Thumbnail({item,art}:{item:HomeItem;art?:HomeArtwork}){
   const ref=useRef<HTMLCanvasElement>(null);
@@ -19,52 +21,58 @@ function Thumbnail({item,art}:{item:HomeItem;art?:HomeArtwork}){
 export default function FurnitureBackpack({scene,state,catalog,busy,pending,error,initialFurniture,onSave,onRetry,onClose}:Props){
   const [base,setBase]=useState(()=>structuredClone(state));
   const [draft,setDraft]=useState<HomeDraft>(()=>structuredClone(state.homeLayout??{}));
-  const [undo,setUndo]=useState<HomeDraft[]>([]),[redo,setRedo]=useState<HomeDraft[]>([]);
-  const [selection,setSelection]=useState(initialFurniture?(initialFurniture.startsWith('stage:')?initialFurniture:'furniture:'+initialFurniture):'');
-  const [filter,setFilter]=useState(()=>selection&&homeInventory(state).some(item=>item.layoutKey===selection&&!item.stored)?'scene':'bag'),[query,setQuery]=useState('');
+  const [undo,setUndo]=useState<Snapshot[]>([]),[redo,setRedo]=useState<Snapshot[]>([]);
+  const initialSurface=HOME_SURFACES.find(item=>'surface:'+item.id===initialFurniture);
+  const [finishDraft,setFinishDraft]=useState(()=>homeSurfaceSelection(state));
+  const [kind,setKind]=useState<'furniture'|'wallpaper'|'floor'>(initialSurface?.kind??'furniture'),[surfaceSelection,setSurfaceSelection]=useState(initialSurface?.id??'');
+  const [selection,setSelection]=useState(initialSurface?'':initialFurniture?(initialFurniture.startsWith('stage:')?initialFurniture:'furniture:'+initialFurniture):'');
   const [category,setCategory]=useState<FurnitureCategory|'all'>('all');
   const [bagOpen,setBagOpen]=useState(true);
   const [art,setArt]=useState<HomeArtwork>(),[artError,setArtError]=useState('');
   const [drag,setDragState]=useState<Drag|null>(null),dragRef=useRef<Drag|null>(null);
   const setDrag=(value:Drag|null)=>{dragRef.current=value;setDragState(value);};
   const [zoom,setZoom]=useState(scene.homeZoomLevel);
-  const panDrag=useRef<{pointer:number;x:number;y:number}|null>(null);
-  const bag=useRef<HTMLElement>(null);
+  const panDrag=useRef<{pointer:number;x:number;y:number;startX:number;startY:number;moved:boolean;placeKey?:string}|null>(null);
+  const bag=useRef<HTMLElement>(null),contextActions=useRef<HTMLDivElement>(null);
   const sent=useRef(false),[notice,setNotice]=useState('');
-  const draftState=useMemo(()=>({...base,homeLayout:draft}),[base,draft]);
+  const draftState=useMemo(()=>({...base,homeLayout:draft,homeSurfaces:finishDraft}),[base,draft,finishDraft]);
   const items=useMemo(()=>homeInventory(draftState).map(item=>({...item,name:item.furnitureId?catalog.furniture.find(f=>f.id===item.furnitureId)?.name??item.name:item.name})),[draftState,catalog]);
   const selected=items.find(item=>item.layoutKey===selection);
   const changes=homeLayoutChanges(base,draftState),locked=busy||pending;
+  const baseSurfaces=homeSurfaceSelection(base),surfaceDirty=finishDraft.wallpaper!==baseSurfaces.wallpaper||finishDraft.floor!==baseSurfaces.floor;
+  const dirty=!!changes.length||surfaceDirty;
+  const snapshot=():Snapshot=>({layout:draft,surfaces:finishDraft});
   const conflict=state.revision!==base.revision&&!sent.current;
   const local=(x:number,y:number)=>scene.homeClientToWorld(x,y);
   const commit=(key:string,x:number,y:number,stored:boolean)=>{
     const item=items.find(i=>i.layoutKey===key);if(!item||locked||conflict)return;
     if(!stored&&!validHomePosition(item,x,y)){setNotice('请放在花房范围内；挂饰可以布置在墙面。');return;}
     if(item.x===x&&item.y===y&&item.stored===stored)return;
-    setUndo(history=>[...history.slice(-39),draft]);setRedo([]);
+    setUndo(history=>[...history.slice(-39),snapshot()]);setRedo([]);
     setDraft({...draft,[key]:{x,y,stored}});setNotice(stored?'已收进背包，保存后生效。':'位置已调整，保存后伙伴会到新位置互动。');
   };
-  const stepUndo=()=>{if(locked||!undo.length)return;setRedo(history=>[...history,draft]);setDraft(undo.at(-1)!);setUndo(undo.slice(0,-1));setDrag(null);setNotice('已撤销上一步。');};
-  const stepRedo=()=>{if(locked||!redo.length)return;setUndo(history=>[...history,draft]);setDraft(redo.at(-1)!);setRedo(redo.slice(0,-1));setDrag(null);setNotice('已重做上一步。');};
+  const applySurface=(id:string)=>{const item=HOME_SURFACES.find(item=>item.id===id);if(!item||locked||conflict||!ownsHomeSurface(base,item))return;setUndo(history=>[...history.slice(-39),snapshot()]);setRedo([]);setFinishDraft({...finishDraft,[item.kind]:id});setNotice(`${item.name}已预览，保存后生效。`);};
+  const stepUndo=()=>{if(locked||!undo.length)return;setRedo(history=>[...history,snapshot()]);setDraft(undo.at(-1)!.layout);setFinishDraft(undo.at(-1)!.surfaces);setUndo(undo.slice(0,-1));setDrag(null);setNotice('已撤销上一步。');};
+  const stepRedo=()=>{if(locked||!redo.length)return;setUndo(history=>[...history,snapshot()]);setDraft(redo.at(-1)!.layout);setFinishDraft(redo.at(-1)!.surfaces);setRedo(redo.slice(0,-1));setDrag(null);setNotice('已重做上一步。');};
   const cancel=()=>{if(locked)return;if(dragRef.current){setDrag(null);setNotice('已取消这次拖动。');return;}onClose();};
-  const save=async()=>{if(locked||conflict||!changes.length||dragRef.current)return;sent.current=true;const ok=await onSave({type:'SAVE_HOME_LAYOUT',changes});if(ok)onClose();else{sent.current=false;setNotice('布置草稿已保留，请根据提示重试。');}};
+  const save=async()=>{if(locked||conflict||!dirty||dragRef.current)return;sent.current=true;const ok=await onSave({type:'SAVE_HOME_LAYOUT',changes,...(surfaceDirty?{surfaces:finishDraft}:{})});if(ok)onClose();else{sent.current=false;setNotice('布置草稿已保留，请根据提示重试。');}};
   useEffect(()=>{let active=true;void loadHomeArtwork().then(value=>{if(active)setArt(value);}).catch(e=>{if(active)setArtError(String(e.message));});return()=>{active=false;};},[]);
   // An idempotent Retry may finish after the original Save response was lost.
-  useEffect(()=>{if(pending||busy||state.revision===base.revision||!changes.length)return;if(changes.every(c=>{const p=state.homeLayout?.[c.key];return p&&p.x===c.x&&p.y===c.y&&p.stored===c.stored;}))onClose();},[state,pending,busy]);
+  useEffect(()=>{if(pending||busy||state.revision===base.revision||!dirty)return;if(changes.every(c=>{const p=state.homeLayout?.[c.key];return p&&p.x===c.x&&p.y===c.y&&p.stored===c.stored;})&&(!surfaceDirty||JSON.stringify(homeSurfaceSelection(state))===JSON.stringify(finishDraft)))onClose();},[state,pending,busy,finishDraft]);
   // A background revision bump (e.g. a parcel draw resolving after this dialog
   // mounted) must not lock the whole editor behind the conflict banner while
   // the player has touched nothing: rebase silently and keep editing. Drafts
   // with real changes still get the explicit conflict notice.
-  useEffect(()=>{if(!conflict||pending||busy||changes.length||dragRef.current)return;setBase(structuredClone(state));setDraft(structuredClone(state.homeLayout??{}));setUndo([]);setRedo([]);},[conflict,pending,busy,changes.length,state]);
+  useEffect(()=>{if(!conflict||pending||busy||dirty||dragRef.current)return;setBase(structuredClone(state));setDraft(structuredClone(state.homeLayout??{}));setFinishDraft(homeSurfaceSelection(state));setUndo([]);setRedo([]);},[conflict,pending,busy,dirty,state]);
   useEffect(()=>{
     const move=(event:PointerEvent)=>{
-      if(panDrag.current?.pointer===event.pointerId){scene.homeCanvas.style.cursor='grabbing';const d=panDrag.current;scene.panHomeEditor(d,{x:event.clientX,y:event.clientY});panDrag.current={pointer:event.pointerId,x:event.clientX,y:event.clientY};return;}
+      if(panDrag.current?.pointer===event.pointerId){scene.homeCanvas.style.cursor='grabbing';const d=panDrag.current,moved=d.moved||Math.hypot(event.clientX-d.startX,event.clientY-d.startY)>4;if(moved)scene.panHomeEditor(d,{x:event.clientX,y:event.clientY});panDrag.current={...d,x:event.clientX,y:event.clientY,moved};return;}
       const d=dragRef.current;if(!d||event.pointerId!==d.pointer)return;
       scene.homeCanvas.style.cursor='grabbing';
       const point=local(event.clientX,event.clientY);setDrag({...d,moved:d.moved||Math.hypot(event.clientX-d.start.x,event.clientY-d.start.y)>4,inside:point.inside,point:{x:point.x+d.offset.x,y:point.y+d.offset.y}});
     };
     const up=(event:PointerEvent)=>{
-      if(panDrag.current?.pointer===event.pointerId){panDrag.current=null;scene.homeCanvas.style.cursor='';return;}
+      if(panDrag.current?.pointer===event.pointerId){const d=panDrag.current;panDrag.current=null;scene.homeCanvas.style.cursor='';if(!d.moved&&d.placeKey){const p=local(event.clientX,event.clientY);if(p.inside)commit(d.placeKey,p.x,p.y,false);}return;}
       const d=dragRef.current;if(!d||event.pointerId!==d.pointer)return;
       scene.homeCanvas.style.cursor='';
       const point=local(event.clientX,event.clientY);setDrag(null);
@@ -93,9 +101,9 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
   const preview=drag?.moved&&drag.inside&&drag.point?{...draftState,homeLayout:{...draft,[drag.key]:{...drag.point,stored:false}}}:draftState;
   const valid=!drag?.point||!selected||validHomePosition(selected,drag.point.x,drag.point.y);
   useEffect(()=>{scene.setHomeEditing({state:preview,selection,valid});},[scene,preview,selection,valid]);
-  useEffect(()=>()=>{scene.setHomeEditing(undefined);scene.homeCanvas.style.cursor='';},[scene]);
+  useEffect(()=>()=>{scene.setHomeEditorBottom(undefined);scene.setHomeEditing(undefined);scene.homeCanvas.style.cursor='';},[scene]);
   const begin=(event:ReactPointerEvent,item:HomeItem,fromBag:boolean)=>{
-    if(locked||conflict||event.button!==0)return;event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);setSelection(item.layoutKey);
+    if(locked||conflict||event.button!==0)return;event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);setSelection(item.layoutKey);setKind('furniture');
     const p=local(event.clientX,event.clientY);setDrag({key:item.layoutKey,pointer:event.pointerId,start:{x:event.clientX,y:event.clientY},offset:fromBag?{x:0,y:0}:{x:item.x-p.x,y:item.y-p.y},moved:false,inside:!fromBag});
   };
   useEffect(()=>{
@@ -104,9 +112,9 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
       if(locked||conflict||e.button!==0)return;
       e.preventDefault();c.setPointerCapture(e.pointerId);
       const p=local(e.clientX,e.clientY),item=homeHit(items,p.x,p.y);
-      if(item){setSelection(item.layoutKey);setDrag({key:item.layoutKey,pointer:e.pointerId,start:{x:e.clientX,y:e.clientY},offset:{x:item.x-p.x,y:item.y-p.y},moved:false,inside:true});return;}
-      if(selected?.stored){commit(selected.layoutKey,p.x,p.y,false);return;}
-      setSelection('');panDrag.current={pointer:e.pointerId,x:e.clientX,y:e.clientY};
+      if(item){setSelection(item.layoutKey);setKind('furniture');setDrag({key:item.layoutKey,pointer:e.pointerId,start:{x:e.clientX,y:e.clientY},offset:{x:item.x-p.x,y:item.y-p.y},moved:false,inside:true});return;}
+      if(!p.inside)return;
+      if(!selected?.stored)setSelection('');panDrag.current={pointer:e.pointerId,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,moved:false,placeKey:selected?.stored?selected.layoutKey:undefined};
     };
     // 悬浮光标与高亮：命中可拖家具给 move（可抓取），空白维持 grab（拖动画面）；
     // 拖动/平移期间不参与，光标由 window 的 move/up 处理为 grabbing。
@@ -122,24 +130,28 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
     return()=>{c.removeEventListener('pointerdown',down);c.removeEventListener('pointermove',hover);c.removeEventListener('pointerleave',leave);c.removeEventListener('wheel',wheel);scene.homeCanvas.style.cursor='';};
   },[scene,items,selected,draft,locked,conflict]);
   const zoomBy=(amount:number)=>{scene.homeZoom(amount);setZoom(scene.homeZoomLevel);};
-  const matching=items.filter(item=>(filter==='all'||(filter==='bag'?item.stored:!item.stored))&&item.name.includes(query.trim()));
+  const matching=items.filter(item=>item.stored);
   const shown=matching.filter(item=>category==='all'||item.category===category);
+  const surfaces=HOME_SURFACES.filter(item=>item.kind===kind&&ownsHomeSurface(base,item)&&finishDraft[item.kind]!==item.id);
+  const placeSelected=(item:HomeItem)=>{const rect=scene.homeCanvas.getBoundingClientRect(),point=local(rect.left+rect.width/2,(rect.top+(bag.current?.getBoundingClientRect().top??rect.bottom))/2);commit(item.layoutKey,Math.round(Math.max(80+item.width/2,Math.min(1592-item.width/2,point.x))),Math.round(Math.max(item.wall?150:355,Math.min(item.wall?890:728,point.y))),false);};
+  useEffect(()=>{const sync=()=>scene.setHomeEditorBottom(bag.current?.getBoundingClientRect().top);const observer=new ResizeObserver(sync);if(bag.current)observer.observe(bag.current);window.addEventListener('resize',sync);sync();return()=>{observer.disconnect();window.removeEventListener('resize',sync);};},[scene]);
+  useEffect(()=>{let frame=0;const position=()=>{const node=contextActions.current;if(node&&selected&&!selected.stored){const p=scene.homeWorldToClient(selected.x,selected.y),limit=bag.current?.getBoundingClientRect().top??window.innerHeight;node.style.left=Math.max(node.offsetWidth/2+12,Math.min(window.innerWidth-node.offsetWidth/2-12,p.x))+'px';node.style.top=Math.min(limit-node.offsetHeight-8,p.y+10)+'px';node.hidden=p.y<0||p.y>limit||p.x<0||p.x>window.innerWidth;}frame=requestAnimationFrame(position);};position();return()=>cancelAnimationFrame(frame);},[scene,selected]);
   return <section role="region" aria-label="家具背包 · 布置模式" className="furniture-backpack">
-    <header className="backpack-header"><div><span>OUR LITTLE GREENHOUSE / {homeStage(base)}</span><h2>家具背包 <small>布置模式</small></h2></div><div className="backpack-save"><button disabled={locked} onClick={()=>{setDrag(null);if(!locked)onClose();}}>取消布置</button><button className="backpack-primary" disabled={locked||conflict||!changes.length||!!drag} onClick={()=>void save()}>{busy?'正在保存…':`保存布置${changes.length?' · '+changes.length:''}`}</button></div></header>
-    <div className="backpack-body"><section ref={bag} className={`backpack-bag${drag?' accepting':''}${bagOpen?'':' folded'}`} aria-label="家具背包">
-      <div className="backpack-bag-head"><button className="backpack-bag-toggle" aria-expanded={bagOpen} aria-controls="backpack-items" onClick={()=>setBagOpen(value=>!value)}>{bagOpen?'▼ 收起背包':'▲ 展开背包'}</button><b>把喜欢的角落搬进家</b><p>往上拖入花房 · 拖回来收起</p><input aria-label="搜索家具" placeholder="找一件家具…" value={query} onChange={e=>setQuery(e.target.value)}/></div>
-      <div className="backpack-tabs" role="tablist" aria-label="家具筛选">{[['bag','背包'],['scene','场景'],['all','全部']].map(([id,label])=><button key={id} role="tab" aria-selected={filter===id} onClick={()=>setFilter(id)}>{label} {items.filter(i=>id==='all'||(id==='bag'?i.stored:!i.stored)).length}</button>)}</div>
-      <div className="backpack-categories" role="group" aria-label="家具分类">
-        <button aria-pressed={category==='all'} onClick={()=>setCategory('all')}>全部分类 {matching.length}</button>
-        {Object.entries(FURNITURE_CATEGORIES).map(([id,label])=><button key={id} aria-pressed={category===id} onClick={()=>setCategory(id as FurnitureCategory)}>{label} {matching.filter(i=>i.category===id).length}</button>)}
+    {selected&&!selected.stored&&<div className="backpack-object-actions" ref={contextActions} aria-label={`${selected.name}操作`}><b>{selected.name}</b><button disabled={locked||conflict} onClick={()=>commit(selected.layoutKey,selected.x,selected.y,true)}>收回背包</button><button aria-label="取消选中家具" onClick={()=>setSelection('')}>×</button></div>}
+    <section ref={bag} className={`backpack-dock${bagOpen?'':' folded'}`} aria-label="未摆放物品">
+      <div className="backpack-controls"><button className="backpack-bag-toggle" aria-expanded={bagOpen} aria-controls="backpack-items" onClick={()=>setBagOpen(value=>!value)}>{bagOpen?'▼ 收起背包':'▲ 展开背包'}</button>
+        <nav className="backpack-kind-tabs" aria-label="布置类别">{[['furniture','家具'],['wallpaper','墙纸'],['floor','地板']].map(([id,label])=><button key={id} aria-pressed={kind===id} onClick={()=>{setKind(id as typeof kind);setSelection('');}}>{label}</button>)}</nav>
+        <div className="backpack-history"><button aria-label="撤销" disabled={locked||!undo.length} onClick={stepUndo}>↶ 撤销</button><button aria-label="重做" disabled={locked||!redo.length} onClick={stepRedo}>↷ 重做</button></div>
+        <div className="backpack-zoom"><button aria-label="缩小场景" onClick={()=>zoomBy(-.25)}>−</button><button aria-label="重置缩放" onClick={()=>zoomBy(0)}>{Math.round(zoom*100)}%</button><button aria-label="放大场景" onClick={()=>zoomBy(.25)}>＋</button></div>
+        <div className="backpack-save"><button disabled={locked} onClick={cancel}>取消布置</button><button className="backpack-primary" disabled={locked||conflict||!dirty||!!drag} onClick={()=>void save()}>{busy?'正在保存…':'保存布置'}</button></div>
       </div>
-      <div className="backpack-grid" id="backpack-items" hidden={!bagOpen} onWheel={e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX))e.currentTarget.scrollLeft+=e.deltaY;}}>{shown.map(item=><button key={item.layoutKey} className={`backpack-item${selection===item.layoutKey?' selected':''}`} data-layout-key={item.layoutKey} aria-label={`选择${item.name}`} aria-pressed={selection===item.layoutKey} disabled={locked||conflict} onPointerDown={e=>begin(e,item,true)} onClick={()=>setSelection(item.layoutKey)}><Thumbnail item={item} art={art}/><b>{item.name}</b><small>{FURNITURE_CATEGORIES[item.category]} · 约 {Math.round(item.width/1.7)} cm · {item.stored?'收纳':'已摆'}</small></button>)}{!shown.length&&<p className="backpack-empty">{query?'没有找到这件家具。':'家具都在场景里啦。点击场景中的家具，就能移动或收回。'}</p>}</div>
-    </section><div className="backpack-scene-column"><div className="backpack-toolbar"><div><button aria-label="撤销" disabled={locked||!undo.length} onClick={stepUndo}>↶ 撤销</button><button aria-label="重做" disabled={locked||!redo.length} onClick={stepRedo}>↷ 重做</button><button disabled={!drag} onClick={()=>{setDrag(null);setNotice('已取消这次拖动。');}}>取消本次移动</button></div><div><button aria-label="缩小场景" onClick={()=>{zoomBy(-.25);}}>−</button><button onClick={()=>{zoomBy(0);}}>{Math.round(zoom*100)}%</button><button aria-label="放大场景" onClick={()=>zoomBy(.25)}>＋</button></div></div>
-      <footer className="backpack-selection">{selected?<><div><b>{selected.name}</b><small>{FURNITURE_CATEGORIES[selected.category]} · 宽约 {Math.round(selected.width/1.7)} 厘米 · {selected.stored?'从背包拖入，或点场景放下':'拖动移动 · 方向键微调 · Delete 收回'}{selected.wall?' · 墙面挂饰':''}</small></div><button disabled={locked||conflict} onClick={()=>commit(selected.layoutKey,selected.stored?820:selected.x,selected.stored?(selected.wall?310:540):selected.y,!selected.stored)}>{selected.stored?'放到场景中央':'收回背包'}</button></>:<p>选中家具后拖动；点空白处拖动画面，使用 ＋ / − 查看细节。</p>}</footer>
-    </div></div>
-    <div className="backpack-status" role="status">{artError||(!art?'正在加载花房素材…':notice||'所有改动在保存后生效；取消布置会恢复进入前的样子。')}</div>
-    {error&&<div className="backpack-error" role="alert">{error} <button disabled={busy} onClick={onRetry}>重试上次保存</button></div>}
-    {pending&&!busy&&<p className="backpack-error">保存结果待确认，请重试上次保存。</p>}
-    {conflict&&!pending&&<div className="backpack-error">进度已在另一处更新。<button onClick={()=>{setBase(structuredClone(state));setDraft(structuredClone(state.homeLayout??{}));setUndo([]);setRedo([]);setDrag(null);}}>载入最新布置</button></div>}
+      {bagOpen&&<>{kind==='furniture'&&<div className="backpack-categories" role="group" aria-label="家具分类"><button aria-pressed={category==='all'} onClick={()=>setCategory('all')}>全部 {matching.length}</button>{Object.entries(FURNITURE_CATEGORIES).filter(([id])=>matching.some(item=>item.category===id)).map(([id,label])=><button key={id} aria-pressed={category===id} onClick={()=>setCategory(id as FurnitureCategory)}>{label} {matching.filter(item=>item.category===id).length}</button>)}</div>}
+        <div className="backpack-grid" id="backpack-items" onWheel={e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX))e.currentTarget.scrollLeft+=e.deltaY;}}>{kind==='furniture'?shown.map(item=><article key={item.layoutKey} className={`backpack-card${selection===item.layoutKey?' selected':''}`} data-layout-key={item.layoutKey}><button className="backpack-item" aria-label={`选择${item.name}`} aria-pressed={selection===item.layoutKey} disabled={locked||conflict} onPointerDown={e=>begin(e,item,true)} onClick={()=>{setSelection(item.layoutKey);setKind('furniture');}}><Thumbnail item={item} art={art}/><b>{item.name}</b></button>{selection===item.layoutKey&&<div className="backpack-card-actions"><button disabled={locked||conflict} onClick={()=>placeSelected(item)}>放入场景</button><button aria-label="取消选中家具" onClick={()=>setSelection('')}>×</button></div>}</article>):surfaces.map(item=><article key={item.id} data-surface-id={item.id} className={`backpack-card${surfaceSelection===item.id?' selected':''}`}><button className="backpack-item" aria-pressed={surfaceSelection===item.id} onClick={()=>setSurfaceSelection(item.id)}><SurfacePreview item={item}/><b>{item.name}</b></button>{surfaceSelection===item.id&&<div className="backpack-card-actions"><button disabled={locked||conflict} onClick={()=>applySurface(item.id)}>{item.kind==='wallpaper'?'贴上墙纸':'铺上地板'}</button></div>}</article>)}</div>
+        {!(kind==='furniture'?shown.length:surfaces.length)&&<p className="backpack-empty">{kind==='furniture'?'家具都已摆好，点击场景中的家具可以移动或收回。':'暂无未使用的款式，可到家具收藏中查看获取方式。'}</p>}
+      </>}
+      <div className="backpack-status" role="status">{artError||(!art?'正在加载花房素材…':notice||'拖入家具或点击空地放下 · 拖动空白处移动视野 · 保存后生效')}</div>
+      {error&&<div className="backpack-error" role="alert">{error}<button disabled={busy} onClick={onRetry}>重试保存</button></div>}
+      {conflict&&!pending&&<div className="backpack-error">进度已在另一处更新。<button onClick={()=>{setBase(structuredClone(state));setDraft(structuredClone(state.homeLayout??{}));setFinishDraft(homeSurfaceSelection(state));setUndo([]);setRedo([]);setDrag(null);}}>载入最新布置</button></div>}
+    </section>
   </section>;
 }

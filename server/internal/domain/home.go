@@ -24,3 +24,16 @@ type HomeDecorAcquisition struct {
 	Material    int    `json:"material,omitempty"`
 	Description string `json:"description"`
 }
+
+type HomeSurfaces struct {
+	Wallpaper string `json:"wallpaper"`
+	Floor     string `json:"floor"`
+}
+
+type HomeSurface struct {
+	ID            string `json:"id"`
+	Kind          string `json:"kind"`
+	Default       bool   `json:"default,omitempty"`
+	PoolID        string `json:"poolId,omitempty"`
+	RequiredOwned int    `json:"requiredOwned,omitempty"`
+}

@@ -94,12 +94,14 @@ type GameState struct {
 	EventState        *EventState `json:"eventState,omitempty"`
 	AlleyBattleReturn *WorldPoint `json:"alleyBattleReturn,omitempty"`
 	// Txns:金枪鱼充值与消费流水(最新的在末尾),供 /api/payment/history 展示;超出上限丢弃最旧。
-	Txns           []Txn                    `json:"txns,omitempty"`
-	QACheckpointID string                   `json:"qaCheckpointId,omitempty"`
-	Lottery        *LotteryState            `json:"lottery,omitempty"`
-	HomeLayout     map[string]HomePlacement `json:"homeLayout,omitempty"`
-	HomeRepairs    []string                 `json:"homeRepairs,omitempty"`
-	HomeDecorOwned []string                 `json:"homeDecorOwned,omitempty"`
+	Txns              []Txn                    `json:"txns,omitempty"`
+	QACheckpointID    string                   `json:"qaCheckpointId,omitempty"`
+	Lottery           *LotteryState            `json:"lottery,omitempty"`
+	HomeLayout        map[string]HomePlacement `json:"homeLayout,omitempty"`
+	HomeRepairs       []string                 `json:"homeRepairs,omitempty"`
+	HomeDecorOwned    []string                 `json:"homeDecorOwned,omitempty"`
+	HomeSurfacesOwned []string                 `json:"homeSurfacesOwned,omitempty"`
+	HomeSurfaces      *HomeSurfaces            `json:"homeSurfaces,omitempty"`
 }
 
 func InitialState(version string) GameState {
@@ -120,6 +122,8 @@ func AppendTxn(s *GameState, t Txn) {
 type Command struct {
 	RepairID      string             `json:"repairId,omitempty"`
 	DecorID       string             `json:"decorId,omitempty"`
+	SurfaceID     string             `json:"surfaceId,omitempty"`
+	Surfaces      *HomeSurfaces      `json:"surfaces,omitempty"`
 	Changes       []HomeLayoutChange `json:"changes,omitempty"`
 	Type          string             `json:"type"`
 	NodeID        string             `json:"nodeId,omitempty"`
@@ -256,6 +260,7 @@ type Product struct {
 	Status       string `json:"status"`
 }
 type Catalog struct {
+	HomeSurfaces  []HomeSurface  `json:"homeSurfaces,omitempty"`
 	HomeDecor     []HomeDecor    `json:"homeDecor"`
 	Version       string         `json:"version"`
 	Chapters      []Chapter      `json:"chapters"`

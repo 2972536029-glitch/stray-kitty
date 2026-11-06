@@ -46,6 +46,22 @@ func TestHTTPBoundaries(t *testing.T) {
 	var session map[string]string
 	json.Unmarshal(w.Body.Bytes(), &session)
 	token := session["token"]
+	// Surface-only edits must reach the service; malformed nested finishes stay
+	// rejected at the HTTP boundary, including null/empty layout-only requests.
+	for _, body := range []string{
+		`{"expectedRevision":0,"command":{"type":"SAVE_HOME_LAYOUT","changes":[]}}`,
+		`{"expectedRevision":0,"command":{"type":"SAVE_HOME_LAYOUT","changes":null,"surfaces":{"wallpaper":"original_wall","floor":"original_floor"}}}`,
+		`{"expectedRevision":0,"command":{"type":"SAVE_HOME_LAYOUT","changes":[],"surfaces":{"wallpaper":"original_wall"}}}`,
+		`{"expectedRevision":0,"command":{"type":"SAVE_HOME_LAYOUT","changes":[],"surfaces":{"wallpaper":"original_wall","floor":42}}}`,
+		`{"expectedRevision":0,"command":{"type":"SAVE_HOME_LAYOUT","changes":[],"surfaces":{"wallpaper":"original_wall","floor":"original_floor","price":0}}}`,
+	} {
+		if w = request("POST", "/api/v1/commands", body, token); w.Code != 400 {
+			t.Fatalf("invalid finishes accepted: %d %s", w.Code, w.Body.String())
+		}
+	}
+	if w = request("POST", "/api/v1/commands", `{"expectedRevision":0,"command":{"type":"SAVE_HOME_LAYOUT","changes":[],"surfaces":{"wallpaper":"original_wall","floor":"original_floor"}}}`, token); w.Code != 409 || !strings.Contains(w.Body.String(), "INVALID_PHASE") {
+		t.Fatalf("surface-only command did not reach service: %d %s", w.Code, w.Body.String())
+	}
 	for _, body := range []string{`{"expectedRevision":0,"command":{"type":"REPAIR_HOME","cost":0}}`, `{"expectedRevision":0,"command":{"type":"REPAIR_HOME","grantsFlag":"kingdom_founded"}}`} {
 		if w = request("POST", "/api/v1/commands", body, token); w.Code != 400 {
 			t.Fatalf("repair accepts client-owned costs or rewards: %d %s", w.Code, w.Body.String())

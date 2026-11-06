@@ -7,7 +7,7 @@ const allowed: Record<GamePhase, readonly GameCommand['type'][]> = {
   preparation: ['START_BATTLE', 'GO_EXPLORE', 'GO_HOME', 'START_STORY'],
   battle: ['COMPLETE_BATTLE', 'QA_SIMULATE_VICTORY', 'QA_SIMULATE_DEFEAT'],
   settlement: ['CONTINUE', 'START_BATTLE', 'START_STORY', 'GO_EXPLORE', 'GO_HOME'],
-  home: ['SAVE_HOME_LAYOUT', 'ACQUIRE_HOME_DECOR', 'CLAIM_PARCEL_REWARD', 'GO_EXPLORE', 'DRAW_FURNITURE', 'PLACE_FURNITURE', 'START_BATTLE', 'BUY_FURNITURE', 'START_STORY', 'REPAIR_HOME']
+  home: ['SAVE_HOME_LAYOUT', 'ACQUIRE_HOME_DECOR', 'ACQUIRE_HOME_SURFACE', 'CLAIM_PARCEL_REWARD', 'GO_EXPLORE', 'DRAW_FURNITURE', 'PLACE_FURNITURE', 'START_BATTLE', 'BUY_FURNITURE', 'START_STORY', 'REPAIR_HOME']
 };
 export function canDispatch(phase: GamePhase, command: GameCommand['type']): boolean {
   if (command === 'QA_CHECKPOINT' || command === 'QA_RESTORE') return true;
