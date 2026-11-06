@@ -6,7 +6,7 @@ import {queueImage} from '../../web/src/core/image-loading.ts';
 // Match Vite's asset URL imports without reading PNGs or starting a browser.
 register('data:text/javascript,'+encodeURIComponent(`
   export async function load(url,context,nextLoad){
-    if(url.endsWith('.png'))return {format:'module',source:'export default '+JSON.stringify(url),shortCircuit:true};
+    if(/\.(png|webp)$/.test(url))return {format:'module',source:'export default '+JSON.stringify(url),shortCircuit:true};
     return nextLoad(url,context);
   }
 `),import.meta.url);
@@ -74,7 +74,7 @@ test('detailed art loads only painted atlases and keeps subscribers for later ch
     const stopCancelled=art.whenDetailedExteriorsReady(()=>{cancelled++;});stops.push(stopCancelled);
     assert.equal(art.paintDetailedJoinedObstacle(env.ink,'cold-frame'),false);
     await Promise.resolve();
-    assert.deepEqual(env.names(),['scene-detailed-obstacles-v1.png']);
+    assert.deepEqual(env.names(),['scene-detailed-obstacles-v1.lossless.webp']);
     art.paintDetailedJoinedObstacle(env.ink,'cold-frame');
     assert.equal(env.images.length,1);
     stopCancelled();env.images[0].load();
@@ -87,6 +87,10 @@ test('detailed art loads only painted atlases and keeps subscribers for later ch
     art.paintDetailedWorkstation(env.ink,'garden-bench',170,100);
     await Promise.resolve();
     env.images[1].fail();
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(env.names()[1],'scene-detailed-workstations-v1.png');
+    env.images[1].fail();
+    await new Promise(resolve=>setImmediate(resolve));
     assert.equal(paints,1);
     art.paintDetailedWorkstation(env.ink,'garden-bench',170,100);
     assert.equal(env.images.length,2,'a failed atlas keeps its cached fallback instead of retrying every frame');
@@ -95,7 +99,7 @@ test('detailed art loads only painted atlases and keeps subscribers for later ch
     env.images[2].load();
     assert.equal(paints,2,'a different atlas failure does not remove the active subscriber');
     assert.equal(art.hasRefinedMaterials(),true);
-    assert.deepEqual(env.names(),['scene-detailed-obstacles-v1.png','scene-detailed-workstations-v1.png','scene-refined-materials-v1.png']);
+    assert.deepEqual(env.names(),['scene-detailed-obstacles-v1.lossless.webp','scene-detailed-workstations-v1.png','scene-refined-materials-v1.lossless.webp']);
 
     art.paintDetailedExterior(env.ink,'planted-bed',200,100);
     await Promise.resolve();
@@ -111,13 +115,13 @@ test('scene painting loads the floor first and the illustrated room only for fin
     let paints=0;stop=art.whenSceneArtReady(()=>{paints++;});
     art.paintSceneTile(env.ink,'greenhouse',0,0,80);
     await Promise.resolve();
-    assert.deepEqual(env.names(),['floor-material-atlas.png']);
+    assert.deepEqual(env.names(),['floor-material-atlas.lossless.webp']);
     env.images[0].load();assert.equal(paints,1);
     art.paintSceneTile(env.ink,'greenhouse',0,0,80);
     assert.equal(env.images.length,1);assert.ok(env.draws.length>0);
     art.paintSceneTile(env.ink,'finale',0,0,80);
     await Promise.resolve();
-    assert.deepEqual(env.names(),['floor-material-atlas.png','finale-room-scene-v1.png']);
+    assert.deepEqual(env.names(),['floor-material-atlas.lossless.webp','finale-room-scene-v1.lossless.webp']);
     env.images[1].load();assert.equal(paints,2,'the floor load must not discard the room subscription');
   }finally{stop();env.restore();}
 });
@@ -138,7 +142,7 @@ for(const entry of singleAtlases){
       stops.push(art[entry.subscribe](()=>{paints++;}));
       const cancel=art[entry.subscribe](()=>{cancelled++;});stops.push(cancel);cancel();
       await Promise.resolve();
-      assert.deepEqual(env.names(),[entry.name]);
+      assert.deepEqual(env.names(),[entry.name.replace('.png','.lossless.webp')]);
       env.images[0].load();assert.equal(paints,1);assert.equal(cancelled,0);
       entry.paint(art,env.ink);entry.paint(art,env.ink);
       assert.equal(env.images.length,1);assert.ok(env.draws.length>0);
@@ -154,6 +158,9 @@ for(const entry of singleAtlases){
       const art=await fresh(entry.module);let paints=0;
       stops.push(art[entry.subscribe](()=>{paints++;}));
       entry.paint(art,env.ink);await Promise.resolve();env.images[0].fail();
+      await new Promise(resolve=>setImmediate(resolve));
+      assert.deepEqual(env.names(),[entry.name]);env.images[0].fail();
+      await new Promise(resolve=>setImmediate(resolve));
       assert.equal(paints,0);
       entry.paint(art,env.ink);assert.equal(env.images.length,1);
       // A spurious late load must not revive the failed request's listeners.
@@ -201,8 +208,8 @@ test('visible battle artwork starts and repaints while two old-scene downloads r
     assert.ok(visible[3].src,'the fourth loader starts without needing either old-scene request to finish');
     assert.equal(activeBattle().length,2);
     assert.deepEqual(visible.map(image=>new URL(image.src).pathname.split('/').at(-1)),[
-      'floor-material-atlas.png','scene-detailed-residences-garden-v1.png',
-      'scene-new-props-atlas.png','finale-room-scene-v1.png',
+      'floor-material-atlas.lossless.webp','scene-detailed-residences-garden-v1.lossless.webp',
+      'scene-new-props-atlas.lossless.webp','finale-room-scene-v1.lossless.webp',
     ]);
     visible[2].load();visible[3].load();
     assert.deepEqual(repaints,{floor:1,exterior:1,props:1,room:1},'completion requests a real scenery repaint');

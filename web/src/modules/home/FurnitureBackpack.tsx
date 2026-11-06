@@ -37,6 +37,7 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
   const sent=useRef(false),[notice,setNotice]=useState('');
   const draftState=useMemo(()=>({...base,homeLayout:draft,homeSurfaces:finishDraft}),[base,draft,finishDraft]);
   const items=useMemo(()=>homeInventory(draftState).map(item=>({...item,name:item.furnitureId?catalog.furniture.find(f=>f.id===item.furnitureId)?.name??item.name:item.name})),[draftState,catalog]);
+  const sheetKey=[...new Set(items.map(item=>HOME_FRAMES[item.sprite].sheet))].sort().join('|');
   const selected=items.find(item=>item.layoutKey===selection);
   const selectionStart=useRef<{key:string;placement:HomePlacement}|null>(null);
   const selectItem=(item?:HomeItem)=>{
@@ -73,7 +74,7 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
   const stepRedo=()=>{if(locked||conflict||!redo.length)return;setUndo(history=>[...history,snapshot()]);setDraft(redo.at(-1)!.layout);setFinishDraft(redo.at(-1)!.surfaces);setRedo(redo.slice(0,-1));setDrag(null);selectItem();setNotice('已重做上一步。');};
   const cancel=()=>{if(locked)return;if(dragRef.current){setDrag(null);setNotice('已取消这次拖动。');return;}onClose();};
   const save=async()=>{if(locked||conflict||!dirty||dragRef.current)return;sent.current=true;const ok=await onSave({type:'SAVE_HOME_LAYOUT',changes,...(surfaceDirty?{surfaces:finishDraft}:{})});if(ok)onClose();else{sent.current=false;setNotice('布置草稿已保留，请根据提示重试。');}};
-  useEffect(()=>{let active=true;void loadHomeArtwork().then(value=>{if(active)setArt(value);}).catch(e=>{if(active)setArtError(String(e.message));});return()=>{active=false;};},[]);
+  useEffect(()=>{let active=true;setArtError('');void loadHomeArtwork(items.map(item=>item.sprite)).then(value=>{if(active)setArt(current=>({...current,...value}));}).catch(e=>{if(active)setArtError(String(e.message));});return()=>{active=false;};},[sheetKey]);
   // An idempotent Retry may finish after the original Save response was lost.
   useEffect(()=>{if(pending||busy||state.revision===base.revision||!dirty)return;if(changes.every(c=>{const p=state.homeLayout?.[c.key];return p&&p.x===c.x&&p.y===c.y&&p.stored===c.stored;})&&(!surfaceDirty||JSON.stringify(homeSurfaceSelection(state))===JSON.stringify(finishDraft)))onClose();},[state,pending,busy,finishDraft]);
   // A background revision bump (e.g. a parcel draw resolving after this dialog

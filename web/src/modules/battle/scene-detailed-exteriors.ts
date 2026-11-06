@@ -11,22 +11,22 @@ const crops:Record<DetailedExteriorKind,readonly [number,number,number,number]>=
   'glass-frame':[1008,683,452,272],
 };
 type Asset='exteriors'|'obstacles'|'workstations'|'materials'|'accents'|'structures'|'market-banks'|'back-walls'|'tunnel-fixtures'|'warehouse-fixtures'|'warehouse-pallet-jack'|'warehouse-pipe-cradle'|'warehouse-roll-pallet'|'warehouse-storage-rack'|'tunnel-tools';
-const urls:Record<Asset,string>={
-  exteriors:new URL('./assets/scene-detailed-residences-garden-v1.png',import.meta.url).href,
-  obstacles:new URL('./assets/scene-detailed-obstacles-v1.png',import.meta.url).href,
-  workstations:new URL('./assets/scene-detailed-workstations-v1.png',import.meta.url).href,
-  'tunnel-tools':new URL('./assets/scene-tunnel-tool-cache-v2.png',import.meta.url).href,
-  materials:new URL('./assets/scene-refined-materials-v1.png',import.meta.url).href,
-  accents:new URL('./assets/scene-small-accents-v1.png',import.meta.url).href,
-  structures:new URL('./assets/scene-perimeter-foreground-v1.png',import.meta.url).href,
-  'market-banks':new URL('./assets/scene-market-banks-v1.png',import.meta.url).href,
-  'back-walls':new URL('./assets/scene-chapter-backwalls-v1.png',import.meta.url).href,
-  'tunnel-fixtures':new URL('./assets/scene-tunnel-fixtures-v3.png',import.meta.url).href,
-  'warehouse-fixtures':new URL('./assets/scene-warehouse-fixtures-v4.png',import.meta.url).href,
-  'warehouse-pallet-jack':new URL('./assets/scene-warehouse-pallet-jack-v1.png',import.meta.url).href,
-  'warehouse-pipe-cradle':new URL('./assets/scene-warehouse-pipe-cradle-v1.png',import.meta.url).href,
-  'warehouse-roll-pallet':new URL('./assets/scene-warehouse-roll-pallet-v1.png',import.meta.url).href,
-  'warehouse-storage-rack':new URL('./assets/scene-warehouse-storage-rack-v1.png',import.meta.url).href,
+const urls:Record<Asset,readonly [string,string]>={
+  exteriors:[new URL('./assets/scene-detailed-residences-garden-v1.lossless.webp',import.meta.url).href,new URL('./assets/scene-detailed-residences-garden-v1.png',import.meta.url).href],
+  obstacles:[new URL('./assets/scene-detailed-obstacles-v1.lossless.webp',import.meta.url).href,new URL('./assets/scene-detailed-obstacles-v1.png',import.meta.url).href],
+  workstations:[new URL('./assets/scene-detailed-workstations-v1.lossless.webp',import.meta.url).href,new URL('./assets/scene-detailed-workstations-v1.png',import.meta.url).href],
+  'tunnel-tools':[new URL('./assets/scene-tunnel-tool-cache-v2.lossless.webp',import.meta.url).href,new URL('./assets/scene-tunnel-tool-cache-v2.png',import.meta.url).href],
+  materials:[new URL('./assets/scene-refined-materials-v1.lossless.webp',import.meta.url).href,new URL('./assets/scene-refined-materials-v1.png',import.meta.url).href],
+  accents:[new URL('./assets/scene-small-accents-v1.lossless.webp',import.meta.url).href,new URL('./assets/scene-small-accents-v1.png',import.meta.url).href],
+  structures:[new URL('./assets/scene-perimeter-foreground-v1.lossless.webp',import.meta.url).href,new URL('./assets/scene-perimeter-foreground-v1.png',import.meta.url).href],
+  'market-banks':[new URL('./assets/scene-market-banks-v1.lossless.webp',import.meta.url).href,new URL('./assets/scene-market-banks-v1.png',import.meta.url).href],
+  'back-walls':[new URL('./assets/scene-chapter-backwalls-v1.lossless.webp',import.meta.url).href,new URL('./assets/scene-chapter-backwalls-v1.png',import.meta.url).href],
+  'tunnel-fixtures':[new URL('./assets/scene-tunnel-fixtures-v3.lossless.webp',import.meta.url).href,new URL('./assets/scene-tunnel-fixtures-v3.png',import.meta.url).href],
+  'warehouse-fixtures':[new URL('./assets/scene-warehouse-fixtures-v4.lossless.webp',import.meta.url).href,new URL('./assets/scene-warehouse-fixtures-v4.png',import.meta.url).href],
+  'warehouse-pallet-jack':[new URL('./assets/scene-warehouse-pallet-jack-v1.lossless.webp',import.meta.url).href,new URL('./assets/scene-warehouse-pallet-jack-v1.png',import.meta.url).href],
+  'warehouse-pipe-cradle':[new URL('./assets/scene-warehouse-pipe-cradle-v1.lossless.webp',import.meta.url).href,new URL('./assets/scene-warehouse-pipe-cradle-v1.png',import.meta.url).href],
+  'warehouse-roll-pallet':[new URL('./assets/scene-warehouse-roll-pallet-v1.lossless.webp',import.meta.url).href,new URL('./assets/scene-warehouse-roll-pallet-v1.png',import.meta.url).href],
+  'warehouse-storage-rack':[new URL('./assets/scene-warehouse-storage-rack-v1.lossless.webp',import.meta.url).href,new URL('./assets/scene-warehouse-storage-rack-v1.png',import.meta.url).href],
 };
 const atlases=new Map<Asset,HTMLImageElement>(),listeners=new Set<()=>void>();
 function source(asset:Asset='exteriors'){
@@ -35,7 +35,7 @@ function source(asset:Asset='exteriors'){
     atlas=new Image();atlas.fetchPriority='high';atlases.set(asset,atlas);
     atlas.onload=()=>{for(const ready of listeners)ready();};
     // Battle art has its own bounded queue, independent of other scene preloads.
-    void queueBattleImage(atlas,urls[asset]);
+    void queueBattleImage(atlas,...urls[asset]);
   }
   return atlas?.complete&&atlas.naturalWidth>0?atlas:undefined;
 }

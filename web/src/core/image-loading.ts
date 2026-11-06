@@ -134,4 +134,25 @@ function createImageQueue(){
 export const {queueImage,cancelQueuedImage}=createImageQueue();
 // Keep two independent battle slots so background preloads cannot starve visible art.
 // Both lanes stay bounded: at most four large image transfers leave room for APIs.
-export const queueBattleImage=createImageQueue().queueImage;
+const battleImages=createImageQueue().queueImage;
+export function queueBattleImage(image:HTMLImageElement,url:string,fallback?:string):Promise<HTMLImageElement>{
+  if(!fallback)return battleImages(image,url);
+  const onerror=image.onerror;
+  image.onerror=null;
+  const ready=battleImages(image,url).catch(()=>{image.onerror=onerror;return battleImages(image,fallback);}).finally(()=>{image.onerror=onerror;});
+  void ready.catch(()=>{});
+  return ready;
+}
+
+const imageAssets=new Map<string,Promise<HTMLImageElement>>();
+export function loadCachedImage(url:string,fallback?:string):Promise<HTMLImageElement>{
+  const existing=imageAssets.get(url);
+  if(existing)return existing;
+  const image=new Image();
+  image.decoding='async';
+  image.fetchPriority='high';
+  const load=async(source:string)=>{await queueImage(image,source);await image.decode();return image;};
+  const ready=load(url).catch(error=>{if(fallback)return load(fallback);throw error;}).catch(error=>{imageAssets.delete(url);throw error;});
+  imageAssets.set(url,ready);
+  return ready;
+}

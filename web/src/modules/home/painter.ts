@@ -28,8 +28,9 @@ export function paintHomeSurroundings(ctx:CanvasRenderingContext2D,state:HomeApp
   ctx.restore();
 }
 export function drawHomeSprite(ctx:CanvasRenderingContext2D,art:HomeArtwork,sprite:HomeSprite,x:number,y:number,width:number){
-  const frame=HOME_FRAMES[sprite],height=width*frame.height/frame.width;
-  ctx.drawImage(art[frame.sheet],frame.x,frame.y,frame.width,frame.height,Math.round(x-width/2),Math.round(y-height),width,height);
+  const frame=HOME_FRAMES[sprite],height=width*frame.height/frame.width,image=art[frame.sheet];
+  if(!image)return;
+  ctx.drawImage(image,frame.x,frame.y,frame.width,frame.height,Math.round(x-width/2),Math.round(y-height),width,height);
 }
 export const HOME_REPAIR_PANELS=[
   {id:'WIN02',x:433,y:33,width:147,height:254},
