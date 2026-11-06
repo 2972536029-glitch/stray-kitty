@@ -22,15 +22,17 @@ export default function HomeRepairOverlay({scene,state,catalog,busy,pending,erro
       const menuBottom=document.querySelector('.fixed-game-menu')?.getBoundingClientRect().bottom??70;
       for(const p of parts){
         const marker=root.current?.querySelector<HTMLElement>(`[data-repair-id="${p.id}"]`);if(!marker)continue;
-        const point=scene.homeWorldToClient(p.x,p.y);
-        marker.style.left=Math.max(bounds.left+marker.offsetWidth/2+12,Math.min(bounds.right-marker.offsetWidth/2-12,point.x))+'px';
-        marker.style.top=Math.max(menuBottom+marker.offsetHeight/2+16,point.y)+'px';
+        const point=scene.homeWorldToClient(p.x,p.y),scale=Number(getComputedStyle(marker).zoom)||1;
+        const width=marker.offsetWidth*scale,height=marker.offsetHeight*scale;
+        marker.style.left=Math.max(bounds.left+width/2+12,Math.min(bounds.right-width/2-12,point.x))/scale+'px';
+        marker.style.top=Math.max(menuBottom+height/2+16,Math.min(bounds.bottom-height/2-16,point.y))/scale+'px';
         marker.hidden=wasRenovating||point.x<bounds.left+18||point.x>bounds.right-18||point.y<bounds.top+20||point.y>bounds.bottom-32;
       }
       if(part){const card=root.current?.querySelector<HTMLElement>('.home-repair-card'),marker=root.current?.querySelector<HTMLElement>(`[data-repair-id="${part.id}"]`);if(card){
         const p=marker?.getBoundingClientRect(),anchor=p?{x:p.left+p.width/2,y:p.top}:scene.homeWorldToClient(part.x,part.y),half=(p?.width??220)/2;
-        const right=anchor.x+half+18,left=right+card.offsetWidth<window.innerWidth-16?right:anchor.x-half-card.offsetWidth-18;
-        card.style.left=Math.max(16,Math.min(window.innerWidth-card.offsetWidth-16,left))+'px';card.style.top=Math.max(menuBottom+16,Math.min(window.innerHeight-card.offsetHeight-18,anchor.y))+'px';
+        const scale=Number(getComputedStyle(card).zoom)||1,width=card.offsetWidth*scale,height=card.offsetHeight*scale;
+        const right=anchor.x+half+18,left=right+width<window.innerWidth-16?right:anchor.x-half-width-18;
+        card.style.left=Math.max(16,Math.min(window.innerWidth-width-16,left))/scale+'px';card.style.top=Math.max(menuBottom+16,Math.min(window.innerHeight-height-18,anchor.y))/scale+'px';
       }}
       frame=requestAnimationFrame(position);
     };position();return()=>cancelAnimationFrame(frame);

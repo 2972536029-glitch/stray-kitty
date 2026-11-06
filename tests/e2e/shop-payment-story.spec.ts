@@ -170,7 +170,7 @@ for(const viewport of [{width:1600,height:900},{width:1366,height:768},{width:25
   await page.screenshot({path:info.outputPath('recharge-layout.png')});
 });
 
-test('desktop HUD and dialogue keep their proportions while resizing without advancing the story',async({page,request},info)=>{
+test('desktop menu uses 40 percent reading room and other UI uses 20 percent without advancing the story',async({page,request},info)=>{
   const {headers}=await prepare(page,request,'alley.story');
   const initial=await(await request.get('/api/v1/state',{headers})).json() as GameState;
   const catalog=await(await request.get('/api/v1/content')).json();
@@ -178,10 +178,12 @@ test('desktop HUD and dialogue keep their proportions while resizing without adv
   let proportions:{dialogue:number;speaker:number;menu:number}|undefined;
   for(const viewport of [{width:1920,height:1080},{width:1600,height:900},{width:1280,height:720},{width:1024,height:576},{width:1920,height:1080}]){
     await page.setViewportSize(viewport);
-    await expect.poll(()=>page.evaluate(()=>Number(getComputedStyle(document.documentElement).getPropertyValue('--desktop-ui-scale')))).toBeCloseTo(Math.min(1,viewport.width/1920,viewport.height/1080),3);
+    const scale=Math.max(.5,Math.min(1,Math.min(viewport.width/1920,viewport.height/1080)*1.2));
+    await expect.poll(()=>page.evaluate(()=>Number(getComputedStyle(document.documentElement).getPropertyValue('--desktop-ui-scale')))).toBeCloseTo(scale,3);
+    expect(await page.locator('.topbar').evaluate(el=>Number(getComputedStyle(el).zoom))).toBeCloseTo(Math.max(.5,Math.min(1,Math.min(viewport.width/1920,viewport.height/1080)*1.4)),3);
     const frame=(await page.locator('.story-dialogue').boundingBox())!,speaker=(await page.locator('.story-dialogue .speaker').boundingBox())!,menu=(await page.locator('.topbar').boundingBox())!;
-    const current={dialogue:frame.height/viewport.height,speaker:speaker.height/viewport.height,menu:menu.height/viewport.height};
-    if(proportions){for(const key of ['dialogue','speaker','menu'] as const)expect(Math.abs(current[key]-proportions[key])).toBeLessThan(.005);}else proportions=current;
+    const current={dialogue:frame.height/scale,speaker:speaker.height/scale,menu:menu.height/Math.max(.5,Math.min(1,Math.min(viewport.width/1920,viewport.height/1080)*1.4))};
+    if(proportions){for(const key of ['dialogue','speaker','menu'] as const)expect(Math.abs(current[key]-proportions[key]),key).toBeLessThan(key==='speaker'?2:8);}else proportions=current;
     expect(frame.x).toBeGreaterThanOrEqual(0);expect(frame.y+frame.height).toBeLessThanOrEqual(viewport.height);
     expect(await page.locator('.topbar nav').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
     await page.screenshot({path:info.outputPath(`desktop-dialogue-${viewport.width}.png`)});

@@ -157,8 +157,9 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
   useEffect(()=>{let frame=0;const position=()=>{const actions=contextActions.current,name=contextName.current;if(actions&&name&&selected&&!selected.stored){
     const sprite=HOME_FRAMES[selected.sprite],point=drag?.moved&&drag.inside&&drag.point?drag.point:selected;
     const foot=scene.homeWorldToClient(point.x,point.y),top=scene.homeWorldToClient(point.x,point.y-selected.width*sprite.height/sprite.width),limit=bag.current?.getBoundingClientRect().top??window.innerHeight;
-    for(const node of [name,actions]){node.style.left=Math.max(node.offsetWidth/2+12,Math.min(window.innerWidth-node.offsetWidth/2-12,foot.x))+'px';node.hidden=foot.y<0||top.y>limit||foot.x<0||foot.x>window.innerWidth;}
-    name.style.top=Math.max(8,top.y-name.offsetHeight-8)+'px';actions.style.top=Math.max(8,Math.min(limit-actions.offsetHeight-8,foot.y+10))+'px';
+    for(const node of [name,actions]){const scale=Number(getComputedStyle(node).zoom)||1,width=node.offsetWidth*scale;node.style.left=Math.max(width/2+12,Math.min(window.innerWidth-width/2-12,foot.x))/scale+'px';node.hidden=foot.y<0||top.y>limit||foot.x<0||foot.x>window.innerWidth;}
+    const nameScale=Number(getComputedStyle(name).zoom)||1,actionsScale=Number(getComputedStyle(actions).zoom)||1;
+    name.style.top=Math.max(8,top.y-name.offsetHeight*nameScale-8)/nameScale+'px';actions.style.top=Math.max(8,Math.min(limit-actions.offsetHeight*actionsScale-8,foot.y+10))/actionsScale+'px';
   }frame=requestAnimationFrame(position);};position();return()=>cancelAnimationFrame(frame);},[scene,selected,drag]);
   return <section role="region" aria-label="家具背包 · 布置模式" className="furniture-backpack">
     {selected&&!selected.stored&&<><div className="backpack-object-name" ref={contextName}>{selected.name}</div><div className="backpack-object-actions" ref={contextActions} role="group" aria-label={`${selected.name}操作`}>
