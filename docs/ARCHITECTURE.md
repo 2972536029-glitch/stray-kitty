@@ -154,6 +154,7 @@ stray-kitty/
 │  │  └─ tutorials/  操作提示
 │  ├─ public/  静态资源
 │  │  └─ assets/  图片、动画、声音与字体
+│  │     ├─ chapters/  五章独立场景封面
 │  │     ├─ fonts/
 │  │     ├─ home/  无猫建筑、四阶修缮与主题家具透明图集
 │  │     │  ├─ parcels/  两套主题的二十四件独立透明家具组件
