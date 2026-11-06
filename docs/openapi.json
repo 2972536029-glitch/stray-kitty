@@ -963,6 +963,16 @@
               "type": "string"
             },
             "description": "已制作或领取的阶段家具 objectId；跨阶段沿用，已保存的旧布置仍视为拥有。"
+          },
+          "homeSurfaces": {
+            "$ref": "#/components/schemas/HomeSurfaces"
+          },
+          "homeSurfacesOwned": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -2029,6 +2039,9 @@
           },
           {
             "$ref": "#/components/schemas/AcquireHomeDecorCommand"
+          },
+          {
+            "$ref": "#/components/schemas/AcquireHomeSurfaceCommand"
           }
         ]
       },
@@ -2207,6 +2220,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/HomeDecor"
+            }
+          },
+          "homeSurfaces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HomeSurface"
             }
           }
         },
@@ -3215,13 +3234,17 @@
           },
           "changes": {
             "type": "array",
-            "minItems": 1,
+            "minItems": 0,
             "maxItems": 96,
             "items": {
               "$ref": "#/components/schemas/HomeLayoutChange"
             }
+          },
+          "surfaces": {
+            "$ref": "#/components/schemas/HomeSurfaces"
           }
-        }
+        },
+        "description": "家具及墙纸地板在同一事务保存；changes 允许空数组，但至少有家具改动或 surfaces。服务端校验拥有权。"
       },
       "HomeDecor": {
         "type": "object",
@@ -3392,6 +3415,89 @@
           }
         },
         "description": "制作或领取当前阶段家具；服务端校验阶段、拥有状态和材料后入库，不自动摆放。"
+      },
+      "HomeSurfaces": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "wallpaper",
+          "floor"
+        ],
+        "properties": {
+          "wallpaper": {
+            "type": "string",
+            "minLength": 1
+          },
+          "floor": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "HomeSurface": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "style",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "wallpaper",
+              "floor"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "style": {
+            "enum": [
+              "original",
+              "moss",
+              "moon"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "default": {
+            "type": "boolean"
+          },
+          "poolId": {
+            "type": "string"
+          },
+          "requiredOwned": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          }
+        }
+      },
+      "AcquireHomeSurfaceCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "surfaceId"
+        ],
+        "properties": {
+          "type": {
+            "const": "ACQUIRE_HOME_SURFACE"
+          },
+          "surfaceId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "description": "按已拥有的不同主题家具数量领取墙纸或地板奖励，不消耗货币，不改变抽奖规则。"
       }
     }
   },

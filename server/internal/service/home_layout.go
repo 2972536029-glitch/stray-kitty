@@ -35,12 +35,17 @@ func homeFurnished(s *domain.GameState) bool {
 
 // All edits validate before any mutation. The store commits the whole draft with
 // its existing revision and idempotency receipt, so a lost response is retryable.
-func (g *Game) saveHomeLayout(s *domain.GameState, changes []domain.HomeLayoutChange) error {
+func (g *Game) saveHomeLayout(s *domain.GameState, changes []domain.HomeLayoutChange, surfaces *domain.HomeSurfaces) error {
 	if err := domain.RequirePhase(*s, "home"); err != nil {
 		return err
 	}
-	if len(changes) < 1 || len(changes) > 96 {
-		return domain.Fail("INVALID_LAYOUT", "一次布置需要 1 到 96 项改动", 400)
+	if len(changes) == 0 && surfaces == nil || len(changes) > 96 {
+		return domain.Fail("INVALID_LAYOUT", "请调整家具或更换墙纸地板后保存，家具改动最多 96 项", 400)
+	}
+	if surfaces != nil {
+		if err := g.validateHomeSurfaces(s, *surfaces); err != nil {
+			return err
+		}
 	}
 	seen := map[string]bool{}
 	for _, c := range changes {
@@ -98,6 +103,10 @@ func (g *Game) saveHomeLayout(s *domain.GameState, changes []domain.HomeLayoutCh
 	}
 	for _, c := range changes {
 		s.HomeLayout[c.Key] = c.HomePlacement
+	}
+	if surfaces != nil {
+		copy := *surfaces
+		s.HomeSurfaces = &copy
 	}
 	s.LastResult = domain.Result{Message: "家具已经摆好了，伙伴们会去新的位置找它们。"}
 	return nil

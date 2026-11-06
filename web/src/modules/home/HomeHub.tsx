@@ -12,9 +12,9 @@ import './hub.css';
 export type HomeHubTab='overview'|'parcels'|'shop'|'depart'|'recharge';
 const titles:Record<HomeHubTab,string>={overview:'家园手册',parcels:'猫爪邮局',shop:'猫咪补给站',depart:'章节地图',recharge:'金枪鱼补给小站'};
 const stageNames=['漏雨避雨处','简易庇护所','原木温室','王国庆典'];
-interface Props {state:GameState;catalog:Catalog;tab:HomeHubTab;locked:boolean;busy:boolean;error:string;onDecorate:(id?:string)=>void;onCommand:(command:GameCommand)=>Promise<boolean>;onClose:()=>void;onRetry:()=>void;journal:ReactNode;children:ReactNode}
+interface Props {state:GameState;catalog:Catalog;tab:HomeHubTab;locked:boolean;busy:boolean;error:string;onDecorate:(id?:string)=>void;onCommand:(command:GameCommand)=>Promise<boolean>;onParcels:()=>void;onClose:()=>void;onRetry:()=>void;journal:ReactNode;children:ReactNode}
 
-export default function HomeHub({state,catalog,tab,locked,busy,error,onDecorate,onCommand,onClose,onRetry,journal,children}:Props) {
+export default function HomeHub({state,catalog,tab,locked,busy,error,onDecorate,onCommand,onParcels,onClose,onRetry,journal,children}:Props) {
   const [section,setSection]=useState<'home'|'journey'|'cats'|'collection'>('home');
   const stage=homeStage(state),project=currentHomeRenovation(state,catalog);
   const body=useRef<HTMLDivElement>(null);
@@ -30,7 +30,7 @@ export default function HomeHub({state,catalog,tab,locked,busy,error,onDecorate,
           </aside></div>
         :section==='journey'?journal
         :section==='cats'?<><div className="home-hub-companions-head"><h3>一路上的伙伴</h3><span>{state.cats.length} / {catalog.cats.length}</span></div><div className="home-hub-cats">{catalog.cats.map(cat=>{const known=state.cats.includes(cat.id);return <article key={cat.id} className={known?'':'locked'}><PixelCat breed={cat.id} size={100}/><h4>{cat.name}<small>{known?cat.id==='miaomiao'?'领队':'伙伴':'尚未结识'}</small></h4><p>{known?cat.description:'继续旅程，与新的伙伴相遇。'}</p></article>;})}</div><HomeMemories state={state}/></>
-        :<HomeCollection state={state} catalog={catalog} locked={locked} onCommand={onCommand} onDecorate={onDecorate}/>}
+        :<HomeCollection state={state} catalog={catalog} locked={locked} onCommand={onCommand} onDecorate={onDecorate} onParcels={onParcels}/>}
       </>:<EmbeddedModalContext.Provider value={true}>{children}</EmbeddedModalContext.Provider>}
     </div></div>
     {error&&tab!=='shop'&&<footer className="home-hub-footer" role="alert"><span>{error}</span><button disabled={busy} onClick={onRetry}>重试上次操作</button></footer>}

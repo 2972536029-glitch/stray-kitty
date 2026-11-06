@@ -14,7 +14,7 @@ export default function HomeMap({state, catalog}: {state: GameState; catalog: Ca
   useEffect(() => {
     const ctx = canvas.current!.getContext('2d')!;
     ctx.save();ctx.translate(-HOME_FRAMING.x,-HOME_FRAMING.y);paintHomestead(ctx, state, art);ctx.restore();
-  }, [state.flags, state.placements, state.homeLayout, state.homeDecorOwned, state.homeRepairs, state.phase, state.storyNodeId, catalog.slots, art]);
+  }, [state.flags, state.placements, state.homeLayout, state.homeDecorOwned, state.homeSurfaces, state.homeRepairs, state.phase, state.storyNodeId, catalog.slots, art]);
   return <figure className="home-map" data-layout={HOME_LAYOUT_ID}>
     <figcaption><h3>拱顶花房</h3><span>修缮 {homeStage(state)} / 4</span></figcaption>
     {loadError && <p role="alert">花房素材加载失败，请刷新重试。</p>}

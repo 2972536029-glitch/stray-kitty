@@ -508,52 +508,54 @@ func (a *API) fail(w http.ResponseWriter, r *http.Request, err error) {
 
 func validateCommand(body []byte, kind string) error {
 	allowed := map[string][]string{
-		"ADVANCE_STORY":       {"nodeId", "optionId"},
-		"START_STORY":         {"nodeId"},
-		"INTERACT":            {"interactionId", "layer", "position"},
-		"REPORT_MOVE":         {"distance"},
-		"CHOOSE_EVENT":        {"eventId", "optionId", "usePush"},
-		"START_BATTLE":        {"stageId", "returnPosition", "layer"},
-		"COMPLETE_BATTLE":     {"attemptId", "outcome", "report"},
-		"QA_SIMULATE_VICTORY": {"attemptId"},
-		"QA_SIMULATE_DEFEAT":  {"attemptId"},
-		"QA_CHECKPOINT":       {"checkpointId"},
-		"QA_RESTORE":          {},
-		"CONTINUE":            {},
-		"GO_HOME":             {},
-		"GO_EXPLORE":          {"mapId"},
-		"EXIT_MARKET":         {"layer", "position"},
-		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
-		"SAVE_HOME_LAYOUT":    {"changes"},
-		"ACQUIRE_HOME_DECOR":  {"decorId"},
-		"DRAW_FURNITURE":      {"poolId", "count"},
-		"CLAIM_PARCEL_REWARD": {"rewardId"},
-		"CHECK_RANDOM_ZONE":   {"zoneId", "layer", "position"},
-		"BUY_FURNITURE":       {"productId"},
-		"REPAIR_HOME":         {"repairId"},
+		"ADVANCE_STORY":        {"nodeId", "optionId"},
+		"START_STORY":          {"nodeId"},
+		"INTERACT":             {"interactionId", "layer", "position"},
+		"REPORT_MOVE":          {"distance"},
+		"CHOOSE_EVENT":         {"eventId", "optionId", "usePush"},
+		"START_BATTLE":         {"stageId", "returnPosition", "layer"},
+		"COMPLETE_BATTLE":      {"attemptId", "outcome", "report"},
+		"QA_SIMULATE_VICTORY":  {"attemptId"},
+		"QA_SIMULATE_DEFEAT":   {"attemptId"},
+		"QA_CHECKPOINT":        {"checkpointId"},
+		"QA_RESTORE":           {},
+		"CONTINUE":             {},
+		"GO_HOME":              {},
+		"GO_EXPLORE":           {"mapId"},
+		"EXIT_MARKET":          {"layer", "position"},
+		"PLACE_FURNITURE":      {"furnitureId", "slotId"},
+		"SAVE_HOME_LAYOUT":     {"changes", "surfaces"},
+		"ACQUIRE_HOME_DECOR":   {"decorId"},
+		"ACQUIRE_HOME_SURFACE": {"surfaceId"},
+		"DRAW_FURNITURE":       {"poolId", "count"},
+		"CLAIM_PARCEL_REWARD":  {"rewardId"},
+		"CHECK_RANDOM_ZONE":    {"zoneId", "layer", "position"},
+		"BUY_FURNITURE":        {"productId"},
+		"REPAIR_HOME":          {"repairId"},
 	}
 	required := map[string][]string{
-		"ADVANCE_STORY":       {"nodeId"},
-		"START_STORY":         {"nodeId"},
-		"INTERACT":            {"interactionId"},
-		"CHOOSE_EVENT":        {"eventId", "optionId"},
-		"START_BATTLE":        {"stageId"},
-		"COMPLETE_BATTLE":     {"attemptId", "outcome"},
-		"QA_SIMULATE_VICTORY": {"attemptId"},
-		"QA_SIMULATE_DEFEAT":  {"attemptId"},
-		"QA_CHECKPOINT":       {"checkpointId"},
-		"QA_RESTORE":          {},
-		"CONTINUE":            {},
-		"GO_HOME":             {},
-		"GO_EXPLORE":          {},
-		"EXIT_MARKET":         {"layer", "position"},
-		"PLACE_FURNITURE":     {"furnitureId", "slotId"},
-		"SAVE_HOME_LAYOUT":    {"changes"},
-		"ACQUIRE_HOME_DECOR":  {"decorId"},
-		"DRAW_FURNITURE":      {"poolId"},
-		"CLAIM_PARCEL_REWARD": {"rewardId"},
-		"BUY_FURNITURE":       {"productId"},
-		"REPAIR_HOME":         {},
+		"ADVANCE_STORY":        {"nodeId"},
+		"START_STORY":          {"nodeId"},
+		"INTERACT":             {"interactionId"},
+		"CHOOSE_EVENT":         {"eventId", "optionId"},
+		"START_BATTLE":         {"stageId"},
+		"COMPLETE_BATTLE":      {"attemptId", "outcome"},
+		"QA_SIMULATE_VICTORY":  {"attemptId"},
+		"QA_SIMULATE_DEFEAT":   {"attemptId"},
+		"QA_CHECKPOINT":        {"checkpointId"},
+		"QA_RESTORE":           {},
+		"CONTINUE":             {},
+		"GO_HOME":              {},
+		"GO_EXPLORE":           {},
+		"EXIT_MARKET":          {"layer", "position"},
+		"PLACE_FURNITURE":      {"furnitureId", "slotId"},
+		"SAVE_HOME_LAYOUT":     {"changes"},
+		"ACQUIRE_HOME_DECOR":   {"decorId"},
+		"ACQUIRE_HOME_SURFACE": {"surfaceId"},
+		"DRAW_FURNITURE":       {"poolId"},
+		"CLAIM_PARCEL_REWARD":  {"rewardId"},
+		"BUY_FURNITURE":        {"productId"},
+		"REPAIR_HOME":          {},
 	}
 	allowedKeys, ok := allowed[kind]
 	if !ok {
@@ -582,11 +584,23 @@ func validateCommand(body []byte, kind string) error {
 			return domain.Fail("INVALID_REQUEST", "repairId 必须为非空字符串", 400)
 		}
 	}
+	if value, exists := raw.Command["surfaces"]; exists {
+		var surfaces map[string]json.RawMessage
+		if json.Unmarshal(value, &surfaces) != nil || len(surfaces) != 2 {
+			return domain.Fail("INVALID_REQUEST", "surfaces 必须包含墙纸与地板", 400)
+		}
+		for _, field := range []string{"wallpaper", "floor"} {
+			var id string
+			if json.Unmarshal(surfaces[field], &id) != nil || id == "" {
+				return domain.Fail("INVALID_REQUEST", "墙纸与地板必须为有效编号", 400)
+			}
+		}
+	}
 	for _, key := range required[kind] {
 		if key == "changes" {
 			var changes []map[string]json.RawMessage
-			if json.Unmarshal(raw.Command[key], &changes) != nil || len(changes) < 1 || len(changes) > 96 {
-				return domain.Fail("INVALID_REQUEST", "changes 需要 1 到 96 项", 400)
+			if json.Unmarshal(raw.Command[key], &changes) != nil || string(raw.Command[key]) == "null" || len(changes) == 0 && raw.Command["surfaces"] == nil || len(changes) > 96 {
+				return domain.Fail("INVALID_REQUEST", "需要家具改动或墙纸地板更换，一次最多 96 项", 400)
 			}
 			for _, change := range changes {
 				if len(change) != 4 {

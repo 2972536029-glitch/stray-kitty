@@ -1,9 +1,10 @@
 import {HOME_SIZE, homeStage} from './layout';
 import {HOME_FRAMES, type HomeArtwork, type HomeSprite} from './assets';
 import {homeObjects, type HomeAppearance, type HomeObject} from './objects';
+import {paintHomeSurfaces} from './surfaces';
 export {homeObjects} from './objects';
 export function homeAppearanceKey(state:HomeAppearance):string {
-  return JSON.stringify(state.homeLayout??{})+'|'+(state.homeDecorOwned??[]).join(',')+'|'+(state.homeRepairs??[]).join(',')+'|'+homeStage(state)+'|'+Object.entries(state.placements).sort(([a],[b])=>a.localeCompare(b)).map(([slot,id])=>slot+':'+id).join('|');
+  return JSON.stringify(state.homeLayout??{})+'|'+JSON.stringify(state.homeSurfaces??{})+'|'+(state.homeDecorOwned??[]).join(',')+'|'+(state.homeRepairs??[]).join(',')+'|'+homeStage(state)+'|'+Object.entries(state.placements).sort(([a],[b])=>a.localeCompare(b)).map(([slot,id])=>slot+':'+id).join('|');
 }
 function filterFor(stage:number){return stage===1?'saturate(.3) brightness(.58)':stage===2?'saturate(.7) brightness(.83)':stage===4?'saturate(1.04) brightness(1.03)':'none';}
 /** Distant garden colours continue around the curved roof, without a solid mat. */
@@ -54,6 +55,7 @@ export function paintHomeStructure(ctx:CanvasRenderingContext2D,state:HomeAppear
     for(const panel of HOME_REPAIR_PANELS)ctx.drawImage(art.atlas,source.x,source.y,source.width,source.height,panel.x,panel.y,panel.width,panel.height);
   }
   ctx.filter='none';
+  paintHomeSurfaces(ctx,state);
   if(stage===1){
     for(const p of HOME_LEAKS){
       ctx.fillStyle='#354f64cc';ctx.fillRect(p.x-p.width/2,p.y-6,p.width,17);

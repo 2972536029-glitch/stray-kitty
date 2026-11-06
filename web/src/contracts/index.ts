@@ -26,12 +26,16 @@ export interface GameState {
   homeLayout?: Record<string, HomePlacement>;
   homeRepairs?: string[];
   homeDecorOwned?: string[];
+  homeSurfacesOwned?: string[];
+  homeSurfaces?: HomeSurfaces;
   alleyBattleReturn?: {x: number; y: number};
   lastResult: {draw?: ParcelDraw; draws?: ParcelDraw[]; message: string; roll?: number; outcome?: string; firstClear?: boolean; stageId?: string};
   qaCheckpointId?: string;
 }
 export interface HomePlacement {x:number;y:number;stored:boolean}
 export interface HomeLayoutChange extends HomePlacement {key:string}
+export interface HomeSurfaces {wallpaper:string;floor:string}
+export interface HomeSurface {id:string;kind:'wallpaper'|'floor';name:string;style:'original'|'moss'|'moon';description:string;default?:boolean;poolId?:string;requiredOwned?:number}
 export interface HomeDecor {id:string;objectId:string;stage:number;name:string;sprite:string;category?:FurnitureCategory;x:number;y:number;width:number;kind:string;front?:boolean;wall?:boolean;replacementSlot?:string;storedByDefault?:boolean;renovatedFrom?:string;description?:string;acquisition?:{kind:'craft'|'gift';material?:number;description:string}}
 export interface QACheckpoint {id: string; chapterId: string; title: string; phase: GamePhase; mapId: string; kind: 'story' | 'explore' | 'battle' | 'home' | 'event'; detail: string}
 export interface QATools {enabled: boolean; checkpoints: QACheckpoint[]}
@@ -51,8 +55,9 @@ export type GameCommand =
   | {type: 'CONTINUE'} | {type: 'GO_HOME'} | {type: 'GO_EXPLORE'; mapId?: string}
   | {type: 'EXIT_MARKET'; layer: string; position: {x:number;y:number}}
   | {type: 'PLACE_FURNITURE'; furnitureId: string; slotId: string}
-  | {type: 'SAVE_HOME_LAYOUT'; changes: HomeLayoutChange[]}
+  | {type: 'SAVE_HOME_LAYOUT'; changes: HomeLayoutChange[];surfaces?:HomeSurfaces}
   | {type: 'ACQUIRE_HOME_DECOR'; decorId: string}
+  | {type: 'ACQUIRE_HOME_SURFACE'; surfaceId: string}
   | {type: 'DRAW_FURNITURE'; poolId: string; count?: 1 | 10}
   | {type: 'CLAIM_PARCEL_REWARD'; rewardId: string}
   | {type: 'BUY_FURNITURE'; productId: string}
@@ -104,6 +109,7 @@ export interface Catalog {
   furniture: {id: string; name: string; theme: string; source?: 'story' | 'free_pool' | 'paid_pool'; description?: string; category?:FurnitureCategory; widthCm?: number; preferredSlot?: string; interactionCat?: string; interaction?: string}[];
   slots: {id: string; name: string}[];
   homeDecor: HomeDecor[];
+  homeSurfaces?: HomeSurface[];
   renovations?: RenovationDefinition[];
   items: {id: string; name: string; description: string}[];
   pools: ParcelPool[];

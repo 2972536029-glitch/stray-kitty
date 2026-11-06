@@ -1,0 +1,32 @@
+[
+  {
+    "id": "alley",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: dedicated chapter selection cover for the cozy pixel-art game 小猫回家记. Create ONE wide 16:9 scenic illustration, low three-quarter eye-level cinematic view, environmental storytelling, hand-crafted detailed pixel art, crisp pixels, warm amber lighting against rich teal and navy shadows. This is a beautiful close scene vignette for a chapter card, full bleed, strong readable focal point, depth and atmosphere. No top-down map, no miniature floorplan, no UI, no text, no labels, no border, no collage, no split panels, no people, no cats. Rainy evening in a narrow Chinese old-town alley, wet blue cobblestones reflecting one glowing amber wall lantern, old brick doorway, small cardboard shelter beside a drainpipe, potted leaves and rain streaks. Frame the inviting doorway and reflections close enough to read on a small chapter card.",
+    "output": "web/public/assets/chapters/alley-cover-v1.webp"
+  },
+  {
+    "id": "market",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: dedicated chapter selection cover for the cozy pixel-art game 小猫回家记. Create ONE wide 16:9 scenic illustration, low three-quarter eye-level cinematic view, environmental storytelling, hand-crafted detailed pixel art, crisp pixels, warm amber lighting against rich teal and navy shadows. This is a beautiful close scene vignette for a chapter card, full bleed, strong readable focal point, depth and atmosphere. No top-down map, no miniature floorplan, no UI, no text, no labels, no border, no collage, no split panels, no people, no cats. A midnight neighborhood street market, charming small wooden food stalls under red and gold paper lanterns, striped awnings, baskets and a steaming stall, warm inviting lamps reflecting on worn stone pavement, dark blue rooftops receding in the background. Close view from the market entrance, a readable cluster of lanterns and one stall as focal point.",
+    "output": "web/public/assets/chapters/market-cover-v1.webp"
+  },
+  {
+    "id": "greenhouse",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: dedicated chapter selection cover for the cozy pixel-art game 小猫回家记. Create ONE wide 16:9 scenic illustration, low three-quarter eye-level cinematic view, environmental storytelling, hand-crafted detailed pixel art, crisp pixels, warm amber lighting against rich teal and navy shadows. This is a beautiful close scene vignette for a chapter card, full bleed, strong readable focal point, depth and atmosphere. No top-down map, no miniature floorplan, no UI, no text, no labels, no border, no collage, no split panels, no people, no cats. Inside an old arched iron-and-glass greenhouse converted into a small home, curved glazing, bright blue sky and leafy garden outside, warm wooden floor, a repaired wooden gardening table with a few potted herbs and folded cloth, climbing vines around the frame, patches of sunlight. Cozy spacious interior corner, low three-quarter view, an illustrated scene rather than an empty architecture map.",
+    "output": "web/public/assets/chapters/greenhouse-cover-v1.webp"
+  },
+  {
+    "id": "tunnel",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: dedicated chapter selection cover for the cozy pixel-art game 小猫回家记. Create ONE wide 16:9 scenic illustration, low three-quarter eye-level cinematic view, environmental storytelling, hand-crafted detailed pixel art, crisp pixels, warm amber lighting against rich teal and navy shadows. This is a beautiful close scene vignette for a chapter card, full bleed, strong readable focal point, depth and atmosphere. No top-down map, no miniature floorplan, no UI, no text, no labels, no border, no collage, no split panels, no people, no cats. A mysterious underground brick passage under the city, damp teal moss along weathered archways, an old copper pipe, a single amber lantern and shallow puddles catching its warm light, a wooden footbridge toward a distant glowing arch. Atmospheric depth, quietly adventurous, readable lantern-lit arch as focal point, no horror.",
+    "output": "web/public/assets/chapters/tunnel-cover-v1.webp"
+  },
+  {
+    "id": "warehouse",
+    "tool": "built-in image_gen",
+    "prompt": "Use case: illustration-story. Asset type: dedicated chapter selection cover for the cozy pixel-art game 小猫回家记. Create ONE wide 16:9 scenic illustration, low three-quarter eye-level cinematic view, environmental storytelling, hand-crafted detailed pixel art, crisp pixels, warm amber lighting against rich teal and navy shadows. This is a beautiful close scene vignette for a chapter card, full bleed, strong readable focal point, depth and atmosphere. No top-down map, no miniature floorplan, no UI, no text, no labels, no border, no collage, no split panels, no people, no cats. Inside a weathered abandoned brick warehouse at night, high industrial windows admitting cool moonlight, stacked wooden shipping crates and a short iron stairway, an open aisle warmed by a hanging amber lantern, a small folded blanket beside a crate hints at a rescue ahead. Moody but hopeful, low three-quarter interior perspective, close cinematic composition.",
+    "output": "web/public/assets/chapters/warehouse-cover-v1.webp"
+  }
+]

@@ -140,6 +140,7 @@ export class DemoScene {
   private homeRenovation=new HomeRenovation();
   private homeVisualState?:HomeAppearance;
   private homeEditing?:{state:HomeAppearance;selection:string;valid:boolean;hover?:string};
+  private homeEditorBottom?:number;
   get homeCanvas(){return this.canvas;}
   get homeZoomLevel(){return this.homeCamera.zoom;}
   get homeRenovating(){return this.homeRenovation.active;}
@@ -152,9 +153,10 @@ export class DemoScene {
     if(!draft){this.canvas.style.cursor='';delete this.canvas.dataset.editorView;delete this.canvas.dataset.editorItems;}
   }
   setHomeHover(layoutKey?:string){if(this.homeEditing&&this.homeEditing.hover!==layoutKey)this.homeEditing={...this.homeEditing,hover:layoutKey};}
+  setHomeEditorBottom(clientY?:number){this.homeEditorBottom=clientY;}
   homeClientToWorld(clientX:number,clientY:number){
     const point=this.homeScreenPoint({clientX,clientY}),view=this.homeView(),r=this.canvas.getBoundingClientRect();
-    return{x:Math.round((point.x-view.x)/view.scale),y:Math.round((point.y-view.y)/view.scale),inside:clientX>=r.left&&clientX<=r.right&&clientY>=r.top&&clientY<=r.bottom};
+    return{x:Math.round((point.x-view.x)/view.scale),y:Math.round((point.y-view.y)/view.scale),inside:clientX>=r.left&&clientX<=r.right&&point.x>=view.viewport.x&&point.x<=view.viewport.x+view.viewport.width&&point.y>=view.viewport.y&&point.y<=view.viewport.y+view.viewport.height};
   }
   homeWorldToClient(x:number,y:number){
     const r=this.canvas.getBoundingClientRect(),view=this.homeView(),cover=getComputedStyle(this.canvas).objectFit==='cover',s=(cover?Math.max:Math.min)(r.width/this.viewWidth,r.height/this.viewHeight);
@@ -375,6 +377,7 @@ export class DemoScene {
   private homeView(){
     const bounds=this.canvas.getBoundingClientRect(),fit=getComputedStyle(this.canvas).objectFit==='cover'?'cover':'contain';
     const viewport=displayedCanvasRect(bounds.width,bounds.height,this.viewWidth,this.viewHeight,fit);
+    if(this.homeEditing&&this.homeEditorBottom!==undefined){const bottom=this.homeScreenPoint({clientX:bounds.left,clientY:this.homeEditorBottom});viewport.height=Math.max(80,Math.min(viewport.height,bottom.y-viewport.y));}
     const frame=this.homeCamera.frame(viewport.width,viewport.height);
     return{...frame,x:frame.x+viewport.x,y:frame.y+viewport.y,viewport};
   }

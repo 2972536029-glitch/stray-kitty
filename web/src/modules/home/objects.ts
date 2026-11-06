@@ -1,12 +1,13 @@
 import {furnitureWidth, furnitureCategory, type FurnitureCategory} from './furnishings';
 import {homeObjectDepth} from './spatial';
 import decor from '../../../content/home/decor.json' with { type: 'json' };
+import furnitureCatalogue from '../../../content/home/furniture.json' with {type:'json'};
 import type {GameState,HomeDecor} from '../../contracts';
 import type {CatBreed} from '../../adapters/canvas/pixelCat';
 import {HOME_SLOTS, homeSlotPoint, homeStage, type HomePoint} from './layout';
 import {HOME_FRAMES, type HomeSprite} from './assets';
 import {PARCEL_ART, PARCEL_IDS, isParcelFurniture, parcelWidth} from '../lottery/furnitureArt';
-export type HomeAppearance=Pick<GameState,'flags'|'placements'> & Partial<Pick<GameState,'phase'|'storyNodeId'|'furniture'|'homeLayout'|'homeRepairs'|'homeDecorOwned'>>;
+export type HomeAppearance=Pick<GameState,'flags'|'placements'> & Partial<Pick<GameState,'phase'|'storyNodeId'|'furniture'|'homeLayout'|'homeRepairs'|'homeDecorOwned'|'homeSurfaces'|'homeSurfacesOwned'>>;
 export type HomeObjectKind='decor'|'plant'|'storage'|'workbench'|'nest'|'castle'|'hammock'|'blanket'|'cushion'|'bowls'|'lamp'|'tower'|'sofa'|'seat';
 export interface HomeObject extends HomePoint {id:string;layoutKey:string;wall?:boolean;sprite:HomeSprite;width:number;kind:HomeObjectKind;solid:boolean;front?:boolean;slot?:string;furnitureId?:string}
 const furnitureSprites:Record<string,{sprite:HomeSprite;width:number;kind:HomeObjectKind}>={
@@ -31,13 +32,13 @@ export function homeInventory(state:HomeAppearance,includeAvailable=false):HomeI
     items.push({id:d.objectId,layoutKey:d.id,sprite:d.sprite as HomeSprite,x:d.x,y:d.y,width:d.width,kind,front:d.front,wall:d.wall,solid:['plant','storage','workbench','nest','castle','hammock','tower'].includes(kind),name:d.name,category:furnitureCategory(d.id,true),owned,description:d.description??d.acquisition?.description,acquisition:d.acquisition,stored:storedByDefault||!!(d.replacementSlot&&state.placements[d.replacementSlot]),...override});
   }
   const owned=state.furniture??Object.values(state.placements);
-  for(const id of owned){
+  for(const id of includeAvailable?furnitureCatalogue.map(item=>item.id):owned){
     const appearance=furnitureSprites[id];if(!appearance)continue;
     const slot=Object.keys(state.placements).find(slot=>state.placements[slot]===id),point=homeSlotPoint(slot??'',stage)??{x:820,y:540};
     const locked=!!slot&&['beam','sun_spot'].includes(slot)&&stage<3;
     const sprite=id==='cardboard_nest'&&stage>=2?'s2.nest':appearance.sprite;
     const layoutKey='furniture:'+id,override=state.homeLayout?.[layoutKey];
-    items.push({id:slot?'placed:'+slot:layoutKey,layoutKey,...appearance,sprite,...point,y:id==='star_glass'?Math.min(350,point.y-150):id==='comet_mobile'?point.y-58:point.y,solid:['nest','castle','hammock','storage','workbench','plant','sofa','seat'].includes(appearance.kind),slot:slot??layoutKey,furnitureId:id,name:id,category:furnitureCategory(id),wall:['star_glass','postmark_clock','lunar_clock','comet_mobile'].includes(id),stored:!slot||locked,...override});
+    items.push({id:slot?'placed:'+slot:layoutKey,layoutKey,...appearance,sprite,...point,y:id==='star_glass'?Math.min(350,point.y-150):id==='comet_mobile'?point.y-58:point.y,solid:['nest','castle','hammock','storage','workbench','plant','sofa','seat'].includes(appearance.kind),slot:slot??layoutKey,furnitureId:id,name:id,category:furnitureCategory(id),owned:owned.includes(id),wall:['star_glass','postmark_clock','lunar_clock','comet_mobile'].includes(id),stored:!slot||locked,...override});
   }
   return items;
 }

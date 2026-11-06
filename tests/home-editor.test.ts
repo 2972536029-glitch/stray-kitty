@@ -21,8 +21,11 @@ test('repairs keep ten matching essentials; optional furnishings need acquisitio
   assert.equal(homeObjects(celebration).length,10);
   assert.equal(homeInventory(timber).filter(item=>item.stored&&!item.furnitureId).length,0);
   assert.equal(homeInventory(celebration).filter(item=>item.stored&&!item.furnitureId).length,0);
-  assert.equal(homeInventory(timber,true).filter(item=>item.owned===false).length,15);
-  assert.equal(homeInventory(celebration,true).filter(item=>item.owned===false).length,24);
+  assert.equal(homeInventory(timber,true).filter(item=>!item.furnitureId&&item.owned===false).length,15);
+  assert.equal(homeInventory(celebration,true).filter(item=>!item.furnitureId&&item.owned===false).length,24);
+  const poolPreview=homeInventory(timber,true).filter(item=>item.furnitureId&&item.sprite.startsWith('parcel.'));
+  assert.equal(poolPreview.length,24);
+  assert.ok(poolPreview.every(item=>item.owned===false&&item.stored));
   const crafted=homeInventory({...timber,homeDecorOwned:['citrus-tree']}).find(item=>item.id==='citrus-tree')!;
   assert.equal(crafted.stored,true);
   assert.equal(crafted.owned,true);
