@@ -88,10 +88,10 @@ test('failed classic-map downloads show retry and recover without refreshing or 
 });
 
 for (const [checkpoint, scene, artwork, source, floorCount] of chapters) {
-  test(`${scene} restores early classic-map warming and reuses decoded artwork on reentry`, async ({page, request}, info) => {
+  test(`${scene} warms only its own floors and reuses decoded artwork on reentry`, async ({page, request}, info) => {
     await prepare(page, request, checkpoint, artwork);
     const requests: string[] = [], errors: string[] = [];
-    page.on('request', request => {if (/lossless.*\.webp/.test(request.url())) requests.push(request.url());});
+    page.on('request', request => {if (/lossless.*\.webp/.test(request.url()) && !request.url().includes('/assets/home/')) requests.push(request.url());});
     page.on('pageerror', error => errors.push(error.message));
     let release!: () => void;
     const gate = new Promise<void>(resolve => {release = resolve;});
@@ -104,7 +104,7 @@ for (const [checkpoint, scene, artwork, source, floorCount] of chapters) {
       expect(requests.some(url => url.includes('warehouse'))).toBe(false);
       expect(await page.locator('.game-viewport canvas').count()).toBe(0);
     } finally {release();}
-    await expect.poll(() => requests.length).toBe(scene === 'home' ? 7 : 6);
+    await expect.poll(() => requests.filter(url => !url.includes('/assets/home/')).length).toBe(floorCount);
     const chapterPrefix = scene === 'night-market' ? 'night_market_' : scene === 'chapter4-tunnel' ? 'chapter4_' : artwork;
     await expect.poll(() => requests.filter(url => url.includes(chapterPrefix)).length).toBe(floorCount);
     await page.getByRole('button', {name: /^(暂不登录|继续冒险)/}).click();
@@ -112,6 +112,7 @@ for (const [checkpoint, scene, artwork, source, floorCount] of chapters) {
     await expect(canvas).toHaveAttribute('data-rendered-scene', scene);
     await expect(canvas).toHaveAttribute('data-painted-background', /\.webp$/);
     if (scene === 'home') await expect(canvas).toHaveAttribute('data-home-artwork', 'ready');
+    expect(requests.filter(url => !url.includes('/assets/home/')).length).toBe(floorCount);
 
     const delivered = requests.find(url => url.includes(artwork))!;
     expect(statSync('web/src/modules/map/assets/' + artwork + '.lossless.webp').size).toBeLessThan(statSync(source).size);

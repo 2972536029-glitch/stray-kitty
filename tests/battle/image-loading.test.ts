@@ -42,7 +42,7 @@ function browser(maximum=2){
     }
     get element(){return this as unknown as HTMLImageElement;}
   }
-  return {image:(name:string)=>new ImageStub(name),started,active,peak:()=>peak};
+  return {Image:ImageStub,image:(name:string)=>new ImageStub(name),started,active,peak:()=>peak};
 }
 
 test('empty complete Images wait for real events and the global queue never exceeds two',async()=>{
@@ -226,4 +226,57 @@ test('ignored failures/cancellations are handled internally and repeated failed 
     assert.deepEqual(env.started,['failed:failed']);assert.deepEqual(unhandled,[]);
     await assert.rejects(promise,/Image failed to load/);
   }finally{process.off('unhandledRejection',observe);}
+});
+
+test('asset consumers share one download and wait for decoding before reusing the image',async()=>{
+  const {loadCachedImage}=await fresh(),env=browser();
+  const original=Object.getOwnPropertyDescriptor(globalThis,'Image');
+  Object.defineProperty(globalThis,'Image',{configurable:true,value:env.Image});
+  try{
+    const first=loadCachedImage('/shared.webp','/shared.png');
+    assert.equal(loadCachedImage('/shared.webp','/shared.png'),first);
+    await flush();assert.equal(env.started.length,1);
+    const image=[...env.active][0];let decode!:()=>void,settled=false;
+    image.decode=()=>new Promise(resolve=>{decode=resolve;});
+    void first.then(()=>{settled=true;});image.finish('load');await setImmediate();
+    assert.equal(settled,false);decode();
+    assert.equal(await first,image.element);
+    assert.equal(await loadCachedImage('/shared.webp','/shared.png'),image.element);
+    assert.equal(env.started.length,1);
+  }finally{if(original)Object.defineProperty(globalThis,'Image',original);else Reflect.deleteProperty(globalThis,'Image');}
+});
+
+test('battle WebP fallback preserves repaint callbacks and only reports failure if the PNG also fails',async()=>{
+  const {queueBattleImage}=await fresh(),env=browser();
+  for(const outcome of ['load','error'] as const){
+    const image=env.image(outcome);let loaded=0,failed=0;
+    image.onload=()=>{loaded++;};const onerror=()=>{failed++;};image.onerror=onerror;
+    const ready=queueBattleImage(image.element,'/battle.webp','/battle.png');
+    const result=outcome==='error'?assert.rejects(ready,/Image failed to load/):ready;
+    await flush();image.finish('error');await setImmediate();
+    assert.equal(failed,0);assert.equal(image.src,'/battle.png');
+    image.finish(outcome);await result;
+    assert.equal(loaded,outcome==='load'?1:0);assert.equal(failed,outcome==='error'?1:0);
+    assert.equal(image.onerror,onerror);
+  }
+});
+
+test('cached assets fall back after decode failure and allow a later retry after both URLs fail',async()=>{
+  const {loadCachedImage}=await fresh(),env=browser();
+  const original=Object.getOwnPropertyDescriptor(globalThis,'Image');
+  Object.defineProperty(globalThis,'Image',{configurable:true,value:env.Image});
+  try{
+    const first=loadCachedImage('/fallback.webp','/fallback.png');await flush();
+    const image=[...env.active][0];image.decode=()=>Promise.reject(Error('decode failed'));
+    image.finish('load');await setImmediate();
+    assert.equal(image.src,'/fallback.png');
+    image.decode=()=>Promise.resolve();image.finish('load');assert.equal(await first,image.element);
+    const failed=loadCachedImage('/retry.webp','/retry.png');
+    const rejection=assert.rejects(failed,/Image failed to load/);await flush();
+    const failing=[...env.active][0];failing.finish('error');await setImmediate();
+    assert.equal(failing.src,'/retry.png');failing.finish('error');await rejection;
+    const retry=loadCachedImage('/retry.webp','/retry.png');assert.notEqual(retry,failed);await flush();
+    const recovered=[...env.active][0];assert.notEqual(recovered,failing);
+    recovered.finish('load');assert.equal(await retry,recovered.element);
+  }finally{if(original)Object.defineProperty(globalThis,'Image',original);else Reflect.deleteProperty(globalThis,'Image');}
 });

@@ -3,14 +3,15 @@ import type {Catalog, GameState} from '../contracts';
 import {HOME_LAYOUT_ID, HOME_FRAMING, homeStage} from '../modules/home/layout';
 import {homeInventory} from '../modules/home/objects';
 import {paintHomestead} from '../modules/home/painter';
-import {loadHomeArtwork, type HomeArtwork} from '../modules/home/assets';
+import {HOME_FRAMES,loadHomeArtwork, type HomeArtwork} from '../modules/home/assets';
 
 export default function HomeMap({state, catalog}: {state: GameState; catalog: Catalog}) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [art, setArt] = useState<HomeArtwork>();
   const [loadError, setLoadError] = useState(false);
-  useEffect(() => {let cancelled=false;void loadHomeArtwork().then(value=>{if(!cancelled)setArt(value);}).catch(()=>{if(!cancelled)setLoadError(true);});return()=>{cancelled=true;};}, []);
   const items = homeInventory(state),placed = items.filter(item=>!item.stored);
+  const sheetKey=[...new Set(placed.map(item=>HOME_FRAMES[item.sprite].sheet))].sort().join('|');
+  useEffect(() => {let cancelled=false;setLoadError(false);void loadHomeArtwork(placed.map(item=>item.sprite)).then(value=>{if(!cancelled)setArt(current=>({...current,...value}));}).catch(()=>{if(!cancelled)setLoadError(true);});return()=>{cancelled=true;};}, [sheetKey]);
   useEffect(() => {
     const ctx = canvas.current!.getContext('2d')!;
     ctx.save();ctx.translate(-HOME_FRAMING.x,-HOME_FRAMING.y);paintHomestead(ctx, state, art);ctx.restore();

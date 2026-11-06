@@ -39,7 +39,7 @@ function sceneAtlas(){
     floorAtlas=new Image();floorAtlas.fetchPriority='high';
     floorAtlas.onload=()=>{groundTileCache.clear();for(const listener of atlasListeners)listener();atlasListeners.clear();};
     floorAtlas.onerror=()=>atlasListeners.clear();
-    void queueBattleImage(floorAtlas,new URL('./assets/floor-material-atlas.png',import.meta.url).href);
+    void queueBattleImage(floorAtlas,new URL('./assets/floor-material-atlas.lossless.webp',import.meta.url).href,new URL('./assets/floor-material-atlas.png',import.meta.url).href);
   }
   return floorAtlas?.complete&&floorAtlas.naturalWidth>0?floorAtlas:undefined;
 }

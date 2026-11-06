@@ -45,28 +45,27 @@ function browser(){
 for(const entry of [
   {method:'state',map:'market',floor:'Lm1',file:'night_market_Lminus1_tunnel_1672x941.lossless.webp'},
   {method:'ready',map:'tunnel',floor:'Lm1',file:'chapter4_Lminus1_tunnel_v11.lossless.webp'},
-  {method:'ready',map:'market',floor:'L0',file:'night_market_L0_streets_1672x941.lossless.webp'},
+  {method:'ready',map:'market',floor:'L1',file:'night_market_L1_rooftops_1672x941.lossless.webp'},
 ] as const){
   test(`${entry.method} promotes a cached warm ${entry.map}/${entry.floor} into the next real queue slot`,async()=>{
     const env=browser();
     try{
       const art=await fresh();
+      const entryReady=art.chapterBackgroundReady(entry.map);await flush();env.images[0].load();await entryReady;
       const first=env.image(),second=env.image();
       const firstPromise=queueImage(first.element,'first-blocker');
       const secondPromise=queueImage(second.element,'second-blocker');await flush();
       const automatic=env.image();const autoPromise=queueImage(automatic.element,'earlier-auto');
-      // Prologue has no registry entry, so this invokes the existing pure-warm
-      // path: every chapter/floor is cached and queued low behind two blockers.
-      art.preloadClassicChapterArtwork('prologue');
-      const warmImages=env.images.slice(3),count=env.images.length;
-      assert.equal(warmImages.length,6);
+      art.preloadChapterArtwork(entry.map);await flush();
+      const warmImages=env.images.slice(4),count=env.images.length;
+      assert.equal(warmImages.length,entry.map==='market'?2:1);
       assert.ok(warmImages.every(image=>image.fetchPriority==='low'&&image.src===''));
       let ready:Promise<HTMLImageElement>|undefined;
       if(entry.method==='state')assert.equal(art.chapterBackgroundState(entry.map,entry.floor),'loading');
       else ready=art.chapterBackgroundReady(entry.map,entry.floor);
       assert.equal(env.images.length,count,'visible demand must promote the existing cached Image');
       // Subsequent background warming must not demote a visible pending image.
-      art.preloadClassicChapterArtwork('prologue');
+      art.preloadChapterArtwork(entry.map);
       assert.equal(env.images.length,count);
       first.load();await firstPromise;await flush();
       const promoted=env.started.at(-1)!;

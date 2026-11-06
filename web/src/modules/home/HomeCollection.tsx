@@ -16,7 +16,6 @@ interface Entry {key:string;name:string;owned:boolean;placed:boolean;theme:strin
 export default function HomeCollection({state,catalog,locked,onDecorate,onCommand,onParcels}:{state:GameState;catalog:Catalog;locked:boolean;onDecorate:(id?:string)=>void;onCommand:(command:GameCommand)=>Promise<boolean>;onParcels:()=>void}){
   const [filter,setFilter]=useState('all'),[theme,setTheme]=useState('all'),[query,setQuery]=useState(''),[selection,setSelection]=useState('');
   const [art,setArt]=useState<HomeArtwork>();
-  useEffect(()=>{let active=true;void loadHomeArtwork().then(a=>{if(active)setArt(a);}).catch(()=>{});return()=>{active=false;};},[]);
   const entries:Entry[]=homeInventory(state,true).map(item=>({key:item.layoutKey,name:catalog.furniture.find(f=>f.id===item.furnitureId)?.name??item.name,owned:item.owned!==false,placed:item.owned!==false&&!item.stored,theme:catalog.pools.find(pool=>pool.entries.some(e=>e.furnitureId===item.furnitureId))?.id??'basic',item}));
   const finishes=homeSurfaceSelection(state);
   const location=(entry:Entry)=>!entry.owned?entry.surface&&surfaceCollectionProgress(state,catalog,entry.surface)>=(entry.surface.requiredOwned??Infinity)?'可领取':entry.item?.acquisition?entry.item.acquisition.kind==='gift'?'可领取':'可制作':'待相遇':entry.surface?entry.placed?'使用中':'未使用':entry.placed?'已摆放':'背包中';
@@ -24,6 +23,8 @@ export default function HomeCollection({state,catalog,locked,onDecorate,onComman
   const themed=entries.filter(entry=>theme==='all'||entry.theme===theme);
   const matches=(entry:Entry,id:string)=>id==='all'||(id==='available'?!entry.owned:entry.owned&&(id==='stored'?!entry.placed:entry.placed));
   const shown=themed.filter(entry=>matches(entry,filter)&&entry.name.includes(query.trim()));
+  const sheetKey=[...new Set(shown.flatMap(entry=>entry.item?[HOME_FRAMES[entry.item.sprite].sheet]:[]))].sort().join('|');
+  useEffect(()=>{let active=true;void loadHomeArtwork(shown.flatMap(entry=>entry.item?[entry.item.sprite]:[])).then(value=>{if(active)setArt(current=>({...current,...value}));}).catch(()=>{});return()=>{active=false;};},[sheetKey]);
   const selected=shown.find(entry=>entry.key===selection)??shown[0],item=selected?.item,surface=selected?.surface;
   const definition=catalog.furniture.find(f=>f.id===item?.furnitureId),pool=catalog.pools.find(p=>p.id===(surface?.poolId??selected?.theme));
   const progress=surface?surfaceCollectionProgress(state,catalog,surface):0,required=surface?.requiredOwned??0,material=item?.acquisition?.material??0;

@@ -135,6 +135,7 @@ export class DemoScene {
   private homeBackdropKey = '';
   private homeArtwork?:HomeArtwork;
   private homeAssetLoading=false;
+  private homeAssetKey?:string;
   private homeAssetError=false;
   private homeCamera=new HomeCamera();
   private homeRenovation=new HomeRenovation();
@@ -700,7 +701,7 @@ export class DemoScene {
       this.canvas.dataset.homeFurniture=JSON.stringify(homeObjects(this.state!).filter(o=>o.furnitureId).map(o=>{const frame=HOME_FRAMES[o.sprite];return{id:o.furnitureId,slot:o.slot,x:o.x,y:o.y,width:o.width,height:o.width*frame.height/frame.width};}));
       this.canvas.dataset.homeCats = JSON.stringify(this.homeEditing?[]:this.homeCats.map(cat => {const hit=residentWorldPoint(cat,this.homeTime);return {breed: cat.breed, x: Math.round(cat.x), y: Math.round(cat.y), hitX:hit.x,hitY:hit.y,pose: cat.pose, slot:cat.slot, action: cat.action, mood:currentCatMood(cat,this.homeTime),petPressure:cat.petPressure??0,height: Math.round(cat.scriptedHeight ?? 0), bubble:cat.bubbleUntil>this.homeTime&&this.homeTime>=(cat.bubbleAt??0)?cat.bubble:null,social:cat.social?.kind,partner:cat.social?.partner,held:this.homeDrag?.cat===cat.breed};}));
       this.canvas.dataset.homeCamera=JSON.stringify({...this.homeView(),zoom:this.homeCamera.zoom,worldWidth:HOME_SIZE.width,worldHeight:HOME_SIZE.height});
-      this.canvas.dataset.homeArtwork=this.homeArtwork?'ready':this.homeAssetError?'error':'loading';
+      this.canvas.dataset.homeArtwork=this.homeAssetError?'error':this.homeAssetLoading||!this.homeArtwork?'loading':'ready';
       this.canvas.dataset.homeObjects=JSON.stringify(homeObjects(state));
     } else {
       for (const name of ['homeLayout', 'homeControl', 'homeBeat', 'homeStage', 'homeTime', 'homeCats','homeCamera','homeArtwork','homeObjects','homeFurniture','homeInteraction','homeRenovation']) delete this.canvas.dataset[name];
@@ -830,9 +831,13 @@ export class DemoScene {
     if(this.state?.chapterId === 'prologue'){this.drawPrologueHome();return;}
     if(!this.state)return;
     if(this.pausedByUser&&!this.homeEditing)this.homePointerCancel();
-    if(!this.homeAssetLoading){
+    const sprites=homeObjects(this.homeEditing?.state??this.state).map(object=>object.sprite);
+    const assetKey=[...new Set(sprites.map(sprite=>HOME_FRAMES[sprite].sheet))].sort().join('|');
+    if(this.homeAssetKey!==assetKey){
+      this.homeAssetKey=assetKey;
       this.homeAssetLoading=true;
-      void loadHomeArtwork().then(art=>{if(!this.destroyed)this.homeArtwork=art;}).catch(()=>{if(!this.destroyed)this.homeAssetError=true;});
+      this.homeAssetError=false;
+      void loadHomeArtwork(sprites).then(art=>{if(!this.destroyed&&this.homeAssetKey===assetKey){this.homeArtwork={...this.homeArtwork,...art};this.homeAssetLoading=false;this.homeBackdropKey='';}}).catch(()=>{if(!this.destroyed&&this.homeAssetKey===assetKey){this.homeAssetLoading=false;this.homeAssetError=true;}});
     }
     if(this.homeEditing){
       const {state,selection,valid,hover}=this.homeEditing,ctx=this.context,view=this.homeView();

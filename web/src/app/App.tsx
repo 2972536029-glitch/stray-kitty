@@ -29,7 +29,9 @@ import Modal from '../ui/Modal';
 import type {GameCommand} from '../contracts';
 import HomeAdvisor from '../modules/advisor/HomeAdvisor';
 import {homeAdvisorBlock, type HomeAdvisorActivity} from '../modules/advisor/home-presentation';
-import {preloadChapterArtwork, preloadClassicChapterArtwork} from '../modules/map/artwork';
+import {preloadChapterArtwork} from '../modules/map/artwork';
+import {loadHomeArtwork} from '../modules/home/assets';
+import {homeObjects} from '../modules/home/objects';
 import {trackContinueAdventure, trackChapter1Enter, trackHomePanelOpen} from '../observability/actions';
 
 export default function App() {
@@ -39,11 +41,11 @@ export default function App() {
   const {state, catalog, send, reportMove, busy, pending, error, disabled, retry, skipDialogue, accountName, sessionUnavailable, startNewJourney, resetSession, refresh, port} = game;
   const storyScene = state && catalog ? currentStory(catalog, state)?.scene : undefined;
   const artworkMap = state?.phase === 'home' || (state?.phase === 'dialogue' && storyScene === 'home') ? 'greenhouse' : state?.mapId;
-  // Chapters 1/2/4 use their original early warming, even during the prologue.
-  // A warehouse save/review keeps Chapter 5's isolated image-loading policy.
   useEffect(() => {
-    if (artworkMap && state?.chapterId !== 'prologue' && state?.phase !== 'battle' && state?.phase !== 'preparation') preloadChapterArtwork(artworkMap);
-    if (state && !warehouseReview) preloadClassicChapterArtwork(state.mapId);
+    if (artworkMap && !warehouseReview && state?.chapterId !== 'prologue' && state?.phase !== 'battle' && state?.phase !== 'preparation') {
+      preloadChapterArtwork(artworkMap);
+      if (artworkMap === 'greenhouse' && state) void loadHomeArtwork(homeObjects(state).map(object=>object.sprite)).catch(()=>{});
+    }
   }, [artworkMap, state?.mapId, state?.chapterId, state?.phase, warehouseReview]);
   const [entered, setEntered] = useState(warehouseReview), [paused, setPaused] = useState(false), [near, setNear] = useState(false);
   const [nearTarget, setNearTarget] = useState<{id: string; label: string} | null>(null);

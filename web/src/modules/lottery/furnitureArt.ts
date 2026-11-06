@@ -1,7 +1,7 @@
 import {furnitureWidthCm, FURNITURE_PIXELS_PER_CM} from '../home/furnishings';
 export {FURNITURE_PIXELS_PER_CM} from '../home/furnishings';
 import atlas from './atlas.json' with {type:'json'};
-import {queueImage} from '../../core/image-loading';
+import {loadCachedImage} from '../../core/image-loading';
 // Each item has an individual transparent PNG and a registered in-scene crop.
 export const PARCEL_ART = {
   moss_cottage: {widthCm:furnitureWidthCm('moss_cottage'),kind:'castle',cat:'diandian',pose:'castle_peek',slot:'corner'},
@@ -35,10 +35,11 @@ export function parcelWidth(id:string):number{return isParcelFurniture(id)?Math.
 export type ParcelFurnitureID = keyof typeof PARCEL_ART;
 export const PARCEL_IDS = Object.keys(PARCEL_ART) as ParcelFurnitureID[];
 export function isParcelFurniture(id:string):id is ParcelFurnitureID {return Object.hasOwn(PARCEL_ART,id);}
-export type ParcelArtwork={moss:HTMLImageElement;moon:HTMLImageElement};
-let loading:Promise<ParcelArtwork>|undefined;
-export function loadParcelArtwork():Promise<ParcelArtwork>{
-  if(!loading){const load=(url:string)=>new Promise<HTMLImageElement>((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error('主题家具素材暂时没有送到，请重试。'));void queueImage(image,url);});loading=Promise.all([load('/assets/home/furniture-parcels-moss-v2.png'),load('/assets/home/furniture-parcels-moon-v2.png')]).then(([moss,moon])=>({moss,moon})).catch(e=>{loading=undefined;throw e;});}return loading;
+export type ParcelArtwork=Partial<Record<'moss'|'moon',HTMLImageElement>>;
+export async function loadParcelArtwork(theme?:'moss'|'moon'):Promise<ParcelArtwork>{
+  const themes=theme?[theme]:['moss','moon'] as const;
+  const entries=await Promise.all(themes.map(async theme=>{const original=`/assets/home/furniture-parcels-${theme}-v2.png`;return [theme,await loadCachedImage(original.replace(/\.png$/,'.lossless.webp'),original)] as const;}));
+  return Object.fromEntries(entries);
 }
 export function parcelFrame(id:string){
   const key=`parcel.${id}`;
@@ -46,5 +47,5 @@ export function parcelFrame(id:string){
   return undefined;
 }
 export function paintParcelFurniture(ctx:CanvasRenderingContext2D,id:string,x:number,y:number,width:number,art?:ParcelArtwork){
-  const frame=parcelFrame(id);if(!frame||!art)return;ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(art[frame.theme],frame.x,frame.y,frame.width,frame.height,Math.round(x-width/2),Math.round(y-width*frame.height/frame.width),Math.round(width),Math.round(width*frame.height/frame.width));ctx.restore();
+  const frame=parcelFrame(id),image=frame&&art?.[frame.theme];if(!frame||!image)return;ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(image,frame.x,frame.y,frame.width,frame.height,Math.round(x-width/2),Math.round(y-width*frame.height/frame.width),Math.round(width),Math.round(width*frame.height/frame.width));ctx.restore();
 }

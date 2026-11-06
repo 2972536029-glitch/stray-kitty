@@ -2,6 +2,7 @@ import {queueBattleImage} from '../../core/image-loading';
 import {getIllustratedRoomBounds} from './scene-room-layout';
 
 const roomUrl=new URL('./assets/finale-room-scene-v1.png',import.meta.url).href;
+const losslessRoomUrl=new URL('./assets/finale-room-scene-v1.lossless.webp',import.meta.url).href;
 
 let roomImage:HTMLImageElement|undefined;
 const listeners=new Set<()=>void>();
@@ -10,7 +11,7 @@ function readyImage(){
     roomImage=new Image();roomImage.fetchPriority='high';
     roomImage.onload=()=>{for(const notify of listeners)notify();listeners.clear();};
     roomImage.onerror=()=>listeners.clear();
-    void queueBattleImage(roomImage,roomUrl);
+    void queueBattleImage(roomImage,losslessRoomUrl,roomUrl);
   }
   return roomImage?.complete&&roomImage.naturalWidth>0?roomImage:undefined;
 }

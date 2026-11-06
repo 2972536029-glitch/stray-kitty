@@ -12,8 +12,6 @@ const alleyOriginal = new URL('../rainyAlley/assets/rainy-alley-background-clean
 const tunnelL0Original = new URL('../../../../level_design/chapter4/art/chapter4_L0_approved.png', import.meta.url).href;
 const tunnelLowerOriginal = new URL('../../../../level_design/chapter4/art/chapter4_Lminus1_tunnel_v11.png', import.meta.url).href;
 
-// Importing this registry never starts downloads. App chooses the classic eager
-// loading policy or warehouse's isolated loading path from the saved map.
 const artwork: Record<string, Record<string, readonly [string, string]>> = {
   alley: {L0: [alleyUrl, alleyOriginal]},
   market: {
@@ -29,8 +27,6 @@ export type ChapterBackgroundStatus = {mapId: string; floor: string; state: Chap
 type Artwork = {image: HTMLImageElement; ready: Promise<HTMLImageElement>; state: ChapterBackgroundState};
 const cache = new Map<string, Artwork>();
 const warming = new Set<string>();
-const classicWarming = new Set<string>();
-let classicActiveMapId = '';
 
 function load(mapId: string, floor: string, priority: 'high' | 'low' = floor === 'L0' ? 'high' : 'low'): Artwork {
   const [url, fallback] = artwork[mapId][floor];
@@ -72,23 +68,6 @@ export function chapterBackgroundState(mapId: string, floor = 'L0'): ChapterBack
 
 export function retryChapterBackground(mapId: string, floor = 'L0') {
   cache.delete(artwork[mapId][floor][0]);warming.delete(mapId);load(mapId, floor);
-}
-
-// Restore early loading for Chapters 1, 2 and 4, including every floor. Finish
-// the visible entry image before warming the others on the same connection.
-export function preloadClassicChapterArtwork(activeMapId: string) {
-  classicActiveMapId = activeMapId;
-  if (activeMapId === 'warehouse' || classicWarming.has(activeMapId)) return;
-  classicWarming.add(activeMapId);
-  const warm = () => {
-    classicWarming.delete(activeMapId);
-    if (classicActiveMapId !== activeMapId) return;
-    for (const mapId of ['alley', 'market', 'tunnel']) {
-      for (const floor of Object.keys(artwork[mapId])) load(mapId, floor, 'low');
-    }
-  };
-  if (artwork[activeMapId]) void chapterBackgroundReady(activeMapId).then(warm, () => {classicWarming.delete(activeMapId);});
-  else warm();
 }
 
 export function chapterBackgroundReady(mapId: string, floor = 'L0'): Promise<HTMLImageElement> {
