@@ -2,6 +2,7 @@ import {useEffect,useRef,useState,type ReactNode} from 'react';
 import type {Catalog,GameCommand,GameState} from '../../contracts';
 import Modal,{EmbeddedModalContext} from '../../ui/Modal';
 import HomeMap from '../../ui/HomeMap';
+import WindowHeading from '../../ui/WindowHeading';
 import PixelCat from '../../ui/PixelCat';
 import HomeCollection from './HomeCollection';
 import {homeStage} from './layout';
@@ -19,8 +20,9 @@ export default function HomeHub({state,catalog,tab,locked,busy,error,onDecorate,
   const stage=homeStage(state),project=currentHomeRenovation(state,catalog);
   const body=useRef<HTMLDivElement>(null);
   useEffect(()=>{body.current?.scrollTo(0,0);},[tab,section]);
-  return <Modal title={titles[tab]} className={`home-hub home-hub-${tab}`} onClose={()=>{if(!locked)onClose();}}>
-    <header className="home-hub-header"><div className="home-hub-title"><h2>{titles[tab]}</h2>{tab==='overview'&&<span>{stageNames[stage-1]}</span>}</div>{tab==='overview'&&section==='home'&&<div className="home-overview-actions"><button disabled={locked} onClick={()=>onDecorate()}>布置花房</button><button className="secondary" onClick={()=>setSection('journey')}>查看旅程 →</button></div>}</header>
+  return <Modal variant="paper" title={titles[tab]} className={`home-hub home-hub-${tab}${tab==='overview'&&section==='journey'?' home-hub-journey':''}`} onClose={()=>{if(!locked)onClose();}}>
+    <WindowHeading title={titles[tab]} icon={tab==='overview'?'manual':tab==='depart'?'map':tab==='parcels'?'post':'supply'} className="home-hub-header" meta={tab==='overview'?<span className="window-badge">{stageNames[stage-1]}</span>:undefined} actions={tab==='overview'&&section==='home'?<><button disabled={locked} onClick={()=>onDecorate()}>布置花房</button><button className="secondary" onClick={()=>setSection('journey')}>查看旅程 →</button></>:undefined}/>
+
     <div className="home-hub-layout"><div className="home-hub-content" ref={body}>
       {tab==='overview'?<>
         <nav className="home-hub-tabs" aria-label="家园手册分类">{[['home','花房总览'],['journey','旅程记录'],['cats','猫咪伙伴'],['collection','家具收藏']].map(([id,title])=><button key={id} aria-pressed={section===id} disabled={locked} onClick={()=>setSection(id as typeof section)}>{title}</button>)}</nav>

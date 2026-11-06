@@ -2,6 +2,7 @@ import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import type {Catalog,GameCommand,GameState} from '../../contracts';
 import type {ParcelDraw} from './types';
 import Modal from '../../ui/Modal';
+import WindowHeading from '../../ui/WindowHeading';
 import {playSound} from '../../ui/soundEffects';
 import {trackRechargeEntryExpose, trackRechargeEntryClick} from '../../observability/actions';
 import {ThemePreview} from './ParcelArt';
@@ -112,7 +113,7 @@ export default function PostalJournal({state,catalog,disabled,retryDisabled,erro
       {(error||pendingNotice)&&<div className="parcel-error postal-error" role="alert"><span>{error||pendingNotice}</span><button disabled={retryDisabled} onClick={onRetry}>重试上次操作</button>{stage==='sending'&&!disabled&&<button onClick={()=>{pending.current=null;setStage('drawing');}}>返回明信片</button>}</div>}
     </div></div>
     {sheet==='collection'&&<CapsuleCollection key={pool.id} state={state} catalog={catalog} pool={pool} onClose={()=>setSheet(null)}/>}
-    {sheet==='rules'&&<Modal title="邮局规则与收据" className="gacha-info-sheet postal-info" onClose={()=>setSheet(null)}><header><h2>邮局手册</h2><div className="postal-info-tabs" role="group" aria-label="查看规则或收据"><button aria-pressed={infoTab==='rules'} onClick={()=>setInfoTab('rules')}>抽取规则</button><button aria-pressed={infoTab==='history'} onClick={()=>setInfoTab('history')}>包裹收据 <small>{state.lottery?.history.length??0}</small></button></div></header>
+    {sheet==='rules'&&<Modal variant="paper" title="邮局规则与收据" className="gacha-info-sheet postal-info" onClose={()=>setSheet(null)}><WindowHeading title="邮局手册" icon="manual"/><div className="postal-info-tabs" role="group" aria-label="查看规则或收据"><button aria-pressed={infoTab==='rules'} onClick={()=>setInfoTab('rules')}>抽取规则</button><button aria-pressed={infoTab==='history'} onClick={()=>setInfoTab('history')}>包裹收据 <small>{state.lottery?.history.length??0}</small></button></div>
       {infoTab==='rules'?<div className="gacha-rule-copy"><h3>费用与寄出</h3><p>{catalog.pools.map(p=>`${p.theme}每份 ${p.cost} ${p.currency==='tuna'?'罐头':'邮票'}`).join('；')}。寄出时扣费，涂画可跳过，不影响结果。家具概率可在图鉴中查看。</p><h3>新家具保底</h3><p>未集齐时，连续两份未获得新家具，第三份只从未拥有家具中按原权重抽取。两池分别累计，十连按顺序逐份计算。</p><h3>重复与收据</h3><p>重复家具转为 2 份修缮材料，收据保留最近 50 次。网络失败时重试原操作，不会重复扣费。</p></div>
       :<><ol className="gacha-receipts">{[...(state.lottery?.history??[])].reverse().map(r=><li key={r.id}><div><small>{new Date(r.createdAt).toLocaleString('zh-CN')} · {catalog.pools.find(p=>p.id===r.poolId)?.theme}</small><b>{catalog.furniture.find(f=>f.id===r.furnitureId)?.name??r.furnitureId}</b><span>{r.duplicate?`重复 → 材料 +${r.material}`:r.guaranteed?'保底新家具':'新家具'} · {r.cost} {r.currency==='tuna'?'罐头':'邮票'}</span></div><button onClick={()=>receipt(r)}>查看结果 ›</button></li>)}</ol>{!state.lottery?.history.length&&<p className="gacha-empty">还没有收据</p>}</>}
     </Modal>}
