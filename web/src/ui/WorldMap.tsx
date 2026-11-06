@@ -10,7 +10,7 @@ const summaries:Record<string,string>={alley:'寻找点点，穿过雨后的小�
 export default function WorldMap({state,catalog,disabled,onNavigate,onClose}:{state:GameState;catalog:Catalog;disabled:boolean;onNavigate:(command:GameCommand)=>void;onClose:()=>void}) {
   const currentId=state.phase==='home'?'greenhouse':state.mapId;
   return <Modal title="猫爪地图" onClose={onClose} className="world-map chapter-map">
-    <header className="chapter-map-header"><div><h2>章节地图</h2><div className="chapter-location" role="status"><span aria-hidden="true">⌖</span><div><small>你在这里</small><strong>{state.phase==='home'?'拱顶花房':catalog.maps.find(map=>map.id===currentId)?.name}</strong></div></div></div>
+    <header className="chapter-map-header"><h2>章节地图</h2>
       {state.phase==='explore'&&state.flags.includes('rescue_story_done')&&<button disabled={disabled} onClick={()=>onNavigate({type:'GO_HOME'})}>返回花房</button>}
     </header>
     <div className="chapter-map-body">

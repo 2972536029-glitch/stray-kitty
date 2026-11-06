@@ -78,8 +78,6 @@
   .event-card h2{font-size:19px}.event-card p{font-size:12px}.event-card button{font-size:12px}
   .choice-list button{min-height:44px}
   .lost-poster{top:64px;left:14px;width:110px;padding:6px}.lost-poster .pixel-cat{width:48px!important;height:48px!important}
-  .home-camera-controls{left:10px;bottom:12px;padding:3px;max-width:calc(100% - 20px)}
-  .home-camera-controls span{display:none}.home-camera-controls button{font-size:12px;padding:6px 12px}
 
   /* A stable left stick + right actions support simultaneous fingers. */
   .touch-controls{display:block;position:absolute;inset:0;z-index:6;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}

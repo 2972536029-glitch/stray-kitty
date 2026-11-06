@@ -121,7 +121,6 @@ export default function GameScreen({onHomeAdvisor: _onHomeAdvisor,homeAdvisorDis
     <main><h1 className="visually-hidden">一只猫的旅程，一群猫的家。</h1>
       <div className="game-layout"><section className="world-panel">
         <div className="world-wrap">{children}
-          {state.qaCheckpointId && state.phase !== 'battle' && <aside className="qa-active-badge" role="status"><span>正在使用验收进度</span><button onClick={onQA}>返回原进度 / 切换节点</button></aside>}
           {isHomeScene && <aside className="home-life-status"><span>{state.phase === 'dialogue' ? '故事进行中' : '花房日常'}</span><strong>{state.phase === 'dialogue' ? '伙伴们正跟随故事行动' : '拖动猫咪到家具或伙伴身边，一起玩一会儿'}</strong></aside>}
 
           {state.phase === 'dialogue' && node && <DialoguePanel key={node.id} node={node} disabled={disabled} onNext={optionId => onCommand({type: 'ADVANCE_STORY', nodeId: node.id, ...(optionId ? {optionId} : {})})} eventResult={resolution?.outcome.situation?.storyNodeId === node.id ? <EventResult resolution={resolution} compact/> : undefined}/>}

@@ -37,7 +37,6 @@ export function Viewport(props: Props) {
   useEffect(() => {
     if (scene.current) {scene.current.state = props.state;scene.current.pausedByUser = props.paused;scene.current.storyScene = props.storyNode?.scene;scene.current.storyNode = props.storyNode;scene.current.randomEligible = props.randomEligible ?? true;}
   }, [props.state, props.paused, props.storyNode, props.randomEligible]);
-  const home = props.state.phase === 'home' && props.state.chapterId !== 'prologue';
   return <><CanvasViewport label={props.state.phase === 'battle' ? '三路守护战场：点击格子布置光源' : props.state.phase === 'home' ? '花房家园俯视场景，拖动查看，点击小猫或家具互动' : props.state.phase === 'dialogue' ? '剧情场景，小猫跟随当前故事行动' : '猫咪俯视探索场景，使用方向键或 WASD 移动'} createRuntime={canvas => {
     const runtime = new DemoScene(
       canvas,
@@ -68,5 +67,5 @@ export function Viewport(props: Props) {
     <div><span aria-hidden="true">ฅ</span><p>{background.state === 'error' ? '地图暂时没打开' : '正在打开地图……'}</p>
       {background.state === 'error' ? <button onClick={()=>scene.current?.retryBackground()}>重新加载地图</button> : <small>路铺好后，小猫就可以出发了。</small>}
     </div>
-  </div>}{home && <div className="home-camera-controls" aria-label="花房视角"><button disabled={props.paused} aria-label="放大花房" onClick={()=>scene.current?.homeZoom(.35)}>＋</button><button disabled={props.paused} aria-label="缩小花房" onClick={()=>scene.current?.homeZoom(-.35)}>－</button><button disabled={props.paused} onClick={()=>scene.current?.homeZoom(0)}>花房全景</button></div>}</>;
+  </div>}</>;
 }

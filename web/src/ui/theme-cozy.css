@@ -207,9 +207,6 @@ button{font-size:14px}
 .app-shell:not([data-phase=battle]) .alley-objective span{color:#ffe9a8;font-size:13px;text-shadow:0 1px 0 #000,0 2px 0 rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.6)}
 .app-shell:not([data-phase=battle]) .alley-objective strong{text-shadow:inherit}
 .app-shell:not([data-phase=battle]) .alley-objective:hover,.app-shell:not([data-phase=battle]) .alley-objective:focus-visible{animation:none;opacity:1;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
-/* ③ 验收进度徽标：同一套（样式主体在 acceptance.css，此处只挂统一淡出节奏与唤回）。 */
-.app-shell .qa-active-badge{animation:overlay-hint-autohide .6s ease 6s forwards}
-.app-shell .qa-active-badge:hover,.app-shell .qa-active-badge:focus-within{animation:none;opacity:1}
 /* 减少动态效果：淡出动画改为常显（内容仍可读，不做节奏变化）。 */
-@media(prefers-reduced-motion:reduce){.app-shell .world-footer p,.app-shell:not([data-phase=battle]) .alley-objective,.app-shell .qa-active-badge{animation:none}}
+@media(prefers-reduced-motion:reduce){.app-shell .world-footer p,.app-shell:not([data-phase=battle]) .alley-objective{animation:none}}
 /* 战斗页顶栏已透明悬浮（layout-battle.css），文字配色/描边统一走上方 V2 的全局 Overlay 规则，与地图、花房一致。 */
