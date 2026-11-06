@@ -66,7 +66,12 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 			a.fail(w, r, err)
 			return
 		}
-		obs.Incr("kitty.session.started")
+		// 新建会话时 QA 标记恒为 false:玩家此时不可能带 QA 恢复点/检查点/模拟战
+		//(QA 身份只会在后续 QA 工作台操作后出现,由 paymentIdentity 在带凭证的
+		//请求里解析)。显式打 qa:false 使分母与业务指标的 !qa:true 过滤兼容,
+		//也让"该指标是否带 qa 维度"在指标管理里可审计(修复剧情推进比分母纯度,
+		//见 #18 齐雯验收反馈)。
+		obs.Incr("kitty.session.started", "qa:false")
 		*r = *r.WithContext(obs.WithQA(obs.WithIdentity(r.Context(), id, service.LogSessionID(token)), false))
 		a.json(w, 201, map[string]string{"playerId": id, "token": token})
 	})
