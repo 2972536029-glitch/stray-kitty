@@ -1,4 +1,5 @@
 import type {StoryNode} from '../contracts';
+import {hasStoryChoice} from '../core/story';
 import type {CatAppearance} from '../adapters/canvas/pixelCat';
 import DialogueBubble from './DialogueBubble';
 import PixelCat from './PixelCat';
@@ -32,15 +33,16 @@ interface Props {
   node: StoryNode;
   disabled: boolean;
   onNext: (optionId?: 'proud' | 'honest') => void;
+  onSkip?: (optionId?: 'proud' | 'honest') => void;
   eventResult?: ReactNode;
 }
 
-export default function DialoguePanel({node, disabled, onNext, eventResult}: Props) {
+export default function DialoguePanel({node, disabled, onNext, onSkip, eventResult}: Props) {
   const [choice, setChoice] = useState<{nodeId: string; attitude: Attitude} | null>(null);
   const attitude = choice?.nodeId === node.id ? choice.attitude : null;
   const [closing, setClosing] = useState(false);
 
-  const hasChoices = node.id === 'prologue_banter' || node.id === 'prologue_sneak';
+  const hasChoices = hasStoryChoice(node.id);
   const choosing = hasChoices && !attitude;
   useEffect(() => {
     if (hasChoices && attitude) document.querySelector<HTMLButtonElement>('.dialogue-advance-hit')?.focus({preventScroll:true});
@@ -79,7 +81,7 @@ export default function DialoguePanel({node, disabled, onNext, eventResult}: Pro
   }, [node.id, disabled]);
   useEffect(() => () => window.clearTimeout(exitTimer.current), []);
 
-  // Both the full-card click and skip advance exactly one story node.
+  // Normal reading advances one line; skip keeps choices and scene boundaries.
   const advance = () => {
     if (disabled || closing || advancing.current || (hasChoices && !attitude)) return;
     advancing.current = true;
@@ -111,7 +113,12 @@ export default function DialoguePanel({node, disabled, onNext, eventResult}: Pro
       closing={closing}
       disabled={disabled}
       onAdvance={advance}
-      onSkip={advance}
+      onSkip={() => {
+        if (!onSkip) {advance();return;}
+        if (disabled || closing || advancing.current || choosing) return;
+        advancing.current = true;
+        onSkip(attitude ?? undefined);
+      }}
     >
       {eventResult}
       <p key={node.id + (attitude ?? 'initial')}>{displayText.slice(0, shown)}{typing && <i className="dialogue-caret" aria-hidden="true"/>}</p>

@@ -1,4 +1,5 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import PixelCat from './PixelCat';
 import DialogueBubble from './DialogueBubble';
 import {playSound} from './soundEffects';
@@ -7,7 +8,7 @@ import alleyArtwork from './assets/opening/rainy-alley.png';
 
 /** Four story beats, from the familiar afternoon home into the rainy alley.
  * Environment plates, existing animated cat and readable captions stay separate.
- * The shared bottom frame advances one beat per click, Space or skip.
+ * The shared bottom frame advances one beat per click or Space.
  */
 const STORY_LINES = [
   '午后的阳光落在毛毯上，一切都是熟悉的温度。',
@@ -20,7 +21,7 @@ const STAGE_TITLES = ['午后 · 熟悉的温度', '气味 · 门外的世界', 
 
 type IntroStep = {phase: 'typing' | 'waiting' | 'fading'; line: number};
 
-export default function PrologueSequence({onComplete}: {onComplete: () => void}) {
+export default function PrologueSequence({onComplete,onSkip}: {onComplete: () => void;onSkip?:()=>void}) {
   const [step, setStep] = useState<IntroStep>({phase: 'typing', line: 0});
   const [typed, setTyped] = useState('');
 
@@ -70,7 +71,7 @@ export default function PrologueSequence({onComplete}: {onComplete: () => void})
       </div>
     </div>
     <div className="prologue-chapter-mark" aria-hidden="true"><span>序章</span><b>{STAGE_TITLES[stage]}</b></div>
-    <DialogueBubble speaker="旁白" kicker={`序章 · ${String(stage + 1).padStart(2, '0')} / 04`} closing={step.phase === 'fading'} onAdvance={advance} onSkip={() => {playSound('close');advance();}}>
+    <DialogueBubble speaker="旁白" kicker={`序章 · ${String(stage + 1).padStart(2, '0')} / 04`} closing={step.phase === 'fading'} onAdvance={advance} onSkip={() => {playSound('close');onSkip?.();onComplete();}}>
       <p className="prologue-text">{typed}{step.phase === 'typing' && <i className="dialogue-caret" aria-hidden="true"/>}</p>
       <div className="prologue-progress" aria-hidden="true">{STORY_LINES.map((_, index) => <i key={index} className={index <= stage ? 'is-active' : undefined}/>)}</div>
     </DialogueBubble>
@@ -84,6 +85,23 @@ export default function PrologueSequence({onComplete}: {onComplete: () => void})
 export function TutorialHighlight({selector, kicker, text, storageKey, onDone}: {selector: string; kicker: string; text: string; storageKey: string; onDone: () => void}) {
   const [rect, setRect] = useState<{left: number; top: number; width: number; height: number} | null>(null);
   const finished = useRef(false);
+  const cardRef=useRef<HTMLDivElement>(null);
+  const [cardPosition,setCardPosition]=useState({left:16,top:16});
+  useLayoutEffect(()=>{
+    if(!rect||!cardRef.current)return;
+    const place=()=>{
+      const card=cardRef.current!,gap=44,margin=16;
+      const bounds=card.getBoundingClientRect(),scale=bounds.width/card.offsetWidth;
+      const target=document.querySelector(selector),menu=target?.closest('.topbar')?.getBoundingClientRect();
+      const below=Math.max(rect.top+rect.height,menu?.bottom??0)+gap;
+      const above=rect.top-bounds.height-gap;
+      const top=(below+bounds.height<=window.innerHeight-margin?below:above>=margin?above:Math.max(margin,window.innerHeight-bounds.height-margin))/scale;
+      const left=Math.max(margin,Math.min(rect.left+rect.width/2-bounds.width/2,window.innerWidth-bounds.width-margin))/scale;
+      setCardPosition(previous=>previous.left===left&&previous.top===top?previous:{left,top});
+    };
+    place();const observer=new ResizeObserver(place);observer.observe(cardRef.current);
+    return()=>observer.disconnect();
+  },[rect,selector]);
 
   const finish = () => {
     if (finished.current) return;
@@ -117,15 +135,15 @@ export function TutorialHighlight({selector, kicker, text, storageKey, onDone}: 
   if (!rect) return null;
   const pad = 10;
   const box = {left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2};
-  return <div className="tutorial-highlight" role="presentation">
+  return createPortal(<div className="tutorial-highlight" role="presentation" style={{position:'fixed',zIndex:80}}>
     {/* 四块蒙版围出高亮窗口 */}
     <i style={{left: 0, top: 0, width: '100%', height: Math.max(0, box.top)}}/>
     <i style={{left: 0, top: box.top + box.height, width: '100%', height: `calc(100% - ${box.top + box.height}px)`}}/>
     <i style={{left: 0, top: box.top, width: Math.max(0, box.left), height: box.height}}/>
     <i style={{left: box.left + box.width, top: box.top, width: `calc(100% - ${box.left + box.width}px)`, height: box.height}}/>
     <span className="tutorial-ring" style={box}/>
-    <span className="tutorial-finger" style={{left: box.left + box.width / 2, top: box.top}} aria-hidden="true">👆</span>
-    <div className="tutorial-card" style={{left: Math.min(box.left, window.innerWidth - 300), top: Math.max(12, box.top - 118)}}>
+    <span className="tutorial-finger" style={{left: box.left + box.width / 2, top: box.top+box.height+4,translate:'-50% 0'}} aria-hidden="true">👆</span>
+    <div ref={cardRef} className="tutorial-card" style={cardPosition}>
       <b>✦ {kicker}</b>
       <p>{text}</p>
       {/* 「知道了」必须同时拦下 pointerdown 与 click 的冒泡：GameScreen 的“点击外部收起顶栏”
@@ -133,5 +151,5 @@ export function TutorialHighlight({selector, kicker, text, storageKey, onDone}: 
           变 false 在 click 前卸载，finish() 就再也不会执行（done 写不进 localStorage）。 */}
       <button data-sound="close" onPointerDown={event => event.stopPropagation()} onClick={event => {event.stopPropagation();finish();}}>知道了</button>
     </div>
-  </div>;
+  </div>,document.body);
 }

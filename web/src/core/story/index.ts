@@ -1,5 +1,6 @@
 import type {Catalog, GameState} from '../../contracts';
 export const currentStory = (catalog: Catalog, state: GameState) => catalog.story.find(n => n.id === state.storyNodeId);
+export const hasStoryChoice = (nodeId: string) => nodeId === 'prologue_banter' || nodeId === 'prologue_sneak';
 export function objective(state: GameState): string {
   if(state.mapId==='warehouse')return state.flags.includes('finale_boss_victory')?'沿北侧已打开的闸门前往隔间出口，护送伙伴回花房。':state.phase==='preparation'?'伙伴已集结，守住仓库防线。':'探索仓库，点亮灯光与捷径；货架上的两处调查可选。抵达北侧首领，守住归路。';
   if (state.activeBattle?.stageId === 'finale_boss' && ['battle', 'preparation', 'settlement'].includes(state.phase)) return '守住总仓库十波黑影与 D2 的喵喵，配合固定援军、照亮归路，击败九格永夜之王与两名精英；试玩结束后返回家园。';

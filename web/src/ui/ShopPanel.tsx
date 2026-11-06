@@ -7,7 +7,7 @@ import PostalCurrencyIcon from '../modules/lottery/PostalCurrencyIcon';
 import SupplyInventory from './SupplyInventory';
 import './panels.css';
 
-export default function ShopPanel({state,catalog,disabled,error,onCommand,onRefresh,onRetry,onClose,onRecharge,onParcels}:{state:GameState;catalog:Catalog;disabled:boolean;error:string;onCommand:(command:GameCommand)=>Promise<boolean>;onRefresh:()=>Promise<void>;onRetry:()=>void;onClose:()=>void;onRecharge:()=>void;onParcels:()=>void}){
+export default function ShopPanel({state,catalog,disabled,retryDisabled,error,onCommand,onRefresh,onRetry,onClose,onRecharge,onParcels}:{state:GameState;catalog:Catalog;disabled:boolean;retryDisabled?:boolean;error:string;onCommand:(command:GameCommand)=>Promise<boolean>;onRefresh:()=>Promise<void>;onRetry:()=>void;onClose:()=>void;onRecharge:()=>void;onParcels:()=>void}){
   useEffect(() => {trackRechargeEntryExpose('shop');}, []);
   const [tab,setTab]=useState<'rewards'|'inventory'>('rewards');
   return <Modal title="猫咪补给站" onClose={onClose} className="cat-shop supply-panel">
@@ -21,6 +21,6 @@ export default function ShopPanel({state,catalog,disabled,error,onCommand,onRefr
       <ParcelRewards state={state} catalog={catalog} disabled={disabled} onCommand={onCommand} onRefresh={onRefresh}/>
     </>:<SupplyInventory state={state}/>}</div>
     <div className="shop-parcel-entry"><h3>主题家具</h3><button disabled={disabled} onClick={onParcels}>打开猫爪邮局 →</button></div>
-    {error&&<div className="shop-notice shop-error" role="alert">{error}<button onClick={onRetry} disabled={disabled}>重试上次操作</button></div>}
+    {error&&<div className="shop-notice shop-error" role="alert">{error}<button onClick={onRetry} disabled={retryDisabled??disabled}>重试上次操作</button></div>}
   </Modal>;
 }

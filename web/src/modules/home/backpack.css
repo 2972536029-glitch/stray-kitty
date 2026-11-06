@@ -27,10 +27,13 @@
 .backpack-card-actions button:last-child:not(:first-child){background:transparent;color:#657652;min-width:30px;padding-inline:6px}
 .backpack-object-name,.backpack-object-actions{position:fixed;transform:translateX(-50%);background:#fbf3dff5;border:1px solid #ad9670;border-radius:6px;box-shadow:0 3px 10px #162b2340}
 .backpack-object-name{padding:7px 12px;font-size:17px;font-weight:600;white-space:nowrap}
-.backpack-object-actions{display:flex;align-items:center;gap:7px;padding:6px;pointer-events:auto}
+.backpack-object-actions{display:flex;align-items:center;gap:5px;padding:4px;pointer-events:auto}
 .backpack-object-name[hidden],.backpack-object-actions[hidden]{display:none}
-.backpack-object-actions button{display:grid;place-items:center;width:44px;height:42px;padding:5px;font-size:27px;line-height:1}
+.furniture-backpack .backpack-object-actions button{display:grid;place-items:center;min-width:32px;min-height:32px;width:32px;height:32px;padding:0;border-radius:4px;line-height:1;transition:background-color .15s,border-color .15s}
+.backpack-object-actions .game-icon{width:18px;height:18px}
+.furniture-backpack .backpack-object-actions button:hover:not(:disabled){transform:none;box-shadow:none;background:#eee3c9;border-color:#a38a62}
 .backpack-object-actions .backpack-confirm{background:#526e57;color:#fff4da;border-color:#526e57}
+.furniture-backpack .backpack-object-actions .backpack-confirm:hover:not(:disabled){background:#405d46;border-color:#405d46}
 .furniture-backpack .backpack-clear{color:#884e3b;border-color:#b6987b}
 .backpack-status{font-size:14px;line-height:1.6;min-height:22px;padding-top:5px;color:#7a6b50}
 .backpack-error{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin-top:8px;font-size:16px;border:1px solid #c99679;border-radius:6px;background:#ffe6d9}

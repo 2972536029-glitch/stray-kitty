@@ -40,7 +40,7 @@ async function open(page:Page,id:string){
   await expect(page.locator('.game-viewport canvas')).toHaveAttribute('data-home-artwork','ready');
   await openToolbar(page);
 }
-async function openToolbar(page:Page){await page.locator('.topbar-sensor').hover({position:{x:10,y:5}});await expect(page.locator('.topbar')).not.toHaveClass(/topbar-collapsed/);}
+async function openToolbar(page:Page){await expect(page.locator('.topbar')).toBeVisible();}
 const postOffice=(page:Page)=>page.getByRole('dialog',{name:'猫爪邮局'});
 async function counterFits(page:Page){const office=postOffice(page),box=(await office.boundingBox())!,size=page.viewportSize()!,rail=(await office.getByRole('tablist',{name:'家具卡池'}).boundingBox())!,paper=(await office.locator('.postal-paper').boundingBox())!,actions=(await office.locator('.postal-actions').boundingBox())!;expect(box.x).toBeGreaterThanOrEqual(0);expect(box.y).toBeGreaterThanOrEqual(0);expect(box.y+box.height).toBeLessThanOrEqual(size.height+1);expect(actions.y+actions.height).toBeLessThanOrEqual(box.y+box.height);expect(rail.x+rail.width).toBeLessThan(paper.x);expect(paper.height).toBeGreaterThan(280);expect(await office.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);}
 
@@ -78,8 +78,8 @@ test('postal journal fits one window; drawing auto-sends, unopened furniture sta
   await backpack.getByRole('button',{name:'放到场景中央'}).click();await backpack.getByRole('button',{name:/保存布置/}).click();await expect(backpack).not.toBeVisible();
   await openToolbar(page);
   await page.getByRole('button',{name:'猫咪补给站',exact:true}).click();let shop=page.getByRole('dialog',{name:'猫咪补给站',exact:true});
-  await shop.getByTestId('claim-daily_wish').click();await expect(shop.getByTestId('claim-daily_wish')).toHaveText('已签收');
-  await shop.getByTestId('claim-daily_letter').click();await expect(shop.getByTestId('claim-daily_letter')).toHaveText('已签收');
+  await shop.getByTestId('claim-daily_wish').click();await expect(shop.getByTestId('claim-daily_wish')).toBeDisabled();await page.getByRole('dialog',{name:'领取成功'}).click();
+  await shop.getByTestId('claim-daily_letter').click();await expect(shop.getByTestId('claim-daily_letter')).toBeDisabled();await page.getByRole('dialog',{name:'领取成功'}).click();
   await shop.getByRole('button',{name:'关闭猫咪补给站',exact:true}).click();
   await expect.poll(async()=>JSON.parse((await page.locator('.game-viewport canvas').getAttribute('data-home-cats'))!).find((c:{breed:string})=>c.breed==='diandian')?.pose).toBe('perch');
   await page.reload();await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();await openToolbar(page);await page.getByRole('button',{name:'猫爪邮局',exact:true}).click();
@@ -96,11 +96,11 @@ test('insufficient tuna opens recharge, declined and successful demo payments, r
   await page.screenshot({path:'output/parcel-design/moon-post-office.png',fullPage:true});
   await office.getByRole('button',{name:'去补给小站 ›'}).click();const recharge=page.getByRole('dialog',{name:'金枪鱼补给小站'});
   await recharge.getByRole('button',{name:'填失败卡 (0000)'}).click();await recharge.getByRole('button',{name:'支付 ¥6.00'}).click();await expect(recharge.locator('.declined')).toBeVisible();
-  await recharge.getByRole('button',{name:'换张卡试试'}).click();await recharge.getByRole('button',{name:'填成功卡 (4242)'}).click();await recharge.getByRole('button',{name:'支付 ¥6.00'}).click();await expect(recharge.locator('.recharge-result.ok')).toContainText('+60');
-  await recharge.getByRole('button',{name:'回去照顾伙伴'}).click();office=postOffice(page);await expect(office.getByRole('tab',{name:/月海观星/})).toHaveAttribute('aria-selected','true');await expect(office.getByTestId('parcel-draw')).toBeEnabled();
+  await recharge.getByRole('button',{name:'换张卡试试'}).click();await recharge.getByRole('button',{name:'填成功卡 (4242)'}).click();await recharge.getByRole('button',{name:'支付 ¥6.00'}).click();await expect(page.getByRole('dialog',{name:'充值到账啦'})).toContainText('+60');await page.getByRole('dialog',{name:'充值到账啦'}).click();
+  await recharge.getByRole('button',{name:'关闭金枪鱼补给小站'}).click();office=postOffice(page);await expect(office.getByRole('tab',{name:/月海观星/})).toHaveAttribute('aria-selected','true');await expect(office.getByTestId('parcel-draw')).toBeEnabled();
   let dropped=false;await page.route('**/api/v1/commands',async route=>{if(!dropped&&route.request().postDataJSON().command.type==='DRAW_FURNITURE'){dropped=true;await route.fetch();await route.abort('failed');}else await route.continue();});
   await office.getByTestId('parcel-draw').click();await office.getByTestId('postcard-skip').click();await expect(office.getByRole('alert')).toBeVisible();await office.getByRole('button',{name:'重试上次操作'}).click();
-  await expect(office.getByTestId('delivered-parcel')).toBeVisible();await office.getByTestId('delivered-parcel').click();await expect(office.locator('.parcel-result-copy h3')).toBeVisible();const headers={Authorization:`Bearer ${sessions.get('paid')!.token}`};const state=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
+  await expect(office.getByTestId('delivered-parcel')).toBeVisible();await expect(office.locator('.postal-layout')).toHaveAttribute('data-stage','parcels');await office.getByTestId('delivered-parcel').click();await expect(office.locator('.parcel-result-copy h3')).toBeVisible();const headers={Authorization:`Bearer ${sessions.get('paid')!.token}`};const state=await(await request.get(origin+'/api/v1/state',{headers})).json() as GameState;
   expect(state.currencies.tuna).toBe(0);expect(state.lottery!.history).toHaveLength(1);expect(state.txns!.filter(t=>t.spent===60)).toHaveLength(1);
   await page.screenshot({path:'output/parcel-design/moon-opening.png',fullPage:true});
 });
