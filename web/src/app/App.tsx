@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import MobileViewport, {usePortraitPhone} from '../ui/MobileViewport';
+import {useDesktopUiScale} from '../ui/useDesktopUiScale';
 import {useGame} from './useGame';
 import {Viewport} from '../examples/demo/Viewport';
 import type {DemoScene} from '../examples/demo/scene';
@@ -17,6 +18,9 @@ import HomeRepairOverlay from '../modules/home/HomeRepairOverlay';
 import HomeSpeechOverlay from '../modules/home/HomeSpeechOverlay';
 import ParcelDialog from '../modules/lottery/ParcelDialog';
 import RechargeDialog from '../ui/RechargeDialog';
+import PaymentReturnNotice from '../ui/PaymentReturnNotice';
+import RewardNotice from '../ui/RewardNotice';
+import {readPaymentReturn,savePaymentReturn,clearPaymentReturn} from './paymentReturn';
 
 import SettingsPanel from '../ui/SettingsPanel';
 import PrologueSequence from '../ui/PrologueSequence';
@@ -35,6 +39,7 @@ import {homeObjects} from '../modules/home/objects';
 import {trackContinueAdventure, trackChapter1Enter, trackHomePanelOpen} from '../observability/actions';
 
 export default function App() {
+  useDesktopUiScale();
   const portraitPhone = usePortraitPhone();
   const warehouseReview = import.meta.env.DEV && new URLSearchParams(window.location.search).has('warehouseQA');
   const game = useGame();
@@ -70,8 +75,25 @@ export default function App() {
   const [decorateFurniture,setDecorateFurniture]=useState<string>();
   const openDecorate=(id?:string)=>{setDecorateFurniture(id);setOverlay('decorate');};
   const [parcelPool, setParcelPool] = useState<string>();
+  const [paymentReturn,setPaymentReturn]=useState(readPaymentReturn);
+  const currentPlayerId=port.playerId();
   const rechargeReturn = useRef<'parcels' | null>(null);
-  const openRecharge = (fromParcels = false) => {if(state?.phase==='home'){openHome('recharge');return;}rechargeReturn.current = fromParcels ? 'parcels' : null;setOverlay('recharge');};
+  useEffect(()=>{
+    const restore=()=>setPaymentReturn(readPaymentReturn());
+    window.addEventListener('pageshow',restore);
+    return()=>window.removeEventListener('pageshow',restore);
+  },[]);
+  useEffect(()=>{
+    if(!state||!paymentReturn)return;
+    if(paymentReturn.playerId!==currentPlayerId){clearPaymentReturn();setPaymentReturn(null);return;}
+    setEntered(true);setPaused(false);setOverlay(paymentReturn.overlay);setHomeTab('recharge');setParcelPool(paymentReturn.parcelPool);
+    rechargeReturn.current=paymentReturn.fromParcels?'parcels':null;
+    const url=new URL(window.location.href);
+    if(url.searchParams.get('payment')==='return'){url.searchParams.delete('payment');window.history.replaceState(null,'',url);}
+  },[!!state,paymentReturn,currentPlayerId]);
+  const rememberCheckout=(packId:string,knownTxnIds:string[])=>savePaymentReturn({playerId:port.playerId(),packId,knownTxnIds,startedAt:Date.now(),overlay:overlay==='home'?'home':'recharge',homeTab:'recharge',parcelPool,fromParcels:rechargeReturn.current==='parcels'});
+  const openRecharge = (fromParcels = false) => {rechargeReturn.current=fromParcels?'parcels':null;if(state?.phase==='home'){openHome('recharge');return;}setOverlay('recharge');};
+  const closeRecharge=()=>{if(rechargeReturn.current==='parcels'){if(overlay==='home')setHomeTab('parcels');else setOverlay('parcels');}else setOverlay(null);rechargeReturn.current=null;};
   const [qaVisit, setQAVisit] = useState(0);
   useEffect(() => {setInspection(null);}, [state?.phase, state?.mapId, qaVisit]);
   const loadQATools = useCallback(() => port.qaTools(), [port]);
@@ -200,7 +222,7 @@ export default function App() {
         {!entered && <StartScreen signedIn={!!accountName} onLogin={()=>openAuth('login','title')} hasProgress={state.revision > 0} disabled={disabled} onStart={() => {trackContinueAdventure();setEntered(true);}}/>}
         {/* Keep an active battle mounted and paused behind the title, so returning does not restart its attempt. */}
         {(entered || state.phase === 'battle') && <div hidden={!entered}>
-          <GameScreen onHomeAdvisor={()=>{if(!homeAdvisorBlocked&&!homeScene?.homeRenovating)setHomeAdvisorOpen(true);}} homeAdvisorDisabled={!!homeAdvisorBlocked} onHomeTutorialChange={setHomeTutorialOpen} onHomeManual={()=>openHome()} homeEditing={overlay==='decorate'} state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay || !!inspection} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} qaOpen={overlay === 'qa'} onQA={() => setOverlay('qa')} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onPause={() => setPaused(!paused)} onMap={() => state.phase==='home'?openHome('depart'):setOverlay('map')} onShop={() => state.phase==='home'?openHome('shop'):setOverlay('shop')} onParcels={() => setOverlay('parcels')} onRecharge={() => openRecharge()} onSettings={() => setOverlay('settings')} onDecorate={()=>openDecorate()} onTitle={() => {setEntered(false);setPaused(false);}}>
+          <GameScreen onSkipDialogue={optionId=>void skipDialogue(optionId)} onHomeAdvisor={()=>{if(!homeAdvisorBlocked&&!homeScene?.homeRenovating)setHomeAdvisorOpen(true);}} homeAdvisorDisabled={!!homeAdvisorBlocked} onHomeTutorialChange={setHomeTutorialOpen} onHomeManual={()=>openHome()} homeEditing={overlay==='decorate'} state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay || !!inspection} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} qaOpen={overlay === 'qa'} onQA={() => setOverlay('qa')} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onPause={() => setPaused(!paused)} onMap={() => state.phase==='home'?openHome('depart'):setOverlay('map')} onShop={() => state.phase==='home'?openHome('shop'):setOverlay('shop')} onParcels={() => setOverlay('parcels')} onRecharge={() => openRecharge()} onSettings={() => setOverlay('settings')} onDecorate={()=>openDecorate()} onTitle={() => {setEntered(false);setPaused(false);}}>
             {state.phase === 'battle'
               ? <BattleHost key={qaVisit} state={state} catalog={catalog} paused={frozen} onResult={result => send({type: 'COMPLETE_BATTLE', ...result})} settlement={{busy,pending,error,retry}}/>
               : <Viewport onHomeAdvisor={()=>{if(!homeAdvisorBlocked&&!homeScene?.homeRenovating)setHomeAdvisorOpen(true);}} key={`${state.qaCheckpointId ?? 'journey'}:${qaVisit}`} state={state} storyNode={currentStory(catalog, state)} paused={frozen} onSceneReady={scene => {sceneRef.current = scene;setHomeScene(scene);}} onNear={(isNear, id, label) => {setNear(isNear);setNearTarget(isNear && id ? {id, label: label ?? '交互 · E'} : null);}} onInteract={interact} onResult={result => void send({type: 'COMPLETE_BATTLE', ...result})} onInspectHint={setInspectHint} onMove={distance => void reportMove(distance)} onRandomZone={checkRandomZone} onMarketBattle={(floor,position)=>void send({type:'START_BATTLE',stageId:'market_boss',layer:floor,returnPosition:position})} onMarketExit={(floor,position)=>void send({type:'EXIT_MARKET',layer:floor,position})} onWorldPosition={point => {rainyPosition.current = point;if(state.mapId==='tunnel')tunnelPosition.current=point;}} onWarehousePosition={(floor,point)=>{warehousePosition.current={floor,point};}} onWarehouseClimbReady={fn=>{warehouseClimb.current=fn;}} randomEligible={randomEligible}/>}
@@ -208,7 +230,7 @@ export default function App() {
         </div>}
       </>}
     {/* 序章开场引导只在每个存档的第一次进入时播放,且仅对话相位挂载——教学战中刷新页面不能让动画盖住战斗 UI。 */}
-    {entered && state?.chapterId === 'prologue' && state.phase === 'dialogue' && !introDone && <PrologueSequence onComplete={() => {setIntroDone(true);try {localStorage.setItem('stray-kitty.prologue.intro', 'done');} catch {/* 隐私模式下跳过记忆，不影响本次游玩 */}}}/>}
+    {entered && state?.chapterId === 'prologue' && state.phase === 'dialogue' && !introDone && <PrologueSequence onSkip={()=>void skipDialogue()} onComplete={() => {setIntroDone(true);try {localStorage.setItem('stray-kitty.prologue.intro', 'done');} catch {/* 隐私模式下跳过记忆，不影响本次游玩 */}}}/>}
     {entered && state?.phase==='home' && state.chapterId!=='prologue' && catalog && homeScene && !overlay && !paused && <HomeRepairOverlay scene={homeScene} state={state} catalog={catalog} busy={busy} pending={pending} error={error} onRepair={send} onRetry={()=>void retry()} onActivityChange={setHomeRepairActivity}/>}
     {entered && state?.phase==='home' && homeScene && !overlay && !paused && <HomeSpeechOverlay scene={homeScene}/>}
     {entered && state?.phase==='home' && catalog && <HomeAdvisor state={state} catalog={catalog} open={overlay==='advisor'} blocked={!!homeAdvisorBlocked} resetKey={qaVisit} onOpenChange={setHomeAdvisorOpen}/>}
@@ -218,21 +240,23 @@ export default function App() {
       <button onClick={() => setInspection(null)}>继续探索 →</button>
     </Modal>}
     {state && catalog && overlay === 'qa' && <AcceptancePanel state={state} catalog={catalog} busy={busy} pending={pending} error={error} loadTools={loadQATools} onCommand={runQACommand} onSkip={async () => {const success = await skipDialogue();if(success){setOverlay(null);setPaused(false);}return success;}} onRetry={() => void retry()} onClose={() => setOverlay(null)}/>}
-    {state && catalog && overlay==='home' && homeTab!=='parcels' && <HomeHub state={state} catalog={catalog} tab={homeTab} locked={busy||pending} busy={busy} error={error} onDecorate={openDecorate} onCommand={send} onParcels={()=>setHomeTab('parcels')} onClose={()=>setOverlay(null)} onRetry={()=>void retry()} journal={<JourneyRecord state={state} busy={busy} pending={pending} disabled={disabled} onReplay={c=>void homeNavigate(c)}/> }>
-      {homeTab==='shop' && <ShopPanel state={state} catalog={catalog} disabled={disabled} error={error} onRetry={()=>void retry()} onClose={()=>setOverlay(null)} onCommand={send} onRefresh={refresh} onParcels={()=>setHomeTab('parcels')} onRecharge={()=>setHomeTab('recharge')}/>}
+    {state && catalog && overlay==='home' && homeTab!=='parcels' && <HomeHub state={state} catalog={catalog} tab={homeTab} locked={busy||pending} busy={busy} error={error} onDecorate={openDecorate} onCommand={send} onParcels={()=>setHomeTab('parcels')} onClose={()=>homeTab==='recharge'?closeRecharge():setOverlay(null)} onRetry={()=>void retry()} journal={<JourneyRecord state={state} busy={busy} pending={pending} disabled={disabled} onReplay={c=>void homeNavigate(c)}/> }>
+      {homeTab==='shop' && <ShopPanel retryDisabled={busy} state={state} catalog={catalog} disabled={disabled} error={error} onRetry={()=>void retry()} onClose={()=>setOverlay(null)} onCommand={send} onRefresh={refresh} onParcels={()=>setHomeTab('parcels')} onRecharge={()=>openRecharge()}/>}
       {homeTab==='depart' && <WorldMap state={state} catalog={catalog} disabled={disabled} onClose={()=>setOverlay(null)} onNavigate={c=>void homeNavigate(c)}/>}
 
-      {homeTab==='recharge' && (catalog.rechargePacks?.length??0)>0 && <RechargeDialog playerId={port.playerId()} packs={catalog.rechargePacks!} tuna={state.currencies.tuna??0} api={port} onCharged={refresh} onClose={()=>setHomeTab('parcels')}/>}
+      {homeTab==='recharge' && (catalog.rechargePacks?.length??0)>0 && <RechargeDialog initialPack={paymentReturn?.packId} onCheckout={rememberCheckout} playerId={port.playerId()} packs={catalog.rechargePacks!} tuna={state.currencies.tuna??0} api={port} onCharged={refresh} onClose={closeRecharge}/>}
     </HomeHub>}
     {state && catalog && homeScene && overlay === 'decorate' && <FurnitureBackpack scene={homeScene} state={state} catalog={catalog} busy={busy} pending={pending} error={error} initialFurniture={decorateFurniture} onSave={send} onRetry={()=>void retry()} onClose={()=>setOverlay(null)}/>}
     {state && catalog && overlay === 'map' && <WorldMap state={state} catalog={catalog} disabled={disabled} onClose={() => setOverlay(null)} onNavigate={command => void homeNavigate(command)}/>}
-    {state && catalog && overlay === 'shop' && <ShopPanel state={state} catalog={catalog} disabled={disabled} error={error} onRetry={() => void retry()} onClose={() => setOverlay(null)} onCommand={send} onRefresh={refresh} onParcels={() => setOverlay('parcels')} onRecharge={() => openRecharge()}/>}
+    {state && catalog && overlay === 'shop' && <ShopPanel retryDisabled={busy} state={state} catalog={catalog} disabled={disabled} error={error} onRetry={() => void retry()} onClose={() => setOverlay(null)} onCommand={send} onRefresh={refresh} onParcels={() => setOverlay('parcels')} onRecharge={() => openRecharge()}/>}
     {state && catalog && (overlay === 'parcels' || overlay === 'home' && homeTab === 'parcels') && <ParcelDialog state={state} catalog={catalog} disabled={disabled} retryDisabled={busy} error={error} initialPool={parcelPool} onPool={setParcelPool} onCommand={send} onRetry={() => void retry()} onClose={() => setOverlay(null)} onRecharge={() => openRecharge(true)} onPlace={async(furnitureId)=>{openDecorate(furnitureId);return true;}}/>}
-    {state && catalog && overlay === 'recharge' && (catalog.rechargePacks?.length ?? 0) > 0 && <RechargeDialog playerId={port.playerId()} packs={catalog.rechargePacks!} tuna={state.currencies.tuna ?? 0} api={port} onCharged={refresh} onClose={() => {setOverlay(rechargeReturn.current);rechargeReturn.current=null;}}/>}
+    {state && catalog && overlay === 'recharge' && (catalog.rechargePacks?.length ?? 0) > 0 && <RechargeDialog initialPack={paymentReturn?.packId} onCheckout={rememberCheckout} playerId={port.playerId()} packs={catalog.rechargePacks!} tuna={state.currencies.tuna ?? 0} api={port} onCharged={refresh} onClose={closeRecharge}/>}
 
     {overlay === 'settings' && <SettingsPanel disabled={disabled} onLogin={()=>openAuth('login','settings')} onRegister={()=>openAuth('register','settings')} onReset={resetSession} musicVolume={musicVolume} sfxVolume={sfxVolume} onMusicVolume={value => {setMusicVolume(value);localStorage.setItem('stray-kitty.audio.music', String(value));}} onSfxVolume={value => {setSfxVolume(value);localStorage.setItem('stray-kitty.audio.sfx', String(value));}} onClose={() => setOverlay(null)}/>}
 
     {state && overlay === 'auth' && <AuthDialog mode={authMode} hasProgress={state.revision > 0} api={port} successLabel={authReturn.current==='title'?'进入冒险':'好的'} onLoggedIn={async () => {await refresh();authSucceeded.current=true;setEntered(false);}} onClose={() => {setOverlay(authReturn.current==='title'?null:'settings');if(authReturn.current==='title'&&authSucceeded.current){trackContinueAdventure();setEntered(true);}}}/>}
     <MobileViewport portrait={portraitPhone}/>
+    {state&&catalog&&paymentReturn&&paymentReturn.playerId===port.playerId()&&<PaymentReturnNotice saved={paymentReturn} packs={catalog.rechargePacks??[]} api={port} onCharged={refresh} onClose={()=>{clearPaymentReturn();setPaymentReturn(null);}}/>}
+    {game.rewardReceipt&&<RewardNotice receipt={game.rewardReceipt} onClose={game.dismissReward}/>}
   </>;
 }

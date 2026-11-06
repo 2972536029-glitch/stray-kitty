@@ -3,6 +3,7 @@ import type {Catalog,GameCommand,GameState,HomePlacement,HomeSurfaces} from '../
 import type {DemoScene} from '../../examples/demo/scene';
 import {HOME_FRAMES,loadHomeArtwork,type HomeArtwork} from './assets';
 import SurfacePreview from './SurfacePreview';
+import GameIcon from '../../ui/GameIcon';
 import {HOME_SURFACES,homeSurfaceSelection,ownsHomeSurface} from './surfaces';
 import {homeInventory,type HomeItem} from './objects';
 import {drawHomeSprite} from './painter';
@@ -161,9 +162,9 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
   }frame=requestAnimationFrame(position);};position();return()=>cancelAnimationFrame(frame);},[scene,selected,drag]);
   return <section role="region" aria-label="家具背包 · 布置模式" className="furniture-backpack">
     {selected&&!selected.stored&&<><div className="backpack-object-name" ref={contextName}>{selected.name}</div><div className="backpack-object-actions" ref={contextActions} role="group" aria-label={`${selected.name}操作`}>
-      <button className="backpack-confirm" aria-label="确定家具位置" title="确定" disabled={locked||conflict||!!drag} onClick={confirmSelection}>√</button>
-      <button aria-label="取消家具调整" title="取消" disabled={locked||conflict||!!drag} onClick={cancelSelection}>×</button>
-      <button aria-label="收回背包" title="收回背包" disabled={locked||conflict||!!drag} onClick={collectSelection}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12v8h16v-8M4 12h4l2 3h4l2-3h4M12 3v8m-3-3 3 3 3-3"/></svg></button>
+      <button className="backpack-confirm" aria-label="确定家具位置" title="确定" disabled={locked||conflict||!!drag} onClick={confirmSelection}><GameIcon name="confirm"/></button>
+      <button aria-label="取消家具调整" title="取消" disabled={locked||conflict||!!drag} onClick={cancelSelection}><GameIcon name="cancel"/></button>
+      <button aria-label="收回背包" title="收回背包" disabled={locked||conflict||!!drag} onClick={collectSelection}><GameIcon name="store"/></button>
     </div></>}
     <section ref={bag} className={`backpack-dock${bagOpen?'':' folded'}`} aria-label="未摆放物品">
       <div className="backpack-controls"><button className="backpack-bag-toggle" aria-expanded={bagOpen} aria-controls="backpack-items" onClick={()=>setBagOpen(value=>!value)}>{bagOpen?'▼ 收起背包':'▲ 展开背包'}</button>

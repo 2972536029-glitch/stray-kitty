@@ -27,7 +27,7 @@ export default function DialogueBubble({speaker, breed, kicker, closing = false,
       <div className="dialogue-who" data-main={speaker === '喵喵'}>
         <span className="dialogue-identity">{kicker && <small>{kicker}</small>}<b className="speaker">{speaker}</b></span>
       </div>
-      <button type="button" className="skip-button dialogue-skip" disabled={disabled || closing} onClick={onSkip} title="只跳过当前这一段剧情">跳过剧情 <svg viewBox="0 0 20 16" fill="none" aria-hidden="true"><path d="m4 3 5 5-5 5m7-10 5 5-5 5" stroke="currentColor" strokeWidth="1.4"/></svg></button>
+      <button type="button" className="skip-button dialogue-skip" disabled={disabled || closing} onClick={onSkip} title="跳到下一个选择、场景或战斗">跳过剧情 <svg viewBox="0 0 20 16" fill="none" aria-hidden="true"><path d="m4 3 5 5-5 5m7-10 5 5-5 5" stroke="currentColor" strokeWidth="1.4"/></svg></button>
     </header>
     <div className="dialogue-copy">{children}</div>
     <span className="dialogue-read-hint" aria-hidden="true">{hint ?? '点击任意位置继续'} <i/></span>

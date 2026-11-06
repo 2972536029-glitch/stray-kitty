@@ -18,6 +18,10 @@
 .app-shell[data-encounter-active] .fixed-game-menu {visibility:visible;pointer-events:auto}
 .app-shell[data-rolling] .fixed-game-menu {visibility:hidden;pointer-events:none}
 .app-shell[data-rolling] .tutorial-highlight {visibility:hidden;pointer-events:none}
+.tutorial-highlight .tutorial-card{box-sizing:border-box;width:360px;max-width:calc(100vw - 32px);padding:20px 24px}
+.tutorial-highlight .tutorial-card b{font-size:18px;margin-bottom:10px}
+.tutorial-highlight .tutorial-card p{font-size:17px;line-height:1.7;margin-bottom:16px}
+.tutorial-highlight .tutorial-card button{min-height:44px;padding:10px 18px;font-size:16px}
 .settings-modal.game-modal {width:min(620px,calc(100vw - 36px));padding:26px 32px;max-height:calc(100dvh - 36px);overflow:auto}
 .settings-modal .settings-section {padding:16px 0;border-top:1px solid #a4916955}
 .settings-modal .settings-section h3 {font-size:17px;color:#65533b;margin:0 0 12px}

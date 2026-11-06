@@ -2,6 +2,7 @@ import {useEffect, useRef, useState, type ReactNode} from 'react';
 import type {Catalog, EventResolution, GameCommand, GameState} from '../contracts';
 import {currentStory, objective} from '../core/story';
 import PixelCat from './PixelCat';
+import GameIcon from './GameIcon';
 import DialoguePanel from './DialoguePanel';
 import DiceEvent, {Dice} from './DiceEvent';
 import DiceRollOverlay from './DiceRollOverlay';
@@ -22,6 +23,7 @@ import {trackFeatureEntry, trackRechargeEntryExpose, trackRechargeEntryClick} fr
 
 interface Props {
   onHomeAdvisor?:()=>void;
+  onSkipDialogue?:(optionId?:'proud'|'honest')=>void;
   homeAdvisorDisabled?:boolean;
   onHomeTutorialChange?:(active:boolean)=>void;
   homeEditing?:boolean;
@@ -35,7 +37,7 @@ interface Props {
   onCommand: (command: GameCommand) => void; onInteract: (interactionId?: string) => void;
   onPause: () => void; onMap: () => void; onShop: () => void; onParcels: () => void; onRecharge: () => void; onSettings: () => void; onDecorate: () => void; onTitle: () => void; children: ReactNode;
 }
-export default function GameScreen({onHomeAdvisor: _onHomeAdvisor,homeAdvisorDisabled: _homeAdvisorDisabled,onHomeTutorialChange,homeEditing,onHomeManual,state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint: suppliedInspectHint, journalOpen, onJournal, qaOpen, onQA, onCommand, onInteract, onPause, onMap, onShop, onParcels, onRecharge, onSettings, onDecorate, onTitle, children}: Props) {
+export default function GameScreen({onSkipDialogue,onHomeAdvisor: _onHomeAdvisor,homeAdvisorDisabled: _homeAdvisorDisabled,onHomeTutorialChange,homeEditing,onHomeManual,state, catalog, busy, pending, disabled, paused, near, nearTarget, inspectHint: suppliedInspectHint, journalOpen, onJournal, qaOpen, onQA, onCommand, onInteract, onPause, onMap, onShop, onParcels, onRecharge, onSettings, onDecorate, onTitle, children}: Props) {
   const touchDevice = useTouchDevice();
   const glassLabels = ['alley', 'market', 'tunnel', 'warehouse'].includes(state.mapId);
   const inspectHint = state.phase === 'explore' && glassLabels && state.mapId !== 'alley' ? null : suppliedInspectHint;
@@ -112,19 +114,19 @@ export default function GameScreen({onHomeAdvisor: _onHomeAdvisor,homeAdvisorDis
       <span className="chapter-pill">{finaleBattle ? '第五章 · 终局试玩' : tunnelBattle ? '第四章 · 地下通道试玩' : greenhouseBattle ? '第三章 · 废弃花房试玩' : marketBattle ? '第二章 · 集市防线战斗试玩' : tutorialBattle ? '序章 · 金枪鱼事件' : chapterBattle ? '第一章 · 陌生小巷' : chapter?.title}<small className="current-place">{isHomeScene ? '家园 · 拱顶花房' : map?.name}</small></span>
       {state.phase!=='home'&&state.phase!=='explore'&&<div className="wallet"><span><span className="wallet-label">✦ 猫爪邮票</span> <b data-testid="stamps">{state.currencies.stamp ?? 0}</b></span><span><span className="wallet-label">◆ 修缮材料</span> <b>{state.inventory.material ?? 0}</b></span><button className="wallet-tuna" onClick={() => {trackRechargeEntryClick('topbar');onRecharge();}} aria-label="金枪鱼罐头，点击打开补给小站" title="点击打开金枪鱼补给小站"><span className="wallet-label">🥫 金枪鱼罐头</span> <b data-testid="tuna">{state.currencies.tuna ?? 0}</b><small>＋充值</small></button></div>}
       <nav aria-label="旅程工具">
-        {state.phase==='home'?<button className="home-manual-button" aria-label="家园手册" data-tip="打开家园手册：花房总览 · 旅程记录 · 家具收藏" aria-haspopup="dialog" disabled={disabled} onClick={() => {trackFeatureEntry('home');onHomeManual();}}>⌂ <span>手册</span></button>:<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}>▤ <span>游记</span></button>}
-        <button className="parcel-button" aria-label="猫爪邮局" aria-haspopup="dialog" onClick={() => {trackFeatureEntry('lottery');onParcels();}}>✉ <span>邮局</span></button>
-        <button className="shop-button" aria-label="猫咪补给站" aria-haspopup="dialog" onClick={() => {trackFeatureEntry('shop');onShop();}}>▣ <span>补给</span></button>
-        <button className="map-button" aria-label="章节地图" aria-haspopup="dialog" onClick={onMap}>▦ <span>地图</span></button>
-        {state.phase==='home'&&<button className="home-decorate-button" aria-label="布置家具" data-tip="进入家具布置模式：移动 / 收回 / 重新摆放家具" disabled={disabled} onClick={onDecorate}>▧ <span>布置</span></button>}
-        {state.phase !== 'battle' && <button className="settings-button" aria-label="游戏设置" onClick={onSettings}>⚙ <span>设置</span></button>}{isDevelopment&&<button className="dev-button" aria-label="验收工具" aria-haspopup="dialog" aria-expanded={qaOpen} onClick={onQA}>🛠️ <span>验收</span></button>}
+        {state.phase==='home'&&<button className="home-decorate-button" aria-label="布置家具" data-tip="进入家具布置模式：移动 / 收回 / 重新摆放家具" disabled={disabled} onClick={onDecorate}><GameIcon name="decorate"/><span>布置</span></button>}
+        {state.phase==='home'?<button className="home-manual-button" aria-label="家园手册" data-tip="打开家园手册：花房总览 · 旅程记录 · 家具收藏" aria-haspopup="dialog" disabled={disabled} onClick={() => {trackFeatureEntry('home');onHomeManual();}}><GameIcon name="manual"/><span>手册</span></button>:<button className="journal-button" aria-label="旅程记录" aria-haspopup="dialog" aria-expanded={journalOpen} onClick={onJournal}><GameIcon name="journal"/><span>游记</span></button>}
+        <button className="parcel-button" aria-label="猫爪邮局" aria-haspopup="dialog" onClick={() => {trackFeatureEntry('lottery');onParcels();}}><GameIcon name="post"/><span>邮局</span></button>
+        <button className="shop-button" aria-label="猫咪补给站" aria-haspopup="dialog" onClick={() => {trackFeatureEntry('shop');onShop();}}><GameIcon name="supply"/><span>补给</span></button>
+        <button className="map-button" aria-label="章节地图" aria-haspopup="dialog" onClick={onMap}><GameIcon name="map"/><span>地图</span></button>
+        {state.phase !== 'battle' && <button className="settings-button" aria-label="游戏设置" onClick={onSettings}><GameIcon name="settings"/><span>设置</span></button>}{isDevelopment&&<button className="dev-button" aria-label="验收工具" aria-haspopup="dialog" aria-expanded={qaOpen} onClick={onQA}><GameIcon name="acceptance"/><span>验收</span></button>}
       </nav></header>
     <main><h1 className="visually-hidden">一只猫的旅程，一群猫的家。</h1>
       <div className="game-layout"><section className="world-panel">
         <div className="world-wrap">{children}
           {isHomeScene && <aside className="home-life-status"><span>{state.phase === 'dialogue' ? '故事进行中' : '花房日常'}</span><strong>{state.phase === 'dialogue' ? '伙伴们正跟随故事行动' : '拖动猫咪到家具或伙伴身边，一起玩一会儿'}</strong></aside>}
 
-          {state.phase === 'dialogue' && node && <DialoguePanel key={node.id} node={node} disabled={disabled} onNext={optionId => onCommand({type: 'ADVANCE_STORY', nodeId: node.id, ...(optionId ? {optionId} : {})})} eventResult={resolution?.outcome.situation?.storyNodeId === node.id ? <EventResult resolution={resolution} compact/> : undefined}/>}
+          {state.phase === 'dialogue' && node && <DialoguePanel onSkip={onSkipDialogue} key={node.id} node={node} disabled={disabled} onNext={optionId => onCommand({type: 'ADVANCE_STORY', nodeId: node.id, ...(optionId ? {optionId} : {})})} eventResult={resolution?.outcome.situation?.storyNodeId === node.id ? <EventResult resolution={resolution} compact/> : undefined}/>}
           {state.phase === 'event' && event && <DiceEvent key={event.id} event={event} disabled={disabled} rolling={busy} random={state.pendingEventSource === 'random'} partyCats={state.cats} pushTokens={state.pushTokens ?? 0} onChoose={(optionId, usePush) => {setDismissedResult('');setCeremony({eventId: event.id, title:event.title, prior: resolution, startedAt: performance.now()});onCommand({type: 'CHOOSE_EVENT', eventId: event.id, optionId, usePush});}}/>}
           {state.phase === 'preparation' && finaleBattle && <section className="event-card preparation-card"><p>{state.lastResult.message}</p><FinaleLoadout disabled={disabled} onCommand={onCommand}/><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回家园</button></section>}
           {state.phase === 'preparation' && tunnelBattle && <section className="event-card preparation-card"><p>{state.lastResult.message}</p><TunnelLoadout disabled={disabled} onCommand={onCommand}/><button className="secondary" disabled={disabled} onClick={() => onCommand({type: 'GO_HOME'})}>返回家园</button></section>}

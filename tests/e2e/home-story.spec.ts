@@ -83,12 +83,6 @@ test('story overrides furniture, stages Momo before recruitment, stays directed 
   await expect(scene(page)).toHaveAttribute('data-home-control', 'story');
   await expect(scene(page)).toHaveAttribute('data-home-beat', 'greenhouse_intro_4');
   await page.getByRole('button', {name: /跳过剧情/}).click();
-  await expect(scene(page)).toHaveAttribute('data-home-beat', 'greenhouse_intro_5');
-  for (let remaining = 0; remaining < 5 && await scene(page).getAttribute('data-home-control') !== 'free'; remaining++) {
-    const previousBeat = await scene(page).getAttribute('data-home-beat');
-    await page.getByRole('button', {name: /跳过剧情/}).click();
-    await expect.poll(async () => await scene(page).getAttribute('data-home-beat') !== previousBeat).toBe(true);
-  }
   await expect(scene(page)).toHaveAttribute('data-home-control', 'free');
   const after = await (await request.get(origin + '/api/v1/state', {headers})).json() as GameState;
   expect(after.cats).toContain('momo');expect(after.placements).toEqual(before.placements);

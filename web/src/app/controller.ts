@@ -1,4 +1,5 @@
-import type {GameCommand} from '../contracts';
+import type {Catalog, GameCommand} from '../contracts';
+import {currentStory, hasStoryChoice} from '../core/story';
 import type {GameApiPort} from '../core/ports';
 import {canDispatch} from '../core/flow';
 import {GameStore} from '../core/state';
@@ -15,6 +16,23 @@ function requestId(): string {
 export class GameController {
   private busy=false;
   constructor(readonly port: GameApiPort, readonly store: GameStore) {}
+  async skipDialogue(catalog: Catalog, optionId?: 'proud' | 'honest') {
+    const initial = this.store.getSnapshot();
+    if (!initial || initial.phase !== 'dialogue') return;
+    const scene = currentStory(catalog, initial)?.scene;
+    const visited = new Set<string>();
+    while (true) {
+      const state = this.store.getSnapshot();
+      if (!state || state.phase !== 'dialogue' || state.chapterId !== initial.chapterId || state.mapId !== initial.mapId) return;
+      const node = currentStory(catalog, state);
+      if (!node || node.scene !== scene) return;
+      const attitude = state.storyNodeId === initial.storyNodeId ? optionId : undefined;
+      if (hasStoryChoice(node.id) && !attitude) return;
+      if (visited.has(node.id)) throw new Error('剧情暂时无法继续，请重试。');
+      visited.add(node.id);
+      await this.dispatch({type:'ADVANCE_STORY', nodeId:node.id, ...(attitude ? {optionId:attitude} : {})});
+    }
+  }
   async dispatch(command: GameCommand) {
     const state=this.store.getSnapshot();
     if(this.busy||!state) throw new Error('请等待当前操作完成');
