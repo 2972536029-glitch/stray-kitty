@@ -5,7 +5,7 @@
   font-weight:600;
   font-display:swap;
 }
-/* 玻璃胶囊标签通用样式：陌生小巷与午夜集市共用同一视觉（24% 基色 / 5px 模糊 / 20px 字体 / .48s 展开）。 */
+/* 四张探索地图共用同一视觉（24% 基色 / 5px 模糊 / 20px 字体 / .48s 展开）。 */
 .alley-label-layer {position:fixed;inset:0;z-index:4;pointer-events:none}
 .alley-label-anchor {position:absolute;top:0;left:0;width:max-content;max-width:calc(100vw - 24px);opacity:0;transition:opacity .24s ease;pointer-events:none}
 .alley-glass-label,.alley-glass-label:disabled,.alley-glass-label:hover {
@@ -35,7 +35,9 @@
 /* 页脚提示与胶囊标签统一字体；胶囊在场时左下角文字提示让位（小巷）。
    集市已停喂 inspectHint（scene.ts 不再调用 onInspectHint），footer 自然不渲染，无需隐藏规则。 */
 .app-shell[data-phase=explore][data-map=alley] .world-footer :is(p,button),
-.app-shell[data-phase=explore][data-map=market] .world-footer :is(p,button) {font:600 20px/1.5 "Alley Noto Sans SC","Noto Sans SC",sans-serif}
+.app-shell[data-phase=explore][data-map=market] .world-footer :is(p,button),
+.app-shell[data-phase=explore][data-map=tunnel] .world-footer :is(p,button),
+.app-shell[data-phase=explore][data-map=warehouse] .world-footer :is(p,button) {font:600 20px/1.5 "Alley Noto Sans SC","Noto Sans SC",sans-serif}
 .app-shell[data-phase=explore][data-map=alley]:has(.alley-label-layer) .world-footer:has(.inspect-hint):not(:has(.home-return-button)) {display:none}
 @keyframes alley-glass-arrive {0%{transform:translateY(6px) scale(.95)}70%{transform:translateY(-.5px) scale(1.008)}100%{transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce) {.alley-label-anchor,.alley-glass-label,.alley-shortcut {transition:none}.alley-label-anchor[data-visible=true] .alley-glass-label {animation:none}.alley-glass-label,.alley-glass-label:hover {transform:none}}

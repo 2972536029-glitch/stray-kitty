@@ -1,4 +1,6 @@
 import {WarehouseEventMarkers} from './eventMarkers';
+import {warehouseExplorationLabels} from './explorationLabels';
+import type {GlassLabel} from '../../ui/GlassLabels';
 import geometry from '../../../../level_design/chapter5/source/v07/warehouse_geometry_v07.json' with { type: 'json' };
 import manifest from '../../../../level_design/chapter5/review/warehouse_L0_asset_placement_manifest.json' with { type: 'json' };
 import groundUrl from './assets/warehouse_L0_ground.lossless.webp?url';
@@ -92,6 +94,19 @@ export class WarehouseWalkMap {
     return this.climbing ? null : targets.sort((a,b)=>a.distance-b.distance)[0] ?? null;
   }
   get hint() {return this.nearTarget?.label ?? null;}
+  explorationLabels(width: number, height: number): GlassLabel[] {
+    if (!this.isReady || this.climbing) return [];
+    const viewport = {x: 0, y: 0, width, height};
+    const frame = cameraFrameFor(viewport, viewport, 680 * 400, W, H);
+    const labels = warehouseExplorationLabels({floor: this.floor, position: this.position, flags: this.markerFlags(), drawn: this.drawn, near: this.nearTarget});
+    return labels.map(label => {
+      const scale = Math.min(width / W, height / H);
+      const point = this.options.overview
+        ? {x: (width - W * scale) / 2 + label.x * scale, y: (height - H * scale) / 2 + label.y * scale}
+        : this.camera.worldToScreen(label, frame);
+      return {...label, ...point};
+    });
+  }
   syncState(state: Pick<GameState,'flags'|'drawnEvents'> & {revision?:number}) {
     if(state.revision!==undefined){
       if(this.lightPreview&&state.revision>this.lightPreview.revision)this.lightPreview=null;
@@ -109,7 +124,7 @@ export class WarehouseWalkMap {
   private lightIsOn(id:string) {return this.lightPreview?.id===id?this.lightPreview.lit:this.flags.has(id);}
   positionNow() {return {...this.position};}
   setOptions(options: Partial<WarehouseReviewOptions>) {this.options = {...this.options, ...options}; this.snapCamera = true;}
-  reset() {this.eventMarkers.reset();this.position = this.flags.has('finale_boss_victory')?{x:1302,y:294}:{x: entry.x, y: entry.y}; this.floor='L0';this.climbing=null;this.snapCamera = true; this.moving = false;}
+  reset() {this.position = this.flags.has('finale_boss_victory')?{x:1302,y:294}:{x: entry.x, y: entry.y}; this.floor='L0';this.climbing=null;this.snapCamera = true; this.moving = false;}
   climb() {
     if(!this.mask||!this.l1Mask||this.climbing)return false;
     const anchor=geometry.climbs.find(point=>Math.hypot(point.x-this.position.x,point.y-this.position.y)<=44);
@@ -229,8 +244,10 @@ export class WarehouseWalkMap {
       ctx.strokeStyle = '#c6f4ff'; ctx.beginPath(); ctx.arc(this.position.x, this.position.y, catRadius, 0, Math.PI * 2); ctx.stroke();
     }
     ctx.restore();
-    ctx.save(); ctx.fillStyle = '#eaddbd'; ctx.font = '13px monospace';
-    ctx.fillText(`${this.floor} · ${Math.round(this.position.x)}, ${Math.round(this.position.y)}`, 18, height - 18); ctx.restore();
+    if (this.options.collision || this.options.overview) {
+      ctx.save(); ctx.fillStyle = '#eaddbd'; ctx.font = '13px monospace';
+      ctx.fillText(`${this.floor} · ${Math.round(this.position.x)}, ${Math.round(this.position.y)}`, 18, height - 18); ctx.restore();
+    }
   }
 
   private drawHardware(ctx:CanvasRenderingContext2D){
@@ -285,10 +302,13 @@ export class WarehouseWalkMap {
     }
     ctx.restore();
   }
-  private drawMarkers(ctx:CanvasRenderingContext2D){
+  private markerFlags(){
     const flags=this.lightPreview?new Set(this.flags):this.flags;
     if(this.lightPreview){if(this.lightPreview.lit)flags.add(this.lightPreview.id);else flags.delete(this.lightPreview.id);}
-    this.eventMarkers.draw(ctx,{floor:this.floor,position:this.position,flags,drawn:this.drawn,near:this.nearTarget},performance.now());
+    return flags;
+  }
+  private drawMarkers(ctx:CanvasRenderingContext2D){
+    this.eventMarkers.draw(ctx,{floor:this.floor,position:this.position,flags:this.markerFlags(),drawn:this.drawn,near:this.nearTarget});
   }
 
   private drawCat(ctx: CanvasRenderingContext2D) {

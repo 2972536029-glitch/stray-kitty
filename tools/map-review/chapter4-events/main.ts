@@ -5,7 +5,10 @@ import {type TunnelSurface} from '../../../web/src/modules/chapter4/surfaces';
 import mapData from '../../../level_design/chapter4/data/chapter4.map.json';
 import lighting from '../../../level_design/chapter4/data/chapter4.lighting.json';
 import {TunnelEventMarkers,tunnelEventObjective,nearbyLockedTunnelEvent,tunnelMovementChoices,type TunnelMarkerState} from '../../../web/src/modules/chapter4/eventMarkers';
-import {drawBaselineMarkers} from './baselineMarkers';
+import {drawBaselineMarkers,drawBaselineLabel} from './baselineMarkers';
+import {createElement} from 'react';
+import {createRoot} from 'react-dom/client';
+import GlassLabels from '../../../web/src/ui/GlassLabels';
 import {cell,propIds,tunnelPropAtlas} from '../../../web/src/modules/chapter4/eventProps';
 
 type Point={x:number;y:number};
@@ -16,8 +19,8 @@ const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,c
 const canvas=get<HTMLCanvasElement>('map'),ctx=canvas.getContext('2d')!,map=new TunnelMap(),view=map as unknown as ReviewRuntime;
 const originalMarkers=drawBaselineMarkers.bind(view as unknown as ThisParameterType<typeof drawBaselineMarkers>),events=mapData.events.filter(e=>propIds.includes(e.id as typeof propIds[number]));
 const originalLighting=view.drawLighting.bind(map);
-const originalLabel=view.drawLabel.bind(map);
-const keys=new Set<string>(),markers=new TunnelEventMarkers(),opacity=markers.labelOpacity;
+const originalLabel=drawBaselineLabel.bind(view);
+const keys=new Set<string>(),markers=new TunnelEventMarkers(),opacity=new Map<string,number>();
 const completedPreviewEvents=new Set<string>();
 let candidate=true,artOnly=false,zoom=1.65,size={width:1,height:1},selected=events[0],now=performance.now(),dt=1/60,previous=now,feedbackUntil=0,initialized=false;
 const progress=()=>get<HTMLSelectElement>('progress').value;
@@ -28,7 +31,7 @@ function markerState():TunnelMarkerState{return {floor:map.layer,surface:view.su
 function nearbyLockedEvent(){return nearbyLockedTunnelEvent(markerState());}
 function movementChoices(){return tunnelMovementChoices(markerState());}
 function notify(text:string){get('feedback').textContent=text;get('feedback').style.display='block';feedbackUntil=performance.now()+3000;}
-function candidateMarkers(c:CanvasRenderingContext2D){markers.draw(c,markerState(),now,checked('names'));}
+function candidateMarkers(c:CanvasRenderingContext2D){markers.draw(c,markerState());}
 view.drawMarkers=(c,f,d)=>candidate&&!artOnly?candidateMarkers(c):originalMarkers(c,f,d);
 view.drawLabel=(c,label,point,movement)=>{if(movement&&candidate&&!artOnly&&(map.nearTarget||nearbyLockedEvent()))return;originalLabel(c,label,point,movement);};
 // The review can zoom out past production's 1066x640 camera. Cover the full
@@ -53,6 +56,19 @@ function interactPreview(){
   updateMap();
   notify(target.id==='tunnel_false_kitten_trap'?'仅预览：已模拟完成诱饵调查，第三泄洪阀与 F 已解锁。正式游戏需完成事件卡结算。':`${event?.label??target.label} · 仅预览：已模拟完成；正式游戏需完成事件卡结算。`);
 }
+// Exercise the production glass labels in the review too; the baseline stays isolated.
+const labelRoot=document.createElement('div');document.body.append(labelRoot);
+createRoot(labelRoot).render(createElement(GlassLabels,{
+  getLabels:()=>{
+    if(!initialized||!candidate||artOnly)return [];
+    const bounds=canvas.getBoundingClientRect(),base=Math.min(size.width/1066,size.height/640);
+    const left=bounds.left+(size.width-1066*base)/2,top=bounds.top+(size.height-640*base)/2;
+    const labels=map.explorationLabels(1066,640,flags(),drawn());
+    opacity.clear();for(const label of labels)opacity.set(label.id,label.alpha);
+    return labels.map(label=>({...label,x:left+label.x*base*zoom,y:top+label.y*base*zoom,alpha:checked('names')?1:label.alpha}));
+  },
+  onAction:key=>{if(key==='e')interactPreview();else if(key==='c'||key==='f'||key===' ')map.traverse(key,flags());}
+}));
 function focusPoint(floor:TunnelLayer,point:Point,surface:TunnelSurface='ground'){
   if(!map.isReady)return;view.floor=floor;view.surface=surface;view.movement=null;view.bossRequested=false;keys.clear();
   const mask=surface==='ground'?view.masks![floor]:view.raisedMasks[surface];let best:Point|null=null,score=Infinity;
@@ -97,7 +113,7 @@ function frame(time:number){
   ctx.setTransform(d,0,0,d,0,0);ctx.fillStyle='#09171e';ctx.fillRect(0,0,size.width,size.height);ctx.save();ctx.beginPath();ctx.rect(x,y,1066*base,640*base);ctx.clip();ctx.translate(x,y);ctx.scale(base*zoom,base*zoom);
   view.cameraPosition={x:Math.max(0,Math.min(1672-1066/zoom,view.position.x-533/zoom)),y:Math.max(0,Math.min(941-640/zoom,view.position.y-320/zoom))};
   map.draw(ctx,1066,640,flags(),drawn());ctx.restore();
-  const hint=candidate&&!artOnly?(map.nearTarget?.label??(nearbyLockedEvent()?'先调查假猫叫诱饵与绊线，再调查第三泄洪阀':map.hint)):map.hint;get('movementHint').textContent=hint??'';get('movementHint').hidden=!hint;
+  const hint=map.hint;get('movementHint').textContent=hint??'';get('movementHint').hidden=candidate&&!artOnly||!hint;
   get('status').textContent=`${map.layer==='Lm1'?'L−1':map.layer} · ${view.surface}\n位置 (${Math.round(view.position.x)}, ${Math.round(view.position.y)})\n当前目标：${events.find(e=>e.id===objective())?.label??'本次救援已完成'}\n${map.nearTarget?'附近：'+map.nearTarget.label:'靠近物件后按 E'}\nC / F / Space 沿用正式连接与阻挡`;
   if(feedbackUntil&&time>feedbackUntil){get('feedback').style.display='none';feedbackUntil=0;}
   canvas.dataset.ready=String(initialized&&map.isReady);requestAnimationFrame(frame);
