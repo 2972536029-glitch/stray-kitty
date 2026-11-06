@@ -204,13 +204,15 @@ export class DemoScene {
     if (!context) throw new Error('浏览器无法创建二维画布');
     this.viewWidth = Number(canvas.dataset.logicalWidth) || canvas.width;
     this.viewHeight = Number(canvas.dataset.logicalHeight) || canvas.height;
-    const dpr = Number(canvas.dataset.dpr) || 1;
-    context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    context.imageSmoothingEnabled = false;
     this.context = context;
+    this.resize();
     this.graphics = new CanvasPainter(context);
     this.cityBackdrop = new Image();
     this.cityBackdrop.src = '/assets/city-backdrop.svg';
+  }
+  resize() {
+    this.context.setTransform(this.canvas.width / this.viewWidth, 0, 0, this.canvas.height / this.viewHeight, 0, 0);
+    this.context.imageSmoothingEnabled = false;
   }
   setDirection(direction: Direction, held: boolean) {
     if (!held) {this.held.delete(direction);return;}

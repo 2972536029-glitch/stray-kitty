@@ -1,6 +1,7 @@
 import {drawPixelCat} from '../../adapters/canvas/pixelCat';
 import {drawPixelDog} from '../../adapters/canvas/pixelDog';
 import {followCameraPoint} from '../../adapters/canvas/camera';
+import {alignToDevicePixel} from '../../adapters/canvas/resolution';
 import {rainyAlleyObjectEligible, rainyAlleyRegistration, rainyAlleySource, type RainyFixedObject} from './assets';
 import {findPath, sweepMove} from './collision';
 import {paintSqueezePassage} from './squeezePainter';
@@ -8,6 +9,7 @@ import {createSqueezeMotion, type SqueezeMotion} from './squeezeMotion';
 import {eventPropPosition, eventPropScale, eventPropTopOffset, paintEventProp} from './eventProps';
 import {rainyEventObjective, EVENT_PROP_SCALE, type AlleyLabel} from './eventLabels';
 import {chapterBackground} from '../map/artwork';
+import {alleyDisplayArtwork} from '../map/alley-artwork';
 import {
   rainyAlleyFieldClosed, rainyAlleyFieldOpen, rainyAlleyGeometryClosed, rainyAlleyGeometryOpen,
   rainyAlleySqueezeFieldClosed, rainyAlleySqueezeFieldOpen, SQUEEZE_BOUNDS, SQUEEZE_CENTER_X,
@@ -33,7 +35,8 @@ function polygonPath(context: CanvasRenderingContext2D, polygon: WorldPolygon) {
 }
 
 export class IntegratedRainyAlley {
-  private get background() {return chapterBackground('alley');}
+  private renderDensity = {x: 1, y: 1};
+  private get background() {return alleyDisplayArtwork(chapterBackground('alley'));}
   private position: Point = {...spawn};
   private camera: Point = {x: 0, y: rainyAlleyRegistration.worldHeight - cameraSize.height};
   private path: Point[] = [];
@@ -194,6 +197,9 @@ export class IntegratedRainyAlley {
     context.save();
     context.imageSmoothingEnabled = false;
     context.fillStyle = '#061525'; context.fillRect(0, 0, width, height);
+    const transform = context.getTransform();
+    this.renderDensity = {x: transform.a, y: transform.d};
+    context.canvas.dataset.alleyArtwork = this.background.src.includes('enhanced-v1') ? 'enhanced' : 'original';
     const view = this.imageView(width, height);
     context.translate(view.padX, view.padY);
     context.scale(view.scale, view.scale);
@@ -345,12 +351,17 @@ export class IntegratedRainyAlley {
     const viewWidth = registration.sx * cameraSize.width / this.zoom;
     const viewHeight = registration.sy * cameraSize.height / this.zoom;
     const scale = Math.min(width / viewWidth, height / viewHeight);
+    const x = registration.tx + registration.sx * this.camera.x;
+    const y = registration.ty + registration.sy * this.camera.y;
+    const padX = (width - viewWidth * scale) / 2, padY = (height - viewHeight * scale) / 2;
+    // Snap only the drawing origin. Simulation/camera interpolation and the
+    // original scale stay unchanged; clicks and labels share this same view.
+    const originX = padX - x * scale, originY = padY - y * scale;
     return {
-      x: registration.tx + registration.sx * this.camera.x,
-      y: registration.ty + registration.sy * this.camera.y,
+      x, y,
       scale,
-      padX: (width - viewWidth * scale) / 2,
-      padY: (height - viewHeight * scale) / 2
+      padX: padX + alignToDevicePixel(originX, this.renderDensity.x) - originX,
+      padY: padY + alignToDevicePixel(originY, this.renderDensity.y) - originY
     };
   }
 
@@ -423,7 +434,7 @@ export class IntegratedRainyAlley {
 
   /** Use the surrounding PNG's facade textures; collision and squeeze endpoints stay authored. */
   private drawSqueezeOverlay(context: CanvasRenderingContext2D) {
-    paintSqueezePassage(context, this.background, SQUEEZE_BOUNDS, SQUEEZE_OPENING_WIDTH);
+    paintSqueezePassage(context, chapterBackground('alley'), SQUEEZE_BOUNDS, SQUEEZE_OPENING_WIDTH);
   }
 
   private drawDebug(context: CanvasRenderingContext2D, _flags: readonly string[], debugState: DebugState) {

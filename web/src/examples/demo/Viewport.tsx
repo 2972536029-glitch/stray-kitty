@@ -38,7 +38,7 @@ export function Viewport(props: Props) {
   useEffect(() => {
     if (scene.current) {scene.current.state = props.state;scene.current.pausedByUser = props.paused;scene.current.storyScene = props.storyNode?.scene;scene.current.storyNode = props.storyNode;scene.current.randomEligible = props.randomEligible ?? true;}
   }, [props.state, props.paused, props.storyNode, props.randomEligible]);
-  return <><CanvasViewport label={props.state.phase === 'battle' ? '三路守护战场：点击格子布置光源' : props.state.phase === 'home' ? '花房家园俯视场景，拖动查看，点击小猫或家具互动' : props.state.phase === 'dialogue' ? '剧情场景，小猫跟随当前故事行动' : '猫咪俯视探索场景，使用方向键或 WASD 移动'} createRuntime={canvas => {
+  return <><CanvasViewport nativeResolution={props.state.chapterId === 'alley' && props.state.mapId === 'alley'} label={props.state.phase === 'battle' ? '三路守护战场：点击格子布置光源' : props.state.phase === 'home' ? '花房家园俯视场景，拖动查看，点击小猫或家具互动' : props.state.phase === 'dialogue' ? '剧情场景，小猫跟随当前故事行动' : '猫咪俯视探索场景，使用方向键或 WASD 移动'} createRuntime={canvas => {
     const runtime = new DemoScene(
       canvas,
       (near, id, label) => latest.current.onNear(near, id, label),
@@ -60,8 +60,7 @@ export function Viewport(props: Props) {
     setActiveScene(runtime);
     latest.current.onWarehouseClimbReady?.(()=>runtime.climbWarehouse());
     latest.current.onSceneReady?.(runtime);
-    // CanvasViewport 只认 destroy；在这里补一次 onSceneReady(null) 的通知。
-    return {destroy() {runtime.destroy();scene.current = null;latest.current.onSceneReady?.(null);}};
+    return {resize() {runtime.resize();},destroy() {runtime.destroy();scene.current = null;latest.current.onSceneReady?.(null);}};
   }}/>{activeScene && props.state.phase === 'explore' && props.state.mapId === 'alley' && <AlleyLabels scene={activeScene}/>}{activeScene && props.state.phase === 'explore' && props.state.mapId === 'market' && <MarketLabels scene={activeScene} state={props.state}/>}{activeScene && props.state.phase === 'explore' && (props.state.mapId === 'tunnel' || props.state.mapId === 'warehouse') && <ChapterExplorationLabels scene={activeScene} mapId={props.state.mapId}/>}{props.state.phase === 'explore' && <TouchControls disabled={props.paused || background?.state === 'loading' || background?.state === 'error'} mapId={props.state.mapId}
     onDirection={(direction, held) => scene.current?.setDirection(direction, held)} onAction={action => scene.current?.performAction(action)}/>}
   {background && (background.state === 'loading' || background.state === 'error') && <div className="map-loading-panel" role={background.state === 'error' ? 'alert' : 'status'}>
