@@ -1,7 +1,7 @@
 import {drawPixelCat} from '../../adapters/canvas/pixelCat';
 import {drawPixelDog} from '../../adapters/canvas/pixelDog';
 import {followCameraPoint} from '../../adapters/canvas/camera';
-import {alignToDevicePixel} from '../../adapters/canvas/resolution';
+import {coveredImageOrigin} from '../../adapters/canvas/resolution';
 import {rainyAlleyObjectEligible, rainyAlleyRegistration, rainyAlleySource, type RainyFixedObject} from './assets';
 import {findPath, sweepMove} from './collision';
 import {paintSqueezePassage} from './squeezePainter';
@@ -354,14 +354,14 @@ export class IntegratedRainyAlley {
     const x = registration.tx + registration.sx * this.camera.x;
     const y = registration.ty + registration.sy * this.camera.y;
     const padX = (width - viewWidth * scale) / 2, padY = (height - viewHeight * scale) / 2;
-    // Snap only the drawing origin. Simulation/camera interpolation and the
-    // original scale stay unchanged; clicks and labels share this same view.
+    // Clamp and snap the drawing origin against the artwork, whose registration
+    // extends beyond world zero. Clicks and labels share the corrected view.
     const originX = padX - x * scale, originY = padY - y * scale;
     return {
       x, y,
       scale,
-      padX: padX + alignToDevicePixel(originX, this.renderDensity.x) - originX,
-      padY: padY + alignToDevicePixel(originY, this.renderDensity.y) - originY
+      padX: padX + coveredImageOrigin(originX, registration.artWidth * scale, width, this.renderDensity.x) - originX,
+      padY: padY + coveredImageOrigin(originY, registration.artHeight * scale, height, this.renderDensity.y) - originY
     };
   }
 
