@@ -1,11 +1,15 @@
 /* Scale interface layers, keeping the Canvas camera and pointer coordinates intact. */
-:root[data-desktop-ui] .app-shell .topbar.fixed-game-menu{zoom:var(--desktop-ui-scale);gap:24px;min-height:68px;inset:8px 20px auto}
+:root[data-desktop-ui] .app-shell .topbar.fixed-game-menu{zoom:var(--desktop-menu-scale);gap:24px;min-height:68px;inset:8px 20px auto}
 :root[data-desktop-ui] .app-shell .fixed-game-menu .brand strong{font-size:34px}
 :root[data-desktop-ui] .app-shell .fixed-game-menu .brand small{display:block;font-size:14px}
+:root[data-desktop-ui] .app-shell .fixed-game-menu .brand{flex-shrink:0;white-space:nowrap}
 :root[data-desktop-ui] .app-shell .fixed-game-menu .brand-mark{display:grid;width:44px;height:44px;font-size:32px}
 :root[data-desktop-ui] .app-shell .fixed-game-menu .chapter-pill{display:flex;flex-direction:row;align-items:center;gap:14px;max-width:none;font-size:20px}
 :root[data-desktop-ui] .app-shell .fixed-game-menu .current-place{padding-left:14px;border-left:1px solid #e5d3a35c;font-size:16px}
 :root[data-desktop-ui] .app-shell .fixed-game-menu nav{gap:9px;flex-wrap:nowrap}
+:root[data-desktop-ui] .app-shell .fixed-game-menu nav{flex-shrink:0}
+:root[data-desktop-ui] .app-shell .fixed-game-menu .chapter-pill{flex:0 1 auto;overflow:hidden}
+:root[data-desktop-ui] .app-shell .fixed-game-menu .chapter-pill>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 :root[data-desktop-ui] .app-shell .fixed-game-menu nav button{min-width:48px;min-height:48px;width:auto;height:auto;padding:10px 14px;gap:8px;font-size:22px}
 :root[data-desktop-ui] .app-shell .fixed-game-menu nav button>span{display:inline}
 :root[data-desktop-ui] .story-dialogue.dialogue-bubble{zoom:var(--desktop-ui-scale);left:24px;right:24px;bottom:20px;width:calc(100% - 48px);min-height:260px;padding:24px 64px 36px}
@@ -24,3 +28,20 @@
 :root[data-desktop-ui] dialog.game-modal.postal-journal{width:1570px;height:min(980px,calc((100dvh - 40px)/var(--desktop-panel-scale)))}
 :root[data-desktop-ui] .tutorial-highlight .tutorial-card{zoom:var(--desktop-panel-scale)}
 :root[data-desktop-ui] .app-shell .event-card.encounter-sheet{zoom:var(--desktop-panel-scale);max-height:calc((100dvh - 112px)/var(--desktop-panel-scale))}
+/* Scene anchors stay in screen pixels; their own UI boxes scale around them. */
+:root[data-desktop-ui] :is(.home-repair-spot,.home-repair-card,.home-life-speech,.backpack-object-name,.backpack-object-actions,.alley-glass-label){zoom:var(--desktop-ui-scale)}
+:root[data-desktop-ui] .home-repairs .home-repair-spot{min-width:232px;min-height:76px;padding:13px 18px 13px 58px}
+:root[data-desktop-ui] .home-repair-spot b{font-size:18px;line-height:1.5}
+:root[data-desktop-ui] .home-repair-spot small{font-size:13px;margin-top:4px}
+:root[data-desktop-ui] .home-repair-spot>span{left:15px;top:21px;width:30px;height:30px}
+:root[data-desktop-ui] .home-repair-spot svg{width:30px;height:30px}
+:root[data-desktop-ui] .home-repair-card{width:380px;padding:24px;max-width:calc((100vw - 32px)/var(--desktop-ui-scale));max-height:calc((100dvh - 120px)/var(--desktop-ui-scale))}
+:root[data-desktop-ui] .home-repair-card h3{font-size:24px}
+:root[data-desktop-ui] .home-repair-card p{font-size:16px}
+:root[data-desktop-ui] .home-repair-confirm{font-size:18px;min-height:52px}
+:root[data-desktop-ui] .home-repair-toast{transform:translateX(-50%) scale(var(--desktop-ui-scale));transform-origin:top center}
+:root[data-desktop-ui] .home-life-speech{max-width:292px;padding:10px 14px 12px;border-radius:10px}
+:root[data-desktop-ui] .home-life-speech p{font-size:18px;line-height:1.5}
+:root[data-desktop-ui] .home-life-speech small{font-size:12px}
+/* Scale only the dock, keeping Canvas drag/pan coordinates in screen pixels. */
+:root[data-desktop-ui] .backpack-dock{right:auto;width:calc(100% / var(--desktop-ui-scale));transform:scale(var(--desktop-ui-scale));transform-origin:bottom left}

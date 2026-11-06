@@ -1,0 +1,26 @@
+/* Portrait presentation uses a clockwise game viewport. The host follows
+   the visible browser area and compensates any unlocked system rotation. */
+:root[data-phone-presentation],:root[data-phone-presentation] body,:root[data-phone-presentation] #root{width:100%;height:100%;margin:0;overflow:hidden;overscroll-behavior:none;background:#142a2b}
+.phone-presentation{position:fixed;inset:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);overflow:hidden;background:#142a2b}
+.phone-game-stage{position:absolute;width:1920px;height:1080px;transform-origin:center}
+.phone-game-frame{width:100%;height:100%;max-width:none;border:0;display:block;background:#142a2b;color-scheme:normal}
+
+/* Keep desktop proportions with a 1920px-wide virtual game viewport. */
+:root[data-mobile-stage]{--safe-top:0px;--safe-right:0px;--safe-bottom:0px;--safe-left:0px}
+:root[data-mobile-stage],:root[data-mobile-stage] body,:root[data-mobile-stage] #root{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+:root[data-mobile-stage] .app-shell{inset:0;width:100%;height:100%}
+/* An opaque menu surface keeps rotated iframe text visible over Canvas on
+   mobile compositors, and makes the small menu readable over bright artwork. */
+:root[data-mobile-stage] .app-shell .topbar.fixed-game-menu{background:#142a2b}
+/* Only the exploration touch controls are additional to the desktop interface. */
+:root[data-mobile-stage] .touch-controls{display:block;position:absolute;inset:0;z-index:6;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+:root[data-mobile-stage] .touch-controls button{pointer-events:auto;touch-action:none;color:#f2e6c6;border:2px solid #cbb98599;background:#203a37d9;box-shadow:0 3px 10px #13262255;backdrop-filter:blur(4px)}
+:root[data-mobile-stage] .touch-stick{position:absolute;left:40px;bottom:40px;width:224px;height:224px;padding:0;border-radius:50%;display:grid;place-items:center}
+:root[data-mobile-stage] .touch-stick-arrows{position:absolute;font-size:200px;line-height:1;opacity:.3}
+:root[data-mobile-stage] .touch-stick-thumb{display:grid;place-items:center;width:92px;height:92px;border-radius:50%;background:#d7c38ed9;color:#31483c;border:2px solid #f7ebc5;font-size:54px;box-shadow:0 2px 8px #10252366}
+:root[data-mobile-stage] .touch-actions{position:absolute;right:32px;bottom:40px;display:flex;align-items:flex-end;gap:20px}
+:root[data-mobile-stage] .touch-traversal{display:flex;flex-direction:column;gap:16px}
+:root[data-mobile-stage] .touch-traversal button{min-width:112px;min-height:88px;padding:12px;font-size:28px;border-radius:24px}
+:root[data-mobile-stage] .touch-actions .touch-interact{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;width:160px;height:160px;padding:8px;border-radius:50%;font-size:30px;background:#526b50ed}
+:root[data-mobile-stage] .touch-interact span{font-size:48px}
+:root[data-mobile-stage] .touch-controls button:disabled{opacity:.35}

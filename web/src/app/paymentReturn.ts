@@ -19,3 +19,10 @@ export function returnedPayment(saved:PaymentReturn,txns:PaymentTxn[]) {
   // authoritative history read immediately before checkout, never a recent-time guess.
   return txns.find(txn=>txn.playerId===saved.playerId&&txn.packId===saved.packId&&txn.status==='confirmed'&&txn.id.startsWith('xs-')&&!saved.knownTxnIds.includes(txn.id));
 }
+
+export function clearPaymentReturnParameter(){
+  const clean=(target:Window)=>{const url=new URL(target.location.href);if(url.searchParams.get('payment')==='return'){url.searchParams.delete('payment');target.history.replaceState(null,'',url);}};
+  clean(window);
+  // The mobile viewport shares its origin and tab storage with the outer page.
+  if(window.parent!==window&&window.top?.location.origin===window.location.origin)clean(window.top);
+}
