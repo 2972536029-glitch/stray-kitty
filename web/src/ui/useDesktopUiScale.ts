@@ -1,4 +1,5 @@
 import {useLayoutEffect} from 'react';
+import {mobileStage} from './MobileViewport';
 
 // Scale from the 1920 x 1080 desktop design, with 20% reading room on
 // smaller windows. The top menu has its own 40% reading room.
@@ -6,7 +7,7 @@ export function useDesktopUiScale() {
   useLayoutEffect(()=>{
     const root=document.documentElement,desktop=window.matchMedia('(hover: hover) and (pointer: fine)');
     const update=()=>{
-      if(!desktop.matches){delete root.dataset.desktopUi;return;}
+      if(!desktop.matches&&!mobileStage){delete root.dataset.desktopUi;return;}
       const ratio=Math.min(window.innerWidth/1920,window.innerHeight/1080);
       const scale=Math.max(.5,Math.min(1,ratio*1.2));
       root.dataset.desktopUi='true';

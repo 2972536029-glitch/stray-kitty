@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import MobileViewport, {usePortraitPhone} from '../ui/MobileViewport';
+import {startResourceCache} from '../core/resource-cache';
 import {useDesktopUiScale} from '../ui/useDesktopUiScale';
 import {useGame} from './useGame';
 import {Viewport} from '../examples/demo/Viewport';
@@ -20,7 +20,7 @@ import ParcelDialog from '../modules/lottery/ParcelDialog';
 import RechargeDialog from '../ui/RechargeDialog';
 import PaymentReturnNotice from '../ui/PaymentReturnNotice';
 import RewardNotice from '../ui/RewardNotice';
-import {readPaymentReturn,savePaymentReturn,clearPaymentReturn} from './paymentReturn';
+import {readPaymentReturn,savePaymentReturn,clearPaymentReturn,clearPaymentReturnParameter} from './paymentReturn';
 
 import SettingsPanel from '../ui/SettingsPanel';
 import PrologueSequence from '../ui/PrologueSequence';
@@ -40,7 +40,7 @@ import {trackContinueAdventure, trackChapter1Enter, trackHomePanelOpen} from '..
 
 export default function App() {
   useDesktopUiScale();
-  const portraitPhone = usePortraitPhone();
+  useEffect(startResourceCache,[]);
   const warehouseReview = import.meta.env.DEV && new URLSearchParams(window.location.search).has('warehouseQA');
   const game = useGame();
   const {state, catalog, send, reportMove, busy, pending, error, disabled, retry, skipDialogue, accountName, sessionUnavailable, startNewJourney, resetSession, refresh, port} = game;
@@ -88,8 +88,7 @@ export default function App() {
     if(paymentReturn.playerId!==currentPlayerId){clearPaymentReturn();setPaymentReturn(null);return;}
     setEntered(true);setPaused(false);setOverlay(paymentReturn.overlay);setHomeTab('recharge');setParcelPool(paymentReturn.parcelPool);
     rechargeReturn.current=paymentReturn.fromParcels?'parcels':null;
-    const url=new URL(window.location.href);
-    if(url.searchParams.get('payment')==='return'){url.searchParams.delete('payment');window.history.replaceState(null,'',url);}
+    clearPaymentReturnParameter();
   },[!!state,paymentReturn,currentPlayerId]);
   const rememberCheckout=(packId:string,knownTxnIds:string[])=>savePaymentReturn({playerId:port.playerId(),packId,knownTxnIds,startedAt:Date.now(),overlay:overlay==='home'?'home':'recharge',homeTab:'recharge',parcelPool,fromParcels:rechargeReturn.current==='parcels'});
   const openRecharge = (fromParcels = false) => {rechargeReturn.current=fromParcels?'parcels':null;if(state?.phase==='home'){openHome('recharge');return;}setOverlay('recharge');};
@@ -209,11 +208,11 @@ export default function App() {
   // Lamp toggles keep walking responsive while the server confirms the light
   // and any gate change. Commands remain serialized; other interactions pause.
   const backgroundWarehouseLight=togglingWarehouseLight&&state?.mapId==='warehouse'&&state.phase==='explore';
-  const homeAdvisorActivity:HomeAdvisorActivity={entered,externalPaused:paused||portraitPhone,overlayOpen:!!overlay&&overlay!=='advisor',
+  const homeAdvisorActivity:HomeAdvisorActivity={entered,externalPaused:paused,overlayOpen:!!overlay&&overlay!=='advisor',
     busy,pending,renovating:!homeScene||homeRepairActivity.renovating||!!homeScene.homeRenovating,
     repairCardOpen:homeRepairActivity.repairCardOpen,tutorialOpen:homeTutorialOpen,pageHidden:document.hidden};
   const homeAdvisorBlocked=state?homeAdvisorBlock(state,homeAdvisorActivity):'outside-home';
-  const frozen = paused || portraitPhone || ((busy || pending) && !backgroundZoneCheck && !backgroundWarehouseLight) || !!overlay || !!inspection || !entered;
+  const frozen = paused || ((busy || pending) && !backgroundZoneCheck && !backgroundWarehouseLight) || !!overlay || !!inspection || !entered;
   const randomEligible = !!state && !!catalog?.events.some(event => event.triggers.includes('random') && event.maps?.includes('alley') && (event.requiresFlags ?? []).every(flag => state.flags.includes(flag)) && (event.repeatable || !state.drawnEvents?.includes(`alley:${event.id}`)));
   return <>
     {error && overlay !== 'shop' && overlay !== 'parcels' && overlay !== 'qa' && overlay !== 'decorate' && overlay !== 'home' && <div className="error-banner" role="alert">{error}<button disabled={busy} onClick={() => void retry()}>重试上次操作</button>{sessionUnavailable && state && <button disabled={busy} onClick={() => void startNewJourney()}>开始新旅程（保留旧会话记录）</button>}</div>}
@@ -255,7 +254,6 @@ export default function App() {
     {overlay === 'settings' && <SettingsPanel disabled={disabled} onLogin={()=>openAuth('login','settings')} onRegister={()=>openAuth('register','settings')} onReset={resetSession} musicVolume={musicVolume} sfxVolume={sfxVolume} onMusicVolume={value => {setMusicVolume(value);localStorage.setItem('stray-kitty.audio.music', String(value));}} onSfxVolume={value => {setSfxVolume(value);localStorage.setItem('stray-kitty.audio.sfx', String(value));}} onClose={() => setOverlay(null)}/>}
 
     {state && overlay === 'auth' && <AuthDialog mode={authMode} hasProgress={state.revision > 0} api={port} successLabel={authReturn.current==='title'?'进入冒险':'好的'} onLoggedIn={async () => {await refresh();authSucceeded.current=true;setEntered(false);}} onClose={() => {setOverlay(authReturn.current==='title'?null:'settings');if(authReturn.current==='title'&&authSucceeded.current){trackContinueAdventure();setEntered(true);}}}/>}
-    <MobileViewport portrait={portraitPhone}/>
     {state&&catalog&&paymentReturn&&paymentReturn.playerId===port.playerId()&&<PaymentReturnNotice saved={paymentReturn} packs={catalog.rechargePacks??[]} api={port} onCharged={refresh} onClose={()=>{clearPaymentReturn();setPaymentReturn(null);}}/>}
     {game.rewardReceipt&&<RewardNotice receipt={game.rewardReceipt} onClose={game.dismissReward}/>}
   </>;

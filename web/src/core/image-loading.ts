@@ -1,3 +1,10 @@
+// Background disk warming yields as soon as visible image work is queued.
+let queuedImageLoads=0;
+const activityListeners=new Set<()=>void>();
+export const imageLoadingBusy=()=>queuedImageLoads>0;
+export function subscribeImageLoading(listener:()=>void){activityListeners.add(listener);return()=>{activityListeners.delete(listener);};}
+function imageLoadActivity(delta:number){queuedImageLoads+=delta;for(const listener of activityListeners)listener();}
+
 type ImageRequest = {
   image:HTMLImageElement;
   url:string;
@@ -39,6 +46,7 @@ function createImageQueue(){
     const finish=(error?:Error)=>{
       if(request.status!=='active')return;
       request.status='finished';
+      imageLoadActivity(-1);
       // Capture runs before existing onload/onerror handlers. Remove both old
       // listeners before a handler can enqueue a fallback on the same Image.
       request.image.removeEventListener('load',loaded,{capture:true});
@@ -89,6 +97,7 @@ function createImageQueue(){
     state.queued=undefined;
     if(state.latest===request)state.latest=state.active;
     request.status='cancelled';
+    imageLoadActivity(-1);
     request.reject(new DOMException('Image request cancelled before starting.','AbortError'));
   }
 
@@ -115,6 +124,7 @@ function createImageQueue(){
     state.queued=request;
     state.latest=request;
     pending.push(request);
+    imageLoadActivity(1);
     schedulePump();
     return promise;
   }

@@ -2,6 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import type {ChargeResponse, PaymentConfig, PaymentTxn, RechargePack} from '../contracts';
 import type {GameApiPort} from '../core/ports';
 import Modal from './Modal';
+import {navigateCheckout} from './MobileViewport';
 import WindowHeading from './WindowHeading';
 import RewardNotice from './RewardNotice';
 import './recharge.css';
@@ -67,7 +68,7 @@ export default function RechargeDialog({playerId, packs, tuna, api, onCharged, o
       const data = await api.paymentSession(playerId, pack.id);
       onCheckout(pack.id,(history.txns??[]).map(txn=>txn.id));
       setLeaving(true);
-      window.location.assign(data.url);
+      navigateCheckout(data.url);
     } catch (e) {
       setError(e instanceof Error ? e.message : '沙盒收银台暂时没有回音，请稍后再试。');
       setBusy(false);
