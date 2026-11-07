@@ -23,6 +23,7 @@ export function returnedPayment(saved:PaymentReturn,txns:PaymentTxn[]) {
 export function clearPaymentReturnParameter(){
   const clean=(target:Window)=>{const url=new URL(target.location.href);if(url.searchParams.get('payment')==='return'){url.searchParams.delete('payment');target.history.replaceState(null,'',url);}};
   clean(window);
-  // The mobile viewport shares its origin and tab storage with the outer page.
-  if(window.parent!==window&&window.top?.location.origin===window.location.origin)clean(window.top);
+  // Clean our mobile host, without reading an unrelated cross-origin top page
+  // when the game itself is embedded by another site.
+  try{if(window.parent!==window&&window.parent.location.origin===window.location.origin)clean(window.parent);}catch{/* Cross-origin hosts own their URL. */}
 }

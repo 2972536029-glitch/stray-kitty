@@ -4,13 +4,18 @@ const stageKey='phoneCanvas';
 // A separate same-origin viewport lets browser hit testing, native dialogs,
 // Canvas coordinates and CSS viewport units rotate together without patching them.
 export const mobileStage=window.parent!==window&&new URLSearchParams(window.location.search).get(stageKey)==='1';
-export const phonePresentation=!mobileStage&&window.parent===window&&window.matchMedia('(pointer: coarse) and (hover: none)').matches&&Math.min(window.screen.width,window.screen.height,window.innerWidth,window.innerHeight)<=600;
+const mobileAgent=(navigator as Navigator&{userAgentData?:{mobile?:boolean}}).userAgentData?.mobile===true||/Android.*Mobile|iPhone|iPod|Windows Phone|HarmonyOS.*Phone/i.test(navigator.userAgent);
+const touchSupported=()=>navigator.maxTouchPoints>0||window.matchMedia('(any-pointer: coarse)').matches;
+// Pointer/hover describe input devices, not whether this is a phone. OEM
+// browsers and desktop-UA mode may report them differently. Only our own
+// virtual viewport is excluded; embedding the game must not disable rotation.
+export const phonePresentation=!mobileStage&&(new URLSearchParams(window.location.search).get('display')==='phone'||mobileAgent||touchSupported()&&Math.min(window.screen.width,window.screen.height,window.innerWidth,window.innerHeight)<=600);
 if(mobileStage){
   document.documentElement.dataset.mobileStage='true';
   window.addEventListener('pointerup',()=>window.parent.postMessage({type:'kitty-enter-portrait'},window.location.origin),{once:true,capture:true});
 }
 function subscribeTouch(listener:()=>void){const media=window.matchMedia('(any-pointer: coarse)');media.addEventListener('change',listener);return()=>media.removeEventListener('change',listener);}
-export function useTouchDevice(){return useSyncExternalStore(subscribeTouch,()=>window.matchMedia('(any-pointer: coarse)').matches);}
+export function useTouchDevice(){return useSyncExternalStore(subscribeTouch,()=>mobileStage||mobileAgent||touchSupported());}
 export function navigateCheckout(url:string){
   // Payment providers must open as a full page, outside the rotated viewport.
   if(mobileStage)window.top!.location.href=url;
