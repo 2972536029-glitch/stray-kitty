@@ -11,9 +11,8 @@
 :root[data-mobile-stage]{--safe-top:0px;--safe-right:0px;--safe-bottom:0px;--safe-left:0px}
 :root[data-mobile-stage],:root[data-mobile-stage] body,:root[data-mobile-stage] #root{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
 :root[data-mobile-stage] .app-shell{inset:0;width:100%;height:100%}
-/* An opaque menu surface keeps rotated iframe text visible over Canvas on
-   mobile compositors, and makes the small menu readable over bright artwork. */
-:root[data-mobile-stage] .app-shell .topbar.fixed-game-menu{background:#142a2b}
+/* The menu keeps the desktop's transparent surface over the game artwork. */
+:root[data-mobile-stage] .app-shell .topbar.fixed-game-menu{background:transparent}
 :root[data-mobile-stage] .app-shell .topbar.fixed-game-menu{left:calc(20px + var(--safe-left)/var(--desktop-menu-scale));right:calc(20px + var(--safe-right)/var(--desktop-menu-scale));top:calc(8px + var(--safe-top)/var(--desktop-menu-scale))}
 :root[data-mobile-stage] .opening-title .start-brand{left:calc(32px + var(--safe-left));top:calc(24px + var(--safe-top))}
 :root[data-mobile-stage] .prologue-chapter-mark{left:calc(36px + var(--safe-left));top:calc(30px + var(--safe-top))}
@@ -21,13 +20,12 @@
 :root[data-mobile-stage] :is(dialog.game-modal,dialog.story-choice-modal,dialog.reward-notice){inset:calc(var(--safe-top)/var(--desktop-panel-scale)) calc(var(--safe-right)/var(--desktop-panel-scale)) calc(var(--safe-bottom)/var(--desktop-panel-scale)) calc(var(--safe-left)/var(--desktop-panel-scale));max-width:calc((100vw - var(--safe-left) - var(--safe-right) - 40px)/var(--desktop-panel-scale));max-height:calc((100dvh - var(--safe-top) - var(--safe-bottom) - 40px)/var(--desktop-panel-scale))}
 /* Only the exploration touch controls are additional to the desktop interface. */
 :root[data-mobile-stage] .touch-controls{display:block;position:absolute;inset:0;z-index:6;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-:root[data-mobile-stage] .touch-controls button{pointer-events:auto;touch-action:none;color:#f2e6c6;border:2px solid #cbb98599;background:#203a37d9;box-shadow:0 3px 10px #13262255;backdrop-filter:blur(4px)}
-:root[data-mobile-stage] .touch-stick{position:absolute;left:calc(40px + var(--safe-left));bottom:calc(40px + var(--safe-bottom));width:224px;height:224px;padding:0;border-radius:50%;display:grid;place-items:center}
-:root[data-mobile-stage] .touch-stick-arrows{position:absolute;font-size:200px;line-height:1;opacity:.3}
-:root[data-mobile-stage] .touch-stick-thumb{display:grid;place-items:center;width:92px;height:92px;border-radius:50%;background:#d7c38ed9;color:#31483c;border:2px solid #f7ebc5;font-size:54px;box-shadow:0 2px 8px #10252366}
-:root[data-mobile-stage] .touch-actions{position:absolute;right:calc(32px + var(--safe-right));bottom:calc(40px + var(--safe-bottom));display:flex;align-items:flex-end;gap:20px}
-:root[data-mobile-stage] .touch-traversal{display:flex;flex-direction:column;gap:16px}
-:root[data-mobile-stage] .touch-traversal button{min-width:112px;min-height:88px;padding:12px;font-size:28px;border-radius:24px}
-:root[data-mobile-stage] .touch-actions .touch-interact{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;width:160px;height:160px;padding:8px;border-radius:50%;font-size:30px;background:#526b50ed}
-:root[data-mobile-stage] .touch-interact span{font-size:48px}
+:root[data-mobile-stage] .touch-controls button{pointer-events:auto;touch-action:none;color:#fff3cf;border:2px solid #f0e2b5a6;background:#d9eed90a;box-shadow:0 2px 8px #071b2340,inset 0 0 0 1px #10252e55;backdrop-filter:none;text-shadow:0 2px 4px #07151d}
+:root[data-mobile-stage] .touch-stick{position:absolute;left:calc(40px + var(--safe-left));bottom:calc(40px + var(--safe-bottom));width:280px;height:280px;padding:0;border-radius:50%;display:grid;place-items:center}
+:root[data-mobile-stage] .touch-stick-arrows{position:absolute;font-size:250px;line-height:1;opacity:.22}
+:root[data-mobile-stage] .touch-stick-thumb{display:grid;place-items:center;width:108px;height:108px;border-radius:50%;background:#f3e4b52e;color:#fff3cf;border:2px solid #fff0bdb3;font-size:60px;box-shadow:0 2px 8px #10252340}
+:root[data-mobile-stage] .touch-actions{position:absolute;right:calc(40px + var(--safe-right));bottom:calc(40px + var(--safe-bottom))}
+:root[data-mobile-stage] .touch-actions .touch-interact{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;width:200px;height:200px;padding:12px;border-radius:50%;font-size:34px;background:#d9eed90a}
+:root[data-mobile-stage] .touch-interact svg{width:64px;height:64px;filter:drop-shadow(0 2px 3px #07151d)}
+:root[data-mobile-stage] .touch-controls button:active{background:#f3e4b52e;transform:none;box-shadow:0 2px 8px #071b2340}
 :root[data-mobile-stage] .touch-controls button:disabled{opacity:.35}

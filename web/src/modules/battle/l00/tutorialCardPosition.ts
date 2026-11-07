@@ -20,9 +20,10 @@ export function placeTutorialCard(frame: Size, board: TutorialBox, size: Size, p
   let best: TutorialBox = {x: centreX, y: centreY, width, height};
   let bestScore = [Infinity, Infinity, Infinity, Infinity, Infinity];
   function consider(candidate: TutorialBox) {
-    // Priorities: essential controls, horizontal centre, readable height, other cats, vertical proximity.
+    // Keep the complete lesson readable before favouring horizontal centring.
+    // A clear side position is better than cropping it into a central strip.
     const score = [protectedBoxes.reduce((sum, box) => sum + overlap(candidate, box), 0),
-      Math.abs(candidate.x - centreX), height - candidate.height, secondaryBoxes.reduce((sum, box) => sum + overlap(candidate, box), 0), Math.abs(candidate.y - centreY)];
+      height - candidate.height, Math.abs(candidate.x - centreX), secondaryBoxes.reduce((sum, box) => sum + overlap(candidate, box), 0), Math.abs(candidate.y - centreY)];
     const firstDifference = score.findIndex((value, index) => value !== bestScore[index]);
     if (firstDifference >= 0 && score[firstDifference] < bestScore[firstDifference]) {best = candidate; bestScore = score;}
   }

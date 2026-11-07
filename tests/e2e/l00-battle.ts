@@ -37,7 +37,7 @@ async function frozen(page:Page,battle:Locator){
  await page.waitForTimeout(350);await expect(battle).toHaveAttribute('data-battle-time',t!);await expect(page.getByTestId('battle-energy-guard-compact')).toHaveAttribute('aria-valuenow',e!);
 }
 async function checkPause(page:Page,battle:Locator){
- await page.getByRole('button',{name:'暂停',exact:true}).click();await frozen(page,battle);await page.locator('.pause-label').getByRole('button',{name:'继续旅程'}).click();
+ await page.getByTestId('battle-play-toggle').click();await frozen(page,battle);await page.getByTestId('battle-play-toggle').click();
  await page.getByRole('button',{name:'章节地图'}).click();await frozen(page,battle);await page.keyboard.press('Escape');
  const old=await battle.elementHandle();await page.getByRole('button',{name:'返回标题'}).click();await expect(page.getByRole('button',{name:/^(暂不登录|继续冒险)/})).toBeVisible();await frozen(page,battle);
  await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();expect(await old!.evaluate((node,css)=>node===document.querySelector(css),selector)).toBe(true);await old!.dispose();

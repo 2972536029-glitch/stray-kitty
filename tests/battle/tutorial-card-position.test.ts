@@ -69,3 +69,12 @@ test('oversized card is constrained to a very small visible viewport', () => {
   inside(card, frame);
   assert.equal(card.x + card.width / 2, frame.width / 2);
 });
+
+test('a complete side lesson wins over a clipped strip in the board centre', () => {
+  const frame = {width: 1856, height: 637};
+  const cats = [{x: 377, y: 162, width: 168, height: 168}, {x: 844, y: 317, width: 168, height: 168}, {x: 1000, y: 162, width: 168, height: 168}];
+  const card = placeTutorialCard(frame, {x: 383, y: 12, width: 1089, height: 467}, {width: 760, height: 190}, cats, cats);
+  assert.equal(card.height, 190);
+  clearOf(card, cats);
+  inside(card, frame);
+});

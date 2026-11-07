@@ -1,4 +1,4 @@
-import {expect, test, type APIRequestContext, type Locator, type Page} from '@playwright/test';
+import {expect, test, type APIRequestContext, type Locator, type Page, type Frame} from '@playwright/test';
 import type {GameCommand, GameState, Session} from '../../web/src/contracts';
 import {playL00ThroughHost} from './l00-battle';
 
@@ -13,12 +13,17 @@ async function openTutorial(page:Page,request:APIRequestContext,start=true){
   }
   expect(state.activeBattle?.stageId).toBe('l00_tutorial');
   await page.addInitScript(value=>localStorage.setItem('stray-kitty.session.v1',JSON.stringify(value)),session);
-  await page.goto('/');await page.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
-  const battle=page.locator('section[aria-label="序章塔防战斗"]');
+  await page.goto('/');const game=await gameScope(page);await game.getByRole('button',{name:/^(暂不登录|继续冒险)/}).click();
+  const battle=game.locator('section[aria-label="序章塔防战斗"]');
   if(!start)return battle;
-  await page.getByTestId('battle-speed-toggle').click();await page.getByTestId('battle-play-toggle').click();
+  await game.getByTestId('battle-speed-toggle').click();await game.getByTestId('battle-play-toggle').click();
   await expect(battle).toHaveAttribute('data-phase','teach_position',{timeout:20000});
   return battle;
+}
+
+async function gameScope(page:Page):Promise<Page|Frame>{
+  const iframe=page.locator('.phone-game-frame');
+  return await iframe.count()?(await(await iframe.elementHandle())!.contentFrame())!:page;
 }
 
 async function center(locator:Locator){
@@ -32,7 +37,7 @@ async function drag(page:Page,from:Locator,to:Locator){
   await page.mouse.move(target.x,target.y,{steps:12});await page.mouse.up();
 }
 
-async function assertFrozenRealWave(page:Page,battle:Locator){
+async function assertFrozenRealWave(page:Page|Frame,battle:Locator){
   await expect(battle).toHaveAttribute('data-phase','teach_move',{timeout:10000});
   await expect(page.getByTestId('battle-wave-progress')).toHaveText('第 1 / 6 波');
   await expect(page.locator('.btl-live-enemy')).toHaveCount(1);
@@ -46,7 +51,7 @@ async function assertFrozenRealWave(page:Page,battle:Locator){
   await expect(page.getByTestId('battle-tutorial-card')).toContainText(/阻挡|黑影/);
 }
 
-async function assertRunningMoveLesson(page:Page,battle:Locator){
+async function assertRunningMoveLesson(page:Page|Frame,battle:Locator){
   await expect(battle).toHaveAttribute('data-phase','teach_live_move');
   await expect(battle).toHaveAttribute('data-effective-speed','0.5');
   const enemy=page.locator('.btl-live-enemy').first();
@@ -57,7 +62,7 @@ async function assertRunningMoveLesson(page:Page,battle:Locator){
   await expect(enemy).not.toHaveAttribute('style',enemyPosition!);
 }
 
-async function assertCardLeavesTargetsVisible(page:Page,ids:string[]){
+async function assertCardLeavesTargetsVisible(page:Page|Frame,ids:string[]){
   const card=await page.getByTestId('battle-tutorial-card').boundingBox();expect(card).toBeTruthy();
   for(const id of ids){
     const target=await page.getByTestId(id).boundingBox();expect(target).toBeTruthy();
@@ -178,23 +183,23 @@ test.describe('窄屏触摸引导',()=>{
   test.use({viewport:{width:390,height:844},hasTouch:true});
   test('提示卡不溢出，触摸可选择非推荐部署格并完成实战换位',async({page,request},testInfo)=>{
     const battle=await openTutorial(page,request);
-    const tap=async(locator:Locator)=>{const point=await center(locator);await page.touchscreen.tap(point.x,point.y);};
-    const fit=page.getByRole('button',{name:'查看全图',exact:true});if(await fit.isVisible())await fit.click();
-    await expect(page.getByTestId('battle-tutorial-card')).toBeVisible();
-    const card=await page.getByTestId('battle-tutorial-card').boundingBox();expect(card).toBeTruthy();
+    const game=await gameScope(page),tap=async(locator:Locator)=>{await locator.tap();};
+    const fit=game.getByRole('button',{name:'查看全图',exact:true});if(await fit.isVisible())await fit.click();
+    await expect(game.getByTestId('battle-tutorial-card')).toBeVisible();
+    const card=await game.getByTestId('battle-tutorial-card').boundingBox();expect(card).toBeTruthy();
     expect(card!.x).toBeGreaterThanOrEqual(0);expect(card!.x+card!.width).toBeLessThanOrEqual(390);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-    await tap(page.getByTestId('battle-cat-caster'));await tap(page.getByTestId('battle-cell-C4'));
+    await tap(game.getByTestId('battle-cat-caster'));await tap(game.getByTestId('battle-cell-C4'));
     await expect(battle).toHaveAttribute('data-phase','teach_energy');
-    await page.getByTestId('battle-begin-skill-practice').click();await assertFrozenRealWave(page,battle);
-    await assertCardLeavesTargetsVisible(page,['battle-cat-guard','battle-cell-B5']);
+    await game.getByTestId('battle-begin-skill-practice').click();await assertFrozenRealWave(game,battle);
+    await assertCardLeavesTargetsVisible(game,['battle-cat-guard','battle-cell-B5']);
     await page.screenshot({path:testInfo.outputPath('real-wave-move-guide-mobile.png'),fullPage:true});
-    await tap(page.getByTestId('battle-cat-guard'));await tap(page.getByTestId('battle-cell-B4'));
-    await assertRunningMoveLesson(page,battle);
-    await assertCardLeavesTargetsVisible(page,['battle-cat-guard','battle-cat-caster']);
+    await tap(game.getByTestId('battle-cat-guard'));await tap(game.getByTestId('battle-cell-B4'));
+    await assertRunningMoveLesson(game,battle);
+    await assertCardLeavesTargetsVisible(game,['battle-cat-guard','battle-cat-caster']);
     await page.screenshot({path:testInfo.outputPath('running-move-guide-mobile.png'),fullPage:true});
-    await tap(page.getByTestId('battle-cat-caster'));await tap(page.getByTestId('battle-cell-A4'));
+    await tap(game.getByTestId('battle-cat-caster'));await tap(game.getByTestId('battle-cell-A4'));
     await expect(battle).toHaveAttribute('data-phase','skill_charge');
-    await expect(page.getByTestId('battle-cat-guard')).toHaveAttribute('aria-label',/，B4，/);
+    await expect(game.getByTestId('battle-cat-guard')).toHaveAttribute('aria-label',/，B4，/);
   });
 });
