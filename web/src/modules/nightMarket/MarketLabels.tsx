@@ -11,7 +11,7 @@ const interactions: Record<string, string> = {crow: 'market_crow_stall', pigeon:
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
 /** 把集市现有事件点/传送门数据适配成玻璃胶囊标签（与陌生小巷同一视觉）。 */
-function assembleMarketLabels(scene: DemoScene, state: GameState): GlassLabel[] {
+export function assembleMarketLabels(scene: DemoScene, state: GameState): GlassLabel[] {
   if (state.phase !== 'explore' || state.mapId !== 'market') return [];
   const {floor, player, camera, frame, flags, drawnEvents, busy, paused, canvas, viewSize} = scene.marketLabelContext();
   if (busy || paused) return [];

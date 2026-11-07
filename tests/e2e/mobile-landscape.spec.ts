@@ -79,3 +79,55 @@ test('mobile checkout leaves the whole page and restores the selected pack on re
 test('desktop keeps its layout without the mobile presentation',async({browser,baseURL})=>{
  const context=await browser.newContext({baseURL,viewport:{width:1920,height:1080},hasTouch:false,isMobile:false});const page=await context.newPage();await page.goto('/');await expect(page.getByRole('button',{name:'暂不登录',exact:true})).toBeVisible();await expect(page.locator('.phone-game-frame')).toHaveCount(0);await page.getByRole('button',{name:'暂不登录',exact:true}).click();await expect(page.locator('.touch-controls')).not.toBeVisible();await context.close();
 });
+
+test('phone exploration has a transparent menu, larger clear stick and one clear action',async({page,request},info)=>{
+ await prepare(page,request);
+ await expect(game(page).locator('.touch-actions button')).toHaveCount(1);
+ await expect(game(page).locator('.touch-traversal')).toHaveCount(0);
+ const alpha=(css:string)=>Number(css.match(/[\d.]+(?=\)$)/)?.[0]);
+ const styles=await game(page).locator('.topbar,.touch-stick,.touch-interact').evaluateAll(els=>els.map(el=>({name:el.className,background:getComputedStyle(el).backgroundColor,blur:getComputedStyle(el).backdropFilter,width:el.getBoundingClientRect().width,tap:getComputedStyle(el).webkitTapHighlightColor})));
+ expect(styles[0].background).toBe('rgba(0, 0, 0, 0)');
+ for(const style of styles.slice(1)){expect(alpha(style.background)).toBeLessThan(.1);expect(style.blur).toBe('none');expect(style.tap).toBe('rgba(0, 0, 0, 0)');}
+ expect(styles[1].width).toBeGreaterThanOrEqual(280);
+ await expect(game(page).locator('.touch-interact')).toHaveText('');await expect(game(page).locator('.touch-interact svg')).toBeVisible();await expect(game(page).locator('.touch-interact')).toHaveAccessibleName('交互：交互');
+ await page.screenshot({path:info.outputPath('clear-mobile-controls.png')});
+});
+
+test('single phone action toggles a real light and climbs both ways without losing either action',async({page,request},info)=>{
+ const {headers}=await prepare(page,request,'finale.explore');const canvas=game(page).locator('.game-viewport canvas');await expect(canvas).toHaveAttribute('data-ready','true',{timeout:30000});
+ const button=game(page).locator('.touch-interact'),commands:string[]=[];
+ page.on('request',req=>{if(req.url().endsWith('/api/v1/commands')&&req.method()==='POST'){const c=req.postDataJSON().command;if(c.type==='INTERACT')commands.push(c.interactionId);}});
+ const walk=async(key:string,axis:'x'|'y',limit:number,below:boolean)=>{
+  await canvas.focus();await page.keyboard.down(key);
+  try{await canvas.evaluate((el,{axis,limit,below})=>new Promise<void>((resolve,reject)=>{const deadline=performance.now()+10000;const tick=()=>{const n=Number(el.getAttribute('data-player-'+axis));if(below?n<limit:n>limit)resolve();else if(performance.now()>deadline)reject(new Error('walk timed out'));else requestAnimationFrame(tick);};tick();}),{axis,limit,below});}finally{await page.keyboard.up(key);}
+ };
+ await walk('ArrowUp','y',600,true);await expect(button).toHaveAttribute('data-action','e');await button.tap();
+ await expect.poll(async()=>((await(await request.get('/api/v1/state',{headers})).json()).flags as string[]).includes('central_spotlight')).toBe(true);
+ await button.tap();await expect.poll(()=>commands.length).toBe(2);expect(commands).toEqual(['central_spotlight','central_spotlight']);
+ await walk('ArrowUp','y',505,true);await walk('ArrowLeft','x',792,true);await walk('ArrowUp','y',425,true);
+ await expect(button).toHaveAccessibleName('交互：攀爬');await expect(button).toHaveText('');await expect(button).toHaveAttribute('data-action','c');await button.tap();await expect(canvas).toHaveAttribute('data-floor','L1');
+ await expect(button).toHaveAttribute('data-action','c');await button.tap();await expect(canvas).toHaveAttribute('data-floor','L0');
+ await page.screenshot({path:info.outputPath('single-context-action.png')});
+});
+
+test('phone tutorial keeps the complete advisor lesson visible at every teaching step',async({page,request},info)=>{
+ test.setTimeout(90000);await prepare(page,request,'prologue.battle');
+ const battle=game(page).locator('section[aria-label="序章塔防战斗"]'),card=game(page).getByTestId('battle-tutorial-card');
+ const readable=async()=>{
+  await expect(card).toBeVisible();await expect(card).toHaveAttribute('data-scrollable','false');
+  const bounds=await card.evaluate(el=>{const r=el.getBoundingClientRect(),p=el.querySelector('p')!.getBoundingClientRect();return{overflow:el.scrollHeight-el.clientHeight,bottom:r.bottom,textBottom:p.bottom,viewport:innerHeight};});
+  expect(bounds.overflow).toBeLessThanOrEqual(1);expect(bounds.textBottom).toBeLessThan(bounds.bottom);expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewport);
+ };
+ await game(page).getByTestId('battle-speed-toggle').tap();await game(page).getByTestId('battle-play-toggle').tap();await expect(battle).toHaveAttribute('data-phase','teach_position');await readable();
+ await game(page).getByTestId('battle-cat-caster').tap();await game(page).getByTestId('battle-cell-A4').press('Enter');await expect(battle).toHaveAttribute('data-phase','teach_energy');await readable();
+ await game(page).getByTestId('battle-begin-skill-practice').tap();await expect(battle).toHaveAttribute('data-phase','teach_move');await readable();
+ await game(page).getByTestId('battle-cat-guard').tap();await game(page).getByTestId('battle-cell-B5').press('Enter');await expect(battle).toHaveAttribute('data-phase','teach_live_move');await readable();
+ await game(page).getByTestId('battle-cat-caster').tap();await game(page).getByTestId('battle-cell-C4').press('Enter');await expect(battle).toHaveAttribute('data-phase','skill_charge');
+ for(const viewport of [{width:390,height:844},{width:393,height:874},{width:390,height:700}]){await page.setViewportSize(viewport);await readable();await page.screenshot({path:info.outputPath(`complete-advisor-${viewport.height}.png`)});}
+});
+
+test('touching the story advance surface keeps browser tap highlighting transparent',async({page,request})=>{
+ await prepare(page,request,'prologue.story');const hit=game(page).getByRole('button',{name:'继续故事',exact:true});await expect(hit).toBeVisible();
+ expect(await hit.evaluate(el=>getComputedStyle(el).webkitTapHighlightColor)).toBe('rgba(0, 0, 0, 0)');
+ const before=await game(page).locator('.dialogue-copy').textContent();await hit.tap();await expect(game(page).locator('.dialogue-copy')).not.toHaveText(before!);
+});

@@ -4,9 +4,9 @@ import type {Point} from '../../modules/rainyAlley/types';
 import {CanvasViewport} from '../../adapters/canvas/CanvasViewport';
 import {DemoScene} from './scene';
 import type {ChapterBackgroundStatus} from '../../modules/map/artwork';
-import TouchControls from '../../ui/TouchControls';
+import TouchControls, {type TouchInteraction} from '../../ui/TouchControls';
 import AlleyLabels from '../../modules/rainyAlley/AlleyLabels';
-import MarketLabels from '../../modules/nightMarket/MarketLabels';
+import MarketLabels, {assembleMarketLabels} from '../../modules/nightMarket/MarketLabels';
 import ChapterExplorationLabels from '../../ui/ChapterExplorationLabels';
 
 interface Props {
@@ -35,6 +35,16 @@ export function Viewport(props: Props) {
   const [activeScene, setActiveScene] = useState<DemoScene | null>(null);
   const [background, setBackground] = useState<ChapterBackgroundStatus | null>(null);
   const latest = useRef(props);latest.current = props;
+  // Use the same reachable actions as the map prompts, then dispatch exactly
+  // one existing key handler. Re-evaluate on press so moving never uses a stale key.
+  const getInteraction = (): TouchInteraction => {
+    const runtime = scene.current, state = latest.current.state;
+    const labels = !runtime || latest.current.paused ? [] : state.mapId === 'alley' ? runtime.alleyExplorationLabels()
+      : state.mapId === 'market' ? assembleMarketLabels(runtime, state)
+      : state.mapId === 'tunnel' || state.mapId === 'warehouse' ? runtime.chapterExplorationLabels(state.mapId) : [];
+    const key = (labels.find(label => label.key === 'e') ?? labels.find(label => label.key))?.key ?? 'e';
+    return {key, label: key === 'q' ? '钻缝' : key === 'c' ? '攀爬' : key === 'f' ? '下行' : key === ' ' ? '跳跃' : '交互'};
+  };
   useEffect(() => {
     if (scene.current) {scene.current.state = props.state;scene.current.pausedByUser = props.paused;scene.current.storyScene = props.storyNode?.scene;scene.current.storyNode = props.storyNode;scene.current.randomEligible = props.randomEligible ?? true;}
   }, [props.state, props.paused, props.storyNode, props.randomEligible]);
@@ -61,7 +71,7 @@ export function Viewport(props: Props) {
     latest.current.onWarehouseClimbReady?.(()=>runtime.climbWarehouse());
     latest.current.onSceneReady?.(runtime);
     return {resize() {runtime.resize();},destroy() {runtime.destroy();scene.current = null;latest.current.onSceneReady?.(null);}};
-  }}/>{activeScene && props.state.phase === 'explore' && props.state.mapId === 'alley' && <AlleyLabels scene={activeScene}/>}{activeScene && props.state.phase === 'explore' && props.state.mapId === 'market' && <MarketLabels scene={activeScene} state={props.state}/>}{activeScene && props.state.phase === 'explore' && (props.state.mapId === 'tunnel' || props.state.mapId === 'warehouse') && <ChapterExplorationLabels scene={activeScene} mapId={props.state.mapId}/>}{props.state.phase === 'explore' && <TouchControls disabled={props.paused || background?.state === 'loading' || background?.state === 'error'} mapId={props.state.mapId}
+  }}/>{activeScene && props.state.phase === 'explore' && props.state.mapId === 'alley' && <AlleyLabels scene={activeScene}/>}{activeScene && props.state.phase === 'explore' && props.state.mapId === 'market' && <MarketLabels scene={activeScene} state={props.state}/>}{activeScene && props.state.phase === 'explore' && (props.state.mapId === 'tunnel' || props.state.mapId === 'warehouse') && <ChapterExplorationLabels scene={activeScene} mapId={props.state.mapId}/>}{props.state.phase === 'explore' && <TouchControls disabled={props.paused || background?.state === 'loading' || background?.state === 'error'} getInteraction={getInteraction}
     onDirection={(direction, held) => scene.current?.setDirection(direction, held)} onAction={action => scene.current?.performAction(action)}/>}
   {background && (background.state === 'loading' || background.state === 'error') && <div className="map-loading-panel" role={background.state === 'error' ? 'alert' : 'status'}>
     <div><span aria-hidden="true">ฅ</span><p>{background.state === 'error' ? '地图暂时没打开' : '正在打开地图……'}</p>

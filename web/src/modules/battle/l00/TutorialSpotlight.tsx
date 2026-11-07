@@ -67,16 +67,22 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
       const right = Math.min(outer.right, visible.right, screenLeft + (screen?.width ?? window.innerWidth));
       const bottom = Math.min(outer.bottom, visible.bottom, screenTop + (screen?.height ?? window.innerHeight));
       const frame = {x: rounded((left - outer.left) / scaleX - container.clientLeft), y: rounded((top - outer.top) / scaleY - container.clientTop), width: rounded(Math.max(0, right - left) / scaleX), height: rounded(Math.max(0, bottom - top) / scaleY)};
+      // The battlefield reserves space below the tiles for teaching. Let the
+      // card use it while the spotlight remains clipped to the real board.
+      const battle = container.closest('.battle-immersive');
+      const safeBottom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')) || 0;
+      const cardBottom = Math.min(battle?.getBoundingClientRect().bottom ?? outer.bottom, screenTop + (screen?.height ?? window.innerHeight)) - safeBottom;
+      const cardFrame = {...frame, height: rounded(Math.max(0, cardBottom - top) / scaleY)};
       const nodes = new Set<Element>();
       for (const selector of [...JSON.parse(selectorsKey) as string[], sourceSelector, targetSelector]) {
         if (selector) for (const node of container.querySelectorAll(selector)) nodes.add(node);
       }
       const holes: Box[] = [];
-      const boxFor = (node: Element): Box | null => {
+      const boxFor = (node: Element, limitBottom = bottom): Box | null => {
         const box = node.getBoundingClientRect();
         if (!box.width || !box.height || getComputedStyle(node).visibility === 'hidden') return null;
         const x = Math.max(left, box.left - 6 * scaleX), y = Math.max(top, box.top - 6 * scaleY);
-        const endX = Math.min(right, box.right + 6 * scaleX), endY = Math.min(bottom, box.bottom + 6 * scaleY);
+        const endX = Math.min(right, box.right + 6 * scaleX), endY = Math.min(limitBottom, box.bottom + 6 * scaleY);
         if (endX <= x || endY <= y) return null;
         return {x: rounded((x - left) / scaleX), y: rounded((y - top) / scaleY), width: rounded((endX - x) / scaleX), height: rounded((endY - y) / scaleY)};
       };
@@ -89,6 +95,9 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
       }
       for (const node of container.querySelectorAll('.btl-unit')) {
         const box = boxFor(node); if (box) secondaryBoxes.push(box);
+      }
+      for (const node of battle?.querySelectorAll('.battle-advisor,.prologue-map-tools,.btl-board-caption') ?? []) {
+        track(node);const box = boxFor(node, cardBottom);if (box) protectedBoxes.push(box);
       }
       const pointFor = (selector: string | undefined): Point | null => {
         const node = selector ? container.querySelector(selector) : null;
@@ -115,9 +124,13 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
       const cardNode = cardRef.current;
       const copyNode = cardNode?.querySelector<HTMLElement>('.btl-tutorial-card-copy');
       const actionsNode = cardNode?.querySelector<HTMLElement>('.btl-tutorial-card-actions');
-      const naturalHeight = copyNode ? copyNode.scrollHeight + (actionsNode ? actionsNode.scrollHeight + 16 : 0) + 36 : 160;
+      track(cardNode);track(copyNode ?? null);track(actionsNode ?? null);
+      const cardStyle = cardNode && getComputedStyle(cardNode);
+      const insets = cardStyle ? ['paddingTop','paddingBottom','borderTopWidth','borderBottomWidth'].reduce((sum, key) => sum + (parseFloat(cardStyle[key as keyof CSSStyleDeclaration] as string) || 0), 0) : 36;
+      const actionsHeight = actionsNode?.offsetHeight ? actionsNode.scrollHeight + (parseFloat(getComputedStyle(actionsNode).marginTop) || 0) : 0;
+      const naturalHeight = copyNode ? copyNode.scrollHeight + actionsHeight + insets + 2 : 160;
       const cardHeight = Math.max(naturalHeight, 140);
-      const rawCard = placeTutorialCard(frame, boardBounds, {width: cardWidth, height: cardHeight}, protectedBoxes, secondaryBoxes);
+      const rawCard = placeTutorialCard(cardFrame, boardBounds, {width: cardWidth, height: cardHeight}, protectedBoxes, secondaryBoxes);
       const card = {
         x: rounded(rawCard.x),
         y: rounded(rawCard.y),
@@ -145,7 +158,7 @@ export function TutorialSpotlight({containerRef, phase, title, text, step, total
       window.removeEventListener('resize', schedule); window.removeEventListener('scroll', schedule, true);
       window.visualViewport?.removeEventListener('resize', schedule);
     };
-  }, [containerRef, phase, sourceSelector, targetSelector, selectorsKey, host, observeEnergy]);
+  }, [containerRef, phase, sourceSelector, targetSelector, selectorsKey, host, observeEnergy, title, text]);
 
   const {frame, holes, source, target} = layout;
   const from = gesture === 'tap' ? target ?? source : source;

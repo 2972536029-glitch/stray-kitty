@@ -1,10 +1,12 @@
 import {useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type MouseEvent as ReactMouseEvent} from 'react';
 import type {Direction} from '../adapters/platform/input';
+import {useTouchDevice} from './MobileViewport';
 
 export type TouchAction = 'e' | 'c' | 'f' | 'q' | ' ';
+export interface TouchInteraction {key: TouchAction; label: string}
 interface Props {
   disabled: boolean;
-  mapId: string;
+  getInteraction: () => TouchInteraction;
   onDirection: (direction: Direction, held: boolean) => void;
   onAction: (action: TouchAction) => void;
 }
@@ -15,7 +17,20 @@ export default function TouchControls(props: Props) {
   const latest = useRef(props);latest.current = props;
   const pointer = useRef<number | null>(null);
   const held = useRef(new Set<Direction>());
+  const touchDevice = useTouchDevice();
   const [offset, setOffset] = useState({x: 0, y: 0});
+  const [interaction, setInteraction] = useState<TouchInteraction>({key: 'e', label: '交互'});
+  useEffect(() => {
+    if (!touchDevice || props.disabled) return;
+    let frame = 0, previous = '';
+    const update = () => {
+      const next = latest.current.getInteraction();
+      const signature = next.key + ':' + next.label;
+      if (signature !== previous) {previous = signature;setInteraction(next);}
+      frame = requestAnimationFrame(update);
+    };
+    update();return () => cancelAnimationFrame(frame);
+  }, [touchDevice, props.disabled]);
   const release = () => {
     pointer.current = null;
     for (const direction of held.current) latest.current.onDirection(direction, false);
@@ -52,11 +67,11 @@ export default function TouchControls(props: Props) {
     for (const direction of directions) if (held.current.has(direction) !== next.has(direction)) props.onDirection(direction, next.has(direction));
     held.current = next;
   };
-  const actionHandlers = (action: TouchAction) => ({
+  const actionHandlers = {
     // Secondary fingers do not consistently produce a compatibility click.
-    onPointerDown(event: ReactPointerEvent<HTMLButtonElement>) {event.preventDefault();if (!latest.current.disabled) latest.current.onAction(action);},
-    onClick(event: ReactMouseEvent<HTMLButtonElement>) {if (event.detail === 0 && !latest.current.disabled) latest.current.onAction(action);},
-  });
+    onPointerDown(event: ReactPointerEvent<HTMLButtonElement>) {event.preventDefault();if (!latest.current.disabled) latest.current.onAction(latest.current.getInteraction().key);},
+    onClick(event: ReactMouseEvent<HTMLButtonElement>) {if (event.detail === 0 && !latest.current.disabled) latest.current.onAction(latest.current.getInteraction().key);},
+  };
   return <div className="touch-controls" role="group" aria-label="触屏探索操作">
     <button type="button" className="touch-stick" aria-label="移动摇杆，按住拖动控制方向" disabled={props.disabled}
       onPointerDown={event => {
@@ -68,13 +83,9 @@ export default function TouchControls(props: Props) {
       <span className="touch-stick-thumb" style={{transform: `translate(${offset.x}px, ${offset.y}px)`}} aria-hidden="true">ฅ</span>
     </button>
     <div className="touch-actions">
-      <div className="touch-traversal">
-        {props.mapId === 'alley' && <button disabled={props.disabled} {...actionHandlers('q')}>钻缝</button>}
-        {['alley', 'market', 'tunnel', 'warehouse'].includes(props.mapId) && <button disabled={props.disabled} {...actionHandlers('c')}>攀爬</button>}
-        {['market', 'tunnel'].includes(props.mapId) && <button disabled={props.disabled} {...actionHandlers('f')}>下行</button>}
-        {props.mapId === 'tunnel' && <button disabled={props.disabled} {...actionHandlers(' ')}>跳跃</button>}
-      </div>
-      <button className="touch-interact" disabled={props.disabled} {...actionHandlers('e')}><span aria-hidden="true">🐾</span>互动</button>
+      <button type="button" className="touch-interact" aria-label={`交互：${interaction.label}`} data-action={interaction.key} disabled={props.disabled} {...actionHandlers}>
+        <svg viewBox="0 0 64 64" aria-hidden="true" fill="currentColor"><ellipse cx="13" cy="24" rx="7" ry="10" transform="rotate(-25 13 24)"/><ellipse cx="27" cy="14" rx="7" ry="10"/><ellipse cx="43" cy="16" rx="7" ry="10" transform="rotate(15 43 16)"/><ellipse cx="54" cy="29" rx="6" ry="9" transform="rotate(30 54 29)"/><path d="M16 45c0-9 8-17 16-17s17 9 17 18c0 13-12 8-17 8s-16 5-16-9Z"/></svg>
+      </button>
     </div>
   </div>;
 }
