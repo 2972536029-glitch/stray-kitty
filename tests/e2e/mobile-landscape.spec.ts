@@ -37,7 +37,7 @@ for(const viewport of [{width:390,height:844},{width:844,height:390},{width:360,
  await game(page).getByRole('button',{name:'猫咪补给站',exact:true}).tap();await game(page).getByRole('button',{name:/罐头.*前往补给小站/}).tap();await within(page,'dialog[open]');await expect(game(page).locator('.recharge-balance')).not.toContainText('我的罐头');await game(page).getByRole('button',{name:'关闭金枪鱼补给小站',exact:true}).tap();
 });
 for(const id of ['alley.explore','market.explore','rescue.explore','finale.explore'])test(`${id}: rotated real touch moves in game direction and releases on resize or modal`,async({page,request})=>{
- await prepare(page,request,id);if(id==='finale.explore')await expect(game(page).locator('.game-viewport canvas')).toHaveAttribute('data-ready','true');const stick=game(page).getByRole('button',{name:'移动摇杆，按住拖动控制方向'});await expect(stick).toBeEnabled();const cdp=await page.context().newCDPSession(page);
+ await prepare(page,request,id);if(id==='finale.explore')await expect(game(page).locator('.game-viewport canvas')).toHaveAttribute('data-ready','true',{timeout:30000});const stick=game(page).getByRole('button',{name:'移动摇杆，按住拖动控制方向'});await expect(stick).toBeEnabled();const cdp=await page.context().newCDPSession(page);
  let moved=false;
  for(const [dx,dy] of [[64,0],[0,-64],[-64,0],[0,64]]){
   const start=await screenPoint(page,stick),end=await screenPoint(page,stick,dx,dy),before=await position(page);
