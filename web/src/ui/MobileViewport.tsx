@@ -24,7 +24,7 @@ export function navigateCheckout(url:string){
 
 const width=1920,height=1080;
 export default function MobileViewport(){
-  const frame=useRef<HTMLIFrameElement>(null),host=useRef<HTMLDivElement>(null),stage=useRef<HTMLDivElement>(null);
+  const frame=useRef<HTMLIFrameElement>(null),host=useRef<HTMLDivElement>(null),stage=useRef<HTMLDivElement>(null),updateLayout=useRef(()=>{});
   const [src]=useState(()=>{const url=new URL(window.location.href);url.searchParams.set(stageKey,'1');return url.href;});
   useLayoutEffect(()=>{
     const root=document.documentElement;root.dataset.phonePresentation='true';
@@ -41,6 +41,17 @@ export default function MobileViewport(){
       const scale=Math.max(visibleWidth,visibleHeight)/width;
       const stageHeight=width*Math.min(visibleWidth,visibleHeight)/Math.max(visibleWidth,visibleHeight);
       const angle=portrait?90:screen.orientation?.angle===270?180:0;
+      // Artwork fills the visible viewport. Reserve safe areas for UI inside
+      // the rotated game instead of exposing the host's solid background.
+      const padding=getComputedStyle(host.current!),safe={
+        top:Math.max(0,box.top+(parseFloat(padding.paddingTop)||0)-visibleTop),
+        right:Math.max(0,visibleRight-box.right+(parseFloat(padding.paddingRight)||0)),
+        bottom:Math.max(0,visibleBottom-box.bottom+(parseFloat(padding.paddingBottom)||0)),
+        left:Math.max(0,box.left+(parseFloat(padding.paddingLeft)||0)-visibleLeft)
+      };
+      const insets=angle===90?[safe.right,safe.bottom,safe.left,safe.top]:angle===180?[safe.bottom,safe.left,safe.top,safe.right]:[safe.top,safe.right,safe.bottom,safe.left];
+      const child=frame.current?.contentDocument?.documentElement;
+      ['top','right','bottom','left'].forEach((edge,index)=>child?.style.setProperty('--safe-'+edge,insets[index]/scale+'px'));
       const left=visibleLeft-box.left+visibleWidth/2,top=visibleTop-box.top+visibleHeight/2;
       const key=[left,top,scale,angle,stageHeight].join(':');
       if(key!==previous){frame.current?.contentWindow?.dispatchEvent(new Event('blur'));previous=key;}
@@ -59,11 +70,12 @@ export default function MobileViewport(){
       }catch{/* Keep the same portrait presentation when the browser denies lock. */}
     };
     window.addEventListener('message',lockPortrait);
+    updateLayout.current=fit;
     const observer=new ResizeObserver(fit);observer.observe(host.current!);fit();
     window.addEventListener('resize',fit);window.visualViewport?.addEventListener('resize',fit);window.visualViewport?.addEventListener('scroll',fit);
     return()=>{window.removeEventListener('message',lockPortrait);observer.disconnect();window.removeEventListener('resize',fit);window.visualViewport?.removeEventListener('resize',fit);window.visualViewport?.removeEventListener('scroll',fit);delete root.dataset.phonePresentation;};
   },[]);
   return <main ref={host} className="phone-presentation" aria-label="小猫回家记，固定竖向横画面">
-    <div ref={stage} className="phone-game-stage"><iframe ref={frame} title="小猫回家记游戏" className="phone-game-frame" src={src} width={width} height={height} allow="autoplay; fullscreen"/></div>
+    <div ref={stage} className="phone-game-stage"><iframe ref={frame} title="小猫回家记游戏" className="phone-game-frame" src={src} width={width} height={height} onLoad={()=>updateLayout.current()} allow="autoplay; fullscreen"/></div>
   </main>;
 }
