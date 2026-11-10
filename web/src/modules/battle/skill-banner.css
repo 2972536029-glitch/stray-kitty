@@ -1,14 +1,14 @@
-/* Skill cast banner: slides in from the right at the board's top-right corner,
+/* Skill cast banner: slides in from the right at the VIEWPORT's top-right corner,
    holds, then slides out — total 2.2s (the artwork carries name and skill text,
-   so it holds long enough to read). The diagonal silhouette comes from
-   clip-path so it keeps its shape regardless of text width; the glint sweep
-   runs on the same 2.2s envelope. */
+   so it holds long enough to read). Portaled to body and position:fixed because
+   the board container keeps a 32px page inset; fixed anchoring reaches the true
+   screen edge. */
 
 .battle-skill-banner {
-  position: absolute;
+  position: fixed;
   top: 4%;
   right: 0;
-  z-index: 6;
+  z-index: 50;
   animation: skill-banner-slide 2.2s cubic-bezier(.22, .61, .36, 1) forwards;
   pointer-events: none !important;
   display: flex;
@@ -64,9 +64,10 @@
 }
 
 /* Artwork mode: the per-skill image is the whole banner (name and skill text are
-   baked into the art). Full-bleed image, anchored flush to the board's right edge. */
+   baked into the art). Full-bleed image anchored flush to the viewport's right
+   edge; the new 2048x768 exports carry no transparent padding. */
 .battle-skill-banner.is-art {
-  width: min(46%, 560px);
+  width: min(42%, 520px);
   background: none;
   clip-path: none;
   padding: 0;

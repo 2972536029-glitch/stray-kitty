@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {CSSProperties} from 'react';
+import {createPortal} from 'react-dom';
 import './skill-banner.css';
 
 // Skill name → banner artwork. Each per-skill art piece carries the cat's name,
@@ -76,28 +77,30 @@ export function useSkillBanner() {
   return {banner, emit, clear};
 }
 
-/** Purely visual overlay. It neither receives input nor reveals enemy positions. */
+/** Purely visual overlay. It neither receives input nor reveals enemy positions.
+ * Portaled to document.body and fixed to the viewport: the board container keeps
+ * a 32px page inset, so anchoring inside it would never reach the screen edge. */
 export function SkillBanner({banner}: {banner: SkillCastBanner | null}) {
   if (!banner) return null;
   const art = BANNER_ART[banner.name];
   if (art) {
     // The artwork already contains the cat name and skill name, so the image is
     // the whole banner; no live text is layered on top of it.
-    return <div className="battle-skill-banner is-art" key={banner.id} data-testid="battle-skill-banner" aria-hidden="true">
+    return createPortal(<div className="battle-skill-banner is-art" key={banner.id} data-testid="battle-skill-banner" aria-hidden="true">
       <img className="skill-banner-art" src={art.webp} alt=""
         onError={event => {
           const img = event.currentTarget;
           if (img.getAttribute('src') !== art.png) img.src = art.png;
         }}/>
-    </div>;
+    </div>, document.body);
   }
   const accent = CAT_ACCENTS[banner.catId] ?? {color: '#c8cbd8', accent: '#eef0f6'};
   const label = CAT_LABELS[banner.catId] ?? banner.catId;
-  return <div className="battle-skill-banner" key={banner.id} data-testid="battle-skill-banner" aria-hidden="true"
+  return createPortal(<div className="battle-skill-banner" key={banner.id} data-testid="battle-skill-banner" aria-hidden="true"
     style={{'--banner-color': accent.color, '--banner-accent': accent.accent} as CSSProperties}>
     <div className="skill-banner-text">
       <strong>{label}</strong>
       <span>「{banner.name}」</span>
     </div>
-  </div>;
+  </div>, document.body);
 }
