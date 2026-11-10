@@ -18,6 +18,7 @@ import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
 import {UnitMeters} from '../UnitMeters';
 import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
+import {SkillBanner, useSkillBanner} from '../SkillBanner';
 import {BossRetreatFeedback} from '../BossRetreatFeedback';
 import {SpawnLabel} from '../SpawnLabel';
 import {GoalLabel} from '../GoalLabel';
@@ -44,6 +45,7 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
   const [game,setGame]=useState(()=>createFinaleBattle({difficulty,carry}));
   const gameRef=useRef(game);
   const skillFeedback=useSkillFeedback();
+  const skillBanner=useSkillBanner();
   const [selected,setSelected]=useState<FinaleCatId|null>(null);
   const [moving,setMoving]=useState<FinaleCatId|null>(null);
   const [hover,setHover]=useState<Position|null>(null);
@@ -86,6 +88,7 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
         skillFeedback.emit({catId:cat.id,name:skill.name,origin:{x:cat.x,y:cat.y},
           cells:skill.targeting==='team'?undefined:getSkillCells(cat,target),
           recipients:skill.targeting==='team'?[...next.cats,...next.allies].filter(friend=>friend.status==='active').map(friend=>({x:friend.x,y:friend.y})):skill.targeting==='self'?[{x:cat.x,y:cat.y}]:undefined});
+        skillBanner.emit(cat.id, skill.name);
       }
     }
     if(next.lastAction&&!next.lastAction.ok)setNotice(next.lastAction.message);
@@ -128,7 +131,7 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
 
   useEffect(()=>{
     if(attemptRef.current===attemptId)return;
-    attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);skillFeedback.clear();
+    attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);skillFeedback.clear();skillBanner.clear();
     setSelected(null);setMoving(null);setHover(null);setChatOpen(false);setDragging(null);gesture.current=null;dragPreview.clear();setNotice('');
     setQuestion('');
     publish(createFinaleBattle({difficulty,carry}));
@@ -305,6 +308,7 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
           <div ref={scrollRef} className="finale-board-scroll" role="region" aria-label="终章废仓库战场，窄屏可横向滚动"><div ref={boardRef} tabIndex={-1} className={`finale-board${game.nightVisionRemaining>0?' has-night-vision':''}${overview?' is-overview':''}${moving?' is-moving':''}${game.aim?' is-aiming':''}`} data-testid="finale-board" data-overview={overview} style={{width:overview?fittedWidth:Math.max(MAP.columns*80,(fittedWidth??0)*1.25)}} onClick={event=>{if(event.target===event.currentTarget){if(suppressClick.current)suppressClick.current=false;else closeInspection();}}} onPointerDown={event=>{if(gameRef.current.aim&&event.pointerType!=='mouse'&&event.button===0){aimPointer.current=event.pointerId;event.currentTarget.setPointerCapture(event.pointerId);previewTouch(event);}}} onPointerMove={previewTouch} onPointerUp={event=>finishTouchAim(event)} onPointerCancel={event=>finishTouchAim(event,true)} onLostPointerCapture={()=>{aimPointer.current=null;}} onContextMenu={event=>{event.preventDefault();if(gameRef.current.aim)cancelAim();else closeInspection();}} onPointerLeave={()=>{if(!gesture.current){setHover(null);if(gameRef.current.aim)act({type:'AIM_SKILL',x:-1,y:-1});}}}>
             <canvas ref={canvasRef} width={BOARD_WIDTH} height={BOARD_HEIGHT} aria-label="七行十二列外框内七十四格不规则废仓库；九格永夜之王与两名精英，喵喵在D2，三座固定援军台，缺口透明"/>
             <SkillFeedback columns={MAP.columns} rows={MAP.rows} bursts={skillFeedback.bursts} shields={[...game.cats,...game.allies].filter(cat=>cat.status==='active'&&cat.shield>0)}/>
+            <SkillBanner banner={skillBanner.banner}/>
             <BossRetreatFeedback key={attemptId} boss={game.boss} columns={MAP.columns} rows={MAP.rows} label="长夜已破"/>
 
             <div className="finale-cells">{CELLS.map(position=>{
