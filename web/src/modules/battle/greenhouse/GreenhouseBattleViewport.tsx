@@ -18,6 +18,7 @@ import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
 import {UnitMeters} from '../UnitMeters';
 import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
+import {SkillBanner, useSkillBanner} from '../SkillBanner';
 import {BossRetreatFeedback} from '../BossRetreatFeedback';
 import {SpawnLabel} from '../SpawnLabel';
 import {GoalLabel} from '../GoalLabel';
@@ -43,6 +44,7 @@ export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onRe
   const [game,setGame]=useState(()=>createGreenhouseBattle({difficulty,carry}));
   const gameRef=useRef(game);
   const skillFeedback=useSkillFeedback();
+  const skillBanner=useSkillBanner();
   const [selected,setSelected]=useState<GreenhouseCatId|null>(null);
   const [moving,setMoving]=useState<GreenhouseCatId|null>(null);
   const [hover,setHover]=useState<Position|null>(null);
@@ -85,6 +87,7 @@ export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onRe
         skillFeedback.emit({catId:cat.id,name:skill.name,origin:{x:cat.x,y:cat.y},
           cells:skill.targeting==='team'?undefined:getSkillCells(cat,target),
           recipients:skill.targeting==='team'?next.cats.filter(friend=>friend.status==='active').map(friend=>({x:friend.x,y:friend.y})):skill.targeting==='self'?[{x:cat.x,y:cat.y}]:undefined,variant:cat.id==='momo'?'cleanse':undefined});
+        skillBanner.emit(cat.id, skill.name);
       }
     }
     if(next.lastAction&&!next.lastAction.ok)setNotice(next.lastAction.message);
@@ -127,7 +130,7 @@ export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onRe
 
   useEffect(()=>{
     if(attemptRef.current===attemptId)return;
-    attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);skillFeedback.clear();
+    attemptRef.current=attemptId;emitted.current=false;setSubmitted(false);skillFeedback.clear();skillBanner.clear();
     setSelected(null);setMoving(null);setHover(null);setChatOpen(false);setDragging(null);gesture.current=null;dragPreview.clear();setNotice('');
     setQuestion('');
     publish(createGreenhouseBattle({difficulty,carry}));
@@ -287,6 +290,7 @@ export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onRe
           <div ref={scrollRef} className="greenhouse-board-scroll" role="region" aria-label="花房战场，窄屏可横向滚动"><div ref={boardRef} tabIndex={-1} className={`greenhouse-board${overview?' is-overview':''}${moving?' is-moving':''}${game.aim?' is-aiming':''}`} data-testid="greenhouse-board" data-overview={overview} style={{width:overview?fittedWidth:Math.max(MAP.columns*80,(fittedWidth??0)*1.25)}} onClick={event=>{if(event.target===event.currentTarget){if(suppressClick.current)suppressClick.current=false;else closeInspection();}}} onPointerDown={event=>{if(gameRef.current.aim&&event.pointerType!=='mouse'&&event.button===0){aimPointer.current=event.pointerId;event.currentTarget.setPointerCapture(event.pointerId);previewTouch(event);}}} onPointerMove={previewTouch} onPointerUp={event=>finishTouchAim(event)} onPointerCancel={event=>finishTouchAim(event,true)} onLostPointerCapture={()=>{aimPointer.current=null;}} onContextMenu={event=>{event.preventDefault();if(gameRef.current.aim)cancelAim();else closeInspection();}} onPointerLeave={()=>{if(!gesture.current){setHover(null);if(gameRef.current.aim)act({type:'AIM_SKILL',x:-1,y:-1});}}}>
             <canvas ref={canvasRef} width={BOARD_WIDTH} height={BOARD_HEIGHT} aria-label="六行九列包围框内三十四格花房，L形三格种植台与四格荆冠首领，缺口透明"/>
             <SkillFeedback columns={MAP.columns} rows={MAP.rows} bursts={skillFeedback.bursts} shields={game.cats.filter(cat=>cat.status==='active'&&cat.shield>0)}/>
+            <SkillBanner banner={skillBanner.banner}/>
             <BossRetreatFeedback key={attemptId} boss={game.boss} columns={MAP.columns} rows={MAP.rows} label="荆冠首领已退去"/>
 
             <div className="greenhouse-cells">{CELLS.map(position=>{
