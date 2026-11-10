@@ -10,6 +10,7 @@ import {useModelAdvisor} from '../useModelAdvisor';
 import {AdvisorChatMessages} from '../AdvisorChatMessages';
 import {CatHealth, CatEnergy} from '../UnitMeters';
 import {SkillFeedback, useSkillFeedback} from '../SkillFeedback';
+import {SkillBanner, useSkillBanner} from '../SkillBanner';
 import {SpawnLabel} from '../SpawnLabel';
 import {GoalLabel} from '../GoalLabel';
 import {COMMANDER_POSITION, CONFIG, DIFFICULTY_CONFIG, SKILLS, SPAWN_POINTS, isSpawnCell} from './config';
@@ -58,6 +59,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
   const [runtime]=useState(()=>new PrologueBattle({mode:'tutorial'}));
   const [game,setGame]=useState<CombatState|null>(null);
   const skillFeedback=useSkillFeedback();
+  const skillBanner=useSkillBanner();
   const [selected,setSelected]=useState<CatId|null>(null);
   const [moveSelection,setMoveSelection]=useState<CatId|null>(null);
   const [skillTooltipOpen,setSkillTooltipOpen]=useState(false);
@@ -104,7 +106,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     inspectedRef.current=null;setSkillTooltipOpen(false);
   }
   useEffect(()=>{
-    skillFeedback.clear();
+    skillFeedback.clear();skillBanner.clear();
     const unsubscribe=runtime.subscribe(setGame);
     runtime.start(context,result=>{setSubmitted(true);callbackRef.current(result);});
     runtime.pause(pausedRef.current||document.hidden);
@@ -201,6 +203,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
         const target=action.x!==undefined&&action.y!==undefined?{x:action.x,y:action.y}:previous?.skillAim?.target;
         skillFeedback.emit({catId:cat.id,name:SKILLS[cat.id].name,origin:{x:cat.x,y:cat.y},cells:getSkillCells(cat,target),
           recipients:cat.id==='guard'?[{x:cat.x,y:cat.y}]:undefined});
+        skillBanner.emit(cat.id, SKILLS[cat.id].name);
       }
     }
   };
@@ -365,6 +368,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
         <div className={`btl-board is-overview${aim?' btl-board-aiming':''}`} ref={boardRef} style={{width:boardWidth}} data-testid="battle-board" onPointerDown={aimDown} onPointerMove={aimMove} onPointerLeave={()=>previewAt(null)} onPointerUp={event=>finishAim(event)} onPointerCancel={event=>finishAim(event,true)} onLostPointerCapture={()=>{if(aimPointerRef.current!==null){aimPointerRef.current=null;previewAt(null);}}}>
           <canvas width={700} height={300} ref={canvasRef} aria-hidden="true"/>
           <SkillFeedback columns={CONFIG.COLUMNS} rows={CONFIG.ROWS} bursts={skillFeedback.bursts} shields={game.cats.filter(cat=>cat.status==='active'&&cat.shield>0)}/>
+          <SkillBanner banner={skillBanner.banner}/>
           <div className="btl-cells" role="group" aria-label={aim?'技能瞄准，全地图 21 格均可选择中心，鼠标移动预览最多 5 格十字，左键释放，右键或 Esc 取消；方向键预览，回车释放':'3 行 7 列战斗地格，B1 为固定保护终点，B7 为唯一出怪口，禁止部署，19 格可部署'}>{Array.from({length:21},(_,i)=>{
             const x=i%7,y=Math.floor(i/7),name=cellName({x,y}),goal=x===COMMANDER_POSITION.x&&y===COMMANDER_POSITION.y,spawn=isSpawnCell(x,y);
             const highlighted=recommendedCell?.x===x&&recommendedCell?.y===y;
