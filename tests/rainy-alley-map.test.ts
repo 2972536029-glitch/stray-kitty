@@ -47,6 +47,23 @@ test('closed gate collision has a reachable interaction point beside the mandato
   assert.ok(reachable, 'expected a collision-valid route from entrance to the crate radius');
 });
 
+test('lower-west junction allows walking up the visible paving beside the wall corner', () => {
+  for (const field of [rainyAlleyFieldClosed, rainyAlleyFieldOpen, rainyAlleySqueezeFieldClosed, rainyAlleySqueezeFieldOpen]) {
+    for (const x of [181, 185, 187]) {
+      const start = {x, y: 561};
+      assert.ok(field.isTraversable(start.x, start.y));
+      const up = sweepMove(field, start, {x: 0, y: -61});
+      assert.equal(up.blockedY, false, `the visible northbound passage stays open at x=${x}`);
+      assert.deepEqual(up.position, {x, y: 500});
+      assert.deepEqual(sweepMove(field, up.position, {x: 0, y: 61}).position, start);
+    }
+    assert.equal(field.isTraversable(206, 538), false, 'the adjacent wall corner remains solid');
+    const intoWall = sweepMove(field, {x: 185, y: 538}, {x: 40, y: 0});
+    assert.equal(intoWall.blockedX, true, 'walking sideways cannot cross the wall');
+    assert.ok(intoWall.position.x < 196);
+  }
+});
+
 for (const gateOpen of [false, true]) for (const direction of [-1, 1] as const) {
   test('squeeze exit direction ' + direction + ' with gate ' + (gateOpen ? 'open' : 'closed'), () => {
     const normal = gateOpen ? rainyAlleyFieldOpen : rainyAlleyFieldClosed;
