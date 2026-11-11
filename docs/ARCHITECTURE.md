@@ -52,6 +52,7 @@ stray-kitty/
 ├─ docs/  需求、架构、接口与集成记录
 │  ├─ ADVISOR-INTEGRATION.md
 │  ├─ ARCHITECTURE.md  架构、目录与接入
+│  ├─ AUDIO-CREDITS.md
 │  ├─ BATTLE-ADVISOR-MODEL.md  阿策模型配置、可见战况与回退边界
 │  ├─ BATTLE-EVENT-ALLIES.md
 │  ├─ BATTLE-EVENT-CARRY.md  事件携带物与协助者六枚举对接
@@ -163,7 +164,8 @@ stray-kitty/
 │  │     │  └─ stages/  四阶段四十八件正向透明家具组件
 │  │     ├─ lottery/  通用邮寄拼贴手账底图与透明包裹开合图集
 │  │     │  └─ fonts/
-│  │     └─ night-market/
+│  │     ├─ night-market/
+│  │     └─ sfx/
 │  └─ src/  运行代码
 │     ├─ adapters/  具体运行能力
 │     │  ├─ api/  HTTP 请求

@@ -2,8 +2,11 @@
  * Compare within one simulation step: basic attacks, damage, pauses and restored
  * attempts cannot replay a shake. This is presentation only; no state is changed.
  */
+import {playSfx} from '../../core/sound';
+
 export function triggerBossSkillShake(element: HTMLElement | null, previousSkills: number, currentSkills: number): void {
   if (!element || currentSkills <= previousSkills) return;
+  playSfx('/assets/sfx/boss-slam.ogg', 0.55);
   if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   const className = 'fx-shake-strong';

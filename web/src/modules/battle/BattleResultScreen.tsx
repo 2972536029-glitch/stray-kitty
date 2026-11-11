@@ -1,6 +1,7 @@
 import {useEffect, useRef} from 'react';
 import {createPortal} from 'react-dom';
 import {drawCat} from './l00/painter';
+import {playSfx} from '../../core/sound';
 import './battle-result.css';
 
 interface Props {
@@ -28,6 +29,8 @@ export function BattleResultScreen({outcome,stageName,busy=false,error='',onCont
   useEffect(()=>{
     const ctx=portrait.current?.getContext('2d');
     if(ctx){ctx.clearRect(0,0,128,128);drawCat(ctx,'hero',0,0,128,won?'idle':'sleep');}
+    // Result jingle rides the same mount that flips the portrait.
+    playSfx(won ? '/assets/sfx/battle-win.ogg' : '/assets/sfx/battle-lose.ogg', 0.5);
   },[won]);
   useEffect(()=>{if(!busy)continuation.current?.focus({preventScroll:true});},[busy]);
 
