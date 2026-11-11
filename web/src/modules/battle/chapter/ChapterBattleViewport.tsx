@@ -7,6 +7,7 @@ import {advanceChapter, createChapterBattle, dispatchChapter, getAttackCells, ge
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintChapter, drawChapterCat} from './painter';
 import {AdvisorPortrait} from '../shared/AdvisorPortrait';
 import {useBattleLoop} from '../shared/useBattleLoop';
+import {useBattleSfx} from '../shared/useBattleSfx';
 import {useBattleDragPreview} from '../shared/useBattleDragPreview';
 import {getChapterAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
@@ -146,6 +147,7 @@ export function ChapterBattleViewport({attemptId,stageId='alley_boss',difficulty
     gameRef,canvasRef,boardRef,paused,uiPaused:chatOpen||retreatOpen||!!dragging,
     selected,hover,dragging,dispatch:dispatchChapter,advance:advanceChapter,paint:paintChapter,setGame,setHidden,
   });
+  useBattleSfx(game, {attackKinds: ['attack']});
 
   useEffect(()=>{
     if((game.phase==='won'||game.phase==='lost')&&!paused&&!game.externallyPaused&&!emitted.current){

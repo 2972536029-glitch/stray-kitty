@@ -2,10 +2,14 @@
 // see docs/AUDIO-CREDITS.md). One cached Audio element per URL: repeated triggers
 // restart it from zero — overwrite semantics, matching the skill banner.
 const cache = new Map<string, HTMLAudioElement>();
+// Exclusive voice groups: a new cue in a group pauses the group's previous
+// audio first, so e.g. petting sounds never overlap each other.
+const groupOwners = new Map<string, HTMLAudioElement>();
 
-export function playSfx(url: string, volume = 0.6, rate = 1): void {
+export function playSfx(url: string, volume = 0.6, rate = 1, group?: string): void {
   // Node test runners have no Audio; stay silent there instead of crashing.
   if (typeof Audio === 'undefined') return;
+  if (group) groupOwners.get(group)?.pause();
   let audio = cache.get(url);
   if (!audio) {
     audio = new Audio(url);
@@ -14,7 +18,11 @@ export function playSfx(url: string, volume = 0.6, rate = 1): void {
   }
   audio.currentTime = 0;
   audio.playbackRate = rate;
+  // Rate is a pitch shift by contract (升降调); browsers default to preserving
+  // pitch when slowing down, which flattens every shifted cue to original pitch.
+  audio.preservesPitch = false;
   audio.volume = volume;
+  if (group) groupOwners.set(group, audio);
   void audio.play().catch(() => {/* autoplay guard: triggers are user gestures */});
 }
 

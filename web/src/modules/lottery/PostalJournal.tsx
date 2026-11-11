@@ -4,6 +4,7 @@ import type {ParcelDraw} from './types';
 import Modal from '../../ui/Modal';
 import WindowHeading from '../../ui/WindowHeading';
 import {playSound} from '../../ui/soundEffects';
+import {playSfx} from '../../core/sound';
 import {trackRechargeEntryExpose, trackRechargeEntryClick} from '../../observability/actions';
 import {ThemePreview} from './ParcelArt';
 import {poolStatus} from './model';
@@ -82,7 +83,7 @@ export default function PostalJournal({state,catalog,disabled,retryDisabled,erro
     if(inFlight)return;
     if(draws.length>1){setOpened(ids=>ids.includes(id)?ids:[...ids,id]);setFocused(null);setStage('parcels');playSound('pickup');return;}
     if(opened.includes(id)){setFocused(id);setStage('result');return;}
-    setOpening(id);setStage('opening');playSound('open');
+    setOpening(id);setStage('opening');playSfx('/assets/sfx/skill-lantern-shatter.ogg', 0.4);
   };
   const receipt=(r:ParcelDraw)=>{setSelected(r.poolId);onPool(r.poolId);setDraws([r]);setOpened([r.id]);setFocused(r.id);setStage('result');setSheet(null);};
   const pendingNotice=disabled&&!retryDisabled?'上一次操作尚未确认，请先重试，确认后即可继续抽取。':'';

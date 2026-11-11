@@ -7,6 +7,7 @@ import {advanceTunnel, createTunnelBattle, dispatchTunnel, getAttackCells, getBo
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, OBSTACLE_NAMES, paintTunnel, drawTunnelCat} from './painter';
 import {AdvisorPortrait} from '../shared/AdvisorPortrait';
 import {useBattleLoop} from '../shared/useBattleLoop';
+import {useBattleSfx} from '../shared/useBattleSfx';
 import {useBattleDragPreview} from '../shared/useBattleDragPreview';
 import {getTunnelAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
@@ -154,6 +155,7 @@ export function TunnelBattleViewport({attemptId,difficulty,carry,paused,onResult
     gameRef,canvasRef,boardRef,paused,uiPaused:chatOpen||retreatOpen||!!dragging,
     selected,hover,dragging,dispatch:dispatchTunnel,advance:advanceTunnel,paint:paintTunnel,setGame,setHidden,
   });
+  useBattleSfx(game, {attackKinds: ['attack']});
 
   useEffect(()=>{
     if((game.phase==='won'||game.phase==='lost')&&!paused&&!game.externallyPaused&&!emitted.current){

@@ -7,6 +7,7 @@ import {advanceFinale, createFinaleBattle, dispatchFinale, getAttackCells, getBo
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, OBSTACLE_NAMES, paintFinale, drawFinaleCat} from './painter';
 import {AdvisorPortrait} from '../shared/AdvisorPortrait';
 import {useBattleLoop} from '../shared/useBattleLoop';
+import {useBattleSfx} from '../shared/useBattleSfx';
 import {useBattleDragPreview} from '../shared/useBattleDragPreview';
 import {getFinaleAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
@@ -147,6 +148,7 @@ export function FinaleBattleViewport({attemptId,difficulty,carry,paused,onResult
     gameRef,canvasRef,boardRef,paused,uiPaused:chatOpen||retreatOpen||!!dragging,
     selected,hover,dragging,dispatch:dispatchFinale,advance:advanceFinale,paint:paintFinale,setGame,setHidden,
   });
+  useBattleSfx(game, {attackKinds: ['attack', 'elite-attack', 'ally-attack']});
 
   useEffect(()=>{
     if((game.phase==='won'||game.phase==='lost')&&!paused&&!game.externallyPaused&&!emitted.current){

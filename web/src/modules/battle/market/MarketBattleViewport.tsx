@@ -7,6 +7,7 @@ import {advanceMarket, createMarketBattle, dispatchMarket, getAttackCells, getBo
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintMarket, drawMarketCat} from './painter';
 import {AdvisorPortrait} from '../shared/AdvisorPortrait';
 import {useBattleLoop} from '../shared/useBattleLoop';
+import {useBattleSfx} from '../shared/useBattleSfx';
 import {useBattleDragPreview} from '../shared/useBattleDragPreview';
 import {getMarketAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
@@ -146,6 +147,7 @@ export function MarketBattleViewport({attemptId,difficulty,carry,paused,onResult
     gameRef,canvasRef,boardRef,paused,uiPaused:chatOpen||retreatOpen||!!dragging,
     selected,hover,dragging,dispatch:dispatchMarket,advance:advanceMarket,paint:paintMarket,setGame,setHidden,
   });
+  useBattleSfx(game, {attackKinds: ['attack']});
 
   useEffect(()=>{
     if((game.phase==='won'||game.phase==='lost')&&!paused&&!game.externallyPaused&&!emitted.current){

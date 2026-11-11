@@ -7,6 +7,7 @@ import {advanceGreenhouse, createGreenhouseBattle, dispatchGreenhouse, getAttack
 import {BOARD_HEIGHT, BOARD_WIDTH, cellName, mapCell, obstacleCell, paintGreenhouse, drawGreenhouseCat} from './painter';
 import {AdvisorPortrait} from '../shared/AdvisorPortrait';
 import {useBattleLoop} from '../shared/useBattleLoop';
+import {useBattleSfx} from '../shared/useBattleSfx';
 import {useBattleDragPreview} from '../shared/useBattleDragPreview';
 import {getGreenhouseAnswer} from './advisor';
 import {CAT_PRESENTATION} from './presentation';
@@ -146,6 +147,7 @@ export function GreenhouseBattleViewport({attemptId,difficulty,carry,paused,onRe
     gameRef,canvasRef,boardRef,paused,uiPaused:chatOpen||retreatOpen||!!dragging,
     selected,hover,dragging,dispatch:dispatchGreenhouse,advance:advanceGreenhouse,paint:paintGreenhouse,setGame,setHidden,
   });
+  useBattleSfx(game, {attackKinds: ['attack']});
 
   useEffect(()=>{
     if((game.phase==='won'||game.phase==='lost')&&!paused&&!game.externallyPaused&&!emitted.current){
