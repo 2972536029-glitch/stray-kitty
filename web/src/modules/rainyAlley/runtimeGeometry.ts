@@ -27,6 +27,11 @@ function svgSubpaths(path: string): Point[][] {
 }
 
 const contours = svgSubpaths(rainyAlleyMapData.geometry.walkable_path_d);
+// Register this short wall return to the approved artwork. The graybox corner
+// projects 20px into the lower-west paving and blocks the visible northbound lane.
+// Keep the locked source and the rest of this building's footprint unchanged.
+const lowerWestWall = contours[2].map(point =>
+  point.x === 176 && (point.y === 527 || point.y === 549) ? {...point, x: 196} : point);
 const squeeze = svgSubpaths(rainyAlleyMapData.geometry.squeeze_connector.svg_path_d)[0];
 export const SQUEEZE_BOUNDS = {left: 478, right: 507, top: 305, bottom: 352} as const;
 export const SQUEEZE_OPENING_WIDTH = 12;
@@ -95,7 +100,7 @@ const makePolygon = (id: number, name: string, points: Point[]): WorldPolygon =>
 
 function geometry(normalFootprint = true): RainyAlleyGeometry {
   const solids = [
-    ...contours.slice(1).map((points, index) => makePolygon(100 + index, `svg_hole_${index + 1}`, points)),
+    ...contours.slice(1).map((points, index) => makePolygon(100 + index, `svg_hole_${index + 1}`, index === 1 ? lowerWestWall : points)),
     makePolygon(200, 'pushcart-blocker', pushcart),
     makePolygon(204, 'west-wooden-crate-hitbox', westWoodenCrate),
     makePolygon(205, 'west-railing-hitbox', westRailing),
