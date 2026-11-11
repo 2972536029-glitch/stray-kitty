@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import type {EventDefinition} from '../contracts';
 import {eventTiers} from '../modules/events/presentation';
+import {playSfx} from '../core/sound';
 import './encounter.css';
 export {default as Dice} from './Dice';
 
@@ -25,7 +26,9 @@ export default function DiceEvent({event, disabled, rolling, random = false, par
   const visibleOptions = event.options.filter(o => !o.requireCat || hasCat(o.requireCat));
   const choose = (usePush = false) => {
     if (!option || disabled || rolling || submitted.current) return;
-    submitted.current = true;onChoose(selected,usePush);
+    submitted.current = true;
+    playSfx('/assets/sfx/dice-roll.ogg', 0.45);
+    onChoose(selected,usePush);
   };
   return <section className="event-card encounter-sheet encounter-portrait event-choice" aria-labelledby="encounter-title">
     <header className="encounter-heading"><span>{random ? '路上的偶遇' : '眼前的发现'}</span><h2 id="encounter-title">{event.title}</h2></header>

@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {startResourceCache} from '../core/resource-cache';
+import {installClickSfx} from '../core/sound';
 import {useDesktopUiScale} from '../ui/useDesktopUiScale';
 import {useGame} from './useGame';
 import {Viewport} from '../examples/demo/Viewport';
@@ -41,6 +42,7 @@ import {trackContinueAdventure, trackChapter1Enter, trackHomePanelOpen} from '..
 export default function App() {
   useDesktopUiScale();
   useEffect(startResourceCache,[]);
+  useEffect(installClickSfx,[]);
   const warehouseReview = import.meta.env.DEV && new URLSearchParams(window.location.search).has('warehouseQA');
   const game = useGame();
   const {state, catalog, send, reportMove, busy, pending, error, disabled, retry, skipDialogue, accountName, sessionUnavailable, startNewJourney, resetSession, refresh, port} = game;

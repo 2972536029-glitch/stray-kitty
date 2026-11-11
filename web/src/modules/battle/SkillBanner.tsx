@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {CSSProperties} from 'react';
 import {createPortal} from 'react-dom';
+import {playSfx, playSfxSequence, type SfxCue} from '../../core/sound';
 import './skill-banner.css';
 
 // Skill name → banner artwork. Each per-skill art piece carries the cat's name,
@@ -18,6 +19,35 @@ const BANNER_ART: Readonly<Record<string, {webp: string; png: string}>> = {
 };
 
 const DURATION = 2200;
+
+// Skill name → cast sound effect (Kenney CC0, see docs/AUDIO-CREDITS.md). Cues
+// are picked from each skill's name and board effect: tin-lid clang for the
+// jar-lid shield, plate slam for the fury strike, three blade whooshes for the
+// triple claw, bell for the slowing chime, glass sparkle for the star burst,
+// soft pizzicato for the heal, a questioning swell for night vision, and a
+// cloth sweep + glass shatter for the thorn-clearing lantern.
+const BANNER_SFX: Readonly<Record<string, readonly SfxCue[]>> = {
+  '星绒绽放': [{url: '/assets/sfx/skill-star-sparkle.ogg'}],
+  '罐盖护盾': [{url: '/assets/sfx/skill-shield-clang.ogg'}],
+  '橘影连爪': [
+    {url: '/assets/sfx/skill-claw-growl.mp3'},
+    {url: '/assets/sfx/skill-claw-1.ogg'},
+    {url: '/assets/sfx/skill-claw-2.ogg'},
+    {url: '/assets/sfx/skill-claw-3.ogg'},
+  ],
+  '安心呼噜': [{url: '/assets/sfx/skill-heal-chime.ogg'}],
+  '栗盾奋击': [{url: '/assets/sfx/skill-fury-slam.ogg'}],
+  // Slow chime: bell strike, then a rising triplet of icy pings — the freeze
+  // spreading. Tight 90ms gaps keep it as one gesture, not three separate hits.
+  '银铃缓行': [
+    {url: '/assets/sfx/skill-bell-frost.ogg'},
+    {url: '/assets/sfx/skill-ice-shimmer.ogg'},
+    {url: '/assets/sfx/skill-ice-shimmer.ogg', rate: 1.25},
+    {url: '/assets/sfx/skill-ice-shimmer.ogg', rate: 1.5},
+  ],
+  '夜视护行': [{url: '/assets/sfx/skill-night-swell.ogg'}],
+  '巡光护行': [{url: '/assets/sfx/skill-lantern-swoosh.ogg'}, {url: '/assets/sfx/skill-lantern-shatter.ogg'}],
+};
 
 export interface SkillCastBanner {
   catId: string;
@@ -49,7 +79,7 @@ const CAT_ACCENTS: Readonly<Record<string, {color: string; accent: string}>> = {
   momo: {color: '#6effdf', accent: '#ddd0ff'},
 };
 
-/** Receipts are emitted only after the engine confirms a cast; the 800ms here is
+/** Receipts are emitted only after the engine confirms a cast; the 2.2s here is
  * presentation time and runs on real time, not battle-clock time. A new emit
  * replaces the current banner and restarts its slide via the id key. */
 export function useSkillBanner() {
@@ -67,6 +97,13 @@ export function useSkillBanner() {
     const id = ++sequence.current;
     setBanner({catId, name, id});
     stopTimer();
+    // Fire the cast cue with the banner. Overlapping casts each sound; short
+    // cues make the overlap a feature.
+    const sfx = BANNER_SFX[name];
+    if (sfx) {
+      if (sfx.length > 1) playSfxSequence(sfx, 90);
+      else playSfx(sfx[0].url);
+    }
     timer.current = setTimeout(() => {
       timer.current = undefined;
       // Guard by id so a re-emit during teardown races cannot clear a newer banner.
