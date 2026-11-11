@@ -9,6 +9,7 @@ import {homeInventory,type HomeItem} from './objects';
 import {drawHomeSprite} from './painter';
 import {homeHit,homeLayoutChanges,validHomePosition,type HomeDraft} from './editor';
 import {FURNITURE_CATEGORIES,type FurnitureCategory} from './furnishings';
+import {playSfx} from '../../core/sound';
 import './backpack.css';
 
 interface Props {scene:DemoScene;state:GameState;catalog:Catalog;busy:boolean;pending:boolean;error:string;initialFurniture?:string;onSave:(c:GameCommand)=>Promise<boolean>;onRetry:()=>void;onClose:()=>void}
@@ -62,7 +63,7 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
     setDraft({...draft,[key]:{x,y,stored}});setNotice(stored?'已收进背包，保存后生效。':'位置已调整，保存后伙伴会到新位置互动。');
   };
   const cancelSelection=()=>{if(locked||conflict)return;const start=selectionStart.current;if(start){const {x,y,stored}=start.placement;commit(start.key,x,y,stored);}setDrag(null);selectItem();setNotice('已取消这件家具的调整。');};
-  const confirmSelection=()=>{if(locked||conflict)return;selectItem();setNotice('已确定家具位置，保存布置后生效。');};
+  const confirmSelection=()=>{if(locked||conflict)return;playSfx('/assets/sfx/ui-select.ogg', 0.4, 0.8);selectItem();setNotice('已确定家具位置，保存布置后生效。');};
   const collectSelection=()=>{if(!selected||locked||conflict)return;commit(selected.layoutKey,selected.x,selected.y,true);selectItem();};
   const clearFurniture=()=>{
     if(locked||conflict||!items.some(item=>!item.stored))return;
@@ -152,7 +153,7 @@ export default function FurnitureBackpack({scene,state,catalog,busy,pending,erro
   const matching=items.filter(item=>item.stored);
   const shown=matching.filter(item=>category==='all'||item.category===category);
   const surfaces=HOME_SURFACES.filter(item=>item.kind===kind&&ownsHomeSurface(base,item)&&finishDraft[item.kind]!==item.id);
-  const placeSelected=(item:HomeItem)=>{const rect=scene.homeCanvas.getBoundingClientRect(),point=local(rect.left+rect.width/2,(rect.top+(bag.current?.getBoundingClientRect().top??rect.bottom))/2);commit(item.layoutKey,Math.round(Math.max(80+item.width/2,Math.min(1592-item.width/2,point.x))),Math.round(Math.max(item.wall?150:355,Math.min(item.wall?890:728,point.y))),false);};
+  const placeSelected=(item:HomeItem)=>{playSfx('/assets/sfx/ui-select.ogg', 0.4, 0.8);const rect=scene.homeCanvas.getBoundingClientRect(),point=local(rect.left+rect.width/2,(rect.top+(bag.current?.getBoundingClientRect().top??rect.bottom))/2);commit(item.layoutKey,Math.round(Math.max(80+item.width/2,Math.min(1592-item.width/2,point.x))),Math.round(Math.max(item.wall?150:355,Math.min(item.wall?890:728,point.y))),false);};
   useEffect(()=>{const sync=()=>scene.setHomeEditorBottom(bag.current?.getBoundingClientRect().top);const observer=new ResizeObserver(sync);if(bag.current)observer.observe(bag.current);window.addEventListener('resize',sync);sync();return()=>{observer.disconnect();window.removeEventListener('resize',sync);};},[scene]);
   useEffect(()=>{let frame=0;const position=()=>{const actions=contextActions.current,name=contextName.current;if(actions&&name&&selected&&!selected.stored){
     const sprite=HOME_FRAMES[selected.sprite],point=drag?.moved&&drag.inside&&drag.point?drag.point:selected;

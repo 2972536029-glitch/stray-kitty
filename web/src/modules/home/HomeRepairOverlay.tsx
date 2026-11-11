@@ -2,7 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import type {Catalog,GameCommand,GameState} from '../../contracts';
 import type {DemoScene} from '../../examples/demo/scene';
 import {currentHomeRenovation,repairBalance,repairRequirements,REPAIR_COST_LABELS} from './repairs';
-import {playSound} from '../../ui/soundEffects';
+import {playSfx} from '../../core/sound';
 import './repairs.css';
 
 interface Props {scene:DemoScene;state:GameState;catalog:Catalog;busy:boolean;pending:boolean;error:string;onRepair:(c:GameCommand)=>Promise<boolean>;onRetry:()=>void;onActivityChange?:(activity:{renovating:boolean;repairCardOpen:boolean})=>void}
@@ -46,7 +46,7 @@ export default function HomeRepairOverlay({scene,state,catalog,busy,pending,erro
   const repair=async()=>{
     if(!part||locked||inFlight.current||!requirement?.affordable||requirement.missing.length)return;
     inFlight.current=true;const name=part.name;scene.prepareHomeRepair(part);
-    try {if(await onRepair({type:'REPAIR_HOME',repairId:part.id})){playSound('pickup');setMessage(`✓ ${name}完成`);setSelected('');}}finally{inFlight.current=false;}
+    try {if(await onRepair({type:'REPAIR_HOME',repairId:part.id})){playSfx('/assets/sfx/result-success.ogg', 0.5);setMessage(`✓ ${name}完成`);setSelected('');}}finally{inFlight.current=false;}
   };
   useEffect(()=>{if(!message||renovating)return;const timer=setTimeout(()=>setMessage(''),2600);return()=>clearTimeout(timer);},[message,renovating]);
   return <div className="home-repairs" ref={root} aria-label="花房场景修缮">

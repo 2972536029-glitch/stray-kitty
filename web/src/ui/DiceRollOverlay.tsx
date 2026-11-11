@@ -1,7 +1,7 @@
 import {useEffect, useMemo, useRef, useState, type CSSProperties} from 'react';
 import type {EventResolution, EventTier} from '../contracts';
 import {eventTiers} from '../modules/events/presentation';
-import {playSound} from './soundEffects';
+import {playSfx} from '../core/sound';
 import {trackDiceRollDuration} from '../observability/actions';
 import './dice-overlay.css';
 
@@ -74,7 +74,6 @@ export default function DiceRollOverlay({resolution, startedAt, title, onClose}:
   onCloseRef.current = onClose;
   const root = useRef<HTMLDivElement>(null);
   const tier = resolution?.tier;
-  const good = tier === 'crit' || tier === 'success';
 
   // 接管焦点：入场聚焦仪式容器，退场还原给之前的元素。
   useEffect(() => {
@@ -91,18 +90,19 @@ export default function DiceRollOverlay({resolution, startedAt, title, onClose}:
     return () => window.clearTimeout(timer);
   }, [resolution, startedAt]);
 
-  // 揭晓只打点+响一声（好结果叮咚、坏结果委屈的喵）；特效播完自动收场。
+  // 揭晓只打点+响一声（按四档结果音：大成功/成功/有代价/失败各有专属音频，
+  // 替换原先好/坏二分的合成音，见 docs/AUDIO-CREDITS.md）；特效播完自动收场。
   const soundedRef = useRef(false);
   useEffect(() => {
     if (phase !== 'reveal') return;
     if (!soundedRef.current) {
       soundedRef.current = true;
       trackDiceRollDuration(performance.now() - startedAt);
-      playSound(good ? 'chime' : 'meow');
+      if (tier) playSfx(`/assets/sfx/result-${tier}.ogg`, 0.5);
     }
     const timer = window.setTimeout(() => onCloseRef.current(), REVEAL_HOLD_MS);
     return () => window.clearTimeout(timer);
-  }, [phase, good, startedAt]);
+  }, [phase, tier, startedAt]);
 
   // —— 大成功：彩虹色硬边彩带从骰心喷射（炸开→受重力下坠），六色轮换。 ——
   const ribbons = useMemo<Particle[]>(() => phase === 'reveal' && tier === 'crit' ? Array.from({length: 26}, (_, i) => {

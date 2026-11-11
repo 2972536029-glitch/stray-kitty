@@ -22,6 +22,7 @@ import {BattleSceneBackdrop} from '../BattleSceneBackdrop';
 import {BattleResultScreen} from '../BattleResultScreen';
 import {useBattleBoardFit} from '../useBattleBoardFit';
 import {useBattleDragPreview} from '../shared/useBattleDragPreview';
+import {useBattleSfx} from '../shared/useBattleSfx';
 import {getSkillTooltipPosition} from '../skillTooltipPosition';
 import type {AnimationBook, CatKind, CatPose} from './painter';
 import './battle.css';
@@ -119,6 +120,7 @@ export function BattleViewport({context,paused,onResult,onStart,onBeforeStart,au
     // A fresh server attempt starts a new battle; unrelated app renders must not reset it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[runtime,context.attempt.id]);
+  useBattleSfx(game, {effects: game?.projectiles, attackKinds: ['starlight', 'shield']});
   useEffect(()=>{if(paused){if(runtime.getSnapshot()?.skillAim)runtime.dispatch({type:'CANCEL_SKILL'});closeInspection();clearPointers();setMoveSelection(null);}runtime.pause(paused||document.hidden);},[runtime,paused,context.attempt.id]);
   useEffect(()=>{if(autoComplete&&!paused&&!submitted&&(game?.phase==='won'||game?.phase==='failed'))runtime.complete();},[autoComplete,paused,submitted,game?.phase,game?.externallyPaused,runtime]);
   useEffect(()=>{

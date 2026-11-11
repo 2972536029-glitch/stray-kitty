@@ -27,6 +27,7 @@ import {CAT_NAMES,SOCIAL_KINDS,freeCatPoint,furnitureAt,furnitureActivity,useFur
 import {HomeCamera} from '../../modules/home/camera';
 import {HomeRenovation} from '../../modules/home/renovation';
 import {playSound} from '../../ui/soundEffects';
+import {playSfx} from '../../core/sound';
 import {homeInventory, type HomeAppearance} from '../../modules/home/objects';
 import {homeWalkable} from '../../modules/home/navigation';
 import {displayedCanvasRect} from '../../adapters/canvas/camera';
@@ -1055,6 +1056,11 @@ export class DemoScene {
   }
   private pokeHomeCat(cat:HomeCatAgent,x:number,y:number){
     const reaction=petCat(cat,this.homeTime);if(!reaction)return;
+    // 摸摸出声:开心=呼噜,平静=喵,被摸烦了=降调喵(抗议)。同走 'pet' 独占组,
+    // 新反应顶掉上一个声;petCat 的防抖挡 300ms 内连点。
+    if(reaction.mood==='irritated')playSfx('/assets/sfx/cat-meow.mp3',0.45,0.75,'pet');
+    else if(reaction.mood==='happy')playSfx('/assets/sfx/cat-purr.mp3',0.5,1,'pet');
+    else playSfx('/assets/sfx/cat-meow.mp3',0.45,1,'pet');
     for(const other of this.homeCats)if(other!==cat)other.bubbleUntil=this.homeTime;
     if(reaction.mood==='happy')this.homeHearts.push({x:cat.x,y:cat.y-60,born:this.homeTime});
     this.canvas.dataset.homeInteraction=JSON.stringify({kind:'cat',breed:cat.breed,mood:reaction.mood,x,y});
