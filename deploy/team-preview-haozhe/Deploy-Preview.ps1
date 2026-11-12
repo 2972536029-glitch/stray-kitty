@@ -360,9 +360,7 @@ try {
     Step 'Verify payment service readiness endpoint'
     $paymentReadyResult = Invoke-NativeChecked -FilePath 'kubectl' -Arguments ($kubeArguments + @('exec', 'deployment/stray-kitty-payment', '--', 'wget', '-qO-', 'http://127.0.0.1:8082/readyz')) -Step 'Payment /readyz' -TailLines 5
     $paymentReady = $paymentReadyResult.StdOut | ConvertFrom-Json
-    if ($paymentReady.status -ne 'ready' -or $paymentReady.storage -ne 'payment-ledger') {
-        throw 'Payment /readyz did not confirm ready payment-ledger storage.'
-    }
+    Assert-PaymentReadiness -Response $paymentReady
 
     $currentPhase = 'wait for frontend LoadBalancer IP'
     Step 'Wait for frontend public IP'

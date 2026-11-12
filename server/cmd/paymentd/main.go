@@ -36,10 +36,22 @@ func main() {
 		slog.Error("invalid catalog")
 		os.Exit(1)
 	}
-	ledger, err := payment.OpenLedger(env("PAYMENT_DATA_FILE", "../data/payments.json"))
+	var ledger payment.Ledger
+	if dsn := os.Getenv("PAYMENT_MYSQL_DSN"); dsn != "" {
+		ledger, err = payment.OpenMySQLLedger(dsn)
+	} else {
+		ledger, err = payment.OpenLedger(env("PAYMENT_DATA_FILE", "../data/payments.json"))
+	}
 	if err != nil {
 		slog.Error("cannot open payment ledger", "error", err.Error())
 		os.Exit(1)
+	}
+	if closer, ok := ledger.(interface{ Close() error }); ok {
+		defer closer.Close()
+	}
+	storage := "payment-ledger"
+	if backend, ok := ledger.(interface{ Backend() string }); ok {
+		storage = backend.Backend()
 	}
 	gateway := payment.NewDecider(catalog)
 	xsollaCfg := payment.XsollaConfig{
@@ -87,7 +99,7 @@ func main() {
 		defer cancel()
 		server.Shutdown(shutdown)
 	}()
-	slog.Info("payment service ready", "address", server.Addr, "storage", "payment-ledger")
+	slog.Info("payment service ready", "address", server.Addr, "storage", storage)
 	if err = server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		slog.Error("payment service stopped", "error", err.Error())
 		os.Exit(1)

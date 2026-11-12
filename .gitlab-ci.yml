@@ -27,6 +27,26 @@ server_checks:
     - go -C server vet ./...
     - go -C server test -race ./...
 
+mysql_checks:
+  stage: verify
+  image: golang:1.26
+  services:
+    - name: mysql:8.4
+      alias: mysql
+  variables:
+    GOPROXY: https://goproxy.cn,direct
+    MYSQL_DATABASE: stray_kitty_test
+    MYSQL_USER: stray_kitty_test
+    # Disposable CI database only; these are not deployment credentials.
+    MYSQL_PASSWORD: ci-integration-only
+    MYSQL_ROOT_PASSWORD: ci-root-integration-only
+    MYSQL_ROOT_HOST: "%"
+    # Tests create uniquely named databases, then drop only those test databases.
+    TEST_MYSQL_DSN: "root:ci-root-integration-only@tcp(mysql:3306)/stray_kitty_test?parseTime=true"
+  script:
+    # Keep package tests sequential when sharing the disposable service database.
+    - go -C server test -race -p 1 ./internal/repository ./internal/integrations/payment ./internal/service ./internal/transport
+
 server_build:
   stage: build
   image: golang:1.26

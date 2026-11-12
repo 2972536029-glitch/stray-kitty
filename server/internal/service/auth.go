@@ -104,7 +104,10 @@ func (g *Game) Register(token, username, password string) (string, error) {
 // Login 校验用户名密码,为账号绑定的存档签发新的会话令牌。
 // 返回 (playerID, token)。同一存档的旧会话(匿名主会话与历史登录)继续有效。
 func (g *Game) Login(username, password string) (string, string, error) {
-	account := g.Store.FindAccount(strings.ToLower(username))
+	account, err := g.Store.FindAccountWithError(strings.ToLower(username))
+	if err != nil {
+		return "", "", err
+	}
 	if account == nil {
 		return "", "", authFailed()
 	}

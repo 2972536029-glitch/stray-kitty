@@ -1,0 +1,180 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "stray-kitty-import-game",
+        "namespace": "cn-haozhe-wang",
+        "labels": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "database-import"
+        }
+      },
+      "spec": {
+        "restartPolicy": "Never",
+        "automountServiceAccountToken": false,
+        "imagePullSecrets": [
+          {
+            "name": "stray-kitty-preview-registry"
+          }
+        ],
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 10001,
+          "runAsGroup": 10001,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "containers": [
+          {
+            "name": "import",
+            "image": "RELEASE_GAME_IMAGE_NOT_SELECTED",
+            "command": [
+              "/bin/sh",
+              "-c",
+              "sleep 86400"
+            ],
+            "env": [
+              {
+                "name": "GAME_MYSQL_DSN",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "stray-kitty-database-migration",
+                    "key": "game-dsn"
+                  }
+                }
+              }
+            ],
+            "securityContext": {
+              "readOnlyRootFilesystem": true,
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            },
+            "resources": {
+              "requests": {
+                "cpu": "50m",
+                "memory": "64Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "512Mi"
+              }
+            },
+            "volumeMounts": [
+              {
+                "name": "legacy",
+                "mountPath": "/legacy",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "legacy",
+            "persistentVolumeClaim": {
+              "claimName": "stray-kitty-preview-data",
+              "readOnly": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "stray-kitty-import-payment",
+        "namespace": "cn-haozhe-wang",
+        "labels": {
+          "app.kubernetes.io/name": "stray-kitty",
+          "app.kubernetes.io/instance": "haozhe-preview",
+          "app.kubernetes.io/component": "database-import"
+        }
+      },
+      "spec": {
+        "restartPolicy": "Never",
+        "automountServiceAccountToken": false,
+        "imagePullSecrets": [
+          {
+            "name": "stray-kitty-preview-registry"
+          }
+        ],
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 10001,
+          "runAsGroup": 10001,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "containers": [
+          {
+            "name": "import",
+            "image": "RELEASE_PAYMENT_IMAGE_NOT_SELECTED",
+            "command": [
+              "/bin/sh",
+              "-c",
+              "sleep 86400"
+            ],
+            "env": [
+              {
+                "name": "PAYMENT_MYSQL_DSN",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "stray-kitty-database-migration",
+                    "key": "payment-dsn"
+                  }
+                }
+              }
+            ],
+            "securityContext": {
+              "readOnlyRootFilesystem": true,
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            },
+            "resources": {
+              "requests": {
+                "cpu": "50m",
+                "memory": "64Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "512Mi"
+              }
+            },
+            "volumeMounts": [
+              {
+                "name": "legacy",
+                "mountPath": "/legacy",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "legacy",
+            "persistentVolumeClaim": {
+              "claimName": "stray-kitty-payment-data",
+              "readOnly": true
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

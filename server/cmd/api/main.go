@@ -27,11 +27,18 @@ func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	obs.Init("kitty-api")
 	defer obs.Shutdown()
-	store, err := repository.Open(env("GAME_DATA_FILE", "../data/game.json"))
+	var store *repository.Store
+	var err error
+	if dsn := os.Getenv("GAME_MYSQL_DSN"); dsn != "" {
+		store, err = repository.OpenMySQL(dsn)
+	} else {
+		store, err = repository.Open(env("GAME_DATA_FILE", "../data/game.json"))
+	}
 	if err != nil {
 		slog.Error("cannot open progress storage", "error", err.Error())
 		os.Exit(1)
 	}
+	defer store.Close()
 	catalog, err := platform.LoadCatalog()
 	if err != nil {
 		slog.Error("invalid catalog")
@@ -59,7 +66,7 @@ func main() {
 		defer cancel()
 		server.Shutdown(shutdown)
 	}()
-	slog.Info("stray-kitty ready", "address", server.Addr, "storage", "single-process-file")
+	slog.Info("stray-kitty ready", "address", server.Addr, "storage", store.Backend())
 	if err = server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		slog.Error("server stopped", "error", err.Error())
 		os.Exit(1)

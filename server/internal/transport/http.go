@@ -46,7 +46,13 @@ func New(game *service.Game, pay PaymentGateway, webDir string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { a.json(w, 200, map[string]string{"status": "ok"}) })
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
-		a.json(w, 200, map[string]string{"status": "ready", "storage": "single-process-file"})
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if err := game.Store.Ping(ctx); err != nil {
+			a.json(w, http.StatusServiceUnavailable, map[string]string{"status": "unavailable", "storage": game.Store.Backend()})
+			return
+		}
+		a.json(w, 200, map[string]string{"status": "ready", "storage": game.Store.Backend()})
 	})
 	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; version=0.0.4")

@@ -1,5 +1,20 @@
 Set-StrictMode -Version Latest
 
+function Assert-PaymentReadiness {
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][AllowNull()][object]$Response)
+
+    if ($null -eq $Response -or
+        -not $Response.PSObject.Properties['status'] -or
+        -not $Response.PSObject.Properties['storage'] -or
+        $Response.status -isnot [string] -or
+        $Response.storage -isnot [string] -or
+        $Response.status -cne 'ready' -or
+        $Response.storage -cnotin @('payment-ledger', 'mysql')) {
+        throw 'Payment /readyz did not confirm ready payment-ledger or mysql storage.'
+    }
+}
+
 function Wait-PublicHealth {
     [CmdletBinding()]
     param(

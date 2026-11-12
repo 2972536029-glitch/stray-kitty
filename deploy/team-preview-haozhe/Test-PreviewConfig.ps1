@@ -119,6 +119,17 @@ foreach ($pair in @{ PAYMENT_ADDR='0.0.0.0:8082'; PAYMENT_DATA_FILE='/data/payme
     Assert-Config ($paymentEnv.ContainsKey($pair.Key) -and $paymentEnv[$pair.Key].value -eq $pair.Value) ('Invalid ' + $pair.Key)
 }
 
+# DB cutover is explicit: absent connection Secret preserves file mode, and no DSN
+# or password may be embedded in a release manifest.
+foreach ($binding in @(
+    @{ env = $envByName; name = 'GAME_MYSQL_DSN'; key = 'game-dsn' },
+    @{ env = $paymentEnv; name = 'PAYMENT_MYSQL_DSN'; key = 'payment-dsn' }
+)) {
+    $entry = $binding.env[$binding.name]
+    Assert-Config ($null -ne $entry -and $null -eq $entry.PSObject.Properties['value']) ('Secret reference required for ' + $binding.name)
+    Assert-Config ($entry.valueFrom.secretKeyRef.name -eq 'stray-kitty-preview-database' -and $entry.valueFrom.secretKeyRef.key -eq $binding.key -and $entry.valueFrom.secretKeyRef.optional -eq $true) ('Optional database cutover Secret required for ' + $binding.name)
+}
+
 [pscustomobject]@{
     Validation       = 'passed-offline'
     Namespace        = $settings.namespace

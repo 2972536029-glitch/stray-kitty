@@ -6,6 +6,7 @@
 package payment
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -56,7 +57,19 @@ func newServiceHTTP(gateway *Gateway, ledger Ledger, xsolla *XsollaClient, credi
 
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { write(w, 200, map[string]string{"status": "ok"}) })
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
-		write(w, 200, map[string]string{"status": "ready", "storage": "payment-ledger"})
+		storage := "payment-ledger"
+		if backend, ok := ledger.(interface{ Backend() string }); ok {
+			storage = backend.Backend()
+		}
+		if checker, ok := ledger.(interface{ Ping(context.Context) error }); ok {
+			ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+			defer cancel()
+			if err := checker.Ping(ctx); err != nil {
+				write(w, http.StatusServiceUnavailable, map[string]string{"status": "not_ready", "storage": storage})
+				return
+			}
+		}
+		write(w, 200, map[string]string{"status": "ready", "storage": storage})
 	})
 	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
