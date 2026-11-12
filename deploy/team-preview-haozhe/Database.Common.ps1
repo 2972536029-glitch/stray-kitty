@@ -42,6 +42,48 @@ function Test-MigrationStopRetry {
     return $true
 }
 
+function Assert-BackedUpAuditState {
+    param([hashtable]$State,[AllowNull()][hashtable]$Lock,[string]$RunId,[string]$StateName,[bool]$AppDatabaseConfigured)
+    if($AppDatabaseConfigured -or $State.phase -cne 'maintenance-failed' -or
+        $State.failureStep -cne 'audit historical payment replay safety' -or
+        $State.backups -isnot [Collections.IDictionary] -or $State.backups.Count -ne 2 -or
+        $null -eq $Lock -or $Lock.data.runId -cne $RunId -or $Lock.data.state -cne $StateName){
+        throw 'Backup resume only accepts the same locked audit failure before any database activation.'
+    }
+    foreach($service in @('game','payment')){
+        $file=if($service -ceq 'game'){'game.json'}else{'payments.json'}
+        if(-not $State.backups.Contains($service) -or
+            $State.backups[$service].pvc -cne "stray-kitty-$service-db-backup" -or
+            $State.backups[$service].path -cne "/backup/$RunId/$file" -or
+            $State.backups[$service].sha256 -cnotmatch '^[a-f0-9]{64}$'){
+            throw 'Both original durable snapshot identities and hashes are required.'
+        }
+    }
+}
+
+function Assert-NeverImportedDatabaseMetrics {
+    param([hashtable]$Metrics)
+    $expected=@('game_players','game_sessions','game_accounts','payment_transactions','game_store_meta','payment_ledger_meta','schema_migrations')
+    if($Metrics.Count -eq 0){return}
+    if($Metrics.Count -ne $expected.Count){throw 'Partially initialized or unknown database tables cannot prove an untouched target.'}
+    foreach($table in $expected){
+        if(-not $Metrics.ContainsKey($table) -or $Metrics[$table].Count -ne 2){throw 'Incomplete database emptiness proof.'}
+        $rows=[long]$Metrics[$table][0];$invalid=[long]$Metrics[$table][1]
+        if($rows -lt 0 -or $invalid -ne 0){throw 'Database import markers or unknown schema state prevent pre-import recovery.'}
+        if($table -in @('game_store_meta','payment_ledger_meta')){
+            if($rows -ne 1){throw 'A store import marker is missing or duplicated.'}
+        }elseif($table -eq 'schema_migrations'){
+            if($rows -gt 1){throw 'Unexpected database schema migration history.'}
+        }elseif($rows -ne 0){throw 'Database business rows prevent pre-import recovery.'}
+    }
+}
+
+function Assert-OriginalSnapshotHashes {
+    param([string]$Output,[ValidatePattern('^[a-f0-9]{64}$')][string]$Expected)
+    $hashes=@($Output -split "`r?`n" | Where-Object {$_ -match '^[a-f0-9]{64}  '} | ForEach-Object {$_.Substring(0,64)})
+    if($hashes.Count -ne 2 -or $hashes[0] -cne $Expected -or $hashes[1] -cne $Expected){throw 'Original file or durable backup changed since the verified snapshot.'}
+}
+
 # Byte-array wrappers keep the .NET span APIs usable on PowerShell 7.
 if (-not ('StrayKittyDatabaseBackup' -as [type])) {
     Add-Type -TypeDefinition @'

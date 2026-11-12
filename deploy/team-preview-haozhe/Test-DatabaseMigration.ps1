@@ -76,6 +76,36 @@ try{
     Assert-Rejected {Test-MigrationStopRetry -State $withBackup -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857'} 'retry-rejects-any-existing-backup'
     $laterFailure=@{phase='maintenance-failed';failureStep='import and verify game snapshot';backups=@{}}
     Assert-Rejected {Test-MigrationStopRetry -State $laterFailure -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857'} 'retry-rejects-later-failure-stage'
+    $backedState=@{phase='maintenance-failed';failureStep='audit historical payment replay safety';backups=@{
+        game=@{pvc='stray-kitty-game-db-backup';path='/backup/db-8857/game.json';sha256=('a'*64)}
+        payment=@{pvc='stray-kitty-payment-db-backup';path='/backup/db-8857/payments.json';sha256=('b'*64)}
+    }}
+    Assert-BackedUpAuditState -State $backedState -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857'
+    Assert-Case $true 'retained-backups-require-exact-audit-stage-and-same-lock'
+    Assert-Rejected {Assert-BackedUpAuditState -State $backedState -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857' -AppDatabaseConfigured $true} 'retained-backups-reject-activated-database'
+    $wrongPath=$backedState|ConvertTo-Json -Depth 8|ConvertFrom-Json -AsHashtable
+    $wrongPath.backups.game.path='/backup/different/game.json'
+    Assert-Rejected {Assert-BackedUpAuditState -State $wrongPath -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857'} 'retained-backups-reject-different-snapshot-path'
+    $later=$backedState|ConvertTo-Json -Depth 8|ConvertFrom-Json -AsHashtable
+    $later.failureStep='import and verify game snapshot'
+    Assert-Rejected {Assert-BackedUpAuditState -State $later -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857'} 'retained-backups-reject-import-stage-failure'
+    Assert-NeverImportedDatabaseMetrics -Metrics @{}
+    Assert-Case $true 'empty-uninitialized-database-accepted'
+    $emptyDb=@{game_players=@(0,0);game_sessions=@(0,0);game_accounts=@(0,0);payment_transactions=@(0,0);game_store_meta=@(1,0);payment_ledger_meta=@(1,0);schema_migrations=@(1,0)}
+    Assert-NeverImportedDatabaseMetrics -Metrics $emptyDb
+    Assert-Case $true 'empty-runtime-schema-with-unset-import-markers-accepted'
+    $withRows=$emptyDb.Clone();$withRows.game_players=@(1,0)
+    Assert-Rejected {Assert-NeverImportedDatabaseMetrics -Metrics $withRows} 'database-with-any-player-row-rejected'
+    $withImport=$emptyDb.Clone();$withImport.payment_ledger_meta=@(1,1)
+    Assert-Rejected {Assert-NeverImportedDatabaseMetrics -Metrics $withImport} 'database-with-imported-marker-rejected'
+    $withUnknown=$emptyDb.Clone();$withUnknown.unknown=@(0,0)
+    Assert-Rejected {Assert-NeverImportedDatabaseMetrics -Metrics $withUnknown} 'unknown-database-table-rejected'
+    $missingMarker=$emptyDb.Clone();$missingMarker.game_store_meta=@(0,0)
+    Assert-Rejected {Assert-NeverImportedDatabaseMetrics -Metrics $missingMarker} 'missing-import-marker-rejected'
+    Assert-OriginalSnapshotHashes -Output ((('a'*64)+'  /legacy/game.json')+"`n"+(('a'*64)+'  /backup/db-8857/game.json')) -Expected ('a'*64)
+    Assert-Case $true 'original-and-backup-must-both-match-recorded-sha'
+    Assert-Rejected {Assert-OriginalSnapshotHashes -Output ((('b'*64)+'  /legacy/game.json')+"`n"+(('a'*64)+'  /backup/db-8857/game.json')) -Expected ('a'*64)} 'changed-original-file-rejected'
+    Assert-Rejected {Assert-OriginalSnapshotHashes -Output ((('a'*64)+'  /legacy/game.json')+"`n"+(('b'*64)+'  /backup/db-8857/game.json')) -Expected ('a'*64)} 'changed-durable-backup-rejected'
     $sanitized=Get-SafeReplicaPatchError -Text 'Error from server (Forbidden): deployments.apps denied; token=NEVER_PRINT_THIS_PRIVATE_VALUE Authorization: Bearer NEVER_PRINT_THIS_PRIVATE_VALUE'
     Assert-Case ($sanitized.Contains('Error from server (Forbidden): deployments.apps denied') -and -not $sanitized.Contains('NEVER_PRINT_THIS_PRIVATE_VALUE')) 'replica-patch-stderr-preserves-rbac-reason-and-redacts-tokens'
     foreach($file in @('Migrate-Database.ps1','Database.Common.ps1')){
