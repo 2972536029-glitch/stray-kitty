@@ -10,7 +10,8 @@ param(
     [string]$PipelineId = $env:CI_PIPELINE_ID,
     [switch]$ResumeBeforeBackup,
     [switch]$ResumeFromBackups,
-    [switch]$LegacyTestPayments
+    [switch]$LegacyTestPayments,
+    [string]$OperationToolsDirectory
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -34,6 +35,10 @@ $state = $null
 $currentStep = 'preflight'
 $maintenanceStarted = $false
 $lastReportedStep = ''
+$privateFailureDetail = ''
+$operationTools = $null
+$auditToolPath = '/app/db-smoke'
+$verifyToolPaths = @{game='/app/db-verify';payment='/app/db-verify'}
 $null = New-Item -ItemType Directory -Path $scratchDirectory
 
 function Invoke-Kube {
@@ -50,6 +55,33 @@ function Get-KubeObject {
     $result = Invoke-Kube -Arguments @('get',$Kind,$Name,'--ignore-not-found','-o','json')
     if ([string]::IsNullOrWhiteSpace($result.StdOut)) { return $null }
     return ($result.StdOut | ConvertFrom-Json -AsHashtable)
+}
+function Invoke-PrivateAuditCommand {
+    param([string[]]$Arguments,[AllowNull()][string]$InputText)
+    Write-Host "Database operation: $currentStep"
+    $result=Invoke-NativeChecked -FilePath 'kubectl' -Arguments ($kubeArguments+$Arguments) -StandardInput $InputText -Step $currentStep -Quiet -ReturnFailure
+    Write-Host "Audit substep exit code: $($result.ExitCode)"
+    if($result.ExitCode -ne 0){
+        $script:privateFailureDetail="exitCode=$($result.ExitCode)`nstderr:`n$($result.StdErr)`nstdout:`n$($result.StdOut)"
+        $safeError=Get-SafePaymentAuditError -Text $result.StdErr
+        if($safeError){Write-Host "Audit diagnostic: $safeError"}else{Write-Host 'Additional audit diagnostics will be retained only in encrypted failure artifacts.'}
+    }
+    return $result
+}
+function Install-DatabaseOperationTool {
+    param([string]$Pod,[ValidateSet('db-verify','db-smoke')][string]$Name)
+    $tool=$operationTools.files[$Name]
+    $path="/tmp/$Name-$($operationTools.sourceCommit)-$($tool.sha256)"
+    $probe=Invoke-Kube -Arguments @('exec',$Pod,'--','sh','-ec',"test `$(uname -m) = x86_64; if [ -e $path ]; then test -x $path; sha256sum $path; else printf 'ABSENT'; fi")
+    if($probe.StdOut.Trim() -ceq 'ABSENT'){
+        $bytes=[IO.File]::ReadAllBytes($tool.path)
+        $hash=[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+        if($hash -cne $tool.sha256){throw 'Operation tool changed after artifact validation.'}
+        $command="set -eu; umask 077; test ! -e $path; base64 -d > $path; chmod 500 $path; sha256sum $path"
+        $probe=Invoke-Kube -Arguments @('exec','-i',$Pod,'--','sh','-ec',$command) -InputText ([Convert]::ToBase64String($bytes))
+    }
+    if($probe.StdOut.Trim() -cne "$($tool.sha256)  $path"){throw 'Installed operation tool hash differs from its pinned artifact.'}
+    return $path
 }
 function Set-ApplicationReplicas {
     param([Parameter(Mandatory)][ValidateSet('game','payment','frontend')][string]$Service,[Parameter(Mandatory)][ValidateRange(0,1)][int]$Replicas,[switch]$DryRun)
@@ -241,6 +273,10 @@ function Write-DatabaseDiagnostics {
 }
 
 try {
+    if($OperationToolsDirectory){
+        if($Phase -cne 'Migrate' -or -not $ResumeFromBackups -or -not $LegacyTestPayments){throw 'Operation tool artifacts are restricted to explicit retained-backup recovery.'}
+        $operationTools=Read-DatabaseOperationTools -Directory $OperationToolsDirectory -ExpectedCommit $env:CI_COMMIT_SHA
+    }
     # Explicit context/namespace for every call; never read or export kubeconfig content.
     foreach ($permission in @(@('create','secrets'),@('create','configmaps'),@('create','persistentvolumeclaims'),@('create','pods'),@('patch','deployments'),@('create','statefulsets'),@('create','services'))) {
         $can = Invoke-Kube -Arguments (@('auth','can-i') + $permission)
@@ -333,6 +369,13 @@ try {
             [StrayKittyDatabaseBackup]::ValidatePublicKey([Convert]::FromBase64String($env:BACKUP_PUBLIC_KEY_BASE64))
             $currentStep='verify stopped writers empty database and retained backup hashes'
             $pods=Get-VerifiedRetainedSnapshotPods
+            if($null -ne $operationTools){
+                $currentStep='stage checksum-pinned recovery operation tools'
+                foreach($service in @('game','payment')){$verifyToolPaths[$service]=Install-DatabaseOperationTool -Pod $pods[$service] -Name 'db-verify'}
+                $auditToolPath=Install-DatabaseOperationTool -Pod $pods.game -Name 'db-smoke'
+                $state.operationTools=@{sourceCommit=$operationTools.sourceCommit;goos=$operationTools.goos;goarch=$operationTools.goarch;files=@{}}
+                foreach($name in @('db-verify','db-smoke')){$state.operationTools.files[$name]=$operationTools.files[$name].sha256}
+            }
             $maintenanceStarted=$true
             $null=New-Item -ItemType Directory -Path $artifactDirectory -Force
             foreach($service in @('game','payment')){
@@ -349,12 +392,20 @@ try {
             $null=Test-LegacyTestPaymentImport -GamePath $gameSource -PaymentsPath $paymentSource -OutputPath $gameImport
             $importSha=(Get-FileHash -LiteralPath $gameImport -Algorithm SHA256).Hash.ToLowerInvariant()
             $importPath="/backup/$runId/game.import.json"
-            $writeImport="set -eu; umask 077; test ! -e $importPath; cat > $importPath; chmod 400 $importPath; sync; sha256sum $importPath"
-            $written=Invoke-Kube -Arguments @('exec','-i',$pods.game,'--','sh','-ec',$writeImport) -InputText ([IO.File]::ReadAllText($gameImport))
-            if($written.StdOut.Trim() -cne "$importSha  $importPath"){throw 'Durable transformed import snapshot hash does not match the verified local transform.'}
+            $existingImport=Invoke-Kube -Arguments @('exec',$pods.game,'--','sh','-ec',"if [ -e $importPath ]; then sha256sum $importPath; else printf 'ABSENT'; fi")
+            $writeMode=Get-TestPaymentSnapshotWriteMode -State $state -RunId $runId -ExistingOutput $existingImport.StdOut -GeneratedSha256 $importSha
+            if($writeMode -ceq 'create'){
+                $writeImport="set -eu; umask 077; test ! -e $importPath; cat > $importPath; chmod 400 $importPath; sync; sha256sum $importPath"
+                $written=Invoke-Kube -Arguments @('exec','-i',$pods.game,'--','sh','-ec',$writeImport) -InputText ([IO.File]::ReadAllText($gameImport))
+                if($written.StdOut.Trim() -cne "$importSha  $importPath"){throw 'Durable transformed import snapshot hash does not match the verified local transform.'}
+            }else{
+                Write-Host 'Reusing the immutable transformed snapshot after matching recorded and regenerated SHA-256.'
+            }
             $null=Write-EncryptedDatabaseBackup -SourcePath $gameImport -DestinationPath (Join-Path $artifactDirectory 'game.import.encrypted.json') -PublicKeyBase64 $env:BACKUP_PUBLIC_KEY_BASE64 -ExpectedSha256 $importSha
             $importPaths=@{game=$importPath;payment=$state.backups.payment.path}
-            $state.transformation=@{type='legacy-test-payment-replay-suppression';gameSourceSha256=$state.backups.game.sha256;paymentSourceSha256=$state.backups.payment.sha256;gameImportSha256=$importSha;gameImportPath=$importPath;encryptedArtifact='game.import.encrypted.json';summary=$transform;operationScriptCommit=$env:CI_COMMIT_SHA;balancesPreserved=$true;ledgerPreserved=$true}
+            if(-not $state.ContainsKey('transformation')){
+                $state.transformation=@{type='legacy-test-payment-replay-suppression';gameSourceSha256=$state.backups.game.sha256;paymentSourceSha256=$state.backups.payment.sha256;gameImportSha256=$importSha;gameImportPath=$importPath;encryptedArtifact='game.import.encrypted.json';summary=$transform;operationScriptCommit=$env:CI_COMMIT_SHA;balancesPreserved=$true;ledgerPreserved=$true}
+            }else{$state.transformation.lastRecoveryScriptCommit=$env:CI_COMMIT_SHA}
             Save-State
         }else{
             if($LegacyTestPayments){throw '-LegacyTestPayments is only valid with an explicitly verified retained-backup recovery.'}
@@ -409,18 +460,27 @@ try {
             $importPaths=@{game=$state.backups.game.path;payment=$state.backups.payment.path}
         }
         if($state.backups.Count -ne 2){throw 'Both durable and encrypted backups are required before import.'}
-        $currentStep='audit historical payment replay safety'
+        $currentStep='stage payment snapshot for historical replay audit'
         $paymentText=[IO.File]::ReadAllText((Join-Path $scratchDirectory 'payments.json'))
-        $null=Invoke-Kube -Arguments @('exec','-i',$pods.game,'--','sh','-ec','umask 077; cat > /tmp/payments-audit.json') -InputText $paymentText
+        $auditPaymentPath='/tmp/payments-audit-'+[Guid]::NewGuid().ToString('N')+'.json'
+        $stageAudit="set -eu; umask 077; test ! -e $auditPaymentPath; cat > $auditPaymentPath; chmod 400 $auditPaymentPath; sha256sum $auditPaymentPath"
+        $staged=Invoke-PrivateAuditCommand -Arguments @('exec','-i',$pods.game,'--','sh','-ec',$stageAudit) -InputText $paymentText
         $paymentText=$null
-        $audit=Invoke-Kube -Arguments @('exec',$pods.game,'--','/app/db-smoke','-phase','audit','-game-file',$importPaths.game,'-payments-file','/tmp/payments-audit.json')
-        $state.audit=($audit.StdOut | ConvertFrom-Json -AsHashtable)
+        Assert-AuditStagingHash -ExitCode $staged.ExitCode -Output $staged.StdOut -ExpectedSha256 $state.backups.payment.sha256 -Path $auditPaymentPath
+        $currentStep='execute historical payment replay audit'
+        $audit=Invoke-PrivateAuditCommand -Arguments @('exec',$pods.game,'--',$auditToolPath,'-phase','audit','-game-file',$importPaths.game,'-payments-file',$auditPaymentPath)
+        $currentStep='parse historical replay audit result'
+        $state.audit=Read-SafePaymentAuditResult -Text $audit.StdOut
+        Write-Host ('Audit summary: '+($state.audit|ConvertTo-Json -Depth 5 -Compress))
+        $currentStep='record historical replay audit result'
+        Save-State
+        if($audit.ExitCode -ne 0 -or $state.audit.status -cne 'passed'){throw 'Historical replay audit did not pass.'}
         $state.phase='importing';Save-State
         foreach($service in @('game','payment')){
             $source=if($service -eq 'game'){'game'}else{'payments'}
             $currentStep="import and verify $service snapshot"
             $null=Invoke-Kube -Arguments @('exec',$pods[$service],'--','/app/db-migrate','-source',$source,'-file',$importPaths[$service])
-            $verified=Invoke-Kube -Arguments @('exec',$pods[$service],'--','/app/db-verify','-source',$source,'-file',$importPaths[$service])
+            $verified=Invoke-Kube -Arguments @('exec',$pods[$service],'--',$verifyToolPaths[$service],'-source',$source,'-file',$importPaths[$service])
             if($ResumeFromBackups -and $service -ceq 'game'){$state.transformation.verification=$verified.StdOut.Trim()}else{$state.backups[$service].verification=$verified.StdOut.Trim()}
             Save-State
         }
@@ -474,6 +534,19 @@ try {
         Write-Output 'Database migration finalized; frontend traffic restored and public health passed.'
     }
 } catch {
+    $failureRecord=$_
+    Write-Host ("Failure exception type: {0}; script line: {1}" -f $failureRecord.Exception.GetType().FullName,$failureRecord.InvocationInfo.ScriptLineNumber)
+    if($env:BACKUP_PUBLIC_KEY_BASE64){
+        try{
+            $detail="step=$currentStep`nexception=$($failureRecord.Exception.Message)`n$privateFailureDetail"
+            $bytes=[Text.Encoding]::UTF8.GetBytes($detail)
+            try{
+                $encrypted=[StrayKittyDatabaseBackup]::Encrypt($bytes,[Convert]::FromBase64String($env:BACKUP_PUBLIC_KEY_BASE64))
+                $null=New-Item -ItemType Directory -Path $artifactDirectory -Force
+                [IO.File]::WriteAllText((Join-Path $artifactDirectory 'failure-diagnostic.encrypted.json'),$encrypted,[Text.UTF8Encoding]::new($false))
+            }finally{[Array]::Clear($bytes,0,$bytes.Length)}
+        }catch{Write-Host 'Encrypted failure diagnostic could not be saved.'}
+    }
     # Never restore JSON or reopen traffic after a failed migration step.
     if($maintenanceStarted){
         try{Set-ApplicationReplicas -Service frontend -Replicas 0}catch{}

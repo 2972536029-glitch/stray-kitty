@@ -55,8 +55,16 @@ server_build:
   script:
     - mkdir -p artifacts
     - CGO_ENABLED=0 go -C server build -trimpath -o ../artifacts/kitty-api ./cmd/api
+    - mkdir -p artifacts/database-tools
+    - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go -C server build -trimpath -o ../artifacts/database-tools/db-verify ./cmd/db-verify
+    - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go -C server build -trimpath -o ../artifacts/database-tools/db-smoke ./cmd/db-smoke
+    - |
+      printf '{"version":1,"sourceCommit":"%s","goos":"linux","goarch":"amd64","files":{"db-verify":"%s","db-smoke":"%s"}}\n' \
+        "$CI_COMMIT_SHA" \
+        "$(sha256sum artifacts/database-tools/db-verify | cut -d ' ' -f 1)" \
+        "$(sha256sum artifacts/database-tools/db-smoke | cut -d ' ' -f 1)" > artifacts/database-tools/manifest.json
   artifacts:
-    paths: [artifacts/kitty-api]
+    paths: [artifacts/kitty-api, artifacts/database-tools/]
     expire_in: 1 week
 
 # ---- main 合并后:构建三服务镜像推送 GitLab Registry(digest 写入 dotenv)----
@@ -172,6 +180,6 @@ database_finalize_existing:
 # This accepts only an audit-stage stop with both original backups intact.
 database_resume_test_payments:
   extends: .database_operation
-  needs: []
+  needs: [server_build]
   script:
-    - pwsh -NoProfile -File deploy/team-preview-haozhe/Migrate-Database.ps1 -Phase Migrate -SourceCommit "$DB_RELEASE_COMMIT" -PipelineId "$DB_OPERATION_PIPELINE_ID" -ResumeFromBackups -LegacyTestPayments
+    - pwsh -NoProfile -File deploy/team-preview-haozhe/Migrate-Database.ps1 -Phase Migrate -SourceCommit "$DB_RELEASE_COMMIT" -PipelineId "$DB_OPERATION_PIPELINE_ID" -ResumeFromBackups -LegacyTestPayments -OperationToolsDirectory artifacts/database-tools

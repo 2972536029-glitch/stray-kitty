@@ -93,6 +93,66 @@ func equalJSON(want any, raw []byte) bool {
 	return err == nil && reflect.DeepEqual(a, b)
 }
 
+// JSON columns parse and serialize floating-point coordinates using MySQL's
+// representation. Normalize the expected input through that same server before
+// comparing it exactly; an epsilon comparison could conceal changed data.
+// This runs before opening result rows, since the transaction has one connection.
+func canonicalMySQLJSON(ctx context.Context, tx *sql.Tx, value any) (json.RawMessage, error) {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return nil, errors.New("cannot encode expected JSON")
+	}
+	var canonical json.RawMessage
+	if err = tx.QueryRowContext(ctx, "SELECT CAST(? AS JSON)", raw).Scan(&canonical); err != nil {
+		return nil, errors.New("cannot normalize expected JSON with database")
+	}
+	original, err := semanticJSON(raw)
+	if err != nil {
+		return nil, err
+	}
+	normalized, err := semanticJSON(canonical)
+	if err != nil || !safeJSONNormalization(original, normalized) {
+		return nil, errors.New("database JSON normalization changed an integer or nonnumeric value")
+	}
+	return canonical, nil
+}
+
+// Integral amounts, counters, strings, keys, and array order must remain exact.
+// Only nonintegral JSON numbers can have a server representation adjustment;
+// the resulting expected JSON is still compared exactly with the stored value.
+func safeJSONNormalization(original, normalized any) bool {
+	switch value := original.(type) {
+	case *big.Rat:
+		other, ok := normalized.(*big.Rat)
+		return ok && ((!value.IsInt() && !other.IsInt()) || value.Cmp(other) == 0)
+	case map[string]any:
+		other, ok := normalized.(map[string]any)
+		if !ok || len(value) != len(other) {
+			return false
+		}
+		for key, child := range value {
+			candidate, exists := other[key]
+			if !exists || !safeJSONNormalization(child, candidate) {
+				return false
+			}
+		}
+		return true
+	case []any:
+		other, ok := normalized.([]any)
+		if !ok || len(value) != len(other) {
+			return false
+		}
+		for i, child := range value {
+			if !safeJSONNormalization(child, other[i]) {
+				return false
+			}
+		}
+		return true
+	default:
+		return reflect.DeepEqual(original, normalized)
+	}
+}
+
 func equalAccountTime(expected, stored time.Time) bool {
 	expected, stored = expected.UTC(), stored.UTC()
 	// DATETIME(6) loses nanoseconds. Accept either MySQL rounding or driver
@@ -131,6 +191,7 @@ func verifyGame(ctx context.Context, tx *sql.Tx, raw []byte) (report, error) {
 		return out, errors.New("unsupported game snapshot")
 	}
 	players := map[string]*repository.Player{}
+	expectedJSON := map[string]json.RawMessage{}
 	primary := map[string]string{}
 	sessions := map[string]string{}
 	for hash, p := range source.Players {
@@ -149,6 +210,11 @@ func verifyGame(ctx context.Context, tx *sql.Tx, raw []byte) (report, error) {
 			}
 		}
 		players[p.ID], primary[p.ID] = p, hash
+		canonical, err := canonicalMySQLJSON(ctx, tx, p)
+		if err != nil {
+			return out, err
+		}
+		expectedJSON[p.ID] = canonical
 		for _, session := range append([]string{hash}, p.SessionAliases...) {
 			if session == "" || sessions[session] != "" {
 				return out, errors.New("invalid or duplicate source session identity")
@@ -170,7 +236,7 @@ func verifyGame(ctx context.Context, tx *sql.Tx, raw []byte) (report, error) {
 			return out, errors.New("cannot decode game player record")
 		}
 		p := players[id]
-		if p == nil || primary[id] != hash || !equalJSON(p, aggregate) {
+		if p == nil || primary[id] != hash || !equalJSON(expectedJSON[id], aggregate) {
 			rows.Close()
 			return out, errors.New("game player aggregate or primary session differs")
 		}
@@ -244,8 +310,16 @@ func verifyPayments(ctx context.Context, tx *sql.Tx, raw []byte) (report, error)
 		return out, errors.New("unsupported payment snapshot")
 	}
 	expectedTotal := 0
+	expectedJSON := map[string]json.RawMessage{}
 	for _, records := range source.Players {
 		expectedTotal += len(records)
+		for _, record := range records {
+			canonical, err := canonicalMySQLJSON(ctx, tx, record)
+			if err != nil {
+				return out, err
+			}
+			expectedJSON[record.ID] = canonical
+		}
 	}
 	seen := map[string]int{}
 	rows, err := tx.QueryContext(ctx, "SELECT txn_id,player_id,txn_json FROM payment_transactions ORDER BY sequence_id DESC")
@@ -261,7 +335,7 @@ func verifyPayments(ctx context.Context, tx *sql.Tx, raw []byte) (report, error)
 		}
 		history := source.Players[playerID]
 		index := len(history) - seen[playerID] - 1
-		if index < 0 || history[index].ID != id || history[index].PlayerID != playerID || !equalJSON(history[index], record) {
+		if index < 0 || history[index].ID != id || history[index].PlayerID != playerID || !equalJSON(expectedJSON[id], record) {
 			return out, errors.New("payment record, player link, or history order differs")
 		}
 		seen[playerID]++

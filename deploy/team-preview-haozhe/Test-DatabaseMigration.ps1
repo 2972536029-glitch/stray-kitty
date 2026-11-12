@@ -16,6 +16,21 @@ $directory=Join-Path ([IO.Path]::GetTempPath()) ('kitty-db-test-' + [Guid]::NewG
 $null=New-Item -ItemType Directory -Path $directory
 $rsa=[Security.Cryptography.RSA]::Create(3072)
 try{
+    $toolsDirectory=Join-Path $directory 'operation-tools'
+    $null=New-Item -ItemType Directory -Path $toolsDirectory
+    $toolsManifest=@{version=1;sourceCommit=('a'*40);goos='linux';goarch='amd64';files=@{}}
+    foreach($name in @('db-verify','db-smoke')){
+        [IO.File]::WriteAllText((Join-Path $toolsDirectory $name),"synthetic-$name",[Text.UTF8Encoding]::new($false))
+        $toolsManifest.files[$name]=(Get-FileHash -LiteralPath (Join-Path $toolsDirectory $name) -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+    $toolsManifestPath=Join-Path $toolsDirectory 'manifest.json'
+    [IO.File]::WriteAllText($toolsManifestPath,($toolsManifest|ConvertTo-Json -Depth 5))
+    $operationTools=Read-DatabaseOperationTools -Directory $toolsDirectory -ExpectedCommit ('a'*40)
+    Assert-Case ($operationTools.files.Count -eq 2 -and $operationTools.files['db-verify'].sha256 -ceq $toolsManifest.files['db-verify']) 'operation-tools-require-current-commit-and-exact-file-hashes'
+    Assert-Rejected {Read-DatabaseOperationTools -Directory $toolsDirectory -ExpectedCommit ('b'*40)} 'operation-tools-reject-artifacts-from-another-commit'
+    [IO.File]::AppendAllText((Join-Path $toolsDirectory 'db-verify'),'tamper')
+    Assert-Rejected {Read-DatabaseOperationTools -Directory $toolsDirectory -ExpectedCommit ('a'*40)} 'operation-tools-reject-altered-binary-bytes'
+    [IO.File]::WriteAllText((Join-Path $toolsDirectory 'db-verify'),'synthetic-db-verify',[Text.UTF8Encoding]::new($false))
     $source=Join-Path $directory 'snapshot.json'
     $output=Join-Path $directory 'snapshot.encrypted.json'
     $text='{"players":{"synthetic-player":{"private":"do-not-publish-this-test-value"}},"accounts":{}}'
@@ -89,6 +104,27 @@ try{
     $later=$backedState|ConvertTo-Json -Depth 8|ConvertFrom-Json -AsHashtable
     $later.failureStep='import and verify game snapshot'
     Assert-Rejected {Assert-BackedUpAuditState -State $later -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857'} 'retained-backups-reject-import-stage-failure'
+    $retainedTransform=$backedState|ConvertTo-Json -Depth 8|ConvertFrom-Json -AsHashtable
+    $retainedTransform.transformation=@{type='legacy-test-payment-replay-suppression';gameSourceSha256=('a'*64);paymentSourceSha256=('b'*64);gameImportSha256=('c'*64);gameImportPath='/backup/db-8857/game.import.json';operationScriptCommit=('d'*40);balancesPreserved=$true;ledgerPreserved=$true}
+    Assert-BackedUpAuditState -State $retainedTransform -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857'
+    Assert-Case $true 'existing-transform-accepted-only-with-matching-source-provenance'
+    $retainedLine=('c'*64)+'  /backup/db-8857/game.import.json'
+    Assert-Case ((Get-TestPaymentSnapshotWriteMode -State $retainedTransform -RunId 'db-8857' -ExistingOutput $retainedLine -GeneratedSha256 ('c'*64)) -ceq 'reuse') 'existing-exact-transformed-file-is-reused-not-written'
+    Assert-Rejected {Get-TestPaymentSnapshotWriteMode -State $retainedTransform -RunId 'db-8857' -ExistingOutput $retainedLine -GeneratedSha256 ('f'*64)} 'existing-transform-rejects-different-regenerated-hash'
+    Assert-Rejected {Get-TestPaymentSnapshotWriteMode -State $retainedTransform -RunId 'db-8857' -ExistingOutput 'ABSENT' -GeneratedSha256 ('c'*64)} 'recorded-missing-transform-is-not-silently-recreated'
+    Assert-AuditStagingHash -ExitCode 0 -Output (('b'*64)+'  /tmp/audit-fixture.json') -ExpectedSha256 ('b'*64) -Path '/tmp/audit-fixture.json'
+    Assert-Case $true 'audit-staging-accepts-exact-original-ledger-hash'
+    Assert-Rejected {Assert-AuditStagingHash -ExitCode 0 -Output (('f'*64)+'  /tmp/audit-fixture.json') -ExpectedSha256 ('b'*64) -Path '/tmp/audit-fixture.json'} 'audit-staging-rejects-content-change'
+    Assert-Rejected {Assert-AuditStagingHash -ExitCode 1 -Output (('b'*64)+'  /tmp/audit-fixture.json') -ExpectedSha256 ('b'*64) -Path '/tmp/audit-fixture.json'} 'audit-staging-rejects-command-failure-even-with-hash'
+    $retainedTransform.transformation.gameSourceSha256='e'*64
+    Assert-Rejected {Assert-BackedUpAuditState -State $retainedTransform -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857'} 'existing-transform-with-wrong-source-rejected'
+    $auditSummary=Read-SafePaymentAuditResult -Text '{"status":"passed","counts":{"players":264,"accounts":10,"confirmedTransactions":17,"xsollaTransactions":9,"knownApplied":17,"ambiguousXsolla":0,"ambiguousMock":0,"missingPlayers":0,"fullDisplayHistories":0},"private":"NEVER_PRINT_THIS_PRIVATE_VALUE"}'
+    Assert-Case ($auditSummary.status -ceq 'passed' -and $auditSummary.counts.knownApplied -eq 17 -and -not($auditSummary|ConvertTo-Json -Compress).Contains('NEVER_PRINT_THIS_PRIVATE_VALUE')) 'audit-output-exposes-only-known-aggregate-fields'
+    Assert-Rejected {Read-SafePaymentAuditResult -Text '{"status":"passed","counts":{"players":"private"}}'} 'malformed-audit-summary-rejected'
+    $auditError=Get-SafePaymentAuditError -Text "db-smoke: cannot read stopped game snapshot`nNEVER_PRINT_THIS_PRIVATE_VALUE`ncommand terminated with exit code 1"
+    Assert-Case ($auditError.Contains('cannot read stopped game snapshot') -and -not $auditError.Contains('NEVER_PRINT_THIS_PRIVATE_VALUE')) 'audit-diagnostic-allows-fixed-errors-without-unknown-content'
+    $unsafeAuditErrors=Get-SafePaymentAuditError -Text "Error from server (Forbidden): NEVER_PRINT_THIS_PRIVATE_VALUE`nError from server (NotFound): NEVER_PRINT_THIS_PRIVATE_VALUE`nError from server (BadRequest): NEVER_PRINT_THIS_PRIVATE_VALUE`nsh: NEVER_PRINT_THIS_PRIVATE_VALUE: Permission denied"
+    Assert-Case ($unsafeAuditErrors -ceq 'Kubernetes Forbidden; Kubernetes NotFound; Kubernetes BadRequest; Shell permission denied') 'audit-diagnostic-reduces-kubernetes-and-shell-free-text-to-fixed-categories'
     Assert-NeverImportedDatabaseMetrics -Metrics @{}
     Assert-Case $true 'empty-uninitialized-database-accepted'
     $emptyDb=@{game_players=@(0,0);game_sessions=@(0,0);game_accounts=@(0,0);payment_transactions=@(0,0);game_store_meta=@(1,0);payment_ledger_meta=@(1,0);schema_migrations=@(1,0)}
@@ -115,6 +151,23 @@ try{
     }
     $tokens=$null;$errors=$null
     $ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'Migrate-Database.ps1'),[ref]$tokens,[ref]$errors)
+    $installTool=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Install-DatabaseOperationTool'},$true)
+    . ([scriptblock]::Create($installTool.Extent.Text))
+    $script:toolCalls=@();$script:toolProbe='ABSENT'
+    $expectedToolPath="/tmp/db-verify-$($operationTools.sourceCommit)-$($operationTools.files['db-verify'].sha256)"
+    function Invoke-Kube {
+        param([string[]]$Arguments,[string]$InputText)
+        $script:toolCalls+=,@{Arguments=$Arguments;InputText=$InputText}
+        if($null -ne $InputText -and $InputText -ne ''){return @{StdOut="$($operationTools.files['db-verify'].sha256)  $expectedToolPath"}}
+        return @{StdOut=$script:toolProbe}
+    }
+    $installed=Install-DatabaseOperationTool -Pod 'synthetic-import-pod' -Name 'db-verify'
+    Assert-Case ($installed -ceq $expectedToolPath -and $script:toolCalls.Count -eq 2 -and $script:toolCalls[1].Arguments[-1].Contains('chmod 500') -and [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($script:toolCalls[1].InputText)) -ceq 'synthetic-db-verify') 'operation-tools-stage-exact-artifact-with-readonly-executable-mode'
+    $script:toolCalls=@();$script:toolProbe="$($operationTools.files['db-verify'].sha256)  $expectedToolPath"
+    $null=Install-DatabaseOperationTool -Pod 'synthetic-import-pod' -Name 'db-verify'
+    Assert-Case ($script:toolCalls.Count -eq 1) 'operation-tools-reuse-exact-staged-binary-without-writing'
+    $script:toolProbe=('f'*64)+"  $expectedToolPath"
+    Assert-Rejected {Install-DatabaseOperationTool -Pod 'synthetic-import-pod' -Name 'db-verify'} 'operation-tools-refuse-mismatched-existing-executable'
     $setReplica=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Set-ApplicationReplicas'},$true)
     . ([scriptblock]::Create($setReplica.Extent.Text))
     $kubeArguments=@('--namespace','cn-haozhe-wang');$currentStep='test replica patch';$script:replicaArguments=@()
