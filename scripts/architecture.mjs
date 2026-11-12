@@ -50,12 +50,15 @@ const labels = {
   'web/public/assets/home/stages': '四阶段四十八件正向透明家具组件',
   'web/public/assets/home/parcels': '两套主题的二十四件独立透明家具组件',
   'web/public/assets/lottery': '通用邮寄拼贴手账底图与透明包裹开合图集',
-  server: 'Go 服务端', 'server/cmd': '服务入口', 'server/cmd/api': 'HTTP 启动',
+  server: 'Go 服务端', 'server/cmd': '服务与迁移入口', 'server/cmd/api': 'HTTP 启动',
+  'server/cmd/paymentd': '独立支付服务', 'server/cmd/db-migrate': '显式导入旧 JSON 存档与支付账本',
   'server/internal': '服务实现', 'server/internal/transport': '请求、认证与参数检查',
   'server/internal/service': '长期规则、判定、奖励与结算', 'server/internal/domain': '状态、命令与错误',
-  'server/internal/repository': '单进程 JSON 文件事务', 'server/internal/platform': '嵌入内容配置',
-  'server/internal/integrations': '外部集成', 'server/internal/integrations/payment': '独立模拟支付与账本',
-  'server/migrations': 'MySQL 结构 · 尚未接入', docs: '需求、架构、接口与集成记录',
+  'server/internal/repository': 'MySQL 玩家事务与兼容 JSON 文件存储', 'server/internal/platform': '嵌入内容配置',
+  'server/internal/database': 'MySQL 连接池、超时与版本化迁移',
+  'server/internal/integrations': '外部集成', 'server/internal/integrations/payment': '模拟与 Xsolla 沙盒支付、MySQL／文件账本',
+  'server/migrations': '嵌入式 MySQL 表结构迁移', docs: '需求、架构、接口与集成记录',
+  'docs/DATABASE.md': '数据库配置、停写导入、备份与恢复',
   design: '模块设计', 'design/tower-defense': '塔防规则与关卡规格',
   'web/src/modules/battle/finale': '第五章74格仓库、九格终极首领、双精英与固定援军', 'design/tower-defense/levels/L05-final-warehouse': '第五章终极仓库设计', 'docs/L05-INTEGRATION.md': '第五章光路援军与独立试玩边界',
   'web/src/modules/battle/tunnel': '第四章37格不规则暗道、断灯脉冲与墨墨夜视', 'design/tower-defense/levels/L04-underground-tunnel': '第四章地下通道设计', 'docs/L04-INTEGRATION.md': '第四章夜视护盾与独立试玩边界',
@@ -97,7 +100,7 @@ const document = `# 架构与文件目录
 
 ## 1. 技术与数据流
 
-React + TypeScript + 原生 Canvas 2D；Go API；当前采用单进程 JSON 存档。不使用 Phaser。
+React + TypeScript + 原生 Canvas 2D；Go API；服务端支持 MySQL 8.4 和兼容的单进程 JSON 文件存储。不使用 Phaser。
 
 \`\`\`mermaid
 flowchart TD
@@ -108,7 +111,10 @@ flowchart TD
   HTTP --> Transport["Go transport：认证与校验"]
   Transport --> Service["Go service：判定、抽取与结算"]
   Service --> Repository["repository：状态与收据一起提交"]
-  Repository --> Save[".runtime/game.json via dev launcher; data/game.json API fallback"]
+  Repository -->|配置 GAME_MYSQL_DSN| MySQL["MySQL：玩家、会话、账号与完整状态事务"]
+  Repository -->|未配置 DSN| Save["单进程 JSON：.runtime/game.json / data/game.json"]
+  Payment["paymentd：独立支付账本"] -->|配置 PAYMENT_MYSQL_DSN| PaymentDB["MySQL：支付流水与持久幂等记录"]
+  Payment -->|未配置 DSN| PaymentFile["单进程 JSON：payments.json"]
   Service -->|返回 GameState| Store["GameStore：界面状态快照"]
   Store --> View
   Module -->|手动提问与可见战况| Advisor["POST /api/v1/advisor：只读场次校验"]
@@ -173,7 +179,7 @@ home/dialogue 按性格、动作和情绪维护台词轮换，reactions 管逐�
 
 当前无道具规则与旧预留返还见 [L01 接入](L01-INTEGRATION.md)；序章教程见 [L00 接入](L00-INTEGRATION.md)，第二章七口六猫试玩见 [L02 接入](L02-INTEGRATION.md)，第三章不规则棋盘与墨墨补位见 [L03 接入](L03-INTEGRATION.md)，第四章暗道与夜视护盾见 [L04 接入](L04-INTEGRATION.md)，第五章终极首领、双精英、光路及固定援军见 [L05 接入](L05-INTEGRATION.md)。旧仓库存量保留，新版本不抽取或消耗战斗物品。\n\n## 5. 启动与检查
 
-环境：Node.js 22.12+、Go 1.24+，无需先安装数据库。
+环境：Node.js 22.12+、Go 1.25+；默认文件模式无需安装数据库，数据库模式使用 MySQL 8.4。
 
 \`\`\`bash
 npm ci
@@ -187,7 +193,11 @@ npm run test:e2e
 
 npm run dev 在当前 worktree 使用忽略的 .runtime/game.json；直接运行 API 时默认使用相对 data/game.json，GAME_DATA_FILE 可显式覆盖。不同 worktree 的存档彼此独立，不要合并。浏览器测试用独立端口 8117 和 .runtime/e2e-save.json。环境变量示例见 .env.example，程序读取进程环境变量，不自动加载 .env。端口冲突诊断、启动/停止、切换 worktree 与安全清理步骤见 [本地开发说明](DEVELOPMENT.md)。
 
-当前存档只支持单进程，MySQL 只有 DDL；战斗胜负仍由客户端原型上报。Docker、K8s 与 GitLab CI 是待团队环境验证的模板。GitLab main 已采用本架构；旧 main 保存在 react-demo 分支，历史不变。
+设置 GAME_MYSQL_DSN 后，游戏存档、账号与会话通过 MySQL 保存；PAYMENT_MYSQL_DSN 独立控制 paymentd 账本。数据库模式按玩家加行锁，将状态、命令回执和 QA 恢复快照一起提交；支付已入账 ID 独立于最近 50 条展示流水持久保留。配置了 DSN 后连接失败会使启动失败，不会自动回退到文件存档；/readyz 检查数据库连接，/healthz 保持进程健康检查。
+
+MySQL 表结构随服务启动自动迁移，旧 JSON 只能通过显式命令 \`go -C server run ./cmd/db-migrate -source game -file <path>\` 导入，支付账本使用 \`-source payments\`。导入前停止所有旧写入者并备份，工具仅接受空且从未导入的目标，拒绝未知字段和无效关联，不覆盖数据。Compose 的 database profile 提供独立持久卷，团队 K8s 使用独立 MySQL 清单和 Secret；切换、备份与恢复步骤见 [数据库说明](DATABASE.md)。CI 的 mysql_checks 使用独立 MySQL 8.4 验证真实事务与导入，常规测试未设置 TEST_MYSQL_DSN 时跳过数据库集成测试。
+
+文件模式仍只支持单进程；战斗胜负仍由客户端原型上报。旧 main 保存在 react-demo 分支，历史不变。
 
 ## 6. react-demo 接入记录
 

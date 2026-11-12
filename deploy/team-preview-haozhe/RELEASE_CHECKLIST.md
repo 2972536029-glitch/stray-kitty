@@ -72,7 +72,8 @@
   - **第 2 层 · 独立健康（无副作用，推荐）**：
     ```powershell
     kubectl -n cn-haozhe-wang --context haozhe-wang@gcp-k8s-xsolla-school-experiments exec deployment/stray-kitty-payment -- wget -qO- http://127.0.0.1:8082/readyz
-    # 期望 {"status":"ready","storage":"payment-ledger"}；/healthz、/metrics 同样只读可用
+    # 期望 status=ready；文件模式 storage=payment-ledger，MySQL 模式 storage=mysql。
+    # /healthz、/metrics 同样只读可用；MySQL 连接不可用时 /readyz 应返回 503。
     ```
   - **第 3 层 · 端到端（有业务副作用，酌情执行）**：公网 `POST /api/payment/charge`，用 `0000` 开头必失败演示卡 + 固定探针玩家 ID（如 `deploy-probe`）——期望 HTTP 200 且 `status:"declined"`（全链路通）；503 `PAYMENT_UNAVAILABLE` = payment 不可达。⚠️ 只要 payment 可达，declined 也会在权威账本与游戏流水各落一条记录（服务不可达时才零写入）。注意：`GET /api/payment/config` **不能**当探针——payment 不可达时游戏静默降级返回 mock，响应无区分度。
 - [ ] 记录本次发布结果（复制留存或贴到群/MR）：

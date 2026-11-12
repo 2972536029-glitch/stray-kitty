@@ -157,7 +157,7 @@ TLS 证书与 ACME 配置必须随发布保留：nginx 只读挂载 `certs`，�
 6. `kubectl apply`（namespace `cn-haozhe-wang`，context `haozhe-wang@gcp-k8s-xsolla-school-experiments`，来自 `release-settings.json`）；
 7. 删除单体时代遗留 Deployment `stray-kitty-preview`（`--ignore-not-found`，仅此固定名称）；
 8. 依次等待 payment → game → frontend rollout（各 300s 超时）。任何原生命令退出码非零都会立即停止、返回失败状态，不再继续误报部署成功；
-9. 先通过集群内 `/readyz` 独立校验 Payment（此端点当前只表示进程就绪，未执行账本读写测试），再查询 LoadBalancer IP 并请求公网 `/healthz`；所有验证成功后将发布归档状态标记为 `deployed`。
+9. 先通过集群内 `/readyz` 独立校验 Payment（文件模式标记 `payment-ledger`；MySQL 模式标记 `mysql` 并检查连接，均不执行账本写入），再查询 LoadBalancer IP 并请求公网 `/healthz`；所有验证成功后将发布归档状态标记为 `deployed`。
 
 操作约定：
 
@@ -191,7 +191,7 @@ kubectl @k exec deployment/stray-kitty-payment -- wget -qO- http://127.0.0.1:808
 | 端点 | 响应 | 副作用 |
 | --- | --- | --- |
 | `GET /healthz` | `200 {"status":"ok"}` | 无 |
-| `GET /readyz` | `200 {"status":"ready","storage":"payment-ledger"}` | 无 |
+| `GET /readyz` | `200 {"status":"ready","storage":"payment-ledger"}`；MySQL 模式的 `storage` 为 `mysql`，连接不可用返回 503 | 无 |
 | `GET /metrics` | Prometheus 文本（请求/错误计数） | 无 |
 
 **第 1 层 · Pod/Deployment 就绪**：`kubectl get pods` 中 payment `1/1 Running` + `rollout status` 成功。由于模板为 payment 定义了 readinessProbe（`/readyz`），这一层已经隐含一次由 kubelet 持续执行的真实 HTTP 健康检查。

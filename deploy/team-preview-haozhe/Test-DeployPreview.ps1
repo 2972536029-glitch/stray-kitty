@@ -23,6 +23,26 @@ $commonPath = Join-Path $bundle 'Release.Common.ps1'
 $null = [System.Management.Automation.Language.Parser]::ParseFile($commonPath, [ref]$tokens, [ref]$parseErrors)
 Assert-Case 'release-helper-parses' (@($parseErrors).Count -eq 0)
 
+foreach ($storage in @('payment-ledger', 'mysql')) {
+    $response = ('{"status":"ready","storage":"' + $storage + '"}') | ConvertFrom-Json
+    Assert-PaymentReadiness -Response $response
+    Assert-Case ("ready-payment-storage-accepted-" + $storage) $true
+}
+foreach ($invalid in @(
+    @{ name = 'mysql-not-ready'; json = '{"status":"not_ready","storage":"mysql"}' },
+    @{ name = 'unknown-storage'; json = '{"status":"ready","storage":"memory"}' },
+    @{ name = 'missing-storage'; json = '{"status":"ready"}' },
+    @{ name = 'missing-status'; json = '{"storage":"mysql"}' },
+    @{ name = 'array-status'; json = '{"status":["ready","not_ready"],"storage":"mysql"}' },
+    @{ name = 'array-storage'; json = '{"status":"ready","storage":["mysql","memory"]}' },
+    @{ name = 'null-response'; json = 'null' }
+)) {
+    $rejected = $false
+    try { Assert-PaymentReadiness -Response ($invalid.json | ConvertFrom-Json) } catch { $rejected = $true }
+    Assert-Case ("invalid-payment-readiness-rejected-" + $invalid.name) $rejected
+}
+Assert-Case 'deployment-validates-payment-backend' ($deployText.Contains('Assert-PaymentReadiness -Response $paymentReady'))
+
 $dockerfileFromWorktree = $deployText.Contains('Join-Path $worktreeBundle $service.Dockerfile')
 $rendererFromWorktree = $deployText.Contains('Join-Path $worktreeBundle ''Prepare-Preview.ps1''')
 Assert-Case 'dockerfiles-resolved-from-detached-worktree' $dockerfileFromWorktree

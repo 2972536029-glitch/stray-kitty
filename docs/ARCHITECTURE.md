@@ -2,7 +2,7 @@
 
 ## 1. 技术与数据流
 
-React + TypeScript + 原生 Canvas 2D；Go API；当前采用单进程 JSON 存档。不使用 Phaser。
+React + TypeScript + 原生 Canvas 2D；Go API；服务端支持 MySQL 8.4 和兼容的单进程 JSON 文件存储。不使用 Phaser。
 
 ```mermaid
 flowchart TD
@@ -13,7 +13,10 @@ flowchart TD
   HTTP --> Transport["Go transport：认证与校验"]
   Transport --> Service["Go service：判定、抽取与结算"]
   Service --> Repository["repository：状态与收据一起提交"]
-  Repository --> Save[".runtime/game.json via dev launcher; data/game.json API fallback"]
+  Repository -->|配置 GAME_MYSQL_DSN| MySQL["MySQL：玩家、会话、账号与完整状态事务"]
+  Repository -->|未配置 DSN| Save["单进程 JSON：.runtime/game.json / data/game.json"]
+  Payment["paymentd：独立支付账本"] -->|配置 PAYMENT_MYSQL_DSN| PaymentDB["MySQL：支付流水与持久幂等记录"]
+  Payment -->|未配置 DSN| PaymentFile["单进程 JSON：payments.json"]
   Service -->|返回 GameState| Store["GameStore：界面状态快照"]
   Store --> View
   Module -->|手动提问与可见战况| Advisor["POST /api/v1/advisor：只读场次校验"]
@@ -62,6 +65,7 @@ stray-kitty/
 │  ├─ biz-obs-module3-plan.md
 │  ├─ biz-obs-overview.md
 │  ├─ CHAPTER-NAVIGATION-QA.md
+│  ├─ DATABASE.md  数据库配置、停写导入、备份与恢复
 │  ├─ DEVELOPMENT.md
 │  ├─ GAME-FLOWCHART.html
 │  ├─ GAME-FLOWCHART.md
@@ -111,20 +115,22 @@ stray-kitty/
 ├─ monitors/
 ├─ scripts/  启动、生成与检查
 ├─ server/  Go 服务端
-│  ├─ cmd/  服务入口
+│  ├─ cmd/  服务与迁移入口
 │  │  ├─ api/  HTTP 启动
-│  │  └─ paymentd/
+│  │  ├─ db-migrate/  显式导入旧 JSON 存档与支付账本
+│  │  └─ paymentd/  独立支付服务
 │  ├─ internal/  服务实现
 │  │  ├─ advisor/  阿策服务端模型客户端与限流
+│  │  ├─ database/  MySQL 连接池、超时与版本化迁移
 │  │  ├─ domain/  状态、命令与错误
 │  │  ├─ integrations/  外部集成
-│  │  │  └─ payment/  独立模拟支付与账本
+│  │  │  └─ payment/  模拟与 Xsolla 沙盒支付、MySQL／文件账本
 │  │  ├─ obs/
 │  │  ├─ platform/  嵌入内容配置
-│  │  ├─ repository/  单进程 JSON 文件事务
+│  │  ├─ repository/  MySQL 玩家事务与兼容 JSON 文件存储
 │  │  ├─ service/  长期规则、判定、奖励与结算
 │  │  └─ transport/  请求、认证与参数检查
-│  └─ migrations/  MySQL 结构 · 尚未接入
+│  └─ migrations/  嵌入式 MySQL 表结构迁移
 ├─ specs/
 │  └─ night-market/
 ├─ tests/  自动验证
@@ -387,7 +393,7 @@ Development `?warehouseQA=1` uses the real reversible `finale.explore` checkpoin
 
 ## 5. 启动与检查
 
-环境：Node.js 22.12+、Go 1.24+，无需先安装数据库。
+环境：Node.js 22.12+、Go 1.25+；默认文件模式无需安装数据库，数据库模式使用 MySQL 8.4。
 
 ```bash
 npm ci
@@ -401,7 +407,11 @@ npm run test:e2e
 
 npm run dev 在当前 worktree 使用忽略的 .runtime/game.json；直接运行 API 时默认使用相对 data/game.json，GAME_DATA_FILE 可显式覆盖。不同 worktree 的存档彼此独立，不要合并。浏览器测试用独立端口 8117 和 .runtime/e2e-save.json。环境变量示例见 .env.example，程序读取进程环境变量，不自动加载 .env。端口冲突诊断、启动/停止、切换 worktree 与安全清理步骤见 [本地开发说明](DEVELOPMENT.md)。
 
-当前存档只支持单进程，MySQL 只有 DDL；战斗胜负仍由客户端原型上报。Docker、K8s 与 GitLab CI 是待团队环境验证的模板。GitLab main 已采用本架构；旧 main 保存在 react-demo 分支，历史不变。
+设置 GAME_MYSQL_DSN 后，游戏存档、账号与会话通过 MySQL 保存；PAYMENT_MYSQL_DSN 独立控制 paymentd 账本。数据库模式按玩家加行锁，将状态、命令回执和 QA 恢复快照一起提交；支付已入账 ID 独立于最近 50 条展示流水持久保留。配置了 DSN 后连接失败会使启动失败，不会自动回退到文件存档；/readyz 检查数据库连接，/healthz 保持进程健康检查。
+
+MySQL 表结构随服务启动自动迁移，旧 JSON 只能通过显式命令 `go -C server run ./cmd/db-migrate -source game -file <path>` 导入，支付账本使用 `-source payments`。导入前停止所有旧写入者并备份，工具仅接受空且从未导入的目标，拒绝未知字段和无效关联，不覆盖数据。Compose 的 database profile 提供独立持久卷，团队 K8s 使用独立 MySQL 清单和 Secret；切换、备份与恢复步骤见 [数据库说明](DATABASE.md)。CI 的 mysql_checks 使用独立 MySQL 8.4 验证真实事务与导入，常规测试未设置 TEST_MYSQL_DSN 时跳过数据库集成测试。
+
+文件模式仍只支持单进程；战斗胜负仍由客户端原型上报。旧 main 保存在 react-demo 分支，历史不变。
 
 ## 6. react-demo 接入记录
 
