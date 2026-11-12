@@ -53,6 +53,7 @@ function Invoke-NativeChecked {
         [Parameter(Mandatory = $true)][string]$Step,
         [AllowNull()][string]$StandardInput,
         [switch]$Quiet,
+        [switch]$ReturnFailure,
         [int]$TailLines = 0
     )
 
@@ -99,7 +100,7 @@ function Invoke-NativeChecked {
         foreach ($line in $display) { Write-Host $line }
     }
 
-    if ($exitCode -ne 0) {
+    if ($exitCode -ne 0 -and -not $ReturnFailure) {
         throw "$Step failed (exit code $exitCode)."
     }
 

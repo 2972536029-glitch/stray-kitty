@@ -7,7 +7,8 @@
 param(
     [Parameter(Mandatory)][ValidateSet('Prepare','Migrate','Finalize')][string]$Phase,
     [string]$SourceCommit = $env:CI_COMMIT_SHA,
-    [string]$PipelineId = $env:CI_PIPELINE_ID
+    [string]$PipelineId = $env:CI_PIPELINE_ID,
+    [switch]$ResumeBeforeBackup
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -46,6 +47,34 @@ function Get-KubeObject {
     $result = Invoke-Kube -Arguments @('get',$Kind,$Name,'--ignore-not-found','-o','json')
     if ([string]::IsNullOrWhiteSpace($result.StdOut)) { return $null }
     return ($result.StdOut | ConvertFrom-Json -AsHashtable)
+}
+function Set-ApplicationReplicas {
+    param([Parameter(Mandatory)][ValidateSet('game','payment','frontend')][string]$Service,[Parameter(Mandatory)][ValidateRange(0,1)][int]$Replicas,[switch]$DryRun)
+    Write-Host "Deployment replica patch: stray-kitty-$Service -> $Replicas (server dry-run: $DryRun)"
+    $arguments=Get-DeploymentReplicaPatchArguments -Service $Service -Replicas $Replicas
+    if($DryRun){$arguments+=@('--dry-run=server')}
+    # This request contains only a fixed deployment name and spec.replicas, never
+    # Secret values or private request records. Other native errors remain hidden.
+    $result=Invoke-NativeChecked -FilePath 'kubectl' -Arguments ($kubeArguments+$arguments) -Step $currentStep -Quiet -ReturnFailure
+    if($result.ExitCode -ne 0){
+        $diagnostic=Get-SafeReplicaPatchError -Text $result.StdErr
+        if($diagnostic){Write-Host "Replica patch error: $diagnostic"}
+        throw 'Deployment replica patch failed.'
+    }
+}
+function Assert-RunningStoresStillUseFiles {
+    $result=Invoke-Kube -Arguments @('get','pods','-l','app.kubernetes.io/instance=haozhe-preview,app.kubernetes.io/component in (game,payment)','-o','json')
+    $pods=$result.StdOut | ConvertFrom-Json -AsHashtable
+    foreach($pod in $pods.items){
+        if(-not $pod.status.ContainsKey('phase') -or $pod.status.phase -cne 'Running'){continue}
+        $service=$pod.metadata.labels['app.kubernetes.io/component']
+        if($service -cnotin @('game','payment')){throw 'Unexpected application pod in stop-retry preflight.'}
+        $port=if($service -ceq 'game'){'8080'}else{'8082'}
+        $backend=if($service -ceq 'game'){'single-process-file'}else{'payment-ledger'}
+        $result=Invoke-Kube -Arguments @('exec',$pod.metadata.name,'--','wget','-qO-',"http://127.0.0.1:$port/readyz")
+        $ready=$result.StdOut | ConvertFrom-Json
+        if($ready.status -cne 'ready' -or $ready.storage -cne $backend){throw 'A running application is not ready on its original file backend.'}
+    }
 }
 function Write-KubeObject {
     param([Parameter(Mandatory)][hashtable]$Object, [switch]$Replace)
@@ -164,6 +193,10 @@ try {
         $can = Invoke-Kube -Arguments (@('auth','can-i') + $permission)
         if ($can.StdOut.Trim() -cne 'yes') { throw 'The target namespace does not grant a required migration permission.' }
     }
+    foreach($verb in @('get','update','patch')){
+        $scaleAccess=Invoke-NativeChecked -FilePath 'kubectl' -Arguments ($kubeArguments+@('auth','can-i',$verb,'deployments/scale')) -Step 'Check optional scale-subresource permission' -Quiet -ReturnFailure
+        Write-Host ("Optional deployments/scale permission: {0}={1}; replica changes use patch deployments." -f $verb,($scaleAccess.StdOut.Trim() -ceq 'yes'))
+    }
     $saved = Get-KubeObject 'configmap' $stateName
     if ($null -ne $saved) { $state = $saved.data['state.json'] | ConvertFrom-Json -AsHashtable }
 
@@ -238,16 +271,30 @@ try {
     Assert-SameImages $state.deployments
 
     if ($Phase -eq 'Migrate') {
-        if ($state.phase -cne 'prepared') { throw 'Migration is not in prepared state; inspect the recorded operation instead of re-importing.' }
+        $lock=Get-KubeObject 'configmap' $lockName
+        $appDatabaseConfigured=$null -ne (Get-KubeObject 'secret' 'stray-kitty-preview-database')
+        $retryStop=Test-MigrationStopRetry -State $state -Lock $lock -RunId $runId -StateName $stateName -AppDatabaseConfigured $appDatabaseConfigured
+        if($retryStop -and -not $ResumeBeforeBackup){throw 'Use -ResumeBeforeBackup only after reviewing this pre-backup stop failure.'}
+        if($ResumeBeforeBackup -and -not $retryStop){throw '-ResumeBeforeBackup requires the exact recorded pre-backup stop failure.'}
         if (-not $env:BACKUP_PUBLIC_KEY_BASE64) { throw 'BACKUP_PUBLIC_KEY_BASE64 is required before entering maintenance.' }
         [StrayKittyDatabaseBackup]::ValidatePublicKey([Convert]::FromBase64String($env:BACKUP_PUBLIC_KEY_BASE64))
-        if ($null -ne (Get-KubeObject 'secret' 'stray-kitty-preview-database')) { throw 'Application DSN already exists; refusing a second migration.' }
         $null=Get-SmokeState
-        Write-KubeObject @{apiVersion='v1';kind='ConfigMap';metadata=@{name=$lockName;namespace=$namespace};data=@{runId=$runId;state=$stateName}}
+        if($retryStop){
+            $currentStep='verify unchanged file stores before retrying writer stop'
+            Assert-RunningStoresStillUseFiles
+            $existingPods=Invoke-Kube -Arguments @('get','pods','-l',"stray-kitty/migration-run=$runId",'-o','json')
+            if(@(($existingPods.StdOut | ConvertFrom-Json -AsHashtable).items).Count -ne 0){throw 'A pre-backup stop retry cannot reuse existing migration Pods.'}
+            Write-Host 'Resuming the same stop-writers failure; no prior backups or import exist.'
+        }
+        $currentStep='server-side replica patch preflight'
+        foreach($service in @('frontend','payment','game')){Set-ApplicationReplicas -Service $service -Replicas 0 -DryRun}
+        if(-not $retryStop){
+            Write-KubeObject @{apiVersion='v1';kind='ConfigMap';metadata=@{name=$lockName;namespace=$namespace};data=@{runId=$runId;state=$stateName}}
+        }
         $state.phase='stopping-writers';Save-State
         $currentStep='stop all external traffic and legacy writers'
         $maintenanceStarted=$true
-        $null=Invoke-Kube -Arguments @('scale','deployment','stray-kitty-frontend','stray-kitty-payment','stray-kitty-game','--replicas=0')
+        foreach($service in @('frontend','payment','game')){Set-ApplicationReplicas -Service $service -Replicas 0}
         $null=Invoke-Kube -Arguments @('wait','--for=delete','pod','-l','app.kubernetes.io/instance=haozhe-preview,app.kubernetes.io/component in (game,payment,frontend)','--timeout=240s')
         $state.phase='backing-up';Save-State
         $currentStep='create isolated read-only source and durable backup Pods'
@@ -299,7 +346,7 @@ try {
             $null=Invoke-Kube -Arguments @('delete','pod',$pods[$service],'--wait=true','--timeout=180s')
         }
         foreach($service in @('payment','game')){
-            $null=Invoke-Kube -Arguments @('scale','deployment',"stray-kitty-$service","--replicas=$($state.deployments[$service].replicas)")
+            Set-ApplicationReplicas -Service $service -Replicas $state.deployments[$service].replicas
             Wait-AppRollout $service
         }
         Assert-BackendReady
@@ -332,7 +379,7 @@ try {
         $recheck=Invoke-Kube -Arguments @('exec','-i','deployment/stray-kitty-game','--','/app/db-smoke','-phase','recheck','-state-file','-','-base-url','http://127.0.0.1:8080') -InputText (Get-SmokeState)
         $state.smoke=($recheck.StdOut | ConvertFrom-Json -AsHashtable)
         $currentStep='restore frontend traffic'
-        $null=Invoke-Kube -Arguments @('scale','deployment','stray-kitty-frontend',"--replicas=$($state.deployments.frontend.replicas)")
+        Set-ApplicationReplicas -Service frontend -Replicas $state.deployments.frontend.replicas
         Wait-AppRollout 'frontend'
         $null=Wait-PublicHealth -Uri 'https://starry-kitty.duckdns.org/healthz'
         $state.phase='complete';$state.completedAtUtc=[DateTime]::UtcNow.ToString('o');Save-State
@@ -342,7 +389,7 @@ try {
 } catch {
     # Never restore JSON or reopen traffic after a failed migration step.
     if($maintenanceStarted){
-        try{$null=Invoke-Kube -Arguments @('scale','deployment','stray-kitty-frontend','--replicas=0')}catch{}
+        try{Set-ApplicationReplicas -Service frontend -Replicas 0}catch{}
         if($null -ne $state){
             $state.phase='maintenance-failed';$state.failureStep=$currentStep;$state.failedAtUtc=[DateTime]::UtcNow.ToString('o')
             try{Save-State}catch{}
