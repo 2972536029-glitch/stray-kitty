@@ -8,12 +8,15 @@ param(
     [Parameter(Mandatory)][ValidateSet('Prepare','Migrate','Finalize')][string]$Phase,
     [string]$SourceCommit = $env:CI_COMMIT_SHA,
     [string]$PipelineId = $env:CI_PIPELINE_ID,
-    [switch]$ResumeBeforeBackup
+    [switch]$ResumeBeforeBackup,
+    [switch]$ResumeFromBackups,
+    [switch]$LegacyTestPayments
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 . (Join-Path $PSScriptRoot 'Release.Common.ps1')
 . (Join-Path $PSScriptRoot 'Database.Common.ps1')
+. (Join-Path $PSScriptRoot 'TestPaymentMigration.Common.ps1')
 
 if ($env:CI -ne 'true') { throw 'This migration runner is intended for the protected GitLab CI environment.' }
 if ($SourceCommit -cnotmatch '^[a-f0-9]{40}$' -or $PipelineId -notmatch '^[0-9]{1,16}$') { throw 'A full CI commit and numeric pipeline ID are required.' }
@@ -142,6 +145,56 @@ function Assert-BackendReady {
 }
 function Wait-AppRollout([string]$Service) {
     $null = Invoke-Kube -Arguments @('rollout','status',"deployment/stray-kitty-$Service",'--timeout=360s')
+}
+function Get-NeverImportedDatabaseProof {
+    $mysqlCommand='MYSQL_PWD=$(cat /run/secrets/mysql/root-password) mysql --protocol=socket -uroot --batch --skip-column-names --database=stray_kitty'
+    $result=Invoke-Kube -Arguments @('exec','-i','stray-kitty-mysql-0','--','sh','-ec',$mysqlCommand) -InputText "START TRANSACTION READ ONLY; SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='stray_kitty' ORDER BY TABLE_NAME; COMMIT;"
+    $tables=@($result.StdOut -split "`r?`n" | Where-Object {$_ -ne ''})
+    $allowed=@('game_players','game_sessions','game_accounts','payment_transactions','game_store_meta','payment_ledger_meta','schema_migrations')
+    if($tables.Count -eq 0){return @{}}
+    if($tables.Count -ne $allowed.Count -or @($tables | Where-Object {$_ -cnotin $allowed}).Count -ne 0){throw 'Unknown or partial target schema prevents an untouched-database proof.'}
+    $statements=@('START TRANSACTION READ ONLY;')
+    foreach($table in $allowed){
+        $invalid=if($table -in @('game_store_meta','payment_ledger_meta')){'COALESCE(SUM(id <> 1 OR imported <> 0),0)'}elseif($table -eq 'schema_migrations'){"COALESCE(SUM(version <> '002_persistent_stores.sql'),0)"}else{'0'}
+        $statements+="SELECT '$table', COUNT(*), $invalid FROM $table;"
+    }
+    $statements+='COMMIT;'
+    $result=Invoke-Kube -Arguments @('exec','-i','stray-kitty-mysql-0','--','sh','-ec',$mysqlCommand) -InputText ($statements -join "`n")
+    $metrics=@{}
+    foreach($line in @($result.StdOut -split "`r?`n" | Where-Object {$_ -ne ''})){
+        $fields=$line -split "`t"
+        if($fields.Count -ne 3 -or $fields[0] -cnotin $allowed -or $fields[1] -notmatch '^\d+$' -or $fields[2] -notmatch '^\d+$' -or $metrics.ContainsKey($fields[0])){throw 'Invalid read-only database proof response.'}
+        $metrics[$fields[0]]=@([long]$fields[1],[long]$fields[2])
+    }
+    Assert-NeverImportedDatabaseMetrics -Metrics $metrics
+    return $metrics
+}
+function Get-VerifiedRetainedSnapshotPods {
+    $deployed=Get-DeployedEvidence
+    foreach($service in @('game','payment','frontend')){
+        if($deployed[$service].replicas -ne 0){throw 'Backup recovery requires all application deployments stopped.'}
+    }
+    $writers=Invoke-Kube -Arguments @('get','pods','-l','app.kubernetes.io/instance=haozhe-preview,app.kubernetes.io/component in (game,payment,frontend)','-o','json')
+    if(@(($writers.StdOut|ConvertFrom-Json -AsHashtable).items).Count -ne 0){throw 'Application writer Pods must be absent before backup recovery.'}
+    $databaseProof=Get-NeverImportedDatabaseProof
+    Assert-NeverImportedDatabaseMetrics -Metrics $databaseProof
+    $pods=@{}
+    foreach($service in @('game','payment')){
+        $podName="stray-kitty-import-$service-$runId"
+        $pod=Get-KubeObject 'pod' $podName
+        $file=if($service -ceq 'game'){'game.json'}else{'payments.json'}
+        $sourcePvc=if($service -ceq 'game'){'stray-kitty-preview-data'}else{'stray-kitty-payment-data'}
+        if($null -eq $pod -or $pod.metadata.labels['stray-kitty/migration-run'] -cne $runId -or $pod.status.phase -cne 'Running' -or $pod.spec.containers[0].image -cne $state.deployments[$service].image){throw 'The matching original migration Pod is required for hash proof.'}
+        $legacy=@($pod.spec.volumes|Where-Object name -eq 'legacy')[0]
+        $backup=@($pod.spec.volumes|Where-Object name -eq 'backup')[0]
+        $mount=@($pod.spec.containers[0].volumeMounts|Where-Object name -eq 'legacy')[0]
+        $backupMount=@($pod.spec.containers[0].volumeMounts|Where-Object name -eq 'backup')[0]
+        if($legacy.persistentVolumeClaim.claimName -cne $sourcePvc -or -not $legacy.persistentVolumeClaim.readOnly -or -not $mount.readOnly -or $mount.mountPath -cne '/legacy' -or $backup.persistentVolumeClaim.claimName -cne $state.backups[$service].pvc -or $backupMount.mountPath -cne '/backup'){throw 'Migration Pod source/backup volume bindings differ from the saved operation.'}
+        $hashes=Invoke-Kube -Arguments @('exec',$podName,'--','sha256sum',"/legacy/$file",$state.backups[$service].path)
+        Assert-OriginalSnapshotHashes -Output $hashes.StdOut -Expected $state.backups[$service].sha256
+        $pods[$service]=$podName
+    }
+    return $pods
 }
 function Write-DatabaseDiagnostics {
     # Only Kubernetes identifiers, phases, reason codes and counts are printable.
@@ -273,6 +326,38 @@ try {
     if ($Phase -eq 'Migrate') {
         $lock=Get-KubeObject 'configmap' $lockName
         $appDatabaseConfigured=$null -ne (Get-KubeObject 'secret' 'stray-kitty-preview-database')
+        if($ResumeFromBackups){
+            if(-not $LegacyTestPayments -or $ResumeBeforeBackup){throw 'Backup recovery requires -LegacyTestPayments and cannot combine stop-retry mode.'}
+            Assert-BackedUpAuditState -State $state -Lock $lock -RunId $runId -StateName $stateName -AppDatabaseConfigured $appDatabaseConfigured
+            if(-not $env:BACKUP_PUBLIC_KEY_BASE64){throw 'The original backup public key is required for recovery artifacts.'}
+            [StrayKittyDatabaseBackup]::ValidatePublicKey([Convert]::FromBase64String($env:BACKUP_PUBLIC_KEY_BASE64))
+            $currentStep='verify stopped writers empty database and retained backup hashes'
+            $pods=Get-VerifiedRetainedSnapshotPods
+            $maintenanceStarted=$true
+            $null=New-Item -ItemType Directory -Path $artifactDirectory -Force
+            foreach($service in @('game','payment')){
+                $file=if($service -ceq 'game'){'game.json'}else{'payments.json'}
+                $local=Join-Path $scratchDirectory $file
+                $null=Invoke-Kube -Arguments @('cp',"$($pods[$service]):$($state.backups[$service].path)",$local)
+                $null=Write-EncryptedDatabaseBackup -SourcePath $local -DestinationPath (Join-Path $artifactDirectory "$service.snapshot.encrypted.json") -PublicKeyBase64 $env:BACKUP_PUBLIC_KEY_BASE64 -ExpectedSha256 $state.backups[$service].sha256
+            }
+            $currentStep='prepare balance-preserving legacy test payment replay suppression'
+            $gameSource=Join-Path $scratchDirectory 'game.json'
+            $paymentSource=Join-Path $scratchDirectory 'payments.json'
+            $gameImport=Join-Path $scratchDirectory 'game.import.json'
+            $transform=New-LegacyTestPaymentImport -GamePath $gameSource -PaymentsPath $paymentSource -OutputPath $gameImport
+            $null=Test-LegacyTestPaymentImport -GamePath $gameSource -PaymentsPath $paymentSource -OutputPath $gameImport
+            $importSha=(Get-FileHash -LiteralPath $gameImport -Algorithm SHA256).Hash.ToLowerInvariant()
+            $importPath="/backup/$runId/game.import.json"
+            $writeImport="set -eu; umask 077; test ! -e $importPath; cat > $importPath; chmod 400 $importPath; sync; sha256sum $importPath"
+            $written=Invoke-Kube -Arguments @('exec','-i',$pods.game,'--','sh','-ec',$writeImport) -InputText ([IO.File]::ReadAllText($gameImport))
+            if($written.StdOut.Trim() -cne "$importSha  $importPath"){throw 'Durable transformed import snapshot hash does not match the verified local transform.'}
+            $null=Write-EncryptedDatabaseBackup -SourcePath $gameImport -DestinationPath (Join-Path $artifactDirectory 'game.import.encrypted.json') -PublicKeyBase64 $env:BACKUP_PUBLIC_KEY_BASE64 -ExpectedSha256 $importSha
+            $importPaths=@{game=$importPath;payment=$state.backups.payment.path}
+            $state.transformation=@{type='legacy-test-payment-replay-suppression';gameSourceSha256=$state.backups.game.sha256;paymentSourceSha256=$state.backups.payment.sha256;gameImportSha256=$importSha;gameImportPath=$importPath;encryptedArtifact='game.import.encrypted.json';summary=$transform;operationScriptCommit=$env:CI_COMMIT_SHA;balancesPreserved=$true;ledgerPreserved=$true}
+            Save-State
+        }else{
+            if($LegacyTestPayments){throw '-LegacyTestPayments is only valid with an explicitly verified retained-backup recovery.'}
         $retryStop=Test-MigrationStopRetry -State $state -Lock $lock -RunId $runId -StateName $stateName -AppDatabaseConfigured $appDatabaseConfigured
         if($retryStop -and -not $ResumeBeforeBackup){throw 'Use -ResumeBeforeBackup only after reviewing this pre-backup stop failure.'}
         if($ResumeBeforeBackup -and -not $retryStop){throw '-ResumeBeforeBackup requires the exact recorded pre-backup stop failure.'}
@@ -321,20 +406,22 @@ try {
             $state.backups[$service]=@{pvc="stray-kitty-$service-db-backup";path=$snapshot;sha256=$hashes[0];encryptedArtifact=$encryptedName;bytes=(Get-Item -LiteralPath $local).Length}
             Save-State
         }
+            $importPaths=@{game=$state.backups.game.path;payment=$state.backups.payment.path}
+        }
         if($state.backups.Count -ne 2){throw 'Both durable and encrypted backups are required before import.'}
         $currentStep='audit historical payment replay safety'
         $paymentText=[IO.File]::ReadAllText((Join-Path $scratchDirectory 'payments.json'))
         $null=Invoke-Kube -Arguments @('exec','-i',$pods.game,'--','sh','-ec','umask 077; cat > /tmp/payments-audit.json') -InputText $paymentText
         $paymentText=$null
-        $audit=Invoke-Kube -Arguments @('exec',$pods.game,'--','/app/db-smoke','-phase','audit','-game-file',$state.backups.game.path,'-payments-file','/tmp/payments-audit.json')
+        $audit=Invoke-Kube -Arguments @('exec',$pods.game,'--','/app/db-smoke','-phase','audit','-game-file',$importPaths.game,'-payments-file','/tmp/payments-audit.json')
         $state.audit=($audit.StdOut | ConvertFrom-Json -AsHashtable)
         $state.phase='importing';Save-State
         foreach($service in @('game','payment')){
             $source=if($service -eq 'game'){'game'}else{'payments'}
             $currentStep="import and verify $service snapshot"
-            $null=Invoke-Kube -Arguments @('exec',$pods[$service],'--','/app/db-migrate','-source',$source,'-file',$state.backups[$service].path)
-            $verified=Invoke-Kube -Arguments @('exec',$pods[$service],'--','/app/db-verify','-source',$source,'-file',$state.backups[$service].path)
-            $state.backups[$service].verification=$verified.StdOut.Trim()
+            $null=Invoke-Kube -Arguments @('exec',$pods[$service],'--','/app/db-migrate','-source',$source,'-file',$importPaths[$service])
+            $verified=Invoke-Kube -Arguments @('exec',$pods[$service],'--','/app/db-verify','-source',$source,'-file',$importPaths[$service])
+            if($ResumeFromBackups -and $service -ceq 'game'){$state.transformation.verification=$verified.StdOut.Trim()}else{$state.backups[$service].verification=$verified.StdOut.Trim()}
             Save-State
         }
         $currentStep='activate verified application database connections'
@@ -391,7 +478,8 @@ try {
     if($maintenanceStarted){
         try{Set-ApplicationReplicas -Service frontend -Replicas 0}catch{}
         if($null -ne $state){
-            $state.phase='maintenance-failed';$state.failureStep=$currentStep;$state.failedAtUtc=[DateTime]::UtcNow.ToString('o')
+            $state.phase='maintenance-failed';$state.failureStep=$currentStep
+            $state.failedAtUtc=[DateTime]::UtcNow.ToString('o')
             try{Save-State}catch{}
         }
     }

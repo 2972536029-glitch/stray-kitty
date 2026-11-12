@@ -167,3 +167,11 @@ database_finalize_existing:
   needs: []
   script:
     - pwsh -NoProfile -File deploy/team-preview-haozhe/Migrate-Database.ps1 -Phase Finalize -SourceCommit "$DB_RELEASE_COMMIT" -PipelineId "$DB_OPERATION_PIPELINE_ID"
+
+# Preserve legacy sandbox-test balances and suppress historical test callbacks.
+# This accepts only an audit-stage stop with both original backups intact.
+database_resume_test_payments:
+  extends: .database_operation
+  needs: []
+  script:
+    - pwsh -NoProfile -File deploy/team-preview-haozhe/Migrate-Database.ps1 -Phase Migrate -SourceCommit "$DB_RELEASE_COMMIT" -PipelineId "$DB_OPERATION_PIPELINE_ID" -ResumeFromBackups -LegacyTestPayments
