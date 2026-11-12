@@ -22,6 +22,7 @@
   /* The title and all main actions fit without scrolling through the cats. */
   .start-screen{height:100dvh;min-height:0;box-sizing:border-box;padding:calc(42px + var(--safe-top)) calc(22px + var(--safe-right)) calc(24px + var(--safe-bottom)) calc(22px + var(--safe-left))}
   .start-brand{top:calc(8px + var(--safe-top));left:calc(22px + var(--safe-left));padding:4px 8px;box-shadow:none}
+  .opening-title .start-audio-toggle,.start-audio-toggle{top:calc(8px + var(--safe-top));right:calc(22px + var(--safe-right));box-shadow:none}
   .xsolla-wordmark{font-size:16px}.xsolla-wordmark span{font-size:9px}.start-brand>small{display:none}
   .start-title{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,.9fr);grid-template-rows:auto auto auto 1fr;align-items:center;column-gap:28px;width:min(900px,100%);height:100%;max-height:none;padding:0;overflow:auto}
   .start-cats{grid-column:1;grid-row:1;align-self:end;margin:0}

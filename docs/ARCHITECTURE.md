@@ -157,6 +157,7 @@ stray-kitty/
 │  │  └─ tutorials/  操作提示
 │  ├─ public/  静态资源
 │  │  └─ assets/  图片、动画、声音与字体
+│  │     ├─ bgm/  分场景 MP3 背景音乐配乐
 │  │     ├─ chapters/  五章独立场景封面
 │  │     ├─ fonts/
 │  │     ├─ home/  无猫建筑、四阶修缮与主题家具透明图集

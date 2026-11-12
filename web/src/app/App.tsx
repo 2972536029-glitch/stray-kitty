@@ -25,7 +25,8 @@ import {readPaymentReturn,savePaymentReturn,clearPaymentReturn,clearPaymentRetur
 
 import SettingsPanel from '../ui/SettingsPanel';
 import PrologueSequence from '../ui/PrologueSequence';
-import {useAudioManager, type BgmMode} from '../ui/useAudioManager';
+import {readAudioPrefs, resolveSceneAmbient, resolveSceneBgm, writeAudioPref, type BgmMode, type HomeBgmChoice} from '../core/audio';
+import {useAudioManager} from '../ui/useAudioManager';
 import {playSound} from '../ui/soundEffects';
 import AuthDialog from '../ui/AuthDialog';
 import {rainyAlleyObject} from '../modules/rainyAlley/assets';
@@ -98,8 +99,11 @@ export default function App() {
   const [qaVisit, setQAVisit] = useState(0);
   useEffect(() => {setInspection(null);}, [state?.phase, state?.mapId, qaVisit]);
   const loadQATools = useCallback(() => port.qaTools(), [port]);
-  const [musicVolume, setMusicVolume] = useState(() => Number(localStorage.getItem('stray-kitty.audio.music') ?? 40));
-  const [sfxVolume, setSfxVolume] = useState(() => Number(localStorage.getItem('stray-kitty.audio.sfx') ?? 65));
+  const [initialAudioPrefs] = useState(() => readAudioPrefs());
+  const [musicVolume, setMusicVolume] = useState(initialAudioPrefs.musicVolume);
+  const [sfxVolume, setSfxVolume] = useState(initialAudioPrefs.sfxVolume);
+  const [muted, setMuted] = useState(initialAudioPrefs.muted);
+  const [homeBgm, setHomeBgm] = useState<HomeBgmChoice>(initialAudioPrefs.homeBgm);
 
   // 序章开场引导只在每个存档的第一次进入时播放。
   // 自动化环境（Playwright 等 navigator.webdriver=true）直接跳过：
@@ -111,12 +115,28 @@ export default function App() {
   // 画布场景实例：对话气泡向它查询说话者头顶的位置。
   const sceneRef = useRef<DemoScene | null>(null);
   const [homeScene,setHomeScene]=useState<DemoScene|null>(null);
-  // 沉浸式音频：主页/探索/家园/守护各一段循环 BGM；小巷落雨、集市人声作为环境音叠加。
-  const audioBgm: BgmMode = !entered || !state ? 'title'
-    : state.phase === 'battle' || state.phase === 'preparation' ? 'battle'
-    : state.phase === 'home' ? 'home' : 'explore';
-  const audioAmbient = entered && state?.phase === 'explore' ? (state.mapId === 'alley' ? 'rain' : state.mapId === 'market' ? 'market' : null) : null;
-  useAudioManager({bgm: audioBgm, ambient: audioAmbient, musicVolume, sfxVolume});
+  // 沉浸式音频：分场景 MP3 循环 BGM（含花房点歌台与邮局独立主题）+ 雨夜小巷/集市环境音。
+  const audioBgm: BgmMode = resolveSceneBgm({entered, state, storyScene, overlay, homeTab, homeBgm});
+  const audioAmbient = resolveSceneAmbient({entered, state, bgm: audioBgm});
+  const {unlock: unlockAudio} = useAudioManager({bgm: audioBgm, ambient: audioAmbient, musicVolume, sfxVolume, muted});
+  const handleToggleMute = useCallback(() => {
+    const next = !muted;
+    setMuted(next);
+    writeAudioPref('muted', next);
+    if (!next) unlockAudio(true);
+  }, [muted, unlockAudio]);
+  const handleMusicVolume = useCallback((value: number) => {
+    setMusicVolume(value);
+    writeAudioPref('music', value);
+  }, []);
+  const handleSfxVolume = useCallback((value: number) => {
+    setSfxVolume(value);
+    writeAudioPref('sfx', value);
+  }, []);
+  const handleHomeBgm = useCallback((choice: HomeBgmChoice) => {
+    setHomeBgm(choice);
+    writeAudioPref('homeBgm', choice);
+  }, []);
   // 错误横幅出现即播低沉音;首次走进花房播上行琶音(每个存档一次)。
   useEffect(() => {if (error) playSound('error');}, [error]);
   const homeChimed = useRef(false);
@@ -220,7 +240,7 @@ export default function App() {
     {error && overlay !== 'shop' && overlay !== 'parcels' && overlay !== 'qa' && overlay !== 'decorate' && overlay !== 'home' && <div className="error-banner" role="alert">{error}<button disabled={busy} onClick={() => void retry()}>重试上次操作</button>{sessionUnavailable && state && <button disabled={busy} onClick={() => void startNewJourney()}>开始新旅程（保留旧会话记录）</button>}</div>}
     {!state || !catalog ? <main className="loading-card"><span className="brand-mark">ฅ</span><h1>{busy ? '正在寻找熟悉的气味……' : '旅程暂时停在这里'}</h1><p>{busy ? '正在打开小巷和你的旅程记录。' : '请确认本地服务已启动，然后重试。'}</p>{!busy && <><button onClick={() => void retry()}>重新连接</button>{sessionUnavailable && <button onClick={() => void startNewJourney()}>开始新旅程（保留旧会话记录）</button>}</>}</main>
       : <>
-        {!entered && <StartScreen signedIn={!!accountName} onLogin={()=>openAuth('login','title')} hasProgress={state.revision > 0} disabled={disabled} onStart={() => {trackContinueAdventure();setEntered(true);}}/>}
+        {!entered && <StartScreen signedIn={!!accountName} muted={muted} onToggleMute={handleToggleMute} onLogin={()=>openAuth('login','title')} hasProgress={state.revision > 0} disabled={disabled} onStart={() => {trackContinueAdventure();setEntered(true);}}/>}
         {/* Keep an active battle mounted and paused behind the title, so returning does not restart its attempt. */}
         {(entered || state.phase === 'battle') && <div hidden={!entered}>
           <GameScreen onSkipDialogue={optionId=>void skipDialogue(optionId)} onHomeAdvisor={()=>{if(!homeAdvisorBlocked&&!homeScene?.homeRenovating)setHomeAdvisorOpen(true);}} homeAdvisorDisabled={!!homeAdvisorBlocked} onHomeTutorialChange={setHomeTutorialOpen} onHomeManual={()=>openHome()} homeEditing={overlay==='decorate'} state={state} catalog={catalog} busy={busy} pending={pending} disabled={disabled || paused || !!overlay || !!inspection} paused={paused} near={near} nearTarget={nearTarget} inspectHint={inspectHint} journalOpen={overlay === 'journal'} onJournal={() => setOverlay(overlay === 'journal' ? null : 'journal')} qaOpen={overlay === 'qa'} onQA={() => setOverlay('qa')} onCommand={command => void send(command.type === 'START_BATTLE' && command.stageId === 'alley_rescue' && rainyPosition.current ? {...command, returnPosition: rainyPosition.current} : command)} onInteract={interact} onPause={() => setPaused(!paused)} onMap={() => state.phase==='home'?openHome('depart'):setOverlay('map')} onShop={() => state.phase==='home'?openHome('shop'):setOverlay('shop')} onParcels={() => setOverlay('parcels')} onRecharge={() => openRecharge()} onSettings={() => setOverlay('settings')} onDecorate={()=>openDecorate()} onTitle={() => {setEntered(false);setPaused(false);}}>
@@ -253,7 +273,7 @@ export default function App() {
     {state && catalog && (overlay === 'parcels' || overlay === 'home' && homeTab === 'parcels') && <ParcelDialog state={state} catalog={catalog} disabled={disabled} retryDisabled={busy} error={error} initialPool={parcelPool} onPool={setParcelPool} onCommand={send} onRetry={() => void retry()} onClose={() => setOverlay(null)} onRecharge={() => openRecharge(true)} onPlace={async(furnitureId)=>{openDecorate(furnitureId);return true;}}/>}
     {state && catalog && overlay === 'recharge' && (catalog.rechargePacks?.length ?? 0) > 0 && <RechargeDialog initialPack={paymentReturn?.packId} onCheckout={rememberCheckout} playerId={port.playerId()} packs={catalog.rechargePacks!} tuna={state.currencies.tuna ?? 0} api={port} onCharged={refresh} onClose={closeRecharge}/>}
 
-    {overlay === 'settings' && <SettingsPanel disabled={disabled} onLogin={()=>openAuth('login','settings')} onRegister={()=>openAuth('register','settings')} onReset={resetSession} musicVolume={musicVolume} sfxVolume={sfxVolume} onMusicVolume={value => {setMusicVolume(value);localStorage.setItem('stray-kitty.audio.music', String(value));}} onSfxVolume={value => {setSfxVolume(value);localStorage.setItem('stray-kitty.audio.sfx', String(value));}} onClose={() => setOverlay(null)}/>}
+    {overlay === 'settings' && <SettingsPanel disabled={disabled} onLogin={()=>openAuth('login','settings')} onRegister={()=>openAuth('register','settings')} onReset={resetSession} musicVolume={musicVolume} sfxVolume={sfxVolume} muted={muted} homeBgm={homeBgm} inHome={state?.phase === 'home'} state={state ?? null} onMusicVolume={handleMusicVolume} onSfxVolume={handleSfxVolume} onToggleMute={handleToggleMute} onHomeBgm={handleHomeBgm} onClose={() => setOverlay(null)}/>}
 
     {state && overlay === 'auth' && <AuthDialog mode={authMode} hasProgress={state.revision > 0} api={port} successLabel={authReturn.current==='title'?'进入冒险':'好的'} onLoggedIn={async () => {await refresh();authSucceeded.current=true;setEntered(false);}} onClose={() => {setOverlay(authReturn.current==='title'?null:'settings');if(authReturn.current==='title'&&authSucceeded.current){trackContinueAdventure();setEntered(true);}}}/>}
     {state&&catalog&&paymentReturn&&paymentReturn.playerId===port.playerId()&&<PaymentReturnNotice saved={paymentReturn} packs={catalog.rechargePacks??[]} api={port} onCharged={refresh} onClose={()=>{clearPaymentReturn();setPaymentReturn(null);}}/>}

@@ -13,6 +13,21 @@
   top:24px;left:32px;right:auto;padding:9px 13px;border:1px solid #71816d;border-radius:1px;
   background:#182e36cc;box-shadow:3px 3px 0 #0b1c28;gap:20px;color:#f1e1ba;
 }
+.opening-title .start-audio-toggle {
+  position:absolute;top:calc(24px + var(--safe-top,0px));right:calc(32px + var(--safe-right,0px));z-index:4;
+  display:grid;place-items:center;width:46px;height:46px;min-width:46px;min-height:46px;padding:0;
+  border:1px solid #71816d;border-radius:2px;background:#182e36cc;color:#f1e1ba;box-shadow:3px 3px 0 #0b1c28;
+}
+.opening-title .start-audio-toggle:hover:not(:disabled) {
+  background:#26454de6;border-color:#b19259;color:#fff3d7;transform:translateY(-1px);box-shadow:3px 4px 0 #0b1c28;
+}
+.opening-title .start-audio-toggle:active:not(:disabled) {
+  transform:translate(2px,2px);box-shadow:1px 1px 0 #0b1c28;
+}
+.opening-title .start-audio-toggle.is-muted {
+  color:#b6b097;border-color:#616d61;background:#132329cc;
+}
+.opening-title .start-audio-toggle .game-icon {width:21px;height:21px}
 .opening-title .xsolla-wordmark {font-size:23px;letter-spacing:-1px}
 .opening-title .xsolla-wordmark span {font-size:10px;letter-spacing:2px;color:#c6bb9a}
 .opening-title .start-brand>small {font-size:8px;letter-spacing:1.5px;padding-left:18px;border-color:#9b947563}
@@ -145,6 +160,7 @@
   .opening-title .start-account {font-size:11px}
   .opening-title .start-title>.eyebrow {font-size:7px;letter-spacing:1.3px}
   .opening-title .start-brand {top:20px;left:22px}
+  .opening-title .start-audio-toggle {top:calc(20px + var(--safe-top,0px));right:calc(22px + var(--safe-right,0px))}
   .opening-title>footer {left:22px;right:22px;font-size:8px}
   .opening-title>footer b {letter-spacing:0}
   .prologue-chapter-mark {left:18px;top:18px}
@@ -193,6 +209,7 @@
   .opening-title .start-account {grid-column:2;grid-row:4;align-self:center;justify-self:start;font-size:10px;margin:0}
   .opening-title .start-save {display:none}
   .opening-title .start-brand {top:13px;left:6vw;padding:5px 9px}
+  .opening-title .start-audio-toggle {top:calc(13px + var(--safe-top,0px));right:calc(6vw + var(--safe-right,0px));width:44px;height:44px;min-width:44px;min-height:44px}
   .opening-title .xsolla-wordmark {font-size:17px}
   .opening-title>footer {bottom:10px;padding-top:6px;font-size:7px}
   .prologue-chapter-mark {top:16px;left:24px}

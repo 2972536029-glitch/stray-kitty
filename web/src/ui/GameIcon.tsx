@@ -1,7 +1,7 @@
 import type {ReactNode} from 'react';
 import './game-icons.css';
 
-export type GameIconName='manual'|'journal'|'post'|'supply'|'map'|'decorate'|'settings'|'acceptance'|'confirm'|'cancel'|'store';
+export type GameIconName='manual'|'journal'|'post'|'supply'|'map'|'decorate'|'settings'|'acceptance'|'confirm'|'cancel'|'store'|'speaker'|'speakerOff';
 
 const drawings:Record<GameIconName,ReactNode>={
   manual:<><path d="M12 6C9.4 4.4 6.2 4 3 4.8v14c3.2-.8 6.4-.4 9 1.2 2.6-1.6 5.8-2 9-1.2v-14c-3.2-.8-6.4-.4-9 1.2Z"/><path d="M12 6v14M6 9c1.1-.1 2.2.1 3.2.5M15 9.5c1-.4 2.1-.6 3.2-.5"/></>,
@@ -15,6 +15,8 @@ const drawings:Record<GameIconName,ReactNode>={
   confirm:<path d="m5 12 4.5 4.5L19 7"/>,
   cancel:<path d="m6 6 12 12M18 6 6 18"/>,
   store:<><path d="M4 12.5V20h16v-7.5M4 12.5h4l2 3h4l2-3h4M12 3v8m-3-3 3 3 3-3"/></>,
+  speaker:<><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 9.2a4.5 4.5 0 0 1 0 5.6"/><path d="M18.5 6.8a8.2 8.2 0 0 1 0 10.4"/></>,
+  speakerOff:<><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></>,
 };
 
 /** Shared 24-unit drawings keep stroke weight and alignment consistent. */

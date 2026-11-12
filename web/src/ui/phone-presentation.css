@@ -15,6 +15,8 @@
 :root[data-mobile-stage] .app-shell .topbar.fixed-game-menu{background:transparent}
 :root[data-mobile-stage] .app-shell .topbar.fixed-game-menu{left:calc(20px + var(--safe-left)/var(--desktop-menu-scale));right:calc(20px + var(--safe-right)/var(--desktop-menu-scale));top:calc(8px + var(--safe-top)/var(--desktop-menu-scale))}
 :root[data-mobile-stage] .opening-title .start-brand{left:calc(32px + var(--safe-left));top:calc(24px + var(--safe-top))}
+:root[data-mobile-stage] .opening-title .start-audio-toggle{right:calc(32px + var(--safe-right));top:calc(24px + var(--safe-top));width:56px;height:56px;min-width:56px;min-height:56px}
+:root[data-mobile-stage] .opening-title .start-audio-toggle .game-icon{width:26px;height:26px}
 :root[data-mobile-stage] .prologue-chapter-mark{left:calc(36px + var(--safe-left));top:calc(30px + var(--safe-top))}
 :root[data-mobile-stage] .story-dialogue.dialogue-bubble{left:calc(24px + var(--safe-left)/var(--desktop-ui-scale));right:calc(24px + var(--safe-right)/var(--desktop-ui-scale));bottom:calc(20px + var(--safe-bottom)/var(--desktop-ui-scale));width:auto}
 :root[data-mobile-stage] :is(dialog.game-modal,dialog.story-choice-modal,dialog.reward-notice){inset:calc(var(--safe-top)/var(--desktop-panel-scale)) calc(var(--safe-right)/var(--desktop-panel-scale)) calc(var(--safe-bottom)/var(--desktop-panel-scale)) calc(var(--safe-left)/var(--desktop-panel-scale));max-width:calc((100vw - var(--safe-left) - var(--safe-right) - 40px)/var(--desktop-panel-scale));max-height:calc((100dvh - var(--safe-top) - var(--safe-bottom) - 40px)/var(--desktop-panel-scale))}
