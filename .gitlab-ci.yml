@@ -152,3 +152,18 @@ database_finalize:
   needs: [database_migrate]
   script:
     - pwsh -NoProfile -File deploy/team-preview-haozhe/Migrate-Database.ps1 -Phase Finalize
+
+# Operation-only recovery uses the existing immutable release, without rebuilding
+# or redeploying applications. Both identifiers must be supplied explicitly.
+# The runner accepts a resume only before any backup/import has begun.
+database_resume_before_backup:
+  extends: .database_operation
+  needs: []
+  script:
+    - pwsh -NoProfile -File deploy/team-preview-haozhe/Migrate-Database.ps1 -Phase Migrate -SourceCommit "$DB_RELEASE_COMMIT" -PipelineId "$DB_OPERATION_PIPELINE_ID" -ResumeBeforeBackup
+
+database_finalize_existing:
+  extends: .database_operation
+  needs: []
+  script:
+    - pwsh -NoProfile -File deploy/team-preview-haozhe/Migrate-Database.ps1 -Phase Finalize -SourceCommit "$DB_RELEASE_COMMIT" -PipelineId "$DB_OPERATION_PIPELINE_ID"

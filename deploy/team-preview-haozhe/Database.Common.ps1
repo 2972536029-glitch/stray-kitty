@@ -1,5 +1,47 @@
 Set-StrictMode -Version Latest
 
+function Get-DeploymentReplicaPatchArguments {
+    param(
+        [Parameter(Mandatory)][ValidateSet('game','payment','frontend')][string]$Service,
+        [Parameter(Mandatory)][ValidateRange(0,1)][int]$Replicas
+    )
+    return @('patch','deployment',"stray-kitty-$Service",'--type=merge','-p',(@{spec=@{replicas=$Replicas}} | ConvertTo-Json -Compress))
+}
+
+function Get-SafeReplicaPatchError {
+    param([AllowEmptyString()][string]$Text)
+    $text=$Text -replace '(?i)Bearer\s+\S+','Bearer [redacted]'
+    $text=$text -replace '(?i)(token|password|authorization)(\s*[:=]\s*)[^\s,;]+','$1$2[redacted]'
+    $text=$text -replace '(?i)(https?://)[^\s/@:]+:[^\s/@]+@','$1[redacted]@'
+    if($text.Length -gt 4096){$text=$text.Substring(0,4096)+' [truncated]'}
+    return $text.Trim()
+}
+
+function Test-MigrationStopRetry {
+    param(
+        [Parameter(Mandatory)][hashtable]$State,
+        [AllowNull()][hashtable]$Lock,
+        [Parameter(Mandatory)][string]$RunId,
+        [Parameter(Mandatory)][string]$StateName,
+        [bool]$AppDatabaseConfigured
+    )
+    if($AppDatabaseConfigured){throw 'Application DSN already exists; refusing an import retry.'}
+    if($State.phase -ceq 'prepared'){
+        if($null -ne $Lock){throw 'A prepared operation cannot take over an existing migration lock.'}
+        return $false
+    }
+    if($State.phase -cne 'maintenance-failed' -or
+        -not $State.ContainsKey('failureStep') -or
+        $State.failureStep -cne 'stop all external traffic and legacy writers' -or
+        -not $State.ContainsKey('backups') -or
+        $State.backups -isnot [Collections.IDictionary] -or $State.backups.Count -ne 0 -or
+        $null -eq $Lock -or -not $Lock.ContainsKey('data') -or
+        $Lock.data.runId -cne $RunId -or $Lock.data.state -cne $StateName){
+        throw 'Only the same locked stop-writers failure with no backups or database activation may resume.'
+    }
+    return $true
+}
+
 # Byte-array wrappers keep the .NET span APIs usable on PowerShell 7.
 if (-not ('StrayKittyDatabaseBackup' -as [type])) {
     Add-Type -TypeDefinition @'

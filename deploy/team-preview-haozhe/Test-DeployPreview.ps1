@@ -81,6 +81,8 @@ try {
     $nonZeroRejected = $_.Exception.Message -match 'exit code 23'
 }
 Assert-Case 'native-nonzero-exit-throws' $nonZeroRejected
+$returnedFailure = Invoke-NativeChecked -FilePath $comspec -Arguments @('/d', '/c', 'exit 23') -Step 'capture replica-patch diagnostic failure' -Quiet -ReturnFailure
+Assert-Case 'explicit-diagnostic-capture-preserves-nonzero-exit' ($returnedFailure.ExitCode -eq 23)
 
 $tempPath = Join-Path $env:TEMP ('stray-kitty-release-test-' + [Guid]::NewGuid().ToString('N') + '.json')
 try {

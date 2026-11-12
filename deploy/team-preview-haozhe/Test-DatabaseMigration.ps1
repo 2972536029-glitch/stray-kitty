@@ -60,6 +60,24 @@ try{
     }
     Assert-Rejected { New-DatabaseMigrationPod -Service game -RunId 'db-123' -Image 'mysql:latest' } 'wrong-project-or-mutable-migration-image-rejected'
     Assert-Rejected { New-DatabaseMigrationPod -Service game -RunId 'db-123;exit' -Image ('school-gitlab.xsolla.dev:5050/haozhe_wang/stray-kitty/game@sha256:'+('a'*64)) } 'unsafe-run-id-rejected'
+    foreach($service in @('game','payment','frontend')){
+        $patch=Get-DeploymentReplicaPatchArguments -Service $service -Replicas 0
+        Assert-Case ($patch[0] -ceq 'patch' -and $patch[1] -ceq 'deployment' -and $patch[2] -ceq "stray-kitty-$service" -and (($patch[-1]|ConvertFrom-Json).spec.replicas -eq 0)) "$service-replica-change-uses-deployment-patch"
+    }
+    $stopFailure=@{phase='maintenance-failed';failureStep='stop all external traffic and legacy writers';backups=@{}}
+    $sameLock=@{data=@{runId='db-8857';state='stray-kitty-db-migration-8857'}}
+    Assert-Case (Test-MigrationStopRetry -State $stopFailure -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857') 'same-stop-failure-with-no-backups-can-resume'
+    Assert-Case (-not(Test-MigrationStopRetry -State @{phase='prepared';backups=@{}} -Lock $null -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857')) 'fresh-prepared-operation-remains-supported'
+    Assert-Rejected {Test-MigrationStopRetry -State $stopFailure -Lock $sameLock -RunId 'db-other' -StateName 'stray-kitty-db-migration-8857'} 'retry-does-not-take-another-run-lock'
+    Assert-Rejected {Test-MigrationStopRetry -State $stopFailure -Lock $sameLock -RunId 'db-8857' -StateName 'different-state'} 'retry-requires-same-state-record'
+    Assert-Rejected {Test-MigrationStopRetry -State $stopFailure -Lock $null -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857'} 'retry-requires-existing-lock'
+    Assert-Rejected {Test-MigrationStopRetry -State $stopFailure -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857' -AppDatabaseConfigured $true} 'retry-rejects-enabled-application-database'
+    $withBackup=@{phase='maintenance-failed';failureStep='stop all external traffic and legacy writers';backups=@{game=@{sha256='recorded'}}}
+    Assert-Rejected {Test-MigrationStopRetry -State $withBackup -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857'} 'retry-rejects-any-existing-backup'
+    $laterFailure=@{phase='maintenance-failed';failureStep='import and verify game snapshot';backups=@{}}
+    Assert-Rejected {Test-MigrationStopRetry -State $laterFailure -Lock $sameLock -RunId 'db-8857' -StateName 'stray-kitty-db-migration-8857'} 'retry-rejects-later-failure-stage'
+    $sanitized=Get-SafeReplicaPatchError -Text 'Error from server (Forbidden): deployments.apps denied; token=NEVER_PRINT_THIS_PRIVATE_VALUE Authorization: Bearer NEVER_PRINT_THIS_PRIVATE_VALUE'
+    Assert-Case ($sanitized.Contains('Error from server (Forbidden): deployments.apps denied') -and -not $sanitized.Contains('NEVER_PRINT_THIS_PRIVATE_VALUE')) 'replica-patch-stderr-preserves-rbac-reason-and-redacts-tokens'
     foreach($file in @('Migrate-Database.ps1','Database.Common.ps1')){
         $tokens=$null;$errors=$null
         $null=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot $file),[ref]$tokens,[ref]$errors)
@@ -67,6 +85,16 @@ try{
     }
     $tokens=$null;$errors=$null
     $ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'Migrate-Database.ps1'),[ref]$tokens,[ref]$errors)
+    $setReplica=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Set-ApplicationReplicas'},$true)
+    . ([scriptblock]::Create($setReplica.Extent.Text))
+    $kubeArguments=@('--namespace','cn-haozhe-wang');$currentStep='test replica patch';$script:replicaArguments=@()
+    function Invoke-NativeChecked {
+        param([string]$FilePath,[string[]]$Arguments,[string]$Step,[switch]$Quiet,[switch]$ReturnFailure)
+        $script:replicaArguments=$Arguments
+        return @{ExitCode=0;StdOut='';StdErr=''}
+    }
+    Set-ApplicationReplicas -Service frontend -Replicas 0 -DryRun
+    Assert-Case ($script:replicaArguments -contains '--dry-run=server' -and $script:replicaArguments -contains 'patch' -and $script:replicaArguments -notcontains 'scale') 'replica-patch-preflight-is-server-dry-run-without-scale-subresource'
     $diagnostics=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Write-DatabaseDiagnostics'},$true)
     . ([scriptblock]::Create($diagnostics.Extent.Text))
     function Invoke-Kube {
