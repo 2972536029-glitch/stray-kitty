@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,6 +30,86 @@ func TestSemanticComparisonPreservesNumberPrecision(t *testing.T) {
 	}
 	if equalJSON(want, []byte(`{"list":[true,null],"number":1,"large":9007199254740993,"extra":true}`)) {
 		t.Fatal("extra stored fields must fail comparison")
+	}
+}
+
+func TestServerNormalizationPreservesIntegersAndStructure(t *testing.T) {
+	parse := func(raw string) any {
+		t.Helper()
+		value, err := semanticJSON([]byte(raw))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return value
+	}
+	original := parse(`{"x":0.12345678901234567,"balance":9007199254740993,"flags":[true,"unchanged"]}`)
+	if !safeJSONNormalization(original, parse(`{"x":0.12345678901234568,"balance":9007199254740993,"flags":[true,"unchanged"]}`)) {
+		t.Fatal("only the server's nonintegral representation adjustment should be allowed")
+	}
+	for _, changed := range []string{
+		`{"x":0.12345678901234567,"balance":9007199254740992,"flags":[true,"unchanged"]}`,
+		`{"x":0.12345678901234567,"balance":9007199254740993.1,"flags":[true,"unchanged"]}`,
+		`{"x":0.12345678901234567,"balance":9007199254740993,"flags":["unchanged",true]}`,
+		`{"x":0.12345678901234567,"balance":9007199254740993,"flags":[true,"changed"]}`,
+		`{"x":0.12345678901234567,"balance":9007199254740993,"flags":[true,"unchanged"],"extra":true}`,
+	} {
+		if safeJSONNormalization(original, parse(changed)) {
+			t.Fatal("normalization concealed an integer or structural change")
+		}
+	}
+	if equalJSON(json.RawMessage(`{"x":0.12345678901234567}`), []byte(`{"x":0.12345678901234568}`)) {
+		t.Fatal("final stored comparison must remain exact without a numeric tolerance")
+	}
+}
+
+func TestMySQLCanonicalJSONMatchesColumnRepresentation(t *testing.T) {
+	dsn, db := verifyTestDSN(t)
+	value := map[string]any{
+		"large":       int64(9007199254740993),
+		"coordinates": []float64{0.1, math.Nextafter(0.1, 1), 1.2345678901234567, 100.23456789012345},
+		"flags":       []any{true, "unchanged", nil},
+	}
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = db.Exec("CREATE TABLE canonical_regression (document JSON NOT NULL)"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = db.Exec("INSERT INTO canonical_regression(document) VALUES (?)", raw); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	readDB, tx, err := openReadOnly(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer readDB.Close()
+	defer tx.Rollback()
+	canonical, err := canonicalMySQLJSON(ctx, tx, value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stored []byte
+	if err = tx.QueryRowContext(ctx, "SELECT document FROM canonical_regression").Scan(&stored); err != nil {
+		t.Fatal(err)
+	}
+	if !equalJSON(canonical, stored) {
+		t.Fatal("same source must match JSON-column canonicalization")
+	}
+	var changed []byte
+	if err = tx.QueryRowContext(ctx, "SELECT JSON_SET(document,'$.large',9007199254740992) FROM canonical_regression").Scan(&changed); err != nil {
+		t.Fatal(err)
+	}
+	if equalJSON(canonical, changed) {
+		t.Fatal("one-unit large integer change must still fail")
+	}
+	if err = tx.QueryRowContext(ctx, "SELECT JSON_SET(document,'$.coordinates[0]',0.10001) FROM canonical_regression").Scan(&changed); err != nil {
+		t.Fatal(err)
+	}
+	if equalJSON(canonical, changed) {
+		t.Fatal("changed coordinates must still fail")
 	}
 }
 

@@ -1,5 +1,25 @@
 Set-StrictMode -Version Latest
 
+function Read-DatabaseOperationTools {
+    param([Parameter(Mandatory)][string]$Directory,[Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{40}$')][string]$ExpectedCommit)
+    $manifest=Get-Content -LiteralPath (Join-Path $Directory 'manifest.json') -Raw | ConvertFrom-Json -AsHashtable
+    if($manifest.version -ne 1 -or $manifest.sourceCommit -cne $ExpectedCommit -or
+        $manifest.goos -cne 'linux' -or $manifest.goarch -cne 'amd64' -or
+        $manifest.files -isnot [Collections.IDictionary] -or $manifest.files.Count -ne 2){
+        throw 'Operation tools must be Linux amd64 artifacts from the executing CI commit.'
+    }
+    $result=@{sourceCommit=$ExpectedCommit;goos='linux';goarch='amd64';files=@{}}
+    foreach($name in @('db-verify','db-smoke')){
+        $path=Join-Path $Directory $name
+        if(-not $manifest.files.Contains($name) -or $manifest.files[$name] -cnotmatch '^[a-f0-9]{64}$' -or
+            -not(Test-Path -LiteralPath $path -PathType Leaf)) {throw 'An expected operation tool or its checksum is missing.'}
+        $hash=(Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+        if($hash -cne $manifest.files[$name]){throw 'Operation tool bytes do not match the CI artifact manifest.'}
+        $result.files[$name]=@{path=[IO.Path]::GetFullPath($path);sha256=$hash}
+    }
+    return $result
+}
+
 function Get-DeploymentReplicaPatchArguments {
     param(
         [Parameter(Mandatory)][ValidateSet('game','payment','frontend')][string]$Service,
@@ -45,7 +65,7 @@ function Test-MigrationStopRetry {
 function Assert-BackedUpAuditState {
     param([hashtable]$State,[AllowNull()][hashtable]$Lock,[string]$RunId,[string]$StateName,[bool]$AppDatabaseConfigured)
     if($AppDatabaseConfigured -or $State.phase -cne 'maintenance-failed' -or
-        $State.failureStep -cne 'audit historical payment replay safety' -or
+        $State.failureStep -cnotin @('audit historical payment replay safety','stage payment snapshot for historical replay audit','execute historical payment replay audit','parse historical replay audit result','record historical replay audit result') -or
         $State.backups -isnot [Collections.IDictionary] -or $State.backups.Count -ne 2 -or
         $null -eq $Lock -or $Lock.data.runId -cne $RunId -or $Lock.data.state -cne $StateName){
         throw 'Backup resume only accepts the same locked audit failure before any database activation.'
@@ -59,6 +79,67 @@ function Assert-BackedUpAuditState {
             throw 'Both original durable snapshot identities and hashes are required.'
         }
     }
+    if($State.ContainsKey('transformation')){Assert-RecordedTestPaymentTransform -State $State -RunId $RunId}
+}
+
+function Assert-RecordedTestPaymentTransform {
+    param([hashtable]$State,[string]$RunId)
+    $t=$State.transformation
+    if($t.type -cne 'legacy-test-payment-replay-suppression' -or
+        $t.gameSourceSha256 -cne $State.backups.game.sha256 -or
+        $t.paymentSourceSha256 -cne $State.backups.payment.sha256 -or
+        $t.gameImportPath -cne "/backup/$RunId/game.import.json" -or
+        $t.gameImportSha256 -cnotmatch '^[a-f0-9]{64}$' -or
+        $t.operationScriptCommit -cnotmatch '^[a-f0-9]{40}$' -or
+        $t.balancesPreserved -isnot [bool] -or -not $t.balancesPreserved -or
+        $t.ledgerPreserved -isnot [bool] -or -not $t.ledgerPreserved){
+        throw 'Recorded transformed snapshot provenance does not match the retained sources and policy.'
+    }
+}
+
+function Get-TestPaymentSnapshotWriteMode {
+    param([hashtable]$State,[string]$RunId,[string]$ExistingOutput,[string]$GeneratedSha256)
+    $path="/backup/$RunId/game.import.json"
+    if($ExistingOutput.Trim() -ceq 'ABSENT'){
+        if($State.ContainsKey('transformation')){throw 'The recorded transformed snapshot is missing; recovery will not recreate it silently.'}
+        return 'create'
+    }
+    if(-not $State.ContainsKey('transformation')){throw 'An unrecorded transformed snapshot cannot be overwritten or reused.'}
+    Assert-RecordedTestPaymentTransform -State $State -RunId $RunId
+    if($State.transformation.gameImportSha256 -cne $GeneratedSha256 -or $ExistingOutput.Trim() -cne "$GeneratedSha256  $path"){
+        throw 'Existing transformed snapshot differs from its provenance or the verified reproducible transform.'
+    }
+    return 'reuse'
+}
+
+function Assert-AuditStagingHash {
+    param([int]$ExitCode,[string]$Output,[string]$ExpectedSha256,[string]$Path)
+    if($ExitCode -ne 0 -or $Output.Trim() -cne "$ExpectedSha256  $Path"){throw 'Payment audit staging failed or its hash differs from the retained ledger.'}
+}
+
+function Get-SafePaymentAuditError {
+    param([AllowEmptyString()][string]$Text)
+    $allowed=@('cannot read stopped game snapshot','cannot read stopped payment snapshot','invalid stopped snapshots','invalid player identities in snapshot','unresolved Xsolla credits or missing players require reconciliation before activation')
+    $lines=[Collections.Generic.List[string]]::new()
+    foreach($line in @($Text -split "`r?`n" | Where-Object {$_ -ne ''})){
+        if($line.StartsWith('db-smoke: ') -and $line.Substring(10) -cin $allowed){$lines.Add($line)}
+        elseif($line -cmatch '^flag provided but not defined: -[a-z-]+$' -or $line -cmatch '^command terminated with exit code [0-9]+$'){$lines.Add($line)}
+        elseif($line -cmatch '^Error from server \((Forbidden|NotFound|BadRequest)\):'){$lines.Add("Kubernetes $($Matches[1])")}
+        elseif($line -cmatch '^sh: .*Permission denied$'){$lines.Add('Shell permission denied')}
+    }
+    return ($lines -join '; ')
+}
+
+function Read-SafePaymentAuditResult {
+    param([string]$Text)
+    $result=$Text|ConvertFrom-Json -AsHashtable
+    if($result.status -cnotin @('passed','blocked') -or $result.counts -isnot [Collections.IDictionary]){throw 'Audit output is not a recognized summary.'}
+    $safe=@{status=$result.status;counts=@{}}
+    foreach($key in @('players','accounts','confirmedTransactions','xsollaTransactions','knownApplied','ambiguousXsolla','ambiguousMock','missingPlayers','fullDisplayHistories')){
+        if(-not $result.counts.Contains($key) -or $result.counts[$key] -isnot [ValueType] -or [string]$result.counts[$key] -notmatch '^\d+$'){throw 'Audit summary is missing a valid aggregate count.'}
+        $safe.counts[$key]=[long]$result.counts[$key]
+    }
+    return $safe
 }
 
 function Assert-NeverImportedDatabaseMetrics {
