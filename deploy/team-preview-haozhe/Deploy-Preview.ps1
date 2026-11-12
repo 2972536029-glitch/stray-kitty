@@ -205,6 +205,12 @@ try {
     $env:KUBECONFIG = $KubeConfig
     $kubeArguments = @('-n', $namespace, '--context', $context)
 
+    $currentPhase = 'check database migration maintenance lock'
+    $migrationLock = Invoke-NativeChecked -FilePath 'kubectl' -Arguments ($kubeArguments + @('get', 'configmap', 'stray-kitty-db-migration-lock', '--ignore-not-found', '-o', 'name')) -Step 'Check database migration lock' -Quiet
+    if (-not [string]::IsNullOrWhiteSpace($migrationLock.StdOut)) {
+        throw 'A database migration is pending; normal deployment cannot recreate writers during maintenance.'
+    }
+
     $services = [ordered]@{
         game = @{ Repository = [string]$settings.images.game; Dockerfile = 'Dockerfile.game' }
         payment = @{ Repository = [string]$settings.images.payment; Dockerfile = 'Dockerfile.payment' }

@@ -67,6 +67,18 @@ Compose 单体的模拟支付保存在游戏状态中，随 `-source game` 导�
 
 ## 团队试玩部署与切换
 
+### CI 分阶段迁移入口
+
+保护分支上的 `Migrate-Database.ps1 -Phase Prepare|Migrate|Finalize` 使用 CI 的 `KUBECONFIG_FILE`，不把 kubeconfig 下载到操作者电脑。三个阶段与常规 `deploy_apply` 共享同一发布资源锁；常规部署还会检查集群中的 `stray-kitty-db-migration-lock`，迁移未完成时拒绝重建应用写入者。
+
+1. 先部署同一 CI commit 的应用镜像，镜像内需有 `db-migrate`、`db-verify`、`db-smoke`。`Prepare` 验证镜像、目标权限、配额及服务端清单 dry-run；创建或复用 MySQL 凭据、数据库与独立备份 PVC，记录一个合成 QA 账号的登录和存档基线。该账号的私人状态仅存 Kubernetes Secret，不进入日志或 artifacts。此阶段不停止对外服务。
+2. `Migrate` 必须提供 `BACKUP_PUBLIC_KEY_BASE64`，格式为至少 RSA-3072 的 SPKI 公钥 DER 的 Base64。私钥由恢复负责人离线持有，不能上传 CI。脚本停掉 frontend/payment/game，等旧 Pod 全部退出后，将游戏和支付 JSON 各自复制到独立持久备份 PVC；同时校验源与备份 SHA256。两份快照随后加密为可下载 artifacts，成功后才允许历史支付审计和导入。`db-verify` 对比迁移后的完整旧数据；激活 MySQL 后运行登录、存档、命令重放、沙盒支付及服务重启验证。
+3. `Migrate` 成功仍保持 frontend 为 0 副本，状态为 `awaiting-finalize`。下载加密备份并用离线私钥验证可恢复，再运行 `Finalize`。它复核相同镜像与私有 readiness/持久化结果，恢复原 frontend 副本并验证公网健康。
+
+加密备份位于 `deploy/team-preview-haozhe/database-artifacts/db-<pipeline-id>/`；只发布 `*.encrypted.json` 和不含私人数据的 `manifest.json`，CI artifacts 需设置 `when: always`。每份 envelope 使用随机 AES-256-GCM 密钥/nonce，并用 RSA-OAEP-SHA256 包装 AES 密钥，字段为 `version`、`algorithm`、`encryptedKey`、`nonce`、`tag`、`ciphertext`、原始 `sha256`。持久明文快照保留在 `stray-kitty-game-db-backup` / `stray-kitty-payment-db-backup` PVC 的 `/backup/db-<pipeline-id>/`，应用没有挂载这些卷。
+
+迁移步骤失败会保留停机状态、操作 ConfigMap 与备份，绝不自动回退到已过期 JSON；失败操作也不会直接再次导入。先检查记录的 `failureStep` 和快照，再制定恢复或继续方案。`Finalize` 只接受成功完成私有验证的操作。以下手工命令用于理解及维护；实际 CI 迁移使用上述脚本统一记录状态。
+
 目标固定为 `cn-haozhe-wang` 命名空间及 `haozhe-wang@gcp-k8s-xsolla-school-experiments` context。先按现有 MR / main / 手动 `deploy_apply` 流程发布支持数据库的新镜像，**此时不要创建应用连接 Secret**，现有游戏仍用 JSON。游戏、支付及本地单体镜像均包含 `/app/db-migrate`。
 
 `k8s/database.yaml` 是独立基础设施清单，不由日常三服务发布自动创建或删除：MySQL StatefulSet、ClusterIP Service、5Gi 专用 PVC。旧游戏、支付和 TLS PVC 均保留。数据库单实例并不提供高可用；PVC 也不能替代独立备份。
