@@ -1,17 +1,22 @@
 import PixelCat from './PixelCat';
 import StartMenuBackdrop from './StartMenuBackdrop';
 import GameButton from './GameButton';
+import GameIcon from './GameIcon';
 
 // Keep the title focused on entering the saved journey.
 export default function StartScreen({
   hasProgress,
   disabled,
   signedIn,
+  muted,
+  onToggleMute,
   onLogin,
   onStart
 }: {
   hasProgress: boolean;
   signedIn: boolean;
+  muted: boolean;
+  onToggleMute: () => void;
   onLogin: () => void;
   disabled: boolean;
   onStart: () => void;
@@ -19,6 +24,17 @@ export default function StartScreen({
   return <section className="start-screen opening-title">
     <StartMenuBackdrop/>
     <header className="start-brand"><span className="xsolla-wordmark">XSOLLA<span> GARAGE</span></span><small>INTERNSHIP GAME PROJECT · 2026</small></header>
+    <button
+      type="button"
+      className={`start-audio-toggle${muted ? ' is-muted' : ''}`}
+      data-mute-control="true"
+      aria-pressed={muted}
+      aria-label={muted ? '开启声音（当前已静音）' : '静音（关闭声音）'}
+      title={muted ? '点击恢复声音' : '点击静音'}
+      onClick={onToggleMute}
+    >
+      <GameIcon name={muted ? 'speakerOff' : 'speaker'}/>
+    </button>
     <div className="start-title">
       <div className="start-cats"><PixelCat breed="tuanzi" size={96}/><PixelCat breed="miaomiao" size={144}/><PixelCat breed="diandian" size={96}/></div>
       <span className="eyebrow">PIXEL RESCUE · A LITTLE JOURNEY HOME</span>

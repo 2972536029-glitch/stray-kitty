@@ -36,3 +36,20 @@
 | result-success(复用) | confirmation_001 | 花房修缮完成(HomeRepairOverlay) |
 | cat-purr | Mixkit「Big wild cat long purr」(#96,免登录直下,Mixkit License 免费商用;裁至 1.5s 尾部淡出) | 摸摸开心=呼噜(home pokeHomeCat,'pet' 独占组) |
 | cat-meow | Mixkit「Sweet kitty meow」(#93,免登录直下,Mixkit License 免费商用) | 摸摸平静=喵;irritated 降调 0.75 复用同文件(home pokeHomeCat) |
+
+## 背景音乐(web/public/assets/bgm/)
+
+以下 MP3 配乐按场景与阶段分曲循环播放，并可在花房「游戏设置 → 花房背景音乐」点播已解锁曲目。
+
+| 文件 | 曲目 | 场景 / 解锁条件 |
+|---|---|---|
+| title-first-stars.mp3 | 暮夜初星 (`First_Stars_In_The_Evening.mp3`) | 标题主界面（默认解锁） |
+| prologue-tall-grass.mp3 | 草丛轻音 (`Notes_in_the_Tall_Grass.mp3`) | 序章 · 金枪鱼事件 |
+| alley-rain-streetlights.mp3 | 雨与街灯间 (`Between_Rain_and_Streetlights.mp3`) | 第一章 · 雨夜小巷 |
+| market-midnight-lanterns.mp3 | 午夜集市灯笼 (`Midnight_Market_Lanterns.mp3`) | 第二章 · 午夜集市 |
+| home-paws-quiet.mp3 | 寂静爪印 (`Paws_in_the_Quiet.mp3`) | 花房 · 初建阶段（1–2 阶） |
+| home-sunlight-floorboards.mp3 | 木板日光 (`Sunlight_on_the_Floorboards.mp3`) | 花房 · 温馨阶段（3–4 阶） |
+| tunnel-steps-arch.mp3 | 拱洞足音 (`Steps_Beneath_the_Arch.mp3`) | 第四章 · 地下暗道 |
+| warehouse-locked-threshold.mp3 | 封锁门扉 (`The_Locked_Threshold.mp3`) | 终章 · 废弃大仓库 |
+| lottery-stamps-starlight.mp3 | 邮票与星光 (`Stamps_and_Starlight.mp3`) | 来信寄送与拆包柜台（邮局界面） |
+| battle-tiny-brigade.mp3 | 小小猫卫队进行曲 (`March_of_the_Tiny_Brigade.mp3`) | 全关卡守护防线战斗 |

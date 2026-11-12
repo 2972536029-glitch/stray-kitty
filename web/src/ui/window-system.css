@@ -137,6 +137,29 @@ dialog.ui-window.settings-modal{width:720px;height:fit-content}
 .ui-window.settings-modal .setting-row{display:block;margin:0 0 var(--window-gap);padding:0;border:0}
 .ui-window.settings-modal .setting-row>span{display:flex;align-items:center;justify-content:space-between;font-size:var(--window-body);gap:var(--window-gap)}
 .ui-window.settings-modal .setting-row output{font-size:var(--window-body);font-weight:600;color:var(--window-heading)}
+.ui-window.settings-modal .setting-mute-row{display:flex;align-items:center;justify-content:space-between;gap:var(--window-gap);padding:12px 14px;margin:0 0 var(--window-gap);background:var(--window-card);border:1px solid var(--window-line);border-radius:var(--window-radius)}
+.ui-window.settings-modal .setting-mute-row strong{display:block;font-size:var(--window-body);color:var(--window-heading);line-height:1.4}
+.ui-window.settings-modal .setting-mute-row small{display:block;font-size:var(--window-caption);color:var(--window-muted);margin-top:2px}
+.ui-window.settings-modal .setting-mute-btn{display:inline-flex;align-items:center;gap:8px;flex:none;background:var(--window-green);color:#fff7e0;border:1px solid var(--window-green);font-size:var(--window-caption);font-weight:600;padding:8px 14px;min-height:var(--window-control-height)}
+.ui-window.settings-modal .setting-mute-btn:hover{background:#465f4c;border-color:#465f4c}
+.ui-window.settings-modal .setting-mute-btn.is-muted{background:var(--window-paper);color:var(--window-danger);border-color:#b18b70}
+.ui-window.settings-modal .setting-mute-btn.is-muted:hover{background:#efe3c9}
+.ui-window.settings-modal .setting-mute-btn .game-icon{width:18px;height:18px;flex:none}
+.ui-window.settings-modal .settings-bgm-head-row{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:var(--window-gap)}
+.ui-window.settings-modal .settings-bgm-head-row h3{margin:0}
+.ui-window.settings-modal .settings-bgm-meta{font-size:var(--window-caption);color:var(--window-muted)}
+.ui-window.settings-modal .settings-bgm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.ui-window.settings-modal .settings-bgm-option{display:flex;flex-direction:column;align-items:stretch;gap:4px;width:100%;text-align:left;padding:10px 14px;min-height:auto;background:var(--window-card);color:var(--window-ink);border:1px solid var(--window-line);border-radius:var(--window-radius);font-weight:500}
+.ui-window.settings-modal .settings-bgm-option:hover:not(:disabled){background:#f7ecd1;border-color:#b39a6c}
+.ui-window.settings-modal .settings-bgm-option.is-selected,.ui-window.settings-modal .settings-bgm-option[aria-pressed=true]{background:var(--window-gold);border-color:#ae8e52;color:#554122}
+.ui-window.settings-modal .settings-bgm-option.is-locked,.ui-window.settings-modal .settings-bgm-option:disabled{background:#ede5d2;border-color:#d4c7aa;color:#8e826b;opacity:.75;cursor:not-allowed}
+.ui-window.settings-modal .settings-bgm-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
+.ui-window.settings-modal .settings-bgm-title-row b{font-size:16px;font-weight:700;line-height:1.35}
+.ui-window.settings-modal .settings-bgm-title-row em{font-style:normal;font-size:12px;font-weight:600;padding:2px 7px;border-radius:3px;border:1px solid #cdb98e;background:#f7efd9;color:#6c5c41;flex:none}
+.ui-window.settings-modal .settings-bgm-option.is-selected .settings-bgm-title-row em{background:#fff7e0;border-color:#ae8e52;color:#554122}
+.ui-window.settings-modal .settings-bgm-option.is-locked .settings-bgm-title-row em{background:transparent;border-color:#d4c7aa;color:#8e826b}
+.ui-window.settings-modal .settings-bgm-option small{display:block;font-size:var(--window-caption);color:var(--window-muted);line-height:1.45}
+@media(max-width:600px){.ui-window.settings-modal .setting-mute-row{flex-direction:column;align-items:stretch}.ui-window.settings-modal .settings-bgm-grid{grid-template-columns:1fr}}
 .ui-window.settings-modal .settings-actions{gap:12px}
 .ui-window.settings-modal .settings-actions button,.ui-window.settings-modal .settings-clear{font-size:var(--window-body);min-height:var(--window-control-height)}
 .ui-window.settings-modal .settings-actions .settings-danger{background:var(--window-danger);border-color:var(--window-danger);color:#fff7e0}

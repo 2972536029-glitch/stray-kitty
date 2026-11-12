@@ -1,96 +1,171 @@
 import {useCallback, useEffect, useRef} from 'react';
+import {
+  BGM_SOURCES,
+  computeEffectiveVolume,
+  type AmbientMode,
+  type BgmMode,
+} from '../core/audio';
+import {setSfxOutput} from '../core/sound';
 import {registerUiSoundPlayer, type UiSoundId} from './soundEffects';
 
-export type BgmMode = 'title' | 'explore' | 'home' | 'battle';
-type AmbientMode = 'rain' | 'market' | null;
+export type {BgmMode, AmbientMode};
+
+const BGM_MAX_GAIN = 0.72;
+const FADE_TICK_MS = 30;
+const FADE_IN_MS = 650;
+const FADE_FAST_MS = 260;
+const FADE_OUT_MS = 550;
+
+interface TrackFadeState {
+  el: HTMLAudioElement;
+  level: number;
+  target: number;
+  durationMs: number;
+}
 
 /**
- * 全局音频系统：分场景 BGM（Web Audio 合成的温柔芯片音乐循环）+ 环境音（雨声/集市）+ UI 音效。
- * 三条总线：musicGain（BGM 与环境音，随“背景音乐音量”滑条）与 sfxGain（音效，随“音效音量”滑条）。
- * 所有起音/收音都走短斜坡（linearRamp/setTargetAtTime），切场景用交叉淡入淡出，保证没有突兀爆音。
- * AudioContext 由首次指针交互解锁；解锁前的场景请求会先记在待办上，解锁后立即拉起。
+ * 全局音频系统：分场景 MP3 循环 BGM（交叉淡入淡出）+ 低通环境音（雨声/集市）+ UI 音效。
+ * 支持全局静音、独立音乐/音效滑条，以及切页后台自动暂停。
  */
-export function useAudioManager({bgm, ambient, musicVolume, sfxVolume}: {bgm: BgmMode; ambient: AmbientMode; musicVolume: number; sfxVolume: number}) {
+export function useAudioManager({
+  bgm,
+  ambient,
+  musicVolume,
+  sfxVolume,
+  muted,
+}: {
+  bgm: BgmMode;
+  ambient: AmbientMode;
+  musicVolume: number;
+  sfxVolume: number;
+  muted: boolean;
+}) {
   const ctx = useRef<AudioContext | null>(null);
   const musicGain = useRef<GainNode | null>(null);
   const sfxGain = useRef<GainNode | null>(null);
-  const ambientRef = useRef<{src: AudioBufferSourceNode; gain: GainNode} | null>(null);
-  const bgmRef = useRef<{mode: BgmMode; timer: number; nodes: Set<AudioScheduledSourceNode>; bus: GainNode} | null>(null);
-  // 最新期望值：AudioContext 解锁后按它们拉起 BGM/环境音。
-  const wanted = useRef({bgm, ambient});
-  wanted.current = {bgm, ambient};
+  const ambientRef = useRef<{kind: Exclude<AmbientMode, null>; src: AudioBufferSourceNode; gain: GainNode} | null>(null);
+  const elementsRef = useRef<Partial<Record<BgmMode, HTMLAudioElement>>>({});
+  const trackStatesRef = useRef<Map<BgmMode, TrackFadeState>>(new Map());
+  const activeModeRef = useRef<BgmMode | null>(null);
+  const fadeTimerRef = useRef<number | null>(null);
+  const unlockedRef = useRef(false);
 
-  const applyVolumes = useCallback(() => {
-    const audio = ctx.current;
-    if (!audio || !musicGain.current || !sfxGain.current) return;
-    const t = audio.currentTime;
-    musicGain.current.gain.setTargetAtTime(musicVolume / 100 * .5, t, .09);
-    sfxGain.current.gain.setTargetAtTime(sfxVolume / 100 * .9, t, .09);
-  }, [musicVolume, sfxVolume]);
+  const wanted = useRef({bgm, ambient, musicVolume, sfxVolume, muted});
+  wanted.current = {bgm, ambient, musicVolume, sfxVolume, muted};
 
-  // ---- BGM：每场景一段 8 拍循环（[拍, MIDI 音高, 时值, 波形]），方波低电平、三角波铺底，柔和不刺耳。 ----
-  const PATTERNS: Record<BgmMode, {tempo: number; notes: [number, number, number, OscillatorType][]}> = {
-    title:   {tempo: 66, notes: [[0, 48, 2, 'triangle'], [0, 60, 1, 'triangle'], [1, 64, 1, 'triangle'], [2, 67, 1, 'triangle'], [3, 69, 1.5, 'triangle'], [4, 48, 2, 'triangle'], [4, 64, 1, 'triangle'], [5, 67, 1, 'triangle'], [6, 72, 2, 'triangle'], [7, 69, 1.5, 'triangle']]},
-    explore: {tempo: 78, notes: [[0, 45, 2, 'triangle'], [0, 57, 1, 'square'], [1, 60, 1, 'square'], [2, 64, 1, 'square'], [3, 57, 1.5, 'square'], [4, 43, 2, 'triangle'], [4, 59, 1, 'square'], [5, 62, 1, 'square'], [6, 67, 1, 'square'], [7, 64, 2, 'square']]},
-    home:    {tempo: 60, notes: [[0, 41, 2, 'triangle'], [0, 53, 1, 'triangle'], [1, 57, 1, 'triangle'], [2, 60, 1, 'triangle'], [3, 65, 1.5, 'triangle'], [4, 41, 2, 'triangle'], [4, 57, 1, 'triangle'], [5, 60, 1, 'triangle'], [6, 65, 1, 'triangle'], [7, 69, 2, 'triangle']]},
-    battle:  {tempo: 100, notes: [[0, 38, 1, 'square'], [1, 38, 1, 'square'], [2, 45, 1, 'triangle'], [3, 38, 1, 'square'], [4, 36, 1, 'square'], [5, 36, 1, 'square'], [6, 43, 1, 'triangle'], [7, 46, 1.5, 'triangle']]}
-  };
-  const midiHz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
-
-  const stopBgm = useCallback(() => {
-    const cur = bgmRef.current;
-    const audio = ctx.current;
-    if (!cur || !audio) return;
-    bgmRef.current = null;
-    window.clearInterval(cur.timer);
-    // 交叉淡出：0.9 秒滑到静音后再停节点，避免“啪”的截断声。
-    const t = audio.currentTime;
-    cur.bus.gain.cancelScheduledValues(t);
-    cur.bus.gain.setValueAtTime(cur.bus.gain.value, t);
-    cur.bus.gain.linearRampToValueAtTime(0, t + .9);
-    for (const node of cur.nodes) {try {node.stop(t + .95);} catch {/* already stopped */}}
-    window.setTimeout(() => cur.bus.disconnect(), 1100);
+  const stopFadeTimer = useCallback(() => {
+    if (fadeTimerRef.current !== null) {
+      window.clearInterval(fadeTimerRef.current);
+      fadeTimerRef.current = null;
+    }
   }, []);
 
-  const startBgm = useCallback((mode: BgmMode) => {
-    const audio = ctx.current;
-    if (!audio || !musicGain.current || audio.state !== 'running') return;
-    stopBgm();
-    const pattern = PATTERNS[mode];
-    const beat = 60 / pattern.tempo;
-    const barLen = beat * 8;
-    const bus = audio.createGain();
-    bus.gain.setValueAtTime(0, audio.currentTime);
-    bus.gain.linearRampToValueAtTime(1, audio.currentTime + 1.6);   // 新场景淡入
-    bus.connect(musicGain.current);
-    const nodes = new Set<AudioScheduledSourceNode>();
-    const scheduleBar = (barStart: number) => {
-      for (const [beats, midi, dur, type] of pattern.notes) {
-        const osc = audio.createOscillator();
-        const gain = audio.createGain();
-        osc.type = type;
-        osc.frequency.value = midiHz(midi);
-        const t = barStart + beats * beat;
-        const len = Math.max(.14, dur * beat * .92);
-        gain.gain.setValueAtTime(0, t);                              // 起音 30ms 斜坡，无咔哒声
-        gain.gain.linearRampToValueAtTime(type === 'square' ? .05 : .09, t + .03);
-        gain.gain.setTargetAtTime(0, t + len * .7, .09);             // 指数收音尾巴
-        osc.connect(gain).connect(bus);
-        osc.start(t);
-        osc.stop(t + len + .4);
-        nodes.add(osc);
-        osc.onended = () => nodes.delete(osc);
+  const getBgmElement = useCallback((mode: BgmMode): HTMLAudioElement | null => {
+    if (typeof Audio === 'undefined') return null;
+    let el = elementsRef.current[mode];
+    if (!el) {
+      el = new Audio(BGM_SOURCES[mode]);
+      el.loop = true;
+      el.preload = 'auto';
+      el.volume = 0;
+      elementsRef.current[mode] = el;
+    }
+    return el;
+  }, []);
+
+  const effectiveMusicGain = useCallback((assumeUnmuted = false): number => {
+    const {musicVolume: vol, muted: isMuted} = wanted.current;
+    const pageHidden = typeof document !== 'undefined' && document.hidden;
+    if ((!assumeUnmuted && isMuted) || pageHidden || vol <= 0) return 0;
+    return computeEffectiveVolume(vol, false, BGM_MAX_GAIN);
+  }, []);
+
+  const applyBgmVolumes = useCallback((assumeUnmuted = false) => {
+    const master = effectiveMusicGain(assumeUnmuted);
+    for (const entry of trackStatesRef.current.values()) {
+      entry.el.volume = Math.min(1, Math.max(0, master * entry.level));
+      if (master <= 0 && !entry.el.paused) {
+        entry.el.pause();
       }
-    };
-    let nextBar = audio.currentTime + .12;
-    scheduleBar(nextBar);
-    nextBar += barLen;
-    const timer = window.setInterval(() => {
-      if (ctx.current?.state !== 'running') return;
-      while (nextBar < ctx.current.currentTime + 1.2) {scheduleBar(nextBar); nextBar += barLen;}
-    }, 250);
-    bgmRef.current = {mode, timer, nodes, bus};
-  }, [PATTERNS, stopBgm]);
+    }
+  }, [effectiveMusicGain]);
+
+  const ensureFadeLoop = useCallback(() => {
+    if (fadeTimerRef.current !== null) return;
+    fadeTimerRef.current = window.setInterval(() => {
+      const master = effectiveMusicGain();
+      let stillAnimating = false;
+      for (const [mode, entry] of trackStatesRef.current.entries()) {
+        const step = FADE_TICK_MS / Math.max(80, entry.durationMs);
+        if (entry.level < entry.target) {
+          entry.level = Math.min(entry.target, entry.level + step);
+        } else if (entry.level > entry.target) {
+          entry.level = Math.max(entry.target, entry.level - step);
+        }
+        entry.el.volume = Math.min(1, Math.max(0, master * entry.level));
+        if (entry.target === 0 && entry.level <= 0.001) {
+          entry.el.volume = 0;
+          entry.el.pause();
+          trackStatesRef.current.delete(mode);
+        } else if (Math.abs(entry.level - entry.target) > 0.001) {
+          stillAnimating = true;
+        }
+      }
+      if (!stillAnimating) stopFadeTimer();
+    }, FADE_TICK_MS);
+  }, [effectiveMusicGain, stopFadeTimer]);
+
+  const syncBgmPlayback = useCallback((mode: BgmMode, {assumeUnmuted = false, fast = false} = {}) => {
+    const master = effectiveMusicGain(assumeUnmuted);
+    activeModeRef.current = mode;
+
+    if (!unlockedRef.current || master <= 0) {
+      for (const [existingMode, entry] of trackStatesRef.current.entries()) {
+        entry.el.volume = 0;
+        if (!entry.el.paused) entry.el.pause();
+        if (existingMode !== mode) {
+          trackStatesRef.current.delete(existingMode);
+        } else {
+          entry.level = 0;
+          entry.target = 1;
+          entry.durationMs = FADE_FAST_MS;
+        }
+      }
+      stopFadeTimer();
+      return;
+    }
+
+    const existing = trackStatesRef.current.get(mode);
+    if (existing) {
+      existing.target = 1;
+      existing.durationMs = fast ? FADE_FAST_MS : FADE_IN_MS;
+      existing.el.volume = Math.min(1, Math.max(0, master * existing.level));
+      if (existing.el.paused) {
+        void existing.el.play().catch(() => {/* autoplay blocked prior to gesture */});
+      }
+    } else {
+      const el = getBgmElement(mode);
+      if (!el) return;
+      const startLevel = 0.05;
+      el.volume = Math.min(1, Math.max(0, master * startLevel));
+      trackStatesRef.current.set(mode, {
+        el,
+        level: startLevel,
+        target: 1,
+        durationMs: fast ? FADE_FAST_MS : FADE_IN_MS,
+      });
+      void el.play().catch(() => {/* autoplay blocked prior to gesture */});
+    }
+
+    for (const [otherMode, otherEntry] of trackStatesRef.current.entries()) {
+      if (otherMode !== mode) {
+        otherEntry.target = 0;
+        otherEntry.durationMs = fast ? FADE_FAST_MS : FADE_OUT_MS;
+      }
+    }
+
+    ensureFadeLoop();
+  }, [effectiveMusicGain, ensureFadeLoop, getBgmElement, stopFadeTimer]);
 
   // ---- 环境音：低通白噪声循环（雨声/集市人声），换场景交叉淡出淡入。 ----
   const stopAmbient = useCallback(() => {
@@ -101,13 +176,16 @@ export function useAudioManager({bgm, ambient, musicVolume, sfxVolume}: {bgm: Bg
     const t = audio.currentTime;
     cur.gain.gain.cancelScheduledValues(t);
     cur.gain.gain.setValueAtTime(cur.gain.gain.value, t);
-    cur.gain.gain.linearRampToValueAtTime(0, t + .7);
-    try {cur.src.stop(t + .75);} catch {/* already stopped */}
+    cur.gain.gain.linearRampToValueAtTime(0, t + 0.5);
+    try {cur.src.stop(t + 0.55);} catch {/* already stopped */}
   }, []);
 
   const startAmbient = useCallback((kind: Exclude<AmbientMode, null>) => {
     const audio = ctx.current;
-    if (!audio || !musicGain.current || audio.state !== 'running') return;
+    const {muted: isMuted, musicVolume: vol} = wanted.current;
+    const pageHidden = typeof document !== 'undefined' && document.hidden;
+    if (!audio || !musicGain.current || audio.state !== 'running' || isMuted || vol <= 0 || pageHidden) return;
+    if (ambientRef.current?.kind === kind) return;
     stopAmbient();
     const buffer = audio.createBuffer(1, audio.sampleRate * 2, audio.sampleRate);
     const data = buffer.getChannelData(0);
@@ -118,16 +196,32 @@ export function useAudioManager({bgm, ambient, musicVolume, sfxVolume}: {bgm: Bg
     src.buffer = buffer;
     src.loop = true;
     filter.type = 'lowpass';
-    filter.frequency.value = kind === 'market' ? 480 : 950;          // 集市是远处闷响的人声嗡嗡，雨声稍亮
+    filter.frequency.value = kind === 'market' ? 480 : 950;
     gain.gain.setValueAtTime(0, audio.currentTime);
-    gain.gain.linearRampToValueAtTime(kind === 'market' ? .4 : .34, audio.currentTime + 1.2);
+    gain.gain.linearRampToValueAtTime(kind === 'market' ? 0.4 : 0.34, audio.currentTime + 1.1);
     src.connect(filter).connect(gain).connect(musicGain.current);
     src.start();
-    ambientRef.current = {src, gain};
+    ambientRef.current = {kind, src, gain};
   }, [stopAmbient]);
 
-  /** 首次指针交互时创建并解锁 AudioContext，随后把等待中的 BGM/环境音拉起来。 */
-  const unlock = useCallback(() => {
+  const applyVolumes = useCallback((assumeUnmuted = false) => {
+    const {musicVolume: mVol, sfxVolume: sVol, muted: isMuted} = wanted.current;
+    const effectiveMuted = assumeUnmuted ? false : isMuted;
+    const pageHidden = typeof document !== 'undefined' && document.hidden;
+    setSfxOutput(sVol, effectiveMuted);
+    applyBgmVolumes(assumeUnmuted);
+
+    const audio = ctx.current;
+    if (!audio || !musicGain.current || !sfxGain.current) return;
+    const t = audio.currentTime;
+    const nextMusicGain = effectiveMuted || pageHidden ? 0 : (mVol / 100) * 0.5;
+    const nextSfxGain = effectiveMuted ? 0 : (sVol / 100) * 0.9;
+    musicGain.current.gain.setTargetAtTime(nextMusicGain, t, 0.06);
+    sfxGain.current.gain.setTargetAtTime(nextSfxGain, t, 0.06);
+  }, [applyBgmVolumes]);
+
+  const ensureAudioContext = useCallback(() => {
+    if (typeof AudioContext === 'undefined') return null;
     if (!ctx.current) {
       const audio = new AudioContext();
       const music = audio.createGain();
@@ -140,15 +234,34 @@ export function useAudioManager({bgm, ambient, musicVolume, sfxVolume}: {bgm: Bg
       musicGain.current = music;
       sfxGain.current = sfx;
     }
-    if (ctx.current.state === 'suspended') void ctx.current.resume();
-    applyVolumes();
-    if (ctx.current.state === 'running') {
-      startBgm(wanted.current.bgm);
-      if (wanted.current.ambient) startAmbient(wanted.current.ambient);
-    }
-  }, [applyVolumes, startAmbient, startBgm]);
+    return ctx.current;
+  }, []);
 
-  // ---- 音效：短促合成音，走 sfxGain 总线（音量由滑条统一控制）。 ----
+  /** 用户交互时创建并解锁音频引擎；unmute 时传 assumeUnmuted=true 立即同步起播。 */
+  const unlock = useCallback((assumeUnmuted = false) => {
+    unlockedRef.current = true;
+    const audio = ensureAudioContext();
+    const startAmbientIfReady = () => {
+      const {ambient: nextAmbient, muted: isMuted, musicVolume: mVol} = wanted.current;
+      const canPlayAmbient = Boolean(nextAmbient && (assumeUnmuted || !isMuted) && mVol > 0 && !document.hidden);
+      if (canPlayAmbient && ctx.current?.state === 'running' && nextAmbient) {
+        startAmbient(nextAmbient);
+      }
+    };
+
+    if (audio && audio.state === 'suspended') {
+      void audio.resume().then(() => {
+        applyVolumes(assumeUnmuted);
+        startAmbientIfReady();
+      }).catch(() => {/* ignore resume errors before gesture */});
+    }
+
+    applyVolumes(assumeUnmuted);
+    syncBgmPlayback(wanted.current.bgm, {assumeUnmuted, fast: true});
+    startAmbientIfReady();
+  }, [applyVolumes, ensureAudioContext, startAmbient, syncBgmPlayback]);
+
+  // ---- 短促 UI 合成音效：走 sfxGain 总线，受音效音量与全局静音控制。 ----
   const blip = useCallback((freq: number, duration: number, start = 0, type: OscillatorType = 'square', gainMul = 1) => {
     const audio = ctx.current;
     if (!audio || !sfxGain.current) return;
@@ -158,70 +271,135 @@ export function useAudioManager({bgm, ambient, musicVolume, sfxVolume}: {bgm: Bg
     osc.frequency.value = freq;
     const t0 = audio.currentTime + start;
     gain.gain.setValueAtTime(0, t0);
-    gain.gain.linearRampToValueAtTime(.045 * gainMul, t0 + .008);    // 8ms 起音防爆音
-    gain.gain.exponentialRampToValueAtTime(.0008, t0 + duration);
+    gain.gain.linearRampToValueAtTime(0.045 * gainMul, t0 + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0008, t0 + duration);
     osc.connect(gain).connect(sfxGain.current);
     osc.start(t0);
-    osc.stop(t0 + duration + .02);
+    osc.stop(t0 + duration + 0.02);
   }, []);
 
   const play = useCallback((id: UiSoundId) => {
-    if (sfxVolume <= 0) return;
+    if (wanted.current.muted || wanted.current.sfxVolume <= 0) return;
     const audio = ctx.current;
     if (!audio || audio.state !== 'running' || !sfxGain.current) return;
-    if (id === 'click') blip(620, .06);
-    else if (id === 'send') {blip(760, .05);blip(1140, .07, .06);}
-    else if (id === 'open') {blip(500, .06);blip(680, .08, .07);}
-    else if (id === 'close') {blip(560, .05);blip(400, .07, .05);}
-    else if (id === 'pickup') {blip(660, .09, 0, 'triangle');blip(880, .1, .07, 'triangle');blip(1320, .14, .13, 'triangle', .8);}
-    else if (id === 'step') {blip(980, .045, 0, 'square', .75);blip(1480, .05, .04, 'square', .6);}    // 仓库加减:清脆高频双击
-    else if (id === 'error') {blip(190, .22, 0, 'sawtooth', .85);blip(140, .28, .1, 'sawtooth', .65);} // 错误:低沉闷响下坠
-    else if (id === 'chime') {blip(660, .1, 0, 'triangle');blip(880, .12, .09, 'triangle');blip(1108, .14, .18, 'triangle', .85);blip(1320, .2, .27, 'triangle', .7);}  // 入场/到账:上行琶音
+    if (id === 'click') blip(620, 0.06);
+    else if (id === 'send') {blip(760, 0.05);blip(1140, 0.07, 0.06);}
+    else if (id === 'open') {blip(500, 0.06);blip(680, 0.08, 0.07);}
+    else if (id === 'close') {blip(560, 0.05);blip(400, 0.07, 0.05);}
+    else if (id === 'pickup') {blip(660, 0.09, 0, 'triangle');blip(880, 0.1, 0.07, 'triangle');blip(1320, 0.14, 0.13, 'triangle', 0.8);}
+    else if (id === 'step') {blip(980, 0.045, 0, 'square', 0.75);blip(1480, 0.05, 0.04, 'square', 0.6);}
+    else if (id === 'error') {blip(190, 0.22, 0, 'sawtooth', 0.85);blip(140, 0.28, 0.1, 'sawtooth', 0.65);}
+    else if (id === 'chime') {blip(660, 0.1, 0, 'triangle');blip(880, 0.12, 0.09, 'triangle');blip(1108, 0.14, 0.18, 'triangle', 0.85);blip(1320, 0.2, 0.27, 'triangle', 0.7);}
     else if (id === 'meow') {
       const osc = audio.createOscillator();
       const gain = audio.createGain();
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(720, audio.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(460, audio.currentTime + .18);
+      osc.frequency.exponentialRampToValueAtTime(460, audio.currentTime + 0.18);
       gain.gain.setValueAtTime(0, audio.currentTime);
-      gain.gain.linearRampToValueAtTime(.06, audio.currentTime + .02);
-      gain.gain.exponentialRampToValueAtTime(.0008, audio.currentTime + .2);
+      gain.gain.linearRampToValueAtTime(0.06, audio.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0008, audio.currentTime + 0.2);
       osc.connect(gain).connect(sfxGain.current);
       osc.start();
-      osc.stop(audio.currentTime + .22);
+      osc.stop(audio.currentTime + 0.22);
     }
-  }, [blip, sfxVolume]);
+  }, [blip]);
 
-  // 全局按钮轻响：任何未禁用按钮按下即响（data-sound 标记的按钮自己发声，避免叠加）。
+  // 首次指针或键盘激活解锁；点按静音开关时由按钮自身的 onClick 负责切换状态，避免抢先起播一瞬间的声音。
   useEffect(() => {
-    const handler = (event: PointerEvent) => {
-      unlock();
-      const target = event.target as Element | null;
-      if (target?.closest('button:not(:disabled)') && !target.closest('[data-sound]')) play('click');
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('[data-mute-control]')) {
+        const audio = ensureAudioContext();
+        if (audio && audio.state === 'suspended') void audio.resume().catch(() => {});
+        unlockedRef.current = true;
+        return;
+      }
+      unlock(false);
     };
-    window.addEventListener('pointerdown', handler, true);
-    return () => window.removeEventListener('pointerdown', handler, true);
-  }, [play, unlock]);
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('[data-mute-control]') && (event.key === 'Enter' || event.key === ' ')) {
+        const audio = ensureAudioContext();
+        if (audio && audio.state === 'suspended') void audio.resume().catch(() => {});
+        unlockedRef.current = true;
+        return;
+      }
+      unlock(false);
+    };
+    window.addEventListener('pointerdown', onPointerDown, true);
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown, true);
+      window.removeEventListener('keydown', onKeyDown, true);
+    };
+  }, [ensureAudioContext, unlock]);
 
-  // 全局 playSound(soundId) 注册：任何组件一行代码即可发声。
+  // 切后台暂停播放，回前台按需恢复。
+  useEffect(() => {
+    const onVisibility = () => {
+      applyVolumes();
+      if (document.hidden) {
+        stopAmbient();
+        syncBgmPlayback(wanted.current.bgm);
+      } else if (unlockedRef.current && !wanted.current.muted && wanted.current.musicVolume > 0) {
+        syncBgmPlayback(wanted.current.bgm, {fast: true});
+        if (wanted.current.ambient) {
+          if (ctx.current?.state === 'suspended') {
+            void ctx.current.resume().then(() => {
+              if (wanted.current.ambient) startAmbient(wanted.current.ambient);
+            }).catch(() => {});
+          } else {
+            startAmbient(wanted.current.ambient);
+          }
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [applyVolumes, startAmbient, stopAmbient, syncBgmPlayback]);
+
+  // 注册全局 UI 音效播放器。
   useEffect(() => {
     registerUiSoundPlayer(play);
     return () => registerUiSoundPlayer(null);
   }, [play]);
 
-  // 音量滑条 → 总线增益平滑跟随（setTargetAtTime 无拉链噪声）。
-  useEffect(() => {applyVolumes();}, [applyVolumes]);
+  const hasMusicOutput = !muted && musicVolume > 0;
 
-  // 场景切换：BGM 交叉淡入淡出；环境音同理。
+  // 音量滑条或全局静音变化 → 实时更新所有音频总线增益。
   useEffect(() => {
-    if (bgmRef.current?.mode !== bgm) startBgm(bgm);
-  }, [bgm, startBgm]);
-  useEffect(() => {
-    const cur = ambientRef.current;
-    if (!ambient) {stopAmbient();return;}
-    if (!cur) startAmbient(ambient);
-  }, [ambient, startAmbient, stopAmbient]);
+    applyVolumes();
+  }, [applyVolumes, musicVolume, muted, sfxVolume]);
 
-  // 卸载时安静收尾。
-  useEffect(() => () => {stopBgm();stopAmbient();}, [stopAmbient, stopBgm]);
+  // 开关静音、恢复音乐音量或切换场景 BGM → 按对应曲线平滑过渡。
+  useEffect(() => {
+    syncBgmPlayback(bgm, {fast: !hasMusicOutput});
+  }, [bgm, hasMusicOutput, syncBgmPlayback]);
+
+  // 环境音随场景、静音与音乐音量开关。
+  useEffect(() => {
+    if (!ambient || muted || musicVolume <= 0 || document.hidden) {
+      stopAmbient();
+      return;
+    }
+    if (unlockedRef.current && ambientRef.current?.kind !== ambient) {
+      startAmbient(ambient);
+    }
+  }, [ambient, musicVolume, muted, startAmbient, stopAmbient]);
+
+  // 卸载时清理所有音频资源。
+  useEffect(() => () => {
+    stopFadeTimer();
+    stopAmbient();
+    for (const el of Object.values(elementsRef.current)) {
+      if (el) {
+        el.pause();
+        el.src = '';
+      }
+    }
+    trackStatesRef.current.clear();
+  }, [stopAmbient, stopFadeTimer]);
+
+  return {unlock};
 }

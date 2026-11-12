@@ -7,7 +7,7 @@ for(const insets of [{top:40,right:0,bottom:0,left:0},{top:44,right:6,bottom:24,
  await page.goto('/?display=phone&prologue=1');const frame=page.locator('.phone-game-frame'),game=page.frameLocator('.phone-game-frame');
  await expect(game.getByRole('button',{name:'登录',exact:true})).toBeVisible();
  const box=(await frame.boundingBox())!;expect(box.x).toBeCloseTo(0,0);expect(box.y).toBeCloseTo(0,0);expect(box.width).toBeCloseTo(viewport.width,0);expect(box.height).toBeCloseTo(viewport.height,0);
- await withinSafe(game.locator('.start-brand'));await withinSafe(game.getByRole('button',{name:'登录',exact:true}));
+ await withinSafe(game.locator('.start-brand'));await withinSafe(game.locator('.start-audio-toggle'));await withinSafe(game.getByRole('button',{name:'登录',exact:true}));
  await game.locator('.start-menu-backdrop img').evaluate((img:HTMLImageElement)=>img.decode());await page.screenshot({path:info.outputPath('title-full-bleed.png')});
  await game.getByRole('button',{name:'登录',exact:true}).tap();await withinSafe(game.locator('dialog[open]'));await withinSafe(game.locator('dialog[open]>.modal-close'));await game.locator('dialog[open]>.modal-close').tap();
  await game.getByRole('button',{name:'暂不登录',exact:true}).tap();const intro=game.getByRole('dialog',{name:'序章',exact:true});await expect(intro).toBeVisible();await withinSafe(intro.locator('.prologue-chapter-mark'));await withinSafe(intro.locator('.story-dialogue'));
