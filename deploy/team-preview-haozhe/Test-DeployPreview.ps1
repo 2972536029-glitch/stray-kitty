@@ -42,6 +42,7 @@ foreach ($invalid in @(
     Assert-Case ("invalid-payment-readiness-rejected-" + $invalid.name) $rejected
 }
 Assert-Case 'deployment-validates-payment-backend' ($deployText.Contains('Assert-PaymentReadiness -Response $paymentReady'))
+Assert-Case 'migration-lock-checked-before-kubernetes-apply' ($deployText.IndexOf('stray-kitty-db-migration-lock') -gt 0 -and $deployText.IndexOf('stray-kitty-db-migration-lock') -lt $deployText.IndexOf("Step 'Apply the two PVCs"))
 
 $dockerfileFromWorktree = $deployText.Contains('Join-Path $worktreeBundle $service.Dockerfile')
 $rendererFromWorktree = $deployText.Contains('Join-Path $worktreeBundle ''Prepare-Preview.ps1''')

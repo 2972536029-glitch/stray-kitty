@@ -8,3 +8,4 @@ private/
 *.dockerconfigjson
 *secret-values*
 backups/
+database-artifacts/

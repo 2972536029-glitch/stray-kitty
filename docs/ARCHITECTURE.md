@@ -118,6 +118,8 @@ stray-kitty/
 │  ├─ cmd/  服务与迁移入口
 │  │  ├─ api/  HTTP 启动
 │  │  ├─ db-migrate/  显式导入旧 JSON 存档与支付账本
+│  │  ├─ db-smoke/
+│  │  ├─ db-verify/
 │  │  └─ paymentd/  独立支付服务
 │  ├─ internal/  服务实现
 │  │  ├─ advisor/  阿策服务端模型客户端与限流

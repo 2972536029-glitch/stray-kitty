@@ -381,6 +381,17 @@ func (s *Store) ImportJSON(path string) error {
 		if err = validatePlayer(hash, p); err != nil {
 			return err
 		}
+		// Legacy saves only retained a bounded display history. Preserve the
+		// confirmed payment evidence before subsequent gameplay can trim it,
+		// even if no payment callback arrives immediately after migration.
+		for _, txn := range p.State.Txns {
+			if txn.Status == "confirmed" && txn.ID != "" {
+				if p.AppliedPayments == nil {
+					p.AppliedPayments = map[string]bool{}
+				}
+				p.AppliedPayments[txn.ID] = true
+			}
+		}
 		if ids[p.ID] {
 			return errors.New("duplicate player identity in source")
 		}

@@ -45,7 +45,7 @@ mysql_checks:
     TEST_MYSQL_DSN: "root:ci-root-integration-only@tcp(mysql:3306)/stray_kitty_test?parseTime=true"
   script:
     # Keep package tests sequential when sharing the disposable service database.
-    - go -C server test -race -p 1 ./internal/repository ./internal/integrations/payment ./internal/service ./internal/transport
+    - go -C server test -race -p 1 ./internal/repository ./internal/integrations/payment ./internal/service ./internal/transport ./cmd/db-verify ./cmd/db-smoke
 
 server_build:
   stage: build
@@ -100,6 +100,7 @@ deploy_images:
 # 变量 KUBECONFIG_FILE,机制上不可能触碰线上。
 deploy_apply:
   stage: deploy
+  resource_group: haozhe-preview
   image: mcr.microsoft.com/powershell:7.5-alpine-3.20
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
@@ -116,3 +117,38 @@ deploy_apply:
     paths:
       - deploy/team-preview-haozhe/releases/
     expire_in: 1 month
+
+# Serialized, protected-main database cutover. No plaintext saves enter artifacts.
+.database_operation:
+  stage: deploy
+  resource_group: haozhe-preview
+  image: mcr.microsoft.com/powershell:7.5-alpine-3.20
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+      allow_failure: false
+  before_script:
+    - pwsh -NoProfile -Command "Invoke-WebRequest -Uri 'https://dl.k8s.io/release/v1.34.9/bin/linux/amd64/kubectl' -OutFile /usr/local/bin/kubectl; chmod +x /usr/local/bin/kubectl"
+  artifacts:
+    when: always
+    paths:
+      - deploy/team-preview-haozhe/database-artifacts/
+    expire_in: 1 year
+
+database_prepare:
+  extends: .database_operation
+  needs: [deploy_apply]
+  script:
+    - pwsh -NoProfile -File deploy/team-preview-haozhe/Migrate-Database.ps1 -Phase Prepare
+
+database_migrate:
+  extends: .database_operation
+  needs: [database_prepare]
+  script:
+    - pwsh -NoProfile -File deploy/team-preview-haozhe/Migrate-Database.ps1 -Phase Migrate
+
+database_finalize:
+  extends: .database_operation
+  needs: [database_migrate]
+  script:
+    - pwsh -NoProfile -File deploy/team-preview-haozhe/Migrate-Database.ps1 -Phase Finalize
