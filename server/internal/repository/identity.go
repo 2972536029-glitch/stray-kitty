@@ -6,6 +6,9 @@ import "stray-kitty/server/internal/domain"
 // store mutex. Request logging must not serialize a player's state and hundreds
 // of historical command receipts just to resolve an ID and the QA flag.
 func (s *Store) ObservationIdentity(hash string) (playerID string, qa bool, err error) {
+	if s.sqlDB != nil {
+		return s.mysqlObservationIdentity(hash, false)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, player := s.lookupSession(hash)
@@ -16,6 +19,9 @@ func (s *Store) ObservationIdentity(hash string) (playerID string, qa bool, err 
 }
 
 func (s *Store) ObservationIdentityByPlayer(playerID string) (resolvedID string, qa bool, err error) {
+	if s.sqlDB != nil {
+		return s.mysqlObservationIdentity(playerID, true)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, player := s.findByID(playerID)

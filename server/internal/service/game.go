@@ -631,16 +631,24 @@ func (g *Game) startTutorialBattle(s *domain.GameState, stageID string, includeM
 func (g *Game) ApplyCharge(playerID string, txn domain.Txn, pack domain.RechargePack) (int, error) {
 	balance := 0
 	err := g.Store.TransactByPlayer(playerID, func(p *repository.Player) error {
+		// The visible history is bounded. Keep processed payment IDs in the
+		// same committed aggregate as the balance so later webhook retries
+		// cannot credit a transaction again after it leaves that history.
+		if p.AppliedPayments == nil {
+			p.AppliedPayments = map[string]bool{}
+		}
 		for _, existing := range p.State.Txns {
-			if existing.ID == txn.ID {
-				balance = p.State.Currencies["tuna"]
-				return nil
-			}
+			p.AppliedPayments[existing.ID] = true
+		}
+		if p.AppliedPayments[txn.ID] {
+			balance = p.State.Currencies["tuna"]
+			return nil
 		}
 		if txn.Status == "confirmed" {
 			p.State.Currencies["tuna"] += pack.TunaGranted
 		}
 		domain.AppendTxn(&p.State, txn)
+		p.AppliedPayments[txn.ID] = true
 		balance = p.State.Currencies["tuna"]
 		return nil
 	})

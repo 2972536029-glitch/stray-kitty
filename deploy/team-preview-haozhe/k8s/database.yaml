@@ -1,0 +1,115 @@
+# Apply separately from the three-service app release, before explicit cutover.
+# Secret stray-kitty-mysql must contain non-empty root-password and app-password.
+# This never exposes MySQL outside the cluster and never removes legacy save PVCs.
+apiVersion: v1
+kind: Service
+metadata:
+  name: stray-kitty-mysql
+  namespace: cn-haozhe-wang
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: stray-kitty
+    app.kubernetes.io/instance: haozhe-preview
+    app.kubernetes.io/component: database
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: mysql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: stray-kitty-mysql
+  namespace: cn-haozhe-wang
+spec:
+  serviceName: stray-kitty-mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: stray-kitty
+      app.kubernetes.io/instance: haozhe-preview
+      app.kubernetes.io/component: database
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: stray-kitty
+        app.kubernetes.io/instance: haozhe-preview
+        app.kubernetes.io/component: database
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          args: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_bin"]
+          ports:
+            - name: mysql
+              containerPort: 3306
+          env:
+            - name: MYSQL_DATABASE
+              value: stray_kitty
+            - name: MYSQL_USER
+              value: stray_kitty
+            - name: MYSQL_ROOT_HOST
+              value: localhost
+            - name: MYSQL_PASSWORD_FILE
+              value: /run/secrets/mysql/app-password
+            - name: MYSQL_ROOT_PASSWORD_FILE
+              value: /run/secrets/mysql/root-password
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          startupProbe:
+            exec:
+              command: ["sh", "-ec", "MYSQL_PWD=$(cat /run/secrets/mysql/app-password) mysql --protocol=tcp -h 127.0.0.1 -u stray_kitty -D stray_kitty -Nse 'SELECT 1' >/dev/null"]
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: ["sh", "-ec", "MYSQL_PWD=$(cat /run/secrets/mysql/app-password) mysql --protocol=tcp -h 127.0.0.1 -u stray_kitty -D stray_kitty -Nse 'SELECT 1' >/dev/null"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "--host=127.0.0.1", "--silent"]
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 5
+          volumeMounts:
+            - name: database
+              mountPath: /var/lib/mysql
+              subPath: mysql
+            - name: credentials
+              mountPath: /run/secrets/mysql
+              readOnly: true
+      volumes:
+        - name: credentials
+          secret:
+            secretName: stray-kitty-mysql
+            defaultMode: 0440
+  volumeClaimTemplates:
+    - metadata:
+        name: database
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi

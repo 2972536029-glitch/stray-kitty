@@ -228,6 +228,16 @@
                         "optional": true
                       }
                     }
+                  },
+                  {
+                    "name": "GAME_MYSQL_DSN",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-database",
+                        "key": "game-dsn",
+                        "optional": true
+                      }
+                    }
                   }
                 ],
                 "securityContext": {
@@ -507,6 +517,16 @@
                       "secretKeyRef": {
                         "name": "stray-kitty-preview-datadog",
                         "key": "api-key",
+                        "optional": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "PAYMENT_MYSQL_DSN",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "stray-kitty-preview-database",
+                        "key": "payment-dsn",
                         "optional": true
                       }
                     }

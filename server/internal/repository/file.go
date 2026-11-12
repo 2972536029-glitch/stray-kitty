@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -21,6 +23,9 @@ type Player struct {
 	ReceiptOrder []string           `json:"receiptOrder"`
 	// SessionAliases 登录会话的 token 哈希别名:同一存档可被匿名主会话与多个登录会话访问。
 	SessionAliases []string `json:"sessionAliases,omitempty"`
+	// AppliedPayments is the durable credit deduplication set. Display history is
+	// bounded, but previously applied payment IDs must never expire with it.
+	AppliedPayments map[string]bool `json:"appliedPayments,omitempty"`
 	// The original progress is kept server-side while a QA checkpoint is active.
 	QARestore *domain.GameState `json:"qaRestore,omitempty"`
 }
@@ -41,11 +46,13 @@ type Database struct {
 	Accounts map[string]*Account `json:"accounts,omitempty"`
 }
 
-// Store 的事务在单进程内串行执行；生产多实例必须替换为数据库事务。
+// Store supports local JSON saves and MySQL transactions. MySQL locks each player
+// independently, so separate API instances share the same commit boundary.
 type Store struct {
-	mu   sync.Mutex
-	path string
-	db   Database
+	sqlDB *sql.DB
+	mu    sync.Mutex
+	path  string
+	db    Database
 }
 
 func Open(path string) (*Store, error) {
@@ -115,6 +122,9 @@ func clone(p *Player) (*Player, error) {
 	return &out, err
 }
 func (s *Store) Create(hash string, p *Player) error {
+	if s.sqlDB != nil {
+		return s.mysqlCreate(hash, p)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.db.Players[hash]; ok {
@@ -143,6 +153,9 @@ func (s *Store) lookupSession(hash string) (string, *Player) {
 	return "", nil
 }
 func (s *Store) Get(hash string) (*Player, error) {
+	if s.sqlDB != nil {
+		return s.mysqlGet(hash, false)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, p := s.lookupSession(hash)
@@ -162,6 +175,9 @@ func (s *Store) findByID(playerID string) (string, *Player) {
 	return "", nil
 }
 func (s *Store) GetByPlayerID(playerID string) (*Player, error) {
+	if s.sqlDB != nil {
+		return s.mysqlGet(playerID, true)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, p := s.findByID(playerID)
@@ -173,6 +189,10 @@ func (s *Store) GetByPlayerID(playerID string) (*Player, error) {
 
 // TransactByPlayer 以玩家 ID 为准的原子变更(支付入账走这里,与命令事务同一把锁)。
 func (s *Store) TransactByPlayer(playerID string, fn func(*Player) error) error {
+	if s.sqlDB != nil {
+		_, err := s.mysqlTransact(playerID, true, false, true, func(p *Player) (domain.CommandResponse, error) { return domain.CommandResponse{}, fn(p) })
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	hash, old := s.findByID(playerID)
@@ -202,6 +222,9 @@ func (s *Store) Transact(hash string, fn func(*Player) (domain.CommandResponse, 
 // TransactWithQA preserves the normal transaction semantics and marks synthetic
 // command changes for observability. QA checkpoints are also detected from state.
 func (s *Store) TransactWithQA(hash string, qa bool, fn func(*Player) (domain.CommandResponse, error)) (domain.CommandResponse, error) {
+	if s.sqlDB != nil {
+		return s.mysqlTransact(hash, false, qa, false, fn)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	key, old := s.lookupSession(hash)
@@ -230,6 +253,9 @@ func (s *Store) TransactWithQA(hash string, qa bool, fn func(*Player) (domain.Co
 
 // AttachAlias 给玩家存档挂一个登录会话哈希;写失败回滚。
 func (s *Store) AttachAlias(playerID, alias string) error {
+	if s.sqlDB != nil {
+		return s.mysqlAttachAlias(playerID, alias)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	key, p := s.findByID(playerID)
@@ -253,6 +279,9 @@ func (s *Store) AttachAlias(playerID, alias string) error {
 
 // SaveAccount 新建账号;用户名已存在时 409。写失败回滚。
 func (s *Store) SaveAccount(account *Account) error {
+	if s.sqlDB != nil {
+		return s.mysqlSaveAccount(account)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	key := account.Username
@@ -272,16 +301,32 @@ func (s *Store) SaveAccount(account *Account) error {
 
 // FindAccount 按用户名(小写)查账号;不存在返回 nil。
 func (s *Store) FindAccount(username string) *Account {
+	account, _ := s.FindAccountWithError(username)
+	return account
+}
+
+// FindAccountWithError distinguishes an unavailable database from absent credentials.
+func (s *Store) FindAccountWithError(username string) (*Account, error) {
+	if s.sqlDB != nil {
+		return s.mysqlFindAccount(username)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.db.Accounts == nil {
-		return nil
+	if s.db.Accounts == nil || s.db.Accounts[username] == nil {
+		return nil, nil
 	}
-	return s.db.Accounts[username]
+	account := *s.db.Accounts[username]
+	return &account, nil
 }
 
 // TrimAliases 控制存档的登录别名数量:超过 limit 时移除最旧的。
 func (s *Store) TrimAliases(playerID string, limit int) error {
+	if limit < 0 {
+		return domain.Fail("INVALID_LIMIT", "会话数量不能为负数", 400)
+	}
+	if s.sqlDB != nil {
+		return s.mysqlTrimAliases(playerID, limit)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, p := s.findByID(playerID)
@@ -297,6 +342,26 @@ func (s *Store) TrimAliases(playerID string, limit int) error {
 	if err := s.persist(); err != nil {
 		p.SessionAliases = old
 		return err
+	}
+	return nil
+}
+
+// Backend is safe to expose in readiness responses; it never includes credentials.
+func (s *Store) Backend() string {
+	if s.sqlDB != nil {
+		return "mysql"
+	}
+	return "single-process-file"
+}
+func (s *Store) Ping(ctx context.Context) error {
+	if s.sqlDB != nil {
+		return s.sqlDB.PingContext(ctx)
+	}
+	return nil
+}
+func (s *Store) Close() error {
+	if s.sqlDB != nil {
+		return s.sqlDB.Close()
 	}
 	return nil
 }

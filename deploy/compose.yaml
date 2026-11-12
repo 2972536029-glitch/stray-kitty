@@ -19,16 +19,45 @@ services:
       # QA 工作台开关(e2e/演示用);设置 PAYMENT_URL 指向独立 paymentd 即切换拆分支付形态
       GAME_QA_ENABLED: ${GAME_QA_ENABLED:-false}
       PAYMENT_URL: ${PAYMENT_URL:-}
+      # Empty keeps the existing file mode. Set explicitly when enabling database.
+      GAME_MYSQL_DSN: ${GAME_MYSQL_DSN:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+        required: false
     volumes:
       - kitty-data:/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/healthz"]
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/readyz"]
       interval: 15s
       timeout: 3s
       retries: 3
     labels:
       com.datadoghq.ad.logs: '[{"source": "go", "service": "kitty-api"}]'
+
+  # Optional local database. No host port; applications use mysql:3306.
+  # Secret files are required only for this profile; see docs/DATABASE.md.
+  mysql:
+    image: mysql:8.4
+    profiles: ["database"]
+    environment:
+      MYSQL_DATABASE: stray_kitty
+      MYSQL_USER: stray_kitty
+      MYSQL_ROOT_HOST: localhost
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_password
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+    secrets: [mysql_password, mysql_root_password]
+    volumes:
+      - kitty-mysql-data:/var/lib/mysql
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_bin"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$(cat /run/secrets/mysql_password) mysql --protocol=tcp -h 127.0.0.1 -u stray_kitty -D stray_kitty -Nse 'SELECT 1' >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
 
   # ---- Datadog Agent(可选 profile:没有 DD_API_KEY 时不启动)----
   # 带观测闭环启动:docker compose --profile observability up --build
@@ -38,7 +67,7 @@ services:
     image: gcr.io/datadoghq/agent:7
     profiles: ["observability"]
     environment:
-      DD_API_KEY: ${DD_API_KEY:?请在 deploy/.env 配置 DD_API_KEY 后再用 --profile observability 启动}
+      DD_API_KEY: ${DD_API_KEY:-}
       DD_SITE: ${DD_SITE:-datadoghq.com}
       DD_ENV: ${DD_ENV:-dev}
       DD_TAGS: "team:${DD_TEAM:-stray-kitty}"
@@ -59,3 +88,10 @@ services:
 
 volumes:
   kitty-data:
+  kitty-mysql-data:
+
+secrets:
+  mysql_password:
+    file: ${MYSQL_PASSWORD_FILE:-./private/mysql-password}
+  mysql_root_password:
+    file: ${MYSQL_ROOT_PASSWORD_FILE:-./private/mysql-root-password}

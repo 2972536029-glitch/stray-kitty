@@ -2,6 +2,8 @@
 
 本目录是 stray-kitty 团队试玩实例的**发布工程唯一入口**：镜像构建、清单渲染、离线校验、集群部署脚本都在这里。
 
+数据库支持为显式切换：未创建 `stray-kitty-preview-database` 连接 Secret 时，下面的 JSON/PVC 部署保持兼容。MySQL 的独立基础设施清单、停写导入、备份和切换流程见 [DATABASE.md](../../docs/DATABASE.md)；日常发布不自动导入旧存档、不自动创建数据库。
+
 ## 0. 快速开始
 
 ### 常规发布：GitLab CI/CD
